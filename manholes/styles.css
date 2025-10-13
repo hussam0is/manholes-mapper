@@ -1425,6 +1425,8 @@ button:focus-visible {
   transition: box-shadow 0.3s ease;
   /* Default scale - will be updated by JavaScript */
   --keyboard-scale: 1;
+  /* Force LTR layout - numbers don't change with language */
+  direction: ltr;
 }
 
 .floating-keyboard:hover {
