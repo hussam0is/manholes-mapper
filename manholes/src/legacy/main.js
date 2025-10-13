@@ -2385,7 +2385,7 @@ function renderDetails() {
           ${adminConfig.edges.include.fall_depth ? `
           <div class="field">
             <label for="fallDepthInput">${t('labels.fallDepth')}</label>
-            <input id="fallDepthInput" type="number" step="any" value="${edge.fall_depth || ''}" placeholder="${t('labels.optional')}" dir="auto" />
+            <input id="fallDepthInput" type="text" inputmode="decimal" pattern="[0-9]*\\.?[0-9]*" value="${edge.fall_depth || ''}" placeholder="${t('labels.optional')}" dir="auto" />
           </div>` : ''}
           ${adminConfig.edges.include.fall_position ? `
           <div class="field">
