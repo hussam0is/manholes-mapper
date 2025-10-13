@@ -112,6 +112,24 @@ export class FloatingKeyboard {
     }
   }
 
+  // Switch to a new input while keeping keyboard open
+  switchToInput(input) {
+    if (!this.isKeyboardActive) {
+      return;
+    }
+    
+    // Update current input
+    this.currentInput = input;
+    
+    // Prevent native keyboard from showing
+    if (input) {
+      input.setAttribute('readonly', 'readonly');
+      setTimeout(() => {
+        input.removeAttribute('readonly');
+      }, 50);
+    }
+  }
+
   hide() {
     this.keyboard.style.display = 'none';
     this.toggleButton.style.display = 'none';
@@ -335,7 +353,13 @@ export function attachFloatingKeyboard(inputSelector = 'input[type="number"], in
     
     // Check if it's a numeric input
     if (input.tagName === 'INPUT' && isNumericInput(input)) {
-      keyboard.showToggleButton(input);
+      // If keyboard is already active, switch to new input without showing native keyboard
+      if (keyboard.isKeyboardActive) {
+        keyboard.switchToInput(input);
+      } else {
+        // Otherwise, show toggle button
+        keyboard.showToggleButton(input);
+      }
     }
   });
 
