@@ -1376,7 +1376,7 @@ button:focus-visible {
   }
   body.drawer-open .toggle-floating-keyboard {
     right: 12px;
-    bottom: calc(min(50vh, 70dvh) + 12px);
+    bottom: calc(min(50vh, 70dvh) + 5px);
   }
   /* Wrap control buttons to two columns */
   #controls > * {
