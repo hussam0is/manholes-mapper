@@ -5,6 +5,7 @@ import './serviceWorker/register-sw.js';
 import { i18n as I18N_DICT, createTranslator, isRTL as i18nIsRTL } from './i18n.js';
 import { syncHeaderHeightVar } from './dom/dom-utils.js';
 import * as CONSTS from './state/constants.js';
+import { attachFloatingKeyboard } from './utils/floating-keyboard.js';
 
 // Provide a translator globally for legacy code if not yet present
 if (typeof window !== 'undefined') {
@@ -23,6 +24,14 @@ if (typeof window !== 'undefined') {
 // This preserves current behavior by importing the legacy script as a side-effect.
 // We will gradually move logic from main.js into organized modules under src/.
 import './legacy/main.js';
+
+// Initialize floating keyboard for mobile numeric inputs
+// This will only activate on mobile/touch devices
+if (typeof window !== 'undefined') {
+  window.addEventListener('DOMContentLoaded', () => {
+    attachFloatingKeyboard();
+  });
+}
 
 // After app scripts load, ensure header height variable is synced
 try { syncHeaderHeightVar(); } catch (_) {}
