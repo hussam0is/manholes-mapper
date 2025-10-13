@@ -255,6 +255,11 @@
         <button id="recenterBtn" class="btn btn-icon canvas-fab" title="" aria-label="">
           <span class="material-icons">center_focus_strong</span>
         </button>
+        <!-- Toggle button for floating keyboard (shown when numeric input is focused on mobile) -->
+        <button id="toggleFloatingKeyboard" class="toggle-floating-keyboard" style="display:none;">
+          <span class="material-icons">dialpad</span>
+          <span class="toggle-keyboard-label"></span>
+        </button>
         <div id="startPanel" style="display: none;">
           <div class="panel">
             <h2 id="startTitle">התחלת שרטוט חדש</h2>
@@ -328,6 +333,36 @@
           <p id="detailsDefault">בחר שוחה או קו כדי לערוך.</p>
         </div>
       </div>
+    </div>
+    <!-- Floating Keyboard for Mobile Numeric Input -->
+    <div id="floatingKeyboard" class="floating-keyboard" style="display:none;">
+      <div class="floating-keyboard-header">
+        <div class="floating-keyboard-drag-handle">
+          <span class="material-icons">drag_indicator</span>
+        </div>
+        <button id="closeFloatingKeyboard" class="floating-keyboard-close">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <div class="floating-keyboard-body">
+        <div class="floating-keyboard-keys">
+          <button class="floating-key" data-key="7">7</button>
+          <button class="floating-key" data-key="8">8</button>
+          <button class="floating-key" data-key="9">9</button>
+          <button class="floating-key" data-key="4">4</button>
+          <button class="floating-key" data-key="5">5</button>
+          <button class="floating-key" data-key="6">6</button>
+          <button class="floating-key" data-key="1">1</button>
+          <button class="floating-key" data-key="2">2</button>
+          <button class="floating-key" data-key="3">3</button>
+          <button class="floating-key" data-key=".">.</button>
+          <button class="floating-key" data-key="0">0</button>
+          <button class="floating-key floating-key-backspace" data-key="backspace">
+            <span class="material-icons">backspace</span>
+          </button>
+        </div>
+      </div>
+      <div class="floating-keyboard-resize-handle"></div>
     </div>
     <!-- Application logic and UI behavior (ES Module entry) -->
     <script type="module" src="./src/main-entry.js"></script>

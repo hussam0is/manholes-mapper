@@ -3586,6 +3586,8 @@ if (langSelect) {
     try { window.currentLang = currentLang; } catch (_) {}
     localStorage.setItem('graphSketch.lang', currentLang);
     applyLangToStaticUI();
+    // Dispatch custom event for language change (for floating keyboard and other modules)
+    document.dispatchEvent(new Event('appLanguageChanged'));
     // Re-render dynamic lists and details with translated labels
     if (homePanel && homePanel.style.display === 'flex') {
       renderHome();

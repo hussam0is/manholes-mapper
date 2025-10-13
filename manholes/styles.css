@@ -583,6 +583,9 @@ canvas { width: 100%; height: 100%; display: block; }
   body.drawer-open .canvas-fab {
     right: calc(12px + var(--drawer-w));
   }
+  body.drawer-open .toggle-floating-keyboard {
+    right: calc(12px + var(--drawer-w));
+  }
   /* Animate toolbar offset for a smooth coordinated slide */
   .canvas-toolbar { transition: right 240ms cubic-bezier(.2,.8,.2,1); }
 }
@@ -1371,6 +1374,9 @@ button:focus-visible {
   body.drawer-open .canvas-fab {
     right: 12px;
   }
+  body.drawer-open .toggle-floating-keyboard {
+    right: 12px;
+  }
   /* Wrap control buttons to two columns */
   #controls > * {
     flex: 1 1 45%;
@@ -1397,6 +1403,257 @@ button:focus-visible {
   }
 }
 
+/* Floating Keyboard Styles */
+.floating-keyboard {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: var(--color-surface);
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  z-index: 9999;
+  min-width: 80px;
+  min-height: 93px;
+  max-width: 90vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  touch-action: none;
+  user-select: none;
+  backdrop-filter: blur(20px) saturate(180%);
+  transition: box-shadow 0.3s ease;
+  /* Default scale - will be updated by JavaScript */
+  --keyboard-scale: 1;
+}
+
+.floating-keyboard:hover {
+  box-shadow: 0 24px 72px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.floating-keyboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(10px * var(--keyboard-scale)) calc(14px * var(--keyboard-scale));
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: calc(16px * var(--keyboard-scale)) calc(16px * var(--keyboard-scale)) 0 0;
+  cursor: move;
+  position: relative;
+  overflow: hidden;
+}
+
+.floating-keyboard-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+  pointer-events: none;
+}
+
+.floating-keyboard-drag-handle {
+  display: flex;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.95);
+  flex: 1;
+  z-index: 1;
+}
+
+.floating-keyboard-drag-handle .material-icons {
+  font-size: calc(22px * var(--keyboard-scale));
+  opacity: 0.8;
+}
+
+.floating-keyboard-close {
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: calc(6px * var(--keyboard-scale));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: calc(8px * var(--keyboard-scale));
+  transition: all 0.2s ease;
+  z-index: 1;
+}
+
+.floating-keyboard-close:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.05);
+}
+
+.floating-keyboard-close:active {
+  transform: scale(0.95);
+}
+
+.floating-keyboard-close .material-icons {
+  font-size: calc(20px * var(--keyboard-scale));
+}
+
+.floating-keyboard-body {
+  flex: 1;
+  padding: calc(14px * var(--keyboard-scale));
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, var(--color-surface) 0%, rgba(248, 250, 252, 0.98) 100%);
+}
+
+.floating-keyboard-keys {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: calc(10px * var(--keyboard-scale));
+  width: 100%;
+  height: 100%;
+}
+
+.floating-key {
+  background: linear-gradient(145deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border: none;
+  border-radius: calc(12px * var(--keyboard-scale));
+  font-size: calc(22px * var(--keyboard-scale));
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(50px * var(--keyboard-scale));
+  box-shadow: 0 calc(4px * var(--keyboard-scale)) calc(12px * var(--keyboard-scale)) rgba(102, 126, 234, 0.3), 
+              inset 0 calc(1px * var(--keyboard-scale)) 0 rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.floating-key::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0) 100%);
+  pointer-events: none;
+}
+
+.floating-key:active {
+  transform: scale(0.92);
+  box-shadow: 0 calc(2px * var(--keyboard-scale)) calc(6px * var(--keyboard-scale)) rgba(102, 126, 234, 0.4), 
+              inset 0 calc(1px * var(--keyboard-scale)) 0 rgba(255, 255, 255, 0.1);
+}
+
+.floating-key:hover {
+  transform: translateY(calc(-2px * var(--keyboard-scale)));
+  box-shadow: 0 calc(6px * var(--keyboard-scale)) calc(16px * var(--keyboard-scale)) rgba(102, 126, 234, 0.4), 
+              inset 0 calc(1px * var(--keyboard-scale)) 0 rgba(255, 255, 255, 0.25);
+}
+
+.floating-key-backspace {
+  background: linear-gradient(145deg, #f093fb 0%, #f5576c 100%);
+}
+
+.floating-key-backspace::before {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 100%);
+}
+
+.floating-key-backspace:hover {
+  box-shadow: 0 calc(6px * var(--keyboard-scale)) calc(16px * var(--keyboard-scale)) rgba(245, 87, 108, 0.4), 
+              inset 0 calc(1px * var(--keyboard-scale)) 0 rgba(255, 255, 255, 0.25);
+}
+
+.floating-key-backspace .material-icons {
+  font-size: calc(24px * var(--keyboard-scale));
+}
+
+.floating-keyboard-resize-handle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: calc(24px * var(--keyboard-scale));
+  height: calc(24px * var(--keyboard-scale));
+  cursor: nwse-resize;
+  background: linear-gradient(135deg, transparent 50%, rgba(102, 126, 234, 0.5) 50%);
+  border-radius: 0 0 calc(16px * var(--keyboard-scale)) 0;
+  transition: all 0.2s ease;
+}
+
+.floating-keyboard-resize-handle:hover {
+  background: linear-gradient(135deg, transparent 50%, rgba(102, 126, 234, 0.7) 50%);
+}
+
+.floating-keyboard-resize-handle::after {
+  content: '';
+  position: absolute;
+  bottom: calc(3px * var(--keyboard-scale));
+  right: calc(3px * var(--keyboard-scale));
+  width: calc(4px * var(--keyboard-scale));
+  height: calc(4px * var(--keyboard-scale));
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  box-shadow: 0 calc(-6px * var(--keyboard-scale)) 0 rgba(255, 255, 255, 0.9), 
+              calc(-6px * var(--keyboard-scale)) 0 0 rgba(255, 255, 255, 0.9), 
+              calc(-6px * var(--keyboard-scale)) calc(-6px * var(--keyboard-scale)) 0 rgba(255, 255, 255, 0.9);
+}
+
+/* Toggle Floating Keyboard Button */
+.toggle-floating-keyboard {
+  position: absolute;
+  bottom: 68px;
+  right: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  padding: 0;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4), 
+              inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  z-index: 150;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.toggle-floating-keyboard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0) 100%);
+  pointer-events: none;
+}
+
+.toggle-floating-keyboard:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5), 
+              inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.toggle-floating-keyboard:active {
+  transform: translateY(0) scale(0.95);
+  box-shadow: 0 3px 8px rgba(102, 126, 234, 0.4);
+}
+
+.toggle-floating-keyboard .material-icons {
+  font-size: 24px;
+  z-index: 1;
+}
+
+.toggle-floating-keyboard .toggle-keyboard-label {
+  display: none;
+}
+
 /* Optional dark mode using prefers-color-scheme */
 @media (prefers-color-scheme: dark) {
   :root {
@@ -1417,5 +1674,17 @@ button:focus-visible {
   input[type="text"], input[type="date"], textarea { background: #0b1220; border-color: var(--color-border); color: var(--color-text); }
   select.btn { background: #0b1220; color: var(--color-text); border-color: var(--color-border); }
   #toast { background: var(--color-primary-strong); }
+  
+  /* Dark mode for floating keyboard */
+  .floating-keyboard {
+    background: rgba(15, 23, 42, 0.95);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+  .floating-keyboard:hover {
+    box-shadow: 0 24px 72px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.15);
+  }
+  .floating-keyboard-body {
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(11, 18, 32, 0.95) 100%);
+  }
 }
 
