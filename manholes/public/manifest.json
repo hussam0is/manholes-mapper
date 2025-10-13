@@ -3,6 +3,12 @@
   "name": "Manhole Mapper (ממפה שוחות)",
   "icons": [
     {
+      "src": "app_icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
       "src": "icon-192.png",
       "sizes": "192x192",
       "type": "image/png"
