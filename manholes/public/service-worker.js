@@ -40,8 +40,6 @@ const PRECACHE_ASSETS = [
   withBase('manifest.json'),
   withBase('styles.css'),
   withBase('app_icon.png'),
-  withBase('icon-192.png'),
-  withBase('icon-512.png'),
   withBase('health/index.html')
 ];
 
