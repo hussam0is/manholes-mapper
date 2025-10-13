@@ -85,7 +85,25 @@ export class FloatingKeyboard {
         return;
       }
       
-      this.currentInput.value = currentValue + key;
+      const newValue = currentValue + key;
+      
+      // For type="number" inputs, we need to handle incomplete decimals (e.g., "3.")
+      // by temporarily switching to text input mode
+      if (this.currentInput.type === 'number') {
+        const originalType = this.currentInput.type;
+        this.currentInput.type = 'text';
+        this.currentInput.value = newValue;
+        
+        // Switch back to number type after a brief delay
+        setTimeout(() => {
+          // Only switch back if the value is a valid number or empty
+          if (newValue === '' || !isNaN(parseFloat(newValue))) {
+            this.currentInput.type = originalType;
+          }
+        }, 10);
+      } else {
+        this.currentInput.value = newValue;
+      }
     }
 
     // Trigger input event to update the app state
