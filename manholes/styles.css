@@ -38,6 +38,11 @@ header {
   z-index: 200; /* keep above any canvas overlays on iPad */
   backdrop-filter: saturate(160%) blur(6px);
 }
+@media (max-width: 600px) {
+  header {
+    padding: 0.5rem 0.75rem;
+  }
+}
 /* Soft light-blue header variant for better logo contrast */
 .soft-blue-header {
   background: linear-gradient(135deg, #eaf2ff 0%, #dbeafe 100%);
@@ -81,8 +86,11 @@ header h1 {
   opacity: 0.9;
 }
 @media (max-width: 600px) {
-  #appTitle { font-size: 1.28rem; }
+  #appTitle { font-size: 1.1rem; }
   #appTitle::after { bottom: -3px; height: 2px; width: 42%; }
+  #brandLogo {
+    height: 28px;
+  }
 }
 @media (min-width: 1100px) {
   #appTitle { font-size: 1.65rem; }
@@ -595,6 +603,18 @@ canvas { width: 100%; height: 100%; display: block; }
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  position: sticky;
+  top: 0;
+  background: var(--color-surface);
+  z-index: 10;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 0.5rem;
+}
+#detailsContainer {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 .icon-btn {
   display: inline-flex;
@@ -639,6 +659,10 @@ canvas { width: 100%; height: 100%; display: block; }
   border-bottom: 0;
   padding-bottom: 0;
   margin-bottom: 0;
+}
+/* Light grey background for connected lines section */
+.details-section:has(.connected-lines-grid) {
+  background: #d8d8d8;
 }
 @media (max-width: 640px) {
   .details-grid.two-col { grid-template-columns: 1fr; }
@@ -1356,8 +1380,8 @@ button:focus-visible {
     bottom: 0;
     top: auto;
     width: 100%;
-    height: min(50vh, 70dvh);
-    max-height: 70dvh;
+    height: min(40vh, 50dvh);
+    max-height: 50dvh;
     transform: translate3d(0, 100%, 0);
     transition: transform 260ms cubic-bezier(.2,.8,.2,1);
     z-index: 40;
@@ -1376,8 +1400,39 @@ button:focus-visible {
   }
   body.drawer-open .toggle-floating-keyboard {
     right: 12px;
-    bottom: calc(min(50vh, 70dvh) + 5px);
+    bottom: calc(min(40vh, 50dvh) + 5px);
   }
+  
+  /* Optimize canvas toolbar for mobile */
+  .canvas-toolbar .segmented#modeGroup .btn {
+    min-width: 40px;
+    height: 40px;
+    padding: 0.4rem;
+  }
+  .canvas-toolbar .segmented#modeGroup .btn .material-icons {
+    font-size: 1.1rem;
+  }
+  .canvas-toolbar {
+    top: 8px;
+    right: 8px;
+  }
+  .canvas-fab {
+    bottom: 8px;
+    right: 8px;
+  }
+  
+  /* Optimize edge legend for mobile */
+  .edge-legend {
+    top: 8px;
+    left: 8px;
+    font-size: 11px;
+    padding: 4px 8px;
+    gap: 8px;
+  }
+  .edge-legend-item {
+    gap: 4px;
+  }
+  
   /* Wrap control buttons to two columns */
   #controls > * {
     flex: 1 1 45%;
@@ -1401,6 +1456,27 @@ button:focus-visible {
   /* Show the mobile menu toggle button on small screens */
   #mobileMenuBtn {
     display: inline-flex;
+    padding: 0.4rem 0.6rem;
+    min-height: 36px;
+  }
+  
+  /* Better touch targets for mobile */
+  .btn {
+    min-height: 40px;
+  }
+  
+  /* Adjust sidebar header for mobile */
+  .sidebar-header h2 {
+    font-size: 1.1rem;
+  }
+  
+  /* Mobile-friendly input fields */
+  #sidebar input[type="text"],
+  #sidebar input[type="number"],
+  #sidebar input[type="date"],
+  #sidebar select {
+    min-height: 40px;
+    font-size: 16px; /* Prevents zoom on iOS */
   }
 }
 

@@ -1999,9 +1999,6 @@ function renderDetails() {
         <div class="field">
           <label><input id="directConnectionToggle" type="checkbox" ${node.directConnection ? 'checked' : ''}/> ${dcText}</label>
         </div>
-        <div class="field">
-          <button id="deleteNodeBtn" class="btn btn-danger btn-full">${t('labels.deleteNode')}</button>
-        </div>
       `;
     } else {
       container.innerHTML = `
@@ -2049,9 +2046,6 @@ function renderDetails() {
             <label for="noteInput">${t('labels.note')}</label>
             <textarea id="noteInput" rows="3" placeholder="${t('labels.notePlaceholder')}" dir="auto">${node.note || ''}</textarea>
           </div>
-        </div>
-        <div class="details-actions">
-          <button id="deleteNodeBtn" class="btn btn-danger btn-full">${t('labels.deleteNode')}</button>
         </div>
       `;
     }
@@ -2156,6 +2150,11 @@ function renderDetails() {
         });
       }
     } catch (_) {}
+    // Add delete button at the bottom (after connected lines if present)
+    const deleteButtonWrapper = document.createElement('div');
+    deleteButtonWrapper.className = 'details-actions';
+    deleteButtonWrapper.innerHTML = `<button id="deleteNodeBtn" class="btn btn-danger btn-full">${t('labels.deleteNode')}</button>`;
+    container.appendChild(deleteButtonWrapper);
     detailsContainer.appendChild(container);
     // ID rename listener
     const idInput = container.querySelector('#idInput');
