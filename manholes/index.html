@@ -33,13 +33,13 @@
       <div id="controls">
         <!-- Primary actions -->
         <div class="toolbar-group">
-          <button id="newSketchBtn" class="btn btn-ghost" title="שרטוט חדש">
+          <button id="newSketchBtn" class="btn btn-ghost" title="">
             <span class="material-icons">note_add</span>
-            <span class="label">שרטוט חדש</span>
+            <span class="label"></span>
           </button>
-          <button id="saveBtn" class="btn btn-ghost" title="שמירת שרטוט">
+          <button id="saveBtn" class="btn btn-ghost" title="">
             <span class="material-icons">save</span>
-            <span class="label">שמור</span>
+            <span class="label"></span>
           </button>
         </div>
 
@@ -50,8 +50,8 @@
             <input 
               id="searchNodeInput" 
               type="text" 
-              placeholder="חפש שוחה..." 
-              title="חפש שוחה לפי מספר"
+              placeholder="" 
+              title=""
               class="search-input"
             />
           </div>
@@ -62,17 +62,17 @@
         <!-- Export controls -->
         <div class="toolbar-group">
           <div class="segmented">
-            <button id="exportSketchBtn" class="btn btn-icon" title="יצוא שרטוט שלם (JSON)">
+            <button id="exportSketchBtn" class="btn btn-icon" title="">
               <span class="material-icons">download</span>
             </button>
-            <button id="importSketchBtn" class="btn btn-icon" title="יבוא שרטוט (JSON)">
+            <button id="importSketchBtn" class="btn btn-icon" title="">
               <span class="material-icons">upload</span>
             </button>
-            <button id="exportNodesBtn" class="btn btn-icon" title="יצוא שוחות ל-CSV">
+            <button id="exportNodesBtn" class="btn btn-icon" title="">
               <span class="material-icons">donut_large</span>
               <span class="badge-icon material-icons" aria-hidden="true">description</span>
             </button>
-            <button id="exportEdgesBtn" class="btn btn-icon" title="יצוא קווים ל-CSV">
+            <button id="exportEdgesBtn" class="btn btn-icon" title="">
               <span class="material-icons">call_split</span>
               <span class="badge-icon material-icons" aria-hidden="true">description</span>
             </button>
@@ -84,10 +84,10 @@
         <!-- Size controls -->
         <div class="toolbar-group">
           <div class="segmented">
-            <button id="sizeDecreaseBtn" class="btn btn-icon" title="הקטן גודל">
+            <button id="sizeDecreaseBtn" class="btn btn-icon" title="">
               <span class="material-icons">remove_circle_outline</span>
             </button>
-            <button id="sizeIncreaseBtn" class="btn btn-icon" title="הגדל גודל">
+            <button id="sizeIncreaseBtn" class="btn btn-icon" title="">
               <span class="material-icons">add_circle_outline</span>
             </button>
           </div>
@@ -97,13 +97,13 @@
         <div class="toolbar-group">
           <label class="btn btn-ghost autosave-btn">
             <input id="autosaveToggle" type="checkbox" />
-            <span class="label">שמירה אוטומטית</span>
+            <span class="label"></span>
           </label>
         </div>
 
         <!-- Language selector -->
         <div class="toolbar-group">
-          <select id="langSelect" class="btn btn-ghost" title="שפה">
+          <select id="langSelect" class="btn btn-ghost" title="">
             <option value="he">עברית</option>
             <option value="en">English</option>
           </select>
@@ -111,33 +111,33 @@
 
         <!-- Utility actions -->
         <div class="toolbar-group">
-          <button id="helpBtn" class="btn btn-ghost btn-icon" title="קיצורי מקשים וטיפים">
+          <button id="helpBtn" class="btn btn-ghost btn-icon" title="">
             <span class="material-icons">help_outline</span>
           </button>
-          <button id="adminBtn" class="btn btn-ghost btn-icon" title="ניהול הגדרות">
+          <button id="adminBtn" class="btn btn-ghost btn-icon" title="">
             <span class="material-icons">tune</span>
           </button>
-          <button id="homeBtn" class="btn btn-ghost" title="בית">
+          <button id="homeBtn" class="btn btn-ghost" title="">
             <span class="material-icons">home</span>
-            <span class="label">בית</span>
+            <span class="label"></span>
           </button>
         </div>
       </div>
       <!-- Mobile only: toggle to open overflow menu (moved outside #controls so it remains visible on small screens) -->
-      <button id="mobileMenuBtn" class="btn btn-ghost" title="תפריט">
+      <button id="mobileMenuBtn" class="btn btn-ghost" title="">
         <span class="material-icons">menu</span>
       </button>
     </header>
 
     <!-- Mobile overflow menu. This menu is hidden on larger screens and shows a vertical list of actions on small screens. -->
     <div id="mobileMenu" class="mobile-menu" style="display:none;">
-      <button id="mobileHomeBtn" class="btn" title="בית">
+      <button id="mobileHomeBtn" class="btn" title="">
         <span class="material-icons">home</span>
-        <span class="label">בית</span>
+        <span class="label"></span>
       </button>
-      <button id="mobileNewSketchBtn" class="btn" title="שרטוט חדש">
+      <button id="mobileNewSketchBtn" class="btn" title="">
         <span class="material-icons">note_add</span>
-        <span class="label">שרטוט חדש</span>
+        <span class="label"></span>
       </button>
       <!-- Mobile search -->
       <div class="search-container mobile-search" style="margin-top:0.4rem;">
@@ -145,66 +145,66 @@
         <input 
           id="mobileSearchNodeInput" 
           type="text" 
-          placeholder="חפש שוחה..." 
-          title="חפש שוחה לפי מספר"
+          placeholder="" 
+          title=""
           class="search-input"
         />
       </div>
-      <button id="mobileZoomOutBtn" class="btn" title="הקטן זום">
+      <button id="mobileZoomOutBtn" class="btn" title="">
         <span class="material-icons">zoom_out</span>
-        <span class="label">הקטן זום</span>
+        <span class="label"></span>
       </button>
-      <button id="mobileZoomInBtn" class="btn" title="הגדל זום">
+      <button id="mobileZoomInBtn" class="btn" title="">
         <span class="material-icons">zoom_in</span>
-        <span class="label">הגדל זום</span>
+        <span class="label"></span>
       </button>
-      <button id="mobileSizeDecreaseBtn" class="btn" title="הקטן גודל">
+      <button id="mobileSizeDecreaseBtn" class="btn" title="">
         <span class="material-icons">remove_circle_outline</span>
-        <span class="label">הקטן גודל</span>
+        <span class="label"></span>
       </button>
-      <button id="mobileSizeIncreaseBtn" class="btn" title="הגדל גודל">
+      <button id="mobileSizeIncreaseBtn" class="btn" title="">
         <span class="material-icons">add_circle_outline</span>
-        <span class="label">הגדל גודל</span>
+        <span class="label"></span>
       </button>
-      <button id="mobileExportSketchBtn" class="btn" title="יצוא שרטוט שלם (JSON)">
+      <button id="mobileExportSketchBtn" class="btn" title="">
         <span class="material-icons">download</span>
-        <span class="label">יצוא שרטוט</span>
+        <span class="label"></span>
       </button>
-      <button id="mobileImportSketchBtn" class="btn" title="יבוא שרטוט (JSON)">
+      <button id="mobileImportSketchBtn" class="btn" title="">
         <span class="material-icons">upload</span>
-        <span class="label">יבוא שרטוט</span>
+        <span class="label"></span>
       </button>
-      <button id="mobileExportNodesBtn" class="btn" title="יצוא שוחות ל-CSV">
+      <button id="mobileExportNodesBtn" class="btn" title="">
         <span class="material-icons">donut_large</span>
-        <span class="label">יצוא שוחות</span>
+        <span class="label"></span>
         <span class="file-tag material-icons" aria-hidden="true">description</span>
       </button>
-      <button id="mobileExportEdgesBtn" class="btn" title="יצוא קווים ל-CSV">
+      <button id="mobileExportEdgesBtn" class="btn" title="">
         <span class="material-icons">call_split</span>
-        <span class="label">יצוא קווים</span>
+        <span class="label"></span>
         <span class="file-tag material-icons" aria-hidden="true">description</span>
       </button>
-      <button id="mobileSaveBtn" class="btn" title="שמירת שרטוט">
+      <button id="mobileSaveBtn" class="btn" title="">
         <span class="material-icons">save</span>
-        <span class="label">שמירה</span>
+        <span class="label"></span>
       </button>
       <!-- Autosave toggle replicates desktop toggle -->
       <label id="mobileAutosaveLabel" style="display:flex;align-items:center;gap:6px;margin-top:0.4rem;">
         <input id="mobileAutosaveToggle" type="checkbox" />
-        <span class="label">שמירה אוטומטית</span>
+        <span class="label"></span>
       </label>
       <!-- Language selector replicates desktop selector -->
       <select id="mobileLangSelect" class="btn" style="margin-top:0.4rem;">
         <option value="he">עברית</option>
         <option value="en">English</option>
       </select>
-      <button id="mobileHelpBtn" class="btn" title="קיצורי מקשים וטיפים" style="margin-top:0.4rem;">
+      <button id="mobileHelpBtn" class="btn" title="" style="margin-top:0.4rem;">
         <span class="material-icons">help_outline</span>
-        <span class="label">עזרה</span>
+        <span class="label"></span>
       </button>
-      <button id="mobileAdminBtn" class="btn" title="ניהול הגדרות" style="margin-top:0.4rem;">
+      <button id="mobileAdminBtn" class="btn" title="" style="margin-top:0.4rem;">
         <span class="material-icons">tune</span>
-        <span class="label">ניהול</span>
+        <span class="label"></span>
       </button>
     </div>
     <!-- Dedicated Admin Screen (separate from the canvas) -->
@@ -242,17 +242,17 @@
         <canvas id="graphCanvas"></canvas>
         <div class="canvas-toolbar">
           <div class="segmented" id="modeGroup">
-            <button id="nodeModeBtn" class="btn" title="יצירת שוחה"></button>
-            <button id="homeNodeModeBtn" class="btn" title="יצירת בית"></button>
-            <button id="drainageNodeModeBtn" class="btn" title="יצירת קולטן"></button>
-            <button id="edgeModeBtn" class="btn" title="יצירת קו"></button>
+            <button id="nodeModeBtn" class="btn" title=""></button>
+            <button id="homeNodeModeBtn" class="btn" title=""></button>
+            <button id="drainageNodeModeBtn" class="btn" title=""></button>
+            <button id="edgeModeBtn" class="btn" title=""></button>
           </div>
         </div>
         <div id="toast"></div>
         <!-- Edge type legend -->
         <div id="edgeLegend" class="edge-legend"></div>
         <!-- Recenter view button -->
-        <button id="recenterBtn" class="btn btn-icon canvas-fab" title="מרכז שרטוט" aria-label="מרכז שרטוט">
+        <button id="recenterBtn" class="btn btn-icon canvas-fab" title="" aria-label="">
           <span class="material-icons">center_focus_strong</span>
         </button>
         <div id="startPanel" style="display: none;">
@@ -320,7 +320,7 @@
       <div id="sidebar" class="drawer">
         <div class="sidebar-header">
           <h2 id="sidebarTitle">פרטים</h2>
-          <button id="sidebarCloseBtn" class="icon-btn" title="סגור">
+          <button id="sidebarCloseBtn" class="icon-btn" title="">
             <span class="material-icons">close</span>
           </button>
         </div>

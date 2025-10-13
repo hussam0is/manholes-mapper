@@ -956,6 +956,8 @@ function applyLangToStaticUI() {
   if (zoomOutBtn) { zoomOutBtn.title = t('zoomOut'); }
   if (sizeIncreaseBtn) { sizeIncreaseBtn.title = t('sizeIncrease'); }
   if (sizeDecreaseBtn) { sizeDecreaseBtn.title = t('sizeDecrease'); }
+  if (exportSketchBtn) { exportSketchBtn.title = t('exportSketch'); }
+  if (importSketchBtn) { importSketchBtn.title = t('importSketch'); }
   if (exportNodesBtn) { exportNodesBtn.title = t('exportNodes'); }
   if (exportEdgesBtn) { exportEdgesBtn.title = t('exportEdges'); }
   setBtnLabel(saveBtn, t('save'));
@@ -965,12 +967,24 @@ function applyLangToStaticUI() {
     if (autosaveLabelEl) autosaveLabelEl.textContent = t('autosave');
   }
   if (helpBtn) { helpBtn.title = t('help'); setBtnLabel(helpBtn, t('help')); }
+  if (adminBtn) { adminBtn.title = t('admin.manage'); }
+  if (recenterBtn) { 
+    recenterBtn.title = t('recenter'); 
+    recenterBtn.setAttribute('aria-label', t('recenter'));
+  }
+  if (sidebarCloseBtn) { sidebarCloseBtn.title = t('close'); }
+  if (langSelect) { langSelect.title = t('language'); }
+  if (mobileMenuBtn) { mobileMenuBtn.title = t('menu'); }
   if (sidebarTitleEl) sidebarTitleEl.textContent = t('sidebarTitle');
   if (detailsDefaultEl) detailsDefaultEl.textContent = t('detailsDefault');
   if (startTitleEl) startTitleEl.textContent = t('startTitle');
   if (creationDateLabelEl) creationDateLabelEl.textContent = t('creationDate');
   if (homeTitleEl) homeTitleEl.textContent = t('homeTitle');
   if (helpTitleEl) helpTitleEl.textContent = t('helpTitle');
+  if (startBtn) startBtn.textContent = t('start');
+  if (cancelBtn) cancelBtn.textContent = t('cancel');
+  if (closeHelpBtn) closeHelpBtn.textContent = t('close');
+  setBtnLabel(createFromHomeBtn, t('createFromHome'));
   if (helpListEl) {
     helpListEl.innerHTML = '';
     t('helpLines').forEach((line) => {
@@ -1014,6 +1028,16 @@ function applyLangToStaticUI() {
     const lbl = mobileSizeDecreaseBtn.querySelector('.label');
     if (lbl) lbl.textContent = t('sizeDecrease');
   }
+  if (mobileExportSketchBtn) {
+    mobileExportSketchBtn.title = t('exportSketch');
+    const lbl = mobileExportSketchBtn.querySelector('.label');
+    if (lbl) lbl.textContent = t('exportSketch');
+  }
+  if (mobileImportSketchBtn) {
+    mobileImportSketchBtn.title = t('importSketch');
+    const lbl = mobileImportSketchBtn.querySelector('.label');
+    if (lbl) lbl.textContent = t('importSketch');
+  }
   if (mobileExportNodesBtn) {
     mobileExportNodesBtn.title = t('exportNodes');
     const lbl = mobileExportNodesBtn.querySelector('.label');
@@ -1033,6 +1057,11 @@ function applyLangToStaticUI() {
     const lbl = mobileHelpBtn.querySelector('.label');
     if (lbl) lbl.textContent = t('help');
     mobileHelpBtn.title = t('help');
+  }
+  if (mobileAdminBtn) {
+    const lbl = mobileAdminBtn.querySelector('.label');
+    if (lbl) lbl.textContent = t('admin.manage');
+    mobileAdminBtn.title = t('admin.manage');
   }
   if (mobileAutosaveToggle) {
     const lbl = mobileAutosaveLabel && mobileAutosaveLabel.querySelector('.label');
@@ -1075,6 +1104,15 @@ function applyLangToStaticUI() {
   }
   if (typeof adminScreenSaveBtn !== 'undefined' && adminScreenSaveBtn) {
     adminScreenSaveBtn.textContent = t('admin.saveSettings');
+  }
+  // Update search inputs
+  if (typeof searchNodeInput !== 'undefined' && searchNodeInput) {
+    searchNodeInput.placeholder = t('searchNode');
+    searchNodeInput.title = t('searchNodeTitle');
+  }
+  if (typeof mobileSearchNodeInput !== 'undefined' && mobileSearchNodeInput) {
+    mobileSearchNodeInput.placeholder = t('searchNode');
+    mobileSearchNodeInput.title = t('searchNodeTitle');
   }
 }
 
