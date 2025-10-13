@@ -1,0 +1,1120 @@
+MANHOLES MAPPER PWA - COMPREHENSIVE TECHNICAL DOCUMENTATION
+===========================================================
+
+TABLE OF CONTENTS
+-----------------
+1. Application Overview
+2. Architecture & Technology Stack
+3. Data Models & Structures
+4. Module Organization
+5. State Management
+6. Canvas Rendering System
+7. User Interactions & Modes
+8. Admin Configuration System
+9. Import/Export System
+10. Internationalization (i18n)
+11. Offline & PWA Features
+12. How to Add New Features
+13. Key Patterns & Conventions
+14. File Reference Guide
+
+===========================================================
+1. APPLICATION OVERVIEW
+===========================================================
+
+PURPOSE:
+A Progressive Web App for field mapping of manholes (שוחות) and sewer lines with GPS measurements.
+Designed for infrastructure workers to capture manhole network data offline and export to ArcGIS.
+
+KEY CAPABILITIES:
+- Canvas-based graph editor for creating node-edge networks
+- Two node types: Manholes (regular nodes) and Homes (residential connection points)
+- Three edge types: Primary lines (קו ראשי), Branch lines (קו סניקה), Secondary lines (קו משני)
+- Offline-first with IndexedDB persistence
+- Bilingual support (Hebrew RTL + English LTR)
+- CSV export for ArcGIS integration
+- Configurable admin panel for field customization
+
+===========================================================
+2. ARCHITECTURE & TECHNOLOGY STACK
+===========================================================
+
+FRONTEND STACK:
+- Pure Vanilla JavaScript (ES modules) - NO frameworks
+- Canvas API for rendering
+- Vite 7.x for build tooling
+- TypeScript for config only (no TS in source code)
+- Material Icons for UI
+- IndexedDB for offline storage
+- Service Worker for offline-first functionality
+
+BUILD CONFIGURATION:
+- Entry point: src/main-entry.js
+- Vite config: vite.config.ts
+- Base path: './' (relative, for flexible deployment)
+- Output: dist/main.js and dist/styles.css (stable names for service worker)
+- HTTPS support for local dev (optional with SSL certs)
+
+PROJECT STRUCTURE:
+manholes/
+├── src/
+│   ├── main-entry.js           # Application entry point
+│   ├── legacy/main.js           # Monolithic legacy code (being migrated)
+│   ├── admin/helpers.js         # Admin UI builders
+│   ├── db.js                    # IndexedDB wrapper
+│   ├── dom/dom-utils.js         # DOM utility functions
+│   ├── features/
+│   │   ├── drawing-primitives.js  # Basic drawing functions
+│   │   └── rendering.js          # Canvas rendering helpers
+│   ├── graph/id-utils.js        # ID generation utilities
+│   ├── i18n.js                  # Internationalization
+│   ├── serviceWorker/register-sw.js  # SW registration
+│   ├── state/
+│   │   ├── constants.js         # App constants & catalogs
+│   │   └── persistence.js       # IndexedDB bridge to localStorage
+│   └── utils/
+│       ├── csv.js               # CSV export logic
+│       ├── encoding.js          # UTF-16LE encoding for Excel
+│       ├── geometry.js          # Geometric calculations
+│       └── toast.js             # Toast notification system
+├── public/
+│   ├── service-worker.js        # Service worker (v11)
+│   ├── manifest.json            # PWA manifest
+│   ├── offline.html             # Offline fallback page
+│   ├── health/index.html        # Health check endpoint
+│   └── icons/                   # App icons
+└── index.html                   # Main HTML template
+
+===========================================================
+3. DATA MODELS & STRUCTURES
+===========================================================
+
+NODE (MANHOLE/HOME) STRUCTURE:
+{
+  id: String|Number,           // Sequential number or home_xxx for homes
+  x: Number,                   // Canvas X coordinate
+  y: Number,                   // Canvas Y coordinate
+  nodeType: 'Manhole'|'Home'|'Covered',  // Node type
+  type: 'type1'|'type2',      // Internal type (type2 = missing measurement)
+  note: String,                // User notes/description
+  material: String,            // Cover material (label or code)
+  coverDiameter: String,       // Cover diameter (e.g., '35', '45', '55')
+  access: String|Number,       // Access method (code)
+  accuracyLevel: Number,       // 0=Engineering, 1=Schematic
+  maintenanceStatus: Number,   // Maintenance status code
+  directConnection: Boolean,   // Has direct home connection
+}
+
+EDGE (LINE) STRUCTURE:
+{
+  id: String,                  // Unique edge ID (e.g., 'edge_xxx')
+  tail: String|Number,         // From node ID
+  head: String|Number,         // To node ID
+  edge_type: String,           // 'קו ראשי'|'קו סניקה'|'קו משני'
+  material: String,            // Line material (label)
+  edge_material: String,       // Alias for material
+  tail_measurement: String,    // Measurement at outgoing end
+  head_measurement: String,    // Measurement at incoming end
+  fall_depth: String,          // Fall depth measurement
+  fall_position: Number,       // 0=Internal, 1=External
+  line_diameter: String,       // Line diameter
+  engineeringStatus: Number,   // Engineering status code
+  note: String,                // Edge notes
+}
+
+SKETCH STRUCTURE:
+{
+  id: String,                  // Unique sketch ID
+  name: String,                // User-friendly name
+  creationDate: String,        // ISO date string
+  nodes: Array<Node>,          // Array of nodes
+  edges: Array<Edge>,          // Array of edges
+  lastModified: Number,        // Timestamp
+}
+
+INDEXEDDB STORES:
+1. 'sketches' - Persistent sketch library (keyPath: 'id')
+2. 'currentSketch' - Currently edited sketch (keyPath: 'key', single record with key='current')
+3. 'syncQueue' - Future backend sync queue (autoIncrement, unused currently)
+
+ADMIN CONFIGURATION STRUCTURE:
+{
+  nodes: {
+    include: {                 // CSV export fields
+      id: Boolean,
+      type: Boolean,
+      note: Boolean,
+      material: Boolean,
+      cover_diameter: Boolean,
+      access: Boolean,
+      accuracy_level: Boolean,
+      maintenance_status: Boolean,
+    },
+    defaults: {                // Default values for new nodes
+      material: String,
+      cover_diameter: String,
+      access: Number,
+      accuracy_level: Number,
+      maintenance_status: Number,
+    },
+    options: {                 // Dropdown options with enabled/disabled
+      material: Array<{code, label, enabled}>,
+      access: Array<{code, label, enabled}>,
+      accuracy_level: Array<{code, label, enabled}>,
+      maintenance_status: Array<{code, label, enabled}>,
+    }
+  },
+  edges: {
+    include: { ... },          // Similar structure for edges
+    defaults: { ... },
+    options: { ... }
+  }
+}
+
+===========================================================
+4. MODULE ORGANIZATION
+===========================================================
+
+ENTRY FLOW:
+1. index.html loads src/main-entry.js (ES module)
+2. main-entry.js imports utilities, i18n, service worker registration
+3. Exposes global t() translator and constants to window for legacy code
+4. Imports legacy/main.js (the monolithic application)
+5. Syncs header height for responsive layout
+
+MIGRATION STRATEGY:
+The app is progressively modularizing from legacy/main.js into organized modules.
+Legacy code still uses window globals (t, isRTL, showToast, CONSTS) for backward compatibility.
+
+KEY MODULES:
+
+db.js - IndexedDB Operations:
+- openDb() - Opens/upgrades database
+- saveCurrentSketch(sketch) - Saves working sketch
+- loadCurrentSketch() - Loads working sketch
+- saveSketch(sketch) - Saves to library
+- getAllSketches() - Gets sketch library
+- getSketch(id) - Gets single sketch
+- deleteSketch(id) - Deletes sketch
+- enqueueSyncOperation(op) - Queues sync (future use)
+- drainSyncQueue() - Gets and clears sync queue
+
+i18n.js - Internationalization:
+- i18n object with 'he' and 'en' translations
+- createTranslator(dict, getLang) - Creates translator function
+- isRTL(lang) - Checks if language is RTL
+- t(path, ...args) - Translation function (exposed globally)
+
+constants.js - Application Constants:
+- NODE_RADIUS = 20
+- COLORS - Color palette for nodes and edges
+- NODE_TYPES, EDGE_TYPES - Type catalogs
+- *_OPTIONS - Dropdown option catalogs with codes and labels
+- EDGE_TYPE_COLORS - Color mapping for edge types
+
+csv.js - CSV Export Logic:
+- exportNodesCsv(nodes, adminConfig, t) - Generates nodes CSV
+- exportEdgesCsv(edges, adminConfig, t) - Generates edges CSV
+- csvQuote(value) - CSV-safe quoting
+- Internal functions map labels to codes based on admin config
+
+geometry.js - Geometric Utilities:
+- distanceToSegment(x0, y0, x1, y1, x2, y2) - Point-to-segment distance
+
+toast.js - Toast Notifications:
+- showToast(message, durationMs=1800) - Shows bottom toast
+- Exposed as window.showToast for legacy code
+
+encoding.js - File Encoding:
+- encodeUtf16LeWithBom(text) - UTF-16LE with BOM for Excel compatibility
+
+graph/id-utils.js - ID Management:
+- isNumericId(id) - Checks if ID is numeric
+- generateHomeInternalId() - Generates unique home IDs (home_xxxxx)
+
+dom/dom-utils.js - DOM Utilities:
+- commitIdInputIfFocused() - Commits ID input changes
+- syncHeaderHeightVar() - Updates --header-h CSS variable
+
+features/rendering.js - Canvas Rendering:
+- renderEdgeLegend(legendEl, edgeTypeColors) - Renders edge type legend
+- drawInfiniteGrid(ctx, viewTranslate, viewScale, canvas) - Draws grid
+- drawEdge(ctx, edge, tailNode, headNode, options) - Draws edge with arrow
+- drawNode(ctx, node, options) - Draws node circle
+
+features/drawing-primitives.js - Drawing Primitives:
+- drawHouse(ctx, cx, cy, radius) - Draws house icon for home nodes
+- drawDirectConnectionBadge(ctx, cx, cy, radius) - Draws connection badge
+
+admin/helpers.js - Admin UI Builders:
+- buildOptionsEditorModal(adminConfig, t, title, cfgKey, specs) - Builds admin modal UI
+- buildOptionsEditorScreen(adminConfig, t, title, cfgKey, specs) - Builds admin screen UI
+
+serviceWorker/register-sw.js - Service Worker:
+- Auto-registers service-worker.js on HTTPS/localhost
+- Handles update checks every 15 minutes
+- Implements SKIP_WAITING messaging
+- Blocks refresh when offline (prevents data loss)
+- Shows online/offline toast notifications
+
+state/persistence.js - Storage Bridge:
+- restoreFromIndexedDbIfNeeded() - Restores from IndexedDB to localStorage
+- idbSaveCurrentCompat(sketch) - Compatibility wrapper
+- idbSaveRecordCompat(record) - Compatibility wrapper
+- idbDeleteRecordCompat(id) - Compatibility wrapper
+
+===========================================================
+5. STATE MANAGEMENT
+===========================================================
+
+GLOBAL STATE (in legacy/main.js):
+- nodes: Array<Node> - All nodes in current sketch
+- edges: Array<Edge> - All edges in current sketch
+- nextNodeId: Number - Next sequential node ID
+- selectedNode: Node|null - Currently selected node
+- selectedEdge: Edge|null - Currently selected edge
+- currentMode: 'node'|'edge' - Current interaction mode
+- pendingEdgeTail: Node|null - Source node when creating edge
+- creationDate: String|null - Current sketch creation date
+- currentSketchId: String|null - Current sketch ID (null = unsaved)
+- currentSketchName: String|null - Current sketch name
+- autosaveEnabled: Boolean - Autosave toggle state
+- currentLang: 'he'|'en' - Current language
+- viewScale: Number - Zoom level (0.1 to 1.0)
+- viewTranslate: {x, y} - Pan offset
+- highlightedHalfEdge: {edgeId, half: 'tail'|'head'}|null - Highlighted edge segment
+- adminConfig: Object - Admin configuration
+
+PERSISTENCE STRATEGY:
+1. Working sketch auto-saved to IndexedDB currentSketch store
+2. Mirrored to localStorage['graphSketch'] for legacy compatibility
+3. Sketch library in IndexedDB sketches store
+4. Mirrored to localStorage['graphSketch.library']
+5. Admin config in localStorage['graphSketch.adminConfig.v1']
+6. Language preference in localStorage['lang']
+
+AUTOSAVE FLOW:
+- When autosave enabled, every change triggers saveCurrentSketchToStorage()
+- Saves to both IndexedDB and localStorage
+- No user confirmation needed
+- Manual save via Save button saves to library with ID
+
+===========================================================
+6. CANVAS RENDERING SYSTEM
+===========================================================
+
+COORDINATE SYSTEMS:
+1. World Coordinates - The logical graph coordinate space
+2. Screen Coordinates - Canvas pixel coordinates after zoom/pan transform
+
+TRANSFORMATION:
+screenX = worldX * viewScale + viewTranslate.x
+screenY = worldY * viewScale + viewTranslate.y
+
+worldX = (screenX - viewTranslate.x) / viewScale
+worldY = (screenY - viewTranslate.y) / viewScale
+
+ZOOM SYSTEM:
+- MIN_SCALE = 0.1 (10%)
+- MAX_SCALE = 1.0 (100%)
+- SCALE_STEP = 1.1 (10% increments)
+- Zoom via mouse wheel, +/- keys, or pinch gesture
+- Zoom anchored to mouse position or screen center
+
+PAN SYSTEM:
+- Click-drag on empty space (mouse)
+- Single-finger drag on empty space (touch)
+- Space + drag (keyboard + mouse)
+- Two-finger drag (touch)
+
+RENDER PIPELINE (draw() function):
+1. Clear canvas
+2. Apply world-to-screen transform
+3. Draw infinite grid (optional, based on zoom level)
+4. Draw all edges with arrows
+5. Draw edge labels (measurements, fall icons)
+6. Draw all nodes (circles)
+7. Draw node labels (IDs)
+8. Draw home icons for home nodes
+9. Draw direct connection badges
+10. Draw edge preview if in edge mode
+11. Restore transform
+12. Trigger legend update
+
+NODE RENDERING:
+- Circle with NODE_RADIUS
+- Color based on type/selection/status:
+  * type1/default: blue-400 (#60a5fa)
+  * type2/missing: orange-400 (#fb923c)
+  * selected default: blue-200 (#bfdbfe)
+  * selected missing: orange-200 (#fed7aa)
+  * blocked/covered: slate-300 (#cbd5e1)
+- Stroke: blue-600 (#2563eb), 2px
+- Label: ID text in slate-800 (#1f2937)
+- Home nodes: house icon overlay
+- Direct connection: green badge with chain icon
+
+EDGE RENDERING:
+- Line between node centers
+- Arrow at head (target) end
+- Color by type:
+  * קו ראשי (primary): blue-600 (#2563eb)
+  * קו סניקה (branch): orange-400 (#fb923c)
+  * קו משני (secondary): teal-600 (#0d9488)
+- Selected edge: violet-600 (#7c3aed) or type-specific lighter variant
+- Fall depth: fall_icon.png displayed at midpoint
+- Half-edge highlight: thicker overlay on tail or head half
+
+EDGE LEGEND:
+- Positioned bottom-left of canvas
+- Shows color swatch + label for each edge type
+- Auto-updated on render
+
+===========================================================
+7. USER INTERACTIONS & MODES
+===========================================================
+
+INTERACTION MODES:
+1. NODE MODE - Create manholes
+2. HOME MODE - Create home connection points
+3. EDGE MODE - Create lines between nodes
+
+MODE SWITCHING:
+- Toolbar buttons: nodeModeBtn, homeNodeModeBtn, edgeModeBtn
+- Keyboard: 'N' = node mode, 'E' = edge mode
+- Mode buttons highlight when active
+
+NODE CREATION FLOW:
+1. Set currentMode = 'node' or 'home'
+2. Click/tap on canvas
+3. Generate sequential ID (or home_xxx for homes)
+4. Create node at world coordinates
+5. Apply default values from adminConfig
+6. Add to nodes array
+7. Auto-save if enabled
+8. Redraw
+
+EDGE CREATION FLOW:
+1. Set currentMode = 'edge'
+2. Click first node (becomes pendingEdgeTail)
+3. Show edge preview line following mouse
+4. Click second node (becomes head)
+5. Validate: no duplicate edges, no self-loops
+6. Create edge with unique ID
+7. Apply default values from adminConfig
+8. Add to edges array
+9. Clear pendingEdgeTail
+10. Auto-save if enabled
+11. Redraw
+
+NODE SELECTION:
+- Click/tap on node
+- Opens details sidebar
+- Shows node properties form
+- Can edit ID, note, material, diameter, access, status
+- Delete button available
+
+EDGE SELECTION:
+- Click/tap on edge line
+- Opens details sidebar
+- Shows edge properties form
+- Can edit type, material, measurements, fall data
+- Shows from/to node IDs (read-only)
+- Delete button available
+
+HALF-EDGE EDITING:
+- In node details, connected edges listed
+- Click "Edit" on edge in list
+- Highlights tail or head half of edge
+- Can edit measurement for that specific end
+- Visual highlight on canvas (thicker colored overlay)
+
+DRAG OPERATIONS:
+- Click-hold on node
+- Drag to move node
+- All connected edges update in real-time
+- Release to commit position
+- Auto-save if enabled
+
+ZOOM CONTROLS:
+- Mouse wheel: zoom in/out at cursor position
+- Keyboard '+'/'-': zoom in/out at canvas center
+- Keyboard '0': reset zoom to 100%
+- Pinch gesture (touch): zoom at pinch center
+- Zoom buttons in mobile menu
+
+PAN CONTROLS:
+- Click-drag empty space
+- Space + drag (desktop)
+- Single-finger drag on empty space (touch)
+- Two-finger drag (touch)
+
+RECENTER BUTTON:
+- Floating action button (bottom-right)
+- Calculates bounding box of all nodes
+- Centers view and adjusts zoom to fit all nodes
+- Shows all content within canvas bounds
+
+KEYBOARD SHORTCUTS:
+- N: Node mode
+- E: Edge mode
+- Esc: Cancel operation / clear selection / close modals
+- Delete/Backspace: Delete selected item
+- +/=: Zoom in
+- -: Zoom out
+- 0: Reset zoom
+- Space + drag: Pan
+
+MOBILE OPTIMIZATIONS:
+- Larger hit targets for touch (TOUCH_SELECT_EXPANSION = 14px)
+- Tap-to-add with movement threshold (TOUCH_TAP_MOVE_THRESHOLD = 5px)
+- Pull-to-refresh disabled when offline
+- Hamburger menu for overflow controls
+- iOS tap-to-click synthesis for header buttons
+
+===========================================================
+8. ADMIN CONFIGURATION SYSTEM
+===========================================================
+
+ADMIN PANEL ACCESS:
+- Desktop: Click gear icon (adminBtn)
+- Mobile: Hamburger menu → Admin option
+- Two variants: Modal (overlay) and Screen (full page)
+
+ADMIN FEATURES:
+
+1. CSV FIELD INCLUSION:
+   - Checkboxes to select which fields appear in CSV exports
+   - Separate for nodes and edges
+   - Stored in adminConfig.nodes.include and adminConfig.edges.include
+
+2. DEFAULT VALUES:
+   - Set default values applied when creating new nodes/edges
+   - Text inputs for free-form fields
+   - Dropdowns for option-based fields
+   - Stored in adminConfig.nodes.defaults and adminConfig.edges.defaults
+
+3. OPTIONS MANAGEMENT:
+   - Edit dropdown option lists
+   - Each option has: enabled (checkbox), label (text), code (number/text)
+   - Add/remove options dynamically
+   - Enable/disable options (disabled options hidden from dropdowns but preserved for data)
+   - Stored in adminConfig.nodes.options.* and adminConfig.edges.options.*
+
+4. IMPORT/EXPORT CONFIG:
+   - Export current admin config to JSON file
+   - Import admin config from JSON file
+   - Validates structure on import
+   - Useful for sharing configurations across devices/teams
+
+ADMIN CONFIG STORAGE:
+- localStorage key: 'graphSketch.adminConfig.v1'
+- Merged with defaultAdminConfig on load
+- Saved on "Save Settings" button click
+
+OPTION STRUCTURE:
+{
+  code: Number|String,  // Exported to CSV (numeric preferred for ArcGIS codes)
+  label: String,        // Displayed in UI
+  enabled: Boolean,     // Show in dropdowns
+}
+
+CSV CODE MAPPING:
+- UI shows labels (user-friendly Hebrew/English)
+- CSV exports codes (numeric for ArcGIS compatibility)
+- csv.js handles label→code conversion using adminConfig options
+- Falls back to default constants if admin options missing
+
+ADMIN TABS:
+- Nodes/Homes (שוחות/בתים)
+- Edges (קווים)
+- Tab switching via buttons
+- Only one tab visible at a time
+
+===========================================================
+9. IMPORT/EXPORT SYSTEM
+===========================================================
+
+CSV EXPORT - NODES:
+File: manholes_YYYYMMDD_HHMMSS.csv
+Encoding: UTF-16LE with BOM (Excel compatibility)
+Columns (if included in adminConfig):
+- ID
+- Type (Manhole/Home)
+- Note
+- Cover material (code)
+- Cover diameter
+- Access (code)
+- Accuracy Level (code)
+- Maintenance status (code)
+
+CSV EXPORT - EDGES:
+File: lines_YYYYMMDD_HHMMSS.csv
+Encoding: UTF-16LE with BOM
+Columns (if included in adminConfig):
+- From (node ID)
+- To (node ID)
+- Tail (outgoing measurement)
+- Head (incoming measurement)
+- Fall depth
+- Fall position (code: 0=internal, 1=external)
+- Diameter
+- Note
+- Material (code)
+- Type (code: 4801=primary, 4802=branch, 4803=secondary)
+- Engineering status (code)
+
+EXPORT FLOW:
+1. User clicks export button (nodes or edges)
+2. Validate data exists
+3. Generate CSV using exportNodesCsv() or exportEdgesCsv()
+4. Encode to UTF-16LE with BOM
+5. Create Blob with type 'text/csv;charset=utf-16le'
+6. Trigger download via temporary <a> element
+7. Show success toast
+
+SKETCH LIBRARY EXPORT:
+- Exports sketch as JSON
+- Contains full node/edge data
+- Can be imported later via file input
+- Used for backup and sharing
+
+ADMIN CONFIG EXPORT:
+- Exports adminConfig to JSON file
+- Filename: manhole_admin_config.json
+- Used to share field configurations
+
+ADMIN CONFIG IMPORT:
+- File input accepts .json files
+- Validates structure
+- Merges with defaults
+- Saves to localStorage
+- Updates UI
+
+===========================================================
+10. INTERNATIONALIZATION (i18n)
+===========================================================
+
+SUPPORTED LANGUAGES:
+- Hebrew (he) - RTL
+- English (en) - LTR
+
+TRANSLATION SYSTEM:
+- Dictionary: i18n object in i18n.js
+- Translator function: t(path, ...args)
+- Usage: t('toasts.saved') → 'נשמר' (he) or 'Saved' (en)
+- Function translations: t('listCounts', 5, 10) → 'שוחות: 5, קווים: 10'
+
+LANGUAGE SWITCHING:
+- Dropdown selector in header
+- Saves to localStorage['lang']
+- Updates window.currentLang
+- Re-renders all UI text
+- Adjusts direction (dir="rtl" or "ltr")
+- Flips layout for RTL (flexbox, positioning)
+
+RTL HANDLING:
+- isRTL(lang) function checks if language is RTL
+- document.documentElement.dir set to 'rtl' or 'ltr'
+- CSS uses logical properties (inline-start, inline-end) where applicable
+- Text alignment, icons, and layout flip automatically
+
+TRANSLATABLE ELEMENTS:
+- App title
+- Button labels
+- Toast messages
+- Modal titles
+- Form labels
+- Help text
+- Admin panel text
+- Error/confirmation dialogs
+- CSV headers (currently English in export)
+
+DYNAMIC TEXT UPDATE:
+- applyLangToStaticUI() function updates all static text elements
+- Called on language change
+- Updates innerHTML/textContent based on t() calls
+- Preserves input values and user data
+
+===========================================================
+11. OFFLINE & PWA FEATURES
+===========================================================
+
+SERVICE WORKER (v11):
+File: public/service-worker.js
+Strategy: Offline-first with network fallback
+
+CACHING STRATEGIES:
+1. Precache (Application Shell):
+   - index.html
+   - offline.html
+   - manifest.json
+   - styles.css
+   - icon-192.png
+   - icon-512.png
+   - health/index.html
+
+2. Navigation (HTML pages):
+   - Network-first
+   - Fallback to cache
+   - Fallback to offline.html
+   - Cache successful responses
+
+3. Static Assets (precached):
+   - Cache-first
+   - Fetch and cache if missing
+   - Fallback to offline.html
+
+4. Built Assets (/assets/*):
+   - Cache-first (fingerprinted files)
+   - Cache on first access
+   - Ensures offline access to JS/CSS bundles
+
+5. Google Fonts:
+   - Cache-first
+   - Safe empty fallback if offline
+
+6. Runtime (other GET requests):
+   - Stale-while-revalidate
+   - Return cached immediately
+   - Update cache in background
+   - Fallback to offline.html if both fail
+
+CACHE VERSIONING:
+- APP_VERSION = 'v11'
+- PRECACHE cache: 'graph-sketch-shell-v11'
+- RUNTIME cache: 'graph-sketch-runtime-v11'
+- Old caches auto-deleted on activation
+
+UPDATE HANDLING:
+- Checks for updates every 15 minutes
+- SKIP_WAITING message to activate immediately
+- Auto-reload on controller change
+- Seamless updates without user interaction
+
+OFFLINE GUARDS:
+1. Refresh Blocking:
+   - Prevents F5/Ctrl+R when offline
+   - Prevents beforeunload when offline
+   - Prevents pull-to-refresh on mobile when offline
+   - Shows warning toast
+
+2. Data Persistence:
+   - IndexedDB stores work offline
+   - Auto-save preserves all changes
+   - No data loss on network interruption
+
+ONLINE/OFFLINE DETECTION:
+- Listens to online/offline events
+- Shows toast notification on status change
+- Updates UI state if needed
+
+PWA MANIFEST:
+- Name: "Manhole Mapper (ממפה שוחות)"
+- Short name: "Manhole | שוחות"
+- Display: standalone (fullscreen app)
+- Start URL: "."
+- Theme color: #2563eb (blue)
+- Icons: 192x192, 512x512
+- Description: "Field capture of GPS manholes and invert measurements for ArcGIS pipe gradients."
+
+INSTALL PROMPT:
+- Browser shows install banner automatically
+- Can be added to home screen on mobile
+- Runs as standalone app (no browser chrome)
+- Persists across device restarts
+
+HEALTH CHECK:
+- Endpoint: /health/index.html
+- Returns simple status page
+- Used for monitoring/deployment checks
+- Cached for offline access
+
+===========================================================
+12. HOW TO ADD NEW FEATURES
+===========================================================
+
+A. ADDING A NEW NODE FIELD
+
+1. Update Data Model (constants.js):
+   - Add option catalog if dropdown (e.g., NEW_FIELD_OPTIONS)
+   - Export the constant
+   ```javascript
+   export const NEW_FIELD_OPTIONS = [
+     { code: 0, label: 'Option 1' },
+     { code: 1, label: 'Option 2' },
+   ];
+   ```
+
+2. Update Admin Config (legacy/main.js):
+   - Add to defaultAdminConfig.nodes.include (default: true/false)
+   - Add to defaultAdminConfig.nodes.defaults (default value)
+   - Add to defaultAdminConfig.nodes.options if dropdown
+   ```javascript
+   defaultAdminConfig.nodes.include.new_field = true;
+   defaultAdminConfig.nodes.defaults.new_field = 0;
+   defaultAdminConfig.nodes.options.new_field = NEW_FIELD_OPTIONS.map(...);
+   ```
+
+3. Update CSV Export (csv.js):
+   - Add field to exportNodesCsv() function
+   - Add to rowFor() function
+   - Add header
+   ```javascript
+   if (include.new_field) row.push(csvQuote(codeFor('nodes', 'new_field', n.newField, adminConfig)));
+   if (include.new_field) headers.push('New Field');
+   ```
+
+4. Update Admin Panel (legacy/main.js):
+   - Add to openAdminModal() specs array
+   ```javascript
+   { key: 'new_field', label: 'New Field', type: 'select', optionsKey: 'new_field', valueKind: 'code' },
+   ```
+
+5. Update Node Details Form (legacy/main.js):
+   - Add to showNodeDetails() function
+   - Create form field HTML
+   - Add change handler
+   ```javascript
+   const newFieldSelect = createSelect('new_field', NEW_FIELD_OPTIONS, node.newField);
+   newFieldSelect.addEventListener('change', (e) => {
+     node.newField = e.target.value;
+     saveCurrentSketchToStorage();
+     scheduleDraw();
+   });
+   ```
+
+6. Update i18n (i18n.js):
+   - Add translations for field label
+   ```javascript
+   labels: {
+     newField: 'שדה חדש',  // Hebrew
+   },
+   labels: {
+     newField: 'New Field',  // English
+   },
+   ```
+
+7. Test:
+   - Create node, verify field appears
+   - Change value, verify save
+   - Export CSV, verify column
+   - Import sketch, verify persistence
+
+B. ADDING A NEW EDGE FIELD
+
+Follow similar steps as node field, but use:
+- defaultAdminConfig.edges.*
+- exportEdgesCsv() in csv.js
+- showEdgeDetails() in legacy/main.js
+- 'edges' scope in all functions
+
+C. ADDING A NEW INTERACTION MODE
+
+1. Define Mode State:
+   ```javascript
+   let currentMode = 'node'|'edge'|'new_mode';
+   ```
+
+2. Create Mode Button:
+   - Add button to index.html
+   - Add to toolbar or mobile menu
+   - Assign ID and event listener
+
+3. Implement Mode Logic:
+   ```javascript
+   function setMode(mode) {
+     currentMode = mode;
+     updateModeButtons();
+     showToast(t('toasts.newMode'));
+   }
+   ```
+
+4. Handle Canvas Events:
+   - Update handleCanvasClick()
+   - Update handleCanvasMouseMove()
+   - Update handleCanvasMouseDown()
+   - Add mode-specific behavior
+
+5. Update Rendering:
+   - Add preview rendering if needed
+   - Update draw() function
+   - Show visual feedback
+
+6. Add Keyboard Shortcut:
+   - Update handleKeyDown()
+   - Document in help modal
+
+D. ADDING A NEW EXPORT FORMAT
+
+1. Create Export Function (utils/):
+   ```javascript
+   // utils/export-new-format.js
+   export function exportNewFormat(nodes, edges, adminConfig) {
+     // Generate format-specific data
+     return formattedData;
+   }
+   ```
+
+2. Create Download Handler:
+   ```javascript
+   function handleNewFormatExport() {
+     const data = exportNewFormat(nodes, edges, adminConfig);
+     const blob = new Blob([data], { type: 'application/custom' });
+     const url = URL.createObjectURL(blob);
+     const a = document.createElement('a');
+     a.href = url;
+     a.download = `export_${Date.now()}.ext`;
+     a.click();
+     URL.revokeObjectURL(url);
+     showToast(t('toasts.exported'));
+   }
+   ```
+
+3. Add Export Button:
+   - Add to index.html toolbar
+   - Wire up event listener
+   - Add to mobile menu
+
+4. Update Service Worker:
+   - Add to precache if static resource
+   - Update cache strategy if needed
+
+E. ADDING A NEW VISUAL THEME
+
+1. Update Colors (constants.js):
+   ```javascript
+   export const THEMES = {
+     default: { /* colors */ },
+     dark: { /* colors */ },
+   };
+   ```
+
+2. Add Theme Selector:
+   - Add dropdown/toggle to header
+   - Save preference to localStorage
+
+3. Update Rendering:
+   - Use theme colors in draw()
+   - Update CSS variables if applicable
+
+4. Update Styles (styles.css):
+   - Add theme-specific CSS classes
+   - Use data-theme attribute on body
+
+F. ADDING A NEW ADMIN SETTING
+
+1. Update defaultAdminConfig:
+   ```javascript
+   defaultAdminConfig.newSetting = { /* structure */ };
+   ```
+
+2. Add UI to Admin Panel:
+   - Update buildOptionsEditorModal/Screen
+   - Add form fields
+
+3. Save/Load Logic:
+   - Update saveAdminConfig()
+   - Validate on load
+
+4. Apply Setting:
+   - Use in relevant functions
+   - Update UI based on setting
+
+===========================================================
+13. KEY PATTERNS & CONVENTIONS
+===========================================================
+
+NAMING CONVENTIONS:
+- Functions: camelCase (e.g., saveCurrentSketch)
+- Constants: UPPER_SNAKE_CASE (e.g., NODE_RADIUS)
+- Variables: camelCase (e.g., selectedNode)
+- Files: kebab-case (e.g., drawing-primitives.js)
+- CSS classes: kebab-case (e.g., admin-section)
+- DOM IDs: camelCase (e.g., adminContent)
+
+CODE ORGANIZATION:
+- Group related functions together
+- Keep functions small and focused
+- Use comments to explain "why", not "what"
+- Extract reusable logic into utils/
+- Keep rendering logic in features/
+- Keep data operations in db.js or state/
+
+ERROR HANDLING:
+- Use try-catch for all external operations (IndexedDB, localStorage, DOM)
+- Silent failures with console.warn for non-critical errors
+- User-facing errors show toast notifications
+- Validate user input before processing
+
+PERFORMANCE:
+- Debounce expensive operations (drawing)
+- Use requestAnimationFrame for animations
+- Batch DOM updates
+- Cache frequently accessed DOM elements
+- Minimize canvas clears/redraws
+
+COORDINATE TRANSFORMS:
+Always use helper functions:
+```javascript
+function screenToWorld(sx, sy) {
+  return {
+    x: (sx - viewTranslate.x) / viewScale,
+    y: (sy - viewTranslate.y) / viewScale
+  };
+}
+
+function worldToScreen(wx, wy) {
+  return {
+    x: wx * viewScale + viewTranslate.x,
+    y: wy * viewScale + viewTranslate.y
+  };
+}
+```
+
+EVENT HANDLING:
+- Use event delegation where possible
+- Remove event listeners when elements destroyed
+- Prevent default for custom behaviors
+- Stop propagation to prevent bubbling issues
+
+ACCESSIBILITY:
+- Use semantic HTML
+- Add ARIA labels to icon-only buttons
+- Support keyboard navigation
+- Ensure sufficient color contrast
+- Provide text alternatives for visual elements
+
+MOBILE CONSIDERATIONS:
+- Touch events have different thresholds than mouse
+- Synthesize clicks for iOS tap handling
+- Disable pull-to-refresh when appropriate
+- Use passive event listeners for scroll performance
+- Larger hit targets (44x44px minimum)
+
+STATE SYNCHRONIZATION:
+- Always save to both IndexedDB and localStorage
+- Keep admin config in sync with UI
+- Update canvas after any data change
+- Trigger autosave after mutations
+
+LEGACY COMPATIBILITY:
+- Expose new functions to window for legacy code access
+- Maintain backward compatibility during migration
+- Document breaking changes
+- Gradually move logic from legacy/main.js to modules
+
+===========================================================
+14. FILE REFERENCE GUIDE
+===========================================================
+
+ESSENTIAL FILES TO MODIFY FOR COMMON TASKS:
+
+Adding UI Elements:
+→ manholes/index.html
+
+Styling Changes:
+→ manholes/styles.css
+
+Adding/Modifying Constants:
+→ manholes/src/state/constants.js
+
+Translations:
+→ manholes/src/i18n.js
+
+Canvas Rendering:
+→ manholes/src/features/rendering.js
+→ manholes/src/features/drawing-primitives.js
+
+CSV Export Logic:
+→ manholes/src/utils/csv.js
+
+Database Operations:
+→ manholes/src/db.js
+→ manholes/src/state/persistence.js
+
+Admin Panel:
+→ manholes/src/admin/helpers.js
+→ manholes/src/legacy/main.js (openAdminModal function)
+
+Main Application Logic:
+→ manholes/src/legacy/main.js (will be split into modules)
+
+Service Worker:
+→ manholes/public/service-worker.js
+
+Build Configuration:
+→ manholes/vite.config.ts
+→ manholes/package.json
+
+PWA Configuration:
+→ manholes/public/manifest.json
+
+DEVELOPMENT WORKFLOW:
+
+1. Start dev server:
+   ```bash
+   cd manholes
+   npm run dev
+   ```
+
+2. Make changes to source files
+
+3. Vite hot-reloads automatically
+
+4. Test in browser (localhost:5173)
+
+5. Build for production:
+   ```bash
+   npm run build
+   ```
+
+6. Preview production build:
+   ```bash
+   npm run preview
+   ```
+
+7. Test PWA features (service worker only works in production)
+
+8. Deploy dist/ folder to hosting
+
+DEBUGGING TIPS:
+
+- Use browser DevTools Console for errors
+- Check Application tab for IndexedDB contents
+- Check Service Worker status in Application tab
+- Use Network tab to verify offline functionality
+- Test on actual mobile device for touch events
+- Clear cache/service worker when testing updates
+- Use localStorage inspector to view admin config
+
+TESTING CHECKLIST:
+
+□ Node creation (manhole and home)
+□ Edge creation (all types)
+□ Selection and editing
+□ Drag and drop
+□ Zoom and pan
+□ Keyboard shortcuts
+□ CSV export (nodes and edges)
+□ Sketch save/load
+□ Admin config changes
+□ Language switching
+□ Offline functionality
+□ Mobile responsiveness
+□ Touch gestures
+□ Service worker updates
+□ Cross-browser compatibility
+
+===========================================================
+END OF DOCUMENTATION
+===========================================================
+
+This documentation should provide AI agents with comprehensive understanding
+of the Manholes Mapper PWA architecture, functionality, and patterns needed
+to successfully add new features or modify existing ones.
+
+For questions or clarifications, examine the source code in conjunction with
+this documentation. The codebase is well-commented and follows consistent
+patterns throughout.
+
