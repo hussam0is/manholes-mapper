@@ -2499,10 +2499,23 @@ function renderDetails() {
       scheduleDraw();
     });
     fallDepthInput.addEventListener('input', (e) => {
-      // Store as number if parsable, otherwise keep empty string
+      // Store the value, allowing partial decimals like "3." while typing
       const val = e.target.value;
-      const num = Number(val);
-      edge.fall_depth = val === '' || !Number.isFinite(num) ? '' : num;
+      
+      // Allow empty string
+      if (val === '') {
+        edge.fall_depth = '';
+      } 
+      // Allow partial decimal numbers (e.g., "3." or "0.")
+      else if (val.endsWith('.') && !isNaN(parseFloat(val))) {
+        edge.fall_depth = val;
+      }
+      // Convert complete numbers to number type
+      else {
+        const num = Number(val);
+        edge.fall_depth = Number.isFinite(num) ? num : val;
+      }
+      
       debouncedSaveToStorage();
       scheduleDraw();
     });
