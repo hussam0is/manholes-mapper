@@ -789,6 +789,15 @@ button:focus-visible {
   box-shadow: var(--ring);
   border-color: var(--color-primary);
 }
+
+/* Visual indicator for active input when using floating keyboard */
+input.floating-keyboard-active {
+  outline: none;
+  border-color: #667eea !important;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.25) !important;
+  background: rgba(102, 126, 234, 0.05) !important;
+}
+
 #sidebar h2 { margin-top: 0; }
 #startPanel,
 #homePanel,

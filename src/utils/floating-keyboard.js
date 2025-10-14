@@ -122,6 +122,11 @@ export class FloatingKeyboard {
     const rect = this.keyboard.getBoundingClientRect();
     this.updateScale(rect.width, rect.height);
     
+    // Add visual indicator to active input
+    if (input) {
+      input.classList.add('floating-keyboard-active');
+    }
+    
     // Hide native keyboard
     if (input) {
       input.setAttribute('readonly', 'readonly');
@@ -138,8 +143,18 @@ export class FloatingKeyboard {
       return;
     }
     
+    // Remove visual indicator from previous input
+    if (this.currentInput) {
+      this.currentInput.classList.remove('floating-keyboard-active');
+    }
+    
     // Update current input
     this.currentInput = input;
+    
+    // Add visual indicator to new active input
+    if (input) {
+      input.classList.add('floating-keyboard-active');
+    }
     
     // Prevent native keyboard from showing
     if (input) {
@@ -155,6 +170,12 @@ export class FloatingKeyboard {
     this.keyboard.style.display = 'none';
     this.toggleButton.style.display = 'none';
     this.isKeyboardActive = false;
+    
+    // Remove visual indicator from current input
+    if (this.currentInput) {
+      this.currentInput.classList.remove('floating-keyboard-active');
+    }
+    
     this.currentInput = null;
     // Remove class indicating keyboard button is visible
     document.body.classList.remove('keyboard-button-visible');
