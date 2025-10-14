@@ -39,3 +39,6 @@ lerna-debug.log*
 # TypeScript
 *.tsbuildinfo
 
+# Empty legacy directory (can be manually deleted)
+manholes/
+
