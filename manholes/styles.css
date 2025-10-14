@@ -10,6 +10,7 @@
   --shadow: 0 8px 24px rgba(2, 6, 23, 0.08);
   --ring: 0 0 0 3px rgba(37, 99, 235, 0.3);
   --drawer-w: 320px; /* sidebar width for responsive offset */
+  --drawer-height: 0px; /* dynamically updated by resizable-drawer.js */
 }
 body {
   margin: 0;
@@ -598,6 +599,25 @@ canvas { width: 100%; height: 100%; display: block; }
   .canvas-toolbar { transition: right 240ms cubic-bezier(.2,.8,.2,1); }
 }
 
+.sidebar-drag-handle {
+  padding: 0.5rem 0;
+  display: flex;
+  justify-content: center;
+  cursor: ns-resize;
+  touch-action: none;
+  user-select: none;
+}
+.drag-handle-bar {
+  width: 40px;
+  height: 4px;
+  background: #cbd5e1;
+  border-radius: 2px;
+  transition: background 0.2s ease;
+}
+.sidebar-drag-handle:hover .drag-handle-bar,
+.sidebar-drag-handle:active .drag-handle-bar {
+  background: #94a3b8;
+}
 .sidebar-header {
   display: flex;
   align-items: center;
@@ -1390,6 +1410,11 @@ button:focus-visible {
     border-top-left-radius: var(--radius);
     border-top-right-radius: var(--radius);
   }
+  
+  /* Disable height transition when resizing */
+  .drawer.resizing {
+    transition: none;
+  }
   .drawer.open {
     transform: translate3d(0, 0, 0);
   }
@@ -1400,7 +1425,17 @@ button:focus-visible {
   }
   body.drawer-open .toggle-floating-keyboard {
     right: 12px;
-    bottom: calc(min(40vh, 50dvh) + 5px);
+    bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 8px);
+  }
+  
+  /* Position recenter button - by default at keyboard button position (when keyboard button is hidden) */
+  body.drawer-open .canvas-fab {
+    bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 8px);
+  }
+  
+  /* When keyboard button is visible, move recenter button above it */
+  body.drawer-open.keyboard-button-visible .canvas-fab {
+    bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 8px + 44px + 8px);
   }
   
   /* Optimize canvas toolbar for mobile */
@@ -1417,6 +1452,11 @@ button:focus-visible {
     right: 8px;
   }
   .canvas-fab {
+    transition: bottom 0.3s ease;
+  }
+  
+  /* Only adjust bottom position when drawer is closed */
+  body:not(.drawer-open) .canvas-fab {
     bottom: 8px;
     right: 8px;
   }
@@ -1695,9 +1735,9 @@ button:focus-visible {
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  z-index: 15;
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4), 
               inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  z-index: 150;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 }

@@ -6,6 +6,7 @@ import { i18n as I18N_DICT, createTranslator, isRTL as i18nIsRTL } from './i18n.
 import { syncHeaderHeightVar } from './dom/dom-utils.js';
 import * as CONSTS from './state/constants.js';
 import { attachFloatingKeyboard } from './utils/floating-keyboard.js';
+import { initResizableDrawer } from './utils/resizable-drawer.js';
 
 // Provide a translator globally for legacy code if not yet present
 if (typeof window !== 'undefined') {
@@ -30,6 +31,7 @@ import './legacy/main.js';
 if (typeof window !== 'undefined') {
   window.addEventListener('DOMContentLoaded', () => {
     attachFloatingKeyboard();
+    initResizableDrawer();
   });
 }
 

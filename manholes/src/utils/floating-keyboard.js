@@ -153,6 +153,8 @@ export class FloatingKeyboard {
     this.toggleButton.style.display = 'none';
     this.isKeyboardActive = false;
     this.currentInput = null;
+    // Remove class indicating keyboard button is visible
+    document.body.classList.remove('keyboard-button-visible');
   }
 
   toggle() {
@@ -167,12 +169,16 @@ export class FloatingKeyboard {
     this.currentInput = input;
     this.toggleButton.style.display = 'flex';
     this.updateLabelText();
+    // Add class indicating keyboard button is visible
+    document.body.classList.add('keyboard-button-visible');
   }
 
   hideToggleButton() {
     if (!this.isKeyboardActive) {
       this.toggleButton.style.display = 'none';
       this.currentInput = null;
+      // Remove class indicating keyboard button is visible
+      document.body.classList.remove('keyboard-button-visible');
     }
   }
 
