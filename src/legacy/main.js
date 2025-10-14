@@ -36,6 +36,8 @@ import { commitIdInputIfFocused } from '../dom/dom-utils.js';
 import { buildOptionsEditorModal, buildOptionsEditorScreen } from '../admin/helpers.js';
 import { drawHouse as primitivesDrawHouse, drawDirectConnectionBadge as primitivesDrawDirectConnectionBadge } from '../features/drawing-primitives.js';
 import { drawInfiniteGrid as drawInfiniteGridFeature, renderEdgeLegend as renderEdgeLegendFeature, drawEdge as drawEdgeFeature, drawNode as drawNodeFeature } from '../features/rendering.js';
+import { drawNodeIcon } from '../features/node-icons.js';
+import { processLabels } from '../utils/label-collision.js';
 
 // DOM references
 const canvas = document.getElementById('graphCanvas');
@@ -1686,10 +1688,38 @@ function draw() {
     ctx.fill();
     ctx.restore();
   }
-  // Draw nodes on top
+  // Draw nodes on top and collect label data
+  const labelData = [];
+  const nodeData = [];
+  
   nodes.forEach((node) => {
-    drawNode(node);
+    const label = drawNode(node);
+    if (label) {
+      labelData.push(label);
+    }
+    // Collect node data for collision detection
+    const radius = NODE_RADIUS * sizeScale;
+    nodeData.push({
+      x: node.x,
+      y: node.y,
+      radius: radius
+    });
   });
+  
+  // Process labels with smart positioning to avoid overlaps
+  const positionedLabels = processLabels(ctx, labelData, nodeData);
+  
+  // Draw the optimally positioned labels
+  ctx.fillStyle = COLORS.node.label;
+  positionedLabels.forEach((label) => {
+    ctx.save();
+    ctx.font = `${label.fontSize}px Arial`;
+    ctx.textAlign = label.align;
+    ctx.textBaseline = label.baseline;
+    ctx.fillText(label.text, label.x, label.y);
+    ctx.restore();
+  });
+  
   // Draw edge measurement labels above nodes for visibility
   edges.forEach((edge) => {
     drawEdgeLabels(edge);
@@ -1909,31 +1939,35 @@ function drawEdgeLabels(edge) {
 
 function drawNode(node) {
   const radius = NODE_RADIUS * sizeScale;
-  drawNodeFeature(ctx, node, { radius, colors: COLORS, selectedNode });
-  if (node.nodeType === 'Home') {
-    const iconRadius = node.directConnection ? radius * 0.7 : radius;
-    drawHouse(node.x, node.y, iconRadius);
-    if (node.directConnection) {
-      drawDirectConnectionBadge(node.x, node.y, radius);
-    }
-    const idStr = String(node.id);
-    if (/^\d+$/.test(idStr)) {
-      ctx.fillStyle = COLORS.node.label;
-      const fontSize = Math.round(16 * sizeScale);
-      ctx.font = `${fontSize}px Arial`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      const labelY = node.y + (node.directConnection ? iconRadius * 0.9 : iconRadius * 0.6);
-      ctx.fillText(idStr, node.x, labelY);
-    }
-  } else {
-    ctx.fillStyle = COLORS.node.label;
-    const fontSize = Math.round(16 * sizeScale);
-    ctx.font = `${fontSize}px Arial`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(String(node.id), node.x, node.y);
+  
+  // Draw the node icon using the new icon system
+  drawNodeIcon(ctx, node, radius, COLORS, selectedNode);
+  
+  // For Home nodes with directConnection badge, draw it on top
+  if (node.nodeType === 'Home' && node.directConnection) {
+    drawDirectConnectionBadge(node.x, node.y, radius);
   }
+  
+  // Return label data for deferred rendering (smart positioning)
+  const fontSize = Math.round(16 * sizeScale);
+  let labelText = String(node.id);
+  
+  // For Home nodes, only show numeric IDs as labels
+  if (node.nodeType === 'Home') {
+    const idStr = String(node.id);
+    if (!/^\d+$/.test(idStr)) {
+      return null; // No label for non-numeric Home IDs
+    }
+    labelText = idStr;
+  }
+  
+  return {
+    text: labelText,
+    nodeX: node.x,
+    nodeY: node.y,
+    nodeRadius: radius,
+    fontSize: fontSize
+  };
 }
 
 /**
@@ -2347,7 +2381,7 @@ function renderDetails() {
       <div class="details-section">
         <div class="details-grid two-col">
           <div class="field col-span-2">
-            <div>${edge.tail} → ${edge.head}</div>
+            <div>${edge.tail} ${isRTL(currentLang) ? '←' : '→'} ${edge.head}</div>
           </div>
         </div>
       </div>

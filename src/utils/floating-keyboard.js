@@ -208,6 +208,11 @@ export class FloatingKeyboard {
 
   // Dragging methods
   startDrag(e) {
+    // Don't start dragging if clicking on the close button
+    if (e.target.closest('#closeFloatingKeyboard')) {
+      return;
+    }
+    
     this.isDragging = true;
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
