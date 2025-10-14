@@ -39,7 +39,9 @@ export class FloatingKeyboard {
     });
 
     // Close button
-    this.closeButton.addEventListener('click', () => {
+    this.closeButton.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       this.hide();
     });
 
@@ -142,9 +144,10 @@ export class FloatingKeyboard {
     // Prevent native keyboard from showing
     if (input) {
       input.setAttribute('readonly', 'readonly');
+      input.blur();
       setTimeout(() => {
         input.removeAttribute('readonly');
-      }, 50);
+      }, 100);
     }
   }
 
