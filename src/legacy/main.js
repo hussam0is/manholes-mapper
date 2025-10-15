@@ -1706,8 +1706,55 @@ function draw() {
     });
   });
   
-  // Process labels with smart positioning to avoid overlaps
-  const positionedLabels = processLabels(ctx, labelData, nodeData);
+  // Collect edge label data for collision detection
+  const edgeLabelData = [];
+  edges.forEach((edge) => {
+    const tailNode = nodes.find((n) => n.id === edge.tail);
+    const headNode = nodes.find((n) => n.id === edge.head);
+    if (!tailNode || !headNode) return;
+    
+    const x1 = tailNode.x, y1 = tailNode.y, x2 = headNode.x, y2 = headNode.y;
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const length = Math.sqrt(dx * dx + dy * dy);
+    if (length <= 0) return;
+    
+    const normX = dx / length;
+    const normY = dy / length;
+    const offset = 6 * sizeScale;
+    const fontSize = Math.round(14 * sizeScale);
+    
+    if (edge.tail_measurement) {
+      const ratio = 0.25;
+      const px = x1 + dx * ratio;
+      const py = y1 + dy * ratio;
+      const perpX = -normY * offset;
+      const perpY = normX * offset;
+      edgeLabelData.push({
+        text: String(edge.tail_measurement),
+        x: px + perpX,
+        y: py + perpY,
+        fontSize: fontSize
+      });
+    }
+    
+    if (edge.head_measurement) {
+      const ratio = 0.75;
+      const px = x1 + dx * ratio;
+      const py = y1 + dy * ratio;
+      const perpX = -normY * offset;
+      const perpY = normX * offset;
+      edgeLabelData.push({
+        text: String(edge.head_measurement),
+        x: px + perpX,
+        y: py + perpY,
+        fontSize: fontSize
+      });
+    }
+  });
+  
+  // Process labels with smart positioning to avoid overlaps (including edge labels)
+  const positionedLabels = processLabels(ctx, labelData, nodeData, edgeLabelData);
   
   // Draw the optimally positioned labels
   ctx.fillStyle = COLORS.node.label;
@@ -1720,7 +1767,7 @@ function draw() {
     ctx.restore();
   });
   
-  // Draw edge measurement labels above nodes for visibility
+  // Draw edge measurement labels after node labels to ensure they're on top
   edges.forEach((edge) => {
     drawEdgeLabels(edge);
   });
