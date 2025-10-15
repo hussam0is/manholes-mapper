@@ -1131,9 +1131,8 @@ function collectUsedNumericIds() {
   const used = new Set();
   for (const n of nodes) {
     if (!n) continue;
-    const isHome = n.nodeType === 'Home';
-    const include = !isHome || (isHome && n.directConnection === true);
-    if (include && isNumericId(n.id)) {
+    // Include all nodes with numeric IDs (manholes, drainage, and homes)
+    if (isNumericId(n.id)) {
       used.add(parseInt(String(n.id), 10));
     }
   }
@@ -2287,22 +2286,7 @@ function renderDetails() {
     if (directToggle) {
       directToggle.addEventListener('change', (e) => {
         node.directConnection = !!e.target.checked;
-        if (node.directConnection) {
-          try { assignHomeIdFromConnectedManhole(node); } catch (_) {}
-        } else {
-          // Revert Home id to a non-numeric internal id when direct connection is off
-          try {
-            const oldId = String(node.id);
-            let newId = (typeof generateHomeInternalId === 'function') ? generateHomeInternalId() : ('home_' + Math.random().toString(36).slice(2, 12));
-            // Ensure uniqueness
-            while (nodes.some((n) => n !== node && String(n.id) === String(newId))) {
-              newId = (typeof generateHomeInternalId === 'function') ? generateHomeInternalId() : ('home_' + Math.random().toString(36).slice(2, 12));
-            }
-            if (String(oldId) !== String(newId)) {
-              renameNodeIdInternal(oldId, newId);
-            }
-          } catch (_) {}
-        }
+        // Keep the same ID regardless of direct connection status
         saveToStorage();
         scheduleDraw();
         renderDetails();
@@ -2848,11 +2832,8 @@ function pointerDown(x, y) {
     scheduleDraw();
   } else if (currentMode === 'home') {
     const created = createNode(world.x, world.y);
-    // Switch the created node to Home type and assign internal id
-    const oldId = String(created.id);
-    const newId = generateHomeInternalId();
+    // Switch the created node to Home type but keep numeric ID (like manholes/drainage)
     created.nodeType = 'Home';
-    renameNodeIdInternal(oldId, newId);
     selectedNode = created;
     draw();
     renderDetails();
@@ -3192,10 +3173,8 @@ canvas.addEventListener('touchend', (e) => {
       if (!nearNode && !nearEdge) {
         const created = createNode(world.x, world.y);
         if (currentMode === 'home' && created) {
-          const oldId = String(created.id);
-          const newId = generateHomeInternalId();
+          // Keep numeric ID for home (like manholes/drainage)
           created.nodeType = 'Home';
-          renameNodeIdInternal(oldId, newId);
         } else if (currentMode === 'drainage' && created) {
           // Keep numeric ID for drainage (like manholes)
           created.nodeType = 'Drainage';
