@@ -215,11 +215,23 @@ export function findOptimalLabelPosition(
  * @param {CanvasRenderingContext2D} ctx
  * @param {Array<{text: string, nodeX: number, nodeY: number, nodeRadius: number, fontSize: number}>} labels
  * @param {Array<{x: number, y: number, radius: number}>} allNodes
+ * @param {Array<{text: string, x: number, y: number, fontSize: number}>} edgeLabels - Edge measurement labels
  * @returns {Array<{text: string, x: number, y: number, align: string, baseline: string, fontSize: number}>}
  */
-export function processLabels(ctx, labels, allNodes) {
+export function processLabels(ctx, labels, allNodes, edgeLabels = []) {
   const positionedLabels = [];
   const placedBounds = [];
+  
+  // Convert edge labels to bounds for collision detection
+  const edgeLabelBounds = edgeLabels.map(edgeLabel => {
+    const dimensions = getTextDimensions(ctx, edgeLabel.text, edgeLabel.fontSize);
+    return {
+      x: edgeLabel.x - dimensions.width / 2, // Center alignment
+      y: edgeLabel.y - dimensions.height / 2, // Bottom baseline
+      width: dimensions.width,
+      height: dimensions.height
+    };
+  });
   
   for (const label of labels) {
     // Get nearby nodes (within reasonable distance)
@@ -233,6 +245,9 @@ export function processLabels(ctx, labels, allNodes) {
       })
       .map(node => ({ x: node.x, y: node.y, radius: node.radius }));
     
+    // Combine placed bounds with edge label bounds
+    const allBounds = [...placedBounds, ...edgeLabelBounds];
+    
     const position = findOptimalLabelPosition(
       ctx,
       label.text,
@@ -240,7 +255,7 @@ export function processLabels(ctx, labels, allNodes) {
       label.nodeY,
       label.nodeRadius,
       label.fontSize,
-      placedBounds,
+      allBounds,
       nearbyNodes
     );
     
