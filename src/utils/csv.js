@@ -83,7 +83,12 @@ export function exportNodesCsv(nodes, adminConfig, t) {
   const rowFor = (n) => {
     const row = [];
     if (include.id) row.push(csvQuote(n.id));
-    if (include.type) row.push(csvQuote(n.nodeType || 'Manhole'));
+    if (include.type) {
+      // Show 'home_direct' for Home nodes with direct connection
+      const nodeType = n.nodeType || 'Manhole';
+      const typeValue = (nodeType === 'Home' && n.directConnection) ? 'home_direct' : nodeType;
+      row.push(csvQuote(typeValue));
+    }
     if (include.note) row.push(csvQuote(n.note || ''));
     if (include.material) row.push(csvQuote(codeFor('nodes', 'material', n.material, adminConfig)));
     if (include.cover_diameter) row.push(csvQuote(n.coverDiameter || ''));
