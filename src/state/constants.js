@@ -16,6 +16,7 @@ const COLORS_LIGHT = {
     fillSelectedMissing: '#fed7aa', // orange-200 (richer than 100)
     fillBlocked: '#cbd5e1',   // slate-300
     fillSelected: '#bfdbfe',  // blue-200 (richer than 100)
+    fillDrainageComplete: '#0ea5e9', // sky-500 (drainage node when complete)
     stroke: '#2563eb',        // blue-600
     label: '#1f2937',         // slate-800 (dark text for light mode)
     houseRoof: '#795548',     // brown-600 (house roof)
@@ -39,6 +40,9 @@ const COLORS_LIGHT = {
     fallIconStroke: '#ffffff', // white (fall icon stroke)
     fallIconFallback: '#0ea5e9', // sky-500 (fallback icon fill)
     fallIconText: '#ffffff',  // white (fallback icon text)
+  },
+  grid: {
+    stroke: 'rgba(0, 0, 0, 0.06)', // semi-transparent black for light mode
   }
 };
 
@@ -50,6 +54,7 @@ const COLORS_DARK = {
     fillSelectedMissing: '#fed7aa', // orange-200
     fillBlocked: '#475569',   // slate-600 (darker for dark mode)
     fillSelected: '#3b82f6',  // blue-500 (more vibrant for dark mode)
+    fillDrainageComplete: '#38bdf8', // sky-400 (brighter drainage node for dark mode)
     stroke: '#60a5fa',        // blue-400 (lighter stroke for dark mode)
     label: '#f1f5f9',         // slate-100 (light text for dark mode)
     houseRoof: '#a1887f',     // brown-400 (lighter house roof for dark mode)
@@ -73,6 +78,9 @@ const COLORS_DARK = {
     fallIconStroke: '#60a5fa', // blue-400 (fall icon stroke for dark mode)
     fallIconFallback: '#3b82f6', // blue-500 (fallback icon fill for dark mode)
     fallIconText: '#e0f2fe',  // sky-100 (fallback icon text for dark mode)
+  },
+  grid: {
+    stroke: 'rgba(255, 255, 255, 0.1)', // semi-transparent white for dark mode
   }
 };
 
