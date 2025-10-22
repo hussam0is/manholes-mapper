@@ -2517,12 +2517,14 @@ function renderDetails() {
         scheduleDraw();
       });
     }
-    edgeEngineeringStatusSelect.addEventListener('change', (e) => {
-      const num = Number(e.target.value);
-      edge.engineeringStatus = Number.isFinite(num) ? num : 0;
-      saveToStorage();
-      scheduleDraw();
-    });
+    if (edgeEngineeringStatusSelect) {
+      edgeEngineeringStatusSelect.addEventListener('change', (e) => {
+        const num = Number(e.target.value);
+        edge.engineeringStatus = Number.isFinite(num) ? num : 0;
+        saveToStorage();
+        scheduleDraw();
+      });
+    }
     if (fallPositionSelect) {
       fallPositionSelect.addEventListener('change', (e) => {
         const raw = e.target.value;
@@ -2534,35 +2536,40 @@ function renderDetails() {
     const tailInput = container.querySelector('#tailInput');
     const headInput = container.querySelector('#headInput');
     const fallDepthInput = container.querySelector('#fallDepthInput');
-    tailInput.addEventListener('input', (e) => {
-      const raw = String(e.target.value || '');
-      // Keep digits and a single dot for decimals
-      const sanitized = raw
-        .replace(/[^0-9.]/g, '')
-        .replace(/\.(?=.*\.)/g, '');
-      if (sanitized !== raw) {
-        e.target.value = sanitized;
-      }
-      edge.tail_measurement = sanitized;
-      // Recompute node types because missing measurement may affect connected node type
-      computeNodeTypes();
-      debouncedSaveToStorage();
-      scheduleDraw();
-    });
-    headInput.addEventListener('input', (e) => {
-      const raw = String(e.target.value || '');
-      const sanitized = raw
-        .replace(/[^0-9.]/g, '')
-        .replace(/\.(?=.*\.)/g, '');
-      if (sanitized !== raw) {
-        e.target.value = sanitized;
-      }
-      edge.head_measurement = sanitized;
-      computeNodeTypes();
-      debouncedSaveToStorage();
-      scheduleDraw();
-    });
-    fallDepthInput.addEventListener('input', (e) => {
+    if (tailInput) {
+      tailInput.addEventListener('input', (e) => {
+        const raw = String(e.target.value || '');
+        // Keep digits and a single dot for decimals
+        const sanitized = raw
+          .replace(/[^0-9.]/g, '')
+          .replace(/\.(?=.*\.)/g, '');
+        if (sanitized !== raw) {
+          e.target.value = sanitized;
+        }
+        edge.tail_measurement = sanitized;
+        // Recompute node types because missing measurement may affect connected node type
+        computeNodeTypes();
+        debouncedSaveToStorage();
+        scheduleDraw();
+      });
+    }
+    if (headInput) {
+      headInput.addEventListener('input', (e) => {
+        const raw = String(e.target.value || '');
+        const sanitized = raw
+          .replace(/[^0-9.]/g, '')
+          .replace(/\.(?=.*\.)/g, '');
+        if (sanitized !== raw) {
+          e.target.value = sanitized;
+        }
+        edge.head_measurement = sanitized;
+        computeNodeTypes();
+        debouncedSaveToStorage();
+        scheduleDraw();
+      });
+    }
+    if (fallDepthInput) {
+      fallDepthInput.addEventListener('input', (e) => {
       // Store the value, allowing partial decimals like "3." while typing
       const val = e.target.value;
       
@@ -2579,10 +2586,11 @@ function renderDetails() {
         const num = Number(val);
         edge.fall_depth = Number.isFinite(num) ? num : val;
       }
-      
+
       debouncedSaveToStorage();
       scheduleDraw();
-    });
+      });
+    }
     const deleteEdgeBtn = container.querySelector('#deleteEdgeBtn');
     deleteEdgeBtn.addEventListener('click', () => {
       const ok = confirm(t('confirms.deleteEdge'));
@@ -3266,7 +3274,7 @@ if (nodeModeBtn) {
     nodeModeBtn.classList.add('active');
     if (homeNodeModeBtn) homeNodeModeBtn.classList.remove('active');
     if (drainageNodeModeBtn) drainageNodeModeBtn.classList.remove('active');
-    edgeModeBtn.classList.remove('active');
+    if (edgeModeBtn) edgeModeBtn.classList.remove('active');
     pendingEdgeTail = null;
     pendingEdgePreview = null;
     selectedNode = null;
@@ -3282,7 +3290,7 @@ if (homeNodeModeBtn) {
     homeNodeModeBtn.classList.add('active');
     if (nodeModeBtn) nodeModeBtn.classList.remove('active');
     if (drainageNodeModeBtn) drainageNodeModeBtn.classList.remove('active');
-    edgeModeBtn.classList.remove('active');
+    if (edgeModeBtn) edgeModeBtn.classList.remove('active');
     pendingEdgeTail = null;
     pendingEdgePreview = null;
     selectedNode = null;
@@ -3298,7 +3306,7 @@ if (drainageNodeModeBtn) {
     drainageNodeModeBtn.classList.add('active');
     if (nodeModeBtn) nodeModeBtn.classList.remove('active');
     if (homeNodeModeBtn) homeNodeModeBtn.classList.remove('active');
-    edgeModeBtn.classList.remove('active');
+    if (edgeModeBtn) edgeModeBtn.classList.remove('active');
     pendingEdgeTail = null;
     pendingEdgePreview = null;
     selectedNode = null;
