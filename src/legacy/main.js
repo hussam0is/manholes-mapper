@@ -1893,10 +1893,10 @@ function drawEdge(edge) {
       const bgRadius = size * 0.45;
       ctx.beginPath();
       ctx.arc(iconX, iconY, bgRadius, 0, Math.PI * 2);
-      ctx.fillStyle = '#bfdbfe';
+      ctx.fillStyle = COLORS.edge.fallIconBg;
       ctx.fill();
       ctx.lineWidth = 2;
-      ctx.strokeStyle = '#ffffff';
+      ctx.strokeStyle = COLORS.edge.fallIconStroke;
       ctx.stroke();
       const innerSize = size - (6 * sizeScale);
       ctx.drawImage(fallIconImage, iconX - innerSize / 2, iconY - innerSize / 2, innerSize, innerSize);
@@ -1906,12 +1906,12 @@ function drawEdge(edge) {
       ctx.save();
       ctx.beginPath();
       ctx.arc(iconX, iconY, iconRadius, 0, Math.PI * 2);
-      ctx.fillStyle = '#0ea5e9';
+      ctx.fillStyle = COLORS.edge.fallIconFallback;
       ctx.fill();
       ctx.lineWidth = 2;
-      ctx.strokeStyle = '#ffffff';
+      ctx.strokeStyle = COLORS.edge.fallIconStroke;
       ctx.stroke();
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = COLORS.edge.fallIconText;
       ctx.font = 'bold 9px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -1958,7 +1958,7 @@ function drawEdgeLabels(edge) {
   ctx.textBaseline = 'bottom';
   ctx.lineJoin = 'round';
   ctx.lineWidth = 4;
-  ctx.strokeStyle = '#ffffff';
+  ctx.strokeStyle = COLORS.edge.labelStroke;
   ctx.fillStyle = COLORS.edge.label;
   if (edge.tail_measurement) {
     const ratio = 0.25;
@@ -4127,6 +4127,14 @@ async function init() {
 }
 
 init();
+
+// Listen for theme changes and redraw canvas
+if (window.matchMedia) {
+  const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  darkModeQuery.addEventListener('change', () => {
+    scheduleDraw();
+  });
+}
 
 // Global error handlers to improve resilience and observability.  Errors
 // surfaced here will not crash the app; instead they are logged and
