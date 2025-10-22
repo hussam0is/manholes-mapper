@@ -2121,5 +2121,87 @@ input.floating-keyboard-active {
   .floating-keyboard-body {
     background: linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(11, 18, 32, 0.95) 100%);
   }
+
+  /* Dark mode for admin modal */
+  .admin-section {
+    background: #0f172a;
+    border-color: var(--color-border);
+  }
+
+  .admin-section-header {
+    background: #1e293b;
+    border-color: var(--color-border);
+  }
+
+  .admin-group {
+    background: #1e293b;
+    border-color: var(--color-border);
+  }
+
+  .option-table {
+    background: #0f172a;
+  }
+
+  .option-table tbody tr:hover {
+    background: #1e293b;
+  }
+
+  .option-table td {
+    border-bottom-color: var(--color-border);
+  }
+
+  .option-table .opt-label input[type="text"],
+  .option-table .opt-code input[type="text"] {
+    background: #0b1220;
+    border-color: var(--color-border);
+    color: var(--color-text);
+  }
+
+  .option-table .opt-label input[type="text"]:focus,
+  .option-table .opt-code input[type="text"]:focus {
+    border-color: var(--color-primary);
+    background: #0f172a;
+  }
+
+  .custom-row {
+    background: #0f172a;
+    border-color: var(--color-border);
+  }
+
+  .custom-row:hover {
+    background: #1e293b;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  .admin-section input[type="text"],
+  .admin-section select {
+    background: #0b1220;
+    border-color: var(--color-border);
+    color: var(--color-text);
+  }
+
+  .admin-section input[type="text"]:focus,
+  .admin-section select:focus {
+    border-color: var(--color-primary);
+    background: #0f172a;
+  }
+
+  /* Dark mode for details sections in sidebar */
+  .details-section {
+    background: #0f172a;
+    border-color: var(--color-border);
+  }
+
+  .soft-blue-header .segmented {
+    background: #0f172a;
+  }
+
+  .soft-blue-header .segmented .btn:hover {
+    background: #1e293b;
+  }
+
+  .soft-blue-header .search-input:focus {
+    background: #0f172a;
+  }
 }
 
