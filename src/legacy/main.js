@@ -428,6 +428,17 @@ function openAdminModal() {
     });
   });
 
+  // Collapsible admin groups functionality
+  adminContent.querySelectorAll('.admin-group-toggle').forEach((toggle) => {
+    toggle.addEventListener('click', () => {
+      const group = toggle.closest('.admin-group');
+      if (!group) return;
+
+      const isCollapsed = group.classList.toggle('collapsed');
+      toggle.setAttribute('aria-expanded', !isCollapsed);
+    });
+  });
+
   // Enhanced row add/remove handlers with validation
   adminContent.querySelectorAll('[data-opt-add]').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -436,16 +447,16 @@ function openAdminModal() {
       if (!tbody) return;
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td class="opt-enabled"><input type="checkbox" checked data-opt-enabled="${scope}:${optKey}"/></td>
-        <td class="opt-label"><input type="text" value="" data-opt-label="${scope}:${optKey}" placeholder="${t('admin.placeholders.newLabel')}"/></td>
-        <td class="opt-code"><input type="text" value="" data-opt-code="${scope}:${optKey}" placeholder="${t('admin.placeholders.code')}"/></td>
-        <td class="opt-actions"><button class="btn btn-danger btn-sm" title="${t('admin.delete')}" aria-label="${t('admin.delete')}" data-opt-del="${scope}:${optKey}">×</button></td>`;
+        <td class="opt-enabled" data-label="${t('admin.thEnabled')}"><input type="checkbox" checked data-opt-enabled="${scope}:${optKey}"/></td>
+        <td class="opt-label" data-label="${t('admin.thLabel')}"><input type="text" value="" data-opt-label="${scope}:${optKey}" placeholder="${t('admin.placeholders.newLabel')}"/></td>
+        <td class="opt-code" data-label="${t('admin.thCode')}"><input type="text" value="" data-opt-code="${scope}:${optKey}" placeholder="${t('admin.placeholders.code')}"/></td>
+        <td class="opt-actions" data-label="${t('admin.delete')}"><button class="btn btn-danger btn-sm" title="${t('admin.delete')}" aria-label="${t('admin.delete')}" data-opt-del="${scope}:${optKey}">×</button></td>`;
       tbody.appendChild(tr);
-      
+
       // Focus on the label input for immediate editing
       const labelInput = tr.querySelector('[data-opt-label]');
       if (labelInput) labelInput.focus();
-      
+
       const delBtn = tr.querySelector('[data-opt-del]');
       delBtn.addEventListener('click', () => {
         if (confirm(t('admin.confirmDeleteOption'))) {
@@ -531,6 +542,52 @@ function openAdminScreen() {
     btn.classList.add('active');
     adminScreenContent.querySelectorAll('[data-tab]').forEach(sec => {
       sec.style.display = (sec.getAttribute('data-tab') === target) ? '' : 'none';
+    });
+  });
+
+  // Collapsible admin groups functionality
+  adminScreenContent.querySelectorAll('.admin-group-toggle').forEach((toggle) => {
+    toggle.addEventListener('click', () => {
+      const group = toggle.closest('.admin-group');
+      if (!group) return;
+
+      const isCollapsed = group.classList.toggle('collapsed');
+      toggle.setAttribute('aria-expanded', !isCollapsed);
+    });
+  });
+
+  // Enhanced row add/remove handlers with validation
+  adminScreenContent.querySelectorAll('[data-opt-add]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const [scope, optKey] = btn.getAttribute('data-opt-add').split(':');
+      const tbody = adminScreenContent.querySelector(`[data-opt-body="${scope}:${optKey}"]`);
+      if (!tbody) return;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="opt-enabled" data-label="${t('admin.thEnabled')}"><input type="checkbox" checked data-opt-enabled="${scope}:${optKey}"/></td>
+        <td class="opt-label" data-label="${t('admin.thLabel')}"><input type="text" value="" data-opt-label="${scope}:${optKey}" placeholder="${t('admin.placeholders.newLabel')}"/></td>
+        <td class="opt-code" data-label="${t('admin.thCode')}"><input type="text" value="" data-opt-code="${scope}:${optKey}" placeholder="${t('admin.placeholders.code')}"/></td>
+        <td class="opt-actions" data-label="${t('admin.delete')}"><button class="btn btn-danger btn-sm" title="${t('admin.delete')}" aria-label="${t('admin.delete')}" data-opt-del="${scope}:${optKey}">×</button></td>`;
+      tbody.appendChild(tr);
+
+      // Focus on the label input for immediate editing
+      const labelInput = tr.querySelector('[data-opt-label]');
+      if (labelInput) labelInput.focus();
+
+      const delBtn = tr.querySelector('[data-opt-del]');
+      delBtn.addEventListener('click', () => {
+        if (confirm(t('admin.confirmDeleteOption'))) {
+          tr.remove();
+        }
+      });
+    });
+  });
+  adminScreenContent.querySelectorAll('[data-opt-del]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (confirm(t('admin.confirmDeleteOption'))) {
+        const tr = btn.closest('tr');
+        if (tr) tr.remove();
+      }
     });
   });
 
