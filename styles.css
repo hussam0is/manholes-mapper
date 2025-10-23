@@ -866,22 +866,23 @@ input.floating-keyboard-active {
 .admin-actions {
   background: #f8fafc;
   border-top: 1px solid var(--color-border);
-  padding: 1.5rem 2rem;
+  padding: 1.25rem 1.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
+  gap: 0.875rem;
   flex-wrap: wrap;
 }
 
 .admin-import-export {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.625rem;
   align-items: center;
 }
 
 .admin-actions .btn {
-  padding: 0.6rem 1.5rem;
+  padding: 0.55rem 1.25rem;
+  font-size: 0.875rem;
   font-weight: 500;
   border-radius: 6px;
   transition: all 0.2s ease;
@@ -914,7 +915,7 @@ input.floating-keyboard-active {
 
 /* Field styling in admin */
 .admin-section .field {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
 }
 
 .admin-section .field:last-child {
@@ -924,18 +925,20 @@ input.floating-keyboard-active {
 .admin-section label {
   font-weight: 600;
   color: var(--color-text);
-  margin-bottom: 0.5rem;
-  font-size: 0.9rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.875rem;
+  display: block;
 }
 
 .admin-section input[type="text"],
 .admin-section select {
   width: 100%;
-  padding: 0.75rem;
+  padding: 0.5rem 0.65rem;
   border: 1px solid var(--color-border);
   border-radius: 6px;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   transition: all 0.2s ease;
+  line-height: 1.4;
 }
 
 .admin-section input[type="text"]:focus,
@@ -948,16 +951,16 @@ input.floating-keyboard-active {
 /* Checkbox styling */
 .admin-checkbox-group {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.5rem;
   margin-top: 0.5rem;
 }
 
 .admin-checkbox-item {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem;
+  gap: 0.4rem;
+  padding: 0.4rem 0.6rem;
   background: white;
   border: 1px solid var(--color-border);
   border-radius: 6px;
@@ -973,13 +976,15 @@ input.floating-keyboard-active {
   width: 16px;
   height: 16px;
   accent-color: var(--color-primary);
+  flex-shrink: 0;
 }
 
 .admin-checkbox-item label {
   margin: 0;
   font-weight: 500;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   cursor: pointer;
+  line-height: 1.3;
 }
 
 /* Admin UI - Professional Design */
@@ -993,17 +998,17 @@ input.floating-keyboard-active {
 .admin-header {
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-strong) 100%);
   color: white;
-  padding: 1.5rem 2rem;
+  padding: 1.25rem 1.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .admin-header h2 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
 }
 
 .admin-header .material-icons {
@@ -1021,10 +1026,11 @@ input.floating-keyboard-active {
 
 .admin-tabs .tab {
   flex: 1;
-  padding: 1rem 1.5rem;
+  padding: 0.875rem 1.25rem;
   border: none;
   background: transparent;
   color: var(--color-muted);
+  font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -1045,7 +1051,7 @@ input.floating-keyboard-active {
 }
 
 .admin-content {
-  padding: 2rem;
+  padding: 1.5rem;
   flex: 1 1 auto;
   min-height: 0; /* allow the flex child to shrink and enable scrolling */
   overflow-y: auto;
@@ -1054,7 +1060,7 @@ input.floating-keyboard-active {
 }
 
 .admin-section {
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   background: white;
   border: 1px solid var(--color-border);
   border-radius: 12px;
@@ -1063,47 +1069,47 @@ input.floating-keyboard-active {
 
 .admin-section-header {
   background: #f8fafc;
-  padding: 1rem 1.5rem;
+  padding: 0.875rem 1.25rem;
   border-bottom: 1px solid var(--color-border);
 }
 
 .admin-section-title {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--color-text);
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 .admin-section-body {
-  padding: 1.5rem;
+  padding: 1.25rem;
 }
 
 .admin-desc {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--color-muted);
-  margin-bottom: 1rem;
+  margin-bottom: 0.875rem;
   line-height: 1.5;
 }
 
 .admin-subtitle {
   font-weight: 600;
   color: var(--color-text);
-  margin-bottom: 0.75rem;
-  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 .admin-group {
   background: #f8fafc;
   border: 1px solid var(--color-border);
   border-radius: 8px;
-  padding: 1.25rem;
-  margin-bottom: 1.5rem;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .admin-group:last-child {
@@ -1147,15 +1153,15 @@ input.floating-keyboard-active {
 }
 
 .option-table th {
-  padding: 0.75rem 1rem;
+  padding: 0.6rem 0.75rem;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   text-align: left;
   border: none;
 }
 
 .option-table td {
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 0.75rem;
   border-bottom: 1px solid #f1f5f9;
   vertical-align: middle;
 }
@@ -1170,45 +1176,49 @@ input.floating-keyboard-active {
 
 /* Fixed width for checkbox column */
 .option-table .opt-enabled {
-  width: 80px;
+  width: 70px;
   text-align: center;
 }
 
 /* Fixed width for compact code column */
 .option-table .opt-code {
-  width: 100px;
+  width: 90px;
 }
 
 /* Fixed width for action buttons column */
 .option-table .opt-actions {
-  width: 100px;
+  width: 80px;
   text-align: center;
 }
 
 /* Label column grows to take remaining space */
 .option-table .opt-label {
   width: auto;
+  min-width: 120px;
 }
 
 /* Label input fills its cell to maximize space for long labels */
 .option-table .opt-label input[type="text"] {
-  width: 150px;
+  width: 100%;
+  max-width: 180px;
   box-sizing: border-box;
   border: 1px solid #e2e8f0;
   border-radius: 4px;
-  padding: 0.5rem;
-  font-size: 0.9rem;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
 }
 
 /* Code input is intentionally narrow to leave room for the label */
 .option-table .opt-code input[type="text"] {
-  width: 35px;
+  width: 50px;
   box-sizing: border-box;
   border: 1px solid #e2e8f0;
   border-radius: 4px;
-  padding: 0.5rem;
-  font-size: 0.9rem;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.875rem;
   text-align: center;
+  line-height: 1.4;
 }
 
 .option-table input[type="checkbox"] {
@@ -1218,24 +1228,27 @@ input.floating-keyboard-active {
 }
 
 .btn-sm {
-  padding: 0.4rem 0.8rem;
-  font-size: 0.85rem;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.875rem;
   border-radius: 6px;
   font-weight: 500;
+  line-height: 1.3;
 }
 
 .btn-add-option {
   background: var(--color-primary);
   color: white;
   border: none;
-  padding: 0.6rem 1.2rem;
+  padding: 0.5rem 1rem;
   border-radius: 6px;
+  font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
+  line-height: 1.4;
 }
 
 .btn-add-option:hover {
@@ -1383,7 +1396,7 @@ input.floating-keyboard-active {
   }
 
   .admin-content {
-    padding: 1.25rem;
+    padding: 1rem;
   }
 
   .admin-tabs {
@@ -1392,14 +1405,22 @@ input.floating-keyboard-active {
   }
 
   .admin-tabs .tab {
-    padding: 1rem 1.25rem;
-    font-size: 0.95rem;
-    min-height: 48px; /* Better touch target */
+    padding: 0.875rem 1rem;
+    font-size: 0.9rem;
+    min-height: 44px; /* Better touch target */
     white-space: nowrap;
   }
 
   .admin-section-body {
     padding: 1rem;
+  }
+
+  .admin-section-header {
+    padding: 0.75rem 1rem;
+  }
+
+  .admin-section-title {
+    font-size: 0.95rem;
   }
 
   .admin-actions {
@@ -1448,32 +1469,36 @@ input.floating-keyboard-active {
 
   /* Improve field spacing on mobile */
   .admin-section .field {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
   }
 
   .admin-section input[type="text"],
   .admin-section select {
-    padding: 0.875rem;
+    padding: 0.625rem 0.75rem;
     font-size: 1rem; /* Prevent zoom on iOS */
-    min-height: 48px;
+    min-height: 44px;
+  }
+
+  .admin-section label {
+    font-size: 0.9rem;
   }
 
   /* Better table scrolling on mobile */
   .option-table-wrapper {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    margin: -1rem -1.5rem 1rem;
-    padding: 0 1.5rem;
+    margin: -1rem -1rem 1rem;
+    padding: 0 1rem;
   }
 
   .option-table {
-    font-size: 0.85rem;
-    min-width: 500px; /* Prevent excessive compression */
+    font-size: 0.875rem;
+    min-width: 480px; /* Prevent excessive compression */
   }
 
   .option-table th,
   .option-table td {
-    padding: 0.75rem 0.5rem;
+    padding: 0.6rem 0.5rem;
   }
 
   .option-table .opt-enabled {
@@ -1481,7 +1506,7 @@ input.floating-keyboard-active {
   }
 
   .option-table .opt-code {
-    width: 80px;
+    width: 85px;
   }
 
   .option-table .opt-actions {
@@ -1490,20 +1515,20 @@ input.floating-keyboard-active {
 
   .option-table .opt-label {
     width: auto;
-    min-width: 150px;
+    min-width: 130px;
   }
 
   .option-table .opt-label input[type="text"] {
     width: 100%;
-    min-width: 140px;
-    padding: 0.75rem 0.5rem;
-    font-size: 0.95rem;
+    min-width: 120px;
+    padding: 0.5rem 0.6rem;
+    font-size: 1rem; /* Prevent zoom on iOS */
   }
 
   .option-table .opt-code input[type="text"] {
-    width: 60px;
-    padding: 0.75rem 0.5rem;
-    font-size: 0.95rem;
+    width: 65px;
+    padding: 0.5rem 0.5rem;
+    font-size: 1rem; /* Prevent zoom on iOS */
   }
 
   .option-table input[type="checkbox"] {
@@ -1512,10 +1537,15 @@ input.floating-keyboard-active {
   }
 
   .btn-sm {
-    padding: 0.6rem 1rem;
-    font-size: 1.2rem;
-    min-width: 44px;
-    min-height: 44px;
+    padding: 0.5rem 0.75rem;
+    font-size: 1.1rem;
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .btn-add-option {
+    padding: 0.625rem 1rem;
+    font-size: 0.95rem;
   }
 
   .custom-row {
@@ -1570,17 +1600,17 @@ input.floating-keyboard-active {
   }
 
   .admin-section-title {
-    font-size: 1rem;
+    font-size: 0.95rem;
   }
 
   .admin-group {
-    padding: 1rem;
+    padding: 0.875rem;
     margin-bottom: 1rem;
   }
 
   .admin-actions {
-    padding: 1rem;
-    gap: 0.75rem;
+    padding: 0.875rem;
+    gap: 0.625rem;
   }
 
   .admin-actions > div {
@@ -1588,7 +1618,7 @@ input.floating-keyboard-active {
   }
 
   .admin-actions .btn {
-    padding: 0.875rem;
+    padding: 0.75rem;
     font-size: 1rem;
     width: 100%;
   }
@@ -1612,13 +1642,13 @@ input.floating-keyboard-active {
     background: white;
     border: 1px solid var(--color-border);
     border-radius: 8px;
-    padding: 1rem;
+    padding: 0.875rem;
     margin-bottom: 0.75rem;
   }
 
   .option-table td {
     display: block;
-    padding: 0.5rem 0;
+    padding: 0.4rem 0;
     border: none;
     text-align: left;
   }
@@ -1628,8 +1658,8 @@ input.floating-keyboard-active {
     display: block;
     font-weight: 600;
     color: var(--color-muted);
-    font-size: 0.85rem;
-    margin-bottom: 0.25rem;
+    font-size: 0.8rem;
+    margin-bottom: 0.3rem;
   }
 
   .option-table .opt-enabled,
@@ -1643,27 +1673,27 @@ input.floating-keyboard-active {
   .option-table .opt-label input[type="text"],
   .option-table .opt-code input[type="text"] {
     width: 100%;
-    padding: 0.875rem;
+    padding: 0.65rem 0.75rem;
     font-size: 1rem;
-    min-height: 48px;
+    min-height: 44px;
   }
 
   .option-table .opt-actions button {
     width: 100%;
-    min-height: 48px;
-    padding: 0.75rem;
+    min-height: 44px;
+    padding: 0.65rem 0.75rem;
   }
 
   .btn-add-option {
     width: 100%;
     justify-content: center;
-    padding: 0.875rem 1.5rem;
+    padding: 0.75rem 1.25rem;
     font-size: 1rem;
   }
 
   /* Improve checkbox items on very small screens */
   .admin-checkbox-item {
-    padding: 1rem;
+    padding: 0.75rem 0.875rem;
   }
 
   .admin-checkbox-item label {
