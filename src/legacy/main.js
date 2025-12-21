@@ -297,7 +297,7 @@ const defaultAdminConfig = {
       material: NODE_MATERIAL_OPTIONS.map(o => ({ code: o.code, label: o.label, enabled: true })),
       access: NODE_ACCESS_OPTIONS.map(o => ({ code: o.code, label: o.label, enabled: true })),
       accuracy_level: NODE_ACCURACY_OPTIONS.map(o => ({ code: o.code, label: o.label, enabled: true })),
-      // engineering_status removed for nodes
+      engineering_status: NODE_ENGINEERING_STATUS.map(o => ({ code: o.code, label: o.label, enabled: true })),
       maintenance_status: NODE_MAINTENANCE_OPTIONS.map(o => ({ code: o.code, label: o.label, enabled: true })),
     },
     // customFields removed
@@ -393,7 +393,7 @@ function openAdminModal() {
     { key: 'cover_diameter', label: t('labels.coverDiameter'), type: 'text' },
     { key: 'access', label: t('labels.access'), type: 'select', optionsKey: 'access', valueKind: 'code' },
     { key: 'accuracy_level', label: t('labels.accuracyLevel'), type: 'select', optionsKey: 'accuracy_level', valueKind: 'code' },
-    
+    { key: 'engineering_status', label: t('labels.nodeEngineeringStatus'), type: 'select', optionsKey: 'engineering_status', valueKind: 'code' },
     { key: 'maintenance_status', label: t('labels.maintenanceStatus'), type: 'select', optionsKey: 'maintenance_status', valueKind: 'code' },
   ]));
   adminContent.appendChild(buildOptionsEditor(t('admin.tabEdges'), 'edges', [
@@ -401,7 +401,10 @@ function openAdminModal() {
     { key: 'edge_type', label: t('labels.edgeType'), type: 'select', optionsKey: 'edge_type', valueKind: 'label' },
     { key: 'line_diameter', label: t('labels.lineDiameter'), type: 'select', optionsKey: 'line_diameter', valueKind: 'label' },
     { key: 'fall_position', label: t('labels.fallPosition'), type: 'select', optionsKey: 'fall_position', valueKind: 'code' },
-    
+    { key: 'engineering_status', label: t('labels.engineeringStatus'), type: 'select', optionsKey: 'engineering_status', valueKind: 'code' },
+    { key: 'tail_measurement', label: t('labels.tailMeasure'), type: 'text' },
+    { key: 'head_measurement', label: t('labels.headMeasure'), type: 'text' },
+    { key: 'fall_depth', label: t('labels.fallDepth'), type: 'text' },
   ]));
 
   // Initialize current default select values
@@ -501,24 +504,34 @@ function openAdminScreen() {
   const tabs = document.createElement('div');
   tabs.className = 'admin-tabs';
   tabs.innerHTML = `
-    <button class="tab active" data-tab-btn="nodes">${t('admin.tabNodes')}</button>
-    <button class="tab" data-tab-btn="edges">${t('admin.tabEdges')}</button>
+    <button class="tab active" data-tab-btn="nodes">
+      <span class="material-icons">account_tree</span>
+      ${t('admin.tabNodes')}
+    </button>
+    <button class="tab" data-tab-btn="edges">
+      <span class="material-icons">timeline</span>
+      ${t('admin.tabEdges')}
+    </button>
   `;
   adminScreenContent.appendChild(tabs);
   // Sections
   adminScreenContent.appendChild(buildOptionsEditor(t('admin.tabNodes'), 'nodes', [
-    { key: 'material', label: 'חומר מכסה', type: 'select', optionsKey: 'material', valueKind: 'label' },
-    { key: 'cover_diameter', label: 'קוטר מכסה', type: 'text' },
-    { key: 'access', label: 'גישה', type: 'select', optionsKey: 'access', valueKind: 'code' },
-    { key: 'accuracy_level', label: 'רמת דיוק', type: 'select', optionsKey: 'accuracy_level', valueKind: 'code' },
-    { key: 'maintenance_status', label: 'סטטוס תחזוקה', type: 'select', optionsKey: 'maintenance_status', valueKind: 'code' },
+    { key: 'material', label: t('labels.coverMaterial'), type: 'select', optionsKey: 'material', valueKind: 'label' },
+    { key: 'cover_diameter', label: t('labels.coverDiameter'), type: 'text' },
+    { key: 'access', label: t('labels.access'), type: 'select', optionsKey: 'access', valueKind: 'code' },
+    { key: 'accuracy_level', label: t('labels.accuracyLevel'), type: 'select', optionsKey: 'accuracy_level', valueKind: 'code' },
+    { key: 'engineering_status', label: t('labels.nodeEngineeringStatus'), type: 'select', optionsKey: 'engineering_status', valueKind: 'code' },
+    { key: 'maintenance_status', label: t('labels.maintenanceStatus'), type: 'select', optionsKey: 'maintenance_status', valueKind: 'code' },
   ]));
   adminScreenContent.appendChild(buildOptionsEditor(t('admin.tabEdges'), 'edges', [
-    { key: 'material', label: 'חומר קו', type: 'select', optionsKey: 'material', valueKind: 'label' },
-    { key: 'edge_type', label: 'סוג קו', type: 'select', optionsKey: 'edge_type', valueKind: 'label' },
-    { key: 'line_diameter', label: 'קוטר קו', type: 'select', optionsKey: 'line_diameter', valueKind: 'label' },
-    { key: 'engineering_status', label: 'סטטוס הנדסי', type: 'select', optionsKey: 'engineering_status', valueKind: 'code' },
-    { key: 'fall_position', label: 'מפל פנימי/חיצוני', type: 'select', optionsKey: 'fall_position', valueKind: 'code' },
+    { key: 'material', label: t('labels.edgeMaterial'), type: 'select', optionsKey: 'material', valueKind: 'label' },
+    { key: 'edge_type', label: t('labels.edgeType'), type: 'select', optionsKey: 'edge_type', valueKind: 'label' },
+    { key: 'line_diameter', label: t('labels.lineDiameter'), type: 'select', optionsKey: 'line_diameter', valueKind: 'label' },
+    { key: 'fall_position', label: t('labels.fallPosition'), type: 'select', optionsKey: 'fall_position', valueKind: 'code' },
+    { key: 'engineering_status', label: t('labels.engineeringStatus'), type: 'select', optionsKey: 'engineering_status', valueKind: 'code' },
+    { key: 'tail_measurement', label: t('labels.tailMeasure'), type: 'text' },
+    { key: 'head_measurement', label: t('labels.headMeasure'), type: 'text' },
+    { key: 'fall_depth', label: t('labels.fallDepth'), type: 'text' },
   ]));
 
   // Initialize defaults
