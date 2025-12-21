@@ -311,6 +311,9 @@ header .btn-primary:hover {
   padding: 0.5rem;
   z-index: 220; /* above header contents */
   min-width: 180px;
+  max-height: calc(100vh - 4.5rem);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 #mobileMenu .btn {
   width: 100%;
