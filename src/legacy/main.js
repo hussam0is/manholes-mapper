@@ -367,6 +367,122 @@ function saveAdminConfig() {
   localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(adminConfig));
 }
 
+// === Field History Tracking System ===
+// Tracks user field value selections to provide smart sorting in dropdowns
+const FIELD_HISTORY_KEY = 'graphSketch.fieldHistory';
+
+// Load field history from localStorage
+function loadFieldHistory() {
+  try {
+    const raw = localStorage.getItem(FIELD_HISTORY_KEY);
+    if (!raw) return { nodes: {}, edges: {} };
+    return JSON.parse(raw);
+  } catch (e) {
+    console.warn('Failed to load field history', e);
+    return { nodes: {}, edges: {} };
+  }
+}
+
+// Save field history to localStorage
+function saveFieldHistory(history) {
+  try {
+    localStorage.setItem(FIELD_HISTORY_KEY, JSON.stringify(history));
+  } catch (e) {
+    console.warn('Failed to save field history', e);
+  }
+}
+
+// Track a field value selection - increment usage count
+function trackFieldUsage(scope, fieldName, value) {
+  if (value === null || value === undefined || value === '') return;
+  const history = loadFieldHistory();
+  if (!history[scope]) history[scope] = {};
+  if (!history[scope][fieldName]) history[scope][fieldName] = {};
+  const key = String(value);
+  history[scope][fieldName][key] = (history[scope][fieldName][key] || 0) + 1;
+  saveFieldHistory(history);
+}
+
+// Get sorted options based on usage history
+// Returns options sorted by: most used first, then original order for unused
+function getSortedOptions(scope, fieldName, originalOptions) {
+  const history = loadFieldHistory();
+  const fieldHistory = history[scope]?.[fieldName] || {};
+
+  // Create a map of value -> usage count
+  const usageMap = new Map();
+  for (const [key, count] of Object.entries(fieldHistory)) {
+    usageMap.set(key, count);
+  }
+
+  // Sort options: first by usage count (descending), then by original order
+  const sorted = [...originalOptions].sort((a, b) => {
+    const aKey = a.code !== undefined ? String(a.code) : (a.label !== undefined ? a.label : String(a));
+    const bKey = b.code !== undefined ? String(b.code) : (b.label !== undefined ? b.label : String(b));
+    const aCount = usageMap.get(aKey) || 0;
+    const bCount = usageMap.get(bKey) || 0;
+    if (aCount !== bCount) return bCount - aCount; // Higher count first
+    return 0; // Keep original order for equal counts
+  });
+
+  return sorted;
+}
+
+// Import field history from a specific sketch
+function importFieldHistoryFromSketch(sketchRec) {
+  if (!sketchRec || !sketchRec.nodes) return 0;
+  const history = loadFieldHistory();
+  let imported = 0;
+
+  // Process nodes from the sketch
+  (sketchRec.nodes || []).forEach(node => {
+    if (node.material && node.material !== 'לא ידוע') {
+      if (!history.nodes) history.nodes = {};
+      if (!history.nodes.material) history.nodes.material = {};
+      history.nodes.material[node.material] = (history.nodes.material[node.material] || 0) + 1;
+      imported++;
+    }
+    if (node.access !== undefined && node.access !== 0) {
+      if (!history.nodes.access) history.nodes.access = {};
+      history.nodes.access[String(node.access)] = (history.nodes.access[String(node.access)] || 0) + 1;
+      imported++;
+    }
+    if (node.maintenanceStatus !== undefined && node.maintenanceStatus !== 0) {
+      if (!history.nodes.maintenance_status) history.nodes.maintenance_status = {};
+      history.nodes.maintenance_status[String(node.maintenanceStatus)] = (history.nodes.maintenance_status[String(node.maintenanceStatus)] || 0) + 1;
+      imported++;
+    }
+    if (node.coverDiameter !== undefined && node.coverDiameter !== '') {
+      if (!history.nodes.cover_diameter) history.nodes.cover_diameter = {};
+      history.nodes.cover_diameter[String(node.coverDiameter)] = (history.nodes.cover_diameter[String(node.coverDiameter)] || 0) + 1;
+      imported++;
+    }
+  });
+
+  // Process edges from the sketch
+  (sketchRec.edges || []).forEach(edge => {
+    if (edge.material && edge.material !== 'לא ידוע') {
+      if (!history.edges) history.edges = {};
+      if (!history.edges.material) history.edges.material = {};
+      history.edges.material[edge.material] = (history.edges.material[edge.material] || 0) + 1;
+      imported++;
+    }
+    if (edge.line_diameter !== undefined && edge.line_diameter !== '') {
+      if (!history.edges.line_diameter) history.edges.line_diameter = {};
+      history.edges.line_diameter[String(edge.line_diameter)] = (history.edges.line_diameter[String(edge.line_diameter)] || 0) + 1;
+      imported++;
+    }
+  });
+
+  saveFieldHistory(history);
+  return imported;
+}
+
+// Get library sketches for history import
+function getSketchesForHistoryImport() {
+  return getLibrary();
+}
+
 function openAdminModal() {
   if (!adminModal || !adminContent) return;
   // Build a professional editor UI for include toggles, defaults, and options
@@ -2103,21 +2219,40 @@ function renderDetails() {
   if (selectedNode) {
     const node = selectedNode;
     const container = document.createElement('div');
-    // Build node details form
+    // Build node details form with smart sorting based on usage history
     let materialOptions = '';
-    const nodeMaterialOptionLabels = (adminConfig.nodes?.options?.material ?? NODE_MATERIAL_OPTIONS)
-      .filter(o => (o.enabled !== false))
-      .map(o => o.label || o);
-    nodeMaterialOptionLabels.forEach((mat) => {
+    const rawMaterialOptions = (adminConfig.nodes?.options?.material ?? NODE_MATERIAL_OPTIONS)
+      .filter(o => (o.enabled !== false));
+    const sortedMaterialOptions = getSortedOptions('nodes', 'material', rawMaterialOptions);
+    sortedMaterialOptions.forEach((opt) => {
+      const mat = opt.label || opt;
       materialOptions += `<option value="${mat}" ${node.material === mat ? 'selected' : ''}>${mat}</option>`;
     });
     // Cover diameter as free integer input
-    // Access options
-    const accessOptions = (adminConfig.nodes?.options?.access ?? NODE_ACCESS_OPTIONS)
-      .filter(o => (o.enabled !== false))
+    // Access options with smart sorting
+    const rawAccessOptions = (adminConfig.nodes?.options?.access ?? NODE_ACCESS_OPTIONS)
+      .filter(o => (o.enabled !== false));
+    const sortedAccessOptions = getSortedOptions('nodes', 'access', rawAccessOptions);
+    const accessOptions = sortedAccessOptions
       .map(({ code, label }) => `<option value="${code}" ${Number(node.access)===Number(code)?'selected':''}>${label}</option>`)
       .join('');
     
+    // Accuracy level options with smart sorting
+    const rawAccuracyOptions = (adminConfig.nodes?.options?.accuracy_level ?? NODE_ACCURACY_OPTIONS)
+      .filter(o => (o.enabled !== false));
+    const sortedAccuracyOptions = getSortedOptions('nodes', 'accuracy_level', rawAccuracyOptions);
+    const accuracyLevelOptions = sortedAccuracyOptions
+      .map(({ code, label }) => `<option value="${code}" ${Number(node.accuracyLevel)===Number(code)?'selected':''}>${label}</option>`)
+      .join('');
+
+    // Maintenance status options with smart sorting
+    const rawMaintenanceOptions = (adminConfig.nodes?.options?.maintenance_status ?? NODE_MAINTENANCE_OPTIONS)
+      .filter(o => (o.enabled !== false));
+    const sortedMaintenanceOptions = getSortedOptions('nodes', 'maintenance_status', rawMaintenanceOptions);
+    const maintenanceStatusOptions = sortedMaintenanceOptions
+      .map(({ code, label }) => `<option value="${code}" ${Number(node.maintenanceStatus)===Number(code)?'selected':''}>${label}</option>`)
+      .join('');
+
     // Node type options: A (default), B (house), C (grey)
     if (node.nodeType === 'Home') {
       const dcLblRaw = (typeof t === 'function') ? t('labels.directConnection') : '';
@@ -2152,6 +2287,21 @@ function renderDetails() {
               <div class="chip ${node.type === 'type2' ? 'chip-warn' : 'chip-ok'}">${node.type === 'type2' ? t('labels.indicatorMissing') : t('labels.indicatorOk')}</div>
             </div>
             <div class="field"></div>
+            ${adminConfig.nodes.include.accuracy_level ? `
+            <div class="field">
+              <label for="accuracyLevelSelect">${t('labels.accuracyLevel')}</label>
+              <select id="accuracyLevelSelect">${accuracyLevelOptions}</select>
+            </div>` : ''}
+            ${adminConfig.nodes.include.maintenance_status ? `
+            <div class="field">
+              <label for="nodeMaintenanceStatusSelect">${t('labels.maintenanceStatus')}</label>
+              <select id="nodeMaintenanceStatusSelect">${maintenanceStatusOptions}</select>
+            </div>` : ''}
+            ${adminConfig.nodes.include.cover_diameter ? `
+            <div class="field">
+              <label for="coverDiameterInput">${t('labels.coverDiameter')}</label>
+              <input id="coverDiameterInput" type="number" step="1" min="0" value="${node.coverDiameter !== '' ? node.coverDiameter : ''}" placeholder="${t('labels.optional')}" />
+            </div>` : ''}
             <div class="field">
               <label for="materialSelect">${t('labels.coverMaterial')}</label>
               <select id="materialSelect">${materialOptions}</select>
@@ -2161,21 +2311,6 @@ function renderDetails() {
               <label for="accessSelect">${t('labels.access')}</label>
               <select id="accessSelect">${accessOptions}</select>
             </div>` : ''}
-            ${adminConfig.nodes.include.cover_diameter ? `
-            <div class="field">
-              <label for="coverDiameterInput">${t('labels.coverDiameter')}</label>
-              <input id="coverDiameterInput" type="number" step="1" min="0" value="${node.coverDiameter !== '' ? node.coverDiameter : ''}" placeholder="${t('labels.optional')}" />
-            </div>` : ''}
-            ${adminConfig.nodes.include.maintenance_status ? `
-            <div class="field">
-              <label for="nodeMaintenanceStatusSelect">${t('labels.maintenanceStatus')}</label>
-              <select id="nodeMaintenanceStatusSelect">${(adminConfig.nodes?.options?.maintenance_status ?? NODE_MAINTENANCE_OPTIONS).filter(o => (o.enabled !== false)).map(({code,label}) => `<option value="${code}" ${Number(node.maintenanceStatus)===Number(code)?'selected':''}>${label}</option>`).join('')}</select>
-            </div>` : ''}
-            ${adminConfig.nodes.include.accuracy_level ? `
-            <div class="field">
-              <label for="accuracyLevelSelect">${t('labels.accuracyLevel')}</label>
-              <select id="accuracyLevelSelect">${(adminConfig.nodes?.options?.accuracy_level ?? NODE_ACCURACY_OPTIONS).filter(o => (o.enabled !== false)).map(({code,label}) => `<option value="${code}" ${Number(node.accuracyLevel)===Number(code)?'selected':''}>${label}</option>`).join('')}</select>
-            </div>` : ''}
           </div>
         </div>
         <div class="details-section">
@@ -2184,8 +2319,46 @@ function renderDetails() {
             <textarea id="noteInput" rows="3" placeholder="${t('labels.notePlaceholder')}" dir="auto">${node.note || ''}</textarea>
           </div>
         </div>
+        <div class="details-section import-history-section">
+          <div class="details-section-title">${t('labels.importHistoryTitle')}</div>
+          <div class="field">
+            <p style="font-size: 0.85rem; color: var(--color-text-secondary); margin-bottom: 8px;">${t('labels.importHistoryDesc')}</p>
+            <div id="importHistorySketchList" class="import-history-list"></div>
+          </div>
+        </div>
       `;
     }
+
+    // Populate import history sketch list
+    if (node.nodeType !== 'Home') {
+      const sketchListContainer = container.querySelector('#importHistorySketchList');
+      if (sketchListContainer) {
+        const lib = getLibrary();
+        if (lib.length === 0) {
+          sketchListContainer.innerHTML = `<p style="font-size: 0.85rem; color: var(--color-text-secondary);">${t('labels.noSketchesForImport')}</p>`;
+        } else {
+          lib.forEach((rec) => {
+            const displayName = rec.name || rec.id;
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-secondary btn-sm import-history-btn';
+            btn.style.marginBottom = '4px';
+            btn.style.marginRight = '4px';
+            btn.textContent = displayName;
+            btn.title = `${t('labels.importHistory')}: ${displayName}`;
+            btn.addEventListener('click', () => {
+              const imported = importFieldHistoryFromSketch(rec);
+              if (imported > 0) {
+                showToast(`${t('labels.importHistorySuccess')} (${imported})`);
+                // Re-render to show sorted options
+                renderDetails();
+              }
+            });
+            sketchListContainer.appendChild(btn);
+          });
+        }
+      }
+    }
+
     // Build per-connected-edge inputs: measurement (incoming/outgoing) | material, then diameter
     try {
       const connectedEdges = edges.filter((e) => String(e.tail) === String(node.id) || String(e.head) === String(node.id));
@@ -2354,6 +2527,7 @@ function renderDetails() {
     if (materialSelect) {
       materialSelect.addEventListener('change', (e) => {
         node.material = e.target.value;
+        trackFieldUsage('nodes', 'material', e.target.value);
         saveToStorage();
         scheduleDraw();
       });
@@ -2365,6 +2539,9 @@ function renderDetails() {
         const val = e.target.value;
         const n = Number(val);
         node.coverDiameter = val === '' || !Number.isFinite(n) ? '' : Math.round(n);
+        if (node.coverDiameter !== '') {
+          trackFieldUsage('nodes', 'cover_diameter', node.coverDiameter);
+        }
         debouncedSaveToStorage();
         scheduleDraw();
       });
@@ -2375,6 +2552,7 @@ function renderDetails() {
       accessSelect.addEventListener('change', (e) => {
         const num = Number(e.target.value);
         node.access = Number.isFinite(num) ? num : 0;
+        trackFieldUsage('nodes', 'access', node.access);
         saveToStorage();
         scheduleDraw();
       });
@@ -2385,17 +2563,34 @@ function renderDetails() {
       accuracyLevelSelect.addEventListener('change', (e) => {
         const num = Number(e.target.value);
         node.accuracyLevel = Number.isFinite(num) ? num : 0;
+        trackFieldUsage('nodes', 'accuracy_level', node.accuracyLevel);
+        // When accuracy level is "סכימטית" (code 1), reset other fields to "לא ידוע" / null
+        if (num === 1) {
+          // Reset maintenance status to "לא ידוע" (code 0)
+          node.maintenanceStatus = 0;
+          // Reset cover diameter to empty
+          node.coverDiameter = '';
+          // Reset material to "לא ידוע" (first option)
+          const matOptions = adminConfig.nodes?.options?.material ?? NODE_MATERIAL_OPTIONS;
+          const unknownMat = matOptions.find(o => o.code === 0 || o.label === 'לא ידוע');
+          node.material = unknownMat ? unknownMat.label : (matOptions[0]?.label || 'לא ידוע');
+          // Reset access to "לא ידוע" (code 0)
+          node.access = 0;
+        }
         saveToStorage();
         scheduleDraw();
+        // Re-render to show updated values
+        renderDetails();
       });
     }
-    
+
     // Node maintenance status selection listener
     const nodeMaintenanceStatusSelect = container.querySelector('#nodeMaintenanceStatusSelect');
     if (nodeMaintenanceStatusSelect) {
       nodeMaintenanceStatusSelect.addEventListener('change', (e) => {
         const num = Number(e.target.value);
         node.maintenanceStatus = Number.isFinite(num) ? num : 0;
+        trackFieldUsage('nodes', 'maintenance_status', node.maintenanceStatus);
         saveToStorage();
         scheduleDraw();
       });
