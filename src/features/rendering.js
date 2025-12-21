@@ -1,4 +1,5 @@
 // Rendering helpers that can be called from legacy code
+import { COLORS } from '../state/constants.js';
 
 /**
  * Render the edge type legend into the provided container element.
@@ -39,7 +40,7 @@ export function drawInfiniteGrid(ctx, viewTranslate, viewScale, canvas) {
   const startYScreen = startYWorld * viewScale + viewTranslate.y;
   ctx.save();
   ctx.beginPath();
-  ctx.strokeStyle = 'rgba(0,0,0,0.06)';
+  ctx.strokeStyle = COLORS.grid.stroke;
   ctx.lineWidth = 1;
   for (let x = startXScreen; x <= screenWidth; x += screenStep) {
     ctx.moveTo(x, 0);
@@ -124,7 +125,7 @@ export function drawNode(ctx, node, options) {
     fillColor = colors.node.fillDefault;
   } else if (node.nodeType === 'Drainage' || node.nodeType === 'קולטן') {
     // Drainage: orange if missing measurements, sky-blue if complete
-    fillColor = node.type === 'type2' ? colors.node.fillMissing : '#0ea5e9';
+    fillColor = node.type === 'type2' ? colors.node.fillMissing : colors.node.fillDrainageComplete;
   } else if (node.nodeType === 'Covered' || node.nodeType === 'שוחה מכוסה') {
     fillColor = colors.node.fillBlocked;
   } else {

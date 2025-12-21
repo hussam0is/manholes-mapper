@@ -1,4 +1,5 @@
 // Canvas drawing primitives that don't depend on application state
+import { COLORS } from '../state/constants.js';
 
 /**
  * Draw a simple house icon centered at (cx, cy) fitting inside the node radius.
@@ -18,7 +19,7 @@ export function drawHouse(ctx, cx, cy, radius) {
   const roofPeakY = top - roofHeight * 0.4;
   // Roof
   ctx.save();
-  ctx.fillStyle = '#795548';
+  ctx.fillStyle = COLORS.node.houseRoof;
   ctx.beginPath();
   ctx.moveTo(cx, roofPeakY);
   ctx.lineTo(left, top);
@@ -26,14 +27,14 @@ export function drawHouse(ctx, cx, cy, radius) {
   ctx.closePath();
   ctx.fill();
   // Body
-  ctx.fillStyle = '#d7ccc8';
+  ctx.fillStyle = COLORS.node.houseBody;
   ctx.fillRect(left, top, bodyWidth, bodyHeight);
   // Door
   const doorWidth = bodyWidth * 0.2;
   const doorHeight = bodyHeight * 0.5;
   const doorLeft = cx - doorWidth / 2;
   const doorTop = bottom - doorHeight;
-  ctx.fillStyle = '#6d4c41';
+  ctx.fillStyle = COLORS.node.houseDoor;
   ctx.fillRect(doorLeft, doorTop, doorWidth, doorHeight);
   ctx.restore();
 }
@@ -53,10 +54,10 @@ export function drawDirectConnectionBadge(ctx, cx, cy, radius) {
   // Badge background
   ctx.beginPath();
   ctx.arc(bx, by, badgeR, 0, Math.PI * 2);
-  ctx.fillStyle = '#16a34a';
+  ctx.fillStyle = COLORS.node.badgeBg;
   ctx.fill();
   // Chain-link glyph: two small overlapping arcs
-  ctx.strokeStyle = '#ffffff';
+  ctx.strokeStyle = COLORS.node.badgeIcon;
   ctx.lineWidth = 2;
   const r = badgeR * 0.45;
   ctx.beginPath();

@@ -428,6 +428,17 @@ function openAdminModal() {
     });
   });
 
+  // Collapsible admin groups functionality
+  adminContent.querySelectorAll('.admin-group-toggle').forEach((toggle) => {
+    toggle.addEventListener('click', () => {
+      const group = toggle.closest('.admin-group');
+      if (!group) return;
+
+      const isCollapsed = group.classList.toggle('collapsed');
+      toggle.setAttribute('aria-expanded', !isCollapsed);
+    });
+  });
+
   // Enhanced row add/remove handlers with validation
   adminContent.querySelectorAll('[data-opt-add]').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -436,16 +447,16 @@ function openAdminModal() {
       if (!tbody) return;
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td class="opt-enabled"><input type="checkbox" checked data-opt-enabled="${scope}:${optKey}"/></td>
-        <td class="opt-label"><input type="text" value="" data-opt-label="${scope}:${optKey}" placeholder="${t('admin.placeholders.newLabel')}"/></td>
-        <td class="opt-code"><input type="text" value="" data-opt-code="${scope}:${optKey}" placeholder="${t('admin.placeholders.code')}"/></td>
-        <td class="opt-actions"><button class="btn btn-danger btn-sm" title="${t('admin.delete')}" aria-label="${t('admin.delete')}" data-opt-del="${scope}:${optKey}">×</button></td>`;
+        <td class="opt-enabled" data-label="${t('admin.thEnabled')}"><input type="checkbox" checked data-opt-enabled="${scope}:${optKey}"/></td>
+        <td class="opt-label" data-label="${t('admin.thLabel')}"><input type="text" value="" data-opt-label="${scope}:${optKey}" placeholder="${t('admin.placeholders.newLabel')}"/></td>
+        <td class="opt-code" data-label="${t('admin.thCode')}"><input type="text" value="" data-opt-code="${scope}:${optKey}" placeholder="${t('admin.placeholders.code')}"/></td>
+        <td class="opt-actions" data-label="${t('admin.delete')}"><button class="btn btn-danger btn-sm" title="${t('admin.delete')}" aria-label="${t('admin.delete')}" data-opt-del="${scope}:${optKey}">×</button></td>`;
       tbody.appendChild(tr);
-      
+
       // Focus on the label input for immediate editing
       const labelInput = tr.querySelector('[data-opt-label]');
       if (labelInput) labelInput.focus();
-      
+
       const delBtn = tr.querySelector('[data-opt-del]');
       delBtn.addEventListener('click', () => {
         if (confirm(t('admin.confirmDeleteOption'))) {
@@ -531,6 +542,52 @@ function openAdminScreen() {
     btn.classList.add('active');
     adminScreenContent.querySelectorAll('[data-tab]').forEach(sec => {
       sec.style.display = (sec.getAttribute('data-tab') === target) ? '' : 'none';
+    });
+  });
+
+  // Collapsible admin groups functionality
+  adminScreenContent.querySelectorAll('.admin-group-toggle').forEach((toggle) => {
+    toggle.addEventListener('click', () => {
+      const group = toggle.closest('.admin-group');
+      if (!group) return;
+
+      const isCollapsed = group.classList.toggle('collapsed');
+      toggle.setAttribute('aria-expanded', !isCollapsed);
+    });
+  });
+
+  // Enhanced row add/remove handlers with validation
+  adminScreenContent.querySelectorAll('[data-opt-add]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const [scope, optKey] = btn.getAttribute('data-opt-add').split(':');
+      const tbody = adminScreenContent.querySelector(`[data-opt-body="${scope}:${optKey}"]`);
+      if (!tbody) return;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="opt-enabled" data-label="${t('admin.thEnabled')}"><input type="checkbox" checked data-opt-enabled="${scope}:${optKey}"/></td>
+        <td class="opt-label" data-label="${t('admin.thLabel')}"><input type="text" value="" data-opt-label="${scope}:${optKey}" placeholder="${t('admin.placeholders.newLabel')}"/></td>
+        <td class="opt-code" data-label="${t('admin.thCode')}"><input type="text" value="" data-opt-code="${scope}:${optKey}" placeholder="${t('admin.placeholders.code')}"/></td>
+        <td class="opt-actions" data-label="${t('admin.delete')}"><button class="btn btn-danger btn-sm" title="${t('admin.delete')}" aria-label="${t('admin.delete')}" data-opt-del="${scope}:${optKey}">×</button></td>`;
+      tbody.appendChild(tr);
+
+      // Focus on the label input for immediate editing
+      const labelInput = tr.querySelector('[data-opt-label]');
+      if (labelInput) labelInput.focus();
+
+      const delBtn = tr.querySelector('[data-opt-del]');
+      delBtn.addEventListener('click', () => {
+        if (confirm(t('admin.confirmDeleteOption'))) {
+          tr.remove();
+        }
+      });
+    });
+  });
+  adminScreenContent.querySelectorAll('[data-opt-del]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (confirm(t('admin.confirmDeleteOption'))) {
+        const tr = btn.closest('tr');
+        if (tr) tr.remove();
+      }
     });
   });
 
@@ -1893,10 +1950,10 @@ function drawEdge(edge) {
       const bgRadius = size * 0.45;
       ctx.beginPath();
       ctx.arc(iconX, iconY, bgRadius, 0, Math.PI * 2);
-      ctx.fillStyle = '#bfdbfe';
+      ctx.fillStyle = COLORS.edge.fallIconBg;
       ctx.fill();
       ctx.lineWidth = 2;
-      ctx.strokeStyle = '#ffffff';
+      ctx.strokeStyle = COLORS.edge.fallIconStroke;
       ctx.stroke();
       const innerSize = size - (6 * sizeScale);
       ctx.drawImage(fallIconImage, iconX - innerSize / 2, iconY - innerSize / 2, innerSize, innerSize);
@@ -1906,12 +1963,12 @@ function drawEdge(edge) {
       ctx.save();
       ctx.beginPath();
       ctx.arc(iconX, iconY, iconRadius, 0, Math.PI * 2);
-      ctx.fillStyle = '#0ea5e9';
+      ctx.fillStyle = COLORS.edge.fallIconFallback;
       ctx.fill();
       ctx.lineWidth = 2;
-      ctx.strokeStyle = '#ffffff';
+      ctx.strokeStyle = COLORS.edge.fallIconStroke;
       ctx.stroke();
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = COLORS.edge.fallIconText;
       ctx.font = 'bold 9px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -1958,7 +2015,7 @@ function drawEdgeLabels(edge) {
   ctx.textBaseline = 'bottom';
   ctx.lineJoin = 'round';
   ctx.lineWidth = 4;
-  ctx.strokeStyle = '#ffffff';
+  ctx.strokeStyle = COLORS.edge.labelStroke;
   ctx.fillStyle = COLORS.edge.label;
   if (edge.tail_measurement) {
     const ratio = 0.25;
@@ -2517,12 +2574,14 @@ function renderDetails() {
         scheduleDraw();
       });
     }
-    edgeEngineeringStatusSelect.addEventListener('change', (e) => {
-      const num = Number(e.target.value);
-      edge.engineeringStatus = Number.isFinite(num) ? num : 0;
-      saveToStorage();
-      scheduleDraw();
-    });
+    if (edgeEngineeringStatusSelect) {
+      edgeEngineeringStatusSelect.addEventListener('change', (e) => {
+        const num = Number(e.target.value);
+        edge.engineeringStatus = Number.isFinite(num) ? num : 0;
+        saveToStorage();
+        scheduleDraw();
+      });
+    }
     if (fallPositionSelect) {
       fallPositionSelect.addEventListener('change', (e) => {
         const raw = e.target.value;
@@ -2534,35 +2593,40 @@ function renderDetails() {
     const tailInput = container.querySelector('#tailInput');
     const headInput = container.querySelector('#headInput');
     const fallDepthInput = container.querySelector('#fallDepthInput');
-    tailInput.addEventListener('input', (e) => {
-      const raw = String(e.target.value || '');
-      // Keep digits and a single dot for decimals
-      const sanitized = raw
-        .replace(/[^0-9.]/g, '')
-        .replace(/\.(?=.*\.)/g, '');
-      if (sanitized !== raw) {
-        e.target.value = sanitized;
-      }
-      edge.tail_measurement = sanitized;
-      // Recompute node types because missing measurement may affect connected node type
-      computeNodeTypes();
-      debouncedSaveToStorage();
-      scheduleDraw();
-    });
-    headInput.addEventListener('input', (e) => {
-      const raw = String(e.target.value || '');
-      const sanitized = raw
-        .replace(/[^0-9.]/g, '')
-        .replace(/\.(?=.*\.)/g, '');
-      if (sanitized !== raw) {
-        e.target.value = sanitized;
-      }
-      edge.head_measurement = sanitized;
-      computeNodeTypes();
-      debouncedSaveToStorage();
-      scheduleDraw();
-    });
-    fallDepthInput.addEventListener('input', (e) => {
+    if (tailInput) {
+      tailInput.addEventListener('input', (e) => {
+        const raw = String(e.target.value || '');
+        // Keep digits and a single dot for decimals
+        const sanitized = raw
+          .replace(/[^0-9.]/g, '')
+          .replace(/\.(?=.*\.)/g, '');
+        if (sanitized !== raw) {
+          e.target.value = sanitized;
+        }
+        edge.tail_measurement = sanitized;
+        // Recompute node types because missing measurement may affect connected node type
+        computeNodeTypes();
+        debouncedSaveToStorage();
+        scheduleDraw();
+      });
+    }
+    if (headInput) {
+      headInput.addEventListener('input', (e) => {
+        const raw = String(e.target.value || '');
+        const sanitized = raw
+          .replace(/[^0-9.]/g, '')
+          .replace(/\.(?=.*\.)/g, '');
+        if (sanitized !== raw) {
+          e.target.value = sanitized;
+        }
+        edge.head_measurement = sanitized;
+        computeNodeTypes();
+        debouncedSaveToStorage();
+        scheduleDraw();
+      });
+    }
+    if (fallDepthInput) {
+      fallDepthInput.addEventListener('input', (e) => {
       // Store the value, allowing partial decimals like "3." while typing
       const val = e.target.value;
       
@@ -2579,10 +2643,11 @@ function renderDetails() {
         const num = Number(val);
         edge.fall_depth = Number.isFinite(num) ? num : val;
       }
-      
+
       debouncedSaveToStorage();
       scheduleDraw();
-    });
+      });
+    }
     const deleteEdgeBtn = container.querySelector('#deleteEdgeBtn');
     deleteEdgeBtn.addEventListener('click', () => {
       const ok = confirm(t('confirms.deleteEdge'));
@@ -3266,7 +3331,7 @@ if (nodeModeBtn) {
     nodeModeBtn.classList.add('active');
     if (homeNodeModeBtn) homeNodeModeBtn.classList.remove('active');
     if (drainageNodeModeBtn) drainageNodeModeBtn.classList.remove('active');
-    edgeModeBtn.classList.remove('active');
+    if (edgeModeBtn) edgeModeBtn.classList.remove('active');
     pendingEdgeTail = null;
     pendingEdgePreview = null;
     selectedNode = null;
@@ -3282,7 +3347,7 @@ if (homeNodeModeBtn) {
     homeNodeModeBtn.classList.add('active');
     if (nodeModeBtn) nodeModeBtn.classList.remove('active');
     if (drainageNodeModeBtn) drainageNodeModeBtn.classList.remove('active');
-    edgeModeBtn.classList.remove('active');
+    if (edgeModeBtn) edgeModeBtn.classList.remove('active');
     pendingEdgeTail = null;
     pendingEdgePreview = null;
     selectedNode = null;
@@ -3298,7 +3363,7 @@ if (drainageNodeModeBtn) {
     drainageNodeModeBtn.classList.add('active');
     if (nodeModeBtn) nodeModeBtn.classList.remove('active');
     if (homeNodeModeBtn) homeNodeModeBtn.classList.remove('active');
-    edgeModeBtn.classList.remove('active');
+    if (edgeModeBtn) edgeModeBtn.classList.remove('active');
     pendingEdgeTail = null;
     pendingEdgePreview = null;
     selectedNode = null;
@@ -4119,6 +4184,14 @@ async function init() {
 }
 
 init();
+
+// Listen for theme changes and redraw canvas
+if (window.matchMedia) {
+  const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  darkModeQuery.addEventListener('change', () => {
+    scheduleDraw();
+  });
+}
 
 // Global error handlers to improve resilience and observability.  Errors
 // surfaced here will not crash the app; instead they are logged and
