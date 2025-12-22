@@ -498,6 +498,26 @@ function getSketchesForHistoryImport() {
   return getLibrary();
 }
 
+// Format sketch display name - use name if available, otherwise format creation date
+function formatSketchDisplayName(rec) {
+  if (rec.name && rec.name.trim()) {
+    return rec.name;
+  }
+  // Format creation date as display name
+  try {
+    const date = new Date(rec.createdAt || rec.creationDate);
+    if (!isNaN(date.getTime())) {
+      return date.toLocaleDateString(currentLang === 'he' ? 'he-IL' : 'en-US', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    }
+  } catch (e) {}
+  // Fallback to shortened ID
+  return rec.id ? rec.id.replace('sk_', '#') : 'Sketch';
+}
+
 function openAdminModal() {
   if (!adminModal || !adminContent) return;
   // Build a professional editor UI for include toggles, defaults, and options
@@ -2353,7 +2373,7 @@ function renderDetails() {
           sketchListContainer.innerHTML = `<p style="font-size: 0.85rem; color: var(--color-text-secondary);">${t('labels.noSketchesForImport')}</p>`;
         } else {
           lib.forEach((rec) => {
-            const displayName = rec.name || rec.id;
+            const displayName = formatSketchDisplayName(rec);
             const btn = document.createElement('button');
             btn.className = 'btn btn-secondary btn-sm import-history-btn';
             btn.style.marginBottom = '4px';
@@ -2794,7 +2814,7 @@ function renderDetails() {
         edgeSketchListContainer.innerHTML = `<p style="font-size: 0.85rem; color: var(--color-text-secondary);">${t('labels.noSketchesForImport')}</p>`;
       } else {
         lib.forEach((rec) => {
-          const displayName = rec.name || rec.id;
+          const displayName = formatSketchDisplayName(rec);
           const btn = document.createElement('button');
           btn.className = 'btn btn-secondary btn-sm import-history-btn';
           btn.style.marginBottom = '4px';
