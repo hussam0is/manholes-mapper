@@ -51,6 +51,7 @@ export const i18n = {
     listOpen: 'פתח',
     listDuplicate: 'שכפל',
     listDelete: 'מחק',
+    listImportHistory: 'ייבא ערכים',
     noSketches: 'אין עדיין שרטוטים.',
     toasts: {
       nodeMode: 'מצב שוחה',
@@ -230,6 +231,7 @@ export const i18n = {
     listOpen: 'Open',
     listDuplicate: 'Duplicate',
     listDelete: 'Delete',
+    listImportHistory: 'Import Values',
     noSketches: 'No sketches yet.',
     toasts: {
       nodeMode: 'Node mode',

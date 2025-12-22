@@ -1714,8 +1714,9 @@ function renderHome() {
       item.style.borderRadius = '8px';
       item.style.padding = '0.5rem';
       item.style.marginBottom = '0.5rem';
-    const displayName = rec.name && String(rec.name).trim().length > 0 ? rec.name : null;
-    const title = displayName || t('listTitle', rec.id.slice(-6), (rec.creationDate || rec.createdAt));
+      const displayName = rec.name && String(rec.name).trim().length > 0 ? rec.name : null;
+      const title = displayName || t('listTitle', rec.id.slice(-6), (rec.creationDate || rec.createdAt));
+      const isCurrentSketch = rec.id === currentSketchId;
       item.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
           <div>
@@ -1723,9 +1724,10 @@ function renderHome() {
             <div style="font-size:0.85rem;color:var(--color-muted);">${t('listUpdated', new Date(rec.updatedAt || rec.createdAt).toLocaleString())}</div>
             <div style="font-size:0.85rem;color:var(--color-muted);">${t('listCounts', (rec.nodes||[]).length, (rec.edges||[]).length)}</div>
           </div>
-          <div style="display:flex;gap:6px;">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
             <button class="btn" data-action="open" data-id="${rec.id}">${t('listOpen')}</button>
             <button class="btn" data-action="duplicate" data-id="${rec.id}">${t('listDuplicate')}</button>
+            ${!isCurrentSketch ? `<button class="btn btn-secondary" data-action="importHistory" data-id="${rec.id}">${t('listImportHistory')}</button>` : ''}
             <button class="btn btn-danger" data-action="delete" data-id="${rec.id}">${t('listDelete')}</button>
           </div>
         </div>`;
@@ -2354,44 +2356,7 @@ function renderDetails() {
             <textarea id="noteInput" rows="3" placeholder="${t('labels.notePlaceholder')}" dir="auto">${node.note || ''}</textarea>
           </div>
         </div>
-        <div class="details-section import-history-section">
-          <div class="details-section-title">${t('labels.importHistoryTitle')}</div>
-          <div class="field">
-            <p style="font-size: 0.85rem; color: var(--color-text-secondary); margin-bottom: 8px;">${t('labels.importHistoryDesc')}</p>
-            <div id="importHistorySketchList" class="import-history-list"></div>
-          </div>
-        </div>
       `;
-    }
-
-    // Populate import history sketch list
-    if (node.nodeType !== 'Home') {
-      const sketchListContainer = container.querySelector('#importHistorySketchList');
-      if (sketchListContainer) {
-        const lib = getLibrary();
-        if (lib.length === 0) {
-          sketchListContainer.innerHTML = `<p style="font-size: 0.85rem; color: var(--color-text-secondary);">${t('labels.noSketchesForImport')}</p>`;
-        } else {
-          lib.forEach((rec) => {
-            const displayName = formatSketchDisplayName(rec);
-            const btn = document.createElement('button');
-            btn.className = 'btn btn-secondary btn-sm import-history-btn';
-            btn.style.marginBottom = '4px';
-            btn.style.marginRight = '4px';
-            btn.textContent = displayName;
-            btn.title = `${t('labels.importHistory')}: ${displayName}`;
-            btn.addEventListener('click', () => {
-              const imported = importFieldHistoryFromSketch(rec);
-              if (imported > 0) {
-                showToast(`${t('labels.importHistorySuccess')} (${imported})`);
-                // Re-render to show sorted options
-                renderDetails();
-              }
-            });
-            sketchListContainer.appendChild(btn);
-          });
-        }
-      }
     }
 
     // Build per-connected-edge inputs: measurement (incoming/outgoing) | material, then diameter
@@ -2792,47 +2757,12 @@ function renderDetails() {
         </div>
       </div>` : ''}
 
-      <div class="details-section import-history-section">
-        <div class="details-section-title">${t('labels.importHistoryTitle')}</div>
-        <div class="field">
-          <p style="font-size: 0.85rem; color: var(--color-text-secondary); margin-bottom: 8px;">${t('labels.importHistoryDesc')}</p>
-          <div id="edgeImportHistorySketchList" class="import-history-list"></div>
-        </div>
-      </div>
-
       <div class="details-actions">
         <button id="deleteEdgeBtn" class="btn btn-danger btn-full">${t('labels.deleteEdge')}</button>
       </div>
     `;
     detailsContainer.appendChild(container);
 
-    // Populate import history sketch list for edges
-    const edgeSketchListContainer = container.querySelector('#edgeImportHistorySketchList');
-    if (edgeSketchListContainer) {
-      const lib = getLibrary();
-      if (lib.length === 0) {
-        edgeSketchListContainer.innerHTML = `<p style="font-size: 0.85rem; color: var(--color-text-secondary);">${t('labels.noSketchesForImport')}</p>`;
-      } else {
-        lib.forEach((rec) => {
-          const displayName = formatSketchDisplayName(rec);
-          const btn = document.createElement('button');
-          btn.className = 'btn btn-secondary btn-sm import-history-btn';
-          btn.style.marginBottom = '4px';
-          btn.style.marginRight = '4px';
-          btn.textContent = displayName;
-          btn.title = `${t('labels.importHistory')}: ${displayName}`;
-          btn.addEventListener('click', () => {
-            const imported = importFieldHistoryFromSketch(rec);
-            if (imported > 0) {
-              showToast(`${t('labels.importHistorySuccess')} (${imported})`);
-              // Re-render to show sorted options
-              renderDetails();
-            }
-          });
-          edgeSketchListContainer.appendChild(btn);
-        });
-      }
-    }
     // Attach listeners with field usage tracking
     const edgeTypeSelect = container.querySelector('#edgeTypeSelect');
     const edgeMaterialSelect = container.querySelector('#edgeMaterialSelect');
@@ -3913,6 +3843,15 @@ if (sketchListEl) {
       deleteFromLibrary(id);
       renderHome();
       showToast(t('toasts.deleted'));
+    } else if (action === 'importHistory') {
+      const lib = getLibrary();
+      const rec = lib.find((r) => r.id === id);
+      if (rec) {
+        const imported = importFieldHistoryFromSketch(rec);
+        if (imported > 0) {
+          showToast(`${t('labels.importHistorySuccess')} (${imported})`);
+        }
+      }
     }
   });
 }
