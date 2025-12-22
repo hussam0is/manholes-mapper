@@ -51,6 +51,7 @@ export const i18n = {
     listOpen: 'פתח',
     listDuplicate: 'שכפל',
     listDelete: 'מחק',
+    listImportHistory: 'ייבא ערכים',
     noSketches: 'אין עדיין שרטוטים.',
     toasts: {
       nodeMode: 'מצב שוחה',
@@ -128,6 +129,11 @@ export const i18n = {
       optional: 'לא חובה',
       targetNote: 'הערת שוחת יעד',
       deleteEdge: 'מחק קו',
+      importHistory: 'ייבא היסטוריה משרטוט',
+      importHistoryTitle: 'ייבא היסטוריה מערכים',
+      importHistoryDesc: 'בחר שרטוט לייבוא ערכי שדות ממנו',
+      importHistorySuccess: 'ערכים יובאו בהצלחה',
+      noSketchesForImport: 'אין שרטוטים זמינים לייבוא',
     },
     admin: {
       manage: 'ניהול',
@@ -225,6 +231,7 @@ export const i18n = {
     listOpen: 'Open',
     listDuplicate: 'Duplicate',
     listDelete: 'Delete',
+    listImportHistory: 'Import Values',
     noSketches: 'No sketches yet.',
     toasts: {
       nodeMode: 'Node mode',
@@ -302,6 +309,11 @@ export const i18n = {
       optional: 'Optional',
       targetNote: 'Target node note',
       deleteEdge: 'Delete Edge',
+      importHistory: 'Import history from sketch',
+      importHistoryTitle: 'Import value history',
+      importHistoryDesc: 'Select a sketch to import field values from',
+      importHistorySuccess: 'Values imported successfully',
+      noSketchesForImport: 'No sketches available for import',
     },
     admin: {
       manage: 'Admin',

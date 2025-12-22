@@ -367,6 +367,157 @@ function saveAdminConfig() {
   localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(adminConfig));
 }
 
+// === Field History Tracking System ===
+// Tracks user field value selections to provide smart sorting in dropdowns
+const FIELD_HISTORY_KEY = 'graphSketch.fieldHistory';
+
+// Load field history from localStorage
+function loadFieldHistory() {
+  try {
+    const raw = localStorage.getItem(FIELD_HISTORY_KEY);
+    if (!raw) return { nodes: {}, edges: {} };
+    return JSON.parse(raw);
+  } catch (e) {
+    console.warn('Failed to load field history', e);
+    return { nodes: {}, edges: {} };
+  }
+}
+
+// Save field history to localStorage
+function saveFieldHistory(history) {
+  try {
+    localStorage.setItem(FIELD_HISTORY_KEY, JSON.stringify(history));
+  } catch (e) {
+    console.warn('Failed to save field history', e);
+  }
+}
+
+// Track a field value selection - increment usage count
+function trackFieldUsage(scope, fieldName, value) {
+  if (value === null || value === undefined || value === '') return;
+  const history = loadFieldHistory();
+  if (!history[scope]) history[scope] = {};
+  if (!history[scope][fieldName]) history[scope][fieldName] = {};
+  const key = String(value);
+  history[scope][fieldName][key] = (history[scope][fieldName][key] || 0) + 1;
+  saveFieldHistory(history);
+}
+
+// Get sorted options based on usage history
+// Returns options sorted by: most used first, then original order for unused
+function getSortedOptions(scope, fieldName, originalOptions) {
+  const history = loadFieldHistory();
+  const fieldHistory = history[scope]?.[fieldName] || {};
+
+  // Create a map of value -> usage count
+  const usageMap = new Map();
+  for (const [key, count] of Object.entries(fieldHistory)) {
+    usageMap.set(key, count);
+  }
+
+  // Sort options: first by usage count (descending), then by original order
+  const sorted = [...originalOptions].sort((a, b) => {
+    const aKey = a.code !== undefined ? String(a.code) : (a.label !== undefined ? a.label : String(a));
+    const bKey = b.code !== undefined ? String(b.code) : (b.label !== undefined ? b.label : String(b));
+    const aCount = usageMap.get(aKey) || 0;
+    const bCount = usageMap.get(bKey) || 0;
+    if (aCount !== bCount) return bCount - aCount; // Higher count first
+    return 0; // Keep original order for equal counts
+  });
+
+  return sorted;
+}
+
+// Import field history from a specific sketch
+function importFieldHistoryFromSketch(sketchRec) {
+  if (!sketchRec || !sketchRec.nodes) return 0;
+  const history = loadFieldHistory();
+  let imported = 0;
+
+  // Process nodes from the sketch
+  (sketchRec.nodes || []).forEach(node => {
+    if (node.material && node.material !== 'לא ידוע') {
+      if (!history.nodes) history.nodes = {};
+      if (!history.nodes.material) history.nodes.material = {};
+      history.nodes.material[node.material] = (history.nodes.material[node.material] || 0) + 1;
+      imported++;
+    }
+    if (node.access !== undefined && node.access !== 0) {
+      if (!history.nodes.access) history.nodes.access = {};
+      history.nodes.access[String(node.access)] = (history.nodes.access[String(node.access)] || 0) + 1;
+      imported++;
+    }
+    if (node.maintenanceStatus !== undefined && node.maintenanceStatus !== 0) {
+      if (!history.nodes.maintenance_status) history.nodes.maintenance_status = {};
+      history.nodes.maintenance_status[String(node.maintenanceStatus)] = (history.nodes.maintenance_status[String(node.maintenanceStatus)] || 0) + 1;
+      imported++;
+    }
+    if (node.coverDiameter !== undefined && node.coverDiameter !== '') {
+      if (!history.nodes.cover_diameter) history.nodes.cover_diameter = {};
+      history.nodes.cover_diameter[String(node.coverDiameter)] = (history.nodes.cover_diameter[String(node.coverDiameter)] || 0) + 1;
+      imported++;
+    }
+  });
+
+  // Process edges from the sketch
+  (sketchRec.edges || []).forEach(edge => {
+    if (!history.edges) history.edges = {};
+    if (edge.material && edge.material !== 'לא ידוע') {
+      if (!history.edges.material) history.edges.material = {};
+      history.edges.material[edge.material] = (history.edges.material[edge.material] || 0) + 1;
+      imported++;
+    }
+    if (edge.line_diameter !== undefined && edge.line_diameter !== '') {
+      if (!history.edges.line_diameter) history.edges.line_diameter = {};
+      history.edges.line_diameter[String(edge.line_diameter)] = (history.edges.line_diameter[String(edge.line_diameter)] || 0) + 1;
+      imported++;
+    }
+    if (edge.edge_type) {
+      if (!history.edges.edge_type) history.edges.edge_type = {};
+      history.edges.edge_type[edge.edge_type] = (history.edges.edge_type[edge.edge_type] || 0) + 1;
+      imported++;
+    }
+    if (edge.engineeringStatus !== undefined && edge.engineeringStatus !== 0) {
+      if (!history.edges.engineering_status) history.edges.engineering_status = {};
+      history.edges.engineering_status[String(edge.engineeringStatus)] = (history.edges.engineering_status[String(edge.engineeringStatus)] || 0) + 1;
+      imported++;
+    }
+    if (edge.fall_position !== undefined && edge.fall_position !== '') {
+      if (!history.edges.fall_position) history.edges.fall_position = {};
+      history.edges.fall_position[String(edge.fall_position)] = (history.edges.fall_position[String(edge.fall_position)] || 0) + 1;
+      imported++;
+    }
+  });
+
+  saveFieldHistory(history);
+  return imported;
+}
+
+// Get library sketches for history import
+function getSketchesForHistoryImport() {
+  return getLibrary();
+}
+
+// Format sketch display name - use name if available, otherwise format creation date
+function formatSketchDisplayName(rec) {
+  if (rec.name && rec.name.trim()) {
+    return rec.name;
+  }
+  // Format creation date as display name
+  try {
+    const date = new Date(rec.createdAt || rec.creationDate);
+    if (!isNaN(date.getTime())) {
+      return date.toLocaleDateString(currentLang === 'he' ? 'he-IL' : 'en-US', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    }
+  } catch (e) {}
+  // Fallback to shortened ID
+  return rec.id ? rec.id.replace('sk_', '#') : 'Sketch';
+}
+
 function openAdminModal() {
   if (!adminModal || !adminContent) return;
   // Build a professional editor UI for include toggles, defaults, and options
@@ -1563,8 +1714,9 @@ function renderHome() {
       item.style.borderRadius = '8px';
       item.style.padding = '0.5rem';
       item.style.marginBottom = '0.5rem';
-    const displayName = rec.name && String(rec.name).trim().length > 0 ? rec.name : null;
-    const title = displayName || t('listTitle', rec.id.slice(-6), (rec.creationDate || rec.createdAt));
+      const displayName = rec.name && String(rec.name).trim().length > 0 ? rec.name : null;
+      const title = displayName || t('listTitle', rec.id.slice(-6), (rec.creationDate || rec.createdAt));
+      const isCurrentSketch = rec.id === currentSketchId;
       item.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
           <div>
@@ -1572,9 +1724,10 @@ function renderHome() {
             <div style="font-size:0.85rem;color:var(--color-muted);">${t('listUpdated', new Date(rec.updatedAt || rec.createdAt).toLocaleString())}</div>
             <div style="font-size:0.85rem;color:var(--color-muted);">${t('listCounts', (rec.nodes||[]).length, (rec.edges||[]).length)}</div>
           </div>
-          <div style="display:flex;gap:6px;">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
             <button class="btn" data-action="open" data-id="${rec.id}">${t('listOpen')}</button>
             <button class="btn" data-action="duplicate" data-id="${rec.id}">${t('listDuplicate')}</button>
+            ${!isCurrentSketch ? `<button class="btn btn-secondary" data-action="importHistory" data-id="${rec.id}">${t('listImportHistory')}</button>` : ''}
             <button class="btn btn-danger" data-action="delete" data-id="${rec.id}">${t('listDelete')}</button>
           </div>
         </div>`;
@@ -2103,21 +2256,40 @@ function renderDetails() {
   if (selectedNode) {
     const node = selectedNode;
     const container = document.createElement('div');
-    // Build node details form
+    // Build node details form with smart sorting based on usage history
     let materialOptions = '';
-    const nodeMaterialOptionLabels = (adminConfig.nodes?.options?.material ?? NODE_MATERIAL_OPTIONS)
-      .filter(o => (o.enabled !== false))
-      .map(o => o.label || o);
-    nodeMaterialOptionLabels.forEach((mat) => {
+    const rawMaterialOptions = (adminConfig.nodes?.options?.material ?? NODE_MATERIAL_OPTIONS)
+      .filter(o => (o.enabled !== false));
+    const sortedMaterialOptions = getSortedOptions('nodes', 'material', rawMaterialOptions);
+    sortedMaterialOptions.forEach((opt) => {
+      const mat = opt.label || opt;
       materialOptions += `<option value="${mat}" ${node.material === mat ? 'selected' : ''}>${mat}</option>`;
     });
     // Cover diameter as free integer input
-    // Access options
-    const accessOptions = (adminConfig.nodes?.options?.access ?? NODE_ACCESS_OPTIONS)
-      .filter(o => (o.enabled !== false))
+    // Access options with smart sorting
+    const rawAccessOptions = (adminConfig.nodes?.options?.access ?? NODE_ACCESS_OPTIONS)
+      .filter(o => (o.enabled !== false));
+    const sortedAccessOptions = getSortedOptions('nodes', 'access', rawAccessOptions);
+    const accessOptions = sortedAccessOptions
       .map(({ code, label }) => `<option value="${code}" ${Number(node.access)===Number(code)?'selected':''}>${label}</option>`)
       .join('');
     
+    // Accuracy level options with smart sorting
+    const rawAccuracyOptions = (adminConfig.nodes?.options?.accuracy_level ?? NODE_ACCURACY_OPTIONS)
+      .filter(o => (o.enabled !== false));
+    const sortedAccuracyOptions = getSortedOptions('nodes', 'accuracy_level', rawAccuracyOptions);
+    const accuracyLevelOptions = sortedAccuracyOptions
+      .map(({ code, label }) => `<option value="${code}" ${Number(node.accuracyLevel)===Number(code)?'selected':''}>${label}</option>`)
+      .join('');
+
+    // Maintenance status options with smart sorting
+    const rawMaintenanceOptions = (adminConfig.nodes?.options?.maintenance_status ?? NODE_MAINTENANCE_OPTIONS)
+      .filter(o => (o.enabled !== false));
+    const sortedMaintenanceOptions = getSortedOptions('nodes', 'maintenance_status', rawMaintenanceOptions);
+    const maintenanceStatusOptions = sortedMaintenanceOptions
+      .map(({ code, label }) => `<option value="${code}" ${Number(node.maintenanceStatus)===Number(code)?'selected':''}>${label}</option>`)
+      .join('');
+
     // Node type options: A (default), B (house), C (grey)
     if (node.nodeType === 'Home') {
       const dcLblRaw = (typeof t === 'function') ? t('labels.directConnection') : '';
@@ -2152,6 +2324,21 @@ function renderDetails() {
               <div class="chip ${node.type === 'type2' ? 'chip-warn' : 'chip-ok'}">${node.type === 'type2' ? t('labels.indicatorMissing') : t('labels.indicatorOk')}</div>
             </div>
             <div class="field"></div>
+            ${adminConfig.nodes.include.accuracy_level ? `
+            <div class="field">
+              <label for="accuracyLevelSelect">${t('labels.accuracyLevel')}</label>
+              <select id="accuracyLevelSelect">${accuracyLevelOptions}</select>
+            </div>` : ''}
+            ${adminConfig.nodes.include.maintenance_status ? `
+            <div class="field">
+              <label for="nodeMaintenanceStatusSelect">${t('labels.maintenanceStatus')}</label>
+              <select id="nodeMaintenanceStatusSelect">${maintenanceStatusOptions}</select>
+            </div>` : ''}
+            ${adminConfig.nodes.include.cover_diameter ? `
+            <div class="field">
+              <label for="coverDiameterInput">${t('labels.coverDiameter')}</label>
+              <input id="coverDiameterInput" type="number" step="1" min="0" value="${node.coverDiameter !== '' ? node.coverDiameter : ''}" placeholder="${t('labels.optional')}" />
+            </div>` : ''}
             <div class="field">
               <label for="materialSelect">${t('labels.coverMaterial')}</label>
               <select id="materialSelect">${materialOptions}</select>
@@ -2160,21 +2347,6 @@ function renderDetails() {
             <div class="field">
               <label for="accessSelect">${t('labels.access')}</label>
               <select id="accessSelect">${accessOptions}</select>
-            </div>` : ''}
-            ${adminConfig.nodes.include.cover_diameter ? `
-            <div class="field">
-              <label for="coverDiameterInput">${t('labels.coverDiameter')}</label>
-              <input id="coverDiameterInput" type="number" step="1" min="0" value="${node.coverDiameter !== '' ? node.coverDiameter : ''}" placeholder="${t('labels.optional')}" />
-            </div>` : ''}
-            ${adminConfig.nodes.include.maintenance_status ? `
-            <div class="field">
-              <label for="nodeMaintenanceStatusSelect">${t('labels.maintenanceStatus')}</label>
-              <select id="nodeMaintenanceStatusSelect">${(adminConfig.nodes?.options?.maintenance_status ?? NODE_MAINTENANCE_OPTIONS).filter(o => (o.enabled !== false)).map(({code,label}) => `<option value="${code}" ${Number(node.maintenanceStatus)===Number(code)?'selected':''}>${label}</option>`).join('')}</select>
-            </div>` : ''}
-            ${adminConfig.nodes.include.accuracy_level ? `
-            <div class="field">
-              <label for="accuracyLevelSelect">${t('labels.accuracyLevel')}</label>
-              <select id="accuracyLevelSelect">${(adminConfig.nodes?.options?.accuracy_level ?? NODE_ACCURACY_OPTIONS).filter(o => (o.enabled !== false)).map(({code,label}) => `<option value="${code}" ${Number(node.accuracyLevel)===Number(code)?'selected':''}>${label}</option>`).join('')}</select>
             </div>` : ''}
           </div>
         </div>
@@ -2186,6 +2358,7 @@ function renderDetails() {
         </div>
       `;
     }
+
     // Build per-connected-edge inputs: measurement (incoming/outgoing) | material, then diameter
     try {
       const connectedEdges = edges.filter((e) => String(e.tail) === String(node.id) || String(e.head) === String(node.id));
@@ -2354,6 +2527,7 @@ function renderDetails() {
     if (materialSelect) {
       materialSelect.addEventListener('change', (e) => {
         node.material = e.target.value;
+        trackFieldUsage('nodes', 'material', e.target.value);
         saveToStorage();
         scheduleDraw();
       });
@@ -2365,6 +2539,9 @@ function renderDetails() {
         const val = e.target.value;
         const n = Number(val);
         node.coverDiameter = val === '' || !Number.isFinite(n) ? '' : Math.round(n);
+        if (node.coverDiameter !== '') {
+          trackFieldUsage('nodes', 'cover_diameter', node.coverDiameter);
+        }
         debouncedSaveToStorage();
         scheduleDraw();
       });
@@ -2375,6 +2552,7 @@ function renderDetails() {
       accessSelect.addEventListener('change', (e) => {
         const num = Number(e.target.value);
         node.access = Number.isFinite(num) ? num : 0;
+        trackFieldUsage('nodes', 'access', node.access);
         saveToStorage();
         scheduleDraw();
       });
@@ -2385,17 +2563,34 @@ function renderDetails() {
       accuracyLevelSelect.addEventListener('change', (e) => {
         const num = Number(e.target.value);
         node.accuracyLevel = Number.isFinite(num) ? num : 0;
+        trackFieldUsage('nodes', 'accuracy_level', node.accuracyLevel);
+        // When accuracy level is "סכימטית" (code 1), reset other fields to "לא ידוע" / null
+        if (num === 1) {
+          // Reset maintenance status to "לא ידוע" (code 0)
+          node.maintenanceStatus = 0;
+          // Reset cover diameter to empty
+          node.coverDiameter = '';
+          // Reset material to "לא ידוע" (first option)
+          const matOptions = adminConfig.nodes?.options?.material ?? NODE_MATERIAL_OPTIONS;
+          const unknownMat = matOptions.find(o => o.code === 0 || o.label === 'לא ידוע');
+          node.material = unknownMat ? unknownMat.label : (matOptions[0]?.label || 'לא ידוע');
+          // Reset access to "לא ידוע" (code 0)
+          node.access = 0;
+        }
         saveToStorage();
         scheduleDraw();
+        // Re-render to show updated values
+        renderDetails();
       });
     }
-    
+
     // Node maintenance status selection listener
     const nodeMaintenanceStatusSelect = container.querySelector('#nodeMaintenanceStatusSelect');
     if (nodeMaintenanceStatusSelect) {
       nodeMaintenanceStatusSelect.addEventListener('change', (e) => {
         const num = Number(e.target.value);
         node.maintenanceStatus = Number.isFinite(num) ? num : 0;
+        trackFieldUsage('nodes', 'maintenance_status', node.maintenanceStatus);
         saveToStorage();
         scheduleDraw();
       });
@@ -2426,14 +2621,17 @@ function renderDetails() {
     const tailNode = nodes.find((n) => String(n.id) === String(edge.tail));
     const headNode = nodes.find((n) => String(n.id) === String(edge.head));
     const container = document.createElement('div');
-    // Build dropdown options for material
+
+    // Build dropdown options for material with smart sorting
     let materialOptions = '';
-    const edgeMaterialOptionLabels = (adminConfig.edges?.options?.material ?? EDGE_MATERIAL_OPTIONS)
-      .filter(o => (o.enabled !== false))
-      .map(o => o.label || o);
-    edgeMaterialOptionLabels.forEach((m) => {
+    const rawEdgeMaterialOptions = (adminConfig.edges?.options?.material ?? EDGE_MATERIAL_OPTIONS)
+      .filter(o => (o.enabled !== false));
+    const sortedEdgeMaterialOptions = getSortedOptions('edges', 'material', rawEdgeMaterialOptions);
+    sortedEdgeMaterialOptions.forEach((opt) => {
+      const m = opt.label || opt;
       materialOptions += `<option value="${m}" ${edge.material === m ? 'selected' : ''}>${m}</option>`;
     });
+
     // Compute current material code based on label
     const materialCodeFor = (label) => {
       const list = adminConfig.edges?.options?.material ?? EDGE_MATERIAL_OPTIONS;
@@ -2442,28 +2640,44 @@ function renderDetails() {
       const idx = (adminConfig.edges?.options?.material ? list.map(o=>o.label) : EDGE_MATERIALS).indexOf(label);
       return idx >= 0 ? idx : 0;
     };
-    // Build dropdown options for edge type
+
+    // Build dropdown options for edge type with smart sorting
     let edgeTypeOptions = '';
-    const edgeTypeOptionLabels = (adminConfig.edges?.options?.edge_type ?? EDGE_TYPE_OPTIONS)
-      .filter(o => (o.enabled !== false))
-      .map(o => o.label || o);
-    edgeTypeOptionLabels.forEach((et) => {
+    const rawEdgeTypeOptions = (adminConfig.edges?.options?.edge_type ?? EDGE_TYPE_OPTIONS)
+      .filter(o => (o.enabled !== false));
+    const sortedEdgeTypeOptions = getSortedOptions('edges', 'edge_type', rawEdgeTypeOptions);
+    sortedEdgeTypeOptions.forEach((opt) => {
+      const et = opt.label || opt;
       edgeTypeOptions += `<option value="${et}" ${edge.edge_type === et ? 'selected' : ''}>${et}</option>`;
     });
-    // Engineering status options for edge
-    const edgeEngineeringOptions = (adminConfig.edges?.options?.engineering_status ?? EDGE_ENGINEERING_STATUS)
+
+    // Engineering status options for edge with smart sorting
+    const rawEngineeringOptions = (adminConfig.edges?.options?.engineering_status ?? EDGE_ENGINEERING_STATUS);
+    const sortedEngineeringOptions = getSortedOptions('edges', 'engineering_status', rawEngineeringOptions);
+    const edgeEngineeringOptions = sortedEngineeringOptions
       .map(({ code, label }) => `<option value="${code}" ${Number(edge.engineeringStatus)===Number(code)?'selected':''}>${label}</option>`)
       .join('');
-    // Normalize line diameter options for slider
-    const diameterOptions = (adminConfig.edges?.options?.line_diameter ?? EDGE_LINE_DIAMETERS)
+
+    // Normalize line diameter options with smart sorting
+    const rawDiameterOptions = (adminConfig.edges?.options?.line_diameter ?? EDGE_LINE_DIAMETERS)
       .filter(o => (o.enabled !== false))
       .map(d => ({ code: d.code ?? d, label: d.label ?? d }));
+    const sortedDiameterOptions = getSortedOptions('edges', 'line_diameter', rawDiameterOptions);
+    const diameterOptions = sortedDiameterOptions;
     const diameterIndexFromCode = (code) => {
       if (code === '' || code == null) return 0; // 0 represents Optional/empty
       const idx = diameterOptions.findIndex((d) => String(d.code) === String(code));
       return idx >= 0 ? (idx + 1) : 0;
     };
     const currentDiameterIndex = diameterIndexFromCode(edge.line_diameter);
+
+    // Fall position options with smart sorting
+    const rawFallPositionOptions = (adminConfig.edges?.options?.fall_position || [{code:0,label:'פנימי'},{code:1,label:'חיצוני'}])
+      .filter(o => (o.enabled !== false));
+    const sortedFallPositionOptions = getSortedOptions('edges', 'fall_position', rawFallPositionOptions);
+    const fallPositionOptionsHtml = sortedFallPositionOptions
+      .map(({code,label}) => `<option value="${String(code)}" ${Number(edge.fall_position)===Number(code)?'selected':''}>${label}</option>`)
+      .join('');
 
     container.innerHTML = `
       <div class="details-section">
@@ -2513,10 +2727,7 @@ function renderDetails() {
             <label for="fallPositionSelect">${t('labels.fallPosition')}</label>
             <select id="fallPositionSelect">
               <option value="" ${edge.fall_position===''?'selected':''}>${t('labels.optional')}</option>
-              ${(adminConfig.edges?.options?.fall_position || [{code:0,label:'פנימי'},{code:1,label:'חיצוני'}])
-                .filter(o => (o.enabled !== false))
-                .map(({code,label}) => `<option value="${String(code)}" ${Number(edge.fall_position)===Number(code)?'selected':''}>${label}</option>`)
-                .join('')}
+              ${fallPositionOptionsHtml}
             </select>
           </div>` : ''}
         </div>
@@ -2551,7 +2762,8 @@ function renderDetails() {
       </div>
     `;
     detailsContainer.appendChild(container);
-    // Attach listeners
+
+    // Attach listeners with field usage tracking
     const edgeTypeSelect = container.querySelector('#edgeTypeSelect');
     const edgeMaterialSelect = container.querySelector('#edgeMaterialSelect');
     const edgeDiameterSelect = container.querySelector('#edgeDiameterSelect');
@@ -2559,17 +2771,22 @@ function renderDetails() {
     const fallPositionSelect = container.querySelector('#fallPositionSelect');
     edgeTypeSelect.addEventListener('change', (e) => {
       edge.edge_type = e.target.value;
+      trackFieldUsage('edges', 'edge_type', e.target.value);
       saveToStorage();
       scheduleDraw();
     });
     edgeMaterialSelect.addEventListener('change', (e) => {
       edge.material = e.target.value;
+      trackFieldUsage('edges', 'material', e.target.value);
       saveToStorage();
       scheduleDraw();
     });
     if (edgeDiameterSelect) {
       edgeDiameterSelect.addEventListener('change', (e) => {
         edge.line_diameter = String(e.target.value || '');
+        if (edge.line_diameter !== '') {
+          trackFieldUsage('edges', 'line_diameter', edge.line_diameter);
+        }
         saveToStorage();
         scheduleDraw();
       });
@@ -2578,6 +2795,7 @@ function renderDetails() {
       edgeEngineeringStatusSelect.addEventListener('change', (e) => {
         const num = Number(e.target.value);
         edge.engineeringStatus = Number.isFinite(num) ? num : 0;
+        trackFieldUsage('edges', 'engineering_status', edge.engineeringStatus);
         saveToStorage();
         scheduleDraw();
       });
@@ -2587,6 +2805,9 @@ function renderDetails() {
         const raw = e.target.value;
         const num = Number(raw);
         edge.fall_position = raw === '' || !Number.isFinite(num) ? '' : num;
+        if (edge.fall_position !== '') {
+          trackFieldUsage('edges', 'fall_position', edge.fall_position);
+        }
         saveToStorage();
       });
     }
@@ -3622,6 +3843,15 @@ if (sketchListEl) {
       deleteFromLibrary(id);
       renderHome();
       showToast(t('toasts.deleted'));
+    } else if (action === 'importHistory') {
+      const lib = getLibrary();
+      const rec = lib.find((r) => r.id === id);
+      if (rec) {
+        const imported = importFieldHistoryFromSketch(rec);
+        if (imported > 0) {
+          showToast(`${t('labels.importHistorySuccess')} (${imported})`);
+        }
+      }
     }
   });
 }
