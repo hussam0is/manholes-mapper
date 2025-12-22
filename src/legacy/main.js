@@ -461,8 +461,8 @@ function importFieldHistoryFromSketch(sketchRec) {
 
   // Process edges from the sketch
   (sketchRec.edges || []).forEach(edge => {
+    if (!history.edges) history.edges = {};
     if (edge.material && edge.material !== 'לא ידוע') {
-      if (!history.edges) history.edges = {};
       if (!history.edges.material) history.edges.material = {};
       history.edges.material[edge.material] = (history.edges.material[edge.material] || 0) + 1;
       imported++;
@@ -470,6 +470,21 @@ function importFieldHistoryFromSketch(sketchRec) {
     if (edge.line_diameter !== undefined && edge.line_diameter !== '') {
       if (!history.edges.line_diameter) history.edges.line_diameter = {};
       history.edges.line_diameter[String(edge.line_diameter)] = (history.edges.line_diameter[String(edge.line_diameter)] || 0) + 1;
+      imported++;
+    }
+    if (edge.edge_type) {
+      if (!history.edges.edge_type) history.edges.edge_type = {};
+      history.edges.edge_type[edge.edge_type] = (history.edges.edge_type[edge.edge_type] || 0) + 1;
+      imported++;
+    }
+    if (edge.engineeringStatus !== undefined && edge.engineeringStatus !== 0) {
+      if (!history.edges.engineering_status) history.edges.engineering_status = {};
+      history.edges.engineering_status[String(edge.engineeringStatus)] = (history.edges.engineering_status[String(edge.engineeringStatus)] || 0) + 1;
+      imported++;
+    }
+    if (edge.fall_position !== undefined && edge.fall_position !== '') {
+      if (!history.edges.fall_position) history.edges.fall_position = {};
+      history.edges.fall_position[String(edge.fall_position)] = (history.edges.fall_position[String(edge.fall_position)] || 0) + 1;
       imported++;
     }
   });
@@ -2621,14 +2636,17 @@ function renderDetails() {
     const tailNode = nodes.find((n) => String(n.id) === String(edge.tail));
     const headNode = nodes.find((n) => String(n.id) === String(edge.head));
     const container = document.createElement('div');
-    // Build dropdown options for material
+
+    // Build dropdown options for material with smart sorting
     let materialOptions = '';
-    const edgeMaterialOptionLabels = (adminConfig.edges?.options?.material ?? EDGE_MATERIAL_OPTIONS)
-      .filter(o => (o.enabled !== false))
-      .map(o => o.label || o);
-    edgeMaterialOptionLabels.forEach((m) => {
+    const rawEdgeMaterialOptions = (adminConfig.edges?.options?.material ?? EDGE_MATERIAL_OPTIONS)
+      .filter(o => (o.enabled !== false));
+    const sortedEdgeMaterialOptions = getSortedOptions('edges', 'material', rawEdgeMaterialOptions);
+    sortedEdgeMaterialOptions.forEach((opt) => {
+      const m = opt.label || opt;
       materialOptions += `<option value="${m}" ${edge.material === m ? 'selected' : ''}>${m}</option>`;
     });
+
     // Compute current material code based on label
     const materialCodeFor = (label) => {
       const list = adminConfig.edges?.options?.material ?? EDGE_MATERIAL_OPTIONS;
@@ -2637,28 +2655,44 @@ function renderDetails() {
       const idx = (adminConfig.edges?.options?.material ? list.map(o=>o.label) : EDGE_MATERIALS).indexOf(label);
       return idx >= 0 ? idx : 0;
     };
-    // Build dropdown options for edge type
+
+    // Build dropdown options for edge type with smart sorting
     let edgeTypeOptions = '';
-    const edgeTypeOptionLabels = (adminConfig.edges?.options?.edge_type ?? EDGE_TYPE_OPTIONS)
-      .filter(o => (o.enabled !== false))
-      .map(o => o.label || o);
-    edgeTypeOptionLabels.forEach((et) => {
+    const rawEdgeTypeOptions = (adminConfig.edges?.options?.edge_type ?? EDGE_TYPE_OPTIONS)
+      .filter(o => (o.enabled !== false));
+    const sortedEdgeTypeOptions = getSortedOptions('edges', 'edge_type', rawEdgeTypeOptions);
+    sortedEdgeTypeOptions.forEach((opt) => {
+      const et = opt.label || opt;
       edgeTypeOptions += `<option value="${et}" ${edge.edge_type === et ? 'selected' : ''}>${et}</option>`;
     });
-    // Engineering status options for edge
-    const edgeEngineeringOptions = (adminConfig.edges?.options?.engineering_status ?? EDGE_ENGINEERING_STATUS)
+
+    // Engineering status options for edge with smart sorting
+    const rawEngineeringOptions = (adminConfig.edges?.options?.engineering_status ?? EDGE_ENGINEERING_STATUS);
+    const sortedEngineeringOptions = getSortedOptions('edges', 'engineering_status', rawEngineeringOptions);
+    const edgeEngineeringOptions = sortedEngineeringOptions
       .map(({ code, label }) => `<option value="${code}" ${Number(edge.engineeringStatus)===Number(code)?'selected':''}>${label}</option>`)
       .join('');
-    // Normalize line diameter options for slider
-    const diameterOptions = (adminConfig.edges?.options?.line_diameter ?? EDGE_LINE_DIAMETERS)
+
+    // Normalize line diameter options with smart sorting
+    const rawDiameterOptions = (adminConfig.edges?.options?.line_diameter ?? EDGE_LINE_DIAMETERS)
       .filter(o => (o.enabled !== false))
       .map(d => ({ code: d.code ?? d, label: d.label ?? d }));
+    const sortedDiameterOptions = getSortedOptions('edges', 'line_diameter', rawDiameterOptions);
+    const diameterOptions = sortedDiameterOptions;
     const diameterIndexFromCode = (code) => {
       if (code === '' || code == null) return 0; // 0 represents Optional/empty
       const idx = diameterOptions.findIndex((d) => String(d.code) === String(code));
       return idx >= 0 ? (idx + 1) : 0;
     };
     const currentDiameterIndex = diameterIndexFromCode(edge.line_diameter);
+
+    // Fall position options with smart sorting
+    const rawFallPositionOptions = (adminConfig.edges?.options?.fall_position || [{code:0,label:'פנימי'},{code:1,label:'חיצוני'}])
+      .filter(o => (o.enabled !== false));
+    const sortedFallPositionOptions = getSortedOptions('edges', 'fall_position', rawFallPositionOptions);
+    const fallPositionOptionsHtml = sortedFallPositionOptions
+      .map(({code,label}) => `<option value="${String(code)}" ${Number(edge.fall_position)===Number(code)?'selected':''}>${label}</option>`)
+      .join('');
 
     container.innerHTML = `
       <div class="details-section">
@@ -2708,10 +2742,7 @@ function renderDetails() {
             <label for="fallPositionSelect">${t('labels.fallPosition')}</label>
             <select id="fallPositionSelect">
               <option value="" ${edge.fall_position===''?'selected':''}>${t('labels.optional')}</option>
-              ${(adminConfig.edges?.options?.fall_position || [{code:0,label:'פנימי'},{code:1,label:'חיצוני'}])
-                .filter(o => (o.enabled !== false))
-                .map(({code,label}) => `<option value="${String(code)}" ${Number(edge.fall_position)===Number(code)?'selected':''}>${label}</option>`)
-                .join('')}
+              ${fallPositionOptionsHtml}
             </select>
           </div>` : ''}
         </div>
@@ -2741,12 +2772,48 @@ function renderDetails() {
         </div>
       </div>` : ''}
 
+      <div class="details-section import-history-section">
+        <div class="details-section-title">${t('labels.importHistoryTitle')}</div>
+        <div class="field">
+          <p style="font-size: 0.85rem; color: var(--color-text-secondary); margin-bottom: 8px;">${t('labels.importHistoryDesc')}</p>
+          <div id="edgeImportHistorySketchList" class="import-history-list"></div>
+        </div>
+      </div>
+
       <div class="details-actions">
         <button id="deleteEdgeBtn" class="btn btn-danger btn-full">${t('labels.deleteEdge')}</button>
       </div>
     `;
     detailsContainer.appendChild(container);
-    // Attach listeners
+
+    // Populate import history sketch list for edges
+    const edgeSketchListContainer = container.querySelector('#edgeImportHistorySketchList');
+    if (edgeSketchListContainer) {
+      const lib = getLibrary();
+      if (lib.length === 0) {
+        edgeSketchListContainer.innerHTML = `<p style="font-size: 0.85rem; color: var(--color-text-secondary);">${t('labels.noSketchesForImport')}</p>`;
+      } else {
+        lib.forEach((rec) => {
+          const displayName = rec.name || rec.id;
+          const btn = document.createElement('button');
+          btn.className = 'btn btn-secondary btn-sm import-history-btn';
+          btn.style.marginBottom = '4px';
+          btn.style.marginRight = '4px';
+          btn.textContent = displayName;
+          btn.title = `${t('labels.importHistory')}: ${displayName}`;
+          btn.addEventListener('click', () => {
+            const imported = importFieldHistoryFromSketch(rec);
+            if (imported > 0) {
+              showToast(`${t('labels.importHistorySuccess')} (${imported})`);
+              // Re-render to show sorted options
+              renderDetails();
+            }
+          });
+          edgeSketchListContainer.appendChild(btn);
+        });
+      }
+    }
+    // Attach listeners with field usage tracking
     const edgeTypeSelect = container.querySelector('#edgeTypeSelect');
     const edgeMaterialSelect = container.querySelector('#edgeMaterialSelect');
     const edgeDiameterSelect = container.querySelector('#edgeDiameterSelect');
@@ -2754,17 +2821,22 @@ function renderDetails() {
     const fallPositionSelect = container.querySelector('#fallPositionSelect');
     edgeTypeSelect.addEventListener('change', (e) => {
       edge.edge_type = e.target.value;
+      trackFieldUsage('edges', 'edge_type', e.target.value);
       saveToStorage();
       scheduleDraw();
     });
     edgeMaterialSelect.addEventListener('change', (e) => {
       edge.material = e.target.value;
+      trackFieldUsage('edges', 'material', e.target.value);
       saveToStorage();
       scheduleDraw();
     });
     if (edgeDiameterSelect) {
       edgeDiameterSelect.addEventListener('change', (e) => {
         edge.line_diameter = String(e.target.value || '');
+        if (edge.line_diameter !== '') {
+          trackFieldUsage('edges', 'line_diameter', edge.line_diameter);
+        }
         saveToStorage();
         scheduleDraw();
       });
@@ -2773,6 +2845,7 @@ function renderDetails() {
       edgeEngineeringStatusSelect.addEventListener('change', (e) => {
         const num = Number(e.target.value);
         edge.engineeringStatus = Number.isFinite(num) ? num : 0;
+        trackFieldUsage('edges', 'engineering_status', edge.engineeringStatus);
         saveToStorage();
         scheduleDraw();
       });
@@ -2782,6 +2855,9 @@ function renderDetails() {
         const raw = e.target.value;
         const num = Number(raw);
         edge.fall_position = raw === '' || !Number.isFinite(num) ? '' : num;
+        if (edge.fall_position !== '') {
+          trackFieldUsage('edges', 'fall_position', edge.fall_position);
+        }
         saveToStorage();
       });
     }
