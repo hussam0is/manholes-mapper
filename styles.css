@@ -1,17 +1,26 @@
 :root {
-  --color-primary: #2563eb; /* blue-600 */
-  --color-primary-strong: #1d4ed8; /* blue-700 */
-  --color-bg: #f8fafc; /* slate-50 */
+  --color-primary: #2563eb;
+  /* blue-600 */
+  --color-primary-strong: #1d4ed8;
+  /* blue-700 */
+  --color-bg: #f8fafc;
+  /* slate-50 */
   --color-surface: #ffffff;
-  --color-text: #0f172a; /* slate-900 */
-  --color-muted: #64748b; /* slate-500 */
-  --color-border: #e5e7eb; /* gray-200 */
+  --color-text: #0f172a;
+  /* slate-900 */
+  --color-muted: #64748b;
+  /* slate-500 */
+  --color-border: #e5e7eb;
+  /* gray-200 */
   --radius: 12px;
   --shadow: 0 8px 24px rgba(2, 6, 23, 0.08);
   --ring: 0 0 0 3px rgba(37, 99, 235, 0.3);
-  --drawer-w: 320px; /* sidebar width for responsive offset */
-  --drawer-height: 0px; /* dynamically updated by resizable-drawer.js */
+  --drawer-w: 320px;
+  /* sidebar width for responsive offset */
+  --drawer-height: 0px;
+  /* dynamically updated by resizable-drawer.js */
 }
+
 body {
   margin: 0;
   /* Use Inter for a modern look with sensible fallbacks */
@@ -24,8 +33,10 @@ body {
    * includes the address bar on load which causes the layout to resize when the bar hides.
    * 100dvh (supported in modern browsers) uses the real viewport height without UI chrome. */
   height: 100dvh;
-  overscroll-behavior-y: contain; /* reduce pull-to-refresh on mobile */
+  overscroll-behavior-y: contain;
+  /* reduce pull-to-refresh on mobile */
 }
+
 header {
   padding: 0.75rem 1rem;
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-strong) 100%);
@@ -36,14 +47,17 @@ header {
   box-shadow: var(--shadow);
   position: sticky;
   top: 0;
-  z-index: 200; /* keep above any canvas overlays on iPad */
+  z-index: 200;
+  /* keep above any canvas overlays on iPad */
   backdrop-filter: saturate(160%) blur(6px);
 }
+
 @media (max-width: 600px) {
   header {
     padding: 0.5rem 0.75rem;
   }
 }
+
 /* Soft light-blue header variant for better logo contrast */
 .soft-blue-header {
   background: linear-gradient(135deg, #eaf2ff 0%, #dbeafe 100%);
@@ -52,12 +66,14 @@ header {
   backdrop-filter: none;
   border-bottom: 1px solid var(--color-border);
 }
+
 header h1 {
   margin: 0;
   font-size: 1.3rem;
   font-weight: 600;
   letter-spacing: 0.2px;
 }
+
 #appTitle {
   font-size: 1.55rem;
   font-weight: 800;
@@ -69,12 +85,14 @@ header h1 {
   background-clip: text;
   color: transparent;
 }
+
 .soft-blue-header #appTitle {
   background: linear-gradient(90deg, #0f172a 0%, #80d6f9 42%, #80d6f9 58%, #0f172a 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
+
 #appTitle::after {
   content: '';
   position: absolute;
@@ -86,16 +104,29 @@ header h1 {
   background: linear-gradient(90deg, #80d6f9, #80d6f9);
   opacity: 0.9;
 }
+
 @media (max-width: 600px) {
-  #appTitle { font-size: 1.1rem; }
-  #appTitle::after { bottom: -3px; height: 2px; width: 42%; }
+  #appTitle {
+    font-size: 1.1rem;
+  }
+
+  #appTitle::after {
+    bottom: -3px;
+    height: 2px;
+    width: 42%;
+  }
+
   #brandLogo {
     height: 28px;
   }
 }
+
 @media (min-width: 1100px) {
-  #appTitle { font-size: 1.65rem; }
+  #appTitle {
+    font-size: 1.65rem;
+  }
 }
+
 @media (prefers-color-scheme: dark) {
   #appTitle {
     background: linear-gradient(90deg, #e2e8f0 0%, #80d6f9 42%, #80d6f9 58%, #e2e8f0 100%);
@@ -103,33 +134,61 @@ header h1 {
     background-clip: text;
     color: transparent;
   }
-  #appTitle::after { opacity: 0.85; }
+
+  #appTitle::after {
+    opacity: 0.85;
+  }
 }
+
 #brand {
   display: inline-flex;
   align-items: center;
   gap: 10px;
 }
+
 #brandLogo {
   height: 34px;
   width: auto;
   display: block;
 }
+
 .soft-blue-header #controls .toolbar-group {
   background: rgba(255, 255, 255, 0.7);
   border: 1px solid var(--color-border);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
   backdrop-filter: blur(2px);
 }
+
 .soft-blue-header .segmented {
   background: #ffffff;
   border: 1px solid var(--color-border);
 }
-.soft-blue-header .segmented .btn { color: var(--color-text); }
-.soft-blue-header .segmented .btn:hover { background: #f1f5f9; }
-.soft-blue-header .btn-ghost { background: rgba(255,255,255,0.7); color: var(--color-text); border-color: var(--color-border); }
-.soft-blue-header .btn-primary { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
-.soft-blue-header .btn-primary:hover { background: var(--color-primary-strong); border-color: var(--color-primary-strong); }
+
+.soft-blue-header .segmented .btn {
+  color: var(--color-text);
+}
+
+.soft-blue-header .segmented .btn:hover {
+  background: #f1f5f9;
+}
+
+.soft-blue-header .btn-ghost {
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.soft-blue-header .btn-primary {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+.soft-blue-header .btn-primary:hover {
+  background: var(--color-primary-strong);
+  border-color: var(--color-primary-strong);
+}
+
 #controls {
   display: flex;
   gap: 0.6rem;
@@ -146,13 +205,15 @@ header #controls .toolbar-group {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.10);
   border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: inset 0 1px 2px rgba(255,255,255,0.12), 0 1px 6px rgba(2, 6, 23, 0.12);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.12), 0 1px 6px rgba(2, 6, 23, 0.12);
   backdrop-filter: blur(6px) saturate(150%);
 }
+
 header #controls .toolbar-group .btn {
   height: 36px;
   border-radius: 999px;
 }
+
 /* Icon-only buttons */
 .btn-icon {
   padding: 0.3rem 0.45rem;
@@ -161,7 +222,10 @@ header #controls .toolbar-group .btn {
   position: relative;
   justify-content: center;
 }
-.btn-icon .material-icons { font-size: 1.2rem; }
+
+.btn-icon .material-icons {
+  font-size: 1.2rem;
+}
 
 /* Small CSV indicator for icon-only export buttons */
 /* Small file icon overlay for icon-only export buttons */
@@ -170,7 +234,7 @@ header #controls .toolbar-group .btn {
   top: 18px;
   right: 1px;
   font-size: 12px;
-  background: rgba(255,255,255,0.95);
+  background: rgba(255, 255, 255, 0.95);
   color: var(--color-primary-strong);
   border-radius: 3px;
   padding: 0px;
@@ -189,14 +253,23 @@ header #controls .toolbar-group .btn {
 
 /* Segment groups inside header enrich with glass look */
 header .segmented {
-  background: rgba(255,255,255,0.16);
-  border: 1px solid rgba(255,255,255,0.28);
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 999px;
 }
-header .segmented .btn { color: #fff; }
-header .segmented .btn:hover { background: rgba(255,255,255,0.14); }
+
+header .segmented .btn {
+  color: #fff;
+}
+
+header .segmented .btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
 /* Prevent label text from wrapping inside toolbar groups */
-header #controls .label { white-space: nowrap; }
+header #controls .label {
+  white-space: nowrap;
+}
 
 /* Make export segmented buttons keep equal size and center icons */
 header .segmented .btn {
@@ -289,6 +362,7 @@ header .btn-primary {
   color: var(--color-primary);
   border-color: #ffffff;
 }
+
 header .btn-primary:hover {
   background: #f8fafc;
   border-color: #f8fafc;
@@ -309,28 +383,33 @@ header .btn-primary:hover {
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 0.5rem;
-  z-index: 220; /* above header contents */
+  z-index: 220;
+  /* above header contents */
   min-width: 180px;
   max-height: calc(100vh - 4.5rem);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
+
 #mobileMenu .btn {
   width: 100%;
   justify-content: flex-start;
   margin-bottom: 0.25rem;
 }
+
 #mobileMenu label {
   width: 100%;
   font-size: 0.92rem;
   margin-bottom: 0.25rem;
-  display:flex;
-  align-items:center;
-  gap:6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
+
 #mobileMenu select {
   width: 100%;
 }
+
 /* Base button styling for consistent look across devices */
 .btn {
   display: inline-flex;
@@ -344,8 +423,9 @@ header .btn-primary:hover {
   border-radius: 6px;
   cursor: pointer;
   transition: transform 0.06s ease, background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
-  touch-action: manipulation; /* improve tap responsiveness on iOS Safari */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  touch-action: manipulation;
+  /* improve tap responsiveness on iOS Safari */
 }
 
 /* Adjust size of material icons within buttons */
@@ -353,18 +433,28 @@ header .btn-primary:hover {
   font-size: 1.1rem;
   line-height: 1;
 }
-.btn:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-.btn:active { transform: translateY(0); }
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
 .btn-primary {
   background: var(--color-primary);
   color: #fff;
   border-color: var(--color-primary);
 }
+
 .btn-ghost {
   background: rgba(255, 255, 255, 0.1);
   color: #ffffff;
   border-color: rgba(255, 255, 255, 0.25);
 }
+
 /* Subtle hover feedback for ghost buttons in header */
 header .btn-ghost:hover {
   background: rgba(255, 255, 255, 0.18);
@@ -377,20 +467,29 @@ header select.btn {
   color: #ffffff;
   border-color: rgba(255, 255, 255, 0.25);
 }
-header select.btn option { color: #0f172a; }
+
+header select.btn option {
+  color: #0f172a;
+}
 
 /* Button-like autosave control in header, toggle remains for state */
 .autosave-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem; /* match .btn spacing */
+  gap: 0.35rem;
+  /* match .btn spacing */
   cursor: pointer;
-  height: 36px; /* match header buttons */
-  padding: 0 0.9rem; /* vertical padding handled by fixed height */
-  border-radius: 999px; /* pill like other header buttons */
-  line-height: 1; /* avoid extra vertical room */
+  height: 36px;
+  /* match header buttons */
+  padding: 0 0.9rem;
+  /* vertical padding handled by fixed height */
+  border-radius: 999px;
+  /* pill like other header buttons */
+  line-height: 1;
+  /* avoid extra vertical room */
   box-sizing: border-box;
 }
+
 .autosave-btn input[type="checkbox"] {
   appearance: none;
   -webkit-appearance: none;
@@ -399,8 +498,10 @@ header select.btn option { color: #0f172a; }
   border-radius: 3px;
   border: 2px solid currentColor;
   position: relative;
-  margin: 0; /* remove default margins that increase height */
+  margin: 0;
+  /* remove default margins that increase height */
 }
+
 .autosave-btn input[type="checkbox"]:checked::after {
   content: "check";
   font-family: 'Material Icons';
@@ -409,8 +510,10 @@ header select.btn option { color: #0f172a; }
   left: -2px;
   top: -2px;
 }
+
 .btn-danger {
-  background: #ef4444; /* red-500 */
+  background: #ef4444;
+  /* red-500 */
   color: #fff;
   border-color: #ef4444;
 }
@@ -435,24 +538,31 @@ select.btn:focus-visible {
   box-shadow: var(--ring);
   border-color: var(--color-primary);
 }
-.btn-full { width: 100%; }
+
+.btn-full {
+  width: 100%;
+}
+
 .segmented {
   display: inline-flex;
-  background: rgba(255,255,255,0.2);
-  border: 1px solid rgba(255,255,255,0.35);
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 999px;
   overflow: hidden;
 }
+
 .segmented .btn {
   background: transparent;
   color: #fff;
   border: none;
   border-radius: 0;
 }
+
 .segmented .btn.active {
   background: #fff;
   color: var(--color-primary-strong);
 }
+
 #canvasContainer {
   flex: 1;
   position: relative;
@@ -462,12 +572,15 @@ select.btn:focus-visible {
   border-radius: var(--radius);
   margin: 0.5rem;
 }
+
 .canvas-toolbar {
   position: absolute;
   top: 12px;
   right: 12px;
-  z-index: 150; /* keep under header */
+  z-index: 150;
+  /* keep under header */
 }
+
 /* Improve contrast for mode buttons over canvas */
 /* Buttons that overlay the canvas use a dark translucent background for contrast */
 .canvas-toolbar .segmented {
@@ -476,33 +589,44 @@ select.btn:focus-visible {
   box-shadow: var(--shadow);
   border-radius: 8px;
 }
+
 .canvas-toolbar .segmented#modeGroup {
   flex-direction: column;
 }
+
 .canvas-toolbar .segmented#modeGroup .btn {
   justify-content: center;
   min-width: 44px;
 }
+
 .canvas-toolbar .segmented .btn {
   color: #f9fafb;
   border: none;
   background: transparent;
 }
+
 .canvas-toolbar .segmented .btn:hover {
   background: rgba(255, 255, 255, 0.12);
 }
+
 .canvas-toolbar .segmented .btn.active {
   background: var(--color-primary);
   color: #fff;
 }
-canvas { width: 100%; height: 100%; display: block; }
+
+canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 /* Edge legend */
 .edge-legend {
   position: absolute;
   top: 12px;
   left: 12px;
   right: auto;
-  background: rgba(255,255,255,0.9);
+  background: rgba(255, 255, 255, 0.9);
   border: 1px solid var(--color-border);
   border-radius: 8px;
   box-shadow: var(--shadow);
@@ -512,8 +636,10 @@ canvas { width: 100%; height: 100%; display: block; }
   display: inline-flex;
   gap: 10px;
   align-items: center;
-  z-index: 140; /* below header */
+  z-index: 140;
+  /* below header */
 }
+
 .canvas-fab {
   position: absolute;
   right: 12px;
@@ -531,8 +657,21 @@ canvas { width: 100%; height: 100%; display: block; }
   justify-content: center;
   box-shadow: var(--shadow);
 }
-.edge-legend .item { display: inline-flex; align-items: center; gap: 6px; }
-.edge-legend .swatch { width: 12px; height: 12px; border-radius: 2px; display: inline-block; border: 1px solid rgba(0,0,0,0.2); }
+
+.edge-legend .item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.edge-legend .swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  display: inline-block;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
 /* Sidebar for details and library */
 #sidebar {
   padding: 1rem;
@@ -545,32 +684,77 @@ canvas { width: 100%; height: 100%; display: block; }
   display: flex;
   flex-direction: column;
 }
+
 /* Compact spacing for details inside the sidebar */
-#sidebar .details-section { padding: 0.5rem; margin-bottom: 0.5rem; }
-#sidebar .details-grid.two-col { gap: 0.5rem 0.5rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-#sidebar .details-grid.two-col .field { min-width: 0; }
-#sidebar .details-grid.two-col .field > * { max-width: 100%; }
+#sidebar .details-section {
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+#sidebar .details-grid.two-col {
+  gap: 0.5rem 0.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+#sidebar .details-grid.two-col .field {
+  min-width: 0;
+}
+
+#sidebar .details-grid.two-col .field>* {
+  max-width: 100%;
+}
+
 /* Ensure edge material selects never overflow their column */
 .field select#edgeMaterialSelect,
-.field select[id^="edgeMaterial_"] { width: 100%; max-width: 100%; min-width: 0; }
-#sidebar .field { margin-bottom: 0.5rem; }
-#sidebar label { font-size: 0.85rem; margin-bottom: 0.15rem; font-weight: 600; }
+.field select[id^="edgeMaterial_"] {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+#sidebar .field {
+  margin-bottom: 0.5rem;
+}
+
+#sidebar label {
+  font-size: 0.85rem;
+  margin-bottom: 0.15rem;
+  font-weight: 600;
+}
+
 #sidebar input[type="text"],
 #sidebar input[type="number"],
 #sidebar input[type="date"],
 #sidebar select,
-#sidebar textarea { padding: 0.4rem 0.5rem; font-size: 0.9rem; }
+#sidebar textarea {
+  padding: 0.4rem 0.5rem;
+  font-size: 0.9rem;
+}
+
 #sidebar input[type="number"],
-#sidebar select { width: 100%; max-width: 100%; }
+#sidebar select {
+  width: 100%;
+  max-width: 100%;
+}
+
 #sidebar select,
 #sidebar input[type="number"],
-#sidebar input[type="text"] { min-width: 0; box-sizing: border-box; }
-#sidebar select { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#sidebar input[type="text"] {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+#sidebar select {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* Slide-in drawer behavior on tablet/mobile; docked on wide screens */
 .drawer {
   position: relative;
 }
+
 @media (max-width: 1024px) {
   .drawer {
     position: fixed;
@@ -579,27 +763,34 @@ canvas { width: 100%; height: 100%; display: block; }
     height: calc(100vh - var(--header-h, 56px));
     max-height: calc(100dvh - var(--header-h, 56px));
     transform: translate3d(100%, 0, 0);
-    transition: transform 260ms cubic-bezier(.2,.8,.2,1);
+    transition: transform 260ms cubic-bezier(.2, .8, .2, 1);
     will-change: transform;
     backface-visibility: hidden;
     z-index: 40;
   }
+
   .drawer.open {
     transform: translate3d(0, 0, 0);
   }
+
   /* When the drawer is open, move the canvas toolbar left so it's still visible */
   body.drawer-open .canvas-toolbar {
     right: calc(12px + var(--drawer-w));
   }
+
   /* Also offset the floating recenter button when the drawer is open */
   body.drawer-open .canvas-fab {
     right: calc(12px + var(--drawer-w));
   }
+
   body.drawer-open .toggle-floating-keyboard {
     right: calc(12px + var(--drawer-w));
   }
+
   /* Animate toolbar offset for a smooth coordinated slide */
-  .canvas-toolbar { transition: right 240ms cubic-bezier(.2,.8,.2,1); }
+  .canvas-toolbar {
+    transition: right 240ms cubic-bezier(.2, .8, .2, 1);
+  }
 }
 
 .sidebar-drag-handle {
@@ -610,6 +801,7 @@ canvas { width: 100%; height: 100%; display: block; }
   touch-action: none;
   user-select: none;
 }
+
 .drag-handle-bar {
   width: 40px;
   height: 4px;
@@ -617,10 +809,12 @@ canvas { width: 100%; height: 100%; display: block; }
   border-radius: 2px;
   transition: background 0.2s ease;
 }
+
 .sidebar-drag-handle:hover .drag-handle-bar,
 .sidebar-drag-handle:active .drag-handle-bar {
   background: #94a3b8;
 }
+
 .sidebar-header {
   display: flex;
   align-items: center;
@@ -634,11 +828,13 @@ canvas { width: 100%; height: 100%; display: block; }
   border-bottom: 1px solid var(--color-border);
   margin-bottom: 0.5rem;
 }
+
 #detailsContainer {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
 }
+
 .icon-btn {
   display: inline-flex;
   align-items: center;
@@ -651,38 +847,57 @@ canvas { width: 100%; height: 100%; display: block; }
   color: var(--color-text);
   cursor: pointer;
 }
-.icon-btn .material-icons { font-size: 18px; }
+
+.icon-btn .material-icons {
+  font-size: 18px;
+}
+
 /* Main content area uses flex to fill the remaining space under the header */
 #main {
   flex: 1;
   display: flex;
-  min-height: 0; /* Allow children to shrink appropriately */
+  min-height: 0;
+  /* Allow children to shrink appropriately */
 }
-.field { margin-bottom: 0.75rem; }
+
+.field {
+  margin-bottom: 0.75rem;
+}
+
 /* Compact two-column layout for details panel */
 .details-grid.two-col {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.75rem 0.75rem;
 }
-.details-grid.two-col .field { margin-bottom: 0; }
+
+.details-grid.two-col .field {
+  margin-bottom: 0;
+}
+
 /* Allow fields to span two columns within the details grid */
-.details-grid.two-col .col-span-2 { grid-column: 1 / -1; }
+.details-grid.two-col .col-span-2 {
+  grid-column: 1 / -1;
+}
+
 /* Visual separation for connected lines inside details */
 .connected-lines-grid {
   position: relative;
 }
+
 /* One separator between line details: after each group's full-width row */
-.connected-lines-grid > .field.col-span-2 {
+.connected-lines-grid>.field.col-span-2 {
   border-bottom: 2px solid #0f172a;
   padding-bottom: 0.5rem;
   margin-bottom: 0.5rem;
 }
-.connected-lines-grid > .field.col-span-2:last-child {
+
+.connected-lines-grid>.field.col-span-2:last-child {
   border-bottom: 0;
   padding-bottom: 0;
   margin-bottom: 0;
 }
+
 /* Light grey background for connected lines section */
 .details-section:has(.connected-lines-grid) {
   background: #d8d8d8;
@@ -710,15 +925,24 @@ canvas { width: 100%; height: 100%; display: block; }
 }
 
 @media (max-width: 640px) {
-  .details-grid.two-col { grid-template-columns: 1fr; }
+  .details-grid.two-col {
+    grid-template-columns: 1fr;
+  }
 }
+
 /* Keep two columns for sidebar on phones; stack only on very narrow screens */
 @media (max-width: 640px) {
-  #sidebar .details-grid.two-col { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #sidebar .details-grid.two-col {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
+
 @media (max-width: 380px) {
-  #sidebar .details-grid.two-col { grid-template-columns: 1fr; }
+  #sidebar .details-grid.two-col {
+    grid-template-columns: 1fr;
+  }
 }
+
 /* Details sections for clearer grouping */
 .details-section {
   background: #ffffff;
@@ -727,18 +951,21 @@ canvas { width: 100%; height: 100%; display: block; }
   padding: 0.75rem;
   margin-bottom: 0.75rem;
 }
+
 .details-section-title {
   font-weight: 600;
   font-size: 0.95rem;
   margin: 0 0 0.5rem 0;
   color: var(--color-text);
 }
+
 .details-actions {
   position: sticky;
   bottom: 0;
-  background: linear-gradient(180deg, rgba(255,255,255,0), #fff 32%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0), #fff 32%);
   padding-top: 0.5rem;
 }
+
 /* Indicator chips */
 /* Pill radio bar for line diameter */
 .radio-bar {
@@ -746,6 +973,7 @@ canvas { width: 100%; height: 100%; display: block; }
   flex-wrap: wrap;
   gap: 0.5rem;
 }
+
 .radio-bar .radio-pill {
   display: inline-flex;
   align-items: center;
@@ -757,19 +985,26 @@ canvas { width: 100%; height: 100%; display: block; }
   cursor: pointer;
   user-select: none;
 }
+
 .radio-bar input[type="radio"] {
   accent-color: var(--primary, #2563eb);
 }
+
 .field select#edgeDiameterSelect,
 .field select[id^="edgeDiameterSelect_"] {
   width: 100%;
 }
+
 .range-value {
   margin-top: 0.25rem;
   font-size: 0.85rem;
   color: #374151;
 }
-.muted { color: var(--color-muted); }
+
+.muted {
+  color: var(--color-muted);
+}
+
 .chip {
   display: inline-flex;
   align-items: center;
@@ -779,19 +1014,37 @@ canvas { width: 100%; height: 100%; display: block; }
   border: 1px solid var(--color-border);
   background: #f5f5f5;
 }
-.chip-ok { background: #e8f5e9; color: #1b5e20; border-color: #c8e6c9; }
-.chip-warn { background: #fff3e0; color: #e65100; border-color: #ffe0b2; }
-/* Compact width for cover diameter input */
-#coverDiameterInput { width: 8rem; }
-@media (max-width: 640px) {
-  #coverDiameterInput { width: 100%; }
+
+.chip-ok {
+  background: #e8f5e9;
+  color: #1b5e20;
+  border-color: #c8e6c9;
 }
+
+.chip-warn {
+  background: #fff3e0;
+  color: #e65100;
+  border-color: #ffe0b2;
+}
+
+/* Compact width for cover diameter input */
+#coverDiameterInput {
+  width: 8rem;
+}
+
+@media (max-width: 640px) {
+  #coverDiameterInput {
+    width: 100%;
+  }
+}
+
 label {
   font-weight: bold;
   font-size: 0.9rem;
   display: block;
   margin-bottom: 0.2rem;
 }
+
 input[type="text"],
 input[type="date"],
 textarea {
@@ -803,9 +1056,22 @@ textarea {
   font-size: 0.95rem;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
-input[type="text"], input[type="date"], textarea, select { color: var(--color-text); }
-::placeholder { color: var(--color-muted); }
-textarea { resize: vertical; }
+
+input[type="text"],
+input[type="date"],
+textarea,
+select {
+  color: var(--color-text);
+}
+
+::placeholder {
+  color: var(--color-muted);
+}
+
+textarea {
+  resize: vertical;
+}
+
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible,
@@ -823,7 +1089,10 @@ input.floating-keyboard-active {
   background: rgba(102, 126, 234, 0.05) !important;
 }
 
-#sidebar h2 { margin-top: 0; }
+#sidebar h2 {
+  margin-top: 0;
+}
+
 #startPanel,
 #homePanel,
 #helpModal,
@@ -835,6 +1104,7 @@ input.floating-keyboard-active {
   align-items: center;
   justify-content: center;
 }
+
 #adminScreen {
   padding: 1rem;
   flex: 1 1 auto;
@@ -843,6 +1113,7 @@ input.floating-keyboard-active {
   justify-content: center;
   align-items: stretch;
 }
+
 #adminScreen .panel {
   background: var(--color-surface);
   padding: 1rem;
@@ -850,10 +1121,27 @@ input.floating-keyboard-active {
   box-shadow: var(--shadow);
   height: 100%;
 }
-#startPanel { display: none; z-index: 10; }
-#homePanel { display: none; z-index: 12; }
-#helpModal { display: none; z-index: 20; }
-#adminModal { display: none; z-index: 22; }
+
+#startPanel {
+  display: none;
+  z-index: 10;
+}
+
+#homePanel {
+  display: none;
+  z-index: 12;
+}
+
+#helpModal {
+  display: none;
+  z-index: 20;
+}
+
+#adminModal {
+  display: none;
+  z-index: 22;
+}
+
 #startPanel .panel,
 #homePanel .panel,
 #helpModal .panel,
@@ -863,6 +1151,7 @@ input.floating-keyboard-active {
   border-radius: var(--radius);
   box-shadow: var(--shadow);
 }
+
 #adminModal .panel {
   width: 95vw;
   max-width: 1200px;
@@ -1078,7 +1367,8 @@ input.floating-keyboard-active {
 .admin-content {
   padding: 1.5rem;
   flex: 1 1 auto;
-  min-height: 0; /* allow the flex child to shrink and enable scrolling */
+  min-height: 0;
+  /* allow the flex child to shrink and enable scrolling */
   overflow-y: auto;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -1281,20 +1571,56 @@ input.floating-keyboard-active {
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
 }
-#startPanel .panel { width: 320px; }
-#homePanel .panel { width: 360px; max-width: calc(100% - 2rem); }
-#helpModal .panel { width: 360px; max-width: calc(100% - 2rem); }
-#startPanel .panel input[type="date"] { width: 100%; margin-top: 0.5rem; }
-#startPanel .panel button { margin-top: 0.7rem; width: 100%; padding: 0.5rem; background: var(--color-primary); color: #fff; border: none; border-radius: 8px; font-size: 0.95rem; cursor: pointer; }
-#startPanel .panel .actions { display: flex; gap: 0.5rem; margin-top: 0.7rem; }
-#startPanel .panel .actions .btn { flex: 1; }
+
+#startPanel .panel {
+  width: 320px;
+}
+
+#homePanel .panel {
+  width: 360px;
+  max-width: calc(100% - 2rem);
+}
+
+#helpModal .panel {
+  width: 360px;
+  max-width: calc(100% - 2rem);
+}
+
+#startPanel .panel input[type="date"] {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+#startPanel .panel button {
+  margin-top: 0.7rem;
+  width: 100%;
+  padding: 0.5rem;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+#startPanel .panel .actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+}
+
+#startPanel .panel .actions .btn {
+  flex: 1;
+}
+
 /* Collapsible admin groups for mobile */
 .admin-group {
   position: relative;
 }
 
 .admin-group-toggle {
-  display: none; /* Hidden by default, shown on mobile */
+  display: none;
+  /* Hidden by default, shown on mobile */
   width: 100%;
   background: transparent;
   border: none;
@@ -1407,7 +1733,8 @@ input.floating-keyboard-active {
   width: 100%;
   padding: 0.75rem;
   font-size: 0.95rem;
-  min-height: 44px; /* iOS touch target size */
+  min-height: 44px;
+  /* iOS touch target size */
 }
 
 /* Responsive design for admin interface */
@@ -1432,7 +1759,8 @@ input.floating-keyboard-active {
   .admin-tabs .tab {
     padding: 0.875rem 1rem;
     font-size: 0.9rem;
-    min-height: 44px; /* Better touch target */
+    min-height: 44px;
+    /* Better touch target */
     white-space: nowrap;
   }
 
@@ -1455,7 +1783,8 @@ input.floating-keyboard-active {
   }
 
   .admin-actions .btn {
-    min-height: 48px; /* iOS recommended touch target */
+    min-height: 48px;
+    /* iOS recommended touch target */
   }
 
   .admin-import-export {
@@ -1475,7 +1804,8 @@ input.floating-keyboard-active {
 
   .admin-checkbox-item {
     padding: 0.75rem;
-    min-height: 48px; /* Better touch target */
+    min-height: 48px;
+    /* Better touch target */
   }
 
   .admin-checkbox-item input[type="checkbox"] {
@@ -1500,7 +1830,8 @@ input.floating-keyboard-active {
   .admin-section input[type="text"],
   .admin-section select {
     padding: 0.625rem 0.75rem;
-    font-size: 1rem; /* Prevent zoom on iOS */
+    font-size: 1rem;
+    /* Prevent zoom on iOS */
     min-height: 44px;
   }
 
@@ -1518,7 +1849,8 @@ input.floating-keyboard-active {
 
   .option-table {
     font-size: 0.875rem;
-    min-width: 480px; /* Prevent excessive compression */
+    min-width: 480px;
+    /* Prevent excessive compression */
   }
 
   .option-table th,
@@ -1547,13 +1879,15 @@ input.floating-keyboard-active {
     width: 100%;
     min-width: 120px;
     padding: 0.5rem 0.6rem;
-    font-size: 1rem; /* Prevent zoom on iOS */
+    font-size: 1rem;
+    /* Prevent zoom on iOS */
   }
 
   .option-table .opt-code input[type="text"] {
     width: 65px;
     padding: 0.5rem 0.5rem;
-    font-size: 1rem; /* Prevent zoom on iOS */
+    font-size: 1rem;
+    /* Prevent zoom on iOS */
   }
 
   .option-table input[type="checkbox"] {
@@ -1585,14 +1919,17 @@ input.floating-keyboard-active {
   .admin-actions {
     gap: 0.75rem;
   }
+
   .admin-import-export {
     flex-wrap: wrap;
     row-gap: 0.5rem;
   }
+
   .admin-actions .btn {
     padding: 0.55rem 1.1rem;
     font-size: 0.9rem;
   }
+
   /* Prevent long Hebrew labels from overflowing in narrow landscape */
   .admin-actions .label {
     white-space: nowrap;
@@ -1638,7 +1975,7 @@ input.floating-keyboard-active {
     gap: 0.625rem;
   }
 
-  .admin-actions > div {
+  .admin-actions>div {
     width: 100%;
   }
 
@@ -1655,7 +1992,8 @@ input.floating-keyboard-active {
   }
 
   .option-table thead {
-    display: none; /* Hide headers on very small screens */
+    display: none;
+    /* Hide headers on very small screens */
   }
 
   .option-table tbody {
@@ -1725,6 +2063,7 @@ input.floating-keyboard-active {
     font-size: 1rem;
   }
 }
+
 /* Toast */
 #toast {
   position: absolute;
@@ -1740,22 +2079,56 @@ input.floating-keyboard-active {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.25s ease, transform 0.25s ease;
-  z-index: 160; /* below header */
+  z-index: 160;
+  /* below header */
 }
-#toast.show { opacity: 1; transform: translateX(-50%) translateY(4px); }
+
+#toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(4px);
+}
+
 /* Help modal specific */
-#helpModal h2 { margin-top: 0; }
-#helpModal ul { padding-left: 1rem; margin: 0.5rem 0 0; }
-#helpModal .close-btn { margin-top: 0.8rem; width: 100%; padding: 0.5rem; background: var(--color-primary-strong); color: #fff; border: none; border-radius: 8px; font-size: 0.9rem; cursor: pointer; }
+#helpModal h2 {
+  margin-top: 0;
+}
+
+#helpModal ul {
+  padding-left: 1rem;
+  margin: 0.5rem 0 0;
+}
+
+#helpModal .close-btn {
+  margin-top: 0.8rem;
+  width: 100%;
+  padding: 0.5rem;
+  background: var(--color-primary-strong);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
 /* RTL support */
-.rtl { direction: rtl; text-align: right; }
-.rtl input[type="text"] { direction: ltr; text-align: left; }
+.rtl {
+  direction: rtl;
+  text-align: right;
+}
+
+.rtl input[type="text"] {
+  direction: ltr;
+  text-align: left;
+}
+
 /* Responsive */
 @media (max-width: 600px) {
+
   /* On small screens, stack sidebar below the canvas */
   #main {
     flex-direction: column;
   }
+
   #sidebar {
     width: 100%;
     border-left: none;
@@ -1763,6 +2136,7 @@ input.floating-keyboard-active {
     max-height: 40vh;
     height: auto;
   }
+
   /* Bottom-sheet behavior for details drawer on phones */
   .drawer {
     position: fixed;
@@ -1774,64 +2148,70 @@ input.floating-keyboard-active {
     height: min(40vh, 50dvh);
     max-height: 50dvh;
     transform: translate3d(0, 100%, 0);
-    transition: transform 260ms cubic-bezier(.2,.8,.2,1);
+    transition: transform 260ms cubic-bezier(.2, .8, .2, 1);
     z-index: 40;
     border-top: 1px solid var(--color-border);
     border-left: none;
     border-top-left-radius: var(--radius);
     border-top-right-radius: var(--radius);
   }
-  
+
   /* Disable height transition when resizing */
   .drawer.resizing {
     transition: none;
   }
+
   .drawer.open {
     transform: translate3d(0, 0, 0);
   }
+
   /* Do not offset canvas controls horizontally when bottom sheet is open */
   body.drawer-open .canvas-toolbar,
   body.drawer-open .canvas-fab {
     right: 12px;
   }
+
   body.drawer-open .toggle-floating-keyboard {
     right: 12px;
     bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 8px);
   }
-  
+
   /* Position recenter button - by default at keyboard button position (when keyboard button is hidden) */
   body.drawer-open .canvas-fab {
     bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 8px);
   }
-  
+
   /* When keyboard button is visible, move recenter button above it */
   body.drawer-open.keyboard-button-visible .canvas-fab {
     bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 8px + 44px + 8px);
   }
-  
+
   /* Optimize canvas toolbar for mobile */
   .canvas-toolbar .segmented#modeGroup .btn {
     min-width: 40px;
     height: 40px;
     padding: 0.4rem;
   }
+
   .canvas-toolbar .segmented#modeGroup .btn .material-icons {
     font-size: 1.1rem;
   }
+
   .canvas-toolbar {
     top: 8px;
     right: 8px;
   }
+
   .canvas-fab {
     transition: bottom 0.3s ease;
   }
-  
+
   /* Only adjust bottom position when drawer is closed */
   body:not(.drawer-open) .canvas-fab {
     bottom: 8px;
     right: 8px;
   }
-  
+
   /* Optimize edge legend for mobile */
   .edge-legend {
     top: 8px;
@@ -1840,23 +2220,27 @@ input.floating-keyboard-active {
     padding: 4px 8px;
     gap: 8px;
   }
+
   .edge-legend-item {
     gap: 4px;
   }
-  
+
   /* Wrap control buttons to two columns */
-  #controls > * {
+  #controls>* {
     flex: 1 1 45%;
     margin-top: 0.4rem;
   }
+
   /* Make search input full width on small screens */
   .search-group {
     flex: 1 1 100% !important;
   }
+
   .search-input {
     width: 100%;
   }
-  #controls > button {
+
+  #controls>button {
     font-size: 1rem;
   }
 
@@ -1864,30 +2248,32 @@ input.floating-keyboard-active {
   #controls {
     display: none;
   }
+
   /* Show the mobile menu toggle button on small screens */
   #mobileMenuBtn {
     display: inline-flex;
     padding: 0.4rem 0.6rem;
     min-height: 36px;
   }
-  
+
   /* Better touch targets for mobile */
   .btn {
     min-height: 40px;
   }
-  
+
   /* Adjust sidebar header for mobile */
   .sidebar-header h2 {
     font-size: 1.1rem;
   }
-  
+
   /* Mobile-friendly input fields */
   #sidebar input[type="text"],
   #sidebar input[type="number"],
   #sidebar input[type="date"],
   #sidebar select {
     min-height: 40px;
-    font-size: 16px; /* Prevents zoom on iOS */
+    font-size: 16px;
+    /* Prevents zoom on iOS */
   }
 }
 
@@ -2014,8 +2400,8 @@ input.floating-keyboard-active {
   align-items: center;
   justify-content: center;
   min-height: calc(50px * var(--keyboard-scale));
-  box-shadow: 0 calc(4px * var(--keyboard-scale)) calc(12px * var(--keyboard-scale)) rgba(102, 126, 234, 0.3), 
-              inset 0 calc(1px * var(--keyboard-scale)) 0 rgba(255, 255, 255, 0.2);
+  box-shadow: 0 calc(4px * var(--keyboard-scale)) calc(12px * var(--keyboard-scale)) rgba(102, 126, 234, 0.3),
+    inset 0 calc(1px * var(--keyboard-scale)) 0 rgba(255, 255, 255, 0.2);
   position: relative;
   overflow: hidden;
 }
@@ -2033,14 +2419,14 @@ input.floating-keyboard-active {
 
 .floating-key:active {
   transform: scale(0.92);
-  box-shadow: 0 calc(2px * var(--keyboard-scale)) calc(6px * var(--keyboard-scale)) rgba(102, 126, 234, 0.4), 
-              inset 0 calc(1px * var(--keyboard-scale)) 0 rgba(255, 255, 255, 0.1);
+  box-shadow: 0 calc(2px * var(--keyboard-scale)) calc(6px * var(--keyboard-scale)) rgba(102, 126, 234, 0.4),
+    inset 0 calc(1px * var(--keyboard-scale)) 0 rgba(255, 255, 255, 0.1);
 }
 
 .floating-key:hover {
   transform: translateY(calc(-2px * var(--keyboard-scale)));
-  box-shadow: 0 calc(6px * var(--keyboard-scale)) calc(16px * var(--keyboard-scale)) rgba(102, 126, 234, 0.4), 
-              inset 0 calc(1px * var(--keyboard-scale)) 0 rgba(255, 255, 255, 0.25);
+  box-shadow: 0 calc(6px * var(--keyboard-scale)) calc(16px * var(--keyboard-scale)) rgba(102, 126, 234, 0.4),
+    inset 0 calc(1px * var(--keyboard-scale)) 0 rgba(255, 255, 255, 0.25);
 }
 
 .floating-key-backspace {
@@ -2052,8 +2438,8 @@ input.floating-keyboard-active {
 }
 
 .floating-key-backspace:hover {
-  box-shadow: 0 calc(6px * var(--keyboard-scale)) calc(16px * var(--keyboard-scale)) rgba(245, 87, 108, 0.4), 
-              inset 0 calc(1px * var(--keyboard-scale)) 0 rgba(255, 255, 255, 0.25);
+  box-shadow: 0 calc(6px * var(--keyboard-scale)) calc(16px * var(--keyboard-scale)) rgba(245, 87, 108, 0.4),
+    inset 0 calc(1px * var(--keyboard-scale)) 0 rgba(255, 255, 255, 0.25);
 }
 
 .floating-key-backspace .material-icons {
@@ -2085,9 +2471,9 @@ input.floating-keyboard-active {
   height: calc(4px * var(--keyboard-scale));
   background: rgba(255, 255, 255, 0.9);
   border-radius: 50%;
-  box-shadow: 0 calc(-6px * var(--keyboard-scale)) 0 rgba(255, 255, 255, 0.9), 
-              calc(-6px * var(--keyboard-scale)) 0 0 rgba(255, 255, 255, 0.9), 
-              calc(-6px * var(--keyboard-scale)) calc(-6px * var(--keyboard-scale)) 0 rgba(255, 255, 255, 0.9);
+  box-shadow: 0 calc(-6px * var(--keyboard-scale)) 0 rgba(255, 255, 255, 0.9),
+    calc(-6px * var(--keyboard-scale)) 0 0 rgba(255, 255, 255, 0.9),
+    calc(-6px * var(--keyboard-scale)) calc(-6px * var(--keyboard-scale)) 0 rgba(255, 255, 255, 0.9);
 }
 
 /* Toggle Floating Keyboard Button */
@@ -2107,8 +2493,8 @@ input.floating-keyboard-active {
   justify-content: center;
   cursor: pointer;
   z-index: 15;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4), 
-              inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 }
@@ -2126,8 +2512,8 @@ input.floating-keyboard-active {
 
 .toggle-floating-keyboard:hover {
   transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5), 
-              inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 .toggle-floating-keyboard:active {
@@ -2154,25 +2540,70 @@ input.floating-keyboard-active {
     --color-border: #1f2937;
     --shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   }
-  header { box-shadow: none; }
-  .btn { background: #0b1220; color: var(--color-text); border-color: var(--color-border); }
-  .btn-primary { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
-  .btn-ghost { background: rgba(255,255,255,0.08); color: #fff; border-color: rgba(255,255,255,0.16); }
-  #canvasContainer { background: var(--color-surface); box-shadow: none; }
-  #sidebar { box-shadow: none; }
-  #mobileMenu { border-color: var(--color-border); }
-  input[type="text"], input[type="date"], textarea { background: #0b1220; border-color: var(--color-border); color: var(--color-text); }
-  select.btn { background: #0b1220; color: var(--color-text); border-color: var(--color-border); }
-  #toast { background: var(--color-primary-strong); }
-  
+
+  header {
+    box-shadow: none;
+  }
+
+  .btn {
+    background: #0b1220;
+    color: var(--color-text);
+    border-color: var(--color-border);
+  }
+
+  .btn-primary {
+    background: var(--color-primary);
+    color: #fff;
+    border-color: var(--color-primary);
+  }
+
+  .btn-ghost {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.16);
+  }
+
+  #canvasContainer {
+    background: var(--color-surface);
+    box-shadow: none;
+  }
+
+  #sidebar {
+    box-shadow: none;
+  }
+
+  #mobileMenu {
+    border-color: var(--color-border);
+  }
+
+  input[type="text"],
+  input[type="date"],
+  textarea {
+    background: #0b1220;
+    border-color: var(--color-border);
+    color: var(--color-text);
+  }
+
+  select.btn {
+    background: #0b1220;
+    color: var(--color-text);
+    border-color: var(--color-border);
+  }
+
+  #toast {
+    background: var(--color-primary-strong);
+  }
+
   /* Dark mode for floating keyboard */
   .floating-keyboard {
     background: rgba(15, 23, 42, 0.95);
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
   }
+
   .floating-keyboard:hover {
     box-shadow: 0 24px 72px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.15);
   }
+
   .floating-keyboard-body {
     background: linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(11, 18, 32, 0.95) 100%);
   }
@@ -2265,4 +2696,3 @@ input.floating-keyboard-active {
     background: #0f172a;
   }
 }
-

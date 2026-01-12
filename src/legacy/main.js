@@ -143,7 +143,7 @@ function synthesizeClickOnTap(element) {
         e.stopPropagation();
         element.click();
       }
-    } catch (_) {}
+    } catch (_) { }
   };
   try { element.addEventListener('touchstart', onTouchStart, { passive: true }); } catch (_) { element.addEventListener('touchstart', onTouchStart); }
   try { element.addEventListener('touchmove', onTouchMove, { passive: true }); } catch (_) { element.addEventListener('touchmove', onTouchMove); }
@@ -187,7 +187,7 @@ let currentLang = 'he';
 // Pointer position used for edge preview in edge mode
 let pendingEdgePreview = null; // { x, y } or null
 // Expose language to window for modules that need it during migration
-try { window.currentLang = currentLang; } catch (_) {}
+try { window.currentLang = currentLang; } catch (_) { }
 // Zoom state
 let viewScale = 1;
 let viewTranslate = { x: 0, y: 0 }; // screen-space translation (for pan/anchored zoom)
@@ -258,7 +258,7 @@ let fallIconReady = false;
 try {
   fallIconImage = new Image();
   fallIconImage.src = './fall_icon.png';
-  fallIconImage.onload = () => { fallIconReady = true; try { scheduleDraw(); } catch (_) {} };
+  fallIconImage.onload = () => { fallIconReady = true; try { scheduleDraw(); } catch (_) { } };
   fallIconImage.onerror = () => { fallIconReady = false; };
 } catch (_) { /* no-op */ }
 
@@ -544,7 +544,7 @@ function openAdminModal() {
     { key: 'cover_diameter', label: t('labels.coverDiameter'), type: 'text' },
     { key: 'access', label: t('labels.access'), type: 'select', optionsKey: 'access', valueKind: 'code' },
     { key: 'accuracy_level', label: t('labels.accuracyLevel'), type: 'select', optionsKey: 'accuracy_level', valueKind: 'code' },
-    
+
     { key: 'maintenance_status', label: t('labels.maintenanceStatus'), type: 'select', optionsKey: 'maintenance_status', valueKind: 'code' },
   ]));
   adminContent.appendChild(buildOptionsEditor(t('admin.tabEdges'), 'edges', [
@@ -552,7 +552,7 @@ function openAdminModal() {
     { key: 'edge_type', label: t('labels.edgeType'), type: 'select', optionsKey: 'edge_type', valueKind: 'label' },
     { key: 'line_diameter', label: t('labels.lineDiameter'), type: 'select', optionsKey: 'line_diameter', valueKind: 'label' },
     { key: 'fall_position', label: t('labels.fallPosition'), type: 'select', optionsKey: 'fall_position', valueKind: 'code' },
-    
+
   ]));
 
   // Initialize current default select values
@@ -756,9 +756,9 @@ function closeAdminScreen() {
 }
 
 function navigateToAdmin() {
-  try { if (mobileMenu) mobileMenu.style.display = 'none'; } catch (_) {}
-  try { location.hash = '#/admin'; } catch (_) {}
-  try { handleRoute(); } catch (_) {}
+  try { if (mobileMenu) mobileMenu.style.display = 'none'; } catch (_) { }
+  try { location.hash = '#/admin'; } catch (_) { }
+  try { handleRoute(); } catch (_) { }
 }
 if (adminBtn) adminBtn.addEventListener('click', (e) => {
   if (e && typeof e.preventDefault === 'function') e.preventDefault();
@@ -772,28 +772,28 @@ if (mobileAdminBtn) {
   };
   // Use both click and touchend for broad Android compatibility
   mobileAdminBtn.addEventListener('click', openAdminFromMobile);
-  try { mobileAdminBtn.addEventListener('touchend', openAdminFromMobile, { passive: false }); } catch(_) { mobileAdminBtn.addEventListener('touchend', openAdminFromMobile); }
+  try { mobileAdminBtn.addEventListener('touchend', openAdminFromMobile, { passive: false }); } catch (_) { mobileAdminBtn.addEventListener('touchend', openAdminFromMobile); }
 }
 // Simple hash routing for admin screen
 function handleRoute() {
   const isAdmin = (location.hash === '#/admin');
   if (isAdmin) {
-    try { document.body.classList.add('admin-screen'); } catch (_) {}
+    try { document.body.classList.add('admin-screen'); } catch (_) { }
     // Prefer separate screen over modal
-    try { closeAdminModal(); } catch (_) {}
-    try { openAdminScreen(); } catch (_) {}
+    try { closeAdminModal(); } catch (_) { }
+    try { openAdminScreen(); } catch (_) { }
   } else {
-    try { document.body.classList.remove('admin-screen'); } catch (_) {}
-    try { closeAdminScreen(); } catch (_) {}
+    try { document.body.classList.remove('admin-screen'); } catch (_) { }
+    try { closeAdminScreen(); } catch (_) { }
   }
 }
 window.addEventListener('hashchange', handleRoute);
 // Initialize route on load
-try { handleRoute(); } catch (_) {}
+try { handleRoute(); } catch (_) { }
 if (adminCancelBtn) adminCancelBtn.addEventListener('click', () => {
   closeAdminModal();
   closeAdminScreen();
-  try { if (document.body.classList.contains('admin-screen')) location.hash = '#/'; } catch (_) {}
+  try { if (document.body.classList.contains('admin-screen')) location.hash = '#/'; } catch (_) { }
 });
 if (adminSaveBtn) adminSaveBtn.addEventListener('click', () => {
   if (!adminContent) return;
@@ -808,7 +808,7 @@ if (adminSaveBtn) adminSaveBtn.addEventListener('click', () => {
     const val = (el.tagName === 'SELECT') ? el.value : el.value;
     // Treat defaults for selects as label unless spec requested 'code'
     let stored = val;
-    const numericKeys = new Set(['access','accuracy_level','fall_position','engineering_status','maintenance_status']);
+    const numericKeys = new Set(['access', 'accuracy_level', 'fall_position', 'engineering_status', 'maintenance_status']);
     if (numericKeys.has(key)) {
       const num = Number(val);
       // Allow empty default (optional)
@@ -893,20 +893,20 @@ if (adminImportBtn && adminImportFile) {
         const merged = { ...JSON.parse(JSON.stringify(defaultAdminConfig)), ...config };
         merged.nodes = merged.nodes || {};
         merged.edges = merged.edges || {};
-        const incNodes = { ...defaultAdminConfig.nodes.include, ...(merged.nodes.include||{}) };
-        const incEdges = { ...defaultAdminConfig.edges.include, ...(merged.edges.include||{}) };
+        const incNodes = { ...defaultAdminConfig.nodes.include, ...(merged.nodes.include || {}) };
+        const incEdges = { ...defaultAdminConfig.edges.include, ...(merged.edges.include || {}) };
         // Coerce include flags to booleans
         Object.keys(incNodes).forEach(k => { incNodes[k] = !!incNodes[k]; });
         Object.keys(incEdges).forEach(k => { incEdges[k] = !!incEdges[k]; });
         merged.nodes.include = incNodes;
         merged.edges.include = incEdges;
-        merged.nodes.defaults = { ...defaultAdminConfig.nodes.defaults, ...(merged.nodes.defaults||{}) };
-        merged.edges.defaults = { ...defaultAdminConfig.edges.defaults, ...(merged.edges.defaults||{}) };
-        merged.nodes.options = { ...defaultAdminConfig.nodes.options, ...(merged.nodes.options||{}) };
-        merged.edges.options = { ...defaultAdminConfig.edges.options, ...(merged.edges.options||{}) };
+        merged.nodes.defaults = { ...defaultAdminConfig.nodes.defaults, ...(merged.nodes.defaults || {}) };
+        merged.edges.defaults = { ...defaultAdminConfig.edges.defaults, ...(merged.edges.defaults || {}) };
+        merged.nodes.options = { ...defaultAdminConfig.nodes.options, ...(merged.nodes.options || {}) };
+        merged.edges.options = { ...defaultAdminConfig.edges.options, ...(merged.edges.options || {}) };
         // customFields removed
         // Ensure options rows have enabled defaulting to true
-        ['nodes','edges'].forEach(scope => {
+        ['nodes', 'edges'].forEach(scope => {
           const opt = merged[scope].options || {};
           Object.keys(opt).forEach(key => {
             const arr = Array.isArray(opt[key]) ? opt[key] : [];
@@ -924,7 +924,7 @@ if (adminImportBtn && adminImportFile) {
         if (document.body && document.body.classList && document.body.classList.contains('admin-screen')) {
           openAdminScreen();
         }
-      } catch (_) {}
+      } catch (_) { }
       // Also refresh details panel options
       renderDetails();
       showToast(t('admin.importSuccess'));
@@ -949,7 +949,7 @@ if (adminScreenExportBtn) {
       a.click();
       a.remove();
       showToast(t('admin.exportSuccess'));
-    } catch (_) {}
+    } catch (_) { }
   });
 }
 if (adminScreenImportBtn && adminScreenImportFile) {
@@ -962,7 +962,7 @@ if (adminScreenImportBtn && adminScreenImportFile) {
     if (!file) return;
     try {
       // Preserve currently active tab before rebuild
-      const prevTab = (function() {
+      const prevTab = (function () {
         try {
           const activeBtn = adminScreenContent && adminScreenContent.querySelector('.admin-tabs .tab.active');
           return activeBtn ? activeBtn.getAttribute('data-tab-btn') : null;
@@ -982,8 +982,8 @@ if (adminScreenImportBtn && adminScreenImportFile) {
         const merged = { ...JSON.parse(JSON.stringify(defaultAdminConfig)), ...config };
         merged.nodes = merged.nodes || {};
         merged.edges = merged.edges || {};
-        const incNodes = { ...defaultAdminConfig.nodes.include, ...(merged.nodes.include||{}) };
-        const incEdges = { ...defaultAdminConfig.edges.include, ...(merged.edges.include||{}) };
+        const incNodes = { ...defaultAdminConfig.nodes.include, ...(merged.nodes.include || {}) };
+        const incEdges = { ...defaultAdminConfig.edges.include, ...(merged.edges.include || {}) };
         Object.keys(incNodes).forEach(k => { incNodes[k] = !!incNodes[k]; });
         Object.keys(incEdges).forEach(k => { incEdges[k] = !!incEdges[k]; });
         merged.nodes.include = incNodes;
@@ -997,7 +997,7 @@ if (adminScreenImportBtn && adminScreenImportFile) {
       }
       adminConfig = normalize(incoming);
       saveAdminConfig();
-      try { openAdminScreen(); } catch (_) {}
+      try { openAdminScreen(); } catch (_) { }
       // Restore previously selected tab if applicable
       try {
         if (prevTab && prevTab !== 'nodes') {
@@ -1005,9 +1005,9 @@ if (adminScreenImportBtn && adminScreenImportFile) {
           const btn = tabs && tabs.querySelector(`[data-tab-btn="${prevTab}"]`);
           if (btn && typeof btn.click === 'function') btn.click();
         }
-      } catch (_) {}
+      } catch (_) { }
       // Refresh details panel to reflect updated dropdown options
-      try { renderDetails(); } catch (_) {}
+      try { renderDetails(); } catch (_) { }
       showToast(t('admin.importSuccess'));
     } catch (_) {
       showToast(t('admin.importInvalid'));
@@ -1025,7 +1025,7 @@ if (adminScreenSaveBtn) adminScreenSaveBtn.addEventListener('click', () => {
   adminScreenContent.querySelectorAll('[data-def]').forEach((el) => {
     const [scope, key] = el.getAttribute('data-def').split(':');
     let stored = (el.tagName === 'SELECT') ? el.value : el.value;
-    const numericKeys = new Set(['access','accuracy_level','fall_position','engineering_status','maintenance_status']);
+    const numericKeys = new Set(['access', 'accuracy_level', 'fall_position', 'engineering_status', 'maintenance_status']);
     if (numericKeys.has(key)) {
       const num = Number(stored);
       stored = (stored === '' ? '' : (Number.isFinite(num) ? num : 0));
@@ -1051,13 +1051,13 @@ if (adminScreenSaveBtn) adminScreenSaveBtn.addEventListener('click', () => {
   });
   saveAdminConfig();
   closeAdminScreen();
-  try { location.hash = '#/'; } catch (_) {}
+  try { location.hash = '#/'; } catch (_) { }
   renderDetails();
   showToast(t('admin.saved'));
 });
 if (adminScreenCancelBtn) adminScreenCancelBtn.addEventListener('click', () => {
   closeAdminScreen();
-  try { location.hash = '#/'; } catch (_) {}
+  try { location.hash = '#/'; } catch (_) { }
 });
 
 // Close admin modal when clicking the dim backdrop
@@ -1113,7 +1113,7 @@ if (window.ResizeObserver) {
   });
   try {
     canvasContainerObserver.observe(canvas.parentElement);
-  } catch (_) {}
+  } catch (_) { }
 }
 
 // showToast is now provided by src/utils/toast.js via window.showToast
@@ -1178,8 +1178,8 @@ function applyLangToStaticUI() {
   }
   if (helpBtn) { helpBtn.title = t('help'); setBtnLabel(helpBtn, t('help')); }
   if (adminBtn) { adminBtn.title = t('admin.manage'); }
-  if (recenterBtn) { 
-    recenterBtn.title = t('recenter'); 
+  if (recenterBtn) {
+    recenterBtn.title = t('recenter');
     recenterBtn.setAttribute('aria-label', t('recenter'));
   }
   if (sidebarCloseBtn) { sidebarCloseBtn.title = t('close'); }
@@ -1333,7 +1333,7 @@ import { exportSketchToJson, importSketchFromJson } from '../utils/sketch-io.js'
 /**
  * Utility: determine if an id is a strictly numeric positive integer string.
  */
- 
+
 
 function collectUsedNumericIds() {
   const used = new Set();
@@ -1364,14 +1364,14 @@ function renameNodeIdInternal(oldId, newId) {
   });
 }
 
- 
+
 
 /**
  * Encode a JS string as UTF-16LE with BOM so that Excel on Windows opens it with correct encoding.
  * @param {string} text
  * @returns {Uint8Array}
  */
- 
+
 
 /**
  * Compute the shortest distance from a point to a line segment.
@@ -1383,7 +1383,7 @@ function renameNodeIdInternal(oldId, newId) {
  * @param {number} y2 - Y of second segment endpoint
  * @returns {number} Euclidean distance in pixels
  */
- 
+
 
 /**
  * Load a previously saved sketch from localStorage if present.
@@ -1410,20 +1410,20 @@ function loadFromStorage() {
       // Normalize legacy nodeType values to 'Manhole' | 'Home'
       if (node.nodeType === 'בית' || node.nodeType === 'Home' || node.nodeType === 'B') node.nodeType = 'Home';
       else node.nodeType = 'Manhole';
-    if (node.nodeType === 'Home') {
-      node.material = NODE_MATERIALS[0];
-      node.coverDiameter = '';
-      node.access = '';
-      node.nodeEngineeringStatus = '';
-      node.maintenanceStatus = '';
-    }
-    if (node.nodeType === 'Drainage') {
-      node.material = NODE_MATERIALS[0];
-      node.coverDiameter = '';
-      node.access = '';
-      node.nodeEngineeringStatus = '';
-      node.maintenanceStatus = '';
-    }
+      if (node.nodeType === 'Home') {
+        node.material = NODE_MATERIALS[0];
+        node.coverDiameter = '';
+        node.access = '';
+        node.nodeEngineeringStatus = '';
+        node.maintenanceStatus = '';
+      }
+      if (node.nodeType === 'Drainage') {
+        node.material = NODE_MATERIALS[0];
+        node.coverDiameter = '';
+        node.access = '';
+        node.nodeEngineeringStatus = '';
+        node.maintenanceStatus = '';
+      }
       // Normalize cover diameter to integer or empty
       if (node.coverDiameter === undefined) node.coverDiameter = '';
       else {
@@ -1515,7 +1515,7 @@ const debouncedSaveToStorage = (function () {
     if (timeoutId) clearTimeout(timeoutId);
     timeoutId = setTimeout(() => {
       timeoutId = undefined;
-      try { saveToStorage(); } catch (_) {}
+      try { saveToStorage(); } catch (_) { }
     }, delayMs);
   };
 })();
@@ -1652,7 +1652,7 @@ function loadFromLibrary(sketchId) {
   draw();
   renderDetails();
   // Recenters view to the current sketch center, keeping the existing zoom level
-  try { recenterView(); } catch (_) {}
+  try { recenterView(); } catch (_) { }
   return true;
 }
 
@@ -1722,7 +1722,7 @@ function renderHome() {
           <div>
             <div class="sketch-title" data-id="${rec.id}" style="font-weight:bold;cursor:text;">${title}</div>
             <div style="font-size:0.85rem;color:var(--color-muted);">${t('listUpdated', new Date(rec.updatedAt || rec.createdAt).toLocaleString())}</div>
-            <div style="font-size:0.85rem;color:var(--color-muted);">${t('listCounts', (rec.nodes||[]).length, (rec.edges||[]).length)}</div>
+            <div style="font-size:0.85rem;color:var(--color-muted);">${t('listCounts', (rec.nodes || []).length, (rec.edges || []).length)}</div>
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
             <button class="btn" data-action="open" data-id="${rec.id}">${t('listOpen')}</button>
@@ -1900,7 +1900,7 @@ function draw() {
   // Draw nodes on top and collect label data
   const labelData = [];
   const nodeData = [];
-  
+
   nodes.forEach((node) => {
     const label = drawNode(node);
     if (label) {
@@ -1914,25 +1914,25 @@ function draw() {
       radius: radius
     });
   });
-  
+
   // Collect edge label data for collision detection
   const edgeLabelData = [];
   edges.forEach((edge) => {
     const tailNode = nodes.find((n) => n.id === edge.tail);
     const headNode = nodes.find((n) => n.id === edge.head);
     if (!tailNode || !headNode) return;
-    
+
     const x1 = tailNode.x, y1 = tailNode.y, x2 = headNode.x, y2 = headNode.y;
     const dx = x2 - x1;
     const dy = y2 - y1;
     const length = Math.sqrt(dx * dx + dy * dy);
     if (length <= 0) return;
-    
+
     const normX = dx / length;
     const normY = dy / length;
     const offset = 6 * sizeScale;
     const fontSize = Math.round(14 * sizeScale);
-    
+
     if (edge.tail_measurement) {
       const ratio = 0.25;
       const px = x1 + dx * ratio;
@@ -1946,7 +1946,7 @@ function draw() {
         fontSize: fontSize
       });
     }
-    
+
     if (edge.head_measurement) {
       const ratio = 0.75;
       const px = x1 + dx * ratio;
@@ -1961,10 +1961,10 @@ function draw() {
       });
     }
   });
-  
+
   // Process labels with smart positioning to avoid overlaps (including edge labels)
   const positionedLabels = processLabels(ctx, labelData, nodeData, edgeLabelData);
-  
+
   // Draw the optimally positioned labels
   ctx.fillStyle = COLORS.node.label;
   positionedLabels.forEach((label) => {
@@ -1975,7 +1975,7 @@ function draw() {
     ctx.fillText(label.text, label.x, label.y);
     ctx.restore();
   });
-  
+
   // Draw edge measurement labels after node labels to ensure they're on top
   edges.forEach((edge) => {
     drawEdgeLabels(edge);
@@ -2195,19 +2195,19 @@ function drawEdgeLabels(edge) {
 
 function drawNode(node) {
   const radius = NODE_RADIUS * sizeScale;
-  
+
   // Draw the node icon using the new icon system
   drawNodeIcon(ctx, node, radius, COLORS, selectedNode);
-  
+
   // For Home nodes with directConnection badge, draw it on top
   if (node.nodeType === 'Home' && node.directConnection) {
     drawDirectConnectionBadge(node.x, node.y, radius);
   }
-  
+
   // Return label data for deferred rendering (smart positioning)
   const fontSize = Math.round(16 * sizeScale);
   let labelText = String(node.id);
-  
+
   // For Home nodes, only show numeric IDs as labels
   if (node.nodeType === 'Home') {
     const idStr = String(node.id);
@@ -2216,7 +2216,7 @@ function drawNode(node) {
     }
     labelText = idStr;
   }
-  
+
   return {
     text: labelText,
     nodeX: node.x,
@@ -2396,8 +2396,8 @@ function renderDetails() {
             <div class="field col-span-2">
               <label for="${diamSelectId}">${t('labels.lineDiameter')}</label>
               <select id="${diamSelectId}">
-                <option value="" ${e.line_diameter===''?'selected':''}>${t('labels.optional')}</option>
-                ${diameterOptions.map((d) => `<option value="${String(d.code)}" ${String(e.line_diameter)===String(d.code)?'selected':''}>${String(d.label)}</option>`).join('')}
+                <option value="" ${e.line_diameter === '' ? 'selected' : ''}>${t('labels.optional')}</option>
+                ${diameterOptions.map((d) => `<option value="${String(d.code)}" ${String(e.line_diameter) === String(d.code) ? 'selected' : ''}>${String(d.label)}</option>`).join('')}
               </select>
             </div>
           `;
@@ -2459,7 +2459,7 @@ function renderDetails() {
           }
         });
       }
-    } catch (_) {}
+    } catch (_) { }
     // Add delete button at the bottom (after connected lines if present)
     const deleteButtonWrapper = document.createElement('div');
     deleteButtonWrapper.className = 'details-actions';
@@ -2595,14 +2595,14 @@ function renderDetails() {
         scheduleDraw();
       });
     }
-    
+
     // Node type selection removed from UI per requirements
     // Delete node button listener
     const deleteNodeBtn = container.querySelector('#deleteNodeBtn');
     deleteNodeBtn.addEventListener('click', () => {
       const hasConnections = edges.some((edge) => String(edge.tail) === String(node.id) || String(edge.head) === String(node.id));
       if (hasConnections) {
-      const ok = confirm(t('confirms.deleteNodeWithEdges'));
+        const ok = confirm(t('confirms.deleteNodeWithEdges'));
         if (!ok) return;
       }
       // Remove node and associated edges
@@ -2637,7 +2637,7 @@ function renderDetails() {
       const list = adminConfig.edges?.options?.material ?? EDGE_MATERIAL_OPTIONS;
       const found = list.find(o => o.label === label);
       if (found) return found.code;
-      const idx = (adminConfig.edges?.options?.material ? list.map(o=>o.label) : EDGE_MATERIALS).indexOf(label);
+      const idx = (adminConfig.edges?.options?.material ? list.map(o => o.label) : EDGE_MATERIALS).indexOf(label);
       return idx >= 0 ? idx : 0;
     };
 
@@ -2707,8 +2707,8 @@ function renderDetails() {
           <div class="field">
             <label for="edgeDiameterSelect">${t('labels.lineDiameter')}</label>
             <select id="edgeDiameterSelect">
-              <option value="" ${edge.line_diameter===''?'selected':''}>${t('labels.optional')}</option>
-              ${diameterOptions.map((d) => `<option value="${String(d.code)}" ${String(edge.line_diameter)===String(d.code)?'selected':''}>${String(d.label)}</option>`).join('')}
+              <option value="" ${edge.line_diameter === '' ? 'selected' : ''}>${t('labels.optional')}</option>
+              ${diameterOptions.map((d) => `<option value="${String(d.code)}" ${String(edge.line_diameter) === String(d.code) ? 'selected' : ''}>${String(d.label)}</option>`).join('')}
             </select>
           </div>` : ''}
         </div>
@@ -2848,25 +2848,25 @@ function renderDetails() {
     }
     if (fallDepthInput) {
       fallDepthInput.addEventListener('input', (e) => {
-      // Store the value, allowing partial decimals like "3." while typing
-      const val = e.target.value;
-      
-      // Allow empty string
-      if (val === '') {
-        edge.fall_depth = '';
-      } 
-      // Allow partial decimal numbers (e.g., "3." or "0.")
-      else if (val.endsWith('.') && !isNaN(parseFloat(val))) {
-        edge.fall_depth = val;
-      }
-      // Convert complete numbers to number type
-      else {
-        const num = Number(val);
-        edge.fall_depth = Number.isFinite(num) ? num : val;
-      }
+        // Store the value, allowing partial decimals like "3." while typing
+        const val = e.target.value;
 
-      debouncedSaveToStorage();
-      scheduleDraw();
+        // Allow empty string
+        if (val === '') {
+          edge.fall_depth = '';
+        }
+        // Allow partial decimal numbers (e.g., "3." or "0.")
+        else if (val.endsWith('.') && !isNaN(parseFloat(val))) {
+          edge.fall_depth = val;
+        }
+        // Convert complete numbers to number type
+        else {
+          const num = Number(val);
+          edge.fall_depth = Number.isFinite(num) ? num : val;
+        }
+
+        debouncedSaveToStorage();
+        scheduleDraw();
       });
     }
     const deleteEdgeBtn = container.querySelector('#deleteEdgeBtn');
@@ -2882,9 +2882,9 @@ function renderDetails() {
       renderDetails();
       showToast(t('toasts.edgeDeleted'));
     });
-    
+
   } else {
-    detailsContainer.textContent = t('detailsDefault');  
+    detailsContainer.textContent = t('detailsDefault');
   }
   // Toggle drawer visibility on tablet/mobile
   try {
@@ -2898,7 +2898,7 @@ function renderDetails() {
       if (shouldOpen) document.body.classList.add('drawer-open');
       else document.body.classList.remove('drawer-open');
     }
-  } catch (_) {}
+  } catch (_) { }
   // In mobile layout, the sidebar height affects the canvasContainer height.
   // Ensure the canvas backing store matches the new display size.
   if (typeof requestAnimationFrame === 'function') {
@@ -2943,14 +2943,14 @@ function findNodeAt(x, y) {
   // Look through nodes in reverse order (topmost first)
   for (let i = nodes.length - 1; i >= 0; i--) {
     const node = nodes[i];
-    
+
     // Check for drainage nodes (rectangular hit detection)
     if (node.nodeType === 'Drainage' || node.nodeType === 'קולטן') {
       const rectWidth = NODE_RADIUS * sizeScale * 1.8;
       const rectHeight = NODE_RADIUS * sizeScale * 1.3;
       const halfWidth = rectWidth / 2 + 2;
       const halfHeight = rectHeight / 2 + 2;
-      
+
       if (Math.abs(x - node.x) <= halfWidth && Math.abs(y - node.y) <= halfHeight) {
         return node;
       }
@@ -2974,14 +2974,14 @@ function findNodeAtWithExpansion(x, y, extraRadius) {
   const extra = typeof extraRadius === 'number' ? extraRadius : 0;
   for (let i = nodes.length - 1; i >= 0; i--) {
     const node = nodes[i];
-    
+
     // Check for drainage nodes (rectangular hit detection)
     if (node.nodeType === 'Drainage' || node.nodeType === 'קולטן') {
       const rectWidth = NODE_RADIUS * sizeScale * 1.8;
       const rectHeight = NODE_RADIUS * sizeScale * 1.3;
       const halfWidth = rectWidth / 2 + 2 + extra;
       const halfHeight = rectHeight / 2 + 2 + extra;
-      
+
       if (Math.abs(x - node.x) <= halfWidth && Math.abs(y - node.y) <= halfHeight) {
         return node;
       }
@@ -3540,7 +3540,7 @@ if (cancelBtn) {
   cancelBtn.addEventListener('click', () => {
     commitIdInputIfFocused();
     startPanel.style.display = 'none';
-      showToast('בוטל');
+    showToast('בוטל');
   });
 }
 
@@ -3710,11 +3710,11 @@ if (importSketchBtn && importSketchFile) {
 
     try {
       const importedSketch = await importSketchFromJson(file);
-      
+
       // Ask user if they want to replace current sketch or create new
       const hasCurrentSketch = nodes.length > 0 || edges.length > 0;
       let shouldReplace = true;
-      
+
       if (hasCurrentSketch) {
         shouldReplace = confirm(t('alerts.confirmImportReplace'));
         if (!shouldReplace) {
@@ -3723,7 +3723,7 @@ if (importSketchBtn && importSketchFile) {
           return;
         }
       }
-      
+
       // Load the imported sketch
       nodes = importedSketch.nodes;
       edges = importedSketch.edges;
@@ -3731,18 +3731,18 @@ if (importSketchBtn && importSketchFile) {
       creationDate = importedSketch.creationDate;
       currentSketchId = null; // Will get new ID when saved
       currentSketchName = importedSketch.sketchName;
-      
+
       // Recompute node types and save
       computeNodeTypes();
       saveToStorage();
       draw();
       renderDetails();
-      
+
       // Recenter view
-      try { recenterView(); } catch (_) {}
-      
+      try { recenterView(); } catch (_) { }
+
       showToast(t('toasts.sketchImported'));
-      
+
     } catch (error) {
       console.error('Import error:', error);
       alert(t('alerts.importFailed') + '\n' + error.message);
@@ -3950,7 +3950,7 @@ if (langSelect) {
   langSelect.addEventListener('change', () => {
     const value = langSelect.value === 'en' ? 'en' : 'he';
     currentLang = value;
-    try { window.currentLang = currentLang; } catch (_) {}
+    try { window.currentLang = currentLang; } catch (_) { }
     localStorage.setItem('graphSketch.lang', currentLang);
     applyLangToStaticUI();
     // Dispatch custom event for language change (for floating keyboard and other modules)
@@ -3969,7 +3969,7 @@ if (langSelect) {
       if (location.hash === '#/admin') {
         openAdminScreen();
       }
-    } catch (_) {}
+    } catch (_) { }
   });
 }
 
@@ -4194,8 +4194,8 @@ document.addEventListener('keydown', (e) => {
   }
 });
 // Commit node id edit when clicking/tapping anywhere outside the input
-document.addEventListener('mousedown', () => { try { commitIdInputIfFocused(); } catch (_) {} }, true);
-document.addEventListener('touchstart', () => { try { commitIdInputIfFocused(); } catch (_) {} }, true);
+document.addEventListener('mousedown', () => { try { commitIdInputIfFocused(); } catch (_) { } }, true);
+document.addEventListener('touchstart', () => { try { commitIdInputIfFocused(); } catch (_) { } }, true);
 document.addEventListener('keyup', (e) => {
   if (e.code === 'Space') {
     spacePanning = false;
@@ -4286,7 +4286,7 @@ function recenterView() {
 // Recenter button handler
 if (recenterBtn) {
   recenterBtn.addEventListener('click', () => {
-    try { recenterView(); } catch (_) {}
+    try { recenterView(); } catch (_) { }
   });
 }
 
@@ -4296,27 +4296,27 @@ if (recenterBtn) {
  */
 function searchAndCenterNode(searchId) {
   if (!searchId || searchId.toString().trim() === '') return;
-  
+
   const searchIdStr = String(searchId).trim();
-  
+
   // Find the node by ID (case-insensitive partial match)
   const foundNode = nodes.find((n) => String(n.id).toLowerCase().includes(searchIdStr.toLowerCase()));
-  
+
   if (foundNode) {
     // Center the view on the found node
     const rect = canvas.getBoundingClientRect();
     const centerScreen = { x: rect.width / 2, y: rect.height / 2 };
     viewTranslate.x = centerScreen.x - viewScale * foundNode.x;
     viewTranslate.y = centerScreen.y - viewScale * foundNode.y;
-    
+
     // Select the node to highlight it
     selectedNode = foundNode;
     selectedEdge = null;
-    
+
     // Render the details and redraw
     renderDetails();
     scheduleDraw();
-    
+
     // Show success toast
     showToast(t('toasts.nodeFound', String(foundNode.id)) || `שוחה ${foundNode.id} נמצאה`);
   } else {
@@ -4337,7 +4337,7 @@ if (searchNodeInput) {
       searchNodeInput.blur(); // Close mobile keyboard
     }
   });
-  
+
   // Also trigger search on input change (debounced)
   let searchTimeout;
   searchNodeInput.addEventListener('input', (e) => {
@@ -4358,7 +4358,7 @@ if (mobileSearchNodeInput) {
       mobileSearchNodeInput.blur(); // Close mobile keyboard
     }
   });
-  
+
   // Also trigger search on input change (debounced)
   let mobileSearchTimeout;
   mobileSearchNodeInput.addEventListener('input', (e) => {
@@ -4377,14 +4377,14 @@ if (mobileSearchNodeInput) {
 async function init() {
   // Attempt to recover any data from IndexedDB into localStorage if localStorage is empty.
   // Wait for restoration so the UI reflects persisted data on first paint after relaunch.
-  try { await restoreFromIndexedDbIfNeeded(); } catch (_) {}
+  try { await restoreFromIndexedDbIfNeeded(); } catch (_) { }
   // Set default date input to today
   dateInput.value = new Date().toISOString().substr(0, 10);
   migrateSingleSketchToLibraryIfNeeded();
   // Language init
   const savedLang = localStorage.getItem('graphSketch.lang');
   if (savedLang === 'en' || savedLang === 'he') currentLang = savedLang; else currentLang = 'he';
-  try { window.currentLang = currentLang; } catch (_) {}
+  try { window.currentLang = currentLang; } catch (_) { }
   if (langSelect) langSelect.value = currentLang;
   applyLangToStaticUI();
   const hasLib = getLibrary().length > 0;

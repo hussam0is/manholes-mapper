@@ -36,4 +36,4 @@ if (typeof window !== 'undefined') {
 }
 
 // After app scripts load, ensure header height variable is synced
-try { syncHeaderHeightVar(); } catch (_) {}
+try { syncHeaderHeightVar(); } catch (_) { }

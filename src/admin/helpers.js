@@ -28,10 +28,10 @@ export function buildOptionsEditorModal(adminConfig, t, title, cfgKey, specs) {
     <div class="admin-group-content">
       <div class="admin-desc">${t('admin.includeDesc')}</div>
       <div class="admin-checkbox-group">${Object.keys(include).map(k => {
-        const checked = include[k] ? 'checked' : '';
-        const id = `inc_${cfgKey}_${k}`;
-        return `<div class="admin-checkbox-item"><input type="checkbox" data-inc="${cfgKey}:${k}" ${checked} id="${id}"/><label for="${id}">${k}</label></div>`;
-      }).join('')}</div>
+    const checked = include[k] ? 'checked' : '';
+    const id = `inc_${cfgKey}_${k}`;
+    return `<div class="admin-checkbox-item"><input type="checkbox" data-inc="${cfgKey}:${k}" ${checked} id="${id}"/><label for="${id}">${k}</label></div>`;
+  }).join('')}</div>
     </div>
   `;
   body.appendChild(includeDiv);
@@ -49,22 +49,22 @@ export function buildOptionsEditorModal(adminConfig, t, title, cfgKey, specs) {
     <div class="admin-group-content">
       <div class="admin-desc">${t('admin.defaultsDesc')}</div>
       ${specs.map(spec => {
-        const current = defaults[spec.key] ?? '';
-        if (spec.type === 'select') {
-          const opts = adminConfig[cfgKey].options[spec.key] || [];
-          const optionsHtml = [`<option value="">${t('labels.optional')}</option>`].concat(
-            opts.filter(o => o.enabled !== false).map(o => {
-              const value = (spec.valueKind === 'code') ? String(o.code) : String(o.label);
-              const text = String(o.label);
-              return `<option value="${value}">${text}</option>`;
-            })
-          ).join('');
-          const id = `def_${cfgKey}_${spec.key}`;
-          return `<div class="field"><label for="${id}">${spec.label}</label><select id="${id}" data-def="${cfgKey}:${spec.key}">${optionsHtml}</select></div>`;
-        }
-        const id = `def_${cfgKey}_${spec.key}`;
-        return `<div class="field"><label for="${id}">${spec.label}</label><input id="${id}" type="text" value="${current}" data-def="${cfgKey}:${spec.key}" placeholder="${t('admin.placeholders.defaultValue')}"/></div>`;
-      }).join('')}
+    const current = defaults[spec.key] ?? '';
+    if (spec.type === 'select') {
+      const opts = adminConfig[cfgKey].options[spec.key] || [];
+      const optionsHtml = [`<option value="">${t('labels.optional')}</option>`].concat(
+        opts.filter(o => o.enabled !== false).map(o => {
+          const value = (spec.valueKind === 'code') ? String(o.code) : String(o.label);
+          const text = String(o.label);
+          return `<option value="${value}">${text}</option>`;
+        })
+      ).join('');
+      const id = `def_${cfgKey}_${spec.key}`;
+      return `<div class="field"><label for="${id}">${spec.label}</label><select id="${id}" data-def="${cfgKey}:${spec.key}">${optionsHtml}</select></div>`;
+    }
+    const id = `def_${cfgKey}_${spec.key}`;
+    return `<div class="field"><label for="${id}">${spec.label}</label><input id="${id}" type="text" value="${current}" data-def="${cfgKey}:${spec.key}" placeholder="${t('admin.placeholders.defaultValue')}"/></div>`;
+  }).join('')}
     </div>
   `;
   body.appendChild(defaultsDiv);
@@ -74,7 +74,7 @@ export function buildOptionsEditorModal(adminConfig, t, title, cfgKey, specs) {
   optsWrap.innerHTML = specs.filter(s => s.optionsKey).map(spec => {
     const opts = adminConfig[cfgKey].options[spec.optionsKey] || [];
     const rows = opts.map((o) => `<tr>
-      <td class="opt-enabled" data-label="${t('admin.thEnabled')}"><input type="checkbox" ${o.enabled!==false?'checked':''} data-opt-enabled="${cfgKey}:${spec.optionsKey}"/></td>
+      <td class="opt-enabled" data-label="${t('admin.thEnabled')}"><input type="checkbox" ${o.enabled !== false ? 'checked' : ''} data-opt-enabled="${cfgKey}:${spec.optionsKey}"/></td>
       <td class="opt-label" data-label="${t('admin.thLabel')}"><input type="text" value="${o.label}" data-opt-label="${cfgKey}:${spec.optionsKey}"/></td>
       <td class="opt-code" data-label="${t('admin.thCode')}"><input type="text" value="${o.code}" data-opt-code="${cfgKey}:${spec.optionsKey}"/></td>
       <td class="opt-actions" data-label="${t('admin.delete')}"><button class="btn btn-danger btn-sm" title="${t('admin.delete')}" aria-label="${t('admin.delete')}" data-opt-del="${cfgKey}:${spec.optionsKey}">×</button></td>
@@ -126,10 +126,10 @@ export function buildOptionsEditorScreen(adminConfig, t, title, cfgKey, specs) {
     <div class="admin-group-content">
       <div class="admin-desc">${t('admin.includeDesc')}</div>
       ${Object.keys(include).map(k => {
-        const checked = include[k] ? 'checked' : '';
-        const id = `inc_${cfgKey}_${k}`;
-        return `<span style="display:inline-flex;align-items:center;gap:6px;margin-inline-end:10px;"><input id="${id}" type="checkbox" data-inc="${cfgKey}:${k}" ${checked}/><label for="${id}"> ${k}</label></span>`;
-      }).join('')}
+    const checked = include[k] ? 'checked' : '';
+    const id = `inc_${cfgKey}_${k}`;
+    return `<span style="display:inline-flex;align-items:center;gap:6px;margin-inline-end:10px;"><input id="${id}" type="checkbox" data-inc="${cfgKey}:${k}" ${checked}/><label for="${id}"> ${k}</label></span>`;
+  }).join('')}
     </div>
   `;
   section.appendChild(includeDiv);
@@ -147,22 +147,22 @@ export function buildOptionsEditorScreen(adminConfig, t, title, cfgKey, specs) {
     <div class="admin-group-content">
       <div class="admin-desc">${t('admin.defaultsDesc')}</div>
       ${specs.map(spec => {
-        const current = defaults[spec.key] ?? '';
-        if (spec.type === 'select') {
-          const opts = adminConfig[cfgKey].options[spec.key] || [];
-          const optionsHtml = [`<option value="">${t('labels.optional')}</option>`].concat(
-            opts.map(o => {
-              const value = (spec.valueKind === 'code') ? String(o.code) : String(o.label);
-              const text = String(o.label);
-              return `<option value="${value}">${text}</option>`;
-            })
-          ).join('');
-          const id = `def_${cfgKey}_${spec.key}`;
-          return `<div class="field"><label for="${id}">${spec.label}</label><select id="${id}" data-def="${cfgKey}:${spec.key}">${optionsHtml}</select></div>`;
-        }
-        const id = `def_${cfgKey}_${spec.key}`;
-        return `<div class="field"><label for="${id}">${spec.label}</label><input id="${id}" type="text" value="${current}" data-def="${cfgKey}:${spec.key}"/></div>`;
-      }).join('')}
+    const current = defaults[spec.key] ?? '';
+    if (spec.type === 'select') {
+      const opts = adminConfig[cfgKey].options[spec.key] || [];
+      const optionsHtml = [`<option value="">${t('labels.optional')}</option>`].concat(
+        opts.map(o => {
+          const value = (spec.valueKind === 'code') ? String(o.code) : String(o.label);
+          const text = String(o.label);
+          return `<option value="${value}">${text}</option>`;
+        })
+      ).join('');
+      const id = `def_${cfgKey}_${spec.key}`;
+      return `<div class="field"><label for="${id}">${spec.label}</label><select id="${id}" data-def="${cfgKey}:${spec.key}">${optionsHtml}</select></div>`;
+    }
+    const id = `def_${cfgKey}_${spec.key}`;
+    return `<div class="field"><label for="${id}">${spec.label}</label><input id="${id}" type="text" value="${current}" data-def="${cfgKey}:${spec.key}"/></div>`;
+  }).join('')}
     </div>
   `;
   section.appendChild(defaultsDiv);
@@ -172,7 +172,7 @@ export function buildOptionsEditorScreen(adminConfig, t, title, cfgKey, specs) {
   optsWrap.innerHTML = specs.filter(s => s.optionsKey).map(spec => {
     const opts = adminConfig[cfgKey].options[spec.optionsKey] || [];
     const rows = opts.map((o) => `<tr>
-      <td class="opt-enabled" data-label="${t('admin.thEnabled')}"><input type="checkbox" ${o.enabled!==false?'checked':''} data-opt-enabled="${cfgKey}:${spec.optionsKey}"/></td>
+      <td class="opt-enabled" data-label="${t('admin.thEnabled')}"><input type="checkbox" ${o.enabled !== false ? 'checked' : ''} data-opt-enabled="${cfgKey}:${spec.optionsKey}"/></td>
       <td class="opt-label" data-label="${t('admin.thLabel')}"><input type="text" value="${o.label}" data-opt-label="${cfgKey}:${spec.optionsKey}"/></td>
       <td class="opt-code" data-label="${t('admin.thCode')}"><input type="text" value="${o.code}" data-opt-code="${cfgKey}:${spec.optionsKey}"/></td>
       <td class="opt-actions" data-label="${t('admin.delete')}"><button class="btn btn-danger btn-sm" title="${t('admin.delete')}" aria-label="${t('admin.delete')}" data-opt-del="${cfgKey}:${spec.optionsKey}">×</button></td>
@@ -200,5 +200,5 @@ export function buildOptionsEditorScreen(adminConfig, t, title, cfgKey, specs) {
 
   return section;
 }
- 
+
 
