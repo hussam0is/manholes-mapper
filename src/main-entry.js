@@ -3,7 +3,7 @@
 import './utils/toast.js';
 import './serviceWorker/register-sw.js';
 import { i18n as I18N_DICT, createTranslator, isRTL as i18nIsRTL } from './i18n.js';
-import { syncHeaderHeightVar } from './dom/dom-utils.js';
+import { syncHeaderHeightVar, syncAppHeightVar } from './dom/dom-utils.js';
 import * as CONSTS from './state/constants.js';
 import { attachFloatingKeyboard } from './utils/floating-keyboard.js';
 import { initResizableDrawer } from './utils/resizable-drawer.js';
@@ -35,5 +35,7 @@ if (typeof window !== 'undefined') {
   });
 }
 
-// After app scripts load, ensure header height variable is synced
+// After app scripts load, ensure header height and app height variables are synced
+// syncAppHeightVar fixes Android devices (e.g., Samsung Note 10) where 100dvh doesn't work correctly
+try { syncAppHeightVar(); } catch (_) { }
 try { syncHeaderHeightVar(); } catch (_) { }
