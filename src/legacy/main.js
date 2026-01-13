@@ -544,11 +544,7 @@ function openAdminModal() {
     { key: 'cover_diameter', label: t('labels.coverDiameter'), type: 'text' },
     { key: 'access', label: t('labels.access'), type: 'select', optionsKey: 'access', valueKind: 'code' },
     { key: 'accuracy_level', label: t('labels.accuracyLevel'), type: 'select', optionsKey: 'accuracy_level', valueKind: 'code' },
-<<<<<<< HEAD
-
-=======
     { key: 'engineering_status', label: t('labels.nodeEngineeringStatus'), type: 'select', optionsKey: 'engineering_status', valueKind: 'code' },
->>>>>>> origin/claude/fix-admin-settings-page-iTCxS
     { key: 'maintenance_status', label: t('labels.maintenanceStatus'), type: 'select', optionsKey: 'maintenance_status', valueKind: 'code' },
   ]));
   adminContent.appendChild(buildOptionsEditor(t('admin.tabEdges'), 'edges', [
@@ -556,14 +552,10 @@ function openAdminModal() {
     { key: 'edge_type', label: t('labels.edgeType'), type: 'select', optionsKey: 'edge_type', valueKind: 'label' },
     { key: 'line_diameter', label: t('labels.lineDiameter'), type: 'select', optionsKey: 'line_diameter', valueKind: 'label' },
     { key: 'fall_position', label: t('labels.fallPosition'), type: 'select', optionsKey: 'fall_position', valueKind: 'code' },
-<<<<<<< HEAD
-
-=======
     { key: 'engineering_status', label: t('labels.engineeringStatus'), type: 'select', optionsKey: 'engineering_status', valueKind: 'code' },
     { key: 'tail_measurement', label: t('labels.tailMeasure'), type: 'text' },
     { key: 'head_measurement', label: t('labels.headMeasure'), type: 'text' },
     { key: 'fall_depth', label: t('labels.fallDepth'), type: 'text' },
->>>>>>> origin/claude/fix-admin-settings-page-iTCxS
   ]));
 
   // Initialize current default select values
