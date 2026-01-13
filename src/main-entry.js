@@ -2,11 +2,15 @@
 // Load small utilities first so legacy code can rely on them during migration.
 import './utils/toast.js';
 import './serviceWorker/register-sw.js';
+import { injectSpeedInsights } from '@vercel/speed-insights';
 import { i18n as I18N_DICT, createTranslator, isRTL as i18nIsRTL } from './i18n.js';
 import { syncHeaderHeightVar, syncAppHeightVar } from './dom/dom-utils.js';
 import * as CONSTS from './state/constants.js';
 import { attachFloatingKeyboard } from './utils/floating-keyboard.js';
 import { initResizableDrawer } from './utils/resizable-drawer.js';
+
+// Initialize Vercel Speed Insights for performance monitoring
+injectSpeedInsights();
 
 // Provide a translator globally for legacy code if not yet present
 if (typeof window !== 'undefined') {

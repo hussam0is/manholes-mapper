@@ -1805,10 +1805,7 @@ input.floating-keyboard-active {
 
   .admin-content {
     padding: 1rem;
-<<<<<<< HEAD
-=======
     padding-bottom: 100px; /* Space for fixed action bar */
->>>>>>> origin/claude/fix-admin-settings-page-iTCxS
   }
 
   .admin-tabs {
@@ -1823,12 +1820,7 @@ input.floating-keyboard-active {
   .admin-tabs .tab {
     padding: 0.875rem 1rem;
     font-size: 0.9rem;
-<<<<<<< HEAD
-    min-height: 44px;
-    /* Better touch target */
-=======
     min-height: 52px; /* Better touch target */
->>>>>>> origin/claude/fix-admin-settings-page-iTCxS
     white-space: nowrap;
     flex-direction: column;
     gap: 0.25rem;
@@ -1879,14 +1871,9 @@ input.floating-keyboard-active {
   }
 
   .admin-actions .btn {
-<<<<<<< HEAD
-    min-height: 48px;
-    /* iOS recommended touch target */
-=======
     min-height: 50px; /* iOS recommended touch target */
     font-size: 1rem;
     border-radius: 10px;
->>>>>>> origin/claude/fix-admin-settings-page-iTCxS
   }
 
   .admin-import-export {
@@ -1919,15 +1906,9 @@ input.floating-keyboard-active {
   }
 
   .admin-checkbox-item {
-<<<<<<< HEAD
-    padding: 0.75rem;
-    min-height: 48px;
-    /* Better touch target */
-=======
     padding: 0.875rem 0.75rem;
     min-height: 50px; /* Better touch target */
     border-radius: 10px;
->>>>>>> origin/claude/fix-admin-settings-page-iTCxS
   }
 
   .admin-checkbox-item input[type="checkbox"] {
@@ -1969,50 +1950,23 @@ input.floating-keyboard-active {
   /* Improve field spacing on mobile */
   .admin-section .field {
     margin-bottom: 1.25rem;
-<<<<<<< HEAD
-=======
   }
 
   .admin-section .field label {
     font-size: 0.85rem;
     margin-bottom: 0.5rem;
->>>>>>> origin/claude/fix-admin-settings-page-iTCxS
   }
 
   .admin-section input[type="text"],
   .admin-section select {
-<<<<<<< HEAD
-    padding: 0.625rem 0.75rem;
-    font-size: 1rem;
-    /* Prevent zoom on iOS */
-    min-height: 44px;
-  }
-
-  .admin-section label {
-    font-size: 0.9rem;
-  }
-
-  /* Better table scrolling on mobile */
-  .option-table-wrapper {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    margin: -1rem -1rem 1rem;
-    padding: 0 1rem;
-=======
     padding: 0.875rem;
     font-size: 16px; /* Prevent zoom on iOS */
     min-height: 50px;
     border-radius: 10px;
->>>>>>> origin/claude/fix-admin-settings-page-iTCxS
   }
 
   /* Better options table handling on mobile - use card layout */
   .option-table {
-<<<<<<< HEAD
-    font-size: 0.875rem;
-    min-width: 480px;
-    /* Prevent excessive compression */
-=======
     display: block;
     font-size: 0.9rem;
     background: transparent;
@@ -2041,13 +1995,9 @@ input.floating-keyboard-active {
     border-radius: 12px;
     padding: 1rem;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
->>>>>>> origin/claude/fix-admin-settings-page-iTCxS
   }
 
   .option-table td {
-<<<<<<< HEAD
-    padding: 0.6rem 0.5rem;
-=======
     display: flex;
     align-items: center;
     padding: 0;
@@ -2061,7 +2011,6 @@ input.floating-keyboard-active {
     font-size: 0.8rem;
     margin-left: 0.5rem;
     min-width: 50px;
->>>>>>> origin/claude/fix-admin-settings-page-iTCxS
   }
 
   .option-table .opt-enabled {
@@ -2075,41 +2024,20 @@ input.floating-keyboard-active {
     margin-left: 0.75rem;
   }
 
-<<<<<<< HEAD
-  .option-table .opt-code {
-    width: 85px;
-  }
-
-  .option-table .opt-actions {
-    width: 70px;
-=======
   .option-table .opt-enabled::before {
     display: none;
->>>>>>> origin/claude/fix-admin-settings-page-iTCxS
   }
 
   .option-table .opt-label {
     grid-column: 2;
     grid-row: 1;
     width: auto;
-<<<<<<< HEAD
-    min-width: 130px;
-  }
-
-  .option-table .opt-label input[type="text"] {
-    width: 100%;
-    min-width: 120px;
-    padding: 0.5rem 0.6rem;
-    font-size: 1rem;
-    /* Prevent zoom on iOS */
-=======
   }
 
   .option-table .opt-code {
     grid-column: 2;
     grid-row: 2;
     width: auto;
->>>>>>> origin/claude/fix-admin-settings-page-iTCxS
   }
 
   .option-table .opt-actions {
@@ -2125,12 +2053,6 @@ input.floating-keyboard-active {
 
   .option-table .opt-label input[type="text"],
   .option-table .opt-code input[type="text"] {
-<<<<<<< HEAD
-    width: 65px;
-    padding: 0.5rem 0.5rem;
-    font-size: 1rem;
-    /* Prevent zoom on iOS */
-=======
     flex: 1;
     width: 100%;
     min-width: 0;
@@ -2138,7 +2060,6 @@ input.floating-keyboard-active {
     font-size: 16px;
     min-height: 44px;
     border-radius: 8px;
->>>>>>> origin/claude/fix-admin-settings-page-iTCxS
   }
 
   .option-table input[type="checkbox"] {
@@ -2156,23 +2077,11 @@ input.floating-keyboard-active {
   }
 
   .btn-sm {
-<<<<<<< HEAD
-    padding: 0.5rem 0.75rem;
-    font-size: 1.1rem;
-    min-width: 40px;
-    min-height: 40px;
-  }
-
-  .btn-add-option {
-    padding: 0.625rem 1rem;
-    font-size: 0.95rem;
-=======
     padding: 0.6rem 1rem;
     font-size: 1.1rem;
     min-width: 44px;
     min-height: 44px;
     border-radius: 8px;
->>>>>>> origin/claude/fix-admin-settings-page-iTCxS
   }
 
   .custom-row {
@@ -2255,10 +2164,6 @@ input.floating-keyboard-active {
   }
 
   .admin-group {
-<<<<<<< HEAD
-    padding: 0.875rem;
-    margin-bottom: 1rem;
-=======
     padding: 0.75rem;
     margin-bottom: 0.875rem;
     border-radius: 10px;
@@ -2266,24 +2171,10 @@ input.floating-keyboard-active {
 
   .admin-group-toggle {
     padding: 0.5rem 0;
->>>>>>> origin/claude/fix-admin-settings-page-iTCxS
   }
 
   .admin-actions {
     padding: 0.875rem;
-<<<<<<< HEAD
-    gap: 0.625rem;
-  }
-
-  .admin-actions>div {
-    width: 100%;
-  }
-
-  .admin-actions .btn {
-    padding: 0.75rem;
-    font-size: 1rem;
-    width: 100%;
-=======
     gap: 0.5rem;
   }
 
@@ -2301,21 +2192,14 @@ input.floating-keyboard-active {
     padding: 0.75rem 0.5rem;
     font-size: 0.9rem;
     min-height: 48px;
->>>>>>> origin/claude/fix-admin-settings-page-iTCxS
   }
 
   .admin-actions .btn .label {
     font-size: 0.8rem;
   }
 
-<<<<<<< HEAD
-  .option-table thead {
-    display: none;
-    /* Hide headers on very small screens */
-=======
   .admin-actions .btn .material-icons {
     font-size: 1.1rem;
->>>>>>> origin/claude/fix-admin-settings-page-iTCxS
   }
 
   /* Stack checkbox in single column on very small screens */
@@ -2335,21 +2219,6 @@ input.floating-keyboard-active {
 
   /* Simplified option card layout for very small screens */
   .option-table tr {
-<<<<<<< HEAD
-    display: block;
-    background: white;
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
-    padding: 0.875rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .option-table td {
-    display: block;
-    padding: 0.4rem 0;
-    border: none;
-    text-align: left;
-=======
     grid-template-columns: 1fr;
     grid-template-rows: auto;
     padding: 0.875rem;
@@ -2364,7 +2233,6 @@ input.floating-keyboard-active {
     margin-left: 0;
     justify-content: flex-start;
     gap: 0.5rem;
->>>>>>> origin/claude/fix-admin-settings-page-iTCxS
   }
 
   .option-table .opt-enabled::before {
@@ -2373,10 +2241,6 @@ input.floating-keyboard-active {
     font-weight: 600;
     color: var(--color-muted);
     font-size: 0.8rem;
-<<<<<<< HEAD
-    margin-bottom: 0.3rem;
-=======
->>>>>>> origin/claude/fix-admin-settings-page-iTCxS
   }
 
   .option-table .opt-label,
@@ -2387,41 +2251,14 @@ input.floating-keyboard-active {
 
   .option-table .opt-label input[type="text"],
   .option-table .opt-code input[type="text"] {
-<<<<<<< HEAD
-    width: 100%;
-    padding: 0.65rem 0.75rem;
-    font-size: 1rem;
-    min-height: 44px;
-=======
     padding: 0.875rem;
     font-size: 16px;
     min-height: 48px;
     border-radius: 10px;
->>>>>>> origin/claude/fix-admin-settings-page-iTCxS
   }
 
   .option-table .opt-actions button {
     width: 100%;
-<<<<<<< HEAD
-    min-height: 44px;
-    padding: 0.65rem 0.75rem;
-  }
-
-  .btn-add-option {
-    width: 100%;
-    justify-content: center;
-    padding: 0.75rem 1.25rem;
-    font-size: 1rem;
-  }
-
-  /* Improve checkbox items on very small screens */
-  .admin-checkbox-item {
-    padding: 0.75rem 0.875rem;
-  }
-
-  .admin-checkbox-item label {
-    font-size: 1rem;
-=======
     min-height: 48px;
     padding: 0.75rem;
     border-radius: 10px;
@@ -2431,7 +2268,6 @@ input.floating-keyboard-active {
     min-height: 48px;
     font-size: 0.95rem;
     padding: 0.75rem;
->>>>>>> origin/claude/fix-admin-settings-page-iTCxS
   }
 }
 
