@@ -44,6 +44,7 @@ const NUMERIC_DEFAULT_KEYS = new Set([
 
 /**
  * AdminSettings - Unified admin settings UI component
+ * Modern mobile-menu inspired design
  */
 export class AdminSettings {
   /**
@@ -71,17 +72,24 @@ export class AdminSettings {
    */
   render() {
     this.container.innerHTML = '';
+    this.container.className = 'admin-modern-content';
 
-    // Tabs
+    // Tabs (styled like segmented controls)
     const tabs = this._createTabs();
     this.container.appendChild(tabs);
+
+    // Sections container
+    const sectionsWrapper = document.createElement('div');
+    sectionsWrapper.className = 'admin-sections-wrapper';
 
     // Sections
     const nodeSpecs = getNodeSpecs(this.t);
     const edgeSpecs = getEdgeSpecs(this.t);
 
-    this.container.appendChild(this._buildSection(this.t('admin.tabNodes'), 'nodes', nodeSpecs));
-    this.container.appendChild(this._buildSection(this.t('admin.tabEdges'), 'edges', edgeSpecs));
+    sectionsWrapper.appendChild(this._buildSection(this.t('admin.tabNodes'), 'nodes', nodeSpecs));
+    sectionsWrapper.appendChild(this._buildSection(this.t('admin.tabEdges'), 'edges', edgeSpecs));
+
+    this.container.appendChild(sectionsWrapper);
 
     // Initialize values and behavior
     this._initializeDefaults();
@@ -91,114 +99,145 @@ export class AdminSettings {
   }
 
   /**
-   * Create tab buttons
+   * Create tab buttons (segmented control style like mobile menu)
    */
   _createTabs() {
     const tabs = document.createElement('div');
-    tabs.className = 'admin-tabs';
+    tabs.className = 'admin-modern-tabs';
     tabs.innerHTML = `
-      <button class="tab active" data-tab-btn="nodes">
+      <button class="admin-modern-tab active" data-tab-btn="nodes">
         <span class="material-icons">account_tree</span>
-        ${this.t('admin.tabNodes')}
+        <span class="tab-label">${this.t('admin.tabNodes')}</span>
       </button>
-      <button class="tab" data-tab-btn="edges">
+      <button class="admin-modern-tab" data-tab-btn="edges">
         <span class="material-icons">timeline</span>
-        ${this.t('admin.tabEdges')}
+        <span class="tab-label">${this.t('admin.tabEdges')}</span>
       </button>
     `;
     return tabs;
   }
 
   /**
-   * Build a section for nodes or edges
+   * Build a section for nodes or edges (mobile menu style)
    */
   _buildSection(title, cfgKey, specs) {
     const section = document.createElement('div');
-    section.className = 'admin-section';
+    section.className = 'admin-modern-section';
     section.setAttribute('data-tab', cfgKey);
 
-    // Header (for modal style)
-    if (this.showHeader) {
-      const header = document.createElement('div');
-      header.className = 'admin-section-header';
-      const icon = cfgKey === 'nodes' ? 'account_tree' : 'timeline';
-      header.innerHTML = `<h3 class="admin-section-title"><span class="material-icons">${icon}</span>${title}</h3>`;
-      section.appendChild(header);
-    } else {
-      const h3 = document.createElement('h3');
-      h3.className = 'admin-section-title';
-      h3.textContent = title;
-      section.appendChild(h3);
-    }
-
-    const body = document.createElement('div');
-    body.className = 'admin-section-body';
-
     // Include toggles group
-    body.appendChild(this._buildIncludeGroup(cfgKey));
+    section.appendChild(this._buildMenuGroup(
+      this.t('admin.includeTitle'),
+      'checklist',
+      this._buildIncludeContent(cfgKey)
+    ));
 
     // Defaults group
-    body.appendChild(this._buildDefaultsGroup(cfgKey, specs));
+    section.appendChild(this._buildMenuGroup(
+      this.t('admin.defaultsTitle'),
+      'settings',
+      this._buildDefaultsContent(cfgKey, specs)
+    ));
 
     // Options groups
     const optionSpecs = specs.filter(s => s.optionsKey);
     for (const spec of optionSpecs) {
-      body.appendChild(this._buildOptionsGroup(cfgKey, spec));
+      section.appendChild(this._buildMenuGroup(
+        this.t('admin.optionsTitle', spec.label),
+        'list',
+        this._buildOptionsContent(cfgKey, spec)
+      ));
     }
 
-    section.appendChild(body);
     return section;
   }
 
   /**
-   * Build the include checkboxes group
+   * Build a menu group (mobile menu style with label and content)
    */
-  _buildIncludeGroup(cfgKey) {
-    const include = this.config[cfgKey].include;
+  _buildMenuGroup(label, icon, content) {
     const group = document.createElement('div');
-    group.className = 'admin-group';
-
-    const checkboxItems = Object.keys(include).map(k => {
-      const checked = include[k] ? 'checked' : '';
-      const id = `inc_${cfgKey}_${k}`;
-      return `
-        <div class="admin-checkbox-item">
-          <input type="checkbox" data-inc="${cfgKey}:${k}" ${checked} id="${id}"/>
-          <label for="${id}">${k}</label>
-        </div>
-      `;
-    }).join('');
-
-    group.innerHTML = `
-      <button type="button" class="admin-group-toggle" aria-expanded="true">
-        <div class="admin-group-toggle-header">
-          <div class="admin-subtitle">
-            ${this.showHeader ? '<span class="material-icons">checklist</span>' : ''}
-            ${this.t('admin.includeTitle')}
-          </div>
-          <span class="material-icons admin-group-toggle-icon">expand_more</span>
-        </div>
-      </button>
-      <div class="admin-group-content">
-        <div class="admin-desc">${this.t('admin.includeDesc')}</div>
-        <div class="admin-checkbox-group">${checkboxItems}</div>
+    group.className = 'admin-menu-group';
+    
+    // Group header (collapsible toggle)
+    const header = document.createElement('button');
+    header.type = 'button';
+    header.className = 'admin-menu-group-header';
+    header.setAttribute('aria-expanded', 'true');
+    header.innerHTML = `
+      <div class="admin-menu-group-title">
+        <span class="material-icons">${icon}</span>
+        <span>${label}</span>
       </div>
+      <span class="material-icons admin-menu-chevron">expand_more</span>
     `;
-
+    
+    // Group content
+    const contentWrapper = document.createElement('div');
+    contentWrapper.className = 'admin-menu-group-content';
+    contentWrapper.appendChild(content);
+    
+    group.appendChild(header);
+    group.appendChild(contentWrapper);
+    
     return group;
   }
 
   /**
-   * Build the defaults group
+   * Build the include checkboxes content (mobile menu style)
    */
-  _buildDefaultsGroup(cfgKey, specs) {
-    const defaults = this.config[cfgKey].defaults;
-    const group = document.createElement('div');
-    group.className = 'admin-group';
+  _buildIncludeContent(cfgKey) {
+    const include = this.config[cfgKey].include;
+    const content = document.createElement('div');
+    content.className = 'admin-menu-items';
 
-    const fields = specs.map(spec => {
+    const desc = document.createElement('p');
+    desc.className = 'admin-menu-desc';
+    desc.textContent = this.t('admin.includeDesc');
+    content.appendChild(desc);
+
+    const checkboxList = document.createElement('div');
+    checkboxList.className = 'admin-toggle-list';
+    
+    Object.keys(include).forEach(k => {
+      const checked = include[k] ? 'checked' : '';
+      const id = `inc_${cfgKey}_${k}`;
+      const item = document.createElement('label');
+      item.className = 'admin-toggle-item';
+      item.innerHTML = `
+        <span class="admin-toggle-label">${k}</span>
+        <input type="checkbox" data-inc="${cfgKey}:${k}" ${checked} id="${id}" class="admin-toggle-checkbox"/>
+        <span class="admin-toggle-switch"></span>
+      `;
+      checkboxList.appendChild(item);
+    });
+
+    content.appendChild(checkboxList);
+    return content;
+  }
+
+  /**
+   * Build the defaults content (mobile menu style)
+   */
+  _buildDefaultsContent(cfgKey, specs) {
+    const defaults = this.config[cfgKey].defaults;
+    const content = document.createElement('div');
+    content.className = 'admin-menu-items';
+
+    const desc = document.createElement('p');
+    desc.className = 'admin-menu-desc';
+    desc.textContent = this.t('admin.defaultsDesc');
+    content.appendChild(desc);
+
+    const fieldsList = document.createElement('div');
+    fieldsList.className = 'admin-fields-list';
+
+    specs.forEach(spec => {
       const current = defaults[spec.key] ?? '';
       const id = `def_${cfgKey}_${spec.key}`;
+      
+      const field = document.createElement('div');
+      field.className = 'admin-field-item';
 
       if (spec.type === 'select') {
         const opts = this.config[cfgKey].options[spec.key] || [];
@@ -209,128 +248,118 @@ export class AdminSettings {
           })
         ).join('');
 
-        return `
-          <div class="field">
-            <label for="${id}">${spec.label}</label>
-            <select id="${id}" data-def="${cfgKey}:${spec.key}">${optionsHtml}</select>
-          </div>
+        field.innerHTML = `
+          <label for="${id}" class="admin-field-label">${spec.label}</label>
+          <select id="${id}" data-def="${cfgKey}:${spec.key}" class="admin-field-select">${optionsHtml}</select>
+        `;
+      } else {
+        field.innerHTML = `
+          <label for="${id}" class="admin-field-label">${spec.label}</label>
+          <input id="${id}" type="text" value="${current}" data-def="${cfgKey}:${spec.key}" 
+                 placeholder="${this.t('admin.placeholders.defaultValue')}" class="admin-field-input"/>
         `;
       }
 
-      return `
-        <div class="field">
-          <label for="${id}">${spec.label}</label>
-          <input id="${id}" type="text" value="${current}" data-def="${cfgKey}:${spec.key}" 
-                 placeholder="${this.t('admin.placeholders.defaultValue')}"/>
-        </div>
-      `;
-    }).join('');
+      fieldsList.appendChild(field);
+    });
 
-    group.innerHTML = `
-      <button type="button" class="admin-group-toggle" aria-expanded="true">
-        <div class="admin-group-toggle-header">
-          <div class="admin-subtitle">
-            ${this.showHeader ? '<span class="material-icons">settings</span>' : ''}
-            ${this.t('admin.defaultsTitle')}
-          </div>
-          <span class="material-icons admin-group-toggle-icon">expand_more</span>
-        </div>
-      </button>
-      <div class="admin-group-content">
-        <div class="admin-desc">${this.t('admin.defaultsDesc')}</div>
-        ${fields}
-      </div>
-    `;
-
-    return group;
+    content.appendChild(fieldsList);
+    return content;
   }
 
   /**
-   * Build an options group (with mobile-friendly cards)
+   * Build options content (mobile menu style with cards)
    */
-  _buildOptionsGroup(cfgKey, spec) {
+  _buildOptionsContent(cfgKey, spec) {
     const opts = this.config[cfgKey].options[spec.optionsKey] || [];
-    const group = document.createElement('div');
-    group.className = 'admin-group';
+    const content = document.createElement('div');
+    content.className = 'admin-menu-items';
 
-    // Build option cards (mobile-friendly) and table rows (desktop)
-    const cards = opts.map((o, idx) => this._buildOptionCard(cfgKey, spec.optionsKey, o, idx)).join('');
-    const rows = opts.map((o) => this._buildOptionRow(cfgKey, spec.optionsKey, o)).join('');
+    const desc = document.createElement('p');
+    desc.className = 'admin-menu-desc';
+    desc.textContent = this.t('admin.optionsDesc');
+    content.appendChild(desc);
 
-    group.innerHTML = `
-      <button type="button" class="admin-group-toggle" aria-expanded="true">
-        <div class="admin-group-toggle-header">
-          <div class="admin-subtitle">${this.t('admin.optionsTitle', spec.label)}</div>
-          <span class="material-icons admin-group-toggle-icon">expand_more</span>
-        </div>
-      </button>
-      <div class="admin-group-content">
-        <div class="admin-desc">${this.t('admin.optionsDesc')}</div>
-        
-        <!-- Mobile: Option Cards -->
-        <div class="option-cards" data-opt-cards="${cfgKey}:${spec.optionsKey}">
-          ${cards}
-        </div>
-        
-        <!-- Desktop: Table -->
-        <table class="option-table" data-opt-table="${cfgKey}:${spec.optionsKey}">
-          <thead>
-            <tr>
-              <th class="opt-enabled">${this.t('admin.thEnabled')}</th>
-              <th class="opt-label">${this.t('admin.thLabel')}</th>
-              <th class="opt-code">${this.t('admin.thCode')}</th>
-              <th class="opt-actions"></th>
-            </tr>
-          </thead>
-          <tbody data-opt-body="${cfgKey}:${spec.optionsKey}">${rows}</tbody>
-        </table>
-        
-        <div class="admin-options-actions">
-          <button class="btn" data-opt-add="${cfgKey}:${spec.optionsKey}">
-            <span class="material-icons">add</span>
-            ${this.t('admin.addOption')}
-          </button>
-        </div>
-      </div>
+    // Option cards container
+    const cardsContainer = document.createElement('div');
+    cardsContainer.className = 'admin-option-cards';
+    cardsContainer.setAttribute('data-opt-cards', `${cfgKey}:${spec.optionsKey}`);
+    
+    opts.forEach((o, idx) => {
+      cardsContainer.innerHTML += this._buildOptionCard(cfgKey, spec.optionsKey, o, idx);
+    });
+
+    content.appendChild(cardsContainer);
+
+    // Hidden table for desktop (data collection)
+    const table = document.createElement('table');
+    table.className = 'option-table';
+    table.setAttribute('data-opt-table', `${cfgKey}:${spec.optionsKey}`);
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th class="opt-enabled">${this.t('admin.thEnabled')}</th>
+          <th class="opt-label">${this.t('admin.thLabel')}</th>
+          <th class="opt-code">${this.t('admin.thCode')}</th>
+          <th class="opt-actions"></th>
+        </tr>
+      </thead>
+      <tbody data-opt-body="${cfgKey}:${spec.optionsKey}">
+        ${opts.map(o => this._buildOptionRow(cfgKey, spec.optionsKey, o)).join('')}
+      </tbody>
     `;
+    content.appendChild(table);
 
-    return group;
+    // Add button
+    const addBtn = document.createElement('button');
+    addBtn.className = 'admin-add-btn';
+    addBtn.setAttribute('data-opt-add', `${cfgKey}:${spec.optionsKey}`);
+    addBtn.innerHTML = `
+      <span class="material-icons">add_circle</span>
+      <span>${this.t('admin.addOption')}</span>
+    `;
+    content.appendChild(addBtn);
+
+    return content;
   }
 
   /**
-   * Build a single option card (for mobile)
+   * Build a single option card (mobile menu style)
    */
   _buildOptionCard(cfgKey, optKey, option, index) {
     const enabled = option.enabled !== false;
     const checkId = `opt_card_${cfgKey}_${optKey}_${index}`;
 
     return `
-      <div class="option-card" data-option-card="${cfgKey}:${optKey}">
-        <div class="option-card-header">
-          <input type="checkbox" ${enabled ? 'checked' : ''} 
-                 data-opt-card-enabled="${cfgKey}:${optKey}" 
-                 id="${checkId}"
-                 aria-label="${this.t('admin.thEnabled')}"/>
-          <input type="text" class="option-card-label" 
-                 value="${this._escapeHtml(option.label)}" 
-                 data-opt-card-label="${cfgKey}:${optKey}"
-                 placeholder="${this.t('admin.placeholders.newLabel')}"
-                 aria-label="${this.t('admin.thLabel')}"/>
-        </div>
-        <div class="option-card-body">
-          <label>${this.t('admin.thCode')}:</label>
-          <input type="text" class="option-card-code" 
-                 value="${this._escapeHtml(String(option.code))}" 
-                 data-opt-card-code="${cfgKey}:${optKey}"
-                 placeholder="${this.t('admin.placeholders.code')}"
-                 aria-label="${this.t('admin.thCode')}"/>
-        </div>
-        <div class="option-card-actions">
-          <button class="btn btn-danger btn-sm" 
+      <div class="admin-option-card ${enabled ? '' : 'disabled'}" data-option-card="${cfgKey}:${optKey}">
+        <div class="admin-option-card-main">
+          <label class="admin-option-toggle">
+            <input type="checkbox" ${enabled ? 'checked' : ''} 
+                   data-opt-card-enabled="${cfgKey}:${optKey}" 
+                   id="${checkId}"
+                   class="admin-toggle-checkbox"/>
+            <span class="admin-toggle-switch"></span>
+          </label>
+          <div class="admin-option-card-fields">
+            <input type="text" class="admin-option-label-input" 
+                   value="${this._escapeHtml(option.label)}" 
+                   data-opt-card-label="${cfgKey}:${optKey}"
+                   placeholder="${this.t('admin.placeholders.newLabel')}"
+                   aria-label="${this.t('admin.thLabel')}"/>
+            <div class="admin-option-code-row">
+              <span class="admin-option-code-label">${this.t('admin.thCode')}:</span>
+              <input type="text" class="admin-option-code-input" 
+                     value="${this._escapeHtml(String(option.code))}" 
+                     data-opt-card-code="${cfgKey}:${optKey}"
+                     placeholder="${this.t('admin.placeholders.code')}"
+                     aria-label="${this.t('admin.thCode')}"/>
+            </div>
+          </div>
+          <button class="admin-option-delete-btn" 
                   data-opt-card-del="${cfgKey}:${optKey}"
                   title="${this.t('admin.delete')}" 
                   aria-label="${this.t('admin.delete')}">
-            <span class="material-icons">delete</span>
+            <span class="material-icons">close</span>
           </button>
         </div>
         <div class="field-error" style="display:none;"></div>
@@ -404,7 +433,7 @@ export class AdminSettings {
       const target = btn.getAttribute('data-tab-btn');
       this.activeTab = target;
 
-      tabs.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+      tabs.querySelectorAll('.admin-modern-tab').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
 
       this.container.querySelectorAll('[data-tab]').forEach(sec => {
@@ -414,16 +443,16 @@ export class AdminSettings {
   }
 
   /**
-   * Initialize collapsible groups
+   * Initialize collapsible groups (mobile menu style)
    */
   _initializeCollapsibleGroups() {
-    this.container.querySelectorAll('.admin-group-toggle').forEach((toggle) => {
-      toggle.addEventListener('click', () => {
-        const group = toggle.closest('.admin-group');
+    this.container.querySelectorAll('.admin-menu-group-header').forEach((header) => {
+      header.addEventListener('click', () => {
+        const group = header.closest('.admin-menu-group');
         if (!group) return;
 
         const isCollapsed = group.classList.toggle('collapsed');
-        toggle.setAttribute('aria-expanded', !isCollapsed);
+        header.setAttribute('aria-expanded', !isCollapsed);
       });
     });
   }
@@ -447,7 +476,7 @@ export class AdminSettings {
 
     // Delete buttons (cards)
     this.container.querySelectorAll('[data-opt-card-del]').forEach((btn) => {
-      this._attachDeleteHandler(btn, '.option-card');
+      this._attachDeleteHandler(btn, '.admin-option-card');
     });
   }
 
@@ -484,10 +513,6 @@ export class AdminSettings {
 
       const delBtn = tr.querySelector('[data-opt-del]');
       this._attachDeleteHandler(delBtn, 'tr');
-
-      // Focus label input
-      const labelInput = tr.querySelector('[data-opt-label]');
-      if (labelInput) labelInput.focus();
     }
 
     // Add to cards
@@ -500,7 +525,11 @@ export class AdminSettings {
       cardsContainer.appendChild(card);
 
       const cardDelBtn = card.querySelector('[data-opt-card-del]');
-      this._attachDeleteHandler(cardDelBtn, '.option-card');
+      this._attachDeleteHandler(cardDelBtn, '.admin-option-card');
+
+      // Focus label input
+      const labelInput = card.querySelector('.admin-option-label-input');
+      if (labelInput) labelInput.focus();
     }
   }
 

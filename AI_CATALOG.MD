@@ -4,12 +4,14 @@ This file documents the routing logic for the Manhole Mapper application.
 
 ## App Routing Logic
 
-The application uses hash-based routing.
+The application uses hash-based routing with Clerk authentication.
 
-| Path | Description | Page |
-| :--- | :--- | :--- |
-| `#/` | Main application view (Home/Canvas) | Home |
-| `#/admin` | Administration and configuration settings | Admin |
+| Path | Description | Page | Auth Required |
+| :--- | :--- | :--- | :--- |
+| `#/login` | Login page with Clerk SignIn | Login | No |
+| `#/signup` | Sign up page with Clerk SignUp | Signup | No |
+| `#/` | Main application view (Home/Canvas) | Home | Yes |
+| `#/admin` | Administration and configuration settings | Admin | Yes |
 
 ## Main Views & Components
 
@@ -32,10 +34,37 @@ A dedicated screen for advanced configuration:
 - **Floating Keyboard**: A numeric-only on-screen keyboard for mobile users, triggered when numeric inputs are focused.
 - **Toast Notifications**: Used for brief status updates (e.g., "Saved", "Settings Imported").
 
+## Authentication & Cloud Sync
+
+### Authentication (Clerk)
+- **Provider**: Clerk (Email/Password authentication)
+- **Config Files**: 
+  - `src/auth/clerk-provider.jsx` - Clerk React components
+  - `src/auth/auth-guard.js` - Route protection and auth state
+- **Environment Variables**:
+  - `VITE_CLERK_PUBLISHABLE_KEY` - Frontend key
+  - `CLERK_SECRET_KEY` - Backend API key
+
+### Cloud Sync (Vercel Postgres)
+- **Sync Service**: `src/auth/sync-service.js` - Handles cloud synchronization
+- **API Routes** (Vercel Serverless):
+  - `GET /api/sketches` - List user's sketches
+  - `POST /api/sketches` - Create new sketch
+  - `GET /api/sketches/[id]` - Get single sketch
+  - `PUT /api/sketches/[id]` - Update sketch
+  - `DELETE /api/sketches/[id]` - Delete sketch
+
+### Caching Strategy
+1. **On Login**: Fetches sketches from cloud, caches in IndexedDB
+2. **Subsequent Logins**: Loads from cache immediately, syncs in background
+3. **Offline Mode**: Saves to IndexedDB, queues changes for later sync
+4. **Online Sync**: Debounced saves (2s delay) to cloud when editing
+
 ## Key Features
 
 - **Multi-Node Modes**: Quick switching between standard Manholes, Home Nodes, and Drainage Nodes.
-- **Sketch Persistence**: Automatic mirroring of state between `localStorage` and `IndexedDB` for durability.
+- **Sketch Persistence**: Automatic mirroring of state between `localStorage`, `IndexedDB`, and cloud (Vercel Postgres).
+- **Cloud Sync**: Real-time synchronization of sketches when online, with offline queue for changes.
 - **Search**: Top bar search to quickly locate nodes by ID.
 - **Export/Import**: Support for exporting/importing the entire sketch (JSON) or exporting nodes/edges separately (CSV).
 - **Responsive Design**: Includes a mobile-specific overflow menu and optimized touch interactions.

@@ -1,11 +1,16 @@
 import { defineConfig } from 'vite'
 import { existsSync } from 'node:fs'
 import react from '@vitejs/plugin-react'
+import basicSsl from '@vitejs/plugin-basic-ssl'
 
 const hasLocalCerts = existsSync('./manholes-mapper.local+5.pem') && existsSync('./manholes-mapper.local+5-key.pem')
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    // Use basicSsl if local custom certs are not present to ensure HTTPS on IP access
+    !hasLocalCerts ? basicSsl() : []
+  ],
   // Use a relative base so that the built index.html references JS/CSS using
   // relative URLs.  This makes it possible to serve the app from a file
   // system or arbitrary path (including on mobile devices) without broken
@@ -36,10 +41,7 @@ export default defineConfig({
   },
   server: {
     host: true,        // binds to 0.0.0.0
-    https: hasLocalCerts ? {
-      cert: './manholes-mapper.local+5.pem',
-      key: './manholes-mapper.local+5-key.pem',
-    } : false,
+    https: true,       // Force HTTPS for secure context
     // Use custom HMR settings only when running with local HTTPS
     hmr: hasLocalCerts ? {
       protocol: 'wss',
@@ -49,10 +51,7 @@ export default defineConfig({
   },
   preview: {
     host: true,
-    https: hasLocalCerts ? {
-      cert: './manholes-mapper.local+5.pem',
-      key: './manholes-mapper.local+5-key.pem',
-    } : false
+    https: true
   }
 })
 

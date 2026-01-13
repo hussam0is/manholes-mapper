@@ -602,9 +602,169 @@ if (mobileAdminBtn) {
   mobileAdminBtn.addEventListener('click', openAdminFromMobile);
   try { mobileAdminBtn.addEventListener('touchend', openAdminFromMobile, { passive: false }); } catch (_) { mobileAdminBtn.addEventListener('touchend', openAdminFromMobile); }
 }
-// Simple hash routing for admin screen
+// DOM references for login
+const loginPanel = document.getElementById('loginPanel');
+const authLoadingOverlay = document.getElementById('authLoadingOverlay');
+const clerkAuthContainer = document.getElementById('clerkAuthContainer');
+const loginTitle = document.getElementById('loginTitle');
+const loginSubtitle = document.getElementById('loginSubtitle');
+const loginLoadingText = document.getElementById('loginLoadingText');
+const authLoadingText = document.getElementById('authLoadingText');
+const userButtonContainer = document.getElementById('userButtonContainer');
+
+// Show/hide login panel
+function showLoginPanel() {
+  if (loginPanel) {
+    loginPanel.style.display = 'flex';
+    document.body.classList.add('show-login');
+  }
+  // Update login panel text based on language
+  if (loginTitle) loginTitle.textContent = t('auth.loginTitle');
+  if (loginSubtitle) loginSubtitle.textContent = t('auth.loginSubtitle');
+  if (loginLoadingText) loginLoadingText.textContent = t('auth.loading');
+  
+  // Mount Clerk SignIn when ready
+  mountClerkSignIn();
+}
+
+function hideLoginPanel() {
+  if (loginPanel) {
+    loginPanel.style.display = 'none';
+    document.body.classList.remove('show-login');
+  }
+}
+
+function showAuthLoading() {
+  if (authLoadingOverlay) {
+    authLoadingOverlay.style.display = 'flex';
+    if (authLoadingText) authLoadingText.textContent = t('auth.checkingAuth');
+  }
+}
+
+function hideAuthLoading() {
+  if (authLoadingOverlay) {
+    authLoadingOverlay.style.display = 'none';
+  }
+}
+
+// Mount Clerk SignIn component
+function mountClerkSignIn() {
+  if (!clerkAuthContainer) return;
+  
+  // Wait for Clerk to be ready
+  const clerk = window.__clerk;
+  if (clerk && clerk.loaded) {
+    // Clear loading state
+    clerkAuthContainer.innerHTML = '';
+    clerk.mountSignIn(clerkAuthContainer, {
+      routing: 'hash',
+      signUpUrl: '#/signup',
+      afterSignInUrl: '#/',
+      afterSignUpUrl: '#/',
+    });
+  } else {
+    // Wait for clerk-loaded event
+    window.addEventListener('clerk-loaded', (e) => {
+      const { clerk: loadedClerk } = e.detail;
+      if (loadedClerk && clerkAuthContainer) {
+        clerkAuthContainer.innerHTML = '';
+        loadedClerk.mountSignIn(clerkAuthContainer, {
+          routing: 'hash',
+          signUpUrl: '#/signup',
+          afterSignInUrl: '#/',
+          afterSignUpUrl: '#/',
+        });
+      }
+    }, { once: true });
+  }
+}
+
+// Mount Clerk SignUp component
+function mountClerkSignUp() {
+  if (!clerkAuthContainer) return;
+  
+  const clerk = window.__clerk;
+  if (clerk && clerk.loaded) {
+    clerkAuthContainer.innerHTML = '';
+    clerk.mountSignUp(clerkAuthContainer, {
+      routing: 'hash',
+      signInUrl: '#/login',
+      afterSignInUrl: '#/',
+      afterSignUpUrl: '#/',
+    });
+  } else {
+    window.addEventListener('clerk-loaded', (e) => {
+      const { clerk: loadedClerk } = e.detail;
+      if (loadedClerk && clerkAuthContainer) {
+        clerkAuthContainer.innerHTML = '';
+        loadedClerk.mountSignUp(clerkAuthContainer, {
+          routing: 'hash',
+          signInUrl: '#/login',
+          afterSignInUrl: '#/',
+          afterSignUpUrl: '#/',
+        });
+      }
+    }, { once: true });
+  }
+}
+
+// Update user button visibility
+function updateUserButtonVisibility(isSignedIn) {
+  if (userButtonContainer) {
+    userButtonContainer.style.display = isSignedIn ? 'flex' : 'none';
+  }
+}
+
+// Simple hash routing for admin screen and login
 function handleRoute() {
-  const isAdmin = (location.hash === '#/admin');
+  const hash = location.hash || '#/';
+  const isAdmin = (hash === '#/admin');
+  const isLogin = (hash === '#/login');
+  const isSignup = (hash === '#/signup');
+  
+  // Get auth state if available
+  const authState = window.authGuard?.getAuthState?.() || { isLoaded: false, isSignedIn: false };
+  const hasClerkKey = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+  
+  console.log('handleRoute:', { hash, isLoaded: authState.isLoaded, isSignedIn: authState.isSignedIn });
+  
+  // If Clerk is configured but not yet loaded, show loading
+  if (hasClerkKey && !authState.isLoaded) {
+    showAuthLoading();
+    return;
+  }
+  
+  hideAuthLoading();
+  
+  // Handle login/signup routes
+  if (isLogin || isSignup) {
+    // If already signed in, redirect to home
+    if (authState.isSignedIn) {
+      location.hash = '#/';
+      return;
+    }
+    showLoginPanel();
+    if (isSignup) {
+      mountClerkSignUp();
+      if (loginTitle) loginTitle.textContent = t('auth.signupTitle');
+      if (loginSubtitle) loginSubtitle.textContent = t('auth.signupSubtitle');
+    } else {
+      mountClerkSignIn();
+    }
+    return;
+  }
+  
+  // For protected routes, check authentication (only if Clerk is configured)
+  if (hasClerkKey && !authState.isSignedIn) {
+    location.hash = '#/login';
+    return;
+  }
+  
+  // Hide login panel for authenticated routes
+  hideLoginPanel();
+  updateUserButtonVisibility(authState.isSignedIn);
+  
+  // Handle admin route
   if (isAdmin) {
     try { document.body.classList.add('admin-screen'); } catch (_) { }
     // Prefer separate screen over modal
@@ -615,9 +775,22 @@ function handleRoute() {
     try { closeAdminScreen(); } catch (_) { }
   }
 }
+
+// Listen for auth state changes to re-route
+if (window.authGuard?.onAuthStateChange) {
+  window.authGuard.onAuthStateChange((state) => {
+    handleRoute();
+    updateUserButtonVisibility(state.isSignedIn);
+  });
+}
+
 window.addEventListener('hashchange', handleRoute);
-// Initialize route on load
-try { handleRoute(); } catch (_) { }
+// Expose handleRoute globally so main-entry.js can call it
+window.handleRoute = handleRoute;
+// Initialize route on load (with slight delay to allow Clerk to initialize)
+setTimeout(() => {
+  try { handleRoute(); } catch (_) { }
+}, 100);
 if (adminCancelBtn) adminCancelBtn.addEventListener('click', () => {
   closeAdminModal();
   closeAdminScreen();
@@ -1312,6 +1485,18 @@ function saveToStorage() {
   if (autosaveEnabled) {
     saveToLibrary();
   }
+  // Trigger cloud sync if authenticated and online
+  if (currentSketchId && window.syncService?.debouncedSyncToCloud) {
+    const sketchForSync = {
+      id: currentSketchId,
+      name: currentSketchName,
+      creationDate: creationDate,
+      nodes: nodes,
+      edges: edges,
+      adminConfig: typeof adminConfig !== 'undefined' ? adminConfig : {},
+    };
+    window.syncService.debouncedSyncToCloud(sketchForSync);
+  }
 }
 
 // Debounced saver to reduce jank on mobile while typing
@@ -1473,6 +1658,10 @@ function deleteFromLibrary(sketchId) {
   }
   // Remove from IndexedDB
   idbDeleteRecordCompat(sketchId);
+  // Remove from cloud if sync service is available
+  if (window.syncService?.deleteSketchEverywhere) {
+    window.syncService.deleteSketchEverywhere(sketchId).catch(console.error);
+  }
 }
 
 function migrateSingleSketchToLibraryIfNeeded() {
@@ -1505,39 +1694,143 @@ function migrateSingleSketchToLibraryIfNeeded() {
   }
 }
 
+// Sync status UI elements
+const syncStatusBar = document.getElementById('syncStatusBar');
+const syncStatusText = document.getElementById('syncStatusText');
+const syncStatusIcon = syncStatusBar?.querySelector('.sync-icon');
+
+// Update sync status UI
+function updateSyncStatusUI(state) {
+  if (!syncStatusBar) return;
+  
+  const authState = window.authGuard?.getAuthState?.() || {};
+  if (!authState.isSignedIn) {
+    syncStatusBar.style.display = 'none';
+    return;
+  }
+  
+  syncStatusBar.style.display = 'flex';
+  
+  // Remove all state classes
+  syncStatusBar.classList.remove('syncing', 'offline', 'error');
+  if (syncStatusIcon) syncStatusIcon.classList.remove('spin');
+  
+  if (!state.isOnline) {
+    syncStatusBar.classList.add('offline');
+    if (syncStatusIcon) syncStatusIcon.textContent = 'cloud_off';
+    if (syncStatusText) syncStatusText.textContent = t('auth.offline');
+  } else if (state.isSyncing) {
+    syncStatusBar.classList.add('syncing');
+    if (syncStatusIcon) {
+      syncStatusIcon.textContent = 'sync';
+      syncStatusIcon.classList.add('spin');
+    }
+    if (syncStatusText) syncStatusText.textContent = t('auth.syncing');
+  } else if (state.error) {
+    syncStatusBar.classList.add('error');
+    if (syncStatusIcon) syncStatusIcon.textContent = 'cloud_off';
+    if (syncStatusText) syncStatusText.textContent = t('auth.syncError');
+  } else {
+    if (syncStatusIcon) syncStatusIcon.textContent = 'cloud_done';
+    if (state.lastSyncTime) {
+      const timeAgo = formatTimeAgo(state.lastSyncTime);
+      if (syncStatusText) syncStatusText.textContent = t('auth.lastSynced', timeAgo);
+    } else {
+      if (syncStatusText) syncStatusText.textContent = t('auth.synced');
+    }
+  }
+}
+
+// Format time ago string
+function formatTimeAgo(date) {
+  const now = new Date();
+  const diff = now - new Date(date);
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return currentLang === 'he' ? 'עכשיו' : 'just now';
+  if (mins < 60) return currentLang === 'he' ? `לפני ${mins} דקות` : `${mins} min ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return currentLang === 'he' ? `לפני ${hours} שעות` : `${hours} hr ago`;
+  return new Date(date).toLocaleDateString();
+}
+
+// Subscribe to sync state changes
+if (window.syncService?.onSyncStateChange) {
+  window.syncService.onSyncStateChange(updateSyncStatusUI);
+}
+
 function renderHome() {
   if (!homePanel || !sketchListEl) return;
   startPanel.style.display = 'none';
   homePanel.style.display = 'flex';
+  
+  // Update sync status
+  if (window.syncService?.getSyncState) {
+    updateSyncStatusUI(window.syncService.getSyncState());
+  }
+  
   const lib = getLibrary();
   sketchListEl.innerHTML = '';
   if (lib.length === 0) {
     const empty = document.createElement('div');
-    empty.textContent = t('noSketches');
+    empty.className = 'sketch-list-empty';
+    empty.innerHTML = `
+      <span class="material-icons">inbox</span>
+      <span>${t('noSketches')}</span>
+    `;
     sketchListEl.appendChild(empty);
   } else {
     lib.forEach((rec) => {
       const item = document.createElement('div');
-      item.style.border = '1px solid var(--color-border)';
-      item.style.borderRadius = '8px';
-      item.style.padding = '0.5rem';
-      item.style.marginBottom = '0.5rem';
+      const isCurrentSketch = rec.id === currentSketchId;
+      item.className = `sketch-card${isCurrentSketch ? ' sketch-card-active' : ''}`;
       const displayName = rec.name && String(rec.name).trim().length > 0 ? rec.name : null;
       const title = displayName || t('listTitle', rec.id.slice(-6), (rec.creationDate || rec.createdAt));
-      const isCurrentSketch = rec.id === currentSketchId;
+      const nodeCount = (rec.nodes || []).length;
+      const edgeCount = (rec.edges || []).length;
       item.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-          <div>
-            <div class="sketch-title" data-id="${rec.id}" style="font-weight:bold;cursor:text;">${title}</div>
-            <div style="font-size:0.85rem;color:var(--color-muted);">${t('listUpdated', new Date(rec.updatedAt || rec.createdAt).toLocaleString())}</div>
-            <div style="font-size:0.85rem;color:var(--color-muted);">${t('listCounts', (rec.nodes || []).length, (rec.edges || []).length)}</div>
+        ${isCurrentSketch ? `<div class="sketch-card-active-badge">
+          <span class="material-icons">check_circle</span>
+          <span>${t('listCurrentSketch')}</span>
+        </div>` : ''}
+        <div class="sketch-card-header">
+          <div class="sketch-card-icon${isCurrentSketch ? ' active' : ''}">
+            <span class="material-icons">description</span>
           </div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            <button class="btn" data-action="open" data-id="${rec.id}">${t('listOpen')}</button>
-            <button class="btn" data-action="duplicate" data-id="${rec.id}">${t('listDuplicate')}</button>
-            ${!isCurrentSketch ? `<button class="btn btn-secondary" data-action="importHistory" data-id="${rec.id}">${t('listImportHistory')}</button>` : ''}
-            <button class="btn btn-danger" data-action="delete" data-id="${rec.id}">${t('listDelete')}</button>
+          <div class="sketch-card-info">
+            <div class="sketch-card-title sketch-title" data-id="${rec.id}">${title}</div>
+            <div class="sketch-card-meta">
+              <span class="material-icons">schedule</span>
+              ${t('listUpdated', new Date(rec.updatedAt || rec.createdAt).toLocaleString())}
+            </div>
           </div>
+        </div>
+        <div class="sketch-card-stats">
+          <div class="sketch-stat">
+            <span class="material-icons">account_tree</span>
+            <span>${nodeCount}</span>
+          </div>
+          <div class="sketch-stat">
+            <span class="material-icons">timeline</span>
+            <span>${edgeCount}</span>
+          </div>
+        </div>
+        <div class="sketch-card-actions">
+          ${isCurrentSketch ? '' : `<button class="sketch-action-btn sketch-action-primary" data-action="open" data-id="${rec.id}">
+            <span class="material-icons">open_in_new</span>
+            <span>${t('listOpen')}</span>
+          </button>`}
+          <button class="sketch-action-btn" data-action="duplicate" data-id="${rec.id}">
+            <span class="material-icons">content_copy</span>
+            <span>${t('listDuplicate')}</span>
+          </button>
+          ${!isCurrentSketch ? `
+          <button class="sketch-action-btn" data-action="importHistory" data-id="${rec.id}">
+            <span class="material-icons">history</span>
+            <span>${t('listImportHistory')}</span>
+          </button>` : ''}
+          <button class="sketch-action-btn sketch-action-danger" data-action="delete" data-id="${rec.id}">
+            <span class="material-icons">delete_outline</span>
+          </button>
         </div>`;
       sketchListEl.appendChild(item);
     });
@@ -3589,6 +3882,13 @@ if (createFromHomeBtn) {
   createFromHomeBtn.addEventListener('click', () => {
     hideHome();
     startPanel.style.display = 'flex';
+  });
+}
+// Close button for home panel
+const homePanelCloseBtn = document.getElementById('homePanelCloseBtn');
+if (homePanelCloseBtn) {
+  homePanelCloseBtn.addEventListener('click', () => {
+    hideHome();
   });
 }
 if (sketchListEl) {
