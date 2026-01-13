@@ -21,6 +21,19 @@
   /* dynamically updated by resizable-drawer.js */
 }
 
+/* Utility classes */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
 body {
   margin: 0;
   /* Use Inter for a modern look with sensible fallbacks */
@@ -57,6 +70,13 @@ header {
   z-index: 200;
   /* keep above any canvas overlays on iPad */
   backdrop-filter: saturate(160%) blur(6px);
+}
+
+/* Hide toolbar labels on medium screens to save horizontal space */
+@media (max-width: 900px) {
+  header #controls .label {
+    display: none;
+  }
 }
 
 @media (max-width: 600px) {
@@ -198,9 +218,83 @@ header h1 {
 
 #controls {
   display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
   align-items: center;
+  overflow-x: auto;
+}
+
+/* Dropdown menu for export actions */
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  min-width: 180px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  z-index: 300;
+  padding: 0.25rem 0;
+  margin-top: 4px;
+}
+
+[dir="rtl"] .dropdown-menu {
+  right: auto;
+  left: 0;
+}
+
+/* RTL support for mobile menu */
+[dir="rtl"] #mobileMenu .mobile-menu-header {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] #mobileMenu .btn {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+
+[dir="rtl"] #mobileMenu .menu-group-label {
+  text-align: right;
+}
+
+.dropdown-menu.open {
+  display: block;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  text-align: start;
+}
+
+.dropdown-item:hover {
+  background: var(--color-bg);
+}
+
+.dropdown-item .material-icons {
+  font-size: 1.1rem;
+  color: var(--color-muted);
+}
+
+.dropdown-divider {
+  margin: 0.25rem 0;
+  border: none;
+  border-top: 1px solid var(--color-border);
 }
 
 /* Professional grouped controls in header */
@@ -383,38 +477,177 @@ header .btn-primary:hover {
 /* Mobile overflow menu container */
 #mobileMenu {
   position: fixed;
-  top: 3.5rem;
-  right: 1rem;
+  top: var(--header-h, 56px);
+  right: 0.75rem;
+  left: 0.75rem;
+  bottom: auto;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 0.5rem;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  padding: 0;
   z-index: 220;
-  /* above header contents */
-  min-width: 180px;
-  max-height: calc(100vh - 4.5rem);
-  overflow-y: auto;
+  /* Responsive max-height using dynamic viewport units with fallbacks */
+  max-height: calc(100vh - var(--header-h, 56px) - 1.5rem);
+  max-height: calc(100dvh - var(--header-h, 56px) - 1.5rem);
+  max-height: calc(var(--app-height, 100dvh) - var(--header-h, 56px) - 1.5rem);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   -webkit-overflow-scrolling: touch;
+  /* Smooth open/close animation */
+  transform-origin: top right;
+  animation: mobileMenuSlideIn 0.2s ease-out;
+}
+
+@keyframes mobileMenuSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Mobile menu scrollable content area */
+#mobileMenu .mobile-menu-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0.5rem;
+  /* Add bottom padding for safe area on devices with home indicators */
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* Mobile menu header with close button */
+#mobileMenu .mobile-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  flex-shrink: 0;
+}
+
+#mobileMenu .mobile-menu-header h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+#mobileMenu .mobile-menu-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--color-muted);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+#mobileMenu .mobile-menu-close:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--color-text);
+}
+
+#mobileMenu .mobile-menu-close .material-icons {
+  font-size: 20px;
+}
+
+/* Group dividers in mobile menu */
+#mobileMenu .menu-divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: 0.5rem 0;
+}
+
+#mobileMenu .menu-group-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0.5rem 0.75rem 0.25rem;
+  margin: 0;
 }
 
 #mobileMenu .btn {
   width: 100%;
   justify-content: flex-start;
   margin-bottom: 0.25rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  min-height: 44px;
+  transition: all 0.15s ease;
+}
+
+#mobileMenu .btn:hover {
+  background: #f1f5f9;
+  transform: none;
+}
+
+#mobileMenu .btn:active {
+  background: #e2e8f0;
+  transform: scale(0.98);
+}
+
+#mobileMenu .btn .material-icons {
+  font-size: 1.2rem;
+  color: var(--color-primary);
+  margin-inline-end: 0.25rem;
 }
 
 #mobileMenu label {
   width: 100%;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   margin-bottom: 0.25rem;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+#mobileMenu label:hover {
+  background: #f1f5f9;
 }
 
 #mobileMenu select {
   width: 100%;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  font-size: 16px; /* Prevent zoom on iOS */
+  border-radius: 8px;
+  margin-bottom: 0.25rem;
+}
+
+/* Mobile menu backdrop overlay */
+.mobile-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 219; /* Just below the menu */
+  backdrop-filter: blur(2px);
+  animation: backdropFadeIn 0.15s ease-out;
+}
+
+@keyframes backdropFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* Base button styling for consistent look across devices */
@@ -1223,6 +1456,27 @@ input.floating-keyboard-active {
   align-items: center;
 }
 
+.admin-action-buttons {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.admin-screen-panel {
+  margin: 1rem auto;
+}
+
+.admin-modal-wrapper {
+  /* Inherits from #adminModal existing styles */
+}
+
+.admin-screen-wrapper {
+  /* Inherits from #adminScreen existing styles */
+}
+
+.admin-title-text {
+  /* Allow title text to be styled separately if needed */
+}
+
 .admin-actions .btn {
   padding: 0.55rem 1.25rem;
   font-size: 0.875rem;
@@ -1363,7 +1617,8 @@ input.floating-keyboard-active {
   display: flex;
   background: #f8fafc;
   border-bottom: 1px solid var(--color-border);
-  margin: 0;
+  /* Negative margins to counteract .admin-content padding and sit flush with header */
+  margin: -1.5rem -1.5rem 1.5rem -1.5rem;
   padding: 0;
   position: sticky;
   top: 0;
@@ -1421,6 +1676,10 @@ input.floating-keyboard-active {
   overflow-y: auto;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+.admin-content > .admin-tabs:first-child {
+  margin-top: -1.5rem;
 }
 
 .admin-section {
@@ -1700,90 +1959,168 @@ input.floating-keyboard-active {
 }
 
 /* Mobile-friendly option cards (alternative to table) */
+/* By default: show table on desktop, hide cards */
+.option-cards {
+  display: none;
+}
+
+.option-table {
+  display: table;
+  width: 100%;
+}
+
 .option-card {
   background: white;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 1rem;
   margin-bottom: 0.75rem;
   transition: all 0.2s ease;
 }
 
 .option-card:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-color: var(--color-primary-soft);
+}
+
+.option-card:last-child {
+  margin-bottom: 0;
 }
 
 .option-card-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 0.75rem;
   margin-bottom: 0.75rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid #f1f5f9;
 }
 
-.option-card-enabled {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.option-card-enabled input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
+.option-card-header input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
   accent-color: var(--color-primary);
+  flex-shrink: 0;
 }
 
-.option-card-enabled label {
-  font-weight: 600;
-  color: var(--color-text);
-  font-size: 0.9rem;
-}
-
-.option-card-field {
-  margin-bottom: 0.75rem;
-}
-
-.option-card-field:last-child {
-  margin-bottom: 0;
-}
-
-.option-card-field label {
-  display: block;
-  font-size: 0.85rem;
-  color: var(--color-muted);
-  margin-bottom: 0.25rem;
-  font-weight: 500;
-}
-
-.option-card-field input[type="text"] {
-  width: 100%;
-  padding: 0.75rem;
+.option-card-header .option-card-label {
+  flex: 1;
+  padding: 0.625rem 0.75rem;
   border: 1px solid var(--color-border);
-  border-radius: 6px;
-  font-size: 0.95rem;
-  box-sizing: border-box;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  background: #f8fafc;
   transition: all 0.2s ease;
 }
 
-.option-card-field input[type="text"]:focus {
+.option-card-header .option-card-label:focus {
   outline: none;
   border-color: var(--color-primary);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.option-card-body {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.option-card-body label {
+  font-size: 0.875rem;
+  color: var(--color-muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.option-card-body .option-card-code {
+  flex: 1;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: #f8fafc;
+  max-width: 120px;
+  transition: all 0.2s ease;
+}
+
+.option-card-body .option-card-code:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background: white;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .option-card-actions {
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.5rem;
   border-top: 1px solid #f1f5f9;
 }
 
 .option-card-actions button {
-  width: 100%;
-  padding: 0.75rem;
-  font-size: 0.95rem;
-  min-height: 44px;
-  /* iOS touch target size */
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.option-card-actions button .material-icons {
+  font-size: 1.1rem;
+}
+
+/* Admin options actions (add button) */
+.admin-options-actions {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.admin-options-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.admin-options-actions .btn .material-icons {
+  font-size: 1.125rem;
+}
+
+/* Validation error styles */
+.field-error {
+  color: #dc2626;
+  font-size: 0.8rem;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+input.invalid,
+select.invalid {
+  border-color: #dc2626 !important;
+  background-color: #fef2f2;
+}
+
+input.invalid:focus,
+select.invalid:focus {
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15) !important;
+}
+
+/* Option card validation */
+.option-card.invalid {
+  border-color: #dc2626;
+  background-color: #fef2f2;
+}
+
+.option-card .field-error {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #fef2f2;
+  border-radius: 6px;
 }
 
 /* Responsive design for admin interface */
@@ -1815,6 +2152,8 @@ input.floating-keyboard-active {
     top: 0;
     z-index: 10;
     flex-shrink: 0;
+    /* Match .admin-content padding: 1rem */
+    margin: -1rem -1rem 1rem -1rem;
   }
 
   .admin-tabs .tab {
@@ -1888,14 +2227,14 @@ input.floating-keyboard-active {
     justify-content: center;
   }
 
-  .admin-actions > div:last-child {
+  .admin-action-buttons {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0.5rem;
     width: 100%;
   }
 
-  .admin-actions > div:last-child .btn {
+  .admin-action-buttons .btn {
     width: 100%;
     justify-content: center;
   }
@@ -1927,6 +2266,53 @@ input.floating-keyboard-active {
     display: block;
     padding: 0.75rem 0;
     margin-bottom: 0.5rem;
+  }
+
+  /* Show cards on mobile, hide tables */
+  .option-cards {
+    display: block;
+  }
+
+  .option-table {
+    display: none;
+  }
+
+  .option-card {
+    padding: 1rem;
+  }
+
+  .option-card-header {
+    margin-bottom: 0.625rem;
+  }
+
+  .option-card-header .option-card-label {
+    font-size: 16px; /* Prevent iOS zoom */
+    padding: 0.75rem;
+    min-height: 48px;
+  }
+
+  .option-card-body .option-card-code {
+    font-size: 16px; /* Prevent iOS zoom */
+    padding: 0.625rem;
+    min-height: 44px;
+    max-width: none;
+    flex: 1;
+  }
+
+  .option-card-actions button {
+    min-height: 44px;
+    padding: 0.625rem 1rem;
+  }
+
+  .admin-options-actions {
+    margin-top: 0.75rem;
+  }
+
+  .admin-options-actions .btn {
+    width: 100%;
+    justify-content: center;
+    min-height: 48px;
+    font-size: 1rem;
   }
 
   .admin-group {
@@ -2141,6 +2527,11 @@ input.floating-keyboard-active {
     padding-bottom: 120px;
   }
 
+  .admin-tabs {
+    /* Match .admin-content padding: 0.75rem */
+    margin: -0.75rem -0.75rem 1rem -0.75rem;
+  }
+
   .admin-tabs .tab {
     padding: 0.75rem 0.875rem;
     font-size: 0.8rem;
@@ -2183,7 +2574,7 @@ input.floating-keyboard-active {
     gap: 0.4rem;
   }
 
-  .admin-actions > div:last-child {
+  .admin-action-buttons {
     grid-template-columns: 1fr 1fr;
     gap: 0.4rem;
   }
@@ -2215,6 +2606,34 @@ input.floating-keyboard-active {
 
   .admin-checkbox-item label {
     font-size: 0.85rem;
+  }
+
+  /* Option cards on very small screens */
+  .option-card {
+    padding: 0.75rem;
+    margin-bottom: 0.625rem;
+  }
+
+  .option-card-header {
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .option-card-header .option-card-label {
+    padding: 0.625rem;
+    font-size: 15px;
+  }
+
+  .option-card-body {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.375rem;
+    padding: 0.375rem 0;
+  }
+
+  .option-card-body .option-card-code {
+    width: 100%;
+    max-width: none;
   }
 
   /* Simplified option card layout for very small screens */
@@ -2779,8 +3198,77 @@ input.floating-keyboard-active {
     box-shadow: none;
   }
 
+  /* Dark mode for mobile menu */
   #mobileMenu {
+    background: #0f172a;
     border-color: var(--color-border);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  }
+
+  #mobileMenu .mobile-menu-header {
+    background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+  }
+
+  #mobileMenu .mobile-menu-header h3 {
+    color: #fff;
+  }
+
+  #mobileMenu .mobile-menu-close {
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  #mobileMenu .mobile-menu-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+  }
+
+  #mobileMenu .mobile-menu-content {
+    background: #0f172a;
+  }
+
+  #mobileMenu .menu-group-label {
+    color: #94a3b8;
+  }
+
+  #mobileMenu .menu-divider {
+    background: #334155;
+  }
+
+  #mobileMenu .btn {
+    background: transparent;
+    color: #e2e8f0;
+    border-color: transparent;
+  }
+
+  #mobileMenu .btn:hover {
+    background: #1e293b;
+  }
+
+  #mobileMenu .btn:active {
+    background: #334155;
+  }
+
+  #mobileMenu .btn .material-icons {
+    color: #60a5fa;
+  }
+
+  #mobileMenu label {
+    color: #e2e8f0;
+  }
+
+  #mobileMenu label:hover {
+    background: #1e293b;
+  }
+
+  #mobileMenu select {
+    background: #1e293b;
+    color: #e2e8f0;
+    border-color: var(--color-border);
+  }
+
+  .mobile-menu-backdrop {
+    background: rgba(0, 0, 0, 0.5);
   }
 
   input[type="text"],

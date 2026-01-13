@@ -33,7 +33,7 @@ import { encodeUtf16LeWithBom } from '../utils/encoding.js';
 import { distanceToSegment } from '../utils/geometry.js';
 import { isNumericId, generateHomeInternalId } from '../graph/id-utils.js';
 import { commitIdInputIfFocused } from '../dom/dom-utils.js';
-import { buildOptionsEditorModal, buildOptionsEditorScreen } from '../admin/helpers.js';
+import { AdminSettings, getNodeSpecs, getEdgeSpecs } from '../admin/admin-settings.js';
 import { drawHouse as primitivesDrawHouse, drawDirectConnectionBadge as primitivesDrawDirectConnectionBadge } from '../features/drawing-primitives.js';
 import { drawInfiniteGrid as drawInfiniteGridFeature, renderEdgeLegend as renderEdgeLegendFeature, drawEdge as drawEdgeFeature, drawNode as drawNodeFeature } from '../features/rendering.js';
 import { drawNodeIcon } from '../features/node-icons.js';
@@ -55,6 +55,9 @@ const exportEdgesBtn = document.getElementById('exportEdgesBtn');
 const exportSketchBtn = document.getElementById('exportSketchBtn');
 const importSketchBtn = document.getElementById('importSketchBtn');
 const importSketchFile = document.getElementById('importSketchFile');
+// Export dropdown menu toggle
+const exportMenuBtn = document.getElementById('exportMenuBtn');
+const exportDropdown = document.getElementById('exportDropdown');
 const detailsContainer = document.getElementById('detailsContainer');
 const startPanel = document.getElementById('startPanel');
 const homePanel = document.getElementById('homePanel');
@@ -112,6 +115,14 @@ const mainEl = document.getElementById('main');
 // Mobile menu elements
 const mobileMenuBtn = document.getElementById('mobileMenuBtn');
 const mobileMenu = document.getElementById('mobileMenu');
+const mobileMenuCloseBtn = document.getElementById('mobileMenuCloseBtn');
+const mobileMenuBackdrop = document.getElementById('mobileMenuBackdrop');
+const mobileMenuTitle = document.getElementById('mobileMenuTitle');
+const menuGroupNav = document.getElementById('menuGroupNav');
+const menuGroupSearch = document.getElementById('menuGroupSearch');
+const menuGroupView = document.getElementById('menuGroupView');
+const menuGroupData = document.getElementById('menuGroupData');
+const menuGroupSettings = document.getElementById('menuGroupSettings');
 const mobileHomeBtn = document.getElementById('mobileHomeBtn');
 const mobileNewSketchBtn = document.getElementById('mobileNewSketchBtn');
 const mobileZoomInBtn = document.getElementById('mobileZoomInBtn');
@@ -519,124 +530,28 @@ function formatSketchDisplayName(rec) {
   return rec.id ? rec.id.replace('sk_', '#') : 'Sketch';
 }
 
+// Shared AdminSettings instance for both modal and screen
+let adminSettingsModal = null;
+let adminSettingsScreen = null;
+
 function openAdminModal() {
   if (!adminModal || !adminContent) return;
-  // Build a professional editor UI for include toggles, defaults, and options
-  const buildOptionsEditor = (title, cfgKey, specs) => buildOptionsEditorModal(adminConfig, t, title, cfgKey, specs);
 
-  adminContent.innerHTML = '';
-  // Enhanced tabs with icons
-  const tabs = document.createElement('div');
-  tabs.className = 'admin-tabs';
-  tabs.innerHTML = `
-    <button class="tab active" data-tab-btn="nodes">
-      <span class="material-icons">account_tree</span>
-      ${t('admin.tabNodes')}
-    </button>
-    <button class="tab" data-tab-btn="edges">
-      <span class="material-icons">timeline</span>
-      ${t('admin.tabEdges')}
-    </button>
-  `;
-  adminContent.appendChild(tabs);
-  // Sections
-  adminContent.appendChild(buildOptionsEditor(t('admin.tabNodes'), 'nodes', [
-    { key: 'material', label: t('labels.coverMaterial'), type: 'select', optionsKey: 'material', valueKind: 'label' },
-    { key: 'cover_diameter', label: t('labels.coverDiameter'), type: 'text' },
-    { key: 'access', label: t('labels.access'), type: 'select', optionsKey: 'access', valueKind: 'code' },
-    { key: 'accuracy_level', label: t('labels.accuracyLevel'), type: 'select', optionsKey: 'accuracy_level', valueKind: 'code' },
-    { key: 'engineering_status', label: t('labels.nodeEngineeringStatus'), type: 'select', optionsKey: 'engineering_status', valueKind: 'code' },
-    { key: 'maintenance_status', label: t('labels.maintenanceStatus'), type: 'select', optionsKey: 'maintenance_status', valueKind: 'code' },
-  ]));
-  adminContent.appendChild(buildOptionsEditor(t('admin.tabEdges'), 'edges', [
-    { key: 'material', label: t('labels.edgeMaterial'), type: 'select', optionsKey: 'material', valueKind: 'label' },
-    { key: 'edge_type', label: t('labels.edgeType'), type: 'select', optionsKey: 'edge_type', valueKind: 'label' },
-    { key: 'line_diameter', label: t('labels.lineDiameter'), type: 'select', optionsKey: 'line_diameter', valueKind: 'label' },
-    { key: 'fall_position', label: t('labels.fallPosition'), type: 'select', optionsKey: 'fall_position', valueKind: 'code' },
-    { key: 'engineering_status', label: t('labels.engineeringStatus'), type: 'select', optionsKey: 'engineering_status', valueKind: 'code' },
-    { key: 'tail_measurement', label: t('labels.tailMeasure'), type: 'text' },
-    { key: 'head_measurement', label: t('labels.headMeasure'), type: 'text' },
-    { key: 'fall_depth', label: t('labels.fallDepth'), type: 'text' },
-  ]));
-
-  // Initialize current default select values
-  adminContent.querySelectorAll('[data-def]').forEach((el) => {
-    const [scope, key] = el.getAttribute('data-def').split(':');
-    const val = adminConfig[scope].defaults[key];
-    if (el.tagName === 'SELECT') {
-      [...el.options].forEach((opt) => { if (opt.value === String(val)) opt.selected = true; });
-    } else {
-      el.value = val == null ? '' : String(val);
-    }
+  // Create or reuse AdminSettings instance
+  adminSettingsModal = new AdminSettings({
+    container: adminContent,
+    config: adminConfig,
+    t,
+    showHeader: true,
   });
-
-  // Activate nodes tab by default
-  adminContent.querySelectorAll('[data-tab="edges"]').forEach(el => { el.style.display = 'none'; });
-  tabs.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-tab-btn]');
-    if (!btn) return;
-    const target = btn.getAttribute('data-tab-btn');
-    tabs.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    adminContent.querySelectorAll('[data-tab]').forEach(sec => {
-      sec.style.display = (sec.getAttribute('data-tab') === target) ? '' : 'none';
-    });
-  });
-
-  // Collapsible admin groups functionality
-  adminContent.querySelectorAll('.admin-group-toggle').forEach((toggle) => {
-    toggle.addEventListener('click', () => {
-      const group = toggle.closest('.admin-group');
-      if (!group) return;
-
-      const isCollapsed = group.classList.toggle('collapsed');
-      toggle.setAttribute('aria-expanded', !isCollapsed);
-    });
-  });
-
-  // Enhanced row add/remove handlers with validation
-  adminContent.querySelectorAll('[data-opt-add]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const [scope, optKey] = btn.getAttribute('data-opt-add').split(':');
-      const tbody = adminContent.querySelector(`[data-opt-body="${scope}:${optKey}"]`);
-      if (!tbody) return;
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td class="opt-enabled" data-label="${t('admin.thEnabled')}"><input type="checkbox" checked data-opt-enabled="${scope}:${optKey}"/></td>
-        <td class="opt-label" data-label="${t('admin.thLabel')}"><input type="text" value="" data-opt-label="${scope}:${optKey}" placeholder="${t('admin.placeholders.newLabel')}"/></td>
-        <td class="opt-code" data-label="${t('admin.thCode')}"><input type="text" value="" data-opt-code="${scope}:${optKey}" placeholder="${t('admin.placeholders.code')}"/></td>
-        <td class="opt-actions" data-label="${t('admin.delete')}"><button class="btn btn-danger btn-sm" title="${t('admin.delete')}" aria-label="${t('admin.delete')}" data-opt-del="${scope}:${optKey}">×</button></td>`;
-      tbody.appendChild(tr);
-
-      // Focus on the label input for immediate editing
-      const labelInput = tr.querySelector('[data-opt-label]');
-      if (labelInput) labelInput.focus();
-
-      const delBtn = tr.querySelector('[data-opt-del]');
-      delBtn.addEventListener('click', () => {
-        if (confirm(t('admin.confirmDeleteOption'))) {
-          tr.remove();
-        }
-      });
-    });
-  });
-  adminContent.querySelectorAll('[data-opt-del]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      if (confirm(t('admin.confirmDeleteOption'))) {
-        const tr = btn.closest('tr');
-        if (tr) tr.remove();
-      }
-    });
-  });
-
-  // Custom fields UI removed
+  adminSettingsModal.render();
 
   adminModal.style.display = 'flex';
-  // Apply localized title if present
+
+  // Apply localized title
   const adminTitleEl = document.getElementById('adminTitle');
   if (adminTitleEl) adminTitleEl.innerHTML = '<span class="material-icons">tune</span>' + t('admin.title');
 
-  // Ensure import/export buttons reflect current language
   applyLangToStaticUI();
 }
 
@@ -647,116 +562,15 @@ function closeAdminModal() {
 // Admin screen (separate view) open/close
 function openAdminScreen() {
   if (!adminScreen || !adminScreenContent) return;
-  // Build UI inside screen content
-  // Build a simple editor UI for include toggles, defaults, and options
-  const buildOptionsEditor = (title, cfgKey, specs) => buildOptionsEditorScreen(adminConfig, t, title, cfgKey, specs);
 
-  adminScreenContent.innerHTML = '';
-  // Tabs
-  const tabs = document.createElement('div');
-  tabs.className = 'admin-tabs';
-  tabs.innerHTML = `
-    <button class="tab active" data-tab-btn="nodes">
-      <span class="material-icons">account_tree</span>
-      ${t('admin.tabNodes')}
-    </button>
-    <button class="tab" data-tab-btn="edges">
-      <span class="material-icons">timeline</span>
-      ${t('admin.tabEdges')}
-    </button>
-  `;
-  adminScreenContent.appendChild(tabs);
-  // Sections
-  adminScreenContent.appendChild(buildOptionsEditor(t('admin.tabNodes'), 'nodes', [
-    { key: 'material', label: t('labels.coverMaterial'), type: 'select', optionsKey: 'material', valueKind: 'label' },
-    { key: 'cover_diameter', label: t('labels.coverDiameter'), type: 'text' },
-    { key: 'access', label: t('labels.access'), type: 'select', optionsKey: 'access', valueKind: 'code' },
-    { key: 'accuracy_level', label: t('labels.accuracyLevel'), type: 'select', optionsKey: 'accuracy_level', valueKind: 'code' },
-    { key: 'engineering_status', label: t('labels.nodeEngineeringStatus'), type: 'select', optionsKey: 'engineering_status', valueKind: 'code' },
-    { key: 'maintenance_status', label: t('labels.maintenanceStatus'), type: 'select', optionsKey: 'maintenance_status', valueKind: 'code' },
-  ]));
-  adminScreenContent.appendChild(buildOptionsEditor(t('admin.tabEdges'), 'edges', [
-    { key: 'material', label: t('labels.edgeMaterial'), type: 'select', optionsKey: 'material', valueKind: 'label' },
-    { key: 'edge_type', label: t('labels.edgeType'), type: 'select', optionsKey: 'edge_type', valueKind: 'label' },
-    { key: 'line_diameter', label: t('labels.lineDiameter'), type: 'select', optionsKey: 'line_diameter', valueKind: 'label' },
-    { key: 'fall_position', label: t('labels.fallPosition'), type: 'select', optionsKey: 'fall_position', valueKind: 'code' },
-    { key: 'engineering_status', label: t('labels.engineeringStatus'), type: 'select', optionsKey: 'engineering_status', valueKind: 'code' },
-    { key: 'tail_measurement', label: t('labels.tailMeasure'), type: 'text' },
-    { key: 'head_measurement', label: t('labels.headMeasure'), type: 'text' },
-    { key: 'fall_depth', label: t('labels.fallDepth'), type: 'text' },
-  ]));
-
-  // Initialize defaults
-  adminScreenContent.querySelectorAll('[data-def]').forEach((el) => {
-    const [scope, key] = el.getAttribute('data-def').split(':');
-    const val = adminConfig[scope].defaults[key];
-    if (el.tagName === 'SELECT') {
-      [...el.options].forEach((opt) => { if (opt.value === String(val)) opt.selected = true; });
-    } else {
-      el.value = val == null ? '' : String(val);
-    }
+  // Create or reuse AdminSettings instance for screen
+  adminSettingsScreen = new AdminSettings({
+    container: adminScreenContent,
+    config: adminConfig,
+    t,
+    showHeader: false, // Screen uses simpler headers
   });
-
-  // Tabs behavior
-  adminScreenContent.querySelectorAll('[data-tab="edges"]').forEach(el => { el.style.display = 'none'; });
-  tabs.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-tab-btn]');
-    if (!btn) return;
-    const target = btn.getAttribute('data-tab-btn');
-    tabs.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    adminScreenContent.querySelectorAll('[data-tab]').forEach(sec => {
-      sec.style.display = (sec.getAttribute('data-tab') === target) ? '' : 'none';
-    });
-  });
-
-  // Collapsible admin groups functionality
-  adminScreenContent.querySelectorAll('.admin-group-toggle').forEach((toggle) => {
-    toggle.addEventListener('click', () => {
-      const group = toggle.closest('.admin-group');
-      if (!group) return;
-
-      const isCollapsed = group.classList.toggle('collapsed');
-      toggle.setAttribute('aria-expanded', !isCollapsed);
-    });
-  });
-
-  // Enhanced row add/remove handlers with validation
-  adminScreenContent.querySelectorAll('[data-opt-add]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const [scope, optKey] = btn.getAttribute('data-opt-add').split(':');
-      const tbody = adminScreenContent.querySelector(`[data-opt-body="${scope}:${optKey}"]`);
-      if (!tbody) return;
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td class="opt-enabled" data-label="${t('admin.thEnabled')}"><input type="checkbox" checked data-opt-enabled="${scope}:${optKey}"/></td>
-        <td class="opt-label" data-label="${t('admin.thLabel')}"><input type="text" value="" data-opt-label="${scope}:${optKey}" placeholder="${t('admin.placeholders.newLabel')}"/></td>
-        <td class="opt-code" data-label="${t('admin.thCode')}"><input type="text" value="" data-opt-code="${scope}:${optKey}" placeholder="${t('admin.placeholders.code')}"/></td>
-        <td class="opt-actions" data-label="${t('admin.delete')}"><button class="btn btn-danger btn-sm" title="${t('admin.delete')}" aria-label="${t('admin.delete')}" data-opt-del="${scope}:${optKey}">×</button></td>`;
-      tbody.appendChild(tr);
-
-      // Focus on the label input for immediate editing
-      const labelInput = tr.querySelector('[data-opt-label]');
-      if (labelInput) labelInput.focus();
-
-      const delBtn = tr.querySelector('[data-opt-del]');
-      delBtn.addEventListener('click', () => {
-        if (confirm(t('admin.confirmDeleteOption'))) {
-          tr.remove();
-        }
-      });
-    });
-  });
-  adminScreenContent.querySelectorAll('[data-opt-del]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      if (confirm(t('admin.confirmDeleteOption'))) {
-        const tr = btn.closest('tr');
-        if (tr) tr.remove();
-      }
-    });
-  });
-
-  // Custom fields UI removed from admin screen
+  adminSettingsScreen.render();
 
   if (adminScreenTitleEl) adminScreenTitleEl.innerHTML = '<span class="material-icons">settings</span>' + t('admin.title');
   if (mainEl) mainEl.style.display = 'none';
@@ -770,7 +584,7 @@ function closeAdminScreen() {
 }
 
 function navigateToAdmin() {
-  try { if (mobileMenu) mobileMenu.style.display = 'none'; } catch (_) { }
+  try { closeMobileMenu(); } catch (_) { }
   try { location.hash = '#/admin'; } catch (_) { }
   try { handleRoute(); } catch (_) { }
 }
@@ -810,44 +624,22 @@ if (adminCancelBtn) adminCancelBtn.addEventListener('click', () => {
   try { if (document.body.classList.contains('admin-screen')) location.hash = '#/'; } catch (_) { }
 });
 if (adminSaveBtn) adminSaveBtn.addEventListener('click', () => {
-  if (!adminContent) return;
-  // Read include toggles
-  adminContent.querySelectorAll('[data-inc]').forEach((el) => {
-    const [scope, key] = el.getAttribute('data-inc').split(':');
-    adminConfig[scope].include[key] = el.checked;
-  });
-  // Read defaults
-  adminContent.querySelectorAll('[data-def]').forEach((el) => {
-    const [scope, key] = el.getAttribute('data-def').split(':');
-    const val = (el.tagName === 'SELECT') ? el.value : el.value;
-    // Treat defaults for selects as label unless spec requested 'code'
-    let stored = val;
-    const numericKeys = new Set(['access', 'accuracy_level', 'fall_position', 'engineering_status', 'maintenance_status']);
-    if (numericKeys.has(key)) {
-      const num = Number(val);
-      // Allow empty default (optional)
-      stored = (val === '' ? '' : (Number.isFinite(num) ? num : 0));
+  if (!adminSettingsModal) return;
+
+  // Validate before saving
+  const validation = adminSettingsModal.validate();
+  if (!validation.valid) {
+    // Scroll to first error
+    if (validation.errors[0]?.field) {
+      validation.errors[0].field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      validation.errors[0].field.focus();
     }
-    adminConfig[scope].defaults[key] = stored;
-  });
-  // Read options
-  adminContent.querySelectorAll('[data-opt-body]').forEach((tbody) => {
-    const [scope, optKey] = tbody.getAttribute('data-opt-body').split(':');
-    const rows = [];
-    tbody.querySelectorAll('tr').forEach((tr) => {
-      const labelInput = tr.querySelector(`[data-opt-label="${scope}:${optKey}"]`);
-      const codeInput = tr.querySelector(`[data-opt-code="${scope}:${optKey}"]`);
-      const enabledInput = tr.querySelector(`[data-opt-enabled="${scope}:${optKey}"]`);
-      if (!labelInput || !codeInput) return;
-      const label = labelInput.value;
-      const codeRaw = codeInput.value;
-      const codeNum = Number(codeRaw);
-      const code = Number.isFinite(codeNum) ? codeNum : codeRaw;
-      const enabled = enabledInput ? !!enabledInput.checked : true;
-      if (String(label).trim() !== '') rows.push({ label, code, enabled });
-    });
-    adminConfig[scope].options[optKey] = rows;
-  });
+    return;
+  }
+
+  // Collect and save configuration
+  const newConfig = adminSettingsModal.collectConfig();
+  Object.assign(adminConfig, newConfig);
   saveAdminConfig();
   closeAdminModal();
   renderDetails();
@@ -976,12 +768,7 @@ if (adminScreenImportBtn && adminScreenImportFile) {
     if (!file) return;
     try {
       // Preserve currently active tab before rebuild
-      const prevTab = (function () {
-        try {
-          const activeBtn = adminScreenContent && adminScreenContent.querySelector('.admin-tabs .tab.active');
-          return activeBtn ? activeBtn.getAttribute('data-tab-btn') : null;
-        } catch (_) { return null; }
-      })();
+      const prevTab = adminSettingsScreen ? adminSettingsScreen.getActiveTab() : 'nodes';
       let text = await file.text();
       if (text && text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
       text = text.trim();
@@ -1014,10 +801,8 @@ if (adminScreenImportBtn && adminScreenImportFile) {
       try { openAdminScreen(); } catch (_) { }
       // Restore previously selected tab if applicable
       try {
-        if (prevTab && prevTab !== 'nodes') {
-          const tabs = adminScreenContent && adminScreenContent.querySelector('.admin-tabs');
-          const btn = tabs && tabs.querySelector(`[data-tab-btn="${prevTab}"]`);
-          if (btn && typeof btn.click === 'function') btn.click();
+        if (prevTab && prevTab !== 'nodes' && adminSettingsScreen) {
+          adminSettingsScreen.setActiveTab(prevTab);
         }
       } catch (_) { }
       // Refresh details panel to reflect updated dropdown options
@@ -1031,38 +816,22 @@ if (adminScreenImportBtn && adminScreenImportFile) {
 
 // Admin screen save/cancel
 if (adminScreenSaveBtn) adminScreenSaveBtn.addEventListener('click', () => {
-  if (!adminScreenContent) return;
-  adminScreenContent.querySelectorAll('[data-inc]').forEach((el) => {
-    const [scope, key] = el.getAttribute('data-inc').split(':');
-    adminConfig[scope].include[key] = el.checked;
-  });
-  adminScreenContent.querySelectorAll('[data-def]').forEach((el) => {
-    const [scope, key] = el.getAttribute('data-def').split(':');
-    let stored = (el.tagName === 'SELECT') ? el.value : el.value;
-    const numericKeys = new Set(['access', 'accuracy_level', 'fall_position', 'engineering_status', 'maintenance_status']);
-    if (numericKeys.has(key)) {
-      const num = Number(stored);
-      stored = (stored === '' ? '' : (Number.isFinite(num) ? num : 0));
+  if (!adminSettingsScreen) return;
+
+  // Validate before saving
+  const validation = adminSettingsScreen.validate();
+  if (!validation.valid) {
+    // Scroll to first error
+    if (validation.errors[0]?.field) {
+      validation.errors[0].field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      validation.errors[0].field.focus();
     }
-    adminConfig[scope].defaults[key] = stored;
-  });
-  adminScreenContent.querySelectorAll('[data-opt-body]').forEach((tbody) => {
-    const [scope, optKey] = tbody.getAttribute('data-opt-body').split(':');
-    const rows = [];
-    tbody.querySelectorAll('tr').forEach((tr) => {
-      const labelInput = tr.querySelector(`[data-opt-label="${scope}:${optKey}"]`);
-      const codeInput = tr.querySelector(`[data-opt-code="${scope}:${optKey}"]`);
-      const enabledInput = tr.querySelector(`[data-opt-enabled="${scope}:${optKey}"]`);
-      if (!labelInput || !codeInput) return;
-      const label = labelInput.value;
-      const codeRaw = codeInput.value;
-      const codeNum = Number(codeRaw);
-      const code = Number.isFinite(codeNum) ? codeNum : codeRaw;
-      const enabled = enabledInput ? !!enabledInput.checked : true;
-      if (String(label).trim() !== '') rows.push({ label, code, enabled });
-    });
-    adminConfig[scope].options[optKey] = rows;
-  });
+    return;
+  }
+
+  // Collect and save configuration
+  const newConfig = adminSettingsScreen.collectConfig();
+  Object.assign(adminConfig, newConfig);
   saveAdminConfig();
   closeAdminScreen();
   try { location.hash = '#/'; } catch (_) { }
@@ -1180,10 +949,27 @@ function applyLangToStaticUI() {
   if (zoomOutBtn) { zoomOutBtn.title = t('zoomOut'); }
   if (sizeIncreaseBtn) { sizeIncreaseBtn.title = t('sizeIncrease'); }
   if (sizeDecreaseBtn) { sizeDecreaseBtn.title = t('sizeDecrease'); }
-  if (exportSketchBtn) { exportSketchBtn.title = t('exportSketch'); }
-  if (importSketchBtn) { importSketchBtn.title = t('importSketch'); }
-  if (exportNodesBtn) { exportNodesBtn.title = t('exportNodes'); }
-  if (exportEdgesBtn) { exportEdgesBtn.title = t('exportEdges'); }
+  if (exportSketchBtn) {
+    exportSketchBtn.title = t('exportSketch');
+    const lbl = exportSketchBtn.querySelector('.dropdown-label');
+    if (lbl) lbl.textContent = t('exportSketch');
+  }
+  if (importSketchBtn) {
+    importSketchBtn.title = t('importSketch');
+    const lbl = importSketchBtn.querySelector('.dropdown-label');
+    if (lbl) lbl.textContent = t('importSketch');
+  }
+  if (exportNodesBtn) {
+    exportNodesBtn.title = t('exportNodes');
+    const lbl = exportNodesBtn.querySelector('.dropdown-label');
+    if (lbl) lbl.textContent = t('exportNodes');
+  }
+  if (exportEdgesBtn) {
+    exportEdgesBtn.title = t('exportEdges');
+    const lbl = exportEdgesBtn.querySelector('.dropdown-label');
+    if (lbl) lbl.textContent = t('exportEdges');
+  }
+  if (exportMenuBtn) { exportMenuBtn.title = t('menu'); }
   setBtnLabel(saveBtn, t('save'));
   if (saveBtn) saveBtn.title = t('save');
   if (autosaveToggle) {
@@ -1199,6 +985,14 @@ function applyLangToStaticUI() {
   if (sidebarCloseBtn) { sidebarCloseBtn.title = t('close'); }
   if (langSelect) { langSelect.title = t('language'); }
   if (mobileMenuBtn) { mobileMenuBtn.title = t('menu'); }
+  // Mobile menu header and group labels
+  if (mobileMenuTitle) { mobileMenuTitle.textContent = t('menu'); }
+  if (mobileMenuCloseBtn) { mobileMenuCloseBtn.title = t('close'); }
+  if (menuGroupNav) { menuGroupNav.textContent = t('menuGroupNav'); }
+  if (menuGroupSearch) { menuGroupSearch.textContent = t('menuGroupSearch'); }
+  if (menuGroupView) { menuGroupView.textContent = t('menuGroupView'); }
+  if (menuGroupData) { menuGroupData.textContent = t('menuGroupData'); }
+  if (menuGroupSettings) { menuGroupSettings.textContent = t('menuGroupSettings'); }
   if (sidebarTitleEl) sidebarTitleEl.textContent = t('sidebarTitle');
   if (detailsDefaultEl) detailsDefaultEl.textContent = t('detailsDefault');
   if (startTitleEl) startTitleEl.textContent = t('startTitle');
@@ -3686,6 +3480,24 @@ if (exportEdgesBtn) {
   });
 }
 
+// Export dropdown toggle
+if (exportMenuBtn && exportDropdown) {
+  exportMenuBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    exportDropdown.classList.toggle('open');
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', () => {
+    exportDropdown.classList.remove('open');
+  });
+
+  // Close dropdown when clicking a dropdown item
+  exportDropdown.addEventListener('click', () => {
+    exportDropdown.classList.remove('open');
+  });
+}
+
 // Export complete sketch as JSON
 if (exportSketchBtn) {
   exportSketchBtn.addEventListener('click', () => {
@@ -3988,17 +3800,40 @@ if (langSelect) {
 }
 
 // === Mobile menu controls ===
+// Helper to show the mobile menu with backdrop
+function openMobileMenu() {
+  if (mobileMenu) mobileMenu.style.display = 'flex';
+  if (mobileMenuBackdrop) mobileMenuBackdrop.style.display = 'block';
+  document.body.style.overflow = 'hidden'; // Prevent background scroll
+}
+
+// Helper to hide the mobile menu and backdrop
+function closeMobileMenu() {
+  if (mobileMenu) mobileMenu.style.display = 'none';
+  if (mobileMenuBackdrop) mobileMenuBackdrop.style.display = 'none';
+  document.body.style.overflow = ''; // Restore scrolling
+}
+
 // Toggle the overflow menu on small screens
 if (mobileMenuBtn && mobileMenu) {
   mobileMenuBtn.addEventListener('click', () => {
-    const isOpen = mobileMenu.style.display === 'block';
-    mobileMenu.style.display = isOpen ? 'none' : 'block';
+    const isOpen = mobileMenu.style.display === 'flex' || mobileMenu.style.display === 'block';
+    if (isOpen) {
+      closeMobileMenu();
+    } else {
+      openMobileMenu();
+    }
   });
 }
 
-// Helper to hide the mobile menu after selecting an action
-function closeMobileMenu() {
-  if (mobileMenu) mobileMenu.style.display = 'none';
+// Close button in mobile menu header
+if (mobileMenuCloseBtn) {
+  mobileMenuCloseBtn.addEventListener('click', closeMobileMenu);
+}
+
+// Close menu when clicking the backdrop
+if (mobileMenuBackdrop) {
+  mobileMenuBackdrop.addEventListener('click', closeMobileMenu);
 }
 
 // Wire up mobile buttons to mimic their desktop counterparts
