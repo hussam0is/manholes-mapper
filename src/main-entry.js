@@ -9,8 +9,11 @@ import * as CONSTS from './state/constants.js';
 import { attachFloatingKeyboard } from './utils/floating-keyboard.js';
 import { initResizableDrawer } from './utils/resizable-drawer.js';
 
-// Initialize Vercel Speed Insights for performance monitoring
-injectSpeedInsights();
+// Initialize Vercel Speed Insights only when deployed on Vercel (production)
+// The /_vercel/speed-insights/script.js endpoint only exists on Vercel's platform
+if (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')) {
+  injectSpeedInsights();
+}
 
 // Provide a translator globally for legacy code if not yet present
 if (typeof window !== 'undefined') {
