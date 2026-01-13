@@ -151,7 +151,7 @@ export function buildOptionsEditorScreen(adminConfig, t, title, cfgKey, specs) {
     if (spec.type === 'select') {
       const opts = adminConfig[cfgKey].options[spec.key] || [];
       const optionsHtml = [`<option value="">${t('labels.optional')}</option>`].concat(
-        opts.map(o => {
+        opts.filter(o => o.enabled !== false).map(o => {
           const value = (spec.valueKind === 'code') ? String(o.code) : String(o.label);
           const text = String(o.label);
           return `<option value="${value}">${text}</option>`;
