@@ -31,8 +31,15 @@ body {
   flex-direction: column;
   /* Use the dynamic viewport height unit to accommodate mobile browser chrome. 100vh on mobile
    * includes the address bar on load which causes the layout to resize when the bar hides.
-   * 100dvh (supported in modern browsers) uses the real viewport height without UI chrome. */
+   * 100dvh (supported in modern browsers) uses the real viewport height without UI chrome.
+   * Fallback chain: CSS variable (JS-calculated) -> 100dvh -> 100vh for maximum compatibility. */
+  height: 100vh; /* Fallback for browsers that don't support dvh */
   height: 100dvh;
+  height: var(--app-height, 100dvh); /* JS-calculated height for problematic Android devices */
+  min-height: 0; /* Allow flex children to shrink properly */
+  max-height: 100vh; /* Prevent overflow on problematic browsers */
+  max-height: 100dvh;
+  max-height: var(--app-height, 100dvh);
   overscroll-behavior-y: contain;
   /* reduce pull-to-refresh on mobile */
 }
@@ -564,7 +571,8 @@ select.btn:focus-visible {
 }
 
 #canvasContainer {
-  flex: 1;
+  flex: 1 1 0%; /* Explicit flex-basis to ensure proper distribution */
+  min-height: 0; /* Allow shrinking in flex context */
   position: relative;
   background: var(--color-surface);
   overflow: hidden;
@@ -761,7 +769,11 @@ canvas {
     top: var(--header-h, 56px);
     right: 0;
     height: calc(100vh - var(--header-h, 56px));
+    height: calc(100dvh - var(--header-h, 56px));
+    height: calc(var(--app-height, 100dvh) - var(--header-h, 56px));
+    max-height: calc(100vh - var(--header-h, 56px));
     max-height: calc(100dvh - var(--header-h, 56px));
+    max-height: calc(var(--app-height, 100dvh) - var(--header-h, 56px));
     transform: translate3d(100%, 0, 0);
     transition: transform 260ms cubic-bezier(.2, .8, .2, 1);
     will-change: transform;
