@@ -1,9 +1,11 @@
 import { defineConfig } from 'vite'
 import { existsSync } from 'node:fs'
+import react from '@vitejs/plugin-react'
 
 const hasLocalCerts = existsSync('./manholes-mapper.local+5.pem') && existsSync('./manholes-mapper.local+5-key.pem')
 
 export default defineConfig({
+  plugins: [react()],
   // Use a relative base so that the built index.html references JS/CSS using
   // relative URLs.  This makes it possible to serve the app from a file
   // system or arbitrary path (including on mobile devices) without broken
