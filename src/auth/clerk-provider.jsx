@@ -37,8 +37,9 @@ export function initClerkAuth() {
 /**
  * Mount the SignIn component to a DOM element
  * @param {HTMLElement} container - The container to mount SignIn into
+ * @param {Object} props - Optional properties for the SignIn component
  */
-export function mountSignIn(container) {
+export function mountSignIn(container, props = {}) {
   if (!container || !PUBLISHABLE_KEY) return;
   
   // We'll use React to render the SignIn component
@@ -67,6 +68,7 @@ export function mountSignIn(container) {
             signUpUrl: '#/signup',
             afterSignInUrl: '#/',
             afterSignUpUrl: '#/',
+            ...props
           })
         )
       );
@@ -77,8 +79,9 @@ export function mountSignIn(container) {
 /**
  * Mount the SignUp component to a DOM element
  * @param {HTMLElement} container - The container to mount SignUp into
+ * @param {Object} props - Optional properties for the SignUp component
  */
-export function mountSignUp(container) {
+export function mountSignUp(container, props = {}) {
   if (!container || !PUBLISHABLE_KEY) return;
   
   import('react').then((React) => {
@@ -102,6 +105,7 @@ export function mountSignUp(container) {
             signInUrl: '#/login',
             afterSignInUrl: '#/',
             afterSignUpUrl: '#/',
+            ...props
           })
         )
       );

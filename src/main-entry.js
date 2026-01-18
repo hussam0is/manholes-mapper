@@ -26,9 +26,20 @@ if (typeof window !== 'undefined' && CLERK_KEY) {
     const clerk = new Clerk(CLERK_KEY);
     window.__clerk = clerk;
     
-    clerk.load().then(() => {
+    clerk.load().then(async () => {
       console.log('Clerk loaded successfully');
       
+      // Attach React-based mount methods if they don't exist on the Clerk instance
+      // The @clerk/clerk-js instance might not have these methods in some environments
+      try {
+        const provider = await import('./auth/clerk-provider.jsx');
+        if (!clerk.mountSignIn) clerk.mountSignIn = provider.mountSignIn;
+        if (!clerk.mountSignUp) clerk.mountSignUp = provider.mountSignUp;
+        if (!clerk.mountUserButton) clerk.mountUserButton = provider.mountUserButton;
+      } catch (err) {
+        console.warn('Failed to attach React-based Clerk mount methods:', err);
+      }
+
       const authData = {
         isSignedIn: clerk.user != null,
         userId: clerk.user?.id || null,

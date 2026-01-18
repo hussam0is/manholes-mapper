@@ -42,3 +42,5 @@ lerna-debug.log*
 # Empty legacy directory (can be manually deleted)
 manholes/
 
+.vercel
+.env*.local

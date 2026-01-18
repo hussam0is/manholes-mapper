@@ -11,43 +11,30 @@ export default defineConfig({
     // Use basicSsl if local custom certs are not present to ensure HTTPS on IP access
     !hasLocalCerts ? basicSsl() : []
   ],
-  // Use a relative base so that the built index.html references JS/CSS using
-  // relative URLs.  This makes it possible to serve the app from a file
-  // system or arbitrary path (including on mobile devices) without broken
-  // absolute paths like "/assets/*.js".
-  base: './',
-  // Customise the Rollup output so that entry points and CSS use stable file
-  // names instead of hashed names.  The service worker expects to find
-  // `main.js` and `styles.css` at runtime.  Other assets can still be
-  // fingerprinted and will be cached by the runtime caching strategy.
+  // Force absolute base in development for Vercel proxy, 
+  // and relative base for the final production PWA build.
+  base: '/', 
   build: {
     rollupOptions: {
       output: {
-        // The main entry file will be emitted as `main.js` in the output
         entryFileNames: 'main.js',
-        // CSS emitted by Vite is placed into a single file called styles.css
-        // rather than using a hash.  This ensures the service worker can
-        // precache the stylesheet reliably.
         assetFileNames: (assetInfo) => {
           if (assetInfo.name && assetInfo.name.endsWith('.css')) {
             return 'styles.css';
           }
-          // Place other assets into the `assets` directory with their original
-          // names (Vite will append a content hash automatically).
           return 'assets/[name][extname]';
         },
       },
     },
   },
   server: {
-    host: true,        // binds to 0.0.0.0
-    https: true,       // Force HTTPS for secure context
-    // Use custom HMR settings only when running with local HTTPS
-    hmr: hasLocalCerts ? {
-      protocol: 'wss',
-      host: 'manholes-mapper.local',
-      port: 5173,
-    } : undefined,
+    port: 5173,
+    strictPort: true,
+    host: '127.0.0.1',
+    https: false,
+    hmr: {
+      protocol: 'ws',
+    }
   },
   preview: {
     host: true,

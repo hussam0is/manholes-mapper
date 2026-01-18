@@ -9,34 +9,36 @@ import { verifyAuth, unauthorizedResponse, jsonResponse, errorResponse } from '.
 import { getSketchesByUser, createSketch, initializeDatabase } from '../_lib/db.js';
 
 // Ensure database is initialized (runs once per cold start)
-let dbInitialized = false;
+let dbInitializationPromise = null;
 
-export const config = {
-  runtime: 'edge',
-};
+async function ensureDb() {
+  if (!dbInitializationPromise) {
+    dbInitializationPromise = initializeDatabase().catch(err => {
+      dbInitializationPromise = null; // Reset promise so next request can retry
+      throw err;
+    });
+  }
+  return dbInitializationPromise;
+}
 
 export default async function handler(request) {
-  // Initialize database on first request
-  if (!dbInitialized) {
-    await initializeDatabase();
-    dbInitialized = true;
-  }
-
-  // Verify authentication
-  const { userId, error: authError } = await verifyAuth(request);
-  if (authError) {
-    return unauthorizedResponse(authError);
-  }
-
-  const method = request.method;
-
   try {
+    // Initialize database on first request
+    await ensureDb();
+
+    // Verify authentication
+    const { userId, error: authError } = await verifyAuth(request);
+    if (authError) {
+      return unauthorizedResponse(authError);
+    }
+
+    const method = request.method;
     if (method === 'GET') {
       // List all sketches for the user
       const sketches = await getSketchesByUser(userId);
       
       // Transform database rows to match frontend format
-      const transformed = sketches.map(row => ({
+      const transformed = (sketches || []).map(row => ({
         id: row.id,
         name: row.name,
         creationDate: row.creation_date,
@@ -81,6 +83,6 @@ export default async function handler(request) {
     return errorResponse('Method not allowed', 405);
   } catch (error) {
     console.error('API error:', error);
-    return errorResponse('Internal server error', 500);
+    return errorResponse(error.message || 'Internal server error', 500);
   }
 }

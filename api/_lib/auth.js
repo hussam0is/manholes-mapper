@@ -4,12 +4,7 @@
  * Verifies Clerk JWT tokens and extracts user information.
  */
 
-import { createClerkClient } from '@clerk/clerk-sdk-node';
-
-// Initialize Clerk client with secret key
-const clerk = createClerkClient({
-  secretKey: process.env.CLERK_SECRET_KEY,
-});
+import { verifyToken } from '@clerk/backend';
 
 /**
  * Verify the request and extract user ID from Clerk session
@@ -18,8 +13,10 @@ const clerk = createClerkClient({
  */
 export async function verifyAuth(request) {
   try {
-    // Get authorization header
-    const authHeader = request.headers.get('authorization');
+    // Get authorization header - handle both Web API (get method) and Node.js style headers
+    const authHeader = typeof request.headers.get === 'function'
+      ? request.headers.get('authorization')
+      : request.headers['authorization'] || request.headers['Authorization'];
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return { userId: null, error: 'Missing or invalid authorization header' };
@@ -28,7 +25,9 @@ export async function verifyAuth(request) {
     const token = authHeader.substring(7);
     
     // Verify the token with Clerk
-    const { sub: userId } = await clerk.verifyToken(token);
+    const { sub: userId } = await verifyToken(token, {
+      secretKey: process.env.CLERK_SECRET_KEY,
+    });
     
     if (!userId) {
       return { userId: null, error: 'Invalid token' };
