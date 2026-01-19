@@ -9,8 +9,8 @@
 import { verifyAuth, parseBody, unauthorizedResponse, jsonResponse, errorResponse } from '../_lib/auth.js';
 import { getSketchById, updateSketch, deleteSketch, ensureDb } from '../_lib/db.js';
 
-// Use Edge Runtime for Web API Request/Response support
-export const config = { runtime: 'edge' };
+// Use Node.js runtime - required for @clerk/backend which uses Node.js crypto APIs
+export const config = { runtime: 'nodejs' };
 
 export default async function handler(request) {
   try {
