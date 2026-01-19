@@ -1855,6 +1855,9 @@ function renderHome() {
   }
 }
 
+// Expose renderHome to window so sync-service can trigger a re-render after fetching sketches
+window.renderHome = renderHome;
+
 function hideHome() {
   if (homePanel) homePanel.style.display = 'none';
 }
