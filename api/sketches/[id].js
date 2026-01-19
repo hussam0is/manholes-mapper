@@ -7,23 +7,10 @@
  */
 
 import { verifyAuth, parseBody, unauthorizedResponse, jsonResponse, errorResponse } from '../_lib/auth.js';
-import { getSketchById, updateSketch, deleteSketch, initializeDatabase } from '../_lib/db.js';
+import { getSketchById, updateSketch, deleteSketch, ensureDb } from '../_lib/db.js';
 
 // Use Edge Runtime for Web API Request/Response support
 export const config = { runtime: 'edge' };
-
-// Ensure database is initialized (runs once per cold start)
-let dbInitializationPromise = null;
-
-async function ensureDb() {
-  if (!dbInitializationPromise) {
-    dbInitializationPromise = initializeDatabase().catch(err => {
-      dbInitializationPromise = null; // Reset promise so next request can retry
-      throw err;
-    });
-  }
-  return dbInitializationPromise;
-}
 
 export default async function handler(request) {
   try {

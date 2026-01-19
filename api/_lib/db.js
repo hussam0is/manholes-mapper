@@ -8,12 +8,17 @@ import { sql } from '@vercel/postgres';
 
 export { sql };
 
+// Centralized database initialization promise - shared across all API routes
+// This ensures initialization only happens once, even if multiple routes
+// receive requests simultaneously during a cold start.
+let dbInitializationPromise = null;
+
 /**
  * Initialize database tables if they don't exist.
  * Call this once during deployment or first request.
  * @throws {Error} If database initialization fails
  */
-export async function initializeDatabase() {
+async function initializeDatabase() {
   // Create sketches table
   await sql`
     CREATE TABLE IF NOT EXISTS sketches (
@@ -33,6 +38,23 @@ export async function initializeDatabase() {
   await sql`
     CREATE INDEX IF NOT EXISTS idx_sketches_user_id ON sketches(user_id)
   `;
+}
+
+/**
+ * Ensure database is initialized (runs once per cold start).
+ * This is the public API for routes to use - it handles caching
+ * the initialization promise so multiple concurrent requests
+ * share the same initialization.
+ * @returns {Promise<void>}
+ */
+export async function ensureDb() {
+  if (!dbInitializationPromise) {
+    dbInitializationPromise = initializeDatabase().catch(err => {
+      dbInitializationPromise = null; // Reset promise so next request can retry
+      throw err;
+    });
+  }
+  return dbInitializationPromise;
 }
 
 /**
