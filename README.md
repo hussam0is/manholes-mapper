@@ -42,6 +42,43 @@ Manholes Mapper is a lightweight yet powerful tool designed for field workers to
 - **Rendering**: HTML5 Canvas API for the graph engine.
 - **Storage**: IndexedDB for durable storage, mirrored with localStorage for synchronous access.
 - **Offline**: Service Worker (Workbox-inspired) for asset caching and offline fallback.
+- **Authentication**: **Clerk** for user authentication and session management.
+
+## Authentication (Clerk)
+
+This project uses [Clerk](https://clerk.com) for user authentication, providing secure sign-in, sign-up, and session management.
+
+### Clerk Integration
+
+| Component | Package | Purpose |
+| :--- | :--- | :--- |
+| Frontend Auth | `@clerk/clerk-react` | React hooks and components |
+| JS SDK | `@clerk/clerk-js` | Core JavaScript authentication |
+| Backend Verification | `@clerk/backend` | Token verification for API routes |
+
+### Environment Variables
+
+| Variable | Location | Description |
+| :--- | :--- | :--- |
+| `VITE_CLERK_PUBLISHABLE_KEY` | `.env.local` | Frontend publishable key (starts with `pk_`) |
+| `CLERK_SECRET_KEY` | Vercel Environment | Backend secret key (starts with `sk_`) |
+
+### Setup Instructions
+
+1. **Create a Clerk Application**: Sign up at [dashboard.clerk.com](https://dashboard.clerk.com) and create a new application.
+2. **Get API Keys**: Navigate to **API Keys** in the Clerk dashboard to find your publishable and secret keys.
+3. **Configure Frontend**: Create a `.env.local` file in the project root:
+   ```bash
+   VITE_CLERK_PUBLISHABLE_KEY=pk_test_your_key_here
+   ```
+4. **Configure Backend (Vercel)**: Add `CLERK_SECRET_KEY` to your Vercel project's environment variables.
+
+### Authentication Features
+
+- **Hash-based Routing**: Sign-in (`#/login`) and sign-up (`#/signup`) use hash routing for PWA compatibility.
+- **Session Persistence**: Automatic session management across page refreshes.
+- **API Token Verification**: Backend routes verify JWT tokens using Clerk's backend SDK.
+- **User Button**: Integrated user menu for profile management and sign-out.
 
 ## Project Structure
 
@@ -114,10 +151,60 @@ npm run preview
 
 ## Deployment
 
-The application is built with a relative base path (`./`) for flexible deployment:
+### Vercel (Production)
+
+This project is deployed on **Vercel** with automatic deployments from Git.
+
+#### Project Configuration
+
+| Setting | Value |
+| :--- | :--- |
+| **Project Name** | `manholes-mapper` |
+| **Framework** | Vite |
+| **Node Version** | 24.x |
+| **Build Command** | `vite build` |
+| **Output Directory** | `dist` |
+
+#### Production URLs
+
+| Environment | URL |
+| :--- | :--- |
+| **Production** | https://manholes-mapper.vercel.app |
+| **Preview (dev branch)** | https://manholes-mapper-git-dev-hussam0is-projects.vercel.app |
+
+#### Deployment Process
+
+1. **Automatic Deployments**: Push to `main` branch triggers production deployment; push to `dev` triggers preview deployment.
+2. **Manual Deployment**: Use Vercel CLI or dashboard to trigger deployments.
+
+```bash
+# Install Vercel CLI (if needed)
+npm i -g vercel
+
+# Deploy to preview
+vercel
+
+# Deploy to production
+vercel --prod
+```
+
+#### Vercel Configuration (`vercel.json`)
+
+```json
+{
+  "framework": "vite",
+  "devCommand": "vite",
+  "buildCommand": "vite build",
+  "outputDirectory": "dist"
+}
+```
+
+### Alternative Deployment
+
+The application is built with a relative base path (`./`) for flexible deployment to other platforms:
 
 1. Build: `npm run build`
-2. Deploy the `dist/` directory to any static host (GitHub Pages, Vercel, Netlify, etc.).
+2. Deploy the `dist/` directory to any static host (GitHub Pages, Netlify, etc.).
 3. **Note**: HTTPS is required for Service Worker functionality.
 
 ## Data Management

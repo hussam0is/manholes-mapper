@@ -5,8 +5,11 @@
  * POST - Create a new sketch
  */
 
-import { verifyAuth, unauthorizedResponse, jsonResponse, errorResponse } from '../_lib/auth.js';
+import { verifyAuth, parseBody, unauthorizedResponse, jsonResponse, errorResponse } from '../_lib/auth.js';
 import { getSketchesByUser, createSketch, initializeDatabase } from '../_lib/db.js';
+
+// Use Edge Runtime for Web API Request/Response support
+export const config = { runtime: 'edge' };
 
 // Ensure database is initialized (runs once per cold start)
 let dbInitializationPromise = null;
@@ -54,7 +57,7 @@ export default async function handler(request) {
 
     if (method === 'POST') {
       // Create a new sketch
-      const body = await request.json();
+      const body = await parseBody(request);
       
       const sketch = await createSketch(userId, {
         name: body.name,

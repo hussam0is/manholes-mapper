@@ -36,8 +36,12 @@ const syncStateListeners = new Set();
 let saveDebounceTimer = null;
 const SAVE_DEBOUNCE_MS = 2000;
 
-// API base URL - empty for same-origin
+// API base URL - in development without vercel dev, API won't be available
+// In production or with vercel dev, API is same-origin
 const API_BASE = '';
+
+// Flag to track if API is available (set to false after first failure in dev)
+let apiAvailable = true;
 
 /**
  * Subscribe to sync state changes
@@ -75,6 +79,11 @@ function updateSyncState(updates) {
  * @returns {Promise<Response>}
  */
 async function apiRequest(endpoint, options = {}) {
+  // Skip API calls if we've detected API isn't available (dev mode without vercel dev)
+  if (!apiAvailable) {
+    throw new Error('API not available (development mode)');
+  }
+
   const token = await getToken();
   
   if (!token) {
@@ -94,16 +103,34 @@ async function apiRequest(endpoint, options = {}) {
       headers,
     });
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Request failed' }));
-      throw new Error(error.error || `API error: ${response.status}`);
+    // Check if we got HTML back instead of JSON (common when API route doesn't exist)
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      console.warn(`API returned non-JSON response (${contentType}). API may not be available.`);
+      apiAvailable = false;
+      throw new Error('API not available - received non-JSON response');
     }
 
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.error || `API error: ${response.status}`;
+      
+      if (response.status === 401) {
+        console.error('Authentication error. Is CLERK_SECRET_KEY set in .env.local?');
+        throw new Error(`Authentication failed (401). Please check your server configuration.`);
+      }
+      
+      throw new Error(errorMessage);
+    }
+
+    // API is working, ensure flag is set
+    apiAvailable = true;
     return response;
   } catch (error) {
     if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
-      console.error(`Network error fetching ${url}. Is the backend server running?`, error);
-      throw new Error(`Cloud connection failed: Could not reach the server at ${url}. Please ensure the backend is running.`);
+      console.warn(`Network error fetching ${url}. API not available in development mode.`);
+      apiAvailable = false;
+      throw new Error('API not available (network error)');
     }
     throw error;
   }
@@ -119,6 +146,12 @@ export async function fetchSketchesFromCloud() {
     const data = await response.json();
     return data.sketches || [];
   } catch (error) {
+    // Check if this is a JSON parsing error (happens when server returns non-JSON)
+    if (error instanceof SyntaxError && error.message.includes('Unexpected token')) {
+      console.warn('API returned non-JSON response - API not available (development mode)');
+      apiAvailable = false;
+      throw new Error('API not available - received non-JSON response');
+    }
     console.error('Failed to fetch sketches from cloud:', error);
     throw error;
   }
@@ -196,6 +229,32 @@ export async function syncFromCloud() {
       await saveSketchToIdb(cloudSketch);
     }
     
+    // Compatibility: Update legacy localStorage library so the legacy UI sees the sketches
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        const legacyLib = cloudSketches.map(s => ({
+          id: s.id,
+          name: s.name,
+          creationDate: s.creationDate,
+          createdAt: s.createdAt,
+          updatedAt: s.updatedAt,
+          nodes: s.nodes || [],
+          edges: s.edges || [],
+          adminConfig: s.adminConfig || {},
+          cloudSynced: true
+        }));
+        window.localStorage.setItem('graphSketch.library', JSON.stringify(legacyLib));
+        console.log(`Updated legacy localStorage with ${legacyLib.length} sketches`);
+        
+        // Trigger a re-render of the home panel if the legacy function is available
+        if (typeof window.renderHome === 'function') {
+          window.renderHome();
+        }
+      } catch (err) {
+        console.warn('Failed to update legacy localStorage:', err);
+      }
+    }
+    
     // Remove local sketches that don't exist in cloud
     // (only if they were previously synced - have cloud IDs)
     for (const localSketch of localSketches) {
@@ -214,6 +273,23 @@ export async function syncFromCloud() {
     console.log(`Synced ${cloudSketches.length} sketches from cloud`);
     return cloudSketches;
   } catch (error) {
+    // Check if this is an "API not available" error - don't show as error in dev
+    const isApiUnavailable = error.message?.includes('API not available') || 
+                             error.message?.includes('network error') ||
+                             error.message?.includes('non-JSON response') ||
+                             (error instanceof SyntaxError && error.message.includes('Unexpected token'));
+    
+    if (isApiUnavailable) {
+      console.log('Cloud sync skipped - API not available (development mode). Using local data only.');
+      apiAvailable = false;
+      updateSyncState({
+        isSyncing: false,
+        error: null, // Don't show as error in dev mode
+      });
+      // Return empty array - app will use localStorage data
+      return [];
+    }
+    
     console.error('Sync from cloud failed:', error);
     updateSyncState({
       isSyncing: false,
@@ -229,6 +305,12 @@ export async function syncFromCloud() {
  * @param {Object} sketch - Sketch to sync
  */
 export async function syncSketchToCloud(sketch) {
+  // Skip if API not available (dev mode)
+  if (!apiAvailable) {
+    console.log('Cloud sync skipped - API not available (development mode)');
+    return;
+  }
+
   if (!navigator.onLine) {
     // Queue for later sync
     await enqueueSyncOperation({
@@ -282,6 +364,14 @@ export async function syncSketchToCloud(sketch) {
       lastSyncTime: new Date(),
     });
   } catch (error) {
+    // Check if API became unavailable
+    const isApiUnavailable = error.message?.includes('API not available');
+    if (isApiUnavailable) {
+      console.log('Cloud sync skipped - API not available (development mode)');
+      updateSyncState({ isSyncing: false });
+      return;
+    }
+
     console.error('Failed to sync sketch to cloud:', error);
     updateSyncState({
       isSyncing: false,
@@ -321,11 +411,22 @@ export async function deleteSketchEverywhere(sketchId) {
   // Delete locally first
   await deleteSketchFromIdb(sketchId);
 
+  // Skip cloud delete if API not available
+  if (!apiAvailable) {
+    console.log('Cloud delete skipped - API not available (development mode)');
+    return;
+  }
+
   // Delete from cloud if online
   if (navigator.onLine && getAuthState().isSignedIn) {
     try {
       await deleteSketchFromCloud(sketchId);
     } catch (error) {
+      // Ignore API unavailable errors
+      if (error.message?.includes('API not available')) {
+        console.log('Cloud delete skipped - API not available (development mode)');
+        return;
+      }
       console.error('Failed to delete from cloud:', error);
       // Queue for later
       await enqueueSyncOperation({
@@ -342,6 +443,15 @@ export async function deleteSketchEverywhere(sketchId) {
       timestamp: Date.now(),
     });
   }
+}
+
+/**
+ * Reset API availability flag - call when environment changes
+ * or when user wants to retry cloud connection
+ */
+export function resetApiAvailability() {
+  apiAvailable = true;
+  console.log('API availability reset - will retry on next request');
 }
 
 /**
@@ -434,5 +544,6 @@ if (typeof window !== 'undefined') {
     processSyncQueue,
     getSyncState,
     onSyncStateChange,
+    resetApiAvailability,
   };
 }

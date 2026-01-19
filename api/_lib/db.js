@@ -11,34 +11,28 @@ export { sql };
 /**
  * Initialize database tables if they don't exist.
  * Call this once during deployment or first request.
+ * @throws {Error} If database initialization fails
  */
 export async function initializeDatabase() {
-  try {
-    // Create sketches table
-    await sql`
-      CREATE TABLE IF NOT EXISTS sketches (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id TEXT NOT NULL,
-        name TEXT,
-        creation_date TIMESTAMPTZ,
-        nodes JSONB DEFAULT '[]'::jsonb,
-        edges JSONB DEFAULT '[]'::jsonb,
-        admin_config JSONB DEFAULT '{}'::jsonb,
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        updated_at TIMESTAMPTZ DEFAULT NOW()
-      )
-    `;
+  // Create sketches table
+  await sql`
+    CREATE TABLE IF NOT EXISTS sketches (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id TEXT NOT NULL,
+      name TEXT,
+      creation_date TIMESTAMPTZ,
+      nodes JSONB DEFAULT '[]'::jsonb,
+      edges JSONB DEFAULT '[]'::jsonb,
+      admin_config JSONB DEFAULT '{}'::jsonb,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
 
-    // Create index on user_id for faster queries
-    await sql`
-      CREATE INDEX IF NOT EXISTS idx_sketches_user_id ON sketches(user_id)
-    `;
-
-    return { success: true };
-  } catch (error) {
-    console.error('Failed to initialize database:', error);
-    return { success: false, error: error.message };
-  }
+  // Create index on user_id for faster queries
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_sketches_user_id ON sketches(user_id)
+  `;
 }
 
 /**
@@ -106,14 +100,21 @@ export async function createSketch(userId, sketch) {
 export async function updateSketch(sketchId, userId, updates) {
   const { name, creationDate, nodes, edges, adminConfig } = updates;
   
+  // Use null checks to distinguish between:
+  // - undefined/null: field not provided, preserve existing value (COALESCE fallback)
+  // - []/{}:          field provided as empty, update to empty value
+  // - [...]/...:      field provided with data, update to that data
+  // Note: We use `!= null` (loose equality) to catch both undefined and null,
+  // because JSON.stringify(null) produces "null" which casts to a JSONB null
+  // value that would overwrite existing data instead of preserving it.
   const result = await sql`
     UPDATE sketches
     SET
       name = COALESCE(${name}, name),
       creation_date = COALESCE(${creationDate}, creation_date),
-      nodes = COALESCE(${nodes ? JSON.stringify(nodes) : null}::jsonb, nodes),
-      edges = COALESCE(${edges ? JSON.stringify(edges) : null}::jsonb, edges),
-      admin_config = COALESCE(${adminConfig ? JSON.stringify(adminConfig) : null}::jsonb, admin_config),
+      nodes = COALESCE(${nodes != null ? JSON.stringify(nodes) : null}::jsonb, nodes),
+      edges = COALESCE(${edges != null ? JSON.stringify(edges) : null}::jsonb, edges),
+      admin_config = COALESCE(${adminConfig != null ? JSON.stringify(adminConfig) : null}::jsonb, admin_config),
       updated_at = NOW()
     WHERE id = ${sketchId} AND user_id = ${userId}
     RETURNING id, name, creation_date, nodes, edges, admin_config, created_at, updated_at

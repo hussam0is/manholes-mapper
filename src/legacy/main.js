@@ -787,9 +787,27 @@ if (window.authGuard?.onAuthStateChange) {
 window.addEventListener('hashchange', handleRoute);
 // Expose handleRoute globally so main-entry.js can call it
 window.handleRoute = handleRoute;
+
+// Prevent scroll and zoom propagation from modals to the canvas
+function preventModalScrollPropagation() {
+  const modals = ['startPanel', 'homePanel', 'helpModal', 'adminModal', 'adminScreen'];
+  modals.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    
+    // Stop mouse wheel and touch events from reaching the canvas
+    const stopProp = (e) => e.stopPropagation();
+    el.addEventListener('wheel', stopProp, { passive: false });
+    el.addEventListener('touchmove', stopProp, { passive: false });
+    el.addEventListener('mousedown', stopProp);
+    el.addEventListener('touchstart', stopProp, { passive: false });
+  });
+}
+
 // Initialize route on load (with slight delay to allow Clerk to initialize)
 setTimeout(() => {
   try { handleRoute(); } catch (_) { }
+  preventModalScrollPropagation();
 }, 100);
 if (adminCancelBtn) adminCancelBtn.addEventListener('click', () => {
   closeAdminModal();
