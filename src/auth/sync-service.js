@@ -87,17 +87,26 @@ async function apiRequest(endpoint, options = {}) {
     ...options.headers,
   };
 
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  const url = `${API_BASE}${endpoint}`;
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers,
+    });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Request failed' }));
-    throw new Error(error.error || `API error: ${response.status}`);
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Request failed' }));
+      throw new Error(error.error || `API error: ${response.status}`);
+    }
+
+    return response;
+  } catch (error) {
+    if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+      console.error(`Network error fetching ${url}. Is the backend server running?`, error);
+      throw new Error(`Cloud connection failed: Could not reach the server at ${url}. Please ensure the backend is running.`);
+    }
+    throw error;
   }
-
-  return response;
 }
 
 /**

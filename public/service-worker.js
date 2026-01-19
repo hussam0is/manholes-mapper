@@ -107,6 +107,10 @@ self.addEventListener('fetch', (event) => {
   // requests are handled separately above.
   if (url.origin !== self.location.origin) return;
 
+  // Skip API requests - let the browser handle them directly so we get
+  // proper error messages and avoid returning HTML fallbacks for JSON requests.
+  if (url.pathname.startsWith(withBase('api/'))) return;
+
   // Use a network‑first strategy for navigation requests (e.g. HTML documents).
   // If the network is unavailable the cached page is served.  If the
   // navigation route hasn’t been cached yet (e.g. first visit while offline)

@@ -24,7 +24,14 @@ export async function verifyAuth(request) {
 
     const token = authHeader.substring(7);
     
-    // Verify the token with Clerk
+    // Use only secretKey for verification (automatically fetches JWKS from Clerk)
+    // Note: Do NOT use CLERK_JWT_KEY unless you have the actual PEM public key
+    if (!process.env.CLERK_SECRET_KEY) {
+      console.error('CLERK_SECRET_KEY is not set');
+      return { userId: null, error: 'Server configuration error' };
+    }
+    
+    // Verify the token with Clerk using secretKey only
     const { sub: userId } = await verifyToken(token, {
       secretKey: process.env.CLERK_SECRET_KEY,
     });
