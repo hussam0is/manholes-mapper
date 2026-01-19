@@ -81,7 +81,10 @@ function updateSyncState(updates) {
 async function apiRequest(endpoint, options = {}) {
   // Skip API calls if we've detected API isn't available (dev mode without vercel dev)
   if (!apiAvailable) {
-    throw new Error('API not available (development mode)');
+    // Silent throw - this is expected in dev mode without vercel dev
+    const error = new Error('API not available (development mode)');
+    error.isExpectedDevError = true;
+    throw error;
   }
 
   const token = await getToken();
@@ -106,9 +109,10 @@ async function apiRequest(endpoint, options = {}) {
     // Check if we got HTML back instead of JSON (common when API route doesn't exist)
     const contentType = response.headers.get('content-type') || '';
     if (!contentType.includes('application/json')) {
-      console.warn(`API returned non-JSON response (${contentType}). API may not be available.`);
       apiAvailable = false;
-      throw new Error('API not available - received non-JSON response');
+      const devError = new Error('API not available - received non-JSON response');
+      devError.isExpectedDevError = true;
+      throw devError;
     }
 
     if (!response.ok) {
@@ -128,9 +132,10 @@ async function apiRequest(endpoint, options = {}) {
     return response;
   } catch (error) {
     if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
-      console.warn(`Network error fetching ${url}. API not available in development mode.`);
       apiAvailable = false;
-      throw new Error('API not available (network error)');
+      const devError = new Error('API not available (network error)');
+      devError.isExpectedDevError = true;
+      throw devError;
     }
     throw error;
   }
@@ -148,9 +153,16 @@ export async function fetchSketchesFromCloud() {
   } catch (error) {
     // Check if this is a JSON parsing error (happens when server returns non-JSON)
     if (error instanceof SyntaxError && error.message.includes('Unexpected token')) {
-      console.warn('API returned non-JSON response - API not available (development mode)');
       apiAvailable = false;
-      throw new Error('API not available - received non-JSON response');
+      const devError = new Error('API not available - received non-JSON response');
+      devError.isExpectedDevError = true;
+      throw devError;
+    }
+    // Don't log as error for expected "API not available" cases in dev mode
+    if (error.isExpectedDevError || 
+        error.message?.includes('API not available') || 
+        error.message?.includes('network error')) {
+      throw error; // Let syncFromCloud handle the logging
     }
     console.error('Failed to fetch sketches from cloud:', error);
     throw error;
@@ -274,13 +286,17 @@ export async function syncFromCloud() {
     return cloudSketches;
   } catch (error) {
     // Check if this is an "API not available" error - don't show as error in dev
-    const isApiUnavailable = error.message?.includes('API not available') || 
+    const isApiUnavailable = error.isExpectedDevError ||
+                             error.message?.includes('API not available') || 
                              error.message?.includes('network error') ||
                              error.message?.includes('non-JSON response') ||
                              (error instanceof SyntaxError && error.message.includes('Unexpected token'));
     
     if (isApiUnavailable) {
-      console.log('Cloud sync skipped - API not available (development mode). Using local data only.');
+      // Only log once when first detected
+      if (apiAvailable) {
+        console.log('Cloud sync: API not available (development mode). Using local data only.');
+      }
       apiAvailable = false;
       updateSyncState({
         isSyncing: false,
@@ -519,7 +535,16 @@ export function initSyncService() {
       if (authState.isSignedIn && authState.isLoaded) {
         // Small delay to ensure everything is ready
         setTimeout(() => {
-          syncFromCloud().catch(console.error);
+          syncFromCloud().catch((error) => {
+            // Don't log expected "API not available" errors in dev mode
+            if (error.message?.includes('API not available') || 
+                error.message?.includes('network error') ||
+                error.message?.includes('non-JSON response')) {
+              // Already handled - silent in dev mode
+              return;
+            }
+            console.error('Sync error:', error);
+          });
         }, 500);
       }
     });
