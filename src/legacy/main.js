@@ -1732,6 +1732,12 @@ function loadFromLibrary(sketchId) {
   currentSketchId = rec.id;
   currentSketchName = rec.name || null;
   updateSketchNameDisplay();
+  // Reset edge creation state
+  pendingEdgeTail = null;
+  pendingEdgePreview = null;
+  pendingEdgeStartPosition = null;
+  selectedNode = null;
+  selectedEdge = null;
   computeNodeTypes();
   saveToStorage();
   draw();
@@ -1948,6 +1954,7 @@ function newSketch(date) {
   selectedEdge = null;
   isDragging = false;
   pendingEdgeTail = null;
+  pendingEdgeStartPosition = null;
   creationDate = date;
   currentSketchId = null; // new unsaved sketch
   currentSketchName = null;
@@ -3854,9 +3861,11 @@ canvas.addEventListener('touchstart', (e) => {
       if (currentMode === 'edge') {
         const nodeAt = findNodeAtWithExpansion(world.x, world.y, TOUCH_SELECT_EXPANSION);
         const edgeAt = findEdgeAt(world.x, world.y, TOUCH_EDGE_HIT_THRESHOLD);
-        if (nodeAt) {
-          // Edge creation: first tap selects tail, second tap on another node creates edge
-          if (!pendingEdgeTail) {
+        
+        // Case 1: No pending edge yet
+        if (!pendingEdgeTail && !pendingEdgeStartPosition) {
+          if (nodeAt) {
+            // Start from a node (for normal or outbound dangling edge)
             pendingEdgeTail = nodeAt;
             pendingEdgePreview = { x: world.x, y: world.y };
             selectedNode = null;
@@ -3866,7 +3875,27 @@ canvas.addEventListener('touchstart', (e) => {
             renderDetails();
             scheduleDraw();
             showToast(t('toasts.chooseTarget'));
+          } else if (edgeAt) {
+            // Select edge for editing
+            selectedEdge = edgeAt;
+            selectedNode = null;
+            touchAddPending = false;
+            touchAddPoint = null;
+            renderDetails();
+            scheduleDraw();
           } else {
+            // Tapped empty space first - start inbound dangling edge
+            pendingEdgeStartPosition = { x: world.x, y: world.y };
+            pendingEdgePreview = { x: world.x, y: world.y };
+            touchAddPending = false;
+            touchAddPoint = null;
+            scheduleDraw();
+            showToast(t('toasts.chooseTargetInbound'));
+          }
+        }
+        // Case 2: We started from a node (pendingEdgeTail is set)
+        else if (pendingEdgeTail) {
+          if (nodeAt) {
             if (String(nodeAt.id) !== String(pendingEdgeTail.id)) {
               const created = createEdge(pendingEdgeTail.id, nodeAt.id);
               pendingEdgeTail = null;
@@ -3884,19 +3913,16 @@ canvas.addEventListener('touchstart', (e) => {
               scheduleDraw();
               showToast(t('toasts.edgeCancelled'));
             }
-          }
-        } else if (edgeAt && !pendingEdgeTail) {
-          // Select edge for editing in edge mode
-          selectedEdge = edgeAt;
-          selectedNode = null;
-          touchAddPending = false;
-          touchAddPoint = null;
-          renderDetails();
-          scheduleDraw();
-        } else {
-          // Empty background in edge mode
-          if (pendingEdgeTail) {
-            // Tapped empty space while an edge is pending: create dangling edge
+          } else if (edgeAt) {
+            // Cancel and select edge
+            pendingEdgeTail = null;
+            pendingEdgePreview = null;
+            selectedEdge = edgeAt;
+            selectedNode = null;
+            renderDetails();
+            scheduleDraw();
+          } else {
+            // Tapped empty space: create outbound dangling edge
             const danglingEdge = createDanglingEdge(pendingEdgeTail.id, world.x, world.y);
             pendingEdgeTail = null;
             pendingEdgePreview = null;
@@ -3905,11 +3931,38 @@ canvas.addEventListener('touchstart', (e) => {
               updateIncompleteEdgeTracker();
             }
             scheduleDraw();
+          }
+        }
+        // Case 3: We started from empty space (pendingEdgeStartPosition is set)
+        else if (pendingEdgeStartPosition) {
+          if (nodeAt) {
+            // Create inbound dangling edge
+            const inboundEdge = createInboundDanglingEdge(
+              pendingEdgeStartPosition.x,
+              pendingEdgeStartPosition.y,
+              nodeAt.id
+            );
+            pendingEdgeStartPosition = null;
+            pendingEdgePreview = null;
+            if (inboundEdge) {
+              showToast(t('toasts.danglingEdgeCreated'));
+              updateIncompleteEdgeTracker();
+            }
+            scheduleDraw();
+          } else if (edgeAt) {
+            // Cancel and select edge
+            pendingEdgeStartPosition = null;
+            pendingEdgePreview = null;
+            selectedEdge = edgeAt;
+            selectedNode = null;
+            renderDetails();
+            scheduleDraw();
           } else {
-            // No pending edge and empty space: candidate for background pan
-            touchPanCandidate = true;
-            touchAddPending = false; // do not create nodes in edge mode
-            touchAddPoint = { x, y };
+            // Tapped empty space again: cancel
+            pendingEdgeStartPosition = null;
+            pendingEdgePreview = null;
+            scheduleDraw();
+            showToast(t('toasts.edgeCancelled'));
           }
         }
       } else {
@@ -4126,6 +4179,7 @@ if (nodeModeBtn) {
     if (edgeModeBtn) edgeModeBtn.classList.remove('active');
     pendingEdgeTail = null;
     pendingEdgePreview = null;
+    pendingEdgeStartPosition = null;
     selectedNode = null;
     selectedEdge = null;
     renderDetails();
@@ -4142,6 +4196,7 @@ if (homeNodeModeBtn) {
     if (edgeModeBtn) edgeModeBtn.classList.remove('active');
     pendingEdgeTail = null;
     pendingEdgePreview = null;
+    pendingEdgeStartPosition = null;
     selectedNode = null;
     selectedEdge = null;
     renderDetails();
@@ -4158,6 +4213,7 @@ if (drainageNodeModeBtn) {
     if (edgeModeBtn) edgeModeBtn.classList.remove('active');
     pendingEdgeTail = null;
     pendingEdgePreview = null;
+    pendingEdgeStartPosition = null;
     selectedNode = null;
     selectedEdge = null;
     renderDetails();
@@ -4174,6 +4230,7 @@ if (edgeModeBtn) {
     if (drainageNodeModeBtn) drainageNodeModeBtn.classList.remove('active');
     pendingEdgeTail = null;
     pendingEdgePreview = null;
+    pendingEdgeStartPosition = null;
     selectedNode = null;
     selectedEdge = null;
     renderDetails();
@@ -5003,9 +5060,10 @@ document.addEventListener('keydown', (e) => {
       e.preventDefault();
       return;
     }
-    if (pendingEdgeTail) {
+    if (pendingEdgeTail || pendingEdgeStartPosition) {
       pendingEdgeTail = null;
       pendingEdgePreview = null;
+      pendingEdgeStartPosition = null;
       scheduleDraw();
       showToast(t('toasts.cancelled'));
       e.preventDefault();
