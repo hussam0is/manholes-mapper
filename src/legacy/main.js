@@ -1531,9 +1531,9 @@ function loadFromStorage() {
         const es = Number(edge.engineeringStatus);
         edge.engineeringStatus = Number.isFinite(es) ? es : 0;
       }
-      // convert ids to strings
-      edge.tail = String(edge.tail);
-      edge.head = String(edge.head);
+      // convert ids to strings (preserve null for dangling edges)
+      edge.tail = edge.tail != null ? String(edge.tail) : null;
+      edge.head = edge.head != null ? String(edge.head) : null;
     });
     // Recompute nextNodeId as (max numeric id among nodes) + 1
     let maxNumericId = 0;
@@ -1726,6 +1726,9 @@ function loadFromLibrary(sketchId) {
       const es = Number(edge.engineeringStatus);
       edge.engineeringStatus = Number.isFinite(es) ? es : 0;
     }
+    // Preserve null for dangling edges, convert valid ids to strings
+    edge.tail = edge.tail != null ? String(edge.tail) : null;
+    edge.head = edge.head != null ? String(edge.head) : null;
   });
   nextNodeId = rec.nextNodeId || 1;
   creationDate = rec.creationDate || rec.createdAt || null;
@@ -2448,15 +2451,15 @@ function drawEdge(edge) {
   const tailNode = edge.tail != null ? nodes.find((n) => n.id === edge.tail) : null;
   const headNode = edge.head != null ? nodes.find((n) => n.id === edge.head) : null;
   
-  // Handle outbound dangling edges (head is null, tail is a node)
-  if (edge.isDangling || (edge.head === null && tailNode)) {
-    drawDanglingEdgeLocal(edge, tailNode, 'outbound');
-    return;
-  }
-  
   // Handle inbound dangling edges (tail is null, head is a node)
   if (edge.tail === null && headNode && edge.tailPosition) {
     drawDanglingEdgeLocal(edge, headNode, 'inbound');
+    return;
+  }
+  
+  // Handle outbound dangling edges (head is null, tail is a node)
+  if (edge.head === null && tailNode && (edge.isDangling || edge.danglingEndpoint)) {
+    drawDanglingEdgeLocal(edge, tailNode, 'outbound');
     return;
   }
   
