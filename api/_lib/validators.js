@@ -72,10 +72,10 @@ export function validateUUID(id) {
 export function validateSketchInput(body) {
   const errors = [];
 
-  // Validate name
-  if (body.name !== undefined) {
+  // Validate name (can be null or string)
+  if (body.name !== undefined && body.name !== null) {
     if (typeof body.name !== 'string') {
-      errors.push('name must be a string');
+      errors.push('name must be a string or null');
     } else if (body.name.length > MAX_NAME_LENGTH) {
       errors.push(`name exceeds maximum of ${MAX_NAME_LENGTH} characters`);
     }
@@ -121,11 +121,16 @@ export function validateSketchInput(body) {
           errors.push(`edge at index ${i} must be an object`);
           break;
         }
-        if (!edge.tail) {
-          errors.push(`edge at index ${i} must have a tail`);
+        // Dangling edges: tail can be null (inbound) or head can be null (outbound)
+        // At least one of tail or head must be present
+        const hasTail = edge.tail !== null && edge.tail !== undefined;
+        const hasHead = edge.head !== null && edge.head !== undefined;
+        if (!hasTail && !hasHead) {
+          errors.push(`edge at index ${i} must have at least a tail or head`);
           break;
         }
-        // Note: head can be null for dangling edges
+        // Note: tailPosition/danglingEndpoint are recommended for dangling edges
+        // but not strictly required for backward compatibility
       }
     }
   }
