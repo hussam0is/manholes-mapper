@@ -4172,13 +4172,14 @@ if (sketchListEl) {
     const target = e.target;
     if (!(target instanceof HTMLElement)) return;
     // Inline title editing: clicking on title turns it into an input
-    if (target.classList.contains('sketch-title')) {
-      const id = target.getAttribute('data-id');
+    const titleEl = target.closest('.sketch-title');
+    if (titleEl) {
+      const id = titleEl.getAttribute('data-id');
       if (!id) return;
       const lib = getLibrary();
       const rec = lib.find((r) => r.id === id);
       if (!rec) return;
-      const originalTitle = (target.textContent || '').trim();
+      const originalTitle = (titleEl.textContent || '').trim();
       const hadExplicitName = !!(rec.name && rec.name.trim().length > 0);
       const currentValue = hadExplicitName ? rec.name : originalTitle;
       const input = document.createElement('input');
@@ -4189,7 +4190,7 @@ if (sketchListEl) {
       input.style.boxSizing = 'border-box';
       input.setAttribute('data-id', id);
       // Replace the title div with the input
-      target.replaceWith(input);
+      titleEl.replaceWith(input);
       input.focus();
       // Select all text for quick overwrite
       input.select();
@@ -4233,8 +4234,11 @@ if (sketchListEl) {
       input.addEventListener('blur', commit);
       return;
     }
-    const action = target.getAttribute('data-action');
-    const id = target.getAttribute('data-id');
+    // Find the button with data-action attribute (handles clicks on child elements like icons/text)
+    const actionBtn = target.closest('[data-action]');
+    if (!actionBtn) return;
+    const action = actionBtn.getAttribute('data-action');
+    const id = actionBtn.getAttribute('data-id');
     if (!action || !id) return;
     if (action === 'open') {
       hideHome();
