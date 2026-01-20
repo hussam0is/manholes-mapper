@@ -6,13 +6,14 @@
  * Requires admin role.
  */
 
-import { verifyAuth } from '../_lib/auth.js';
+import { verifyAuth, sanitizeErrorMessage } from '../_lib/auth.js';
 import { 
   ensureDb, 
   getUserByClerkId,
   getAllUsers,
   getUsersByOrganization
 } from '../_lib/db.js';
+import { applyRateLimit } from '../_lib/rate-limit.js';
 
 export const config = { runtime: 'nodejs' };
 
@@ -24,6 +25,11 @@ export default async function handler(req, res) {
   }
 
   console.log(`[API /api/users] ${req.method} request started`);
+
+  // Apply rate limiting
+  if (applyRateLimit(req, res)) {
+    return; // Rate limited, response already sent
+  }
 
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -82,6 +88,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error(`[API /api/users] Error:`, error);
-    return res.status(500).json({ error: error.message || 'Internal server error' });
+    return res.status(500).json({ error: sanitizeErrorMessage(error) });
   }
 }

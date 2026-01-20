@@ -15,6 +15,8 @@ import {
   getEffectiveFeatures,
   DEFAULT_FEATURES 
 } from '../_lib/db.js';
+import { applyRateLimit } from '../_lib/rate-limit.js';
+import { sanitizeErrorMessage } from '../_lib/auth.js';
 
 export const config = { runtime: 'nodejs' };
 
@@ -41,6 +43,11 @@ export default async function handler(req, res) {
 
   console.log(`[API /api/user-role] ${req.method} request started`);
 
+  // Apply rate limiting
+  if (applyRateLimit(req, res)) {
+    return; // Rate limited, response already sent
+  }
+
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -62,10 +69,18 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Server configuration error' });
     }
 
-    // Verify token and get full session data
-    const verifiedToken = await verifyToken(token, {
+    // Build verification options
+    const verifyOptions = {
       secretKey: process.env.CLERK_SECRET_KEY,
-    });
+    };
+    
+    // SECURITY: Add authorized parties if configured
+    if (process.env.CLERK_AUTHORIZED_PARTIES) {
+      verifyOptions.authorizedParties = process.env.CLERK_AUTHORIZED_PARTIES.split(',').map(s => s.trim());
+    }
+    
+    // Verify token and get full session data
+    const verifiedToken = await verifyToken(token, verifyOptions);
 
     const userId = verifiedToken.sub;
     if (!userId) {
@@ -102,6 +117,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error(`[API /api/user-role] Error:`, error);
-    return res.status(500).json({ error: error.message || 'Internal server error' });
+    return res.status(500).json({ error: sanitizeErrorMessage(error) });
   }
 }

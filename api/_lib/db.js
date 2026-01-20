@@ -251,8 +251,10 @@ export async function getOrCreateUser(clerkId, userData = {}) {
   // Create new user
   const { username, email } = userData;
   
-  // Check if this is the super admin (hussam01)
-  const isSuperAdmin = username === 'hussam01';
+  // SECURITY: Use environment variable to designate initial super admin by Clerk ID
+  // This is more secure than checking username which could be spoofed
+  const INITIAL_SUPER_ADMIN_CLERK_ID = process.env.INITIAL_SUPER_ADMIN_CLERK_ID;
+  const isSuperAdmin = INITIAL_SUPER_ADMIN_CLERK_ID && clerkId === INITIAL_SUPER_ADMIN_CLERK_ID;
   const role = isSuperAdmin ? 'super_admin' : 'user';
   
   result = await sql`

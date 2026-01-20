@@ -7,8 +7,10 @@
  * Note: Uses standard Node.js (req, res) signature for better compatibility with vercel dev.
  */
 
-import { verifyAuth, parseBody } from '../_lib/auth.js';
+import { verifyAuth, parseBody, sanitizeErrorMessage } from '../_lib/auth.js';
 import { getSketchesByUser, createSketch, ensureDb } from '../_lib/db.js';
+import { validateSketchInput } from '../_lib/validators.js';
+import { applyRateLimit } from '../_lib/rate-limit.js';
 
 export const config = { runtime: 'nodejs' };
 
@@ -20,6 +22,11 @@ export default async function handler(req, res) {
   }
 
   console.log(`[API /api/sketches] ${req.method} request started`);
+  
+  // Apply rate limiting
+  if (applyRateLimit(req, res)) {
+    return; // Rate limited, response already sent
+  }
   
   try {
     // Initialize database
@@ -56,6 +63,12 @@ export default async function handler(req, res) {
     if (req.method === 'POST') {
       const body = await parseBody(request);
       
+      // Validate input
+      const validationErrors = validateSketchInput(body);
+      if (validationErrors) {
+        return res.status(400).json({ error: 'Validation failed', details: validationErrors });
+      }
+      
       const sketch = await createSketch(userId, {
         name: body.name,
         creationDate: body.creationDate,
@@ -86,6 +99,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
     console.error(`[API /api/sketches] Error:`, error);
-    return res.status(500).json({ error: error.message || 'Internal server error' });
+    return res.status(500).json({ error: sanitizeErrorMessage(error) });
   }
 }

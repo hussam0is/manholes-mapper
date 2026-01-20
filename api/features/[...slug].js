@@ -8,7 +8,7 @@
  * targetId: clerk_id or org_id
  */
 
-import { verifyAuth, parseBody } from '../_lib/auth.js';
+import { verifyAuth, parseBody, sanitizeErrorMessage } from '../_lib/auth.js';
 import { 
   ensureDb, 
   getUserByClerkId,
@@ -17,6 +17,8 @@ import {
   setFeatures,
   DEFAULT_FEATURES
 } from '../_lib/db.js';
+import { applyRateLimit } from '../_lib/rate-limit.js';
+import { validateFeaturesInput } from '../_lib/validators.js';
 
 export const config = { runtime: 'nodejs' };
 
@@ -35,6 +37,11 @@ export default async function handler(req, res) {
 
   const [targetType, targetId] = slug;
   console.log(`[API /api/features/${targetType}/${targetId}] ${req.method} request started`);
+
+  // Apply rate limiting
+  if (applyRateLimit(req, res)) {
+    return; // Rate limited, response already sent
+  }
 
   if (!['user', 'organization'].includes(targetType)) {
     return res.status(400).json({ error: 'Target type must be "user" or "organization"' });
@@ -131,6 +138,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error(`[API /api/features/${targetType}/${targetId}] Error:`, error);
-    return res.status(500).json({ error: error.message || 'Internal server error' });
+    return res.status(500).json({ error: sanitizeErrorMessage(error) });
   }
 }

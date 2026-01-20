@@ -19,14 +19,20 @@ export default defineConfig({
           }
           return 'assets/[name][extname]';
         },
-        manualChunks: {
-          // Split Clerk into its own chunk (large library)
-          'clerk': ['@clerk/clerk-react', '@clerk/shared'],
-          // React ecosystem in its own chunk
-          'react-vendor': ['react', 'react-dom'],
+        manualChunks: (id) => {
+          if (id.includes('node_modules')) {
+            if (id.includes('@clerk')) {
+              return 'clerk';
+            }
+            if (id.includes('react') || id.includes('scheduler')) {
+              return 'react-vendor';
+            }
+            return 'vendor';
+          }
         },
       },
     },
+    chunkSizeWarningLimit: 1000,
   },
   server: {
     // When running under vercel dev, let Vercel control the port

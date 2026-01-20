@@ -40,6 +40,8 @@ import { drawNodeIcon } from '../features/node-icons.js';
 import { processLabels } from '../utils/label-collision.js';
 import { initBackupManager, clearHourlyBackups, saveDailyBackup, getAllBackups } from '../utils/backup-manager.js';
 import { getUsername as getAuthUsername } from '../auth/auth-guard.js';
+import { initPermissionsService, onPermissionChange, isAdmin, isSuperAdmin, canAccessFeature, fetchUserRole } from '../auth/permissions.js';
+import { openAdminPanel } from '../admin/admin-panel.js';
 
 /**
  * Get the current username from authentication or return a default
@@ -128,6 +130,12 @@ const adminScreenImportBtn = document.getElementById('adminScreenImportBtn');
 const adminScreenExportBtn = document.getElementById('adminScreenExportBtn');
 const adminScreenImportFile = document.getElementById('adminScreenImportFile');
 const mainEl = document.getElementById('main');
+
+// Admin Panel elements (user/org management - for super admin and org admin)
+const adminPanelBtnContainer = document.getElementById('adminPanelBtnContainer');
+const adminPanelBtn = document.getElementById('adminPanelBtn');
+const mobileAdminPanelBtn = document.getElementById('mobileAdminPanelBtn');
+const adminPanelScreen = document.getElementById('adminPanelScreen');
 
 // Mobile menu elements
 const mobileMenuBtn = document.getElementById('mobileMenuBtn');
@@ -630,6 +638,72 @@ function closeAdminScreen() {
   if (mainEl) mainEl.style.display = '';
 }
 
+// Admin Panel (user/org management) functions
+function openAdminPanelScreen() {
+  if (!adminPanelScreen) return;
+  adminPanelScreen.style.display = 'block';
+  if (mainEl) mainEl.style.display = 'none';
+  
+  // Open the admin panel component
+  openAdminPanel(adminPanelScreen, t, () => {
+    location.hash = '#/';
+  });
+}
+
+function closeAdminPanelScreen() {
+  if (adminPanelScreen) {
+    adminPanelScreen.style.display = 'none';
+    adminPanelScreen.innerHTML = '';
+  }
+  if (mainEl) mainEl.style.display = '';
+}
+
+function navigateToAdminPanel() {
+  try { closeMobileMenu(); } catch (_) { }
+  try { location.hash = '#/admin-panel'; } catch (_) { }
+  try { handleRoute(); } catch (_) { }
+}
+
+// Update admin panel button visibility based on user role
+function updateAdminPanelButtonVisibility() {
+  const shouldShow = isAdmin();
+  if (adminPanelBtnContainer) {
+    adminPanelBtnContainer.style.display = shouldShow ? 'flex' : 'none';
+  }
+  if (mobileAdminPanelBtn) {
+    mobileAdminPanelBtn.style.display = shouldShow ? '' : 'none';
+  }
+}
+
+// Update feature-controlled UI elements based on permissions
+function updateFeatureControlledElements() {
+  // Export CSV feature (nodes and edges export)
+  const canExportCsv = canAccessFeature('export_csv');
+  if (exportNodesBtn) exportNodesBtn.style.display = canExportCsv ? '' : 'none';
+  if (exportEdgesBtn) exportEdgesBtn.style.display = canExportCsv ? '' : 'none';
+  if (mobileExportNodesBtn) mobileExportNodesBtn.style.display = canExportCsv ? '' : 'none';
+  if (mobileExportEdgesBtn) mobileExportEdgesBtn.style.display = canExportCsv ? '' : 'none';
+
+  // Export sketch feature
+  const canExportSketch = canAccessFeature('export_sketch');
+  if (exportSketchBtn) exportSketchBtn.style.display = canExportSketch ? '' : 'none';
+  if (importSketchBtn) importSketchBtn.style.display = canExportSketch ? '' : 'none';
+  if (mobileExportSketchBtn) mobileExportSketchBtn.style.display = canExportSketch ? '' : 'none';
+  if (mobileImportSketchBtn) mobileImportSketchBtn.style.display = canExportSketch ? '' : 'none';
+
+  // Admin settings feature (tune button)
+  const canAccessAdminSettings = canAccessFeature('admin_settings');
+  if (adminBtn) adminBtn.style.display = canAccessAdminSettings ? '' : 'none';
+  if (mobileAdminBtn) mobileAdminBtn.style.display = canAccessAdminSettings ? '' : 'none';
+
+  // Finish workday feature
+  const canFinishWorkday = canAccessFeature('finish_workday');
+  const finishWorkdayBtn = document.getElementById('finishWorkdayBtn');
+  const mobileFinishWorkdayBtn = document.getElementById('mobileFinishWorkdayBtn');
+  if (finishWorkdayBtn) finishWorkdayBtn.style.display = canFinishWorkday ? '' : 'none';
+  if (mobileFinishWorkdayBtn) mobileFinishWorkdayBtn.style.display = canFinishWorkday ? '' : 'none';
+}
+
 function navigateToAdmin() {
   try { closeMobileMenu(); } catch (_) { }
   try { location.hash = '#/admin'; } catch (_) { }
@@ -649,6 +723,24 @@ if (mobileAdminBtn) {
   mobileAdminBtn.addEventListener('click', openAdminFromMobile);
   try { mobileAdminBtn.addEventListener('touchend', openAdminFromMobile, { passive: false }); } catch (_) { mobileAdminBtn.addEventListener('touchend', openAdminFromMobile); }
 }
+
+// Admin Panel button event listeners
+if (adminPanelBtn) {
+  adminPanelBtn.addEventListener('click', (e) => {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    navigateToAdminPanel();
+  });
+}
+if (mobileAdminPanelBtn) {
+  const openAdminPanelFromMobile = (e) => {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+    navigateToAdminPanel();
+  };
+  mobileAdminPanelBtn.addEventListener('click', openAdminPanelFromMobile);
+  try { mobileAdminPanelBtn.addEventListener('touchend', openAdminPanelFromMobile, { passive: false }); } catch (_) { mobileAdminPanelBtn.addEventListener('touchend', openAdminPanelFromMobile); }
+}
+
 // DOM references for login
 const loginPanel = document.getElementById('loginPanel');
 const authLoadingOverlay = document.getElementById('authLoadingOverlay');
@@ -769,7 +861,8 @@ function updateUserButtonVisibility(isSignedIn) {
 // Simple hash routing for admin screen and login
 function handleRoute() {
   const hash = location.hash || '#/';
-  const isAdmin = (hash === '#/admin');
+  const isAdminSettings = (hash === '#/admin');
+  const isAdminPanel = (hash === '#/admin-panel');
   const isLogin = (hash === '#/login');
   const isSignup = (hash === '#/signup');
   
@@ -815,8 +908,26 @@ function handleRoute() {
   hideLoginPanel();
   updateUserButtonVisibility(authState.isSignedIn);
   
-  // Handle admin route
-  if (isAdmin) {
+  // Handle admin panel route (user/org management)
+  if (isAdminPanel) {
+    // Check if user is admin
+    if (!isAdmin()) {
+      console.warn('Admin panel access denied - not an admin');
+      location.hash = '#/';
+      return;
+    }
+    try { document.body.classList.add('admin-panel-active'); } catch (_) { }
+    try { closeAdminModal(); } catch (_) { }
+    try { closeAdminScreen(); } catch (_) { }
+    try { openAdminPanelScreen(); } catch (_) { }
+    return;
+  } else {
+    try { document.body.classList.remove('admin-panel-active'); } catch (_) { }
+    try { closeAdminPanelScreen(); } catch (_) { }
+  }
+  
+  // Handle admin settings route
+  if (isAdminSettings) {
     try { document.body.classList.add('admin-screen'); } catch (_) { }
     // Prefer separate screen over modal
     try { closeAdminModal(); } catch (_) { }
@@ -834,6 +945,15 @@ if (window.authGuard?.onAuthStateChange) {
     updateUserButtonVisibility(state.isSignedIn);
   });
 }
+
+// Initialize permissions service
+initPermissionsService();
+
+// Listen for permission changes to update admin panel button and feature-controlled elements
+onPermissionChange((permissions) => {
+  updateAdminPanelButtonVisibility();
+  updateFeatureControlledElements();
+});
 
 window.addEventListener('hashchange', handleRoute);
 // Expose handleRoute globally so main-entry.js can call it
@@ -1220,6 +1340,12 @@ function applyLangToStaticUI() {
   }
   if (helpBtn) { helpBtn.title = t('help'); setBtnLabel(helpBtn, t('help')); }
   if (adminBtn) { adminBtn.title = t('admin.manage'); }
+  if (adminPanelBtn) { adminPanelBtn.title = t('adminPanel'); }
+  if (mobileAdminPanelBtn) {
+    const lbl = mobileAdminPanelBtn.querySelector('.label');
+    if (lbl) lbl.textContent = t('adminPanel');
+    mobileAdminPanelBtn.title = t('adminPanel');
+  }
   if (recenterBtn) {
     recenterBtn.title = t('recenter');
     recenterBtn.setAttribute('aria-label', t('recenter'));
@@ -2615,26 +2741,28 @@ function drawDanglingEdgeLocal(edge, connectedNode, type = 'outbound') {
     ctx.moveTo(dashEndX, dashEndY);
     ctx.lineTo(endX, endY);
     ctx.stroke();
-    
-    // Draw arrow at the node end
-    const angle = Math.atan2(dy, dx);
-    const arrowLength = 10;
-    ctx.beginPath();
-    ctx.moveTo(endX, endY);
-    ctx.lineTo(
-      endX - arrowLength * Math.cos(angle - Math.PI / 6),
-      endY - arrowLength * Math.sin(angle - Math.PI / 6)
-    );
-    ctx.lineTo(
-      endX - arrowLength * Math.cos(angle + Math.PI / 6),
-      endY - arrowLength * Math.sin(angle + Math.PI / 6)
-    );
-    ctx.closePath();
-    ctx.fillStyle = solidColor;
-    ctx.fill();
   }
   
   ctx.setLineDash([]);
+  
+  // Draw the mid-arrow (black triangle at the middle) like regular edges
+  const angle = Math.atan2(dy, dx);
+  const midX = (startX + endX) / 2;
+  const midY = (startY + endY) / 2;
+  const midArrowLen = 8;
+  ctx.beginPath();
+  ctx.moveTo(midX, midY);
+  ctx.lineTo(
+    midX - midArrowLen * Math.cos(angle - Math.PI / 6),
+    midY - midArrowLen * Math.sin(angle - Math.PI / 6)
+  );
+  ctx.lineTo(
+    midX - midArrowLen * Math.cos(angle + Math.PI / 6),
+    midY - midArrowLen * Math.sin(angle + Math.PI / 6)
+  );
+  ctx.closePath();
+  ctx.fillStyle = (COLORS.edge.label || '#000');
+  ctx.fill();
   
   // Draw a small open circle at the dangling end (unfilled, subtle indicator)
   const circleRadius = 5 * sizeScale;

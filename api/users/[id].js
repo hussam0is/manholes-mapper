@@ -7,12 +7,14 @@
  * Requires admin role.
  */
 
-import { verifyAuth, parseBody } from '../_lib/auth.js';
+import { verifyAuth, parseBody, sanitizeErrorMessage } from '../_lib/auth.js';
 import { 
   ensureDb, 
   getUserByClerkId,
   updateUser
 } from '../_lib/db.js';
+import { applyRateLimit } from '../_lib/rate-limit.js';
+import { VALID_ROLES } from '../_lib/validators.js';
 
 export const config = { runtime: 'nodejs' };
 
@@ -25,6 +27,11 @@ export default async function handler(req, res) {
 
   const { id: targetUserId } = req.query;
   console.log(`[API /api/users/${targetUserId}] ${req.method} request started`);
+
+  // Apply rate limiting
+  if (applyRateLimit(req, res)) {
+    return; // Rate limited, response already sent
+  }
 
   try {
     // Initialize database
@@ -80,6 +87,11 @@ export default async function handler(req, res) {
       const body = await parseBody(request);
       const { role, organizationId } = body;
 
+      // Validation: Ensure role is a valid value
+      if (role !== undefined && !VALID_ROLES.includes(role)) {
+        return res.status(400).json({ error: `Invalid role. Must be one of: ${VALID_ROLES.join(', ')}` });
+      }
+
       // Validation: Only super admin can change roles to/from super_admin or admin
       if (role) {
         if (!isSuperAdmin && (role === 'super_admin' || role === 'admin')) {
@@ -123,6 +135,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error(`[API /api/users/${targetUserId}] Error:`, error);
-    return res.status(500).json({ error: error.message || 'Internal server error' });
+    return res.status(500).json({ error: sanitizeErrorMessage(error) });
   }
 }

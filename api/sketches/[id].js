@@ -8,8 +8,10 @@
  * Note: Uses standard Node.js (req, res) signature for better compatibility with vercel dev.
  */
 
-import { verifyAuth, parseBody } from '../_lib/auth.js';
+import { verifyAuth, parseBody, sanitizeErrorMessage } from '../_lib/auth.js';
 import { getSketchById, updateSketch, deleteSketch, ensureDb } from '../_lib/db.js';
+import { validateSketchInput, validateUUID } from '../_lib/validators.js';
+import { applyRateLimit } from '../_lib/rate-limit.js';
 
 export const config = { runtime: 'nodejs' };
 
@@ -27,9 +29,19 @@ export default async function handler(req, res) {
 
   console.log(`[API /api/sketches/${sketchId}] ${req.method} request started`);
 
+  // Apply rate limiting
+  if (applyRateLimit(req, res)) {
+    return; // Rate limited, response already sent
+  }
+
   try {
     if (!sketchId || sketchId === 'sketches') {
       return res.status(400).json({ error: 'Sketch ID is required' });
+    }
+    
+    // Validate UUID format
+    if (!validateUUID(sketchId)) {
+      return res.status(400).json({ error: 'Invalid sketch ID format' });
     }
 
     // Initialize database
@@ -66,6 +78,12 @@ export default async function handler(req, res) {
 
     if (req.method === 'PUT') {
       const body = await parseBody(request);
+      
+      // Validate input
+      const validationErrors = validateSketchInput(body);
+      if (validationErrors) {
+        return res.status(400).json({ error: 'Validation failed', details: validationErrors });
+      }
       
       const updated = await updateSketch(sketchId, userId, {
         name: body.name,
@@ -111,6 +129,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
     console.error(`[API /api/sketches/${sketchId}] Error:`, error);
-    return res.status(500).json({ error: error.message || 'Internal server error' });
+    return res.status(500).json({ error: sanitizeErrorMessage(error) });
   }
 }

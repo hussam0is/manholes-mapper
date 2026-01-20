@@ -71,10 +71,29 @@ function labelFor(scope, key, value, adminConfig) {
   return byLabel ? String(byLabel.label) : String(value);
 }
 
+/**
+ * Quote a value for CSV export, with protection against formula injection.
+ * 
+ * SECURITY: Spreadsheet applications (Excel, Google Sheets) can execute formulas
+ * when cells start with =, +, -, @, \t, or \r. To prevent injection attacks,
+ * we prefix such values with a single quote which displays as literal text.
+ * 
+ * @param {any} value - The value to quote
+ * @returns {string} - Properly quoted and sanitized CSV value
+ */
 export function csvQuote(value) {
   const s = value == null ? '' : String(value);
   const normalized = s.replace(/\r?\n/g, ' ');
-  return '"' + normalized.replace(/"/g, '""') + '"';
+  
+  // SECURITY: Prevent CSV formula injection
+  // If the value starts with a formula-triggering character, prefix with single quote
+  const formulaPrefixes = ['=', '+', '-', '@', '\t', '\r'];
+  let safe = normalized;
+  if (formulaPrefixes.some(p => normalized.startsWith(p))) {
+    safe = "'" + normalized;  // Single quote prevents formula interpretation in spreadsheets
+  }
+  
+  return '"' + safe.replace(/"/g, '""') + '"';
 }
 
 export function exportNodesCsv(nodes, adminConfig, t) {

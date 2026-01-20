@@ -7,13 +7,14 @@
  * Requires admin role.
  */
 
-import { verifyAuth, parseBody } from '../_lib/auth.js';
+import { verifyAuth, parseBody, sanitizeErrorMessage } from '../_lib/auth.js';
 import { 
   ensureDb, 
   getUserByClerkId,
   getAllOrganizations,
   createOrganization
 } from '../_lib/db.js';
+import { applyRateLimit } from '../_lib/rate-limit.js';
 
 export const config = { runtime: 'nodejs' };
 
@@ -25,6 +26,11 @@ export default async function handler(req, res) {
   }
 
   console.log(`[API /api/organizations] ${req.method} request started`);
+
+  // Apply rate limiting
+  if (applyRateLimit(req, res)) {
+    return; // Rate limited, response already sent
+  }
 
   try {
     // Initialize database
@@ -93,6 +99,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error(`[API /api/organizations] Error:`, error);
-    return res.status(500).json({ error: error.message || 'Internal server error' });
+    return res.status(500).json({ error: sanitizeErrorMessage(error) });
   }
 }
