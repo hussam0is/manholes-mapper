@@ -279,6 +279,7 @@ let pendingDetailsForSelectedNode = false;
 let selectedNodeDownScreen = null; // screen-space coordinates at press time
 let selectedNodeMoveThreshold = MOUSE_TAP_MOVE_THRESHOLD; // threshold depends on pointer type
 let lastPointerType = 'mouse';
+let pendingDeselect = false; // Defer deselection until release if grabbing a selected node
 
 // Highlight state for half-edge when editing via node details panel
 let highlightedHalfEdge = null; // { edgeId, half: 'tail' | 'head' } or null
@@ -3678,17 +3679,16 @@ function pointerDown(x, y) {
   }
   // Contextual edit: in Node/Home/Drainage mode, allow selecting and dragging existing nodes when clicking on them
   if ((currentMode === 'node' || currentMode === 'home' || currentMode === 'drainage') && node) {
-    // Toggle close if clicking the same node again
+    // If clicking an already selected node, defer potential deselection until release
+    // so that dragging is still possible.
     if (selectedNode && String(selectedNode.id) === String(node.id)) {
-      selectedNode = null;
+      pendingDeselect = true;
+    } else {
+      selectedNode = node;
       selectedEdge = null;
-      pendingDetailsForSelectedNode = false;
-      renderDetails();
-      scheduleDraw();
-      return;
+      pendingDeselect = false;
     }
-    selectedNode = node;
-    selectedEdge = null;
+    
     dragOffset.x = world.x - node.x;
     dragOffset.y = world.y - node.y;
     isDragging = true;
@@ -3738,6 +3738,7 @@ function pointerMove(x, y) {
     const dyScreen = y - selectedNodeDownScreen.y;
     if (Math.hypot(dxScreen, dyScreen) > selectedNodeMoveThreshold) {
       pendingDetailsForSelectedNode = false;
+      pendingDeselect = false;
     }
   }
   if (isDragging && selectedNode) {
@@ -3761,13 +3762,20 @@ function pointerMove(x, y) {
  */
 function pointerUp() {
   isDragging = false;
-  // If a node was grabbed but not moved significantly, open details now
+  // If a node was grabbed but not moved significantly, perform toggle/details logic
   if (pendingDetailsForSelectedNode && selectedNode) {
-    renderDetails();
+    if (pendingDeselect) {
+      selectedNode = null;
+      selectedEdge = null;
+      renderDetails();
+    } else {
+      renderDetails();
+    }
     scheduleDraw();
   }
-  // Reset pending click/drag-open state
+  // Reset pending click/drag states
   pendingDetailsForSelectedNode = false;
+  pendingDeselect = false;
   selectedNodeDownScreen = null;
 }
 
@@ -3966,18 +3974,15 @@ canvas.addEventListener('touchstart', (e) => {
       } else {
         const nodeAt = findNodeAtWithExpansion(world.x, world.y, TOUCH_SELECT_EXPANSION);
         if (nodeAt) {
-          // Toggle close if tapping the same node again
+          // If tapping an already selected node, defer potential deselection until release
           if (selectedNode && String(selectedNode.id) === String(nodeAt.id)) {
-            selectedNode = null;
+            pendingDeselect = true;
+          } else {
+            selectedNode = nodeAt;
             selectedEdge = null;
-            pendingDetailsForSelectedNode = false;
-            renderDetails();
-            scheduleDraw();
-            return;
+            pendingDeselect = false;
           }
           // Begin drag/select without risking accidental creation via pointerDown
-          selectedNode = nodeAt;
-          selectedEdge = null;
           dragOffset.x = world.x - nodeAt.x;
           dragOffset.y = world.y - nodeAt.y;
           isDragging = true;
