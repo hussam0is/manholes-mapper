@@ -16,7 +16,7 @@
  */
 
 const DB_NAME = 'graphSketchDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 /**
  * Open the IndexedDB database and upgrade schema if necessary.
@@ -39,6 +39,13 @@ export function openDb() {
       // Create a syncQueue for future background sync operations
       if (!db.objectStoreNames.contains('syncQueue')) {
         db.createObjectStore('syncQueue', { autoIncrement: true });
+      }
+      // Create object store for automatic backups (3-hour and daily)
+      if (!db.objectStoreNames.contains('backups')) {
+        const backupStore = db.createObjectStore('backups', { keyPath: 'id' });
+        backupStore.createIndex('sketchId', 'sketchId', { unique: false });
+        backupStore.createIndex('type', 'type', { unique: false });
+        backupStore.createIndex('timestamp', 'timestamp', { unique: false });
       }
     };
     request.onsuccess = () => {
@@ -196,4 +203,129 @@ export async function drainSyncQueue() {
     };
     req.onerror = () => reject(req.error);
   });
+}
+
+// ============= Backup Functions =============
+
+/**
+ * Save a backup of the current sketch.
+ * @param {object} sketch - The sketch data to backup
+ * @param {'auto'|'daily'} type - Type of backup ('auto' for 3-hour, 'daily' for end-of-day)
+ * @returns {Promise<string>} The backup ID
+ */
+export async function saveBackup(sketch, type = 'auto') {
+  const db = await openDb();
+  const backupId = `backup_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const backup = {
+    id: backupId,
+    sketchId: sketch.sketchId || sketch.id || null,
+    type: type,
+    timestamp: new Date().toISOString(),
+    data: sketch,
+  };
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('backups', 'readwrite');
+    tx.objectStore('backups').put(backup);
+    tx.oncomplete = () => resolve(backupId);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+/**
+ * Get all backups, optionally filtered by sketch ID or type.
+ * @param {object} [options] - Filter options
+ * @param {string} [options.sketchId] - Filter by sketch ID
+ * @param {'auto'|'daily'} [options.type] - Filter by backup type
+ * @returns {Promise<Array>} Array of backup objects
+ */
+export async function getBackups(options = {}) {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('backups', 'readonly');
+    const store = tx.objectStore('backups');
+    const req = store.getAll();
+    req.onsuccess = () => {
+      let results = req.result || [];
+      if (options.sketchId) {
+        results = results.filter(b => b.sketchId === options.sketchId);
+      }
+      if (options.type) {
+        results = results.filter(b => b.type === options.type);
+      }
+      // Sort by timestamp descending (newest first)
+      results.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      resolve(results);
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+/**
+ * Clean old auto-backups (3-hour backups) for a specific sketch.
+ * Keeps only the most recent backup if specified.
+ * @param {string} sketchId - The sketch ID to clean backups for
+ * @param {boolean} [keepMostRecent=false] - Whether to keep the most recent auto backup
+ * @returns {Promise<number>} Number of backups deleted
+ */
+export async function cleanAutoBackups(sketchId, keepMostRecent = false) {
+  const db = await openDb();
+  const backups = await getBackups({ sketchId, type: 'auto' });
+  
+  // Determine which backups to delete
+  const toDelete = keepMostRecent && backups.length > 0 
+    ? backups.slice(1) // Keep the first (most recent), delete the rest
+    : backups; // Delete all
+  
+  if (toDelete.length === 0) return 0;
+  
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('backups', 'readwrite');
+    const store = tx.objectStore('backups');
+    toDelete.forEach(backup => store.delete(backup.id));
+    tx.oncomplete = () => resolve(toDelete.length);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+/**
+ * Save a daily backup and clean all auto-backups for the sketch.
+ * @param {object} sketch - The sketch data to backup
+ * @returns {Promise<string>} The daily backup ID
+ */
+export async function saveDailyBackup(sketch) {
+  const sketchId = sketch.sketchId || sketch.id || null;
+  
+  // First, clean all auto-backups for this sketch
+  if (sketchId) {
+    await cleanAutoBackups(sketchId, false);
+  }
+  
+  // Save the daily backup
+  return saveBackup(sketch, 'daily');
+}
+
+/**
+ * Delete a specific backup by ID.
+ * @param {string} backupId - The backup ID to delete
+ * @returns {Promise<void>}
+ */
+export async function deleteBackup(backupId) {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('backups', 'readwrite');
+    tx.objectStore('backups').delete(backupId);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+/**
+ * Get the most recent backup for a sketch.
+ * @param {string} sketchId - The sketch ID
+ * @param {'auto'|'daily'} [type] - Optional type filter
+ * @returns {Promise<object|null>} The most recent backup or null
+ */
+export async function getLatestBackup(sketchId, type) {
+  const backups = await getBackups({ sketchId, type });
+  return backups.length > 0 ? backups[0] : null;
 }

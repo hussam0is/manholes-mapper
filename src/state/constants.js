@@ -94,6 +94,9 @@ export const COLORS = new Proxy({}, {
 
 export const NODE_TYPES = ['type1', 'type2'];
 
+// Node category types (nodeType property) - the actual classification of the node
+export const NODE_CATEGORIES = ['Manhole', 'Home', 'Drainage', 'ForLater', 'Unknown'];
+
 export const NODE_MATERIAL_OPTIONS = [
   { code: 0, label: 'לא ידוע' },
   { code: 1, label: 'פלדה מגולוונת' },

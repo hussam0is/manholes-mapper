@@ -9,7 +9,7 @@
 export function exportSketchToJson(sketch, filename = null) {
   // Create a complete snapshot of the sketch
   const sketchData = {
-    version: '1.0', // Schema version for future compatibility
+    version: '1.1', // Schema version - updated to include user tracking
     exportDate: new Date().toISOString(),
     sketch: {
       id: sketch.sketchId || null,
@@ -17,7 +17,11 @@ export function exportSketchToJson(sketch, filename = null) {
       creationDate: sketch.creationDate || null,
       nextNodeId: sketch.nextNodeId || 1,
       nodes: sketch.nodes || [],
-      edges: sketch.edges || []
+      edges: sketch.edges || [],
+      // User tracking fields
+      createdBy: sketch.createdBy || null,
+      lastEditedBy: sketch.lastEditedBy || null,
+      lastEditedAt: sketch.lastEditedAt || null,
     }
   };
 
@@ -103,7 +107,11 @@ export function importSketchFromJson(file) {
           sketchId: null, // Generate new ID when saving
           sketchName: sketch.name || null,
           importDate: jsonData.exportDate || null,
-          version: jsonData.version || '1.0'
+          version: jsonData.version || '1.0',
+          // User tracking fields
+          createdBy: sketch.createdBy || null,
+          lastEditedBy: sketch.lastEditedBy || null,
+          lastEditedAt: sketch.lastEditedAt || null,
         });
         
       } catch (error) {

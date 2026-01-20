@@ -29,6 +29,7 @@
 
 // IndexedDB bridge moved to src/state/persistence.js and src/db.js
 import { restoreFromIndexedDbIfNeeded, idbSaveCurrentCompat, idbSaveRecordCompat, idbDeleteRecordCompat } from '../state/persistence.js';
+import { saveBackup, cleanAutoBackups, saveDailyBackup, getBackups } from '../db.js';
 import { encodeUtf16LeWithBom } from '../utils/encoding.js';
 import { distanceToSegment } from '../utils/geometry.js';
 import { isNumericId, generateHomeInternalId } from '../graph/id-utils.js';
@@ -38,6 +39,7 @@ import { drawHouse as primitivesDrawHouse, drawDirectConnectionBadge as primitiv
 import { drawInfiniteGrid as drawInfiniteGridFeature, renderEdgeLegend as renderEdgeLegendFeature, drawEdge as drawEdgeFeature, drawNode as drawNodeFeature } from '../features/rendering.js';
 import { drawNodeIcon } from '../features/node-icons.js';
 import { processLabels } from '../utils/label-collision.js';
+import { getUserId } from '../auth/auth-guard.js';
 
 // DOM references
 const canvas = document.getElementById('graphCanvas');
@@ -1406,9 +1408,12 @@ function loadFromStorage() {
       if (node.material === undefined) node.material = NODE_MATERIALS[0];
       if (node.type === undefined) node.type = NODE_TYPES[0];
       if (node.nodeType === undefined) node.nodeType = 'Manhole';
-      // Normalize legacy nodeType values to 'Manhole' | 'Home'
+      // Normalize legacy nodeType values - preserve valid types, default to Manhole
       if (node.nodeType === 'בית' || node.nodeType === 'Home' || node.nodeType === 'B') node.nodeType = 'Home';
-      else node.nodeType = 'Manhole';
+      else if (node.nodeType === 'קולטן' || node.nodeType === 'Drainage' || node.nodeType === 'D') node.nodeType = 'Drainage';
+      else if (node.nodeType === 'ForLater' || node.nodeType === 'להמשך') node.nodeType = 'ForLater';
+      else if (node.nodeType === 'Unknown' || node.nodeType === 'לא ידוע') node.nodeType = 'Unknown';
+      else if (node.nodeType !== 'Manhole') node.nodeType = 'Manhole';
       if (node.nodeType === 'Home') {
         node.material = NODE_MATERIALS[0];
         node.coverDiameter = '';
@@ -1417,6 +1422,14 @@ function loadFromStorage() {
         node.maintenanceStatus = '';
       }
       if (node.nodeType === 'Drainage') {
+        node.material = NODE_MATERIALS[0];
+        node.coverDiameter = '';
+        node.access = '';
+        node.nodeEngineeringStatus = '';
+        node.maintenanceStatus = '';
+      }
+      if (node.nodeType === 'ForLater' || node.nodeType === 'Unknown') {
+        // ForLater and Unknown nodes are placeholders - minimal properties
         node.material = NODE_MATERIALS[0];
         node.coverDiameter = '';
         node.access = '';
@@ -1489,6 +1502,8 @@ function loadFromStorage() {
  * Persist the current sketch to localStorage.
  */
 function saveToStorage() {
+  const currentUserId = getUserId() || null;
+  const now = new Date().toISOString();
   const payload = {
     nodes: nodes,
     edges: edges,
@@ -1496,6 +1511,8 @@ function saveToStorage() {
     creationDate: creationDate,
     sketchId: currentSketchId,
     sketchName: currentSketchName,
+    lastEditedBy: currentUserId,
+    lastEditedAt: now,
   };
   localStorage.setItem('graphSketch', JSON.stringify(payload));
   // Persist to IndexedDB for durability
@@ -1512,6 +1529,8 @@ function saveToStorage() {
       nodes: nodes,
       edges: edges,
       adminConfig: typeof adminConfig !== 'undefined' ? adminConfig : {},
+      lastEditedBy: currentUserId,
+      lastEditedAt: now,
     };
     window.syncService.debouncedSyncToCloud(sketchForSync);
   }
@@ -1565,6 +1584,8 @@ function generateSketchId() {
 function saveToLibrary() {
   const lib = getLibrary();
   const nowIso = new Date().toISOString();
+  const currentUserId = getUserId() || null;
+  const existingRecord = lib.find((s) => s.id === currentSketchId);
   const record = {
     id: currentSketchId || generateSketchId(),
     createdAt: creationDate || nowIso,
@@ -1574,6 +1595,9 @@ function saveToLibrary() {
     nextNodeId,
     creationDate: creationDate || nowIso,
     name: currentSketchName || null,
+    createdBy: existingRecord?.createdBy || currentUserId,
+    lastEditedBy: currentUserId,
+    lastEditedAt: nowIso,
   };
   const idx = lib.findIndex((s) => s.id === record.id);
   if (idx >= 0) {
@@ -1582,6 +1606,10 @@ function saveToLibrary() {
     const merged = { ...record };
     if ((record.name == null || record.name === '') && (existing.name != null && existing.name !== '')) {
       merged.name = existing.name;
+    }
+    // Preserve createdBy from existing record
+    if (existing.createdBy) {
+      merged.createdBy = existing.createdBy;
     }
     lib[idx] = merged;
   } else {
@@ -1604,11 +1632,13 @@ function loadFromLibrary(sketchId) {
     if (node.material === undefined) node.material = NODE_MATERIALS[0];
     if (node.type === undefined) node.type = NODE_TYPES[0];
     if (node.nodeType === undefined) node.nodeType = 'Manhole';
-    // Normalize legacy labels to new values
+    // Normalize legacy labels to new values - preserve valid types
     if (node.nodeType === 'בית' || node.nodeType === 'Home' || node.nodeType === 'B') node.nodeType = 'Home';
     else if (node.nodeType === 'שוחה מכוסה' || node.nodeType === 'Covered' || node.nodeType === 'C') node.nodeType = 'Covered';
     else if (node.nodeType === 'קולטן' || node.nodeType === 'Drainage' || node.nodeType === 'D') node.nodeType = 'Drainage';
-    else node.nodeType = 'Manhole';
+    else if (node.nodeType === 'ForLater' || node.nodeType === 'להמשך') node.nodeType = 'ForLater';
+    else if (node.nodeType === 'Unknown' || node.nodeType === 'לא ידוע') node.nodeType = 'Unknown';
+    else if (node.nodeType !== 'Manhole') node.nodeType = 'Manhole';
     if (node.nodeType === 'Home') {
       node.material = NODE_MATERIALS[0];
       node.coverDiameter = '';
@@ -1618,6 +1648,14 @@ function loadFromLibrary(sketchId) {
       if (node.directConnection === undefined) node.directConnection = false;
     }
     if (node.nodeType === 'Drainage') {
+      node.material = NODE_MATERIALS[0];
+      node.coverDiameter = '';
+      node.access = '';
+      node.nodeEngineeringStatus = '';
+      node.maintenanceStatus = '';
+    }
+    if (node.nodeType === 'ForLater' || node.nodeType === 'Unknown') {
+      // ForLater and Unknown nodes are placeholders - minimal properties
       node.material = NODE_MATERIALS[0];
       node.coverDiameter = '';
       node.access = '';
@@ -1898,6 +1936,8 @@ function createNode(x, y) {
   let nextCandidate = 1;
   while (used.has(nextCandidate)) nextCandidate += 1;
   nextNodeId = nextCandidate;
+  const now = new Date().toISOString();
+  const currentUserId = getUserId() || null;
   const node = {
     id: candidateStr,
     x: x,
@@ -1911,6 +1951,10 @@ function createNode(x, y) {
     accuracyLevel: (adminConfig.nodes?.defaults?.accuracy_level ?? 0),
     nodeEngineeringStatus: (adminConfig.nodes?.defaults?.engineering_status ?? 0),
     maintenanceStatus: (adminConfig.nodes?.defaults?.maintenance_status ?? 0),
+    createdAt: now,
+    createdBy: currentUserId,
+    updatedAt: now,
+    updatedBy: currentUserId,
   };
   // Apply custom default fields
   if (Array.isArray(adminConfig.nodes?.customFields)) {
@@ -1943,6 +1987,8 @@ function createEdge(tailId, headId) {
   if (exists) {
     return null;
   }
+  const now = new Date().toISOString();
+  const currentUserId = getUserId() || null;
   const edge = {
     id: Date.now() + Math.random(), // unique id for internal use
     tail: tailStr,
@@ -1956,6 +2002,10 @@ function createEdge(tailId, headId) {
     material: (adminConfig.edges?.defaults?.material ?? EDGE_MATERIALS[0]),
     maintenanceStatus: 0,
     engineeringStatus: (adminConfig.edges?.defaults?.engineering_status ?? 0),
+    createdAt: now,
+    createdBy: currentUserId,
+    updatedAt: now,
+    updatedBy: currentUserId,
   };
   if (Array.isArray(adminConfig.edges?.customFields)) {
     adminConfig.edges.customFields.forEach((f) => {
@@ -4581,6 +4631,483 @@ async function init() {
   if (editModeBtn) editModeBtn.classList.remove('active');
   resizeCanvas();
   renderDetails();
+  
+  // Start 3-hour auto-backup timer
+  startAutoBackupTimer();
+}
+
+// 3-hour auto-backup timer (in milliseconds)
+const AUTO_BACKUP_INTERVAL_MS = 3 * 60 * 60 * 1000; // 3 hours
+let autoBackupTimerId = null;
+
+/**
+ * Perform an automatic backup of the current sketch.
+ */
+async function performAutoBackup() {
+  if (!currentSketchId && nodes.length === 0 && edges.length === 0) {
+    // No sketch to backup
+    return;
+  }
+  try {
+    const sketchData = {
+      sketchId: currentSketchId,
+      sketchName: currentSketchName,
+      creationDate: creationDate,
+      nodes: nodes,
+      edges: edges,
+      nextNodeId: nextNodeId,
+      adminConfig: typeof adminConfig !== 'undefined' ? adminConfig : {},
+      lastEditedBy: getUserId() || null,
+      lastEditedAt: new Date().toISOString(),
+    };
+    await saveBackup(sketchData, 'auto');
+    console.log('Auto-backup saved at', new Date().toISOString());
+  } catch (err) {
+    console.warn('Auto-backup failed:', err);
+  }
+}
+
+/**
+ * Start the 3-hour auto-backup timer.
+ */
+function startAutoBackupTimer() {
+  // Clear any existing timer
+  if (autoBackupTimerId) {
+    clearInterval(autoBackupTimerId);
+  }
+  // Start the interval timer
+  autoBackupTimerId = setInterval(performAutoBackup, AUTO_BACKUP_INTERVAL_MS);
+  console.log('Auto-backup timer started (every 3 hours)');
+}
+
+/**
+ * Stop the auto-backup timer.
+ */
+function stopAutoBackupTimer() {
+  if (autoBackupTimerId) {
+    clearInterval(autoBackupTimerId);
+    autoBackupTimerId = null;
+  }
+}
+
+// ============= Orphan Edge Detection and Validation =============
+
+/**
+ * Find edges that reference nodes that don't exist (orphan edges).
+ * An orphan edge has either tail or head pointing to a non-existent node.
+ * @returns {Array<{edge: object, missingNodes: Array<{id: string, position: 'tail'|'head'}>}>}
+ */
+function findOrphanEdges() {
+  const nodeIds = new Set(nodes.map(n => String(n.id)));
+  const orphans = [];
+  
+  for (const edge of edges) {
+    const missingNodes = [];
+    const tailId = String(edge.tail);
+    const headId = String(edge.head);
+    
+    if (!nodeIds.has(tailId)) {
+      missingNodes.push({ id: tailId, position: 'tail' });
+    }
+    if (!nodeIds.has(headId)) {
+      missingNodes.push({ id: headId, position: 'head' });
+    }
+    
+    if (missingNodes.length > 0) {
+      orphans.push({ edge, missingNodes });
+    }
+  }
+  
+  return orphans;
+}
+
+/**
+ * Validate the current sketch JSON structure.
+ * Checks for required fields and data integrity.
+ * @returns {{valid: boolean, errors: string[]}}
+ */
+function validateSketchJson() {
+  const errors = [];
+  
+  // Check nodes array
+  if (!Array.isArray(nodes)) {
+    errors.push('Nodes is not an array');
+  } else {
+    nodes.forEach((node, idx) => {
+      if (!node.id) errors.push(`Node at index ${idx} is missing id`);
+      if (typeof node.x !== 'number') errors.push(`Node ${node.id || idx} has invalid x coordinate`);
+      if (typeof node.y !== 'number') errors.push(`Node ${node.id || idx} has invalid y coordinate`);
+    });
+  }
+  
+  // Check edges array
+  if (!Array.isArray(edges)) {
+    errors.push('Edges is not an array');
+  } else {
+    edges.forEach((edge, idx) => {
+      if (!edge.tail) errors.push(`Edge at index ${idx} is missing tail`);
+      if (!edge.head) errors.push(`Edge at index ${idx} is missing head`);
+    });
+  }
+  
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+}
+
+/**
+ * Get all unique missing node IDs from orphan edges.
+ * @param {Array} orphanEdges - Result from findOrphanEdges()
+ * @returns {Array<string>} Unique missing node IDs
+ */
+function getUniqueMissingNodeIds(orphanEdges) {
+  const missingIds = new Set();
+  for (const { missingNodes } of orphanEdges) {
+    for (const { id } of missingNodes) {
+      missingIds.add(id);
+    }
+  }
+  return Array.from(missingIds);
+}
+
+/**
+ * Create a placeholder node for a missing node ID.
+ * @param {string} nodeId - The node ID to create
+ * @param {string} nodeType - The node type ('Manhole', 'Home', 'ForLater', 'Unknown')
+ * @param {number} x - X position (default 0)
+ * @param {number} y - Y position (default 0)
+ * @returns {object} The created node
+ */
+function createPlaceholderNode(nodeId, nodeType, x = 0, y = 0) {
+  const now = new Date().toISOString();
+  const currentUserId = getUserId() || null;
+  const node = {
+    id: String(nodeId),
+    x: x,
+    y: y,
+    note: '',
+    material: NODE_MATERIALS[0],
+    coverDiameter: '',
+    type: 'type1',
+    nodeType: nodeType,
+    access: 0,
+    accuracyLevel: 0,
+    nodeEngineeringStatus: 0,
+    maintenanceStatus: 0,
+    createdAt: now,
+    createdBy: currentUserId,
+    updatedAt: now,
+    updatedBy: currentUserId,
+    isPlaceholder: true, // Mark as placeholder for tracking
+  };
+  
+  // Add to nodes array
+  nodes.push(node);
+  computeNodeTypes();
+  
+  return node;
+}
+
+// ============= Orphan Correction Modal =============
+
+// DOM references for orphan correction modal
+const orphanCorrectionModal = document.getElementById('orphanCorrectionModal');
+const orphanCorrectionTitleText = document.getElementById('orphanCorrectionTitleText');
+const orphanCorrectionDesc = document.getElementById('orphanCorrectionDesc');
+const orphanNodesList = document.getElementById('orphanNodesList');
+const orphanCorrectionCancelBtn = document.getElementById('orphanCorrectionCancelBtn');
+const orphanCorrectionConfirmBtn = document.getElementById('orphanCorrectionConfirmBtn');
+
+// Store the callback to execute after orphan correction
+let orphanCorrectionCallback = null;
+
+/**
+ * Show the orphan correction modal with the list of missing nodes.
+ * @param {Array<string>} missingNodeIds - Array of missing node IDs
+ * @param {Function} onConfirm - Callback to execute after user confirms corrections
+ * @returns {void}
+ */
+function showOrphanCorrectionModal(missingNodeIds, onConfirm) {
+  if (!orphanCorrectionModal || !orphanNodesList) return;
+  
+  // Update translations if available
+  if (orphanCorrectionTitleText) {
+    orphanCorrectionTitleText.textContent = t('orphanEdgesFound') || 'נמצאו קווים עם שוחות חסרות';
+  }
+  if (orphanCorrectionDesc) {
+    orphanCorrectionDesc.textContent = t('selectNodeType') || 'יש לבחור סוג לכל שוחה חסרה כדי להמשיך:';
+  }
+  if (orphanCorrectionCancelBtn) {
+    orphanCorrectionCancelBtn.textContent = t('cancel') || 'ביטול';
+  }
+  if (orphanCorrectionConfirmBtn) {
+    orphanCorrectionConfirmBtn.textContent = t('confirmAndContinue') || 'אשר והמשך';
+  }
+  
+  // Build the list of missing nodes with type selectors
+  orphanNodesList.innerHTML = '';
+  
+  const nodeTypeOptions = [
+    { value: 'Manhole', label: t('modeNode') || 'שוחה' },
+    { value: 'Home', label: t('modeHome') || 'בית' },
+    { value: 'ForLater', label: t('forLater') || 'להמשך' },
+    { value: 'Unknown', label: t('unknown') || 'לא ידוע' },
+  ];
+  
+  for (const nodeId of missingNodeIds) {
+    const itemDiv = document.createElement('div');
+    itemDiv.className = 'orphan-node-item';
+    
+    const idSpan = document.createElement('span');
+    idSpan.className = 'orphan-node-id';
+    idSpan.innerHTML = `<span class="material-icons">place</span> ${nodeId}`;
+    
+    const select = document.createElement('select');
+    select.className = 'orphan-node-type-select';
+    select.dataset.nodeId = nodeId;
+    
+    for (const opt of nodeTypeOptions) {
+      const option = document.createElement('option');
+      option.value = opt.value;
+      option.textContent = opt.label;
+      // Default to ForLater for missing nodes
+      if (opt.value === 'ForLater') option.selected = true;
+      select.appendChild(option);
+    }
+    
+    itemDiv.appendChild(idSpan);
+    itemDiv.appendChild(select);
+    orphanNodesList.appendChild(itemDiv);
+  }
+  
+  // Store the callback
+  orphanCorrectionCallback = onConfirm;
+  
+  // Show the modal
+  orphanCorrectionModal.style.display = 'flex';
+}
+
+/**
+ * Hide the orphan correction modal.
+ */
+function hideOrphanCorrectionModal() {
+  if (orphanCorrectionModal) {
+    orphanCorrectionModal.style.display = 'none';
+  }
+  orphanCorrectionCallback = null;
+}
+
+/**
+ * Get the user's node type selections from the modal.
+ * @returns {Array<{nodeId: string, nodeType: string}>}
+ */
+function getOrphanNodeSelections() {
+  const selections = [];
+  const selects = orphanNodesList?.querySelectorAll('.orphan-node-type-select') || [];
+  
+  for (const select of selects) {
+    selections.push({
+      nodeId: select.dataset.nodeId,
+      nodeType: select.value,
+    });
+  }
+  
+  return selections;
+}
+
+// Modal button event handlers
+if (orphanCorrectionCancelBtn) {
+  orphanCorrectionCancelBtn.addEventListener('click', () => {
+    hideOrphanCorrectionModal();
+    showToast(t('cancelled') || 'בוטל');
+  });
+}
+
+if (orphanCorrectionConfirmBtn) {
+  orphanCorrectionConfirmBtn.addEventListener('click', () => {
+    const selections = getOrphanNodeSelections();
+    
+    // Calculate positions for new nodes (spread them out from center)
+    const centerX = nodes.length > 0 
+      ? nodes.reduce((sum, n) => sum + n.x, 0) / nodes.length 
+      : 0;
+    const centerY = nodes.length > 0 
+      ? nodes.reduce((sum, n) => sum + n.y, 0) / nodes.length 
+      : 0;
+    
+    // Create placeholder nodes for each missing node
+    selections.forEach((sel, index) => {
+      // Position nodes in a circle around center
+      const angle = (index / selections.length) * 2 * Math.PI;
+      const radius = 150;
+      const x = centerX + radius * Math.cos(angle);
+      const y = centerY + radius * Math.sin(angle);
+      
+      createPlaceholderNode(sel.nodeId, sel.nodeType, x, y);
+    });
+    
+    // Save changes
+    saveToStorage();
+    scheduleDraw();
+    
+    // Hide modal
+    hideOrphanCorrectionModal();
+    
+    // Execute callback if provided
+    if (orphanCorrectionCallback) {
+      const cb = orphanCorrectionCallback;
+      orphanCorrectionCallback = null;
+      cb();
+    }
+  });
+}
+
+// ============= Finish Work Day Feature =============
+
+// DOM references for finish work day buttons
+const finishWorkDayBtn = document.getElementById('finishWorkDayBtn');
+const mobileFinishWorkDayBtn = document.getElementById('mobileFinishWorkDayBtn');
+
+/**
+ * Execute the finish work day workflow.
+ * 1. Validate JSON structure
+ * 2. Check for orphan edges
+ * 3. If orphans found, show modal and wait for user to fix
+ * 4. Export CSV and JSON
+ * 5. Clean auto-backups and save daily backup
+ * 6. Sync to cloud
+ */
+async function finishWorkDay() {
+  // Step 1: Validate JSON structure
+  const validation = validateSketchJson();
+  if (!validation.valid) {
+    showToast(t('alerts.exportFailed') || 'שגיאה בנתוני השרטוט');
+    console.error('Sketch validation errors:', validation.errors);
+    return;
+  }
+  
+  // Step 2: Check for orphan edges
+  const orphanEdges = findOrphanEdges();
+  
+  if (orphanEdges.length > 0) {
+    // Get unique missing node IDs
+    const missingNodeIds = getUniqueMissingNodeIds(orphanEdges);
+    
+    // Show modal and wait for user to fix
+    showOrphanCorrectionModal(missingNodeIds, () => {
+      // After correction, continue with the workflow
+      continueFinishWorkDay();
+    });
+    return;
+  }
+  
+  // No orphans, continue directly
+  await continueFinishWorkDay();
+}
+
+/**
+ * Continue the finish work day workflow after orphan correction.
+ */
+async function continueFinishWorkDay() {
+  try {
+    // Show loading state
+    showToast(t('finishWorkDayProcessing') || 'מעבד סיום יום עבודה...');
+    
+    // Step 3: Export CSV files
+    if (nodes.length > 0) {
+      try {
+        exportNodesBtn?.click();
+      } catch (err) {
+        console.warn('Failed to export nodes:', err);
+      }
+    }
+    
+    if (edges.length > 0) {
+      try {
+        // Small delay to avoid download conflicts
+        await new Promise(resolve => setTimeout(resolve, 500));
+        exportEdgesBtn?.click();
+      } catch (err) {
+        console.warn('Failed to export edges:', err);
+      }
+    }
+    
+    // Step 4: Export JSON sketch
+    try {
+      // Small delay to avoid download conflicts
+      await new Promise(resolve => setTimeout(resolve, 500));
+      exportSketchBtn?.click();
+    } catch (err) {
+      console.warn('Failed to export sketch:', err);
+    }
+    
+    // Step 5: Clean auto-backups and save daily backup
+    const sketchData = {
+      sketchId: currentSketchId,
+      sketchName: currentSketchName,
+      creationDate: creationDate,
+      nodes: nodes,
+      edges: edges,
+      nextNodeId: nextNodeId,
+      adminConfig: typeof adminConfig !== 'undefined' ? adminConfig : {},
+      lastEditedBy: getUserId() || null,
+      lastEditedAt: new Date().toISOString(),
+    };
+    
+    try {
+      await saveDailyBackup(sketchData);
+      console.log('Daily backup saved');
+    } catch (err) {
+      console.warn('Failed to save daily backup:', err);
+    }
+    
+    // Step 6: Sync to cloud immediately
+    if (currentSketchId && window.syncService?.immediateSyncToCloud) {
+      try {
+        const sketchForSync = {
+          id: currentSketchId,
+          name: currentSketchName,
+          creationDate: creationDate,
+          nodes: nodes,
+          edges: edges,
+          adminConfig: typeof adminConfig !== 'undefined' ? adminConfig : {},
+          lastEditedBy: getUserId() || null,
+          lastEditedAt: new Date().toISOString(),
+        };
+        await window.syncService.immediateSyncToCloud(sketchForSync);
+        console.log('Cloud sync completed');
+      } catch (err) {
+        console.warn('Cloud sync failed:', err);
+      }
+    }
+    
+    // Save final state
+    saveToStorage();
+    
+    // Show success message
+    showToast(t('finishWorkDayComplete') || 'יום עבודה הסתיים בהצלחה!');
+    
+  } catch (err) {
+    console.error('Finish work day failed:', err);
+    showToast(t('finishWorkDayFailed') || 'שגיאה בסיום יום עבודה');
+  }
+}
+
+// Event listeners for finish work day buttons
+if (finishWorkDayBtn) {
+  finishWorkDayBtn.addEventListener('click', () => {
+    // Close the dropdown first
+    if (exportDropdown) exportDropdown.classList.remove('open');
+    finishWorkDay();
+  });
+}
+
+if (mobileFinishWorkDayBtn) {
+  mobileFinishWorkDayBtn.addEventListener('click', () => {
+    try { closeMobileMenu(); } catch (_) { }
+    finishWorkDay();
+  });
 }
 
 init();

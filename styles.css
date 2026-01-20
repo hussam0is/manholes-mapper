@@ -320,6 +320,35 @@ header h1 {
   color: var(--color-muted);
 }
 
+.dropdown-item-primary {
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.dropdown-item-primary .material-icons {
+  color: var(--color-primary);
+}
+
+.dropdown-item-primary:hover {
+  background: rgba(37, 99, 235, 0.1);
+}
+
+/* Finish Work Day button styling */
+.btn-finish-workday {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: white !important;
+  border: none;
+  font-weight: 500;
+}
+
+.btn-finish-workday:hover {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+}
+
+.btn-finish-workday .material-icons {
+  color: white;
+}
+
 .dropdown-divider {
   margin: 0.25rem 0;
   border: none;
@@ -1485,6 +1514,121 @@ input.floating-keyboard-active {
   /* Inherits from #adminModal existing styles */
 }
 
+/* Orphan Correction Modal Styles */
+.modal-wrapper {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-wrapper[style*="display: flex"] {
+  display: flex !important;
+}
+
+.orphan-correction-container {
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  width: 100%;
+  max-width: 500px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.modal-header h2 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  color: var(--color-text);
+}
+
+.modal-header h2 .material-icons {
+  color: #f59e0b; /* amber-500 for warning */
+}
+
+.modal-content {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-content p {
+  margin: 0 0 1rem;
+  color: var(--color-muted);
+}
+
+.orphan-nodes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.orphan-node-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-bg);
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+}
+
+.orphan-node-id {
+  font-weight: 600;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.orphan-node-id .material-icons {
+  font-size: 1.1rem;
+  color: var(--color-muted);
+}
+
+.orphan-node-type-select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  font-size: 0.9rem;
+  min-width: 140px;
+}
+
+.modal-actions {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  background: var(--color-bg);
+}
+
+/* RTL adjustments for modal */
+html[dir="rtl"] .orphan-node-item {
+  flex-direction: row-reverse;
+}
+
+html[dir="rtl"] .modal-actions {
+  flex-direction: row-reverse;
+}
+
 .admin-screen-wrapper {
   /* Inherits from #adminScreen existing styles */
 }
@@ -1690,7 +1834,7 @@ input.floating-keyboard-active {
   min-height: 0;
   /* allow the flex child to shrink and enable scrolling */
   overflow-y: auto;
-  overflow-x: auto;
+  overflow-x: hidden; /* prevent horizontal scroll/dance */
   -webkit-overflow-scrolling: touch;
 }
 
@@ -2158,7 +2302,7 @@ select.invalid:focus {
 
   .admin-content {
     padding: 1rem;
-    padding-bottom: 100px; /* Space for fixed action bar */
+    padding-bottom: 70px; /* Space for compact fixed action bar */
   }
 
   .admin-tabs {
@@ -2211,10 +2355,12 @@ select.invalid:focus {
   }
 
   .admin-actions {
-    padding: 1rem;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
+    padding: 0.75rem;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
     position: fixed;
     bottom: 0;
     left: 0;
@@ -2226,32 +2372,41 @@ select.invalid:focus {
   }
 
   .admin-actions .btn {
-    min-height: 50px; /* iOS recommended touch target */
-    font-size: 1rem;
-    border-radius: 10px;
+    min-height: 44px; /* iOS minimum touch target */
+    font-size: 0.875rem;
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
   }
 
   .admin-import-export {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.5rem;
-    width: 100%;
+    display: flex;
+    gap: 0.375rem;
+    flex-shrink: 0;
   }
 
   .admin-import-export .btn {
-    width: 100%;
     justify-content: center;
   }
 
+  /* Hide labels on import/export buttons for compact view */
+  .admin-import-export .btn .label {
+    display: none;
+  }
+
+  .admin-import-export .btn .material-icons {
+    margin: 0;
+  }
+
   .admin-action-buttons {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
     gap: 0.5rem;
-    width: 100%;
+    flex: 1;
+    justify-content: flex-end;
   }
 
   .admin-action-buttons .btn {
-    width: 100%;
+    flex: 1;
+    max-width: 140px;
     justify-content: center;
   }
 
@@ -2581,32 +2736,30 @@ select.invalid:focus {
   }
 
   .admin-actions {
-    padding: 0.875rem;
-    gap: 0.5rem;
+    padding: 0.625rem;
+    gap: 0.375rem;
   }
 
   .admin-import-export {
-    grid-template-columns: 1fr 1fr;
-    gap: 0.4rem;
+    gap: 0.25rem;
   }
 
   .admin-action-buttons {
-    grid-template-columns: 1fr 1fr;
-    gap: 0.4rem;
+    gap: 0.375rem;
   }
 
   .admin-actions .btn {
-    padding: 0.75rem 0.5rem;
-    font-size: 0.9rem;
-    min-height: 48px;
+    padding: 0.5rem 0.625rem;
+    font-size: 0.8rem;
+    min-height: 40px;
   }
 
-  .admin-actions .btn .label {
-    font-size: 0.8rem;
+  .admin-action-buttons .btn {
+    max-width: 120px;
   }
 
   .admin-actions .btn .material-icons {
-    font-size: 1.1rem;
+    font-size: 1rem;
   }
 
   /* Stack checkbox in single column on very small screens */
@@ -3510,6 +3663,9 @@ select.invalid:focus {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* Sections wrapper for scrolling */
@@ -3517,6 +3673,9 @@ select.invalid:focus {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* Modern tabs (segmented control style) */
@@ -3573,6 +3732,9 @@ select.invalid:focus {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* Menu group (like mobile menu groups) */
@@ -3582,6 +3744,9 @@ select.invalid:focus {
   border-radius: 12px;
   overflow: hidden;
   transition: all 0.2s ease;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .admin-menu-group:hover {
@@ -3636,6 +3801,18 @@ select.invalid:focus {
 .admin-menu-group-content {
   padding: 1rem;
   border-top: 1px solid var(--color-border);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+/* Menu items container */
+.admin-menu-items {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 /* Menu description */
@@ -3651,6 +3828,9 @@ select.invalid:focus {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .admin-toggle-item {
@@ -3715,6 +3895,9 @@ select.invalid:focus {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .admin-field-item {
@@ -3755,6 +3938,9 @@ select.invalid:focus {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .admin-option-card {
@@ -3763,6 +3949,9 @@ select.invalid:focus {
   border-radius: 12px;
   padding: 1rem;
   transition: all 0.2s ease;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .admin-option-card:hover {
@@ -3794,6 +3983,8 @@ select.invalid:focus {
   flex-direction: column;
   gap: 0.5rem;
   min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .admin-option-label-input {

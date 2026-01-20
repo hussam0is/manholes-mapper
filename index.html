@@ -81,6 +81,11 @@
               <span class="material-icons">call_split</span>
               <span class="dropdown-label"></span>
             </button>
+            <hr class="dropdown-divider" />
+            <button id="finishWorkDayBtn" class="dropdown-item dropdown-item-primary">
+              <span class="material-icons">done_all</span>
+              <span class="dropdown-label">סיום יום עבודה</span>
+            </button>
           </div>
         </div>
       </div>
@@ -243,6 +248,10 @@
         <span class="material-icons">save</span>
         <span class="label"></span>
       </button>
+      <button id="mobileFinishWorkDayBtn" class="btn btn-finish-workday" title="">
+        <span class="material-icons">done_all</span>
+        <span class="label">סיום יום עבודה</span>
+      </button>
       
       <!-- Settings group -->
       <div class="menu-divider"></div>
@@ -401,6 +410,25 @@
               <button id="adminCancelBtn" class="btn btn-ghost" type="button">ביטול</button>
               <button id="adminSaveBtn" class="btn btn-primary" type="button">שמור הגדרות</button>
             </div>
+          </div>
+        </div>
+      </div>
+      <!-- Orphan Edge Correction Modal -->
+      <div id="orphanCorrectionModal" class="modal-wrapper" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="orphanCorrectionTitle">
+        <div class="panel orphan-correction-container">
+          <div class="modal-header">
+            <h2 id="orphanCorrectionTitle">
+              <span class="material-icons">warning</span>
+              <span id="orphanCorrectionTitleText">נמצאו קווים עם שוחות חסרות</span>
+            </h2>
+          </div>
+          <div id="orphanCorrectionContent" class="modal-content">
+            <p id="orphanCorrectionDesc">יש לבחור סוג לכל שוחה חסרה כדי להמשיך:</p>
+            <div id="orphanNodesList" class="orphan-nodes-list"></div>
+          </div>
+          <div class="modal-actions">
+            <button id="orphanCorrectionCancelBtn" class="btn btn-ghost" type="button">ביטול</button>
+            <button id="orphanCorrectionConfirmBtn" class="btn btn-primary" type="button">אשר והמשך</button>
           </div>
         </div>
       </div>
