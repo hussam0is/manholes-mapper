@@ -181,7 +181,6 @@ export const i18n = {
       success: 'יום העבודה הסתיים בהצלחה!',
       noChanges: 'אין שינויים לשמירה',
     },
-    adminPanel: 'לוח ניהול',
     admin: {
       manage: 'ניהול',
       title: 'הגדרות מנהל',
@@ -413,7 +412,6 @@ export const i18n = {
       success: 'Workday finished successfully!',
       noChanges: 'No changes to save',
     },
-    adminPanel: 'Admin Panel',
     admin: {
       manage: 'Admin',
       title: 'Admin Settings',
