@@ -35,6 +35,8 @@
       <h1 id="appTitle">Manhole Mapper (ממפה שוחות)</h1>
       <span id="sketchNameDisplay" class="sketch-name-display"></span>
     </div>
+    <!-- Mobile sketch name display (positioned after header on small screens) -->
+    <span id="sketchNameDisplayMobile" class="sketch-name-display-mobile"></span>
     <div id="controls">
       <!-- Primary actions -->
       <div class="toolbar-group">
@@ -139,10 +141,6 @@
         <div id="clerkUserButton"></div>
       </div>
     </div>
-    <!-- Mobile only: user badge -->
-    <div class="toolbar-group" id="mobileUserButtonContainer">
-      <div id="clerkUserButtonMobile"></div>
-    </div>
     <!-- Mobile only: toggle to open overflow menu (moved outside #controls so it remains visible on small screens) -->
     <button id="mobileMenuBtn" class="btn btn-ghost" title="">
       <span class="material-icons">menu</span>
@@ -186,6 +184,10 @@
       <button id="mobileMenuCloseBtn" class="mobile-menu-close" title="סגור" aria-label="Close menu">
         <span class="material-icons">close</span>
       </button>
+    </div>
+    <!-- User account badge (Clerk) - shown in mobile menu -->
+    <div id="mobileUserButtonContainer" class="mobile-user-container">
+      <div id="mobileClerkUserButton"></div>
     </div>
     <!-- Scrollable content area -->
     <div class="mobile-menu-content">

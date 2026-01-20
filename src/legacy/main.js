@@ -95,6 +95,7 @@ const sizeIncreaseBtn = document.getElementById('sizeIncreaseBtn');
 const sizeDecreaseBtn = document.getElementById('sizeDecreaseBtn');
 const appTitleEl = document.getElementById('appTitle');
 const sketchNameDisplayEl = document.getElementById('sketchNameDisplay');
+const sketchNameDisplayMobileEl = document.getElementById('sketchNameDisplayMobile');
 const sidebarTitleEl = document.getElementById('sidebarTitle');
 const detailsDefaultEl = document.getElementById('detailsDefault');
 const sidebarEl = document.getElementById('sidebar');
@@ -217,15 +218,21 @@ let dragOffset = { x: 0, y: 0 };
 // Current interaction mode: 'node' to create nodes, 'edge' to create edges
 let currentMode = 'node';
 let pendingEdgeTail = null;
+// For inbound dangling edges: when user clicks empty space first, store the position
+let pendingEdgeStartPosition = null; // { x, y } or null - for creating inbound dangling edges
 let creationDate = null;
 let currentSketchId = null; // id in library; null means unsaved new sketch
 let currentSketchName = null; // human-friendly name for the sketch
 let autosaveEnabled = true;
 
-// Update the sketch name display in the header
+// Update the sketch name display in the header (desktop and mobile)
 function updateSketchNameDisplay() {
+  const name = currentSketchName || '';
   if (sketchNameDisplayEl) {
-    sketchNameDisplayEl.textContent = currentSketchName || '';
+    sketchNameDisplayEl.textContent = name;
+  }
+  if (sketchNameDisplayMobileEl) {
+    sketchNameDisplayMobileEl.textContent = name;
   }
 }
 let currentLang = 'he';
@@ -749,13 +756,13 @@ function mountClerkSignUp() {
   }
 }
 
-// Update user button visibility
+// Update user button visibility (desktop and mobile)
 function updateUserButtonVisibility(isSignedIn) {
   if (userButtonContainer) {
     userButtonContainer.style.display = isSignedIn ? 'flex' : 'none';
   }
   if (mobileUserButtonContainer) {
-    mobileUserButtonContainer.style.display = isSignedIn ? '' : 'none';
+    mobileUserButtonContainer.style.display = isSignedIn ? 'flex' : 'none';
   }
 }
 
@@ -1994,7 +2001,7 @@ function createNode(x, y) {
   // Check for nearby dangling edges and auto-connect
   const nearbyDangling = findDanglingEdgeNear(x, y);
   if (nearbyDangling) {
-    connectDanglingEdge(nearbyDangling.edge, node.id);
+    connectDanglingEdge(nearbyDangling.edge, node.id, nearbyDangling.type);
     showToast(t('toasts.danglingEdgeConnected'));
   }
   
@@ -2006,16 +2013,18 @@ function createNode(x, y) {
 /**
  * Create a directed edge between two nodes.
  * Prevents duplicates regardless of direction (A→B or B→A).
- * Supports dangling edges where headId is null.
- * @param {string|number} tailId - Source node id
- * @param {string|number|null} headId - Target node id (null for dangling edge)
- * @param {object} options - Optional: { danglingEndpoint: {x, y} } for dangling edge position
+ * Supports dangling edges where either tailId or headId is null.
+ * @param {string|number|null} tailId - Source node id (null for inbound dangling edge)
+ * @param {string|number|null} headId - Target node id (null for outbound dangling edge)
+ * @param {object} options - Optional: { danglingEndpoint: {x, y}, tailPosition: {x, y} }
  * @returns {object|null} The created edge, or null if duplicate exists
  */
 function createEdge(tailId, headId, options = {}) {
-  const tailStr = String(tailId);
+  const tailStr = tailId != null ? String(tailId) : null;
   const headStr = headId != null ? String(headId) : null;
-  const isDangling = headStr === null;
+  const isDanglingHead = headStr === null; // outbound: missing head
+  const isDanglingTail = tailStr === null; // inbound: missing tail
+  const isDangling = isDanglingHead || isDanglingTail;
   
   // Block duplicate edges in either direction (only for non-dangling edges)
   if (!isDangling) {
@@ -2033,7 +2042,8 @@ function createEdge(tailId, headId, options = {}) {
     tail: tailStr,
     head: headStr,
     isDangling: isDangling,
-    danglingEndpoint: isDangling ? (options.danglingEndpoint || null) : null,
+    danglingEndpoint: isDanglingHead ? (options.danglingEndpoint || null) : null, // for outbound
+    tailPosition: isDanglingTail ? (options.tailPosition || null) : null, // for inbound
     tail_measurement: (adminConfig.edges?.defaults?.tail_measurement ?? ''),
     head_measurement: (adminConfig.edges?.defaults?.head_measurement ?? ''),
     fall_depth: (adminConfig.edges?.defaults?.fall_depth ?? ''),
@@ -2065,16 +2075,27 @@ function createEdge(tailId, headId, options = {}) {
  * @param {number} endY - Y coordinate for the dangling endpoint
  * @returns {object} The created dangling edge
  */
+/**
+ * Create an outbound dangling edge (from node to open end).
+ */
 function createDanglingEdge(tailId, endX, endY) {
   return createEdge(tailId, null, { danglingEndpoint: { x: endX, y: endY } });
 }
 
 /**
+ * Create an inbound dangling edge (from open end to node).
+ */
+function createInboundDanglingEdge(startX, startY, headId) {
+  return createEdge(null, headId, { tailPosition: { x: startX, y: startY } });
+}
+
+/**
  * Find all incomplete/dangling edges (edges with only one connected node).
+ * Includes both outbound (head === null) and inbound (tail === null) dangling edges.
  * @returns {Array<object>} Array of dangling edges
  */
 function findIncompleteEdges() {
-  return edges.filter(edge => edge.isDangling || edge.head === null);
+  return edges.filter(edge => edge.isDangling || edge.head === null || edge.tail === null);
 }
 
 /**
@@ -2098,10 +2119,11 @@ function updateIncompleteEdgeTracker() {
 
 /**
  * Find a dangling edge whose open endpoint is within snap distance of the given position.
+ * Checks both outbound (danglingEndpoint) and inbound (tailPosition) dangling edges.
  * @param {number} x - X coordinate to check
  * @param {number} y - Y coordinate to check
  * @param {number} snapDistance - Maximum distance to consider for snapping (default 30)
- * @returns {{edge: object, distance: number}|null} The closest dangling edge within range, or null
+ * @returns {{edge: object, distance: number, type: 'outbound'|'inbound'}|null} The closest dangling edge within range, or null
  */
 function findDanglingEdgeNear(x, y, snapDistance = 30) {
   const incompleteEdges = findIncompleteEdges();
@@ -2109,13 +2131,25 @@ function findDanglingEdgeNear(x, y, snapDistance = 30) {
   let minDist = snapDistance;
   
   for (const edge of incompleteEdges) {
-    if (!edge.danglingEndpoint) continue;
-    const dx = edge.danglingEndpoint.x - x;
-    const dy = edge.danglingEndpoint.y - y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist < minDist) {
-      minDist = dist;
-      closest = { edge, distance: dist };
+    // Check outbound dangling edges (head is null, danglingEndpoint has position)
+    if (edge.danglingEndpoint) {
+      const dx = edge.danglingEndpoint.x - x;
+      const dy = edge.danglingEndpoint.y - y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < minDist) {
+        minDist = dist;
+        closest = { edge, distance: dist, type: 'outbound' };
+      }
+    }
+    // Check inbound dangling edges (tail is null, tailPosition has position)
+    if (edge.tailPosition) {
+      const dx = edge.tailPosition.x - x;
+      const dy = edge.tailPosition.y - y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < minDist) {
+        minDist = dist;
+        closest = { edge, distance: dist, type: 'inbound' };
+      }
     }
   }
   
@@ -2126,11 +2160,19 @@ function findDanglingEdgeNear(x, y, snapDistance = 30) {
  * Connect a dangling edge to a newly created node.
  * @param {object} edge - The dangling edge to connect
  * @param {string} nodeId - The node ID to connect to
+ * @param {'outbound'|'inbound'} type - Type of dangling edge
  */
-function connectDanglingEdge(edge, nodeId) {
-  edge.head = String(nodeId);
+function connectDanglingEdge(edge, nodeId, type = 'outbound') {
+  if (type === 'outbound') {
+    // Outbound: connect the open head end to the new node
+    edge.head = String(nodeId);
+    edge.danglingEndpoint = null;
+  } else {
+    // Inbound: connect the open tail end to the new node
+    edge.tail = String(nodeId);
+    edge.tailPosition = null;
+  }
   edge.isDangling = false;
-  edge.danglingEndpoint = null;
   saveToStorage();
 }
 
@@ -2153,11 +2195,25 @@ function draw() {
     drawEdge(edge);
   });
   // Draw a rubber-band preview when creating an edge
-  if (currentMode === 'edge' && pendingEdgeTail && pendingEdgePreview) {
-    const x1 = pendingEdgeTail.x;
-    const y1 = pendingEdgeTail.y;
-    const x2 = pendingEdgePreview.x;
-    const y2 = pendingEdgePreview.y;
+  if (currentMode === 'edge' && pendingEdgePreview) {
+    let x1, y1, x2, y2;
+    
+    if (pendingEdgeTail) {
+      // Normal preview: from node to cursor
+      x1 = pendingEdgeTail.x;
+      y1 = pendingEdgeTail.y;
+      x2 = pendingEdgePreview.x;
+      y2 = pendingEdgePreview.y;
+    } else if (pendingEdgeStartPosition) {
+      // Inbound preview: from start position to cursor
+      x1 = pendingEdgeStartPosition.x;
+      y1 = pendingEdgeStartPosition.y;
+      x2 = pendingEdgePreview.x;
+      y2 = pendingEdgePreview.y;
+    } else {
+      x1 = x2 = y1 = y2 = 0; // Should not happen
+    }
+    
     ctx.save();
     ctx.strokeStyle = COLORS.edge.preview;
     ctx.fillStyle = COLORS.edge.preview;
@@ -2182,6 +2238,16 @@ function draw() {
     );
     ctx.closePath();
     ctx.fill();
+    
+    // Draw a small circle at the start position when creating inbound edge
+    if (pendingEdgeStartPosition) {
+      const circleRadius = 5 * sizeScale;
+      ctx.beginPath();
+      ctx.arc(x1, y1, circleRadius, 0, Math.PI * 2);
+      ctx.strokeStyle = COLORS.edge.preview;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
     ctx.restore();
   }
   // Draw nodes on top and collect label data
@@ -2372,12 +2438,18 @@ function computeNodeTypes() {
 }
 
 function drawEdge(edge) {
-  const tailNode = nodes.find((n) => n.id === edge.tail);
+  const tailNode = edge.tail != null ? nodes.find((n) => n.id === edge.tail) : null;
   const headNode = edge.head != null ? nodes.find((n) => n.id === edge.head) : null;
   
-  // Handle dangling edges (edges with only one connected node)
+  // Handle outbound dangling edges (head is null, tail is a node)
   if (edge.isDangling || (edge.head === null && tailNode)) {
-    drawDanglingEdgeLocal(edge, tailNode);
+    drawDanglingEdgeLocal(edge, tailNode, 'outbound');
+    return;
+  }
+  
+  // Handle inbound dangling edges (tail is null, head is a node)
+  if (edge.tail === null && headNode && edge.tailPosition) {
+    drawDanglingEdgeLocal(edge, headNode, 'inbound');
     return;
   }
   
@@ -3400,8 +3472,11 @@ function pointerDown(x, y) {
   // Edge creation and selection mode
   if (currentMode === 'edge') {
     const edgeAt = findEdgeAt(world.x, world.y);
-    if (!pendingEdgeTail) {
+    
+    // Case 1: No pending edge yet
+    if (!pendingEdgeTail && !pendingEdgeStartPosition) {
       if (node) {
+        // Start from a node (for normal or outbound dangling edge)
         pendingEdgeTail = node;
         pendingEdgePreview = { x: world.x, y: world.y };
         showToast(t('toasts.chooseTarget'));
@@ -3415,8 +3490,16 @@ function pointerDown(x, y) {
         scheduleDraw();
         return;
       }
-      // Nothing under cursor; do nothing
-    } else {
+      // Clicked empty space first - start inbound dangling edge
+      pendingEdgeStartPosition = { x: world.x, y: world.y };
+      pendingEdgePreview = { x: world.x, y: world.y };
+      showToast(t('toasts.chooseTargetInbound'));
+      scheduleDraw();
+      return;
+    }
+    
+    // Case 2: We started from a node (pendingEdgeTail is set)
+    if (pendingEdgeTail) {
       if (node) {
         // If user clicked the same node again, cancel pending edge creation
         if (String(node.id) === String(pendingEdgeTail.id)) {
@@ -3447,7 +3530,7 @@ function pointerDown(x, y) {
         scheduleDraw();
         return;
       }
-      // Clicked empty space; create a dangling edge with open end at this position
+      // Clicked empty space; create an outbound dangling edge
       const danglingEdge = createDanglingEdge(pendingEdgeTail.id, world.x, world.y);
       pendingEdgeTail = null;
       pendingEdgePreview = null;
@@ -3455,6 +3538,42 @@ function pointerDown(x, y) {
         showToast(t('toasts.danglingEdgeCreated'));
         updateIncompleteEdgeTracker();
       }
+      scheduleDraw();
+      return;
+    }
+    
+    // Case 3: We started from empty space (pendingEdgeStartPosition is set)
+    if (pendingEdgeStartPosition) {
+      if (node) {
+        // Create an inbound dangling edge (from position to node)
+        const inboundEdge = createInboundDanglingEdge(
+          pendingEdgeStartPosition.x, 
+          pendingEdgeStartPosition.y, 
+          node.id
+        );
+        pendingEdgeStartPosition = null;
+        pendingEdgePreview = null;
+        if (inboundEdge) {
+          showToast(t('toasts.danglingEdgeCreated'));
+          updateIncompleteEdgeTracker();
+        }
+        scheduleDraw();
+        return;
+      }
+      if (edgeAt) {
+        // Cancel and select the edge
+        pendingEdgeStartPosition = null;
+        pendingEdgePreview = null;
+        selectedEdge = edgeAt;
+        selectedNode = null;
+        renderDetails();
+        scheduleDraw();
+        return;
+      }
+      // Clicked empty space again - cancel
+      pendingEdgeStartPosition = null;
+      pendingEdgePreview = null;
+      showToast(t('toasts.edgeCancelled'));
       scheduleDraw();
       return;
     }
@@ -3533,7 +3652,7 @@ function pointerMove(x, y) {
     return;
   }
   // Update edge preview while selecting target in edge mode
-  if (currentMode === 'edge' && pendingEdgeTail) {
+  if (currentMode === 'edge' && (pendingEdgeTail || pendingEdgeStartPosition)) {
     pendingEdgePreview = { x: world.x, y: world.y };
     scheduleDraw();
   }
@@ -3782,7 +3901,7 @@ canvas.addEventListener('touchmove', (e) => {
       const x = touch.clientX - rect.left;
       const y = touch.clientY - rect.top;
       // Update edge preview while selecting target in edge mode (touch)
-      if (currentMode === 'edge' && pendingEdgeTail) {
+      if (currentMode === 'edge' && (pendingEdgeTail || pendingEdgeStartPosition)) {
         const world = screenToWorld(x, y);
         pendingEdgePreview = { x: world.x, y: world.y };
         scheduleDraw();
@@ -4172,14 +4291,13 @@ if (sketchListEl) {
     const target = e.target;
     if (!(target instanceof HTMLElement)) return;
     // Inline title editing: clicking on title turns it into an input
-    const titleEl = target.closest('.sketch-title');
-    if (titleEl) {
-      const id = titleEl.getAttribute('data-id');
+    if (target.classList.contains('sketch-title')) {
+      const id = target.getAttribute('data-id');
       if (!id) return;
       const lib = getLibrary();
       const rec = lib.find((r) => r.id === id);
       if (!rec) return;
-      const originalTitle = (titleEl.textContent || '').trim();
+      const originalTitle = (target.textContent || '').trim();
       const hadExplicitName = !!(rec.name && rec.name.trim().length > 0);
       const currentValue = hadExplicitName ? rec.name : originalTitle;
       const input = document.createElement('input');
@@ -4190,7 +4308,7 @@ if (sketchListEl) {
       input.style.boxSizing = 'border-box';
       input.setAttribute('data-id', id);
       // Replace the title div with the input
-      titleEl.replaceWith(input);
+      target.replaceWith(input);
       input.focus();
       // Select all text for quick overwrite
       input.select();
@@ -4234,11 +4352,8 @@ if (sketchListEl) {
       input.addEventListener('blur', commit);
       return;
     }
-    // Find the button with data-action attribute (handles clicks on child elements like icons/text)
-    const actionBtn = target.closest('[data-action]');
-    if (!actionBtn) return;
-    const action = actionBtn.getAttribute('data-action');
-    const id = actionBtn.getAttribute('data-id');
+    const action = target.getAttribute('data-action');
+    const id = target.getAttribute('data-id');
     if (!action || !id) return;
     if (action === 'open') {
       hideHome();

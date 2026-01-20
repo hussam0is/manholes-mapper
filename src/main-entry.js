@@ -46,20 +46,22 @@ if (typeof window !== 'undefined' && CLERK_KEY) {
         sessionId: clerk.session?.id || null,
       };
 
-      // Function to mount or refresh the user button
+      // Function to mount or refresh the user button (desktop and mobile)
       const refreshUserButton = () => {
-        const containers = [
-          document.getElementById('clerkUserButton'),
-          document.getElementById('clerkUserButtonMobile'),
-        ].filter(Boolean);
-
-        if (!clerk.user) return;
-
-        containers.forEach((container) => {
-          clerk.mountUserButton(container, {
+        // Mount on desktop header
+        const userBtnContainer = document.getElementById('clerkUserButton');
+        if (userBtnContainer && clerk.user) {
+          clerk.mountUserButton(userBtnContainer, {
             afterSignOutUrl: '#/login',
           });
-        });
+        }
+        // Mount on mobile menu
+        const mobileUserBtnContainer = document.getElementById('mobileClerkUserButton');
+        if (mobileUserBtnContainer && clerk.user) {
+          clerk.mountUserButton(mobileUserBtnContainer, {
+            afterSignOutUrl: '#/login',
+          });
+        }
       };
 
       // Update auth state when Clerk loads

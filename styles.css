@@ -165,21 +165,6 @@ header h1 {
   #appTitle::after {
     opacity: 0.85;
   }
-  
-  .sketch-name-display {
-    color: #93c5fd;
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.15) 100%);
-    border-color: rgba(59, 130, 246, 0.3);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  }
-  
-  .sketch-name-display::before {
-    color: #60a5fa;
-  }
-  
-  #brand:has(.sketch-name-display:not(:empty))::after {
-    background: linear-gradient(to bottom, transparent, rgba(96, 165, 250, 0.4), transparent);
-  }
 }
 
 #brand {
@@ -188,7 +173,7 @@ header h1 {
   gap: 10px;
 }
 
-/* Sketch name display in header */
+/* Sketch name display in header - Desktop version */
 .sketch-name-display {
   font-size: 0.9rem;
   font-weight: 600;
@@ -197,13 +182,12 @@ header h1 {
   background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(59, 130, 246, 0.08) 100%);
   border-radius: 20px;
   border: 1px solid rgba(37, 99, 235, 0.2);
-  max-width: 220px;
+  max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   display: none;
   margin-inline-start: 8px;
-  position: relative;
   box-shadow: 0 1px 3px rgba(37, 99, 235, 0.1);
 }
 
@@ -220,21 +204,6 @@ header h1 {
   color: #3b82f6;
 }
 
-/* Separator before sketch name */
-#brand::after {
-  content: '';
-  display: none;
-}
-
-#brand:has(.sketch-name-display:not(:empty))::after {
-  content: '';
-  display: block;
-  width: 1px;
-  height: 24px;
-  background: linear-gradient(to bottom, transparent, rgba(37, 99, 235, 0.3), transparent);
-  margin-inline-start: 6px;
-}
-
 @media (max-width: 900px) {
   .sketch-name-display {
     max-width: 140px;
@@ -247,38 +216,76 @@ header h1 {
   }
 }
 
-/* Mobile: show sketch name below header */
+/* Hide desktop version on mobile */
 @media (max-width: 600px) {
-  .sketch-name-display:not(:empty) {
-    display: inline-flex;
-    position: fixed;
-    top: 52px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 90;
-    max-width: calc(100vw - 100px);
-    font-size: 0.75rem;
-    padding: 4px 10px;
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid rgba(37, 99, 235, 0.25);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  }
-  
-  .sketch-name-display::before {
-    font-size: 0.85rem;
-  }
-  
-  #brand::after {
+  .sketch-name-display {
     display: none !important;
   }
 }
 
-/* Mobile dark mode for sketch name */
-@media (max-width: 600px) and (prefers-color-scheme: dark) {
-  .sketch-name-display:not(:empty) {
+/* Mobile sketch name display - positioned in header */
+.sketch-name-display-mobile {
+  display: none;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #1e40af;
+  padding: 3px 8px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  margin-inline-start: auto;
+  margin-inline-end: 6px;
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.sketch-name-display-mobile:not(:empty) {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.sketch-name-display-mobile::before {
+  content: 'description';
+  font-family: 'Material Icons';
+  font-size: 0.8rem;
+  color: #3b82f6;
+  flex-shrink: 0;
+}
+
+/* Hide mobile version on larger screens */
+@media (min-width: 601px) {
+  .sketch-name-display-mobile {
+    display: none !important;
+  }
+}
+
+/* Dark mode for sketch name displays */
+@media (prefers-color-scheme: dark) {
+  .sketch-name-display {
+    color: #93c5fd;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.15) 100%);
+    border-color: rgba(59, 130, 246, 0.3);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+  
+  .sketch-name-display::before {
+    color: #60a5fa;
+  }
+  
+  .sketch-name-display-mobile {
+    color: #93c5fd;
     background: rgba(15, 23, 42, 0.95);
-    border-color: rgba(59, 130, 246, 0.35);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+  
+  .sketch-name-display-mobile::before {
+    color: #60a5fa;
   }
 }
 
@@ -3238,11 +3245,6 @@ select.invalid:focus {
     display: none;
   }
 
-  /* Show the user badge on small screens */
-  #mobileUserButtonContainer {
-    display: inline-flex;
-  }
-
   /* Show the mobile menu toggle button on small screens */
   #mobileMenuBtn {
     display: inline-flex;
@@ -5164,22 +5166,27 @@ select.invalid:focus {
   align-items: center;
 }
 
-/* Mobile user button (hidden by default) */
-#mobileUserButtonContainer {
-  display: none;
-  align-items: center;
-}
-
-#clerkUserButtonMobile {
-  display: flex;
-  align-items: center;
-}
-
 .clerk-avatar {
   width: 32px;
   height: 32px;
   border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Mobile user button container in mobile menu */
+.mobile-user-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-strong) 100%);
+  border-bottom: 1px solid var(--color-border);
+}
+
+#mobileClerkUserButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Sync status indicator */
