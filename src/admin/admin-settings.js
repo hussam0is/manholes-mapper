@@ -72,7 +72,8 @@ export class AdminSettings {
    */
   render() {
     this.container.innerHTML = '';
-    this.container.className = 'admin-modern-content';
+    // Keep existing classes (e.g., admin-content for scrolling) and add modern styling
+    this.container.classList.add('admin-modern-content');
 
     // Tabs (styled like segmented controls)
     const tabs = this._createTabs();
