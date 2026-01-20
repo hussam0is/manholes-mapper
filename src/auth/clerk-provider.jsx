@@ -5,6 +5,8 @@
  * This enables useAuth, useUser, and other Clerk hooks throughout the app.
  */
 
+import React from 'react';
+import { createRoot } from 'react-dom/client';
 import { ClerkProvider, SignIn, SignUp, UserButton, useAuth, useUser } from '@clerk/clerk-react';
 
 // Get the publishable key from environment variables
@@ -16,14 +18,13 @@ const roots = new Map();
 /**
  * Get or create a React root for a container
  * @param {HTMLElement} container 
- * @param {Object} ReactDOM 
  * @returns {Object} React root
  */
-function getRoot(container, ReactDOM) {
+function getRoot(container) {
   if (roots.has(container)) {
     return roots.get(container);
   }
-  const root = ReactDOM.createRoot(container);
+  const root = createRoot(container);
   roots.set(container, root);
   return root;
 }
@@ -60,38 +61,33 @@ export function initClerkAuth() {
 export function mountSignIn(container, props = {}) {
   if (!container || !PUBLISHABLE_KEY) return;
   
-  // We'll use React to render the SignIn component
-  import('react').then((React) => {
-    import('react-dom/client').then((ReactDOM) => {
-      const root = getRoot(container, ReactDOM);
-      root.render(
-        React.createElement(ClerkProvider, { publishableKey: PUBLISHABLE_KEY },
-          React.createElement(SignIn, {
-            appearance: {
-              elements: {
-                rootBox: 'clerk-root-box',
-                card: 'clerk-card',
-                headerTitle: 'clerk-header-title',
-                headerSubtitle: 'clerk-header-subtitle',
-                formButtonPrimary: 'clerk-btn-primary',
-                footerActionLink: 'clerk-footer-link',
-              },
-              variables: {
-                colorPrimary: '#2563eb',
-                colorTextOnPrimaryBackground: '#ffffff',
-                borderRadius: '12px',
-              },
-            },
-            routing: 'hash',
-            signUpUrl: '#/signup',
-            afterSignInUrl: '#/',
-            afterSignUpUrl: '#/',
-            ...props
-          })
-        )
-      );
-    });
-  });
+  const root = getRoot(container);
+  root.render(
+    React.createElement(ClerkProvider, { publishableKey: PUBLISHABLE_KEY },
+      React.createElement(SignIn, {
+        appearance: {
+          elements: {
+            rootBox: 'clerk-root-box',
+            card: 'clerk-card',
+            headerTitle: 'clerk-header-title',
+            headerSubtitle: 'clerk-header-subtitle',
+            formButtonPrimary: 'clerk-btn-primary',
+            footerActionLink: 'clerk-footer-link',
+          },
+          variables: {
+            colorPrimary: '#2563eb',
+            colorTextOnPrimaryBackground: '#ffffff',
+            borderRadius: '12px',
+          },
+        },
+        routing: 'hash',
+        signUpUrl: '#/signup',
+        afterSignInUrl: '#/',
+        afterSignUpUrl: '#/',
+        ...props
+      })
+    )
+  );
 }
 
 /**
@@ -102,33 +98,29 @@ export function mountSignIn(container, props = {}) {
 export function mountSignUp(container, props = {}) {
   if (!container || !PUBLISHABLE_KEY) return;
   
-  import('react').then((React) => {
-    import('react-dom/client').then((ReactDOM) => {
-      const root = getRoot(container, ReactDOM);
-      root.render(
-        React.createElement(ClerkProvider, { publishableKey: PUBLISHABLE_KEY },
-          React.createElement(SignUp, {
-            appearance: {
-              elements: {
-                rootBox: 'clerk-root-box',
-                card: 'clerk-card',
-              },
-              variables: {
-                colorPrimary: '#2563eb',
-                colorTextOnPrimaryBackground: '#ffffff',
-                borderRadius: '12px',
-              },
-            },
-            routing: 'hash',
-            signInUrl: '#/login',
-            afterSignInUrl: '#/',
-            afterSignUpUrl: '#/',
-            ...props
-          })
-        )
-      );
-    });
-  });
+  const root = getRoot(container);
+  root.render(
+    React.createElement(ClerkProvider, { publishableKey: PUBLISHABLE_KEY },
+      React.createElement(SignUp, {
+        appearance: {
+          elements: {
+            rootBox: 'clerk-root-box',
+            card: 'clerk-card',
+          },
+          variables: {
+            colorPrimary: '#2563eb',
+            colorTextOnPrimaryBackground: '#ffffff',
+            borderRadius: '12px',
+          },
+        },
+        routing: 'hash',
+        signInUrl: '#/login',
+        afterSignInUrl: '#/',
+        afterSignUpUrl: '#/',
+        ...props
+      })
+    )
+  );
 }
 
 /**
@@ -138,23 +130,19 @@ export function mountSignUp(container, props = {}) {
 export function mountUserButton(container) {
   if (!container || !PUBLISHABLE_KEY) return;
   
-  import('react').then((React) => {
-    import('react-dom/client').then((ReactDOM) => {
-      const root = getRoot(container, ReactDOM);
-      root.render(
-        React.createElement(ClerkProvider, { publishableKey: PUBLISHABLE_KEY },
-          React.createElement(UserButton, {
-            appearance: {
-              elements: {
-                avatarBox: 'clerk-avatar',
-              },
-            },
-            afterSignOutUrl: '#/login',
-          })
-        )
-      );
-    });
-  });
+  const root = getRoot(container);
+  root.render(
+    React.createElement(ClerkProvider, { publishableKey: PUBLISHABLE_KEY },
+      React.createElement(UserButton, {
+        appearance: {
+          elements: {
+            avatarBox: 'clerk-avatar',
+          },
+        },
+        afterSignOutUrl: '#/login',
+      })
+    )
+  );
 }
 
 // Export Clerk components for direct use

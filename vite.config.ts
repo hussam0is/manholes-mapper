@@ -19,6 +19,12 @@ export default defineConfig({
           }
           return 'assets/[name][extname]';
         },
+        manualChunks: {
+          // Split Clerk into its own chunk (large library)
+          'clerk': ['@clerk/clerk-react', '@clerk/shared'],
+          // React ecosystem in its own chunk
+          'react-vendor': ['react', 'react-dom'],
+        },
       },
     },
   },
