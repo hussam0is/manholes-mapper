@@ -2518,58 +2518,118 @@ function drawEdge(edge) {
 }
 
 /**
- * Draw a dangling edge (edge with only one connected node).
- * Shows a dashed line from the tail node to a floating endpoint with a question mark.
+ * Draw a dangling edge with dashed/fading end.
  * @param {object} edge - The dangling edge object
- * @param {object} tailNode - The connected tail node
+ * @param {object} connectedNode - The connected node (tailNode for outbound, headNode for inbound)
+ * @param {'outbound'|'inbound'} type - Type of dangling edge
  */
-function drawDanglingEdgeLocal(edge, tailNode) {
-  if (!tailNode) return;
+function drawDanglingEdgeLocal(edge, connectedNode, type = 'outbound') {
+  if (!connectedNode) return;
   
   const isSelected = edge === selectedEdge;
-  
-  // Get or calculate the dangling endpoint position
   const defaultOffset = 80 * sizeScale;
-  const endX = edge.danglingEndpoint?.x ?? (tailNode.x + defaultOffset);
-  const endY = edge.danglingEndpoint?.y ?? (tailNode.y - defaultOffset * 0.5);
+  
+  let startX, startY, endX, endY, openEndX, openEndY;
+  
+  if (type === 'outbound') {
+    // Outbound: draw from node to dangling endpoint
+    startX = connectedNode.x;
+    startY = connectedNode.y;
+    endX = edge.danglingEndpoint?.x ?? (connectedNode.x + defaultOffset);
+    endY = edge.danglingEndpoint?.y ?? (connectedNode.y - defaultOffset * 0.5);
+    openEndX = endX;
+    openEndY = endY;
+  } else {
+    // Inbound: draw from tailPosition to node
+    startX = edge.tailPosition?.x ?? (connectedNode.x - defaultOffset);
+    startY = edge.tailPosition?.y ?? (connectedNode.y - defaultOffset * 0.5);
+    endX = connectedNode.x;
+    endY = connectedNode.y;
+    openEndX = startX;
+    openEndY = startY;
+  }
   
   ctx.save();
   
   // Use grey color for dangling edges
   const solidColor = isSelected ? '#6b7280' : '#9ca3af'; // grey-500 / grey-400
   
-  // Calculate the total length and determine where to start dashing
-  const dx = endX - tailNode.x;
-  const dy = endY - tailNode.y;
+  // Calculate the total length and determine where to start/end dashing
+  const dx = endX - startX;
+  const dy = endY - startY;
   const totalLength = Math.sqrt(dx * dx + dy * dy);
-  const dashStartLength = Math.max(0, totalLength - 30 * sizeScale); // Last 30px will be dashed/faded
+  const dashLength = 30 * sizeScale; // 30px of dashed line at the open end
   
-  // Calculate the point where dashing begins
-  const ratio = totalLength > 0 ? dashStartLength / totalLength : 0;
-  const dashStartX = tailNode.x + dx * ratio;
-  const dashStartY = tailNode.y + dy * ratio;
+  if (type === 'outbound') {
+    // Outbound: solid from node, dashed at the end
+    const dashStartLength = Math.max(0, totalLength - dashLength);
+    const ratio = totalLength > 0 ? dashStartLength / totalLength : 0;
+    const dashStartX = startX + dx * ratio;
+    const dashStartY = startY + dy * ratio;
+    
+    // Draw solid portion
+    ctx.strokeStyle = solidColor;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(dashStartX, dashStartY);
+    ctx.stroke();
+    
+    // Draw dashed portion
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = isSelected ? '#9ca3af' : '#d1d5db';
+    ctx.beginPath();
+    ctx.moveTo(dashStartX, dashStartY);
+    ctx.lineTo(endX, endY);
+    ctx.stroke();
+  } else {
+    // Inbound: dashed at the start, solid to node
+    const dashEndLength = Math.min(dashLength, totalLength);
+    const ratio = totalLength > 0 ? dashEndLength / totalLength : 0;
+    const dashEndX = startX + dx * ratio;
+    const dashEndY = startY + dy * ratio;
+    
+    // Draw dashed portion (at start)
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = isSelected ? '#9ca3af' : '#d1d5db';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(dashEndX, dashEndY);
+    ctx.stroke();
+    
+    // Draw solid portion (to node)
+    ctx.setLineDash([]);
+    ctx.strokeStyle = solidColor;
+    ctx.beginPath();
+    ctx.moveTo(dashEndX, dashEndY);
+    ctx.lineTo(endX, endY);
+    ctx.stroke();
+    
+    // Draw arrow at the node end
+    const angle = Math.atan2(dy, dx);
+    const arrowLength = 10;
+    ctx.beginPath();
+    ctx.moveTo(endX, endY);
+    ctx.lineTo(
+      endX - arrowLength * Math.cos(angle - Math.PI / 6),
+      endY - arrowLength * Math.sin(angle - Math.PI / 6)
+    );
+    ctx.lineTo(
+      endX - arrowLength * Math.cos(angle + Math.PI / 6),
+      endY - arrowLength * Math.sin(angle + Math.PI / 6)
+    );
+    ctx.closePath();
+    ctx.fillStyle = solidColor;
+    ctx.fill();
+  }
   
-  // Draw solid portion from tail to dash start point
-  ctx.strokeStyle = solidColor;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(tailNode.x, tailNode.y);
-  ctx.lineTo(dashStartX, dashStartY);
-  ctx.stroke();
-  
-  // Draw dashed/fading portion from dash start to end
-  ctx.setLineDash([4, 4]);
-  ctx.strokeStyle = isSelected ? '#9ca3af' : '#d1d5db'; // lighter grey for dashed part
-  ctx.beginPath();
-  ctx.moveTo(dashStartX, dashStartY);
-  ctx.lineTo(endX, endY);
-  ctx.stroke();
   ctx.setLineDash([]);
   
   // Draw a small open circle at the dangling end (unfilled, subtle indicator)
   const circleRadius = 5 * sizeScale;
   ctx.beginPath();
-  ctx.arc(endX, endY, circleRadius, 0, Math.PI * 2);
+  ctx.arc(openEndX, openEndY, circleRadius, 0, Math.PI * 2);
   ctx.strokeStyle = solidColor;
   ctx.lineWidth = 1.5;
   ctx.stroke();
@@ -3435,22 +3495,38 @@ function findEdgeAt(x, y, threshold) {
   let closest = null;
   let minDist = (typeof threshold === 'number') ? threshold : 8; // threshold in pixels
   edges.forEach((edge) => {
-    const tailNode = nodes.find((n) => n.id === edge.tail);
+    let tailX, tailY, headX, headY;
     
-    // Handle dangling edges - use danglingEndpoint position for head
-    let headX, headY;
-    if (edge.isDangling || edge.head === null) {
+    // Handle outbound dangling edges (tail is node, head is null)
+    if (edge.head === null && edge.tail != null) {
+      const tailNode = nodes.find((n) => n.id === edge.tail);
       if (!tailNode || !edge.danglingEndpoint) return;
+      tailX = tailNode.x;
+      tailY = tailNode.y;
       headX = edge.danglingEndpoint.x;
       headY = edge.danglingEndpoint.y;
-    } else {
+    }
+    // Handle inbound dangling edges (tail is null, head is node)
+    else if (edge.tail === null && edge.head != null) {
+      const headNode = nodes.find((n) => n.id === edge.head);
+      if (!headNode || !edge.tailPosition) return;
+      tailX = edge.tailPosition.x;
+      tailY = edge.tailPosition.y;
+      headX = headNode.x;
+      headY = headNode.y;
+    }
+    // Normal edges
+    else {
+      const tailNode = nodes.find((n) => n.id === edge.tail);
       const headNode = nodes.find((n) => n.id === edge.head);
       if (!tailNode || !headNode) return;
+      tailX = tailNode.x;
+      tailY = tailNode.y;
       headX = headNode.x;
       headY = headNode.y;
     }
     
-    const dist = distanceToSegment(x, y, tailNode.x, tailNode.y, headX, headY);
+    const dist = distanceToSegment(x, y, tailX, tailY, headX, headY);
     if (dist < minDist) {
       minDist = dist;
       closest = edge;
