@@ -9,19 +9,17 @@
 export function exportSketchToJson(sketch, filename = null) {
   // Create a complete snapshot of the sketch
   const sketchData = {
-    version: '1.1', // Schema version - updated to include user tracking
+    version: '1.1', // Schema version for future compatibility (1.1 adds metadata)
     exportDate: new Date().toISOString(),
     sketch: {
       id: sketch.sketchId || null,
       name: sketch.sketchName || null,
       creationDate: sketch.creationDate || null,
-      nextNodeId: sketch.nextNodeId || 1,
-      nodes: sketch.nodes || [],
-      edges: sketch.edges || [],
-      // User tracking fields
       createdBy: sketch.createdBy || null,
       lastEditedBy: sketch.lastEditedBy || null,
-      lastEditedAt: sketch.lastEditedAt || null,
+      nextNodeId: sketch.nextNodeId || 1,
+      nodes: sketch.nodes || [],
+      edges: sketch.edges || []
     }
   };
 
@@ -91,11 +89,12 @@ export function importSketchFromJson(file) {
           }
         }
         
-        // Validate edge structure
+        // Validate edge structure - head can be null for dangling edges
         for (const edge of sketch.edges) {
-          if (!edge.tail || !edge.head) {
-            throw new Error('Invalid edge structure: edge missing tail or head');
+          if (!edge.tail) {
+            throw new Error('Invalid edge structure: edge missing tail');
           }
+          // Note: edge.head can be null for dangling edges (edges with only one connected node)
         }
         
         // Return the validated sketch data
@@ -104,14 +103,12 @@ export function importSketchFromJson(file) {
           edges: sketch.edges,
           nextNodeId: sketch.nextNodeId || 1,
           creationDate: sketch.creationDate || null,
+          createdBy: sketch.createdBy || null,
+          lastEditedBy: sketch.lastEditedBy || null,
           sketchId: null, // Generate new ID when saving
           sketchName: sketch.name || null,
           importDate: jsonData.exportDate || null,
-          version: jsonData.version || '1.0',
-          // User tracking fields
-          createdBy: sketch.createdBy || null,
-          lastEditedBy: sketch.lastEditedBy || null,
-          lastEditedAt: sketch.lastEditedAt || null,
+          version: jsonData.version || '1.0'
         });
         
       } catch (error) {

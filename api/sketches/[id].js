@@ -52,6 +52,8 @@ export default async function handler(req, res) {
         id: sketch.id,
         name: sketch.name,
         creationDate: sketch.creation_date,
+        createdBy: sketch.created_by,
+        lastEditedBy: sketch.last_edited_by,
         createdAt: sketch.created_at,
         updatedAt: sketch.updated_at,
         nodes: sketch.nodes || [],
@@ -71,6 +73,7 @@ export default async function handler(req, res) {
         nodes: body.nodes,
         edges: body.edges,
         adminConfig: body.adminConfig,
+        lastEditedBy: body.lastEditedBy,
       });
       
       if (!updated) {
@@ -81,6 +84,8 @@ export default async function handler(req, res) {
         id: updated.id,
         name: updated.name,
         creationDate: updated.creation_date,
+        createdBy: updated.created_by,
+        lastEditedBy: updated.last_edited_by,
         createdAt: updated.created_at,
         updatedAt: updated.updated_at,
         nodes: updated.nodes || [],

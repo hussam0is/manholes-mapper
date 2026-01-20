@@ -37,8 +37,7 @@ const syncStateListeners = new Set();
 
 // Debounce timer for save operations
 let saveDebounceTimer = null;
-const SAVE_DEBOUNCE_MS_ONLINE = 500;   // Quick sync when online
-const SAVE_DEBOUNCE_MS_OFFLINE = 2000; // Longer debounce when offline (for queue)
+const SAVE_DEBOUNCE_MS = 2000;
 
 // API base URL - in development without vercel dev, API won't be available
 // In production or with vercel dev, API is same-origin
@@ -396,6 +395,7 @@ export async function syncSketchToCloud(sketch) {
         nodes: sketch.nodes,
         edges: sketch.edges,
         adminConfig: sketch.adminConfig,
+        lastEditedBy: sketch.lastEditedBy,
       });
     } else {
       // Create new sketch in cloud
@@ -405,6 +405,8 @@ export async function syncSketchToCloud(sketch) {
         nodes: sketch.nodes,
         edges: sketch.edges,
         adminConfig: sketch.adminConfig,
+        createdBy: sketch.createdBy,
+        lastEditedBy: sketch.lastEditedBy,
       });
       
       // Update local sketch with cloud ID
@@ -446,8 +448,7 @@ export async function syncSketchToCloud(sketch) {
 }
 
 /**
- * Debounced sync to cloud - called on every local change.
- * Uses shorter debounce when online for near-realtime sync.
+ * Debounced sync to cloud - called on every local change
  * @param {Object} sketch - Sketch to sync
  */
 export function debouncedSyncToCloud(sketch) {
@@ -455,28 +456,9 @@ export function debouncedSyncToCloud(sketch) {
     clearTimeout(saveDebounceTimer);
   }
   
-  // Use shorter debounce when online for quicker sync
-  const debounceMs = navigator.onLine ? SAVE_DEBOUNCE_MS_ONLINE : SAVE_DEBOUNCE_MS_OFFLINE;
-  
   saveDebounceTimer = setTimeout(() => {
     syncSketchToCloud(sketch);
-  }, debounceMs);
-}
-
-/**
- * Immediately sync to cloud without debouncing.
- * Use sparingly - primarily for critical operations like finish work day.
- * @param {Object} sketch - Sketch to sync
- */
-export async function immediateSyncToCloud(sketch) {
-  // Clear any pending debounced sync
-  if (saveDebounceTimer) {
-    clearTimeout(saveDebounceTimer);
-    saveDebounceTimer = null;
-  }
-  
-  // Sync immediately
-  return syncSketchToCloud(sketch);
+  }, SAVE_DEBOUNCE_MS);
 }
 
 /**
@@ -570,6 +552,7 @@ export async function processSyncQueue() {
               nodes: op.data.nodes,
               edges: op.data.edges,
               adminConfig: op.data.adminConfig,
+              lastEditedBy: op.data.lastEditedBy,
             });
           } else {
             const cloudSketch = await createSketchInCloud({
@@ -578,6 +561,8 @@ export async function processSyncQueue() {
               nodes: op.data.nodes,
               edges: op.data.edges,
               adminConfig: op.data.adminConfig,
+              createdBy: op.data.createdBy,
+              lastEditedBy: op.data.lastEditedBy,
             });
             op.data.id = cloudSketch.id;
             op.data.cloudSynced = true;
@@ -660,7 +645,6 @@ if (typeof window !== 'undefined') {
     syncFromCloud,
     syncSketchToCloud,
     debouncedSyncToCloud,
-    immediateSyncToCloud,
     deleteSketchEverywhere,
     processSyncQueue,
     getSyncState,

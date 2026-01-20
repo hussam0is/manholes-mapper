@@ -29,7 +29,6 @@
 
 // IndexedDB bridge moved to src/state/persistence.js and src/db.js
 import { restoreFromIndexedDbIfNeeded, idbSaveCurrentCompat, idbSaveRecordCompat, idbDeleteRecordCompat } from '../state/persistence.js';
-import { saveBackup, cleanAutoBackups, saveDailyBackup, getBackups } from '../db.js';
 import { encodeUtf16LeWithBom } from '../utils/encoding.js';
 import { distanceToSegment } from '../utils/geometry.js';
 import { isNumericId, generateHomeInternalId } from '../graph/id-utils.js';
@@ -39,7 +38,21 @@ import { drawHouse as primitivesDrawHouse, drawDirectConnectionBadge as primitiv
 import { drawInfiniteGrid as drawInfiniteGridFeature, renderEdgeLegend as renderEdgeLegendFeature, drawEdge as drawEdgeFeature, drawNode as drawNodeFeature } from '../features/rendering.js';
 import { drawNodeIcon } from '../features/node-icons.js';
 import { processLabels } from '../utils/label-collision.js';
-import { getUserId } from '../auth/auth-guard.js';
+import { initBackupManager, clearHourlyBackups, saveDailyBackup, getAllBackups } from '../utils/backup-manager.js';
+import { getUsername as getAuthUsername } from '../auth/auth-guard.js';
+
+/**
+ * Get the current username from authentication or return a default
+ * @returns {string}
+ */
+function getCurrentUsername() {
+  try {
+    const username = getAuthUsername();
+    return username || 'anonymous';
+  } catch (_) {
+    return 'anonymous';
+  }
+}
 
 // DOM references
 const canvas = document.getElementById('graphCanvas');
@@ -81,6 +94,7 @@ const recenterBtn = document.getElementById('recenterBtn');
 const sizeIncreaseBtn = document.getElementById('sizeIncreaseBtn');
 const sizeDecreaseBtn = document.getElementById('sizeDecreaseBtn');
 const appTitleEl = document.getElementById('appTitle');
+const sketchNameDisplayEl = document.getElementById('sketchNameDisplay');
 const sidebarTitleEl = document.getElementById('sidebarTitle');
 const detailsDefaultEl = document.getElementById('detailsDefault');
 const sidebarEl = document.getElementById('sidebar');
@@ -141,6 +155,17 @@ const mobileAutosaveLabel = document.getElementById('mobileAutosaveLabel');
 const mobileLangSelect = document.getElementById('mobileLangSelect');
 const mobileHelpBtn = document.getElementById('mobileHelpBtn');
 
+// Finish Workday elements
+const finishWorkdayBtn = document.getElementById('finishWorkdayBtn');
+const mobileFinishWorkdayBtn = document.getElementById('mobileFinishWorkdayBtn');
+const finishWorkdayModal = document.getElementById('finishWorkdayModal');
+const finishWorkdayContent = document.getElementById('finishWorkdayContent');
+const finishWorkdayCloseBtn = document.getElementById('finishWorkdayCloseBtn');
+const finishWorkdayCancelBtn = document.getElementById('finishWorkdayCancelBtn');
+const finishWorkdayConfirmBtn = document.getElementById('finishWorkdayConfirmBtn');
+const danglingEdgesListEl = document.getElementById('danglingEdgesList');
+const finishWorkdayDescEl = document.getElementById('finishWorkdayDesc');
+const finishWorkdayTitleEl = document.getElementById('finishWorkdayTitle');
 
 // iPad/iOS: ensure taps trigger clicks on header buttons (Safari sometimes suppresses click)
 function synthesizeClickOnTap(element) {
@@ -196,6 +221,13 @@ let creationDate = null;
 let currentSketchId = null; // id in library; null means unsaved new sketch
 let currentSketchName = null; // human-friendly name for the sketch
 let autosaveEnabled = true;
+
+// Update the sketch name display in the header
+function updateSketchNameDisplay() {
+  if (sketchNameDisplayEl) {
+    sketchNameDisplayEl.textContent = currentSketchName || '';
+  }
+}
 let currentLang = 'he';
 // Pointer position used for edge preview in edge mode
 let pendingEdgePreview = null; // { x, y } or null
@@ -552,7 +584,10 @@ function openAdminModal() {
 
   // Apply localized title
   const adminTitleEl = document.getElementById('adminTitle');
-  if (adminTitleEl) adminTitleEl.innerHTML = '<span class="material-icons">tune</span>' + t('admin.title');
+  if (adminTitleEl) {
+    const titleText = adminTitleEl.querySelector('.admin-title-text');
+    if (titleText) titleText.textContent = t('admin.title');
+  }
 
   applyLangToStaticUI();
 }
@@ -574,7 +609,10 @@ function openAdminScreen() {
   });
   adminSettingsScreen.render();
 
-  if (adminScreenTitleEl) adminScreenTitleEl.innerHTML = '<span class="material-icons">settings</span>' + t('admin.title');
+  if (adminScreenTitleEl) {
+    const titleText = adminScreenTitleEl.querySelector('.admin-title-text');
+    if (titleText) titleText.textContent = t('admin.title');
+  }
   if (mainEl) mainEl.style.display = 'none';
   adminScreen.style.display = 'block';
   applyLangToStaticUI();
@@ -613,6 +651,7 @@ const loginSubtitle = document.getElementById('loginSubtitle');
 const loginLoadingText = document.getElementById('loginLoadingText');
 const authLoadingText = document.getElementById('authLoadingText');
 const userButtonContainer = document.getElementById('userButtonContainer');
+const mobileUserButtonContainer = document.getElementById('mobileUserButtonContainer');
 
 // Show/hide login panel
 function showLoginPanel() {
@@ -714,6 +753,9 @@ function mountClerkSignUp() {
 function updateUserButtonVisibility(isSignedIn) {
   if (userButtonContainer) {
     userButtonContainer.style.display = isSignedIn ? 'flex' : 'none';
+  }
+  if (mobileUserButtonContainer) {
+    mobileUserButtonContainer.style.display = isSignedIn ? '' : 'none';
   }
 }
 
@@ -1175,6 +1217,11 @@ function applyLangToStaticUI() {
     recenterBtn.title = t('recenter');
     recenterBtn.setAttribute('aria-label', t('recenter'));
   }
+  // Update incomplete edge tracker tooltip
+  const incompleteTrackerEl = document.getElementById('incompleteEdgeTracker');
+  if (incompleteTrackerEl) {
+    incompleteTrackerEl.title = t('incompleteEdgeTracker');
+  }
   if (sidebarCloseBtn) { sidebarCloseBtn.title = t('close'); }
   if (langSelect) { langSelect.title = t('language'); }
   if (mobileMenuBtn) { mobileMenuBtn.title = t('menu'); }
@@ -1273,6 +1320,17 @@ function applyLangToStaticUI() {
     const lbl = mobileAdminBtn.querySelector('.label');
     if (lbl) lbl.textContent = t('admin.manage');
     mobileAdminBtn.title = t('admin.manage');
+  }
+  // Finish Workday buttons
+  if (finishWorkdayBtn) {
+    const lbl = finishWorkdayBtn.querySelector('.dropdown-label');
+    if (lbl) lbl.textContent = t('finishWorkday.button');
+    finishWorkdayBtn.title = t('finishWorkday.button');
+  }
+  if (mobileFinishWorkdayBtn) {
+    const lbl = mobileFinishWorkdayBtn.querySelector('.label');
+    if (lbl) lbl.textContent = t('finishWorkday.button');
+    mobileFinishWorkdayBtn.title = t('finishWorkday.button');
   }
   if (mobileAutosaveToggle) {
     const lbl = mobileAutosaveLabel && mobileAutosaveLabel.querySelector('.label');
@@ -1403,17 +1461,15 @@ function loadFromStorage() {
     creationDate = parsed.creationDate || null;
     currentSketchId = parsed.sketchId || null;
     currentSketchName = parsed.sketchName || null;
+    updateSketchNameDisplay();
     // Ensure each node has required properties
     nodes.forEach((node) => {
       if (node.material === undefined) node.material = NODE_MATERIALS[0];
       if (node.type === undefined) node.type = NODE_TYPES[0];
       if (node.nodeType === undefined) node.nodeType = 'Manhole';
-      // Normalize legacy nodeType values - preserve valid types, default to Manhole
+      // Normalize legacy nodeType values to 'Manhole' | 'Home'
       if (node.nodeType === 'בית' || node.nodeType === 'Home' || node.nodeType === 'B') node.nodeType = 'Home';
-      else if (node.nodeType === 'קולטן' || node.nodeType === 'Drainage' || node.nodeType === 'D') node.nodeType = 'Drainage';
-      else if (node.nodeType === 'ForLater' || node.nodeType === 'להמשך') node.nodeType = 'ForLater';
-      else if (node.nodeType === 'Unknown' || node.nodeType === 'לא ידוע') node.nodeType = 'Unknown';
-      else if (node.nodeType !== 'Manhole') node.nodeType = 'Manhole';
+      else node.nodeType = 'Manhole';
       if (node.nodeType === 'Home') {
         node.material = NODE_MATERIALS[0];
         node.coverDiameter = '';
@@ -1422,14 +1478,6 @@ function loadFromStorage() {
         node.maintenanceStatus = '';
       }
       if (node.nodeType === 'Drainage') {
-        node.material = NODE_MATERIALS[0];
-        node.coverDiameter = '';
-        node.access = '';
-        node.nodeEngineeringStatus = '';
-        node.maintenanceStatus = '';
-      }
-      if (node.nodeType === 'ForLater' || node.nodeType === 'Unknown') {
-        // ForLater and Unknown nodes are placeholders - minimal properties
         node.material = NODE_MATERIALS[0];
         node.coverDiameter = '';
         node.access = '';
@@ -1502,8 +1550,6 @@ function loadFromStorage() {
  * Persist the current sketch to localStorage.
  */
 function saveToStorage() {
-  const currentUserId = getUserId() || null;
-  const now = new Date().toISOString();
   const payload = {
     nodes: nodes,
     edges: edges,
@@ -1511,8 +1557,8 @@ function saveToStorage() {
     creationDate: creationDate,
     sketchId: currentSketchId,
     sketchName: currentSketchName,
-    lastEditedBy: currentUserId,
-    lastEditedAt: now,
+    lastEditedBy: getCurrentUsername(),
+    lastEditedAt: new Date().toISOString(),
   };
   localStorage.setItem('graphSketch', JSON.stringify(payload));
   // Persist to IndexedDB for durability
@@ -1529,8 +1575,8 @@ function saveToStorage() {
       nodes: nodes,
       edges: edges,
       adminConfig: typeof adminConfig !== 'undefined' ? adminConfig : {},
-      lastEditedBy: currentUserId,
-      lastEditedAt: now,
+      lastEditedBy: getCurrentUsername(),
+      lastEditedAt: new Date().toISOString(),
     };
     window.syncService.debouncedSyncToCloud(sketchForSync);
   }
@@ -1584,8 +1630,6 @@ function generateSketchId() {
 function saveToLibrary() {
   const lib = getLibrary();
   const nowIso = new Date().toISOString();
-  const currentUserId = getUserId() || null;
-  const existingRecord = lib.find((s) => s.id === currentSketchId);
   const record = {
     id: currentSketchId || generateSketchId(),
     createdAt: creationDate || nowIso,
@@ -1595,9 +1639,7 @@ function saveToLibrary() {
     nextNodeId,
     creationDate: creationDate || nowIso,
     name: currentSketchName || null,
-    createdBy: existingRecord?.createdBy || currentUserId,
-    lastEditedBy: currentUserId,
-    lastEditedAt: nowIso,
+    lastEditedBy: getCurrentUsername(),
   };
   const idx = lib.findIndex((s) => s.id === record.id);
   if (idx >= 0) {
@@ -1606,10 +1648,6 @@ function saveToLibrary() {
     const merged = { ...record };
     if ((record.name == null || record.name === '') && (existing.name != null && existing.name !== '')) {
       merged.name = existing.name;
-    }
-    // Preserve createdBy from existing record
-    if (existing.createdBy) {
-      merged.createdBy = existing.createdBy;
     }
     lib[idx] = merged;
   } else {
@@ -1632,13 +1670,11 @@ function loadFromLibrary(sketchId) {
     if (node.material === undefined) node.material = NODE_MATERIALS[0];
     if (node.type === undefined) node.type = NODE_TYPES[0];
     if (node.nodeType === undefined) node.nodeType = 'Manhole';
-    // Normalize legacy labels to new values - preserve valid types
+    // Normalize legacy labels to new values
     if (node.nodeType === 'בית' || node.nodeType === 'Home' || node.nodeType === 'B') node.nodeType = 'Home';
     else if (node.nodeType === 'שוחה מכוסה' || node.nodeType === 'Covered' || node.nodeType === 'C') node.nodeType = 'Covered';
     else if (node.nodeType === 'קולטן' || node.nodeType === 'Drainage' || node.nodeType === 'D') node.nodeType = 'Drainage';
-    else if (node.nodeType === 'ForLater' || node.nodeType === 'להמשך') node.nodeType = 'ForLater';
-    else if (node.nodeType === 'Unknown' || node.nodeType === 'לא ידוע') node.nodeType = 'Unknown';
-    else if (node.nodeType !== 'Manhole') node.nodeType = 'Manhole';
+    else node.nodeType = 'Manhole';
     if (node.nodeType === 'Home') {
       node.material = NODE_MATERIALS[0];
       node.coverDiameter = '';
@@ -1648,14 +1684,6 @@ function loadFromLibrary(sketchId) {
       if (node.directConnection === undefined) node.directConnection = false;
     }
     if (node.nodeType === 'Drainage') {
-      node.material = NODE_MATERIALS[0];
-      node.coverDiameter = '';
-      node.access = '';
-      node.nodeEngineeringStatus = '';
-      node.maintenanceStatus = '';
-    }
-    if (node.nodeType === 'ForLater' || node.nodeType === 'Unknown') {
-      // ForLater and Unknown nodes are placeholders - minimal properties
       node.material = NODE_MATERIALS[0];
       node.coverDiameter = '';
       node.access = '';
@@ -1696,6 +1724,7 @@ function loadFromLibrary(sketchId) {
   creationDate = rec.creationDate || rec.createdAt || null;
   currentSketchId = rec.id;
   currentSketchName = rec.name || null;
+  updateSketchNameDisplay();
   computeNodeTypes();
   saveToStorage();
   draw();
@@ -1915,6 +1944,7 @@ function newSketch(date) {
   creationDate = date;
   currentSketchId = null; // new unsaved sketch
   currentSketchName = null;
+  updateSketchNameDisplay();
   saveToStorage();
   draw();
   renderDetails();
@@ -1936,8 +1966,6 @@ function createNode(x, y) {
   let nextCandidate = 1;
   while (used.has(nextCandidate)) nextCandidate += 1;
   nextNodeId = nextCandidate;
-  const now = new Date().toISOString();
-  const currentUserId = getUserId() || null;
   const node = {
     id: candidateStr,
     x: x,
@@ -1951,10 +1979,8 @@ function createNode(x, y) {
     accuracyLevel: (adminConfig.nodes?.defaults?.accuracy_level ?? 0),
     nodeEngineeringStatus: (adminConfig.nodes?.defaults?.engineering_status ?? 0),
     maintenanceStatus: (adminConfig.nodes?.defaults?.maintenance_status ?? 0),
-    createdAt: now,
-    createdBy: currentUserId,
-    updatedAt: now,
-    updatedBy: currentUserId,
+    createdAt: new Date().toISOString(),
+    createdBy: getCurrentUsername(),
   };
   // Apply custom default fields
   if (Array.isArray(adminConfig.nodes?.customFields)) {
@@ -1964,6 +1990,14 @@ function createNode(x, y) {
     });
   }
   nodes.push(node);
+  
+  // Check for nearby dangling edges and auto-connect
+  const nearbyDangling = findDanglingEdgeNear(x, y);
+  if (nearbyDangling) {
+    connectDanglingEdge(nearbyDangling.edge, node.id);
+    showToast(t('toasts.danglingEdgeConnected'));
+  }
+  
   computeNodeTypes();
   saveToStorage();
   return node;
@@ -1972,27 +2006,34 @@ function createNode(x, y) {
 /**
  * Create a directed edge between two nodes.
  * Prevents duplicates regardless of direction (A→B or B→A).
+ * Supports dangling edges where headId is null.
  * @param {string|number} tailId - Source node id
- * @param {string|number} headId - Target node id
+ * @param {string|number|null} headId - Target node id (null for dangling edge)
+ * @param {object} options - Optional: { danglingEndpoint: {x, y} } for dangling edge position
  * @returns {object|null} The created edge, or null if duplicate exists
  */
-function createEdge(tailId, headId) {
+function createEdge(tailId, headId, options = {}) {
   const tailStr = String(tailId);
-  const headStr = String(headId);
-  // Block duplicate edges in either direction
-  const exists = edges.some((e) =>
-    (String(e.tail) === tailStr && String(e.head) === headStr) ||
-    (String(e.tail) === headStr && String(e.head) === tailStr)
-  );
-  if (exists) {
-    return null;
+  const headStr = headId != null ? String(headId) : null;
+  const isDangling = headStr === null;
+  
+  // Block duplicate edges in either direction (only for non-dangling edges)
+  if (!isDangling) {
+    const exists = edges.some((e) =>
+      (String(e.tail) === tailStr && String(e.head) === headStr) ||
+      (String(e.tail) === headStr && String(e.head) === tailStr)
+    );
+    if (exists) {
+      return null;
+    }
   }
-  const now = new Date().toISOString();
-  const currentUserId = getUserId() || null;
+  
   const edge = {
     id: Date.now() + Math.random(), // unique id for internal use
     tail: tailStr,
     head: headStr,
+    isDangling: isDangling,
+    danglingEndpoint: isDangling ? (options.danglingEndpoint || null) : null,
     tail_measurement: (adminConfig.edges?.defaults?.tail_measurement ?? ''),
     head_measurement: (adminConfig.edges?.defaults?.head_measurement ?? ''),
     fall_depth: (adminConfig.edges?.defaults?.fall_depth ?? ''),
@@ -2002,10 +2043,8 @@ function createEdge(tailId, headId) {
     material: (adminConfig.edges?.defaults?.material ?? EDGE_MATERIALS[0]),
     maintenanceStatus: 0,
     engineeringStatus: (adminConfig.edges?.defaults?.engineering_status ?? 0),
-    createdAt: now,
-    createdBy: currentUserId,
-    updatedAt: now,
-    updatedBy: currentUserId,
+    createdAt: new Date().toISOString(),
+    createdBy: getCurrentUsername(),
   };
   if (Array.isArray(adminConfig.edges?.customFields)) {
     adminConfig.edges.customFields.forEach((f) => {
@@ -2017,6 +2056,82 @@ function createEdge(tailId, headId) {
   computeNodeTypes();
   saveToStorage();
   return edge;
+}
+
+/**
+ * Create a dangling edge from a node with the open end at the specified position.
+ * @param {string|number} tailId - Source node id
+ * @param {number} endX - X coordinate for the dangling endpoint
+ * @param {number} endY - Y coordinate for the dangling endpoint
+ * @returns {object} The created dangling edge
+ */
+function createDanglingEdge(tailId, endX, endY) {
+  return createEdge(tailId, null, { danglingEndpoint: { x: endX, y: endY } });
+}
+
+/**
+ * Find all incomplete/dangling edges (edges with only one connected node).
+ * @returns {Array<object>} Array of dangling edges
+ */
+function findIncompleteEdges() {
+  return edges.filter(edge => edge.isDangling || edge.head === null);
+}
+
+/**
+ * Update the incomplete edge tracker UI with the current count.
+ */
+function updateIncompleteEdgeTracker() {
+  const tracker = document.getElementById('incompleteEdgeTracker');
+  const countEl = document.getElementById('incompleteEdgeCount');
+  if (!tracker || !countEl) return;
+  
+  const incompleteCount = findIncompleteEdges().length;
+  countEl.textContent = String(incompleteCount);
+  
+  // Show/hide tracker based on count
+  if (incompleteCount > 0) {
+    tracker.style.display = 'inline-flex';
+  } else {
+    tracker.style.display = 'none';
+  }
+}
+
+/**
+ * Find a dangling edge whose open endpoint is within snap distance of the given position.
+ * @param {number} x - X coordinate to check
+ * @param {number} y - Y coordinate to check
+ * @param {number} snapDistance - Maximum distance to consider for snapping (default 30)
+ * @returns {{edge: object, distance: number}|null} The closest dangling edge within range, or null
+ */
+function findDanglingEdgeNear(x, y, snapDistance = 30) {
+  const incompleteEdges = findIncompleteEdges();
+  let closest = null;
+  let minDist = snapDistance;
+  
+  for (const edge of incompleteEdges) {
+    if (!edge.danglingEndpoint) continue;
+    const dx = edge.danglingEndpoint.x - x;
+    const dy = edge.danglingEndpoint.y - y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < minDist) {
+      minDist = dist;
+      closest = { edge, distance: dist };
+    }
+  }
+  
+  return closest;
+}
+
+/**
+ * Connect a dangling edge to a newly created node.
+ * @param {object} edge - The dangling edge to connect
+ * @param {string} nodeId - The node ID to connect to
+ */
+function connectDanglingEdge(edge, nodeId) {
+  edge.head = String(nodeId);
+  edge.isDangling = false;
+  edge.danglingEndpoint = null;
+  saveToStorage();
 }
 
 // Drawing functions
@@ -2155,6 +2270,8 @@ function draw() {
   ctx.restore();
   // Ensure edge legend is rendered/positioned
   renderEdgeLegend();
+  // Update incomplete edge tracker
+  updateIncompleteEdgeTracker();
 }
 
 function renderEdgeLegend() {
@@ -2256,7 +2373,14 @@ function computeNodeTypes() {
 
 function drawEdge(edge) {
   const tailNode = nodes.find((n) => n.id === edge.tail);
-  const headNode = nodes.find((n) => n.id === edge.head);
+  const headNode = edge.head != null ? nodes.find((n) => n.id === edge.head) : null;
+  
+  // Handle dangling edges (edges with only one connected node)
+  if (edge.isDangling || (edge.head === null && tailNode)) {
+    drawDanglingEdgeLocal(edge, tailNode);
+    return;
+  }
+  
   const angle = tailNode && headNode ? Math.atan2(headNode.y - tailNode.y, headNode.x - tailNode.x) : 0;
   drawEdgeFeature(ctx, edge, tailNode, headNode, {
     selectedEdge,
@@ -2319,6 +2443,66 @@ function drawEdge(edge) {
   ctx.closePath();
   ctx.fillStyle = (COLORS.edge.label || '#000');
   ctx.fill();
+}
+
+/**
+ * Draw a dangling edge (edge with only one connected node).
+ * Shows a dashed line from the tail node to a floating endpoint with a question mark.
+ * @param {object} edge - The dangling edge object
+ * @param {object} tailNode - The connected tail node
+ */
+function drawDanglingEdgeLocal(edge, tailNode) {
+  if (!tailNode) return;
+  
+  const isSelected = edge === selectedEdge;
+  
+  // Get or calculate the dangling endpoint position
+  const defaultOffset = 80 * sizeScale;
+  const endX = edge.danglingEndpoint?.x ?? (tailNode.x + defaultOffset);
+  const endY = edge.danglingEndpoint?.y ?? (tailNode.y - defaultOffset * 0.5);
+  
+  ctx.save();
+  
+  // Use grey color for dangling edges
+  const solidColor = isSelected ? '#6b7280' : '#9ca3af'; // grey-500 / grey-400
+  
+  // Calculate the total length and determine where to start dashing
+  const dx = endX - tailNode.x;
+  const dy = endY - tailNode.y;
+  const totalLength = Math.sqrt(dx * dx + dy * dy);
+  const dashStartLength = Math.max(0, totalLength - 30 * sizeScale); // Last 30px will be dashed/faded
+  
+  // Calculate the point where dashing begins
+  const ratio = totalLength > 0 ? dashStartLength / totalLength : 0;
+  const dashStartX = tailNode.x + dx * ratio;
+  const dashStartY = tailNode.y + dy * ratio;
+  
+  // Draw solid portion from tail to dash start point
+  ctx.strokeStyle = solidColor;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(tailNode.x, tailNode.y);
+  ctx.lineTo(dashStartX, dashStartY);
+  ctx.stroke();
+  
+  // Draw dashed/fading portion from dash start to end
+  ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = isSelected ? '#9ca3af' : '#d1d5db'; // lighter grey for dashed part
+  ctx.beginPath();
+  ctx.moveTo(dashStartX, dashStartY);
+  ctx.lineTo(endX, endY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  
+  // Draw a small open circle at the dangling end (unfilled, subtle indicator)
+  const circleRadius = 5 * sizeScale;
+  ctx.beginPath();
+  ctx.arc(endX, endY, circleRadius, 0, Math.PI * 2);
+  ctx.strokeStyle = solidColor;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  
+  ctx.restore();
 }
 
 function drawEdgeLabels(edge) {
@@ -3180,9 +3364,21 @@ function findEdgeAt(x, y, threshold) {
   let minDist = (typeof threshold === 'number') ? threshold : 8; // threshold in pixels
   edges.forEach((edge) => {
     const tailNode = nodes.find((n) => n.id === edge.tail);
-    const headNode = nodes.find((n) => n.id === edge.head);
-    if (!tailNode || !headNode) return;
-    const dist = distanceToSegment(x, y, tailNode.x, tailNode.y, headNode.x, headNode.y);
+    
+    // Handle dangling edges - use danglingEndpoint position for head
+    let headX, headY;
+    if (edge.isDangling || edge.head === null) {
+      if (!tailNode || !edge.danglingEndpoint) return;
+      headX = edge.danglingEndpoint.x;
+      headY = edge.danglingEndpoint.y;
+    } else {
+      const headNode = nodes.find((n) => n.id === edge.head);
+      if (!tailNode || !headNode) return;
+      headX = headNode.x;
+      headY = headNode.y;
+    }
+    
+    const dist = distanceToSegment(x, y, tailNode.x, tailNode.y, headX, headY);
     if (dist < minDist) {
       minDist = dist;
       closest = edge;
@@ -3251,10 +3447,14 @@ function pointerDown(x, y) {
         scheduleDraw();
         return;
       }
-      // Clicked empty space; cancel
+      // Clicked empty space; create a dangling edge with open end at this position
+      const danglingEdge = createDanglingEdge(pendingEdgeTail.id, world.x, world.y);
       pendingEdgeTail = null;
       pendingEdgePreview = null;
-      showToast(t('toasts.edgeCancelled'));
+      if (danglingEdge) {
+        showToast(t('toasts.danglingEdgeCreated'));
+        updateIncompleteEdgeTracker();
+      }
       scheduleDraw();
       return;
     }
@@ -3501,11 +3701,15 @@ canvas.addEventListener('touchstart', (e) => {
         } else {
           // Empty background in edge mode
           if (pendingEdgeTail) {
-            // Tapped empty space while an edge is pending: cancel
+            // Tapped empty space while an edge is pending: create dangling edge
+            const danglingEdge = createDanglingEdge(pendingEdgeTail.id, world.x, world.y);
             pendingEdgeTail = null;
             pendingEdgePreview = null;
+            if (danglingEdge) {
+              showToast(t('toasts.danglingEdgeCreated'));
+              updateIncompleteEdgeTracker();
+            }
             scheduleDraw();
-            showToast(t('toasts.edgeCancelled'));
           } else {
             // No pending edge and empty space: candidate for background pan
             touchPanCandidate = true;
@@ -3921,6 +4125,7 @@ if (importSketchBtn && importSketchFile) {
       creationDate = importedSketch.creationDate;
       currentSketchId = null; // Will get new ID when saved
       currentSketchName = importedSketch.sketchName;
+      updateSketchNameDisplay();
 
       // Recompute node types and save
       computeNodeTypes();
@@ -3999,11 +4204,22 @@ if (sketchListEl) {
           rec.name = newVal;
         }
         rec.updatedAt = new Date().toISOString();
+        rec.lastEditedBy = getCurrentUsername();
+        
         setLibrary(lib);
+
         if (currentSketchId === rec.id) {
           currentSketchName = rec.name || null;
+          updateSketchNameDisplay();
           saveToStorage();
+        } else {
+          // If not the current sketch, we still need to persist to IndexedDB and Sync to Cloud
+          idbSaveRecordCompat(rec);
+          if (window.syncService?.debouncedSyncToCloud) {
+            window.syncService.debouncedSyncToCloud(rec);
+          }
         }
+        
         renderHome();
         showToast(t('toasts.renamed'));
       };
@@ -4028,9 +4244,23 @@ if (sketchListEl) {
       const lib = getLibrary();
       const rec = lib.find((r) => r.id === id);
       if (rec) {
-        const copy = { ...rec, id: generateSketchId(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+        const now = new Date().toISOString();
+        const copy = { 
+          ...rec, 
+          id: generateSketchId(), 
+          createdAt: now, 
+          updatedAt: now,
+          lastEditedBy: getCurrentUsername()
+        };
         lib.unshift(copy);
         setLibrary(lib);
+        
+        // Persist duplicate to IndexedDB and Sync to Cloud
+        idbSaveRecordCompat(copy);
+        if (window.syncService?.debouncedSyncToCloud) {
+          window.syncService.debouncedSyncToCloud(copy);
+        }
+        
         renderHome();
         showToast(t('toasts.duplicated'));
       }
@@ -4297,6 +4527,236 @@ if (mobileHelpBtn && helpBtn) {
   mobileHelpBtn.addEventListener('click', () => {
     closeMobileMenu();
     helpBtn.click();
+  });
+}
+
+// === Finish Workday Functionality ===
+
+/**
+ * Get all dangling edges (edges with head === null)
+ * @returns {Array} Array of dangling edge objects
+ */
+function getDanglingEdges() {
+  return edges.filter(e => e.head === null || e.isDangling === true);
+}
+
+/**
+ * Show the finish workday modal
+ */
+function showFinishWorkdayModal() {
+  const danglingEdgesList = getDanglingEdges();
+  
+  if (danglingEdgesList.length === 0) {
+    // No dangling edges - proceed directly
+    completeFinishWorkday();
+    return;
+  }
+  
+  // Show modal with dangling edges
+  if (finishWorkdayModal) {
+    finishWorkdayModal.style.display = 'flex';
+    renderDanglingEdgesForm(danglingEdgesList);
+  }
+}
+
+/**
+ * Render the form for resolving dangling edges
+ * @param {Array} danglingEdgesList - Array of dangling edges
+ */
+function renderDanglingEdgesForm(danglingEdgesList) {
+  if (!danglingEdgesListEl) return;
+  
+  // Update description text
+  if (finishWorkdayDescEl) {
+    finishWorkdayDescEl.textContent = t('labels.resolveDanglingDesc');
+  }
+  if (finishWorkdayTitleEl) {
+    const titleText = finishWorkdayTitleEl.querySelector('.finish-workday-title-text');
+    if (titleText) titleText.textContent = t('finishWorkday.title');
+  }
+  
+  danglingEdgesListEl.innerHTML = danglingEdgesList.map((edge, index) => {
+    const tailNode = nodes.find(n => n.id === edge.tail);
+    const tailLabel = tailNode ? `${edge.tail}` : edge.tail;
+    
+    return `
+      <div class="dangling-edge-item" data-edge-id="${edge.id}">
+        <div class="dangling-edge-item-header">
+          <span class="material-icons">call_missed_outgoing</span>
+          <span>${t('labels.danglingEdge')}: ${tailLabel} → ?</span>
+        </div>
+        <select class="dangling-edge-select" data-edge-index="${index}">
+          <option value="">${t('labels.selectNodeType')}</option>
+          <option value="Manhole">${t('modeNode')}</option>
+          <option value="Home">${t('modeHome')}</option>
+          <option value="ForLater">${t('modeForLater')}</option>
+        </select>
+      </div>
+    `;
+  }).join('');
+  
+  // Update button texts
+  if (finishWorkdayCancelBtn) {
+    finishWorkdayCancelBtn.textContent = t('cancel');
+  }
+  if (finishWorkdayConfirmBtn) {
+    const confirmText = finishWorkdayConfirmBtn.querySelector('span:last-child');
+    if (confirmText) confirmText.textContent = t('finishWorkday.confirm');
+  }
+}
+
+/**
+ * Close the finish workday modal
+ */
+function closeFinishWorkdayModal() {
+  if (finishWorkdayModal) {
+    finishWorkdayModal.style.display = 'none';
+  }
+}
+
+/**
+ * Resolve dangling edges by creating nodes at their endpoints
+ * @returns {boolean} True if all dangling edges were resolved
+ */
+function resolveDanglingEdges() {
+  const danglingEdgesList = getDanglingEdges();
+  const selects = danglingEdgesListEl?.querySelectorAll('.dangling-edge-select') || [];
+  
+  // Check all selections are made
+  for (const select of selects) {
+    if (!select.value) {
+      showToast(t('finishWorkday.resolveFirst'));
+      return false;
+    }
+  }
+  
+  // Create nodes for each dangling edge
+  danglingEdgesList.forEach((edge, index) => {
+    const select = selects[index];
+    if (!select || !select.value) return;
+    
+    const nodeType = select.value;
+    const tailNode = nodes.find(n => n.id === edge.tail);
+    
+    // Calculate position for new node
+    let newX, newY;
+    if (edge.danglingEndpoint) {
+      newX = edge.danglingEndpoint.x;
+      newY = edge.danglingEndpoint.y;
+    } else if (tailNode) {
+      // Default offset from tail node
+      newX = tailNode.x + 80;
+      newY = tailNode.y - 40;
+    } else {
+      newX = 100;
+      newY = 100;
+    }
+    
+    // Create the new node
+    const newNode = createNode(newX, newY);
+    newNode.nodeType = nodeType;
+    
+    // Update the edge to connect to the new node
+    edge.head = newNode.id;
+    edge.isDangling = false;
+    edge.danglingEndpoint = null;
+  });
+  
+  computeNodeTypes();
+  saveToStorage();
+  scheduleDraw();
+  
+  return true;
+}
+
+/**
+ * Complete the finish workday process
+ */
+async function completeFinishWorkday() {
+  try {
+    // Clear hourly backups
+    await clearHourlyBackups();
+    
+    // Save daily backup
+    await saveDailyBackup();
+    
+    // Export nodes and edges CSV (optional - could prompt user)
+    // For now, just save the sketch and sync
+    saveToStorage();
+    
+    // Force immediate sync if online
+    if (currentSketchId && window.syncService?.syncSketchToCloud) {
+      const sketchForSync = {
+        id: currentSketchId,
+        name: currentSketchName,
+        creationDate: creationDate,
+        nodes: nodes,
+        edges: edges,
+        adminConfig: typeof adminConfig !== 'undefined' ? adminConfig : {},
+        lastEditedBy: getCurrentUsername(),
+        lastEditedAt: new Date().toISOString(),
+      };
+      await window.syncService.syncSketchToCloud(sketchForSync);
+    }
+    
+    showToast(t('toasts.finishWorkdaySuccess'));
+    closeFinishWorkdayModal();
+    scheduleDraw();
+    
+  } catch (error) {
+    console.error('Error completing finish workday:', error);
+    showToast(t('finishWorkday.error') || 'Error completing workday');
+  }
+}
+
+// Finish Workday button handlers
+if (finishWorkdayBtn) {
+  finishWorkdayBtn.addEventListener('click', () => {
+    // Close dropdown menu first
+    if (exportDropdown) exportDropdown.style.display = 'none';
+    showFinishWorkdayModal();
+  });
+}
+
+if (mobileFinishWorkdayBtn) {
+  mobileFinishWorkdayBtn.addEventListener('click', () => {
+    closeMobileMenu();
+    showFinishWorkdayModal();
+  });
+}
+
+// Modal close handlers
+if (finishWorkdayCloseBtn) {
+  finishWorkdayCloseBtn.addEventListener('click', closeFinishWorkdayModal);
+}
+
+if (finishWorkdayCancelBtn) {
+  finishWorkdayCancelBtn.addEventListener('click', closeFinishWorkdayModal);
+}
+
+// Confirm button handler
+if (finishWorkdayConfirmBtn) {
+  finishWorkdayConfirmBtn.addEventListener('click', async () => {
+    const danglingEdgesList = getDanglingEdges();
+    
+    if (danglingEdgesList.length > 0) {
+      // Need to resolve dangling edges first
+      if (!resolveDanglingEdges()) {
+        return; // Resolution failed or incomplete
+      }
+    }
+    
+    // Proceed with finish workday
+    await completeFinishWorkday();
+  });
+}
+
+// Close modal when clicking backdrop
+if (finishWorkdayModal) {
+  finishWorkdayModal.addEventListener('click', (e) => {
+    if (e.target === finishWorkdayModal) {
+      closeFinishWorkdayModal();
+    }
   });
 }
 
@@ -4622,6 +5082,20 @@ async function init() {
     const rec = lib.find((r) => r.id === currentSketchId);
     if (rec && rec.name) currentSketchName = rec.name;
   }
+  updateSketchNameDisplay();
+  
+  // Initialize backup manager with function to get current sketch data
+  initBackupManager(() => ({
+    nodes: nodes,
+    edges: edges,
+    nextNodeId: nextNodeId,
+    creationDate: creationDate,
+    sketchId: currentSketchId,
+    sketchName: currentSketchName,
+    createdBy: getCurrentUsername(),
+    lastEditedBy: getCurrentUsername(),
+  }));
+  
   // Default interaction mode is node creation
   currentMode = 'node';
   if (nodeModeBtn) nodeModeBtn.classList.add('active');
@@ -4631,483 +5105,6 @@ async function init() {
   if (editModeBtn) editModeBtn.classList.remove('active');
   resizeCanvas();
   renderDetails();
-  
-  // Start 3-hour auto-backup timer
-  startAutoBackupTimer();
-}
-
-// 3-hour auto-backup timer (in milliseconds)
-const AUTO_BACKUP_INTERVAL_MS = 3 * 60 * 60 * 1000; // 3 hours
-let autoBackupTimerId = null;
-
-/**
- * Perform an automatic backup of the current sketch.
- */
-async function performAutoBackup() {
-  if (!currentSketchId && nodes.length === 0 && edges.length === 0) {
-    // No sketch to backup
-    return;
-  }
-  try {
-    const sketchData = {
-      sketchId: currentSketchId,
-      sketchName: currentSketchName,
-      creationDate: creationDate,
-      nodes: nodes,
-      edges: edges,
-      nextNodeId: nextNodeId,
-      adminConfig: typeof adminConfig !== 'undefined' ? adminConfig : {},
-      lastEditedBy: getUserId() || null,
-      lastEditedAt: new Date().toISOString(),
-    };
-    await saveBackup(sketchData, 'auto');
-    console.log('Auto-backup saved at', new Date().toISOString());
-  } catch (err) {
-    console.warn('Auto-backup failed:', err);
-  }
-}
-
-/**
- * Start the 3-hour auto-backup timer.
- */
-function startAutoBackupTimer() {
-  // Clear any existing timer
-  if (autoBackupTimerId) {
-    clearInterval(autoBackupTimerId);
-  }
-  // Start the interval timer
-  autoBackupTimerId = setInterval(performAutoBackup, AUTO_BACKUP_INTERVAL_MS);
-  console.log('Auto-backup timer started (every 3 hours)');
-}
-
-/**
- * Stop the auto-backup timer.
- */
-function stopAutoBackupTimer() {
-  if (autoBackupTimerId) {
-    clearInterval(autoBackupTimerId);
-    autoBackupTimerId = null;
-  }
-}
-
-// ============= Orphan Edge Detection and Validation =============
-
-/**
- * Find edges that reference nodes that don't exist (orphan edges).
- * An orphan edge has either tail or head pointing to a non-existent node.
- * @returns {Array<{edge: object, missingNodes: Array<{id: string, position: 'tail'|'head'}>}>}
- */
-function findOrphanEdges() {
-  const nodeIds = new Set(nodes.map(n => String(n.id)));
-  const orphans = [];
-  
-  for (const edge of edges) {
-    const missingNodes = [];
-    const tailId = String(edge.tail);
-    const headId = String(edge.head);
-    
-    if (!nodeIds.has(tailId)) {
-      missingNodes.push({ id: tailId, position: 'tail' });
-    }
-    if (!nodeIds.has(headId)) {
-      missingNodes.push({ id: headId, position: 'head' });
-    }
-    
-    if (missingNodes.length > 0) {
-      orphans.push({ edge, missingNodes });
-    }
-  }
-  
-  return orphans;
-}
-
-/**
- * Validate the current sketch JSON structure.
- * Checks for required fields and data integrity.
- * @returns {{valid: boolean, errors: string[]}}
- */
-function validateSketchJson() {
-  const errors = [];
-  
-  // Check nodes array
-  if (!Array.isArray(nodes)) {
-    errors.push('Nodes is not an array');
-  } else {
-    nodes.forEach((node, idx) => {
-      if (!node.id) errors.push(`Node at index ${idx} is missing id`);
-      if (typeof node.x !== 'number') errors.push(`Node ${node.id || idx} has invalid x coordinate`);
-      if (typeof node.y !== 'number') errors.push(`Node ${node.id || idx} has invalid y coordinate`);
-    });
-  }
-  
-  // Check edges array
-  if (!Array.isArray(edges)) {
-    errors.push('Edges is not an array');
-  } else {
-    edges.forEach((edge, idx) => {
-      if (!edge.tail) errors.push(`Edge at index ${idx} is missing tail`);
-      if (!edge.head) errors.push(`Edge at index ${idx} is missing head`);
-    });
-  }
-  
-  return {
-    valid: errors.length === 0,
-    errors
-  };
-}
-
-/**
- * Get all unique missing node IDs from orphan edges.
- * @param {Array} orphanEdges - Result from findOrphanEdges()
- * @returns {Array<string>} Unique missing node IDs
- */
-function getUniqueMissingNodeIds(orphanEdges) {
-  const missingIds = new Set();
-  for (const { missingNodes } of orphanEdges) {
-    for (const { id } of missingNodes) {
-      missingIds.add(id);
-    }
-  }
-  return Array.from(missingIds);
-}
-
-/**
- * Create a placeholder node for a missing node ID.
- * @param {string} nodeId - The node ID to create
- * @param {string} nodeType - The node type ('Manhole', 'Home', 'ForLater', 'Unknown')
- * @param {number} x - X position (default 0)
- * @param {number} y - Y position (default 0)
- * @returns {object} The created node
- */
-function createPlaceholderNode(nodeId, nodeType, x = 0, y = 0) {
-  const now = new Date().toISOString();
-  const currentUserId = getUserId() || null;
-  const node = {
-    id: String(nodeId),
-    x: x,
-    y: y,
-    note: '',
-    material: NODE_MATERIALS[0],
-    coverDiameter: '',
-    type: 'type1',
-    nodeType: nodeType,
-    access: 0,
-    accuracyLevel: 0,
-    nodeEngineeringStatus: 0,
-    maintenanceStatus: 0,
-    createdAt: now,
-    createdBy: currentUserId,
-    updatedAt: now,
-    updatedBy: currentUserId,
-    isPlaceholder: true, // Mark as placeholder for tracking
-  };
-  
-  // Add to nodes array
-  nodes.push(node);
-  computeNodeTypes();
-  
-  return node;
-}
-
-// ============= Orphan Correction Modal =============
-
-// DOM references for orphan correction modal
-const orphanCorrectionModal = document.getElementById('orphanCorrectionModal');
-const orphanCorrectionTitleText = document.getElementById('orphanCorrectionTitleText');
-const orphanCorrectionDesc = document.getElementById('orphanCorrectionDesc');
-const orphanNodesList = document.getElementById('orphanNodesList');
-const orphanCorrectionCancelBtn = document.getElementById('orphanCorrectionCancelBtn');
-const orphanCorrectionConfirmBtn = document.getElementById('orphanCorrectionConfirmBtn');
-
-// Store the callback to execute after orphan correction
-let orphanCorrectionCallback = null;
-
-/**
- * Show the orphan correction modal with the list of missing nodes.
- * @param {Array<string>} missingNodeIds - Array of missing node IDs
- * @param {Function} onConfirm - Callback to execute after user confirms corrections
- * @returns {void}
- */
-function showOrphanCorrectionModal(missingNodeIds, onConfirm) {
-  if (!orphanCorrectionModal || !orphanNodesList) return;
-  
-  // Update translations if available
-  if (orphanCorrectionTitleText) {
-    orphanCorrectionTitleText.textContent = t('orphanEdgesFound') || 'נמצאו קווים עם שוחות חסרות';
-  }
-  if (orphanCorrectionDesc) {
-    orphanCorrectionDesc.textContent = t('selectNodeType') || 'יש לבחור סוג לכל שוחה חסרה כדי להמשיך:';
-  }
-  if (orphanCorrectionCancelBtn) {
-    orphanCorrectionCancelBtn.textContent = t('cancel') || 'ביטול';
-  }
-  if (orphanCorrectionConfirmBtn) {
-    orphanCorrectionConfirmBtn.textContent = t('confirmAndContinue') || 'אשר והמשך';
-  }
-  
-  // Build the list of missing nodes with type selectors
-  orphanNodesList.innerHTML = '';
-  
-  const nodeTypeOptions = [
-    { value: 'Manhole', label: t('modeNode') || 'שוחה' },
-    { value: 'Home', label: t('modeHome') || 'בית' },
-    { value: 'ForLater', label: t('forLater') || 'להמשך' },
-    { value: 'Unknown', label: t('unknown') || 'לא ידוע' },
-  ];
-  
-  for (const nodeId of missingNodeIds) {
-    const itemDiv = document.createElement('div');
-    itemDiv.className = 'orphan-node-item';
-    
-    const idSpan = document.createElement('span');
-    idSpan.className = 'orphan-node-id';
-    idSpan.innerHTML = `<span class="material-icons">place</span> ${nodeId}`;
-    
-    const select = document.createElement('select');
-    select.className = 'orphan-node-type-select';
-    select.dataset.nodeId = nodeId;
-    
-    for (const opt of nodeTypeOptions) {
-      const option = document.createElement('option');
-      option.value = opt.value;
-      option.textContent = opt.label;
-      // Default to ForLater for missing nodes
-      if (opt.value === 'ForLater') option.selected = true;
-      select.appendChild(option);
-    }
-    
-    itemDiv.appendChild(idSpan);
-    itemDiv.appendChild(select);
-    orphanNodesList.appendChild(itemDiv);
-  }
-  
-  // Store the callback
-  orphanCorrectionCallback = onConfirm;
-  
-  // Show the modal
-  orphanCorrectionModal.style.display = 'flex';
-}
-
-/**
- * Hide the orphan correction modal.
- */
-function hideOrphanCorrectionModal() {
-  if (orphanCorrectionModal) {
-    orphanCorrectionModal.style.display = 'none';
-  }
-  orphanCorrectionCallback = null;
-}
-
-/**
- * Get the user's node type selections from the modal.
- * @returns {Array<{nodeId: string, nodeType: string}>}
- */
-function getOrphanNodeSelections() {
-  const selections = [];
-  const selects = orphanNodesList?.querySelectorAll('.orphan-node-type-select') || [];
-  
-  for (const select of selects) {
-    selections.push({
-      nodeId: select.dataset.nodeId,
-      nodeType: select.value,
-    });
-  }
-  
-  return selections;
-}
-
-// Modal button event handlers
-if (orphanCorrectionCancelBtn) {
-  orphanCorrectionCancelBtn.addEventListener('click', () => {
-    hideOrphanCorrectionModal();
-    showToast(t('cancelled') || 'בוטל');
-  });
-}
-
-if (orphanCorrectionConfirmBtn) {
-  orphanCorrectionConfirmBtn.addEventListener('click', () => {
-    const selections = getOrphanNodeSelections();
-    
-    // Calculate positions for new nodes (spread them out from center)
-    const centerX = nodes.length > 0 
-      ? nodes.reduce((sum, n) => sum + n.x, 0) / nodes.length 
-      : 0;
-    const centerY = nodes.length > 0 
-      ? nodes.reduce((sum, n) => sum + n.y, 0) / nodes.length 
-      : 0;
-    
-    // Create placeholder nodes for each missing node
-    selections.forEach((sel, index) => {
-      // Position nodes in a circle around center
-      const angle = (index / selections.length) * 2 * Math.PI;
-      const radius = 150;
-      const x = centerX + radius * Math.cos(angle);
-      const y = centerY + radius * Math.sin(angle);
-      
-      createPlaceholderNode(sel.nodeId, sel.nodeType, x, y);
-    });
-    
-    // Save changes
-    saveToStorage();
-    scheduleDraw();
-    
-    // Hide modal
-    hideOrphanCorrectionModal();
-    
-    // Execute callback if provided
-    if (orphanCorrectionCallback) {
-      const cb = orphanCorrectionCallback;
-      orphanCorrectionCallback = null;
-      cb();
-    }
-  });
-}
-
-// ============= Finish Work Day Feature =============
-
-// DOM references for finish work day buttons
-const finishWorkDayBtn = document.getElementById('finishWorkDayBtn');
-const mobileFinishWorkDayBtn = document.getElementById('mobileFinishWorkDayBtn');
-
-/**
- * Execute the finish work day workflow.
- * 1. Validate JSON structure
- * 2. Check for orphan edges
- * 3. If orphans found, show modal and wait for user to fix
- * 4. Export CSV and JSON
- * 5. Clean auto-backups and save daily backup
- * 6. Sync to cloud
- */
-async function finishWorkDay() {
-  // Step 1: Validate JSON structure
-  const validation = validateSketchJson();
-  if (!validation.valid) {
-    showToast(t('alerts.exportFailed') || 'שגיאה בנתוני השרטוט');
-    console.error('Sketch validation errors:', validation.errors);
-    return;
-  }
-  
-  // Step 2: Check for orphan edges
-  const orphanEdges = findOrphanEdges();
-  
-  if (orphanEdges.length > 0) {
-    // Get unique missing node IDs
-    const missingNodeIds = getUniqueMissingNodeIds(orphanEdges);
-    
-    // Show modal and wait for user to fix
-    showOrphanCorrectionModal(missingNodeIds, () => {
-      // After correction, continue with the workflow
-      continueFinishWorkDay();
-    });
-    return;
-  }
-  
-  // No orphans, continue directly
-  await continueFinishWorkDay();
-}
-
-/**
- * Continue the finish work day workflow after orphan correction.
- */
-async function continueFinishWorkDay() {
-  try {
-    // Show loading state
-    showToast(t('finishWorkDayProcessing') || 'מעבד סיום יום עבודה...');
-    
-    // Step 3: Export CSV files
-    if (nodes.length > 0) {
-      try {
-        exportNodesBtn?.click();
-      } catch (err) {
-        console.warn('Failed to export nodes:', err);
-      }
-    }
-    
-    if (edges.length > 0) {
-      try {
-        // Small delay to avoid download conflicts
-        await new Promise(resolve => setTimeout(resolve, 500));
-        exportEdgesBtn?.click();
-      } catch (err) {
-        console.warn('Failed to export edges:', err);
-      }
-    }
-    
-    // Step 4: Export JSON sketch
-    try {
-      // Small delay to avoid download conflicts
-      await new Promise(resolve => setTimeout(resolve, 500));
-      exportSketchBtn?.click();
-    } catch (err) {
-      console.warn('Failed to export sketch:', err);
-    }
-    
-    // Step 5: Clean auto-backups and save daily backup
-    const sketchData = {
-      sketchId: currentSketchId,
-      sketchName: currentSketchName,
-      creationDate: creationDate,
-      nodes: nodes,
-      edges: edges,
-      nextNodeId: nextNodeId,
-      adminConfig: typeof adminConfig !== 'undefined' ? adminConfig : {},
-      lastEditedBy: getUserId() || null,
-      lastEditedAt: new Date().toISOString(),
-    };
-    
-    try {
-      await saveDailyBackup(sketchData);
-      console.log('Daily backup saved');
-    } catch (err) {
-      console.warn('Failed to save daily backup:', err);
-    }
-    
-    // Step 6: Sync to cloud immediately
-    if (currentSketchId && window.syncService?.immediateSyncToCloud) {
-      try {
-        const sketchForSync = {
-          id: currentSketchId,
-          name: currentSketchName,
-          creationDate: creationDate,
-          nodes: nodes,
-          edges: edges,
-          adminConfig: typeof adminConfig !== 'undefined' ? adminConfig : {},
-          lastEditedBy: getUserId() || null,
-          lastEditedAt: new Date().toISOString(),
-        };
-        await window.syncService.immediateSyncToCloud(sketchForSync);
-        console.log('Cloud sync completed');
-      } catch (err) {
-        console.warn('Cloud sync failed:', err);
-      }
-    }
-    
-    // Save final state
-    saveToStorage();
-    
-    // Show success message
-    showToast(t('finishWorkDayComplete') || 'יום עבודה הסתיים בהצלחה!');
-    
-  } catch (err) {
-    console.error('Finish work day failed:', err);
-    showToast(t('finishWorkDayFailed') || 'שגיאה בסיום יום עבודה');
-  }
-}
-
-// Event listeners for finish work day buttons
-if (finishWorkDayBtn) {
-  finishWorkDayBtn.addEventListener('click', () => {
-    // Close the dropdown first
-    if (exportDropdown) exportDropdown.classList.remove('open');
-    finishWorkDay();
-  });
-}
-
-if (mobileFinishWorkDayBtn) {
-  mobileFinishWorkDayBtn.addEventListener('click', () => {
-    try { closeMobileMenu(); } catch (_) { }
-    finishWorkDay();
-  });
 }
 
 init();

@@ -85,7 +85,6 @@ export function exportNodesCsv(nodes, adminConfig, t) {
     if (include.id) row.push(csvQuote(n.id));
     if (include.type) {
       // Show 'home_direct' for Home nodes with direct connection
-      // Include ForLater and Unknown as valid types
       const nodeType = n.nodeType || 'Manhole';
       const typeValue = (nodeType === 'Home' && n.directConnection) ? 'home_direct' : nodeType;
       row.push(csvQuote(typeValue));
@@ -97,11 +96,6 @@ export function exportNodesCsv(nodes, adminConfig, t) {
     if (include.accuracy_level) row.push(csvQuote(codeFor('nodes', 'accuracy_level', n.accuracyLevel, adminConfig)));
     // engineering_status removed from node export
     if (include.maintenance_status) row.push(csvQuote(codeFor('nodes', 'maintenance_status', n.maintenanceStatus, adminConfig)));
-    // Timestamp fields - always include if present
-    if (include.created_at) row.push(csvQuote(n.createdAt || ''));
-    if (include.created_by) row.push(csvQuote(n.createdBy || ''));
-    if (include.updated_at) row.push(csvQuote(n.updatedAt || ''));
-    if (include.updated_by) row.push(csvQuote(n.updatedBy || ''));
     // Custom fields removed
     return row.join(',');
   };
@@ -114,11 +108,6 @@ export function exportNodesCsv(nodes, adminConfig, t) {
   if (include.accuracy_level) headers.push('Accuracy Level');
   // engineering_status removed from node headers
   if (include.maintenance_status) headers.push('Maintenance status');
-  // Timestamp headers
-  if (include.created_at) headers.push('Created At');
-  if (include.created_by) headers.push('Created By');
-  if (include.updated_at) headers.push('Updated At');
-  if (include.updated_by) headers.push('Updated By');
   // Custom fields removed
   const lines = [headers.map(csvQuote).join(',')];
   for (const n of nodes) lines.push(rowFor(n));
@@ -130,8 +119,8 @@ export function exportEdgesCsv(edges, adminConfig, t) {
   const headers = [];
   const rowFor = (e) => {
     const row = [];
-    if (include.from_node) row.push(csvQuote(e.tail));
-    if (include.to_node) row.push(csvQuote(e.head));
+    if (include.from_node) row.push(csvQuote(e.tail || ''));
+    if (include.to_node) row.push(csvQuote(e.head || '')); // head can be null for dangling edges
     if (include.tail_measurement) row.push(csvQuote(e.tail_measurement || ''));
     if (include.head_measurement) row.push(csvQuote(e.head_measurement || ''));
     if (include.fall_depth) row.push(csvQuote(e.fall_depth || ''));
@@ -141,11 +130,6 @@ export function exportEdgesCsv(edges, adminConfig, t) {
     if (include.edge_material) row.push(csvQuote(codeFor('edges', 'material', e.edge_material || e.material, adminConfig)));
     if (include.edge_type) row.push(csvQuote(codeFor('edges', 'edge_type', e.edge_type, adminConfig)));
     if (include.engineering_status) row.push(csvQuote(codeFor('edges', 'engineering_status', e.engineeringStatus, adminConfig)));
-    // Timestamp fields - always include if present
-    if (include.created_at) row.push(csvQuote(e.createdAt || ''));
-    if (include.created_by) row.push(csvQuote(e.createdBy || ''));
-    if (include.updated_at) row.push(csvQuote(e.updatedAt || ''));
-    if (include.updated_by) row.push(csvQuote(e.updatedBy || ''));
     // Custom fields removed
     return row.join(',');
   };
@@ -160,11 +144,6 @@ export function exportEdgesCsv(edges, adminConfig, t) {
   if (include.edge_material) headers.push('Material');
   if (include.edge_type) headers.push('Type');
   if (include.engineering_status) headers.push('Engineering status');
-  // Timestamp headers
-  if (include.created_at) headers.push('Created At');
-  if (include.created_by) headers.push('Created By');
-  if (include.updated_at) headers.push('Updated At');
-  if (include.updated_by) headers.push('Updated By');
   // Custom fields removed
   const lines = [headers.map(csvQuote).join(',')];
   for (const e of edges) lines.push(rowFor(e));

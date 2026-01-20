@@ -48,12 +48,18 @@ if (typeof window !== 'undefined' && CLERK_KEY) {
 
       // Function to mount or refresh the user button
       const refreshUserButton = () => {
-        const userBtnContainer = document.getElementById('clerkUserButton');
-        if (userBtnContainer && clerk.user) {
-          clerk.mountUserButton(userBtnContainer, {
+        const containers = [
+          document.getElementById('clerkUserButton'),
+          document.getElementById('clerkUserButtonMobile'),
+        ].filter(Boolean);
+
+        if (!clerk.user) return;
+
+        containers.forEach((container) => {
+          clerk.mountUserButton(container, {
             afterSignOutUrl: '#/login',
           });
-        }
+        });
       };
 
       // Update auth state when Clerk loads

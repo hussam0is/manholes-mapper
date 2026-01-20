@@ -208,9 +208,16 @@ describe('Sketches API Integration Tests', () => {
       }),
     };
 
-    // Call the handler
-    const response = await handler(mockRequest as unknown as Request);
-    const data = await response.json();
+    // Call the handler with mock res object
+    const mockResponse = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn().mockReturnThis(),
+    };
+    
+    await handler(mockRequest as any, mockResponse as any);
+    
+    // Extract data from the mock
+    const data = mockResponse.json.mock.calls[0][0];
 
     expect(data).toHaveProperty('sketches');
     expect(Array.isArray(data.sketches)).toBe(true);
@@ -231,16 +238,12 @@ describe('Sketches API Integration Tests', () => {
     // Note: API returns dates as ISO strings, database returns Date objects
     expect(apiSketch.id).toBe(dbRow.id);
     expect(apiSketch.name).toBe(dbRow.name);
-    // Compare dates as ISO strings (API serializes Date objects to ISO strings)
-    expect(apiSketch.creationDate).toBe(
-      dbRow.creation_date instanceof Date ? dbRow.creation_date.toISOString() : dbRow.creation_date
-    );
-    expect(apiSketch.createdAt).toBe(
-      dbRow.created_at instanceof Date ? dbRow.created_at.toISOString() : dbRow.created_at
-    );
-    expect(apiSketch.updatedAt).toBe(
-      dbRow.updated_at instanceof Date ? dbRow.updated_at.toISOString() : dbRow.updated_at
-    );
+    // Compare dates as ISO strings
+    const toIso = (d: any) => d instanceof Date ? d.toISOString() : d;
+    
+    expect(toIso(apiSketch.creationDate)).toBe(toIso(dbRow.creation_date));
+    expect(toIso(apiSketch.createdAt)).toBe(toIso(dbRow.created_at));
+    expect(toIso(apiSketch.updatedAt)).toBe(toIso(dbRow.updated_at));
     expect(JSON.stringify(apiSketch.nodes)).toBe(JSON.stringify(dbRow.nodes));
     expect(JSON.stringify(apiSketch.edges)).toBe(JSON.stringify(dbRow.edges));
     expect(JSON.stringify(apiSketch.adminConfig)).toBe(JSON.stringify(dbRow.admin_config));

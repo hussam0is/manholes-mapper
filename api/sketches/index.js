@@ -41,6 +41,8 @@ export default async function handler(req, res) {
         id: row.id,
         name: row.name,
         creationDate: row.creation_date,
+        createdBy: row.created_by,
+        lastEditedBy: row.last_edited_by,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
         nodes: row.nodes || [],
@@ -60,12 +62,16 @@ export default async function handler(req, res) {
         nodes: body.nodes || [],
         edges: body.edges || [],
         adminConfig: body.adminConfig || {},
+        createdBy: body.createdBy,
+        lastEditedBy: body.lastEditedBy,
       });
       
       const transformed = {
         id: sketch.id,
         name: sketch.name,
         creationDate: sketch.creation_date,
+        createdBy: sketch.created_by,
+        lastEditedBy: sketch.last_edited_by,
         createdAt: sketch.created_at,
         updatedAt: sketch.updated_at,
         nodes: sketch.nodes || [],

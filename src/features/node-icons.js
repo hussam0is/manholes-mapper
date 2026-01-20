@@ -213,6 +213,41 @@ export function drawHomeIcon(ctx, x, y, radius, colors, isSelected, fillColor) {
 }
 
 /**
+ * Draw a "for later" icon - dashed circle with question mark
+ * Indicates a node that needs to be measured/completed later
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} x - Center x coordinate
+ * @param {number} y - Center y coordinate
+ * @param {number} radius - Node radius
+ * @param {Object} colors - Color palette
+ * @param {boolean} isSelected - Whether the node is selected
+ * @param {string} fillColor - Fill color for the node
+ */
+export function drawForLaterIcon(ctx, x, y, radius, colors, isSelected, fillColor) {
+  ctx.save();
+  
+  // Draw outer dashed circle
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.fillStyle = fillColor;
+  ctx.fill();
+  ctx.strokeStyle = colors.node.forLaterStroke || colors.node.stroke;
+  ctx.lineWidth = 2;
+  ctx.setLineDash([4, 3]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  
+  // Draw question mark inside
+  ctx.fillStyle = isSelected ? '#ffffff' : 'rgba(0, 0, 0, 0.7)';
+  ctx.font = `bold ${radius * 1.2}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('?', x, y + 1);
+  
+  ctx.restore();
+}
+
+/**
  * Dispatch to the appropriate icon drawer based on node type
  * @param {CanvasRenderingContext2D} ctx
  * @param {Object} node - Node object with properties
@@ -226,11 +261,15 @@ export function drawNodeIcon(ctx, node, radius, colors, selectedNode) {
   // Determine fill color based on node state
   let fillColor;
   if (isSelected) {
-    if (node.nodeType !== 'Home' && node.type === 'type2') {
+    if (node.nodeType === 'ForLater' || node.nodeType === 'למדידה מאוחרת') {
+      fillColor = colors.node.fillForLaterSelected || colors.node.fillSelected;
+    } else if (node.nodeType !== 'Home' && node.type === 'type2') {
       fillColor = colors.node.fillSelectedMissing;
     } else {
       fillColor = colors.node.fillSelected;
     }
+  } else if (node.nodeType === 'ForLater' || node.nodeType === 'למדידה מאוחרת') {
+    fillColor = colors.node.fillForLater || '#a855f7';
   } else if (node.nodeType === 'Home') {
     fillColor = colors.node.fillDefault;
   } else if (node.nodeType === 'Drainage' || node.nodeType === 'קולטן') {
@@ -242,7 +281,9 @@ export function drawNodeIcon(ctx, node, radius, colors, selectedNode) {
   }
   
   // Dispatch to appropriate icon drawer
-  if (node.nodeType === 'Home') {
+  if (node.nodeType === 'ForLater' || node.nodeType === 'למדידה מאוחרת') {
+    drawForLaterIcon(ctx, node.x, node.y, radius, colors, isSelected, fillColor);
+  } else if (node.nodeType === 'Home') {
     drawHomeIcon(ctx, node.x, node.y, radius, colors, isSelected, fillColor);
   } else if (node.nodeType === 'Drainage' || node.nodeType === 'קולטן') {
     drawDrainageIcon(ctx, node.x, node.y, radius, colors, isSelected, fillColor);

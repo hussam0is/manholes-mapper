@@ -83,6 +83,22 @@ export function getUserId() {
 }
 
 /**
+ * Get the current username from Clerk
+ * @returns {string|null}
+ */
+export function getUsername() {
+  try {
+    if (window.__clerk?.user) {
+      return window.__clerk.user.username || 
+             window.__clerk.user.firstName || 
+             window.__clerk.user.emailAddresses?.[0]?.emailAddress ||
+             authState.userId;
+    }
+  } catch (_) {}
+  return authState.userId;
+}
+
+/**
  * Get the current session token for API calls
  * @returns {Promise<string|null>}
  */

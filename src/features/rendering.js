@@ -55,6 +55,59 @@ export function drawInfiniteGrid(ctx, viewTranslate, viewScale, canvas) {
 }
 
 /**
+ * Draw a dangling edge (edge with only one connected node).
+ * Shows a dashed line from the tail node to a floating endpoint.
+ */
+export function drawDanglingEdge(ctx, edge, tailNode, options) {
+  if (!tailNode) return;
+  
+  const { colors, selectedEdge, danglingEndpoint } = options;
+  const isSelected = edge === selectedEdge;
+  
+  // Default dangling endpoint position (offset from tail)
+  const endX = danglingEndpoint?.x ?? (tailNode.x + 80);
+  const endY = danglingEndpoint?.y ?? (tailNode.y - 40);
+  
+  ctx.save();
+  
+  // Use a purple/violet color for dangling edges to make them stand out
+  const danglingColor = isSelected 
+    ? (colors?.edge?.selected || '#a855f7')
+    : '#a855f7'; // purple-500
+  
+  ctx.strokeStyle = danglingColor;
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 4]); // Dashed line for dangling edges
+  
+  // Draw the line from tail to floating endpoint
+  ctx.beginPath();
+  ctx.moveTo(tailNode.x, tailNode.y);
+  ctx.lineTo(endX, endY);
+  ctx.stroke();
+  
+  ctx.setLineDash([]);
+  
+  // Draw a question mark circle at the dangling end
+  const circleRadius = 12;
+  ctx.beginPath();
+  ctx.arc(endX, endY, circleRadius, 0, Math.PI * 2);
+  ctx.fillStyle = isSelected ? '#c084fc' : '#e9d5ff'; // purple-400 / purple-200
+  ctx.fill();
+  ctx.strokeStyle = danglingColor;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  
+  // Draw question mark inside
+  ctx.fillStyle = '#6b21a8'; // purple-800
+  ctx.font = 'bold 14px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('?', endX, endY + 1);
+  
+  ctx.restore();
+}
+
+/**
  * Draw a directed edge with arrowheads and optional labels.
  * Keeps color logic external (pass in resolved colors and selection state).
  */

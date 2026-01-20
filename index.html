@@ -33,6 +33,7 @@
     <div id="brand">
       <img id="brandLogo" src="./geopoint_logo.png" alt="Geopoint" />
       <h1 id="appTitle">Manhole Mapper (ממפה שוחות)</h1>
+      <span id="sketchNameDisplay" class="sketch-name-display"></span>
     </div>
     <div id="controls">
       <!-- Primary actions -->
@@ -82,9 +83,9 @@
               <span class="dropdown-label"></span>
             </button>
             <hr class="dropdown-divider" />
-            <button id="finishWorkDayBtn" class="dropdown-item dropdown-item-primary">
+            <button id="finishWorkdayBtn" class="dropdown-item dropdown-item-primary">
               <span class="material-icons">done_all</span>
-              <span class="dropdown-label">סיום יום עבודה</span>
+              <span class="dropdown-label"></span>
             </button>
           </div>
         </div>
@@ -137,6 +138,10 @@
       <div class="toolbar-group" id="userButtonContainer">
         <div id="clerkUserButton"></div>
       </div>
+    </div>
+    <!-- Mobile only: user badge -->
+    <div class="toolbar-group" id="mobileUserButtonContainer">
+      <div id="clerkUserButtonMobile"></div>
     </div>
     <!-- Mobile only: toggle to open overflow menu (moved outside #controls so it remains visible on small screens) -->
     <button id="mobileMenuBtn" class="btn btn-ghost" title="">
@@ -248,9 +253,9 @@
         <span class="material-icons">save</span>
         <span class="label"></span>
       </button>
-      <button id="mobileFinishWorkDayBtn" class="btn btn-finish-workday" title="">
+      <button id="mobileFinishWorkdayBtn" class="btn btn-finish-workday" title="">
         <span class="material-icons">done_all</span>
-        <span class="label">סיום יום עבודה</span>
+        <span class="label"></span>
       </button>
       
       <!-- Settings group -->
@@ -324,6 +329,11 @@
       <button id="recenterBtn" class="btn btn-icon canvas-fab" title="" aria-label="">
         <span class="material-icons">center_focus_strong</span>
       </button>
+      <!-- Incomplete edge tracker (shows count of edges missing connection) -->
+      <div id="incompleteEdgeTracker" class="incomplete-tracker" style="display: none;" title="">
+        <span class="material-icons">link_off</span>
+        <span id="incompleteEdgeCount">0</span>
+      </div>
       <!-- Toggle button for floating keyboard (shown when numeric input is focused on mobile) -->
       <button id="toggleFloatingKeyboard" class="toggle-floating-keyboard" style="display:none;">
         <span class="material-icons">dialpad</span>
@@ -413,22 +423,31 @@
           </div>
         </div>
       </div>
-      <!-- Orphan Edge Correction Modal -->
-      <div id="orphanCorrectionModal" class="modal-wrapper" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="orphanCorrectionTitle">
-        <div class="panel orphan-correction-container">
-          <div class="modal-header">
-            <h2 id="orphanCorrectionTitle">
-              <span class="material-icons">warning</span>
-              <span id="orphanCorrectionTitleText">נמצאו קווים עם שוחות חסרות</span>
+      <!-- Finish Workday Modal - for resolving dangling edges -->
+      <div id="finishWorkdayModal" class="finish-workday-modal-wrapper" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="finishWorkdayTitle">
+        <div class="panel finish-workday-container">
+          <div class="finish-workday-header">
+            <h2 id="finishWorkdayTitle">
+              <span class="material-icons">done_all</span>
+              <span class="finish-workday-title-text">סיום יום עבודה</span>
             </h2>
+            <button id="finishWorkdayCloseBtn" class="icon-btn" title="סגור">
+              <span class="material-icons">close</span>
+            </button>
           </div>
-          <div id="orphanCorrectionContent" class="modal-content">
-            <p id="orphanCorrectionDesc">יש לבחור סוג לכל שוחה חסרה כדי להמשיך:</p>
-            <div id="orphanNodesList" class="orphan-nodes-list"></div>
+          <div id="finishWorkdayContent" class="finish-workday-content">
+            <!-- Content will be dynamically populated -->
+            <p id="finishWorkdayDesc" class="finish-workday-desc">הקווים הבאים אינם מחוברים בשני הקצוות. בחר סוג נקודה לכל קצה חסר:</p>
+            <div id="danglingEdgesList" class="dangling-edges-list">
+              <!-- Dangling edges will be listed here -->
+            </div>
           </div>
-          <div class="modal-actions">
-            <button id="orphanCorrectionCancelBtn" class="btn btn-ghost" type="button">ביטול</button>
-            <button id="orphanCorrectionConfirmBtn" class="btn btn-primary" type="button">אשר והמשך</button>
+          <div class="finish-workday-actions">
+            <button id="finishWorkdayCancelBtn" class="btn btn-ghost" type="button">ביטול</button>
+            <button id="finishWorkdayConfirmBtn" class="btn btn-primary" type="button">
+              <span class="material-icons">check</span>
+              <span>אישור וסיום</span>
+            </button>
           </div>
         </div>
       </div>

@@ -24,6 +24,9 @@ const COLORS_LIGHT = {
     houseDoor: '#6d4c41',     // brown-700 (house door)
     badgeBg: '#16a34a',       // green-600 (connection badge)
     badgeIcon: '#ffffff',     // white (badge icon)
+    fillForLater: '#a855f7',  // purple-500 (for later node)
+    fillForLaterSelected: '#d8b4fe', // purple-300 (for later selected)
+    forLaterStroke: '#7c3aed', // violet-600 (for later stroke)
   },
   edge: {
     typePrimary: '#2563eb',   // blue-600
@@ -62,6 +65,9 @@ const COLORS_DARK = {
     houseDoor: '#3e2723',     // brown-900 (darkest house door for dark mode)
     badgeBg: '#22c55e',       // green-500 (brighter badge for dark mode)
     badgeIcon: '#f0fdf4',     // green-50 (light badge icon for dark mode)
+    fillForLater: '#c084fc',  // purple-400 (for later node - brighter for dark mode)
+    fillForLaterSelected: '#e9d5ff', // purple-200 (for later selected - brighter)
+    forLaterStroke: '#a78bfa', // violet-400 (for later stroke - lighter for dark mode)
   },
   edge: {
     typePrimary: '#60a5fa',   // blue-400 (lighter for dark mode)
@@ -94,8 +100,8 @@ export const COLORS = new Proxy({}, {
 
 export const NODE_TYPES = ['type1', 'type2'];
 
-// Node category types (nodeType property) - the actual classification of the node
-export const NODE_CATEGORIES = ['Manhole', 'Home', 'Drainage', 'ForLater', 'Unknown'];
+// Node type categories for the app (Manhole, Home, Drainage, Covered, ForLater)
+export const NODE_TYPE_CATEGORIES = ['Manhole', 'Home', 'Drainage', 'Covered', 'ForLater'];
 
 export const NODE_MATERIAL_OPTIONS = [
   { code: 0, label: 'לא ידוע' },
