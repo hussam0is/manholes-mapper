@@ -595,7 +595,7 @@ function openAdminScreen() {
 
   if (adminScreenTitleEl) adminScreenTitleEl.innerHTML = '<span class="material-icons">settings</span>' + t('admin.title');
   if (mainEl) mainEl.style.display = 'none';
-  adminScreen.style.display = 'block';
+  adminScreen.style.display = 'flex';
   applyLangToStaticUI();
 }
 
