@@ -128,7 +128,13 @@ async function apiRequest(endpoint, options = {}) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      const errorMessage = errorData.error || `API error: ${response.status}`;
+      let errorMessage = errorData.error || `API error: ${response.status}`;
+      
+      // Include validation details if present
+      if (errorData.details && Array.isArray(errorData.details)) {
+        errorMessage += ': ' + errorData.details.join(', ');
+        console.error('Validation errors:', errorData.details);
+      }
       
       if (response.status === 401) {
         console.error('Authentication error. Is CLERK_SECRET_KEY set in .env.local?');
@@ -386,6 +392,13 @@ export async function syncSketchToCloud(sketch) {
   try {
     // Check if sketch exists in cloud (has UUID format)
     const isCloudSketch = sketch.id && /^[0-9a-f-]{36}$/i.test(sketch.id);
+    
+    // Log sketch data for debugging validation issues
+    console.log(`Syncing sketch "${sketch.name}" (${sketch.id}):`, {
+      nodesCount: sketch.nodes?.length ?? 0,
+      edgesCount: sketch.edges?.length ?? 0,
+      hasAdminConfig: !!sketch.adminConfig,
+    });
     
     if (isCloudSketch) {
       // Update existing sketch

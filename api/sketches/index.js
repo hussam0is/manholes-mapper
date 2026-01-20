@@ -66,6 +66,15 @@ export default async function handler(req, res) {
       // Validate input
       const validationErrors = validateSketchInput(body);
       if (validationErrors) {
+        console.warn(`[API /api/sketches] Validation failed:`, validationErrors);
+        console.warn(`[API /api/sketches] Request body summary:`, {
+          name: body.name,
+          nameType: typeof body.name,
+          nodesCount: Array.isArray(body.nodes) ? body.nodes.length : 'not array',
+          edgesCount: Array.isArray(body.edges) ? body.edges.length : 'not array',
+          adminConfigType: typeof body.adminConfig,
+          creationDateType: typeof body.creationDate,
+        });
         return res.status(400).json({ error: 'Validation failed', details: validationErrors });
       }
       
