@@ -3,31 +3,40 @@
  * 
  * GET  - List all sketches for authenticated user
  * POST - Create a new sketch
+ * 
+ * Note: Uses standard Node.js (req, res) signature for better compatibility with vercel dev.
  */
 
-import { verifyAuth, parseBody, unauthorizedResponse, jsonResponse, errorResponse } from '../_lib/auth.js';
+import { verifyAuth, parseBody } from '../_lib/auth.js';
 import { getSketchesByUser, createSketch, ensureDb } from '../_lib/db.js';
 
-// Use Node.js runtime - required for @clerk/backend which uses Node.js crypto APIs
 export const config = { runtime: 'nodejs' };
 
-export default async function handler(request) {
+export default async function handler(req, res) {
+  // Polyfill for helper functions that expect Web API Request
+  const request = req; 
+  if (!request.headers.get) {
+    request.headers.get = (name) => req.headers[name.toLowerCase()];
+  }
+
+  console.log(`[API /api/sketches] ${req.method} request started`);
+  
   try {
-    // Initialize database on first request
+    // Initialize database
     await ensureDb();
 
     // Verify authentication
     const { userId, error: authError } = await verifyAuth(request);
+    
     if (authError) {
-      return unauthorizedResponse(authError);
+      console.warn(`[API /api/sketches] Auth failed: ${authError}`);
+      return res.status(401).json({ error: authError });
     }
 
-    const method = request.method;
-    if (method === 'GET') {
-      // List all sketches for the user
+    if (req.method === 'GET') {
       const sketches = await getSketchesByUser(userId);
+      console.log(`[API /api/sketches] Fetched ${sketches?.length} sketches for ${userId}`);
       
-      // Transform database rows to match frontend format
       const transformed = (sketches || []).map(row => ({
         id: row.id,
         name: row.name,
@@ -39,11 +48,10 @@ export default async function handler(request) {
         adminConfig: row.admin_config || {},
       }));
       
-      return jsonResponse({ sketches: transformed });
+      return res.status(200).json({ sketches: transformed });
     }
 
-    if (method === 'POST') {
-      // Create a new sketch
+    if (req.method === 'POST') {
       const body = await parseBody(request);
       
       const sketch = await createSketch(userId, {
@@ -54,7 +62,6 @@ export default async function handler(request) {
         adminConfig: body.adminConfig || {},
       });
       
-      // Transform to frontend format
       const transformed = {
         id: sketch.id,
         name: sketch.name,
@@ -66,13 +73,13 @@ export default async function handler(request) {
         adminConfig: sketch.admin_config || {},
       };
       
-      return jsonResponse({ sketch: transformed }, 201);
+      console.log(`[API /api/sketches] Created sketch ${transformed.id} for ${userId}`);
+      return res.status(201).json({ sketch: transformed });
     }
 
-    // Method not allowed
-    return errorResponse('Method not allowed', 405);
+    return res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
-    console.error('API error:', error);
-    return errorResponse(error.message || 'Internal server error', 500);
+    console.error(`[API /api/sketches] Error:`, error);
+    return res.status(500).json({ error: error.message || 'Internal server error' });
   }
 }

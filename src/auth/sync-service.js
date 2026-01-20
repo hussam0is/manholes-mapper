@@ -29,6 +29,9 @@ let syncState = {
   error: null,
 };
 
+// Sync lock to prevent concurrent sync operations
+let isSyncInProgress = false;
+
 // Sync state listeners
 const syncStateListeners = new Set();
 
@@ -100,11 +103,19 @@ async function apiRequest(endpoint, options = {}) {
   };
 
   const url = `${API_BASE}${endpoint}`;
+  
+  // Add a timeout to prevent hanging requests
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000); // Increased to 30s for local dev stability
+
   try {
     const response = await fetch(url, {
       ...options,
       headers,
+      signal: controller.signal,
     });
+    
+    clearTimeout(timeoutId);
 
     // Check if we got HTML back instead of JSON (common when API route doesn't exist)
     const contentType = response.headers.get('content-type') || '';
@@ -131,6 +142,10 @@ async function apiRequest(endpoint, options = {}) {
     apiAvailable = true;
     return response;
   } catch (error) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error('API request timed out');
+    }
     if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
       apiAvailable = false;
       const devError = new Error('API not available (network error)');
@@ -226,15 +241,22 @@ export async function syncFromCloud() {
     return;
   }
 
+  if (isSyncInProgress) {
+    console.log('Sync already in progress, skipping concurrent call');
+    return;
+  }
+
+  isSyncInProgress = true;
   updateSyncState({ isSyncing: true, error: null });
 
   try {
+    console.log('Starting cloud sync...');
     // Fetch sketches from cloud
     const cloudSketches = await fetchSketchesFromCloud();
+    console.log(`Fetched ${cloudSketches.length} sketches from cloud`);
     
     // Get local sketches
     const localSketches = await getAllSketchesFromIdb();
-    const localSketchMap = new Map(localSketches.map(s => [s.id, s]));
     
     // Update local cache with cloud data
     for (const cloudSketch of cloudSketches) {
@@ -282,7 +304,7 @@ export async function syncFromCloud() {
       pendingChanges: 0,
     });
 
-    console.log(`Synced ${cloudSketches.length} sketches from cloud`);
+    console.log(`Synced ${cloudSketches.length} sketches from cloud successfully`);
     return cloudSketches;
   } catch (error) {
     // Check if this is an "API not available" error - don't show as error in dev
@@ -312,6 +334,8 @@ export async function syncFromCloud() {
       error: error.message,
     });
     throw error;
+  } finally {
+    isSyncInProgress = false;
   }
 }
 
@@ -344,9 +368,22 @@ export async function syncSketchToCloud(sketch) {
     return;
   }
 
-  try {
-    updateSyncState({ isSyncing: true });
+  if (isSyncInProgress) {
+    console.log('Sync already in progress, queuing this update');
+    await enqueueSyncOperation({
+      type: 'UPDATE',
+      sketchId: sketch.id,
+      data: sketch,
+      timestamp: Date.now(),
+    });
+    updateSyncState({ pendingChanges: syncState.pendingChanges + 1 });
+    return;
+  }
 
+  isSyncInProgress = true;
+  updateSyncState({ isSyncing: true });
+
+  try {
     // Check if sketch exists in cloud (has UUID format)
     const isCloudSketch = sketch.id && /^[0-9a-f-]{36}$/i.test(sketch.id);
     
@@ -402,6 +439,8 @@ export async function syncSketchToCloud(sketch) {
       timestamp: Date.now(),
     });
     updateSyncState({ pendingChanges: syncState.pendingChanges + 1 });
+  } finally {
+    isSyncInProgress = false;
   }
 }
 
@@ -482,34 +521,69 @@ export async function processSyncQueue() {
   const operations = await drainSyncQueue();
   if (operations.length === 0) return;
 
+  if (isSyncInProgress) {
+    console.log('Sync already in progress, will retry processing queue later');
+    return;
+  }
+
   console.log(`Processing ${operations.length} queued sync operations`);
+  isSyncInProgress = true;
   updateSyncState({ isSyncing: true });
 
   let failedOps = [];
 
-  for (const op of operations) {
-    try {
-      if (op.type === 'UPDATE') {
-        await syncSketchToCloud(op.data);
-      } else if (op.type === 'DELETE') {
-        await deleteSketchFromCloud(op.sketchId);
+  try {
+    for (const op of operations) {
+      try {
+        if (op.type === 'UPDATE') {
+          // Internal call - we already have the lock
+          // We bypass the check in syncSketchToCloud by calling its logic directly
+          // or just letting it fail the lock check and re-queue.
+          // Actually, let's just use the syncSketchToCloud logic but without the lock check.
+          
+          const isCloudSketch = op.data.id && /^[0-9a-f-]{36}$/i.test(op.data.id);
+          if (isCloudSketch) {
+            await updateSketchInCloud(op.data.id, {
+              name: op.data.name,
+              creationDate: op.data.creationDate,
+              nodes: op.data.nodes,
+              edges: op.data.edges,
+              adminConfig: op.data.adminConfig,
+            });
+          } else {
+            const cloudSketch = await createSketchInCloud({
+              name: op.data.name,
+              creationDate: op.data.creationDate,
+              nodes: op.data.nodes,
+              edges: op.data.edges,
+              adminConfig: op.data.adminConfig,
+            });
+            op.data.id = cloudSketch.id;
+            op.data.cloudSynced = true;
+            await saveSketchToIdb(op.data);
+          }
+        } else if (op.type === 'DELETE') {
+          await deleteSketchFromCloud(op.sketchId);
+        }
+      } catch (error) {
+        console.error('Failed to process sync op:', op, error);
+        failedOps.push(op);
       }
-    } catch (error) {
-      console.error('Failed to process sync op:', op, error);
-      failedOps.push(op);
     }
-  }
 
-  // Re-queue failed operations
-  for (const op of failedOps) {
-    await enqueueSyncOperation(op);
-  }
+    // Re-queue failed operations
+    for (const op of failedOps) {
+      await enqueueSyncOperation(op);
+    }
 
-  updateSyncState({
-    isSyncing: false,
-    lastSyncTime: new Date(),
-    pendingChanges: failedOps.length,
-  });
+    updateSyncState({
+      isSyncing: false,
+      lastSyncTime: new Date(),
+      pendingChanges: failedOps.length,
+    });
+  } finally {
+    isSyncInProgress = false;
+  }
 }
 
 /**

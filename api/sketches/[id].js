@@ -4,49 +4,50 @@
  * GET    - Get a single sketch by ID
  * PUT    - Update a sketch
  * DELETE - Delete a sketch
+ * 
+ * Note: Uses standard Node.js (req, res) signature for better compatibility with vercel dev.
  */
 
-import { verifyAuth, parseBody, unauthorizedResponse, jsonResponse, errorResponse } from '../_lib/auth.js';
+import { verifyAuth, parseBody } from '../_lib/auth.js';
 import { getSketchById, updateSketch, deleteSketch, ensureDb } from '../_lib/db.js';
 
-// Use Node.js runtime - required for @clerk/backend which uses Node.js crypto APIs
 export const config = { runtime: 'nodejs' };
 
-export default async function handler(request) {
+export default async function handler(req, res) {
+  // Polyfill for helper functions that expect Web API Request
+  const request = req; 
+  if (!request.headers.get) {
+    request.headers.get = (name) => req.headers[name.toLowerCase()];
+  }
+
+  // Extract sketch ID from URL
+  const urlPath = req.url;
+  const pathParts = (urlPath || '').split('/');
+  const sketchId = pathParts[pathParts.length - 1].split('?')[0];
+
+  console.log(`[API /api/sketches/${sketchId}] ${req.method} request started`);
+
   try {
-    // Initialize database on first request
+    if (!sketchId || sketchId === 'sketches') {
+      return res.status(400).json({ error: 'Sketch ID is required' });
+    }
+
+    // Initialize database
     await ensureDb();
 
     // Verify authentication
     const { userId, error: authError } = await verifyAuth(request);
     if (authError) {
-      return unauthorizedResponse(authError);
+      return res.status(401).json({ error: authError });
     }
 
-    // Extract sketch ID from URL - handle both Web API and Node.js formats
-    // Node.js: request.url is just the path like "/api/sketches/123"
-    // Web API: request.url is a full URL
-    const urlPath = request.url?.startsWith('http') 
-      ? new URL(request.url).pathname 
-      : request.url;
-    const pathParts = (urlPath || '').split('/');
-    const sketchId = pathParts[pathParts.length - 1];
-
-    if (!sketchId || sketchId === 'sketches') {
-      return errorResponse('Sketch ID is required', 400);
-    }
-
-    const method = request.method;
-
-    if (method === 'GET') {
-      // Get single sketch
+    if (req.method === 'GET') {
       const sketch = await getSketchById(sketchId, userId);
       
       if (!sketch) {
-        return errorResponse('Sketch not found', 404);
+        return res.status(404).json({ error: 'Sketch not found' });
       }
       
-      // Transform to frontend format
       const transformed = {
         id: sketch.id,
         name: sketch.name,
@@ -58,11 +59,10 @@ export default async function handler(request) {
         adminConfig: sketch.admin_config || {},
       };
       
-      return jsonResponse({ sketch: transformed });
+      return res.status(200).json({ sketch: transformed });
     }
 
-    if (method === 'PUT') {
-      // Update sketch
+    if (req.method === 'PUT') {
       const body = await parseBody(request);
       
       const updated = await updateSketch(sketchId, userId, {
@@ -74,10 +74,9 @@ export default async function handler(request) {
       });
       
       if (!updated) {
-        return errorResponse('Sketch not found', 404);
+        return res.status(404).json({ error: 'Sketch not found' });
       }
       
-      // Transform to frontend format
       const transformed = {
         id: updated.id,
         name: updated.name,
@@ -89,24 +88,24 @@ export default async function handler(request) {
         adminConfig: updated.admin_config || {},
       };
       
-      return jsonResponse({ sketch: transformed });
+      console.log(`[API /api/sketches/${sketchId}] Updated sketch`);
+      return res.status(200).json({ sketch: transformed });
     }
 
-    if (method === 'DELETE') {
-      // Delete sketch
+    if (req.method === 'DELETE') {
       const deleted = await deleteSketch(sketchId, userId);
       
       if (!deleted) {
-        return errorResponse('Sketch not found', 404);
+        return res.status(404).json({ error: 'Sketch not found' });
       }
       
-      return jsonResponse({ success: true });
+      console.log(`[API /api/sketches/${sketchId}] Deleted sketch`);
+      return res.status(200).json({ success: true });
     }
 
-    // Method not allowed
-    return errorResponse('Method not allowed', 405);
+    return res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
-    console.error('API error:', error);
-    return errorResponse('Internal server error', 500);
+    console.error(`[API /api/sketches/${sketchId}] Error:`, error);
+    return res.status(500).json({ error: error.message || 'Internal server error' });
   }
 }

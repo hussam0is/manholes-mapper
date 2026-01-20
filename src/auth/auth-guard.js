@@ -91,15 +91,23 @@ export async function getToken() {
   
   // Try to get fresh token from Clerk
   try {
-    if (window.__clerk && typeof window.__clerk.session?.getToken === 'function') {
-      const token = await window.__clerk.session.getToken();
-      authState.token = token;
-      return token;
+    if (window.__clerk) {
+      if (typeof window.__clerk.session?.getToken === 'function') {
+        const token = await window.__clerk.session.getToken();
+        authState.token = token;
+        return token;
+      } else if (typeof window.__clerk.getToken === 'function') {
+        // Fallback to clerk.getToken() if session.getToken() is not available
+        const token = await window.__clerk.getToken();
+        authState.token = token;
+        return token;
+      }
     }
   } catch (err) {
-    console.warn('Failed to get Clerk token:', err);
+    console.warn('Failed to get fresh Clerk token:', err);
   }
   
+  // Fallback to cached token
   return authState.token;
 }
 

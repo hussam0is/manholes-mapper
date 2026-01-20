@@ -46,8 +46,19 @@ if (typeof window !== 'undefined' && CLERK_KEY) {
         sessionId: clerk.session?.id || null,
       };
 
+      // Function to mount or refresh the user button
+      const refreshUserButton = () => {
+        const userBtnContainer = document.getElementById('clerkUserButton');
+        if (userBtnContainer && clerk.user) {
+          clerk.mountUserButton(userBtnContainer, {
+            afterSignOutUrl: '#/login',
+          });
+        }
+      };
+
       // Update auth state when Clerk loads
       updateAuthState(authData);
+      refreshUserButton();
       
       // Listen for auth changes
       clerk.addListener((event) => {
@@ -56,15 +67,10 @@ if (typeof window !== 'undefined' && CLERK_KEY) {
           userId: clerk.user?.id || null,
           sessionId: clerk.session?.id || null,
         });
+        
+        // Refresh user button on any auth change (mounts it if user just signed in)
+        refreshUserButton();
       });
-
-      // Mount user button if container exists
-      const userBtnContainer = document.getElementById('clerkUserButton');
-      if (userBtnContainer && clerk.user) {
-        clerk.mountUserButton(userBtnContainer, {
-          afterSignOutUrl: '#/login',
-        });
-      }
 
       // Dispatch custom event so other parts of the app know auth is ready
       window.dispatchEvent(new CustomEvent('clerk-loaded', { detail: { clerk } }));

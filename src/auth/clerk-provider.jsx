@@ -10,6 +10,24 @@ import { ClerkProvider, SignIn, SignUp, UserButton, useAuth, useUser } from '@cl
 // Get the publishable key from environment variables
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
+// Keep track of React roots to avoid multiple createRoot calls on the same container
+const roots = new Map();
+
+/**
+ * Get or create a React root for a container
+ * @param {HTMLElement} container 
+ * @param {Object} ReactDOM 
+ * @returns {Object} React root
+ */
+function getRoot(container, ReactDOM) {
+  if (roots.has(container)) {
+    return roots.get(container);
+  }
+  const root = ReactDOM.createRoot(container);
+  roots.set(container, root);
+  return root;
+}
+
 if (!PUBLISHABLE_KEY) {
   console.warn('Missing VITE_CLERK_PUBLISHABLE_KEY environment variable. Auth will not work.');
 }
@@ -45,7 +63,7 @@ export function mountSignIn(container, props = {}) {
   // We'll use React to render the SignIn component
   import('react').then((React) => {
     import('react-dom/client').then((ReactDOM) => {
-      const root = ReactDOM.createRoot(container);
+      const root = getRoot(container, ReactDOM);
       root.render(
         React.createElement(ClerkProvider, { publishableKey: PUBLISHABLE_KEY },
           React.createElement(SignIn, {
@@ -86,7 +104,7 @@ export function mountSignUp(container, props = {}) {
   
   import('react').then((React) => {
     import('react-dom/client').then((ReactDOM) => {
-      const root = ReactDOM.createRoot(container);
+      const root = getRoot(container, ReactDOM);
       root.render(
         React.createElement(ClerkProvider, { publishableKey: PUBLISHABLE_KEY },
           React.createElement(SignUp, {
@@ -122,7 +140,7 @@ export function mountUserButton(container) {
   
   import('react').then((React) => {
     import('react-dom/client').then((ReactDOM) => {
-      const root = ReactDOM.createRoot(container);
+      const root = getRoot(container, ReactDOM);
       root.render(
         React.createElement(ClerkProvider, { publishableKey: PUBLISHABLE_KEY },
           React.createElement(UserButton, {

@@ -9,17 +9,12 @@ import { sql } from '@vercel/postgres';
 export { sql };
 
 // Centralized database initialization promise - shared across all API routes
-// This ensures initialization only happens once, even if multiple routes
-// receive requests simultaneously during a cold start.
 let dbInitializationPromise = null;
 
 /**
  * Initialize database tables if they don't exist.
- * Call this once during deployment or first request.
- * @throws {Error} If database initialization fails
  */
 async function initializeDatabase() {
-  // Create sketches table
   await sql`
     CREATE TABLE IF NOT EXISTS sketches (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -34,23 +29,18 @@ async function initializeDatabase() {
     )
   `;
 
-  // Create index on user_id for faster queries
   await sql`
     CREATE INDEX IF NOT EXISTS idx_sketches_user_id ON sketches(user_id)
   `;
 }
 
 /**
- * Ensure database is initialized (runs once per cold start).
- * This is the public API for routes to use - it handles caching
- * the initialization promise so multiple concurrent requests
- * share the same initialization.
- * @returns {Promise<void>}
+ * Ensure database is initialized.
  */
 export async function ensureDb() {
   if (!dbInitializationPromise) {
     dbInitializationPromise = initializeDatabase().catch(err => {
-      dbInitializationPromise = null; // Reset promise so next request can retry
+      dbInitializationPromise = null; 
       throw err;
     });
   }
@@ -59,8 +49,6 @@ export async function ensureDb() {
 
 /**
  * Get all sketches for a user
- * @param {string} userId - Clerk user ID
- * @returns {Promise<Array>} Array of sketches
  */
 export async function getSketchesByUser(userId) {
   const result = await sql`
@@ -74,9 +62,6 @@ export async function getSketchesByUser(userId) {
 
 /**
  * Get a single sketch by ID
- * @param {string} sketchId - Sketch UUID
- * @param {string} userId - Clerk user ID (for authorization)
- * @returns {Promise<Object|null>} Sketch or null if not found
  */
 export async function getSketchById(sketchId, userId) {
   const result = await sql`
@@ -89,9 +74,6 @@ export async function getSketchById(sketchId, userId) {
 
 /**
  * Create a new sketch
- * @param {string} userId - Clerk user ID
- * @param {Object} sketch - Sketch data
- * @returns {Promise<Object>} Created sketch
  */
 export async function createSketch(userId, sketch) {
   const { name, creationDate, nodes, edges, adminConfig } = sketch;
@@ -114,21 +96,10 @@ export async function createSketch(userId, sketch) {
 
 /**
  * Update an existing sketch
- * @param {string} sketchId - Sketch UUID
- * @param {string} userId - Clerk user ID (for authorization)
- * @param {Object} updates - Fields to update
- * @returns {Promise<Object|null>} Updated sketch or null if not found
  */
 export async function updateSketch(sketchId, userId, updates) {
   const { name, creationDate, nodes, edges, adminConfig } = updates;
   
-  // Use null checks to distinguish between:
-  // - undefined/null: field not provided, preserve existing value (COALESCE fallback)
-  // - []/{}:          field provided as empty, update to empty value
-  // - [...]/...:      field provided with data, update to that data
-  // Note: We use `!= null` (loose equality) to catch both undefined and null,
-  // because JSON.stringify(null) produces "null" which casts to a JSONB null
-  // value that would overwrite existing data instead of preserving it.
   const result = await sql`
     UPDATE sketches
     SET
@@ -147,9 +118,6 @@ export async function updateSketch(sketchId, userId, updates) {
 
 /**
  * Delete a sketch
- * @param {string} sketchId - Sketch UUID
- * @param {string} userId - Clerk user ID (for authorization)
- * @returns {Promise<boolean>} True if deleted
  */
 export async function deleteSketch(sketchId, userId) {
   const result = await sql`

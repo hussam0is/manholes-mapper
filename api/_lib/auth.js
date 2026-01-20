@@ -14,15 +14,12 @@ import { verifyToken } from '@clerk/backend';
  * @returns {string|null}
  */
 function getHeader(request, name) {
-  // Normalize header name to lowercase for consistent handling across runtimes
   const normalizedName = name.toLowerCase();
   
-  // Web API Request (Edge Runtime) - Headers.get() is case-insensitive
   if (typeof request.headers?.get === 'function') {
     return request.headers.get(normalizedName);
   }
   
-  // Node.js IncomingMessage - headers are always normalized to lowercase
   if (request.headers) {
     return request.headers[normalizedName] || null;
   }
@@ -36,15 +33,12 @@ function getHeader(request, name) {
  * @returns {Promise<any>}
  */
 export async function parseBody(request) {
-  // Web API Request
   if (typeof request.json === 'function') {
     return request.json();
   }
-  // Node.js IncomingMessage - body is already parsed by Vercel
   if (request.body !== undefined) {
     return request.body;
   }
-  // Fallback: read stream
   return new Promise((resolve, reject) => {
     let data = '';
     request.on('data', chunk => { data += chunk; });
@@ -74,14 +68,12 @@ export async function verifyAuth(request) {
 
     const token = authHeader.substring(7);
     
-    // Use only secretKey for verification (automatically fetches JWKS from Clerk)
-    // Note: Do NOT use CLERK_JWT_KEY unless you have the actual PEM public key
     if (!process.env.CLERK_SECRET_KEY) {
       console.error('CLERK_SECRET_KEY is not set');
       return { userId: null, error: 'Server configuration error' };
     }
     
-    // Verify the token with Clerk using secretKey only
+    // Verify the token with Clerk
     const { sub: userId } = await verifyToken(token, {
       secretKey: process.env.CLERK_SECRET_KEY,
     });
@@ -92,48 +84,7 @@ export async function verifyAuth(request) {
 
     return { userId, error: null };
   } catch (error) {
-    console.error('Auth verification failed:', error);
+    console.error('Auth verification failed:', error.message);
     return { userId: null, error: 'Authentication failed' };
   }
-}
-
-/**
- * Create an unauthorized response
- * @param {string} message - Error message
- * @returns {Response}
- */
-export function unauthorizedResponse(message = 'Unauthorized') {
-  return new Response(JSON.stringify({ error: message }), {
-    status: 401,
-    headers: { 'Content-Type': 'application/json' },
-  });
-}
-
-/**
- * Create a JSON response
- * @param {any} data - Response data
- * @param {number} status - HTTP status code
- * @returns {Response}
- */
-export function jsonResponse(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      'Content-Type': 'application/json',
-      'Cache-Control': 'no-store',
-    },
-  });
-}
-
-/**
- * Create an error response
- * @param {string} message - Error message
- * @param {number} status - HTTP status code
- * @returns {Response}
- */
-export function errorResponse(message, status = 500) {
-  return new Response(JSON.stringify({ error: message }), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  });
 }
