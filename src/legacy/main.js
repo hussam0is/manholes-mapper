@@ -4968,7 +4968,7 @@ async function completeFinishWorkday() {
 if (finishWorkdayBtn) {
   finishWorkdayBtn.addEventListener('click', () => {
     // Close dropdown menu first
-    if (exportDropdown) exportDropdown.style.display = 'none';
+    if (exportDropdown) exportDropdown.classList.remove('open');
     showFinishWorkdayModal();
   });
 }

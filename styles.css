@@ -390,20 +390,6 @@ header h1 {
   justify-content: flex-end;
 }
 
-[dir="rtl"] #mobileMenu .mobile-search {
-  direction: rtl;
-}
-
-[dir="rtl"] #mobileMenu .mobile-search .search-icon {
-  right: auto;
-  left: 10px;
-}
-
-[dir="rtl"] #mobileMenu .mobile-search .search-input {
-  padding: 0.45rem 0.9rem 0.45rem 2.5rem;
-  text-align: right;
-}
-
 [dir="rtl"] #mobileMenu select {
   text-align: right;
   direction: rtl;
@@ -531,7 +517,7 @@ header .segmented .btn {
 
 .search-container .search-icon {
   position: absolute;
-  right: 10px;
+  inset-inline-start: 10px;
   font-size: 1.1rem;
   color: var(--color-muted);
   pointer-events: none;
@@ -541,7 +527,8 @@ header .segmented .btn {
 .search-input {
   width: 160px;
   height: 36px;
-  padding: 0.45rem 2.5rem 0.45rem 0.9rem;
+  padding: 0.45rem 0.9rem;
+  padding-inline-start: 2.5rem;
   font-size: 0.92rem;
   border: 1px solid rgba(255, 255, 255, 0.25);
   background: rgba(255, 255, 255, 0.1);
@@ -550,7 +537,6 @@ header .segmented .btn {
   outline: none;
   transition: all 0.2s ease;
   font-family: inherit;
-  direction: rtl;
 }
 
 .search-input::placeholder {
