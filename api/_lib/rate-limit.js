@@ -79,16 +79,16 @@ export function checkRateLimit(req, maxRequests = MAX_REQUESTS_DEFAULT) {
   // Filter to only requests within the window
   const recentRequests = requests.filter(t => t > windowStart);
   
-  // Add current request
-  recentRequests.push(now);
-  requestStore.set(ip, recentRequests);
-  
-  const requestCount = recentRequests.length;
+  const requestCount = recentRequests.length + 1;
   const remaining = Math.max(0, maxRequests - requestCount);
   
   if (requestCount > maxRequests) {
+    // Add current request to the list for calculation but DO NOT save to store
+    // This prevents blocked requests from "pushing" the window further
+    const allRequests = [...recentRequests, now];
+    
     // Calculate when the oldest request in the window will expire
-    const oldestRequest = recentRequests[0];
+    const oldestRequest = allRequests[0];
     const retryAfter = Math.ceil((oldestRequest + WINDOW_MS - now) / 1000);
     
     return {
@@ -98,6 +98,10 @@ export function checkRateLimit(req, maxRequests = MAX_REQUESTS_DEFAULT) {
       limit: maxRequests,
     };
   }
+  
+  // Within limit, add current request and save to store
+  recentRequests.push(now);
+  requestStore.set(ip, recentRequests);
   
   return {
     allowed: true,

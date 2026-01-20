@@ -560,7 +560,7 @@ function formatSketchDisplayName(rec) {
   try {
     const date = new Date(rec.createdAt || rec.creationDate);
     if (!isNaN(date.getTime())) {
-      return date.toLocaleDateString(currentLang === 'he' ? 'he-IL' : 'en-US', {
+      return date.toLocaleDateString(currentLang === 'he' ? 'he-IL' : 'en-GB', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric'
@@ -1851,7 +1851,7 @@ function formatTimeAgo(date) {
   if (mins < 60) return currentLang === 'he' ? `לפני ${mins} דקות` : `${mins} min ago`;
   const hours = Math.floor(mins / 60);
   if (hours < 24) return currentLang === 'he' ? `לפני ${hours} שעות` : `${hours} hr ago`;
-  return new Date(date).toLocaleDateString();
+  return new Date(date).toLocaleDateString(currentLang === 'he' ? 'he-IL' : 'en-GB');
 }
 
 // Subscribe to sync state changes
@@ -1885,7 +1885,17 @@ function renderHome() {
       const isCurrentSketch = rec.id === currentSketchId;
       item.className = `sketch-card${isCurrentSketch ? ' sketch-card-active' : ''}`;
       const displayName = rec.name && String(rec.name).trim().length > 0 ? rec.name : null;
-      const title = displayName || t('listTitle', rec.id.slice(-6), (rec.creationDate || rec.createdAt));
+      const dateStr = rec.creationDate || rec.createdAt;
+      let formattedDate = '';
+      if (dateStr) {
+        const d = new Date(dateStr);
+        if (!isNaN(d.getTime())) {
+          formattedDate = d.toLocaleDateString(currentLang === 'he' ? 'he-IL' : 'en-GB');
+        } else {
+          formattedDate = dateStr;
+        }
+      }
+      const title = displayName || t('listTitle', rec.id.slice(-6), formattedDate);
       const nodeCount = (rec.nodes || []).length;
       const edgeCount = (rec.edges || []).length;
       item.innerHTML = `
@@ -1901,7 +1911,7 @@ function renderHome() {
             <div class="sketch-card-title sketch-title" data-id="${rec.id}">${title}</div>
             <div class="sketch-card-meta">
               <span class="material-icons">schedule</span>
-              ${t('listUpdated', new Date(rec.updatedAt || rec.createdAt).toLocaleString())}
+              ${t('listUpdated', new Date(rec.updatedAt || rec.createdAt).toLocaleString(currentLang === 'he' ? 'he-IL' : 'en-GB'))}
             </div>
           </div>
         </div>
@@ -3782,7 +3792,7 @@ canvas.addEventListener('mousedown', (e) => {
       } else {
         // Empty background: prepare to either pan (if moved) or create node on release (node/home/drainage modes)
         mousePanCandidate = true;
-        mouseAddPending = (currentMode === 'node' || currentMode === 'home' || currentMode === 'drainage');
+        mouseAddPending = (currentMode === 'node' || currentMode === 'home' || currentMode === 'drainage' || currentMode === 'edge');
         mouseAddPoint = { x: e.offsetX, y: e.offsetY };
         panStart = { x: e.clientX, y: e.clientY };
         translateStart = { ...viewTranslate };
@@ -3867,108 +3877,91 @@ canvas.addEventListener('touchstart', (e) => {
         const nodeAt = findNodeAtWithExpansion(world.x, world.y, TOUCH_SELECT_EXPANSION);
         const edgeAt = findEdgeAt(world.x, world.y, TOUCH_EDGE_HIT_THRESHOLD);
         
-        // Case 1: No pending edge yet
-        if (!pendingEdgeTail && !pendingEdgeStartPosition) {
-          if (nodeAt) {
-            // Start from a node (for normal or outbound dangling edge)
-            pendingEdgeTail = nodeAt;
-            pendingEdgePreview = { x: world.x, y: world.y };
-            selectedNode = null;
-            selectedEdge = null;
-            touchAddPending = false;
-            touchAddPoint = null;
-            renderDetails();
-            scheduleDraw();
-            showToast(t('toasts.chooseTarget'));
-          } else if (edgeAt) {
-            // Select edge for editing
-            selectedEdge = edgeAt;
-            selectedNode = null;
-            touchAddPending = false;
-            touchAddPoint = null;
-            renderDetails();
-            scheduleDraw();
-          } else {
-            // Tapped empty space first - start inbound dangling edge
-            pendingEdgeStartPosition = { x: world.x, y: world.y };
-            pendingEdgePreview = { x: world.x, y: world.y };
-            touchAddPending = false;
-            touchAddPoint = null;
-            scheduleDraw();
-            showToast(t('toasts.chooseTargetInbound'));
-          }
-        }
-        // Case 2: We started from a node (pendingEdgeTail is set)
-        else if (pendingEdgeTail) {
-          if (nodeAt) {
-            if (String(nodeAt.id) !== String(pendingEdgeTail.id)) {
-              const created = createEdge(pendingEdgeTail.id, nodeAt.id);
-              pendingEdgeTail = null;
-              pendingEdgePreview = null;
+        if (nodeAt || edgeAt) {
+          // Case 1: No pending edge yet
+          if (!pendingEdgeTail && !pendingEdgeStartPosition) {
+            if (nodeAt) {
+              // Start from a node (for normal or outbound dangling edge)
+              pendingEdgeTail = nodeAt;
+              pendingEdgePreview = { x: world.x, y: world.y };
+              selectedNode = null;
+              selectedEdge = null;
+              touchAddPending = false;
+              touchAddPoint = null;
+              renderDetails();
               scheduleDraw();
-              if (created) {
-                showToast(t('toasts.edgeCreated'));
+              showToast(t('toasts.chooseTarget'));
+            } else if (edgeAt) {
+              // Select edge for editing
+              selectedEdge = edgeAt;
+              selectedNode = null;
+              touchAddPending = false;
+              touchAddPoint = null;
+              renderDetails();
+              scheduleDraw();
+            }
+          }
+          // Case 2: We started from a node (pendingEdgeTail is set)
+          else if (pendingEdgeTail) {
+            if (nodeAt) {
+              if (String(nodeAt.id) !== String(pendingEdgeTail.id)) {
+                const created = createEdge(pendingEdgeTail.id, nodeAt.id);
+                pendingEdgeTail = null;
+                pendingEdgePreview = null;
+                scheduleDraw();
+                if (created) {
+                  showToast(t('toasts.edgeCreated'));
+                } else {
+                  showToast(t('toasts.edgeExists'));
+                }
               } else {
-                showToast(t('toasts.edgeExists'));
+                // Tapped same node again: cancel
+                pendingEdgeTail = null;
+                pendingEdgePreview = null;
+                scheduleDraw();
+                showToast(t('toasts.edgeCancelled'));
               }
-            } else {
-              // Tapped same node again: cancel
+            } else if (edgeAt) {
+              // Cancel and select edge
               pendingEdgeTail = null;
               pendingEdgePreview = null;
+              selectedEdge = edgeAt;
+              selectedNode = null;
+              renderDetails();
               scheduleDraw();
-              showToast(t('toasts.edgeCancelled'));
             }
-          } else if (edgeAt) {
-            // Cancel and select edge
-            pendingEdgeTail = null;
-            pendingEdgePreview = null;
-            selectedEdge = edgeAt;
-            selectedNode = null;
-            renderDetails();
-            scheduleDraw();
-          } else {
-            // Tapped empty space: create outbound dangling edge
-            const danglingEdge = createDanglingEdge(pendingEdgeTail.id, world.x, world.y);
-            pendingEdgeTail = null;
-            pendingEdgePreview = null;
-            if (danglingEdge) {
-              showToast(t('toasts.danglingEdgeCreated'));
-              updateIncompleteEdgeTracker();
-            }
-            scheduleDraw();
           }
-        }
-        // Case 3: We started from empty space (pendingEdgeStartPosition is set)
-        else if (pendingEdgeStartPosition) {
-          if (nodeAt) {
-            // Create inbound dangling edge
-            const inboundEdge = createInboundDanglingEdge(
-              pendingEdgeStartPosition.x,
-              pendingEdgeStartPosition.y,
-              nodeAt.id
-            );
-            pendingEdgeStartPosition = null;
-            pendingEdgePreview = null;
-            if (inboundEdge) {
-              showToast(t('toasts.danglingEdgeCreated'));
-              updateIncompleteEdgeTracker();
+          // Case 3: We started from empty space (pendingEdgeStartPosition is set)
+          else if (pendingEdgeStartPosition) {
+            if (nodeAt) {
+              // Create inbound dangling edge
+              const inboundEdge = createInboundDanglingEdge(
+                pendingEdgeStartPosition.x,
+                pendingEdgeStartPosition.y,
+                nodeAt.id
+              );
+              pendingEdgeStartPosition = null;
+              pendingEdgePreview = null;
+              if (inboundEdge) {
+                showToast(t('toasts.danglingEdgeCreated'));
+                updateIncompleteEdgeTracker();
+              }
+              scheduleDraw();
+            } else if (edgeAt) {
+              // Cancel and select edge
+              pendingEdgeStartPosition = null;
+              pendingEdgePreview = null;
+              selectedEdge = edgeAt;
+              selectedNode = null;
+              renderDetails();
+              scheduleDraw();
             }
-            scheduleDraw();
-          } else if (edgeAt) {
-            // Cancel and select edge
-            pendingEdgeStartPosition = null;
-            pendingEdgePreview = null;
-            selectedEdge = edgeAt;
-            selectedNode = null;
-            renderDetails();
-            scheduleDraw();
-          } else {
-            // Tapped empty space again: cancel
-            pendingEdgeStartPosition = null;
-            pendingEdgePreview = null;
-            scheduleDraw();
-            showToast(t('toasts.edgeCancelled'));
           }
+        } else {
+          // Empty background in edge mode: defer to allow panning
+          touchPanCandidate = true;
+          touchAddPending = true;
+          touchAddPoint = { x, y };
         }
       } else {
         const nodeAt = findNodeAtWithExpansion(world.x, world.y, TOUCH_SELECT_EXPANSION);
@@ -4079,22 +4072,26 @@ canvas.addEventListener('touchend', (e) => {
     pinchStartScale = null;
   }
   if (e.touches.length === 0) {
-    // If a tap-to-add is pending and didn't move much, create node now (Node or Home or Drainage mode)
-    if (touchAddPending && touchAddPoint && (currentMode === 'node' || currentMode === 'home' || currentMode === 'drainage') && !isDragging) {
-      const world = screenToWorld(touchAddPoint.x, touchAddPoint.y);
-      // Re-check proximity with touch-friendly thresholds to avoid creating next to an existing node/edge
-      const nearNode = findNodeAtWithExpansion(world.x, world.y, TOUCH_SELECT_EXPANSION);
-      const nearEdge = findEdgeAt(world.x, world.y, TOUCH_EDGE_HIT_THRESHOLD);
-      if (!nearNode && !nearEdge) {
-        const created = createNode(world.x, world.y);
-        if (currentMode === 'home' && created) {
-          // Keep numeric ID for home (like manholes/drainage)
-          created.nodeType = 'Home';
-        } else if (currentMode === 'drainage' && created) {
-          // Keep numeric ID for drainage (like manholes)
-          created.nodeType = 'Drainage';
+    // If a tap-to-add is pending and didn't move much, create node/edge now
+    if (touchAddPending && touchAddPoint && (currentMode === 'node' || currentMode === 'home' || currentMode === 'drainage' || currentMode === 'edge') && !isDragging) {
+      if (currentMode === 'edge') {
+        pointerDown(touchAddPoint.x, touchAddPoint.y);
+      } else {
+        const world = screenToWorld(touchAddPoint.x, touchAddPoint.y);
+        // Re-check proximity with touch-friendly thresholds to avoid creating next to an existing node/edge
+        const nearNode = findNodeAtWithExpansion(world.x, world.y, TOUCH_SELECT_EXPANSION);
+        const nearEdge = findEdgeAt(world.x, world.y, TOUCH_EDGE_HIT_THRESHOLD);
+        if (!nearNode && !nearEdge) {
+          const created = createNode(world.x, world.y);
+          if (currentMode === 'home' && created) {
+            // Keep numeric ID for home (like manholes/drainage)
+            created.nodeType = 'Home';
+          } else if (currentMode === 'drainage' && created) {
+            // Keep numeric ID for drainage (like manholes)
+            created.nodeType = 'Drainage';
+          }
+          scheduleDraw();
         }
-        scheduleDraw();
       }
     }
     touchAddPending = false;

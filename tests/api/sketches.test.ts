@@ -212,6 +212,7 @@ describe('Sketches API Integration Tests', () => {
     const mockResponse = {
       status: vi.fn().mockReturnThis(),
       json: vi.fn().mockReturnThis(),
+      setHeader: vi.fn().mockReturnThis(),
     };
     
     await handler(mockRequest as any, mockResponse as any);
