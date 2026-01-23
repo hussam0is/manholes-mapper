@@ -82,9 +82,9 @@ async function initializeDatabase() {
   // Migration: Changed from clerk_id to user_id (UUID) for Better Auth compatibility
   await sql`
     CREATE TABLE IF NOT EXISTS users (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      id TEXT PRIMARY KEY,
       username TEXT,
-      email TEXT,
+      email TEXT UNIQUE,
       role TEXT DEFAULT 'user',
       organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL,
       created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -309,7 +309,7 @@ export async function getOrCreateUser(userId, userData = {}) {
   let result = await sql`
     SELECT id, username, email, role, organization_id, created_at, updated_at
     FROM users
-    WHERE id = ${userId}::uuid OR email = ${email}
+    WHERE id = ${userId} OR email = ${email}
     LIMIT 1
   `;
   
@@ -318,7 +318,7 @@ export async function getOrCreateUser(userId, userData = {}) {
     if (result.rows[0].id !== userId) {
       // User exists by email but with different ID, update the ID
       await sql`
-        UPDATE users SET id = ${userId}::uuid, updated_at = NOW()
+        UPDATE users SET id = ${userId}, updated_at = NOW()
         WHERE email = ${email}
       `;
     }
@@ -333,7 +333,7 @@ export async function getOrCreateUser(userId, userData = {}) {
   
   result = await sql`
     INSERT INTO users (id, username, email, role)
-    VALUES (${userId}::uuid, ${username || null}, ${email || null}, ${role})
+    VALUES (${userId}, ${username || null}, ${email || null}, ${role})
     ON CONFLICT (id) DO UPDATE SET
       username = COALESCE(EXCLUDED.username, users.username),
       email = COALESCE(EXCLUDED.email, users.email),
@@ -351,8 +351,7 @@ export async function getUserById(userId) {
   const result = await sql`
     SELECT id, username, email, role, organization_id, created_at, updated_at
     FROM users
-    WHERE id = ${userId}::uuid
-  `;
+    WHERE id = ${userId}  `;
   return result.rows[0] || null;
 }
 
@@ -412,8 +411,7 @@ export async function updateUser(userId, updates) {
       role = COALESCE(${role}, role),
       organization_id = ${organizationId === undefined ? null : organizationId},
       updated_at = NOW()
-    WHERE id = ${userId}::uuid
-    RETURNING id, username, email, role, organization_id, created_at, updated_at
+    WHERE id = ${userId}    RETURNING id, username, email, role, organization_id, created_at, updated_at
   `;
   
   return result.rows[0] || null;
