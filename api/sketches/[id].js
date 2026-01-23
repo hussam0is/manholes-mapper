@@ -158,7 +158,13 @@ export default async function handler(req, res) {
 
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
-    console.error(`[API /api/sketches/${sketchId}] Error:`, error);
+    console.error(`[API /api/sketches/${sketchId}] Error:`, error.message, error.stack);
+    
+    // Check for specific error types
+    if (error.message?.includes('Database connection not configured')) {
+      return res.status(503).json({ error: 'Database service unavailable' });
+    }
+    
     return res.status(500).json({ error: sanitizeErrorMessage(error) });
   }
 }

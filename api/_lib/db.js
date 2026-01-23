@@ -15,7 +15,33 @@ let dbInitializationPromise = null;
  * Initialize database tables if they don't exist.
  */
 async function initializeDatabase() {
-  // Sketches table
+  // Organizations table (must be created first - referenced by projects and users)
+  await sql`
+    CREATE TABLE IF NOT EXISTS organizations (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      name TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+
+  // Projects table (must be created before sketches - referenced by sketches)
+  await sql`
+    CREATE TABLE IF NOT EXISTS projects (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      description TEXT,
+      input_flow_config JSONB DEFAULT '{}'::jsonb,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_projects_organization_id ON projects(organization_id)
+  `;
+
+  // Sketches table (created after projects since it references projects)
   await sql`
     CREATE TABLE IF NOT EXISTS sketches (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -36,7 +62,7 @@ async function initializeDatabase() {
   await sql`ALTER TABLE sketches ADD COLUMN IF NOT EXISTS created_by TEXT`;
   await sql`ALTER TABLE sketches ADD COLUMN IF NOT EXISTS last_edited_by TEXT`;
   
-  // Migration: Add project support to sketches
+  // Migration: Add project support to sketches (now safe since projects table exists)
   await sql`ALTER TABLE sketches ADD COLUMN IF NOT EXISTS project_id UUID REFERENCES projects(id) ON DELETE SET NULL`;
   await sql`ALTER TABLE sketches ADD COLUMN IF NOT EXISTS snapshot_input_flow_config JSONB DEFAULT '{}'::jsonb`;
 
@@ -50,32 +76,6 @@ async function initializeDatabase() {
 
   await sql`
     CREATE INDEX IF NOT EXISTS idx_sketches_updated_at ON sketches(updated_at DESC)
-  `;
-
-  // Organizations table
-  await sql`
-    CREATE TABLE IF NOT EXISTS organizations (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      name TEXT NOT NULL,
-      created_at TIMESTAMPTZ DEFAULT NOW()
-    )
-  `;
-
-  // Projects table (per organization)
-  await sql`
-    CREATE TABLE IF NOT EXISTS projects (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-      name TEXT NOT NULL,
-      description TEXT,
-      input_flow_config JSONB DEFAULT '{}'::jsonb,
-      created_at TIMESTAMPTZ DEFAULT NOW(),
-      updated_at TIMESTAMPTZ DEFAULT NOW()
-    )
-  `;
-
-  await sql`
-    CREATE INDEX IF NOT EXISTS idx_projects_organization_id ON projects(organization_id)
   `;
 
   // Users table with roles
@@ -167,9 +167,17 @@ export async function ensureDb() {
 
   dbInitializationPromise = (async () => {
     try {
+      // Verify database connection environment variable exists
+      if (!process.env.POSTGRES_URL && !process.env.DATABASE_URL) {
+        console.error('[DB] Missing POSTGRES_URL or DATABASE_URL environment variable');
+        throw new Error('Database connection not configured');
+      }
+      
       await initializeDatabase();
+      console.log('[DB] Database initialized successfully');
     } catch (err) {
       dbInitializationPromise = null;
+      console.error('[DB] Database initialization failed:', err.message);
       throw err;
     }
   })();
