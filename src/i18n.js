@@ -282,6 +282,16 @@ export const i18n = {
     alerts: {
       selectProject: 'יש לבחור פרויקט',
     },
+    buttons: {
+      cancel: 'ביטול',
+      save: 'שמור',
+      close: 'סגור',
+      edit: 'ערוך',
+      delete: 'מחק',
+    },
+    validation: {
+      required: 'שדה חובה',
+    },
   },
   en: {
     appTitle: 'Manhole Mapper',
@@ -564,6 +574,16 @@ export const i18n = {
     },
     alerts: {
       selectProject: 'Please select a project',
+    },
+    buttons: {
+      cancel: 'Cancel',
+      save: 'Save',
+      close: 'Close',
+      edit: 'Edit',
+      delete: 'Delete',
+    },
+    validation: {
+      required: 'This field is required',
     },
   },
 };

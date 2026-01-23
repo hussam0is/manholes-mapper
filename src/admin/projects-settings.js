@@ -5,6 +5,8 @@
  * with full CRUD functionality following the vision document design.
  */
 
+import { InputFlowSettings } from './input-flow-settings.js';
+
 /**
  * ProjectsSettings - Projects management UI component
  */
@@ -441,9 +443,62 @@ export class ProjectsSettings {
    * @param {Object} project - Project to configure
    */
   _navigateToInputFlow(project) {
-    // For now, show a toast - input flow editor can be implemented separately
-    this.showToast(`${this.t('projects.inputFlowConfig')}: ${project.name}`, 'info');
-    // Future: location.hash = `#/projects/${project.id}/input-flow`;
+    // Store current content
+    const originalContent = this.container.innerHTML;
+    
+    // Create input flow settings UI
+    this.container.innerHTML = '';
+    
+    const inputFlowSettings = new InputFlowSettings({
+      container: this.container,
+      config: project.inputFlowConfig || {},
+      t: this.t,
+      project: project,
+      onSave: async (newConfig) => {
+        try {
+          // Save the updated config to the project
+          await this._updateProjectInputFlow(project.id, newConfig);
+          this.showToast(this.t('inputFlow.title') + ' ✓', 'success');
+          // Return to projects list
+          await this.render();
+        } catch (error) {
+          console.error('[ProjectsSettings] Error saving input flow config:', error);
+          this.showToast(error.message || 'Error saving configuration', 'error');
+        }
+      },
+      onCancel: () => {
+        // Return to projects list
+        this.render();
+      }
+    });
+    
+    inputFlowSettings.render();
+  }
+
+  /**
+   * Update project input flow configuration
+   * @param {string} projectId - Project ID
+   * @param {Object} inputFlowConfig - New input flow configuration
+   */
+  async _updateProjectInputFlow(projectId, inputFlowConfig) {
+    const authState = window.authGuard?.getAuthState?.() || {};
+    if (!authState.isSignedIn) throw new Error('Not authenticated');
+
+    const response = await fetch(`/api/projects/${projectId}`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ inputFlowConfig })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to update input flow configuration');
+    }
+
+    return response.json();
   }
 
   /**

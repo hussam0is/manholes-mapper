@@ -34,12 +34,63 @@ export class InputFlowSettings {
   constructor({ container, config, t, onSave, onCancel, project }) {
     this.container = container;
     this.config = JSON.parse(JSON.stringify(config || DEFAULT_INPUT_FLOW_CONFIG));
-    this.t = t;
+    // Wrap t function to handle cases where key is not found
+    this.t = (key, ...args) => {
+      if (typeof t === 'function') {
+        const result = t(key, ...args);
+        return result !== key ? result : this._getDefaultTranslation(key);
+      }
+      return this._getDefaultTranslation(key);
+    };
     this.onSave = onSave;
     this.onCancel = onCancel;
     this.project = project;
     this.activeTab = 'nodes';
     this.editingRuleId = null;
+  }
+
+  /**
+   * Get default translation for a key (fallback)
+   */
+  _getDefaultTranslation(key) {
+    const defaults = {
+      'inputFlow.title': 'Input Flow Settings',
+      'inputFlow.import': 'Import',
+      'inputFlow.export': 'Export',
+      'inputFlow.tabNodes': 'Nodes',
+      'inputFlow.tabEdges': 'Edges',
+      'inputFlow.noRules': 'No rules defined',
+      'inputFlow.addRule': 'Add Rule',
+      'inputFlow.editRule': 'Edit Rule',
+      'inputFlow.rule': 'Rule',
+      'inputFlow.ruleName': 'Rule Name',
+      'inputFlow.ruleNamePlaceholder': 'Enter rule name...',
+      'inputFlow.ruleDescription': 'Description',
+      'inputFlow.ruleDescriptionPlaceholder': 'Enter description...',
+      'inputFlow.triggerSection': 'Trigger Condition',
+      'inputFlow.actionsSection': 'Actions',
+      'inputFlow.field': 'Field',
+      'inputFlow.operator': 'Condition',
+      'inputFlow.value': 'Value',
+      'inputFlow.selectField': 'Select field...',
+      'inputFlow.selectValue': 'Select value...',
+      'inputFlow.when': 'When',
+      'inputFlow.addAction': 'Add Action',
+      'inputFlow.actionNullify': 'Set to Empty',
+      'inputFlow.actionDisable': 'Hide Field',
+      'inputFlow.actionRequire': 'Make Required',
+      'inputFlow.actionBulkReset': 'Bulk Reset',
+      'inputFlow.confirmDelete': 'Delete this rule?',
+      'inputFlow.invalidConfig': 'Invalid configuration',
+      'inputFlow.importSuccess': 'Imported successfully',
+      'inputFlow.importError': 'Import error',
+      'inputFlow.validationErrors': 'Validation errors',
+      'buttons.cancel': 'Cancel',
+      'buttons.save': 'Save',
+      'buttons.edit': 'Edit',
+      'buttons.delete': 'Delete',
+    };
+    return defaults[key] || key;
   }
 
   /**
