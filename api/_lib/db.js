@@ -517,6 +517,22 @@ export async function getProjectsByOrganization(organizationId) {
 }
 
 /**
+ * Get all projects (for super admin)
+ */
+export async function getAllProjects() {
+  const result = await sql`
+    SELECT p.id, p.organization_id, p.name, p.description, p.input_flow_config,
+           p.created_at, p.updated_at,
+           COUNT(s.id) as sketch_count
+    FROM projects p
+    LEFT JOIN sketches s ON p.id = s.project_id
+    GROUP BY p.id, p.organization_id, p.name, p.description, p.input_flow_config, p.created_at, p.updated_at
+    ORDER BY p.name
+  `;
+  return result.rows;
+}
+
+/**
  * Get a single project by ID
  */
 export async function getProjectById(projectId) {

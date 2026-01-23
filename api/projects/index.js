@@ -61,16 +61,24 @@ export default async function handler(req, res) {
       // Get organization ID from query param (for super admin) or from user
       const orgId = req.query.organizationId || currentUser.organization_id;
       
-      if (!orgId) {
-        return res.status(400).json({ error: 'Organization ID required' });
+      let projects;
+      
+      // Super admin with no org filter - return all projects
+      if (isSuperAdmin && !orgId) {
+        const { getAllProjects } = await import('../_lib/db.js');
+        projects = await getAllProjects();
+        console.log(`[API /api/projects] Super admin: returning all ${projects.length} projects`);
+      } else if (!orgId) {
+        // Non-super admin without org - return empty
+        return res.status(200).json({ projects: [] });
+      } else {
+        // Non-super admins can only see their own organization's projects
+        if (!isSuperAdmin && orgId !== currentUser.organization_id) {
+          return res.status(403).json({ error: 'Access denied to this organization' });
+        }
+        projects = await getProjectsByOrganization(orgId);
+        console.log(`[API /api/projects] Returning ${projects.length} projects for org ${orgId}`);
       }
-
-      // Non-super admins can only see their own organization's projects
-      if (!isSuperAdmin && orgId !== currentUser.organization_id) {
-        return res.status(403).json({ error: 'Access denied to this organization' });
-      }
-
-      const projects = await getProjectsByOrganization(orgId);
       
       const transformed = projects.map(p => ({
         id: p.id,
@@ -83,7 +91,6 @@ export default async function handler(req, res) {
         updatedAt: p.updated_at,
       }));
 
-      console.log(`[API /api/projects] Returning ${transformed.length} projects for org ${orgId}`);
       return res.status(200).json({ projects: transformed });
     }
 
