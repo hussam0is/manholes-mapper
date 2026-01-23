@@ -4,6 +4,11 @@
   "devCommand": "vite --port $PORT",
   "buildCommand": "vite build",
   "outputDirectory": "dist",
+  "functions": {
+    "api/auth/[...all].js": {
+      "runtime": "nodejs20.x"
+    }
+  },
   "headers": [
     {
       "source": "/(.*)",
