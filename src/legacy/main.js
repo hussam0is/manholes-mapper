@@ -4738,8 +4738,11 @@ if (sketchListEl) {
       input.addEventListener('blur', commit);
       return;
     }
-    const action = target.getAttribute('data-action');
-    const id = target.getAttribute('data-id');
+    // Find the closest button with data-action (handles clicks on child spans)
+    const actionBtn = target.closest('[data-action]');
+    if (!actionBtn) return;
+    const action = actionBtn.getAttribute('data-action');
+    const id = actionBtn.getAttribute('data-id');
     if (!action || !id) return;
     if (action === 'open') {
       hideHome();
