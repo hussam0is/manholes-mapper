@@ -1,7 +1,8 @@
 /**
  * API Route: /api/auth/*
  * 
- * Catch-all route for Better Auth endpoints.
+ * Handler for Better Auth endpoints.
+ * Uses Vercel rewrites to catch all /api/auth/* paths.
  * Handles: signIn, signUp, signOut, session, etc.
  */
 
