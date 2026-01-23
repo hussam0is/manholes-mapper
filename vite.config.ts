@@ -21,8 +21,8 @@ export default defineConfig({
         },
         manualChunks: (id) => {
           if (id.includes('node_modules')) {
-            if (id.includes('@clerk')) {
-              return 'clerk';
+            if (id.includes('better-auth')) {
+              return 'auth';
             }
             if (id.includes('react') || id.includes('scheduler')) {
               return 'react-vendor';

@@ -76,16 +76,17 @@ export class ProjectsSettings {
    */
   async _fetchProjects() {
     try {
-      const token = await window.Clerk?.session?.getToken();
-      if (!token) {
-        console.warn('[ProjectsSettings] No auth token available');
+      // Better Auth uses cookie-based sessions
+      const authState = window.authGuard?.getAuthState?.() || {};
+      if (!authState.isSignedIn) {
+        console.warn('[ProjectsSettings] Not authenticated');
         this.projects = [];
         return;
       }
 
       const response = await fetch('/api/projects', {
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -111,15 +112,16 @@ export class ProjectsSettings {
    */
   async _checkAdminStatus() {
     try {
-      const token = await window.Clerk?.session?.getToken();
-      if (!token) {
+      // Better Auth uses cookie-based sessions
+      const authState = window.authGuard?.getAuthState?.() || {};
+      if (!authState.isSignedIn) {
         this.isAdmin = false;
         return;
       }
 
       const response = await fetch('/api/user-role', {
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -353,13 +355,14 @@ export class ProjectsSettings {
    * @param {Object} data - Project data
    */
   async _createProject(data) {
-    const token = await window.Clerk?.session?.getToken();
-    if (!token) throw new Error('Not authenticated');
+    // Better Auth uses cookie-based sessions
+    const authState = window.authGuard?.getAuthState?.() || {};
+    if (!authState.isSignedIn) throw new Error('Not authenticated');
 
     const response = await fetch('/api/projects', {
       method: 'POST',
+      credentials: 'include',
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(data)
@@ -380,13 +383,14 @@ export class ProjectsSettings {
    * @param {Object} data - Updated data
    */
   async _updateProject(id, data) {
-    const token = await window.Clerk?.session?.getToken();
-    if (!token) throw new Error('Not authenticated');
+    // Better Auth uses cookie-based sessions
+    const authState = window.authGuard?.getAuthState?.() || {};
+    if (!authState.isSignedIn) throw new Error('Not authenticated');
 
     const response = await fetch(`/api/projects/${id}`, {
       method: 'PUT',
+      credentials: 'include',
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(data)
@@ -407,13 +411,14 @@ export class ProjectsSettings {
    */
   async _deleteProject(id) {
     try {
-      const token = await window.Clerk?.session?.getToken();
-      if (!token) throw new Error('Not authenticated');
+      // Better Auth uses cookie-based sessions
+      const authState = window.authGuard?.getAuthState?.() || {};
+      if (!authState.isSignedIn) throw new Error('Not authenticated');
 
       const response = await fetch(`/api/projects/${id}`, {
         method: 'DELETE',
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });

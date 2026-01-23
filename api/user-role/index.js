@@ -7,32 +7,17 @@
  * Returns user info with effective features based on user and org settings.
  */
 
-import { verifyToken } from '@clerk/backend';
+import { verifyAuth, sanitizeErrorMessage } from '../_lib/auth.js';
 import { 
   ensureDb, 
   getOrCreateUser, 
-  getUserByClerkId,
+  getUserById,
   getEffectiveFeatures,
   DEFAULT_FEATURES 
 } from '../_lib/db.js';
 import { applyRateLimit } from '../_lib/rate-limit.js';
-import { sanitizeErrorMessage } from '../_lib/auth.js';
 
 export const config = { runtime: 'nodejs' };
-
-/**
- * Get header value from request
- */
-function getHeader(request, name) {
-  const normalizedName = name.toLowerCase();
-  if (typeof request.headers?.get === 'function') {
-    return request.headers.get(normalizedName);
-  }
-  if (request.headers) {
-    return request.headers[normalizedName] || null;
-  }
-  return null;
-}
 
 export default async function handler(req, res) {
   // Polyfill for helper functions
@@ -56,43 +41,18 @@ export default async function handler(req, res) {
     // Initialize database
     await ensureDb();
 
-    // Verify authentication
-    const authHeader = getHeader(request, 'authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Missing or invalid authorization header' });
-    }
-
-    const token = authHeader.substring(7);
+    // Verify authentication using Better Auth
+    const { userId, error: authError, user: authUser } = await verifyAuth(request);
     
-    if (!process.env.CLERK_SECRET_KEY) {
-      console.error('CLERK_SECRET_KEY is not set');
-      return res.status(500).json({ error: 'Server configuration error' });
+    if (authError || !userId) {
+      return res.status(401).json({ error: authError || 'Not authenticated' });
     }
 
-    // Build verification options
-    const verifyOptions = {
-      secretKey: process.env.CLERK_SECRET_KEY,
-    };
-    
-    // SECURITY: Add authorized parties if configured
-    if (process.env.CLERK_AUTHORIZED_PARTIES) {
-      verifyOptions.authorizedParties = process.env.CLERK_AUTHORIZED_PARTIES.split(',').map(s => s.trim());
-    }
-    
-    // Verify token and get full session data
-    const verifiedToken = await verifyToken(token, verifyOptions);
+    // Extract user info from auth session
+    const username = authUser?.name || null;
+    const email = authUser?.email || null;
 
-    const userId = verifiedToken.sub;
-    if (!userId) {
-      return res.status(401).json({ error: 'Invalid token' });
-    }
-
-    // Extract user info from token claims
-    // Clerk stores username in the token claims
-    const username = verifiedToken.username || verifiedToken.user_username || null;
-    const email = verifiedToken.email || verifiedToken.user_email || null;
-
-    // Get or create user record
+    // Get or create user record in our app database
     const user = await getOrCreateUser(userId, { username, email });
 
     // Get effective features (combining org and user settings)
@@ -100,9 +60,9 @@ export default async function handler(req, res) {
 
     // Build response
     const response = {
-      clerkId: user.clerk_id,
-      username: user.clerk_username,
-      email: user.email,
+      userId: user.id || userId,
+      username: user.username || username,
+      email: user.email || email,
       role: user.role,
       organizationId: user.organization_id,
       isSuperAdmin: user.role === 'super_admin',

@@ -137,7 +137,7 @@ async function apiRequest(endpoint, options = {}) {
       }
       
       if (response.status === 401) {
-        console.error('Authentication error. Is CLERK_SECRET_KEY set in .env.local?');
+        console.error('Authentication error. Is BETTER_AUTH_SECRET set in .env.local?');
         throw new Error(`Authentication failed (401). Please check your server configuration.`);
       }
       

@@ -5,13 +5,13 @@
  * PUT - Update feature settings (requires admin)
  * 
  * targetType: 'user' or 'organization'
- * targetId: clerk_id or org_id
+ * targetId: user_id or org_id
  */
 
 import { verifyAuth, parseBody, sanitizeErrorMessage } from '../_lib/auth.js';
 import { 
   ensureDb, 
-  getUserByClerkId,
+  getUserById,
   getOrganizationById,
   getFeatures,
   setFeatures,
@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     request.headers.get = (name) => req.headers[name.toLowerCase()];
   }
 
-  // Parse slug: /api/features/user/clerk_123 => ['user', 'clerk_123']
+  // Parse slug: /api/features/user/uuid => ['user', 'uuid']
   const { slug } = req.query;
   if (!slug || slug.length < 2) {
     return res.status(400).json({ error: 'Invalid path. Expected /api/features/:targetType/:targetId' });
@@ -58,7 +58,7 @@ export default async function handler(req, res) {
     }
 
     // Check if user is admin
-    const currentUser = await getUserByClerkId(userId);
+    const currentUser = await getUserById(userId);
     if (!currentUser) {
       return res.status(403).json({ error: 'User not found' });
     }
@@ -72,7 +72,7 @@ export default async function handler(req, res) {
 
     // Validate target exists
     if (targetType === 'user') {
-      const targetUser = await getUserByClerkId(targetId);
+      const targetUser = await getUserById(targetId);
       if (!targetUser) {
         return res.status(404).json({ error: 'User not found' });
       }

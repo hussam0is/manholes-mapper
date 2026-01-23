@@ -11,7 +11,7 @@
 import { verifyAuth, parseBody, sanitizeErrorMessage } from '../_lib/auth.js';
 import { 
   ensureDb, 
-  getUserByClerkId,
+  getUserById,
   getOrganizationById,
   updateOrganization,
   deleteOrganization
@@ -46,7 +46,7 @@ export default async function handler(req, res) {
     }
 
     // Check if user is admin
-    const currentUser = await getUserByClerkId(userId);
+    const currentUser = await getUserById(userId);
     if (!currentUser) {
       return res.status(403).json({ error: 'User not found' });
     }

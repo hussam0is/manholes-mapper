@@ -88,9 +88,9 @@ async function testConnection() {
     
     console.log('\n🎉 Database setup complete!');
     console.log('\nNext steps:');
-    console.log('  1. Set up Clerk authentication (get keys from dashboard.clerk.com)');
-    console.log('  2. Add VITE_CLERK_PUBLISHABLE_KEY to .env.local');
-    console.log('  3. Add CLERK_SECRET_KEY to Vercel environment variables');
+    console.log('  1. Generate a secret: openssl rand -base64 32');
+    console.log('  2. Add BETTER_AUTH_SECRET to .env.local and Vercel environment variables');
+    console.log('  3. Add BETTER_AUTH_URL to .env.local (your app URL)');
     console.log('  4. Deploy to Vercel or run locally with: npm run dev');
     
   } catch (error) {

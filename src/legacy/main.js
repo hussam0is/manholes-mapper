@@ -747,8 +747,8 @@ function showLoginPanel() {
   if (loginSubtitle) loginSubtitle.textContent = t('auth.loginSubtitle');
   if (loginLoadingText) loginLoadingText.textContent = t('auth.loading');
   
-  // Mount Clerk SignIn when ready
-  mountClerkSignIn();
+  // Mount SignIn when ready
+  mountAuthSignIn();
 }
 
 function hideLoginPanel() {
@@ -771,65 +771,36 @@ function hideAuthLoading() {
   }
 }
 
-// Mount Clerk SignIn component
-function mountClerkSignIn() {
+// Mount SignIn component (Better Auth)
+function mountAuthSignIn() {
   if (!clerkAuthContainer) return;
   
-  // Wait for Clerk to be ready
-  const clerk = window.__clerk;
-  if (clerk && clerk.loaded) {
-    // Clear loading state
+  // Dynamically import and mount the SignIn form
+  import('../auth/auth-provider.jsx').then(({ mountSignIn }) => {
     clerkAuthContainer.innerHTML = '';
-    clerk.mountSignIn(clerkAuthContainer, {
-      routing: 'hash',
+    mountSignIn(clerkAuthContainer, {
       signUpUrl: '#/signup',
-      afterSignInUrl: '#/',
-      afterSignUpUrl: '#/',
     });
-  } else {
-    // Wait for clerk-loaded event
-    window.addEventListener('clerk-loaded', (e) => {
-      const { clerk: loadedClerk } = e.detail;
-      if (loadedClerk && clerkAuthContainer) {
-        clerkAuthContainer.innerHTML = '';
-        loadedClerk.mountSignIn(clerkAuthContainer, {
-          routing: 'hash',
-          signUpUrl: '#/signup',
-          afterSignInUrl: '#/',
-          afterSignUpUrl: '#/',
-        });
-      }
-    }, { once: true });
-  }
+  }).catch(err => {
+    console.error('Failed to load auth provider:', err);
+    clerkAuthContainer.innerHTML = '<p>Failed to load sign in form</p>';
+  });
 }
 
-// Mount Clerk SignUp component
-function mountClerkSignUp() {
+// Mount SignUp component (Better Auth)
+function mountAuthSignUp() {
   if (!clerkAuthContainer) return;
   
-  const clerk = window.__clerk;
-  if (clerk && clerk.loaded) {
+  // Dynamically import and mount the SignUp form
+  import('../auth/auth-provider.jsx').then(({ mountSignUp }) => {
     clerkAuthContainer.innerHTML = '';
-    clerk.mountSignUp(clerkAuthContainer, {
-      routing: 'hash',
+    mountSignUp(clerkAuthContainer, {
       signInUrl: '#/login',
-      afterSignInUrl: '#/',
-      afterSignUpUrl: '#/',
     });
-  } else {
-    window.addEventListener('clerk-loaded', (e) => {
-      const { clerk: loadedClerk } = e.detail;
-      if (loadedClerk && clerkAuthContainer) {
-        clerkAuthContainer.innerHTML = '';
-        loadedClerk.mountSignUp(clerkAuthContainer, {
-          routing: 'hash',
-          signInUrl: '#/login',
-          afterSignInUrl: '#/',
-          afterSignUpUrl: '#/',
-        });
-      }
-    }, { once: true });
-  }
+  }).catch(err => {
+    console.error('Failed to load auth provider:', err);
+    clerkAuthContainer.innerHTML = '<p>Failed to load sign up form</p>';
+  });
 }
 
 // Update user button visibility (desktop and mobile)
@@ -852,12 +823,11 @@ function handleRoute() {
   
   // Get auth state if available
   const authState = window.authGuard?.getAuthState?.() || { isLoaded: false, isSignedIn: false };
-  const hasClerkKey = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
   
   console.log('handleRoute:', { hash, isLoaded: authState.isLoaded, isSignedIn: authState.isSignedIn });
   
-  // If Clerk is configured but not yet loaded, show loading
-  if (hasClerkKey && !authState.isLoaded) {
+  // If auth is not yet loaded, show loading
+  if (!authState.isLoaded) {
     showAuthLoading();
     return;
   }
@@ -873,17 +843,17 @@ function handleRoute() {
     }
     showLoginPanel();
     if (isSignup) {
-      mountClerkSignUp();
+      mountAuthSignUp();
       if (loginTitle) loginTitle.textContent = t('auth.signupTitle');
       if (loginSubtitle) loginSubtitle.textContent = t('auth.signupSubtitle');
     } else {
-      mountClerkSignIn();
+      mountAuthSignIn();
     }
     return;
   }
   
-  // For protected routes, check authentication (only if Clerk is configured)
-  if (hasClerkKey && !authState.isSignedIn) {
+  // For protected routes, check authentication
+  if (!authState.isSignedIn) {
     location.hash = '#/login';
     return;
   }
@@ -940,7 +910,7 @@ function preventModalScrollPropagation() {
   });
 }
 
-// Initialize route on load (with slight delay to allow Clerk to initialize)
+// Initialize route on load (with slight delay to allow auth to initialize)
 setTimeout(() => {
   try { handleRoute(); } catch (_) { }
   preventModalScrollPropagation();
@@ -4250,15 +4220,17 @@ canvas.addEventListener('touchcancel', (e) => {
  */
 async function fetchProjects() {
   try {
-    const token = await window.Clerk?.session?.getToken();
-    if (!token) {
-      console.warn('[Projects] No auth token available');
+    // Better Auth uses cookie-based sessions, no token needed
+    // The session cookie is automatically sent with fetch requests
+    const authState = window.authGuard?.getAuthState?.() || {};
+    if (!authState.isSignedIn) {
+      console.warn('[Projects] Not authenticated');
       return [];
     }
     
     const response = await fetch('/api/projects', {
+      credentials: 'include', // Include cookies for session auth
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
     });

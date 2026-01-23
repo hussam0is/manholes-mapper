@@ -79,10 +79,11 @@ async function initializeDatabase() {
   `;
 
   // Users table with roles
+  // Migration: Changed from clerk_id to user_id (UUID) for Better Auth compatibility
   await sql`
     CREATE TABLE IF NOT EXISTS users (
-      clerk_id TEXT PRIMARY KEY,
-      clerk_username TEXT,
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      username TEXT,
       email TEXT,
       role TEXT DEFAULT 'user',
       organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL,
@@ -91,12 +92,25 @@ async function initializeDatabase() {
     )
   `;
 
+  // Migration: Add id column if table was created with old schema (clerk_id as PK)
+  // This handles existing installations
+  try {
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS id UUID DEFAULT gen_random_uuid()`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT`;
+  } catch (e) {
+    // Column may already exist or table has new schema
+  }
+
   await sql`
     CREATE INDEX IF NOT EXISTS idx_users_organization_id ON users(organization_id)
   `;
 
   await sql`
     CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)
+  `;
+  
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)
   `;
 
   // User features table
@@ -284,52 +298,75 @@ export async function deleteSketch(sketchId, userId) {
 
 /**
  * Get or create a user record
- * @param {string} clerkId - Clerk user ID
- * @param {Object} userData - User data from Clerk (username, email)
+ * @param {string} userId - User ID from Better Auth (UUID)
+ * @param {Object} userData - User data from auth session (username, email)
  * @returns {Object} User record
  */
-export async function getOrCreateUser(clerkId, userData = {}) {
-  // First, try to get existing user
+export async function getOrCreateUser(userId, userData = {}) {
+  const { username, email } = userData;
+  
+  // First, try to get existing user by ID or email
   let result = await sql`
-    SELECT clerk_id, clerk_username, email, role, organization_id, created_at, updated_at
+    SELECT id, username, email, role, organization_id, created_at, updated_at
     FROM users
-    WHERE clerk_id = ${clerkId}
+    WHERE id = ${userId}::uuid OR email = ${email}
+    LIMIT 1
   `;
   
   if (result.rows[0]) {
+    // Update user info if needed
+    if (result.rows[0].id !== userId) {
+      // User exists by email but with different ID, update the ID
+      await sql`
+        UPDATE users SET id = ${userId}::uuid, updated_at = NOW()
+        WHERE email = ${email}
+      `;
+    }
     return result.rows[0];
   }
   
   // Create new user
-  const { username, email } = userData;
-  
-  // SECURITY: Use environment variable to designate initial super admin by Clerk ID
-  // This is more secure than checking username which could be spoofed
-  const INITIAL_SUPER_ADMIN_CLERK_ID = process.env.INITIAL_SUPER_ADMIN_CLERK_ID;
-  const isSuperAdmin = INITIAL_SUPER_ADMIN_CLERK_ID && clerkId === INITIAL_SUPER_ADMIN_CLERK_ID;
+  // SECURITY: Use environment variable to designate initial super admin by email
+  const INITIAL_SUPER_ADMIN_EMAIL = process.env.INITIAL_SUPER_ADMIN_EMAIL;
+  const isSuperAdmin = INITIAL_SUPER_ADMIN_EMAIL && email === INITIAL_SUPER_ADMIN_EMAIL;
   const role = isSuperAdmin ? 'super_admin' : 'user';
   
   result = await sql`
-    INSERT INTO users (clerk_id, clerk_username, email, role)
-    VALUES (${clerkId}, ${username || null}, ${email || null}, ${role})
-    ON CONFLICT (clerk_id) DO UPDATE SET
-      clerk_username = COALESCE(EXCLUDED.clerk_username, users.clerk_username),
+    INSERT INTO users (id, username, email, role)
+    VALUES (${userId}::uuid, ${username || null}, ${email || null}, ${role})
+    ON CONFLICT (id) DO UPDATE SET
+      username = COALESCE(EXCLUDED.username, users.username),
       email = COALESCE(EXCLUDED.email, users.email),
       updated_at = NOW()
-    RETURNING clerk_id, clerk_username, email, role, organization_id, created_at, updated_at
+    RETURNING id, username, email, role, organization_id, created_at, updated_at
   `;
   
   return result.rows[0];
 }
 
 /**
- * Get a user by Clerk ID
+ * Get a user by ID (Better Auth UUID)
+ */
+export async function getUserById(userId) {
+  const result = await sql`
+    SELECT id, username, email, role, organization_id, created_at, updated_at
+    FROM users
+    WHERE id = ${userId}::uuid
+  `;
+  return result.rows[0] || null;
+}
+
+/**
+ * Get a user by Clerk ID (legacy - for backwards compatibility during migration)
+ * @deprecated Use getUserById instead
  */
 export async function getUserByClerkId(clerkId) {
+  // Try to find by old clerk_id column if it exists, or by id
   const result = await sql`
-    SELECT clerk_id, clerk_username, email, role, organization_id, created_at, updated_at
+    SELECT id, username, email, role, organization_id, created_at, updated_at
     FROM users
-    WHERE clerk_id = ${clerkId}
+    WHERE id::text = ${clerkId} OR email = ${clerkId}
+    LIMIT 1
   `;
   return result.rows[0] || null;
 }
@@ -339,7 +376,7 @@ export async function getUserByClerkId(clerkId) {
  */
 export async function getAllUsers() {
   const result = await sql`
-    SELECT u.clerk_id, u.clerk_username, u.email, u.role, u.organization_id, 
+    SELECT u.id, u.username, u.email, u.role, u.organization_id, 
            u.created_at, u.updated_at, o.name as organization_name
     FROM users u
     LEFT JOIN organizations o ON u.organization_id = o.id
@@ -353,7 +390,7 @@ export async function getAllUsers() {
  */
 export async function getUsersByOrganization(organizationId) {
   const result = await sql`
-    SELECT u.clerk_id, u.clerk_username, u.email, u.role, u.organization_id,
+    SELECT u.id, u.username, u.email, u.role, u.organization_id,
            u.created_at, u.updated_at, o.name as organization_name
     FROM users u
     LEFT JOIN organizations o ON u.organization_id = o.id
@@ -366,7 +403,7 @@ export async function getUsersByOrganization(organizationId) {
 /**
  * Update a user's role and/or organization
  */
-export async function updateUser(clerkId, updates) {
+export async function updateUser(userId, updates) {
   const { role, organizationId } = updates;
   
   const result = await sql`
@@ -375,8 +412,8 @@ export async function updateUser(clerkId, updates) {
       role = COALESCE(${role}, role),
       organization_id = ${organizationId === undefined ? null : organizationId},
       updated_at = NOW()
-    WHERE clerk_id = ${clerkId}
-    RETURNING clerk_id, clerk_username, email, role, organization_id, created_at, updated_at
+    WHERE id = ${userId}::uuid
+    RETURNING id, username, email, role, organization_id, created_at, updated_at
   `;
   
   return result.rows[0] || null;
@@ -392,7 +429,7 @@ export async function updateUser(clerkId, updates) {
 export async function getAllOrganizations() {
   const result = await sql`
     SELECT o.id, o.name, o.created_at,
-           COUNT(u.clerk_id) as user_count
+           COUNT(u.id) as user_count
     FROM organizations o
     LEFT JOIN users u ON o.id = u.organization_id
     GROUP BY o.id, o.name, o.created_at
@@ -631,7 +668,7 @@ export async function getFeatures(targetType, targetId) {
  * Get effective features for a user (considers both user and org settings)
  * Org settings are applied first, then user-specific overrides
  */
-export async function getEffectiveFeatures(clerkId, organizationId) {
+export async function getEffectiveFeatures(userId, organizationId) {
   const features = {};
   DEFAULT_FEATURES.forEach(key => {
     features[key] = true;
@@ -653,7 +690,7 @@ export async function getEffectiveFeatures(clerkId, organizationId) {
   const userResult = await sql`
     SELECT feature_key, enabled
     FROM user_features
-    WHERE target_type = 'user' AND target_id = ${clerkId}
+    WHERE target_type = 'user' AND target_id = ${userId}
   `;
   userResult.rows.forEach(row => {
     features[row.feature_key] = row.enabled;

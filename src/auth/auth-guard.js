@@ -2,11 +2,10 @@
  * Auth Guard - Route protection for the Manholes Mapper PWA
  * 
  * Handles authentication state checking and route protection.
- * Works with Clerk's session management.
+ * Works with Better Auth session management (replaces Clerk).
  */
 
-const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-console.log('Auth Guard: PUBLISHABLE_KEY present:', !!PUBLISHABLE_KEY);
+import { authClient, getCurrentSession } from './auth-client.js';
 
 // Auth state cache
 let authState = {
@@ -14,7 +13,7 @@ let authState = {
   isSignedIn: false,
   userId: null,
   sessionId: null,
-  token: null,
+  user: null,
 };
 
 // Callbacks for auth state changes
@@ -44,16 +43,16 @@ function notifyAuthStateChange() {
 }
 
 /**
- * Update auth state from Clerk
- * @param {Object} clerkState - State from Clerk
+ * Update auth state from Better Auth session
+ * @param {Object} sessionData - Session data from Better Auth
  */
-export function updateAuthState(clerkState) {
+export function updateAuthState(sessionData) {
   authState = {
     isLoaded: true,
-    isSignedIn: clerkState.isSignedIn || false,
-    userId: clerkState.userId || null,
-    sessionId: clerkState.sessionId || null,
-    token: clerkState.token || null,
+    isSignedIn: !!sessionData?.session,
+    userId: sessionData?.user?.id || null,
+    sessionId: sessionData?.session?.id || null,
+    user: sessionData?.user || null,
   };
   notifyAuthStateChange();
 }
@@ -83,48 +82,36 @@ export function getUserId() {
 }
 
 /**
- * Get the current username from Clerk
+ * Get the current username
  * @returns {string|null}
  */
 export function getUsername() {
-  try {
-    if (window.__clerk?.user) {
-      return window.__clerk.user.username || 
-             window.__clerk.user.firstName || 
-             window.__clerk.user.emailAddresses?.[0]?.emailAddress ||
-             authState.userId;
-    }
-  } catch (_) {}
+  if (authState.user) {
+    return authState.user.name || 
+           authState.user.email ||
+           authState.userId;
+  }
   return authState.userId;
 }
 
 /**
+ * Get the current user's email
+ * @returns {string|null}
+ */
+export function getUserEmail() {
+  return authState.user?.email || null;
+}
+
+/**
  * Get the current session token for API calls
+ * Better Auth uses cookies for session management, so we don't need a token
  * @returns {Promise<string|null>}
  */
 export async function getToken() {
-  if (!authState.isSignedIn) return null;
-  
-  // Try to get fresh token from Clerk
-  try {
-    if (window.__clerk) {
-      if (typeof window.__clerk.session?.getToken === 'function') {
-        const token = await window.__clerk.session.getToken();
-        authState.token = token;
-        return token;
-      } else if (typeof window.__clerk.getToken === 'function') {
-        // Fallback to clerk.getToken() if session.getToken() is not available
-        const token = await window.__clerk.getToken();
-        authState.token = token;
-        return token;
-      }
-    }
-  } catch (err) {
-    console.warn('Failed to get fresh Clerk token:', err);
-  }
-  
-  // Fallback to cached token
-  return authState.token;
+  // Better Auth uses cookie-based sessions
+  // For API calls, the session cookie is automatically sent
+  // Return the session ID as a reference if needed
+  return authState.sessionId;
 }
 
 /**
@@ -144,12 +131,6 @@ export function routeRequiresAuth(hash) {
  * @returns {boolean} True if redirected, false if allowed
  */
 export function guardRoute(currentHash) {
-  // Don't guard if Clerk is not configured
-  if (!PUBLISHABLE_KEY) {
-    console.warn('Clerk not configured, skipping auth guard');
-    return false;
-  }
-  
   // Don't guard public routes
   if (!routeRequiresAuth(currentHash)) {
     return false;
@@ -188,19 +169,35 @@ export function redirectIfAuthenticated(currentHash) {
 }
 
 /**
- * Initialize auth state monitoring with Clerk
+ * Refresh the current session from the server
+ * @returns {Promise<void>}
  */
-export function initAuthMonitor() {
-  if (!PUBLISHABLE_KEY) {
-    console.warn('Clerk publishable key not set. Auth features disabled.');
-    // Set as loaded but not signed in to allow app to work without auth
-    authState = { isLoaded: true, isSignedIn: false, userId: null, sessionId: null, token: null };
-    notifyAuthStateChange();
-    return;
+export async function refreshSession() {
+  try {
+    const { data, error } = await getCurrentSession();
+    if (error) {
+      console.warn('Session refresh failed:', error);
+      updateAuthState({ session: null, user: null });
+    } else {
+      updateAuthState(data);
+    }
+  } catch (err) {
+    console.error('Session refresh error:', err);
+    updateAuthState({ session: null, user: null });
   }
+}
 
-  // Clerk will be initialized by the provider, we listen for its events
-  // The ClerkProvider will call updateAuthState when auth state changes
+/**
+ * Initialize auth state monitoring with Better Auth
+ */
+export async function initAuthMonitor() {
+  console.log('Auth Guard: Initializing Better Auth session monitoring');
+  
+  // Check for existing session
+  await refreshSession();
+  
+  // Set up periodic session refresh (every 5 minutes)
+  setInterval(refreshSession, 5 * 60 * 1000);
 }
 
 // Initialize on module load

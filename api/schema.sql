@@ -4,7 +4,7 @@
 -- Sketches table: stores user sketches with nodes and edges as JSONB
 CREATE TABLE IF NOT EXISTS sketches (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id TEXT NOT NULL,           -- Clerk user ID
+    user_id UUID NOT NULL,           -- User ID (references neon_auth.user)
     name TEXT,                        -- User-defined sketch name
     creation_date TIMESTAMPTZ,        -- Date shown in exports
     nodes JSONB DEFAULT '[]'::jsonb,  -- Array of node objects (includes createdAt, createdBy per node)
@@ -85,10 +85,11 @@ CREATE TRIGGER update_projects_updated_at
     EXECUTE FUNCTION update_updated_at_column();
 
 -- Users table: stores user roles and organization membership
+-- Links to neon_auth.user via id (UUID)
 CREATE TABLE IF NOT EXISTS users (
-    clerk_id TEXT PRIMARY KEY,
-    clerk_username TEXT,
-    email TEXT,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username TEXT,
+    email TEXT UNIQUE,
     role TEXT DEFAULT 'user',  -- 'super_admin', 'admin', 'user'
     organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -112,7 +113,7 @@ CREATE TRIGGER update_users_updated_at
 CREATE TABLE IF NOT EXISTS user_features (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     target_type TEXT NOT NULL,  -- 'user', 'organization'
-    target_id TEXT NOT NULL,     -- clerk_id or org_id
+    target_id TEXT NOT NULL,     -- user_id or org_id (as text)
     feature_key TEXT NOT NULL,   -- 'export_csv', 'export_sketch', 'admin_settings', etc.
     enabled BOOLEAN DEFAULT true,
     created_at TIMESTAMPTZ DEFAULT NOW(),

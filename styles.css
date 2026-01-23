@@ -5541,3 +5541,307 @@ html[dir="rtl"] .clerk-auth-container {
     background: #1e293b;
   }
 }
+
+/* ================================================
+   Auth Form Styles (Better Auth)
+   ================================================ */
+
+.auth-form-container {
+  padding: 1.5rem 2rem 2rem;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.auth-form-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-text);
+  text-align: center;
+}
+
+.auth-form-subtitle {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.auth-form-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius);
+  color: #dc2626;
+  font-size: 0.875rem;
+}
+
+.auth-form-error .material-icons {
+  font-size: 1.25rem;
+}
+
+.auth-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.auth-form-field label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.auth-form-field input {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.auth-form-field input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--ring);
+}
+
+.auth-form-field input:disabled {
+  background: #f1f5f9;
+  cursor: not-allowed;
+}
+
+.auth-form-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.5rem;
+  margin-top: 0.5rem;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.auth-form-submit:hover:not(:disabled) {
+  background: var(--color-primary-strong);
+}
+
+.auth-form-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.auth-form-submit .spin {
+  animation: spin 1s linear infinite;
+}
+
+.auth-form-footer {
+  margin: 0;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--color-muted);
+}
+
+.auth-form-link {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.auth-form-link:hover {
+  text-decoration: underline;
+}
+
+/* User Menu Styles */
+.user-menu {
+  position: relative;
+}
+
+.user-menu-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.875rem;
+  overflow: hidden;
+}
+
+.user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user-menu-dropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  min-width: 200px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  z-index: 1000;
+}
+
+.user-menu-header {
+  padding: 1rem;
+}
+
+.user-menu-name {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.user-menu-email {
+  font-size: 0.875rem;
+  color: var(--color-muted);
+  word-break: break-all;
+}
+
+.user-menu-divider {
+  margin: 0;
+  border: none;
+  border-top: 1px solid var(--color-border);
+}
+
+.user-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  color: var(--color-text);
+  font-size: 0.875rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.2s;
+}
+
+.user-menu-item:hover {
+  background: #f1f5f9;
+}
+
+.user-menu-signout {
+  color: #dc2626;
+}
+
+.user-menu-signout:hover {
+  background: #fef2f2;
+}
+
+.user-login-btn {
+  padding: 0.5rem;
+}
+
+/* Dark mode auth forms */
+@media (prefers-color-scheme: dark) {
+  .auth-form-title,
+  .auth-form-field label {
+    color: #f1f5f9;
+  }
+
+  .auth-form-subtitle {
+    color: #94a3b8;
+  }
+
+  .auth-form-error {
+    background: #450a0a;
+    border-color: #7f1d1d;
+    color: #fca5a5;
+  }
+
+  .auth-form-field input {
+    background: #1e293b;
+    border-color: #334155;
+    color: #f1f5f9;
+  }
+
+  .auth-form-field input:focus {
+    border-color: var(--color-primary);
+  }
+
+  .auth-form-field input:disabled {
+    background: #0f172a;
+  }
+
+  .user-menu-dropdown {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  .user-menu-name {
+    color: #f1f5f9;
+  }
+
+  .user-menu-email {
+    color: #94a3b8;
+  }
+
+  .user-menu-divider {
+    border-color: #334155;
+  }
+
+  .user-menu-item {
+    color: #f1f5f9;
+  }
+
+  .user-menu-item:hover {
+    background: #334155;
+  }
+
+  .user-menu-signout {
+    color: #fca5a5;
+  }
+
+  .user-menu-signout:hover {
+    background: #450a0a;
+  }
+}
+
+/* RTL adjustments for auth forms */
+html[dir="rtl"] .auth-form,
+html[dir="rtl"] .auth-form-container {
+  direction: rtl;
+}
+
+html[dir="rtl"] .user-menu-dropdown {
+  right: auto;
+  left: 0;
+}
+
+html[dir="rtl"] .user-menu-item {
+  text-align: right;
+}

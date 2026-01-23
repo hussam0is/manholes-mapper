@@ -10,7 +10,7 @@
 import { verifyAuth, parseBody, sanitizeErrorMessage } from '../_lib/auth.js';
 import { 
   ensureDb, 
-  getUserByClerkId,
+  getUserById,
   updateUser
 } from '../_lib/db.js';
 import { applyRateLimit } from '../_lib/rate-limit.js';
@@ -44,7 +44,7 @@ export default async function handler(req, res) {
     }
 
     // Check if user is admin
-    const currentUser = await getUserByClerkId(userId);
+    const currentUser = await getUserById(userId);
     if (!currentUser) {
       return res.status(403).json({ error: 'User not found' });
     }
@@ -57,7 +57,7 @@ export default async function handler(req, res) {
     }
 
     // Get target user
-    const targetUser = await getUserByClerkId(targetUserId);
+    const targetUser = await getUserById(targetUserId);
     if (!targetUser) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -72,8 +72,8 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       return res.status(200).json({
         user: {
-          clerkId: targetUser.clerk_id,
-          username: targetUser.clerk_username,
+          id: targetUser.id,
+          username: targetUser.username,
           email: targetUser.email,
           role: targetUser.role,
           organizationId: targetUser.organization_id,
@@ -120,8 +120,8 @@ export default async function handler(req, res) {
       console.log(`[API /api/users/${targetUserId}] Updated by ${userId}`);
       return res.status(200).json({
         user: {
-          clerkId: updatedUser.clerk_id,
-          username: updatedUser.clerk_username,
+          id: updatedUser.id,
+          username: updatedUser.username,
           email: updatedUser.email,
           role: updatedUser.role,
           organizationId: updatedUser.organization_id,

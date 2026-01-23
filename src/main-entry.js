@@ -8,8 +8,9 @@ import { syncHeaderHeightVar, syncAppHeightVar } from './dom/dom-utils.js';
 import * as CONSTS from './state/constants.js';
 import { attachFloatingKeyboard } from './utils/floating-keyboard.js';
 import { initResizableDrawer } from './utils/resizable-drawer.js';
-import { initAuthMonitor, onAuthStateChange, getAuthState, updateAuthState, guardRoute, redirectIfAuthenticated } from './auth/auth-guard.js';
+import { initAuthMonitor, onAuthStateChange, getAuthState, updateAuthState, guardRoute, redirectIfAuthenticated, refreshSession } from './auth/auth-guard.js';
 import { initSyncService } from './auth/sync-service.js';
+import { authClient, signOutUser, getCurrentSession } from './auth/auth-client.js';
 
 // Initialize Vercel Speed Insights only when deployed on Vercel (production)
 // The /_vercel/speed-insights/script.js endpoint only exists on Vercel's platform
@@ -17,94 +18,109 @@ if (typeof window !== 'undefined' && window.location.hostname.includes('vercel.a
   injectSpeedInsights();
 }
 
-// Initialize Clerk authentication
-const CLERK_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-if (typeof window !== 'undefined' && CLERK_KEY) {
-  // Dynamically load Clerk when key is available
-  // We use @clerk/clerk-js for the global instance to provide the constructor
-  import('@clerk/clerk-js').then(({ Clerk }) => {
-    const clerk = new Clerk(CLERK_KEY);
-    window.__clerk = clerk;
+// Initialize Better Auth
+if (typeof window !== 'undefined') {
+  console.log('Auth: Initializing Better Auth');
+  
+  // Store auth client globally for legacy code access
+  window.__authClient = authClient;
+  
+  // Function to render user menu (desktop and mobile)
+  const renderUserMenu = (user) => {
+    const userBtnContainer = document.getElementById('clerkUserButton');
+    const mobileUserBtnContainer = document.getElementById('mobileClerkUserButton');
     
-    clerk.load().then(async () => {
-      console.log('Clerk loaded successfully');
+    const renderButton = (container) => {
+      if (!container) return;
       
-      // Attach React-based mount methods if they don't exist on the Clerk instance
-      // The @clerk/clerk-js instance might not have these methods in some environments
-      try {
-        const provider = await import('./auth/clerk-provider.jsx');
-        if (!clerk.mountSignIn) clerk.mountSignIn = provider.mountSignIn;
-        if (!clerk.mountSignUp) clerk.mountSignUp = provider.mountSignUp;
-        if (!clerk.mountUserButton) clerk.mountUserButton = provider.mountUserButton;
-      } catch (err) {
-        console.warn('Failed to attach React-based Clerk mount methods:', err);
-      }
-
-      const authData = {
-        isSignedIn: clerk.user != null,
-        userId: clerk.user?.id || null,
-        sessionId: clerk.session?.id || null,
-      };
-
-      // Function to mount or refresh the user button (desktop and mobile)
-      const refreshUserButton = () => {
-        // Mount on desktop header
-        const userBtnContainer = document.getElementById('clerkUserButton');
-        if (userBtnContainer && clerk.user) {
-          clerk.mountUserButton(userBtnContainer, {
-            afterSignOutUrl: '#/login',
-          });
-        }
-        // Mount on mobile menu
-        const mobileUserBtnContainer = document.getElementById('mobileClerkUserButton');
-        if (mobileUserBtnContainer && clerk.user) {
-          clerk.mountUserButton(mobileUserBtnContainer, {
-            afterSignOutUrl: '#/login',
-          });
-        }
-      };
-
-      // Update auth state when Clerk loads
-      updateAuthState(authData);
-      refreshUserButton();
-      
-      // Listen for auth changes
-      clerk.addListener((event) => {
-        updateAuthState({
-          isSignedIn: clerk.user != null,
-          userId: clerk.user?.id || null,
-          sessionId: clerk.session?.id || null,
-        });
+      if (user) {
+        // User is signed in - show user menu
+        container.innerHTML = `
+          <div class="user-menu">
+            <button class="user-menu-trigger" title="${user.name || user.email}">
+              <div class="user-avatar">
+                ${user.image ? `<img src="${user.image}" alt="${user.name || 'User'}" />` : `<span>${(user.name || user.email || 'U')[0].toUpperCase()}</span>`}
+              </div>
+            </button>
+            <div class="user-menu-dropdown" style="display: none;">
+              <div class="user-menu-header">
+                <div class="user-menu-name">${user.name || 'User'}</div>
+                <div class="user-menu-email">${user.email || ''}</div>
+              </div>
+              <hr class="user-menu-divider" />
+              <button class="user-menu-item user-menu-signout">
+                <span class="material-icons">logout</span>
+                <span>Sign Out</span>
+              </button>
+            </div>
+          </div>
+        `;
         
-        // Refresh user button on any auth change (mounts it if user just signed in)
-        refreshUserButton();
-      });
-
-      // Dispatch custom event so other parts of the app know auth is ready
-      window.dispatchEvent(new CustomEvent('clerk-loaded', { detail: { clerk } }));
-      
-      // Force a route check now that we are sure everything is loaded
-      if (window.handleRoute) {
-        window.handleRoute();
+        // Add event listeners
+        const trigger = container.querySelector('.user-menu-trigger');
+        const dropdown = container.querySelector('.user-menu-dropdown');
+        const signOutBtn = container.querySelector('.user-menu-signout');
+        
+        if (trigger && dropdown) {
+          trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+          });
+          
+          // Close dropdown when clicking outside
+          document.addEventListener('click', () => {
+            dropdown.style.display = 'none';
+          });
+        }
+        
+        if (signOutBtn) {
+          signOutBtn.addEventListener('click', async () => {
+            try {
+              await signOutUser();
+              await refreshSession();
+              window.location.hash = '#/login';
+            } catch (err) {
+              console.error('Sign out failed:', err);
+            }
+          });
+        }
+      } else {
+        // User is not signed in - show login button
+        container.innerHTML = `
+          <button class="btn btn-ghost user-login-btn" onclick="window.location.hash='#/login'">
+            <span class="material-icons">login</span>
+          </button>
+        `;
       }
-    }).catch((err) => {
-      console.error('Failed to load Clerk:', err);
-      // Set as loaded but not signed in to allow app to continue
-      updateAuthState({ isSignedIn: false, userId: null, sessionId: null });
-    });
-  }).catch((err) => {
-    console.warn('Clerk module not available:', err);
-    // Ensure auth state is marked as loaded even if module fails
-    updateAuthState({ isSignedIn: false, userId: null, sessionId: null });
+    };
+    
+    renderButton(userBtnContainer);
+    renderButton(mobileUserBtnContainer);
+  };
+  
+  // Listen for auth state changes
+  onAuthStateChange((state) => {
+    console.log('Auth state changed:', state.isSignedIn ? 'signed in' : 'signed out');
+    renderUserMenu(state.user);
+    
+    // Force a route check when auth state changes
+    if (window.handleRoute) {
+      window.handleRoute();
+    }
   });
-} else if (typeof window !== 'undefined') {
-  // No Clerk key - mark auth as loaded (unauthenticated mode)
-  console.warn('VITE_CLERK_PUBLISHABLE_KEY not set. Running without authentication.');
+  
+  // Dispatch custom event so other parts of the app know auth is ready
+  getCurrentSession().then(({ data }) => {
+    if (data?.session) {
+      console.log('Auth: Session restored');
+    }
+    window.dispatchEvent(new CustomEvent('auth-loaded', { detail: { authClient } }));
+  });
 }
 
 // Expose auth functions globally for legacy code
 if (typeof window !== 'undefined') {
-  window.authGuard = { getAuthState, onAuthStateChange, guardRoute, redirectIfAuthenticated, updateAuthState };
+  window.authGuard = { getAuthState, onAuthStateChange, guardRoute, redirectIfAuthenticated, updateAuthState, refreshSession };
 }
 
 // Initialize sync service for cloud synchronization

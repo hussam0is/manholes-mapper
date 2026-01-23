@@ -34,6 +34,33 @@ Open **http://localhost:5173** in your browser to test the app.
 
 ---
 
+## Environment Variables
+
+Create a `.env.local` file in the project root with the following variables:
+
+```bash
+# Better Auth Configuration
+# Generate a secret with: openssl rand -base64 32
+BETTER_AUTH_SECRET=your-secret-key-here
+BETTER_AUTH_URL=http://localhost:3000
+
+# Initial Super Admin (optional)
+# Set this to the email of the first user who should be super admin
+INITIAL_SUPER_ADMIN_EMAIL=admin@example.com
+
+# Database (provided by Vercel's Neon integration)
+# These are automatically set when you link Neon to Vercel
+# For local development, use your Neon connection string:
+# POSTGRES_URL=postgresql://neondb_owner:password@host/neondb?sslmode=require
+```
+
+For local development with the full backend (API routes), run:
+```bash
+npm run start  # Uses Vercel CLI to run API routes locally
+```
+
+---
+
 ## Testing a Dev Branch
 
 ### Option 1: Test an Existing Dev Branch

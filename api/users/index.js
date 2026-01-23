@@ -9,7 +9,7 @@
 import { verifyAuth, sanitizeErrorMessage } from '../_lib/auth.js';
 import { 
   ensureDb, 
-  getUserByClerkId,
+  getUserById,
   getAllUsers,
   getUsersByOrganization
 } from '../_lib/db.js';
@@ -46,7 +46,7 @@ export default async function handler(req, res) {
     }
 
     // Check if user is admin
-    const currentUser = await getUserByClerkId(userId);
+    const currentUser = await getUserById(userId);
     if (!currentUser) {
       return res.status(403).json({ error: 'User not found' });
     }
@@ -73,8 +73,8 @@ export default async function handler(req, res) {
 
     // Transform response
     const transformed = users.map(u => ({
-      clerkId: u.clerk_id,
-      username: u.clerk_username,
+      id: u.id,
+      username: u.username,
       email: u.email,
       role: u.role,
       organizationId: u.organization_id,

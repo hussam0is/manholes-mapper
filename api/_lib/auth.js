@@ -1,11 +1,11 @@
 /**
  * Authentication helper for Vercel API routes
  * 
- * Verifies Clerk JWT tokens and extracts user information.
+ * Verifies Better Auth sessions and extracts user information.
  * Supports both Web API Request and Node.js IncomingMessage formats.
  */
 
-import { verifyToken } from '@clerk/backend';
+import { auth } from '../../lib/auth.js';
 
 /**
  * Sanitize error message for API response
@@ -44,6 +44,25 @@ function getHeader(request, name) {
   }
   
   return null;
+}
+
+/**
+ * Get cookie value from request
+ * @param {Request|IncomingMessage} request
+ * @param {string} name - Cookie name
+ * @returns {string|null}
+ */
+function getCookie(request, name) {
+  const cookieHeader = getHeader(request, 'cookie');
+  if (!cookieHeader) return null;
+  
+  const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+    const [key, value] = cookie.trim().split('=');
+    acc[key] = value;
+    return acc;
+  }, {});
+  
+  return cookies[name] || null;
 }
 
 // Maximum request body size (5MB)
@@ -105,46 +124,57 @@ export async function parseBody(request, maxSize = MAX_BODY_SIZE) {
 }
 
 /**
- * Verify the request and extract user ID from Clerk session
+ * Convert Node.js request headers to Web API Headers format
+ * @param {Object} nodeHeaders - Node.js headers object
+ * @returns {Headers}
+ */
+function convertHeaders(nodeHeaders) {
+  const headers = new Headers();
+  for (const [key, value] of Object.entries(nodeHeaders)) {
+    if (value) {
+      if (Array.isArray(value)) {
+        value.forEach(v => headers.append(key, v));
+      } else {
+        headers.append(key, value);
+      }
+    }
+  }
+  return headers;
+}
+
+/**
+ * Verify the request and extract user ID from Better Auth session
  * @param {Request|IncomingMessage} request - Incoming request
- * @returns {Promise<{userId: string|null, error: string|null}>}
+ * @returns {Promise<{userId: string|null, error: string|null, user: Object|null}>}
  */
 export async function verifyAuth(request) {
   try {
-    const authHeader = getHeader(request, 'authorization');
+    // Convert headers to Web API format if needed
+    let headers;
+    if (request.headers instanceof Headers) {
+      headers = request.headers;
+    } else if (request.headers) {
+      headers = convertHeaders(request.headers);
+    } else {
+      headers = new Headers();
+    }
     
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return { userId: null, error: 'Missing or invalid authorization header' };
+    // Get session from Better Auth
+    const session = await auth.api.getSession({
+      headers,
+    });
+    
+    if (!session || !session.user) {
+      return { userId: null, error: 'Not authenticated', user: null };
     }
 
-    const token = authHeader.substring(7);
-    
-    if (!process.env.CLERK_SECRET_KEY) {
-      console.error('CLERK_SECRET_KEY is not set');
-      return { userId: null, error: 'Server configuration error' };
-    }
-    
-    // Build verification options
-    const verifyOptions = {
-      secretKey: process.env.CLERK_SECRET_KEY,
+    return { 
+      userId: session.user.id, 
+      error: null,
+      user: session.user,
     };
-    
-    // SECURITY: Add authorized parties if configured
-    // This validates the 'azp' (authorized party) claim in the JWT
-    if (process.env.CLERK_AUTHORIZED_PARTIES) {
-      verifyOptions.authorizedParties = process.env.CLERK_AUTHORIZED_PARTIES.split(',').map(s => s.trim());
-    }
-    
-    // Verify the token with Clerk
-    const { sub: userId } = await verifyToken(token, verifyOptions);
-    
-    if (!userId) {
-      return { userId: null, error: 'Invalid token' };
-    }
-
-    return { userId, error: null };
   } catch (error) {
     console.error('Auth verification failed:', error.message);
-    return { userId: null, error: 'Authentication failed' };
+    return { userId: null, error: 'Authentication failed', user: null };
   }
 }

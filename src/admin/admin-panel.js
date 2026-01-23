@@ -259,13 +259,13 @@ export class AdminPanel {
     section.innerHTML = `
       <div class="admin-panel-list">
         ${this.users.map(user => `
-          <div class="admin-panel-list-item" data-user-id="${user.clerkId}">
+          <div class="admin-panel-list-item" data-user-id="${user.id}">
             <div class="admin-panel-list-item-main">
               <div class="admin-panel-list-item-icon">
                 <span class="material-icons">${user.role === 'super_admin' ? 'admin_panel_settings' : user.role === 'admin' ? 'manage_accounts' : 'person'}</span>
               </div>
               <div class="admin-panel-list-item-info">
-                <div class="admin-panel-list-item-title">${this._escapeHtml(user.username || user.email || user.clerkId)}</div>
+                <div class="admin-panel-list-item-title">${this._escapeHtml(user.username || user.email || user.id)}</div>
                 <div class="admin-panel-list-item-subtitle">
                   ${ROLE_LABELS[user.role]?.[this.lang] || user.role}
                   ${user.organizationName ? ` • ${this._escapeHtml(user.organizationName)}` : ''}
@@ -273,10 +273,10 @@ export class AdminPanel {
               </div>
             </div>
             <div class="admin-panel-list-item-actions">
-              <button class="btn btn-ghost btn-sm" data-action="edit-user" data-user-id="${user.clerkId}" title="${this._label('editUser')}">
+              <button class="btn btn-ghost btn-sm" data-action="edit-user" data-user-id="${user.id}" title="${this._label('editUser')}">
                 <span class="material-icons">edit</span>
               </button>
-              <button class="btn btn-ghost btn-sm" data-action="edit-user-features" data-user-id="${user.clerkId}" title="${this._label('editFeatures')}">
+              <button class="btn btn-ghost btn-sm" data-action="edit-user-features" data-user-id="${user.id}" title="${this._label('editFeatures')}">
                 <span class="material-icons">toggle_on</span>
               </button>
             </div>
@@ -387,9 +387,9 @@ export class AdminPanel {
           <h3><span class="material-icons">people</span> ${this._label('usersTab')}</h3>
           <div class="admin-panel-features-list">
             ${this.users.map(user => `
-              <button class="admin-panel-features-target" data-action="manage-features" data-target-type="user" data-target-id="${user.clerkId}">
+              <button class="admin-panel-features-target" data-action="manage-features" data-target-type="user" data-target-id="${user.id}">
                 <span class="material-icons">person</span>
-                <span>${this._escapeHtml(user.username || user.email || user.clerkId)}</span>
+                <span>${this._escapeHtml(user.username || user.email || user.id)}</span>
               </button>
             `).join('')}
           </div>
@@ -424,7 +424,7 @@ export class AdminPanel {
    * Show edit user modal
    */
   _showEditUserModal(userId) {
-    const user = this.users.find(u => u.clerkId === userId);
+    const user = this.users.find(u => u.id === userId);
     if (!user) return;
 
     const modal = document.createElement('div');
@@ -587,7 +587,7 @@ export class AdminPanel {
     }
 
     const targetName = targetType === 'user'
-      ? this.users.find(u => u.clerkId === targetId)?.username || targetId
+      ? this.users.find(u => u.id === targetId)?.username || targetId
       : this.organizations.find(o => o.id === targetId)?.name || targetId;
 
     const modal = document.createElement('div');
