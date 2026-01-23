@@ -80,6 +80,7 @@ export class InputFlowSettings {
       'inputFlow.actionDisable': 'Hide Field',
       'inputFlow.actionRequire': 'Make Required',
       'inputFlow.actionBulkReset': 'Bulk Reset',
+      'inputFlow.actionFillValue': 'Fill Value',
       'inputFlow.confirmDelete': 'Delete this rule?',
       'inputFlow.invalidConfig': 'Invalid configuration',
       'inputFlow.importSuccess': 'Imported successfully',
@@ -282,10 +283,22 @@ export class InputFlowSettings {
         'nullify': this.t('inputFlow.actionNullify'),
         'disable': this.t('inputFlow.actionDisable'),
         'require': this.t('inputFlow.actionRequire'),
-        'bulk_reset': this.t('inputFlow.actionBulkReset')
+        'bulk_reset': this.t('inputFlow.actionBulkReset'),
+        'fill_value': this.t('inputFlow.actionFillValue')
       };
       if (action.type === 'bulk_reset') {
         return `${actionLabels[action.type]} (${action.fields?.length || 0})`;
+      }
+      if (action.type === 'fill_value') {
+        const targetField = fields.find(f => f.key === action.field);
+        let valueLabel = action.value;
+        if (targetField?.options) {
+          const valueOption = targetField.options.find(o => 
+            String(o.code) === String(action.value) || o.label === action.value
+          );
+          if (valueOption) valueLabel = valueOption.label;
+        }
+        return `${actionLabels[action.type]}: ${targetField?.label || action.field} = ${valueLabel}`;
       }
       const targetField = fields.find(f => f.key === action.field);
       return `${actionLabels[action.type]}: ${targetField?.label || action.field}`;
@@ -545,6 +558,43 @@ export class InputFlowSettings {
             <span class="material-icons">delete</span>
           </button>
         `;
+      } else if (action.type === 'fill_value') {
+        // Fill value action: needs field selector AND value selector
+        const selectedField = fields.find(f => f.key === action.field);
+        const valueOptions = selectedField?.options || [];
+        
+        actionDiv.innerHTML = `
+          <select class="action-type" data-action-idx="${idx}">
+            ${INPUT_FLOW_ACTION_TYPES.map(t => `<option value="${t}" ${action.type === t ? 'selected' : ''}>${this._getActionTypeLabel(t)}</option>`).join('')}
+          </select>
+          <select class="action-field" data-action-idx="${idx}">
+            <option value="">${this.t('inputFlow.selectField')}</option>
+            ${fields.map(f => `<option value="${f.key}" ${action.field === f.key ? 'selected' : ''}>${f.label}</option>`).join('')}
+          </select>
+          <select class="action-value" data-action-idx="${idx}">
+            <option value="">${this.t('inputFlow.selectValue')}</option>
+            ${valueOptions.map(o => `<option value="${o.code}" ${String(o.code) === String(action.value) ? 'selected' : ''}>${o.label}</option>`).join('')}
+          </select>
+          <button class="btn-icon btn-danger action-delete" data-action-idx="${idx}">
+            <span class="material-icons">delete</span>
+          </button>
+        `;
+        
+        // Field change handler for fill_value - update available values
+        actionDiv.querySelector('.action-field')?.addEventListener('change', (e) => {
+          const newFieldKey = e.target.value;
+          actions[idx].field = newFieldKey;
+          actions[idx].value = ''; // Reset value when field changes
+          this._renderActions(modal, actions, fields);
+        });
+        
+        // Value change handler for fill_value
+        actionDiv.querySelector('.action-value')?.addEventListener('change', (e) => {
+          const val = e.target.value;
+          // Try to parse as number if it looks like one
+          const num = Number(val);
+          actions[idx].value = Number.isFinite(num) ? num : val;
+        });
       } else {
         actionDiv.innerHTML = `
           <select class="action-type" data-action-idx="${idx}">
@@ -563,9 +613,13 @@ export class InputFlowSettings {
       // Type change handler
       actionDiv.querySelector('.action-type')?.addEventListener('change', (e) => {
         const newType = e.target.value;
-        actions[idx] = newType === 'bulk_reset' 
-          ? { type: 'bulk_reset', fields: [] }
-          : { type: newType, field: '' };
+        if (newType === 'bulk_reset') {
+          actions[idx] = { type: 'bulk_reset', fields: [] };
+        } else if (newType === 'fill_value') {
+          actions[idx] = { type: 'fill_value', field: '', value: '' };
+        } else {
+          actions[idx] = { type: newType, field: '' };
+        }
         this._renderActions(modal, actions, fields);
       });
       
@@ -595,6 +649,17 @@ export class InputFlowSettings {
         const fieldsSelect = row.querySelector('.action-fields');
         const selectedFields = Array.from(fieldsSelect?.selectedOptions || []).map(o => o.value);
         actions.push({ type: 'bulk_reset', fields: selectedFields });
+      } else if (type === 'fill_value') {
+        const fieldSelect = row.querySelector('.action-field');
+        const valueSelect = row.querySelector('.action-value');
+        const val = valueSelect?.value || '';
+        // Try to parse as number if it looks like one
+        const num = Number(val);
+        actions.push({ 
+          type: 'fill_value', 
+          field: fieldSelect?.value || '',
+          value: Number.isFinite(num) ? num : val
+        });
       } else {
         const fieldSelect = row.querySelector('.action-field');
         actions.push({ type, field: fieldSelect?.value || '' });
@@ -612,7 +677,8 @@ export class InputFlowSettings {
       'nullify': this.t('inputFlow.actionNullify'),
       'disable': this.t('inputFlow.actionDisable'),
       'require': this.t('inputFlow.actionRequire'),
-      'bulk_reset': this.t('inputFlow.actionBulkReset')
+      'bulk_reset': this.t('inputFlow.actionBulkReset'),
+      'fill_value': this.t('inputFlow.actionFillValue')
     };
     return labels[type] || type;
   }

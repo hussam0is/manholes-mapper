@@ -51,7 +51,7 @@ export function evaluateTrigger(trigger, entity) {
  * @param {Object} config - The input flow configuration
  * @param {string} entityType - 'nodes' or 'edges'
  * @param {Object} entity - The node or edge data
- * @returns {Object} - Object with field states { disabled: Set, required: Set, nullified: Set, bulkReset: Array }
+ * @returns {Object} - Object with field states { disabled: Set, required: Set, nullified: Set, bulkReset: Array, fillValues: Map }
  */
 export function evaluateRules(config, entityType, entity) {
   const result = {
@@ -59,6 +59,7 @@ export function evaluateRules(config, entityType, entity) {
     required: new Set(),      // Fields that are required
     nullified: new Set(),     // Fields that should be set to null
     bulkReset: [],           // Arrays of fields to bulk reset
+    fillValues: new Map(),   // Map of field -> value to fill
     triggeredRules: []       // List of triggered rule IDs for debugging
   };
   
@@ -109,6 +110,12 @@ export function evaluateRules(config, entityType, entity) {
             action.fields.forEach(f => result.nullified.add(f));
           }
           break;
+        
+        case 'fill_value':
+          if (action.field && action.value !== undefined && action.value !== '') {
+            result.fillValues.set(action.field, action.value);
+          }
+          break;
       }
     }
   }
@@ -150,6 +157,41 @@ export function applyActions(entity, ruleResults, defaults = {}) {
     } else {
       // Generic nullification
       modified[field] = null;
+    }
+  }
+  
+  // Apply fill values
+  if (ruleResults.fillValues) {
+    for (const [field, value] of ruleResults.fillValues) {
+      // Map snake_case field keys to camelCase entity properties
+      if (field === 'cover_diameter') {
+        modified.coverDiameter = value;
+      } else if (field === 'maintenance_status') {
+        modified.maintenanceStatus = value;
+      } else if (field === 'material') {
+        modified.material = value;
+      } else if (field === 'access') {
+        modified.access = value;
+      } else if (field === 'accuracy_level') {
+        modified.accuracyLevel = value;
+      } else if (field === 'line_diameter') {
+        modified.line_diameter = value;
+      } else if (field === 'fall_depth') {
+        modified.fallDepth = value;
+      } else if (field === 'engineering_status') {
+        modified.engineeringStatus = value;
+      } else if (field === 'edge_type') {
+        modified.edgeType = value;
+      } else if (field === 'tail_measurement') {
+        modified.tailMeasurement = value;
+      } else if (field === 'head_measurement') {
+        modified.headMeasurement = value;
+      } else if (field === 'notes') {
+        modified.notes = value;
+      } else {
+        // Generic assignment
+        modified[field] = value;
+      }
     }
   }
   
@@ -255,12 +297,15 @@ export function createEmptyRule(entityType) {
 
 /**
  * Create an empty action template
- * @param {string} type - Action type: 'nullify', 'disable', 'require', 'bulk_reset'
+ * @param {string} type - Action type: 'nullify', 'disable', 'require', 'bulk_reset', 'fill_value'
  * @returns {Object} - A new action template
  */
 export function createEmptyAction(type = 'nullify') {
   if (type === 'bulk_reset') {
     return { type: 'bulk_reset', fields: [] };
+  }
+  if (type === 'fill_value') {
+    return { type: 'fill_value', field: '', value: '' };
   }
   return { type, field: '' };
 }

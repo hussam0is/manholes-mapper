@@ -223,8 +223,9 @@ export const EDGE_ENGINEERING_STATUS = [
  * - disable: Hide field from input form
  * - require: Make field mandatory
  * - bulk_reset: Reset multiple fields to their defaults
+ * - fill_value: Set field to a specific value from its options
  */
-export const INPUT_FLOW_ACTION_TYPES = ['nullify', 'disable', 'require', 'bulk_reset'];
+export const INPUT_FLOW_ACTION_TYPES = ['nullify', 'disable', 'require', 'bulk_reset', 'fill_value'];
 
 /**
  * Input Flow Operators for trigger conditions
