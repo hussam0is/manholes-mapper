@@ -34,6 +34,7 @@ import { distanceToSegment } from '../utils/geometry.js';
 import { isNumericId, generateHomeInternalId } from '../graph/id-utils.js';
 import { commitIdInputIfFocused } from '../dom/dom-utils.js';
 import { AdminSettings, getNodeSpecs, getEdgeSpecs } from '../admin/admin-settings.js';
+import { ProjectsSettings } from '../admin/projects-settings.js';
 import { drawHouse as primitivesDrawHouse, drawDirectConnectionBadge as primitivesDrawDirectConnectionBadge } from '../features/drawing-primitives.js';
 import { drawInfiniteGrid as drawInfiniteGridFeature, renderEdgeLegend as renderEdgeLegendFeature, drawEdge as drawEdgeFeature, drawNode as drawNodeFeature } from '../features/rendering.js';
 import { drawNodeIcon } from '../features/node-icons.js';
@@ -659,9 +660,6 @@ let projectsSettingsScreen = null;
 // Projects screen (separate view) open/close
 async function openProjectsScreen() {
   if (!projectsScreen || !projectsScreenContent) return;
-
-  // Dynamically import ProjectsSettings to avoid circular dependencies
-  const { ProjectsSettings } = await import('../admin/projects-settings.js');
 
   // Create or reuse ProjectsSettings instance for screen
   projectsSettingsScreen = new ProjectsSettings({
