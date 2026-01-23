@@ -118,6 +118,7 @@ const helpNoteEl = document.getElementById('helpNote');
 const langSelect = document.getElementById('langSelect');
 // Admin UI elements
 const adminBtn = document.getElementById('adminBtn');
+const projectsBtn = document.getElementById('projectsBtn');
 const mobileAdminBtn = document.getElementById('mobileAdminBtn');
 const mobileProjectsBtn = document.getElementById('mobileProjectsBtn');
 const adminModal = document.getElementById('adminModal');
@@ -710,7 +711,11 @@ if (mobileAdminBtn) {
   try { mobileAdminBtn.addEventListener('touchend', openAdminFromMobile, { passive: false }); } catch (_) { mobileAdminBtn.addEventListener('touchend', openAdminFromMobile); }
 }
 
-// Projects button click handler
+// Projects button click handlers
+if (projectsBtn) projectsBtn.addEventListener('click', (e) => {
+  if (e && typeof e.preventDefault === 'function') e.preventDefault();
+  navigateToProjects();
+});
 if (mobileProjectsBtn) {
   const openProjectsFromMobile = (e) => {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();

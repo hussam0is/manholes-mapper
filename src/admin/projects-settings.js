@@ -117,7 +117,7 @@ export class ProjectsSettings {
         return;
       }
 
-      const response = await fetch('/api/me', {
+      const response = await fetch('/api/user-role', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -126,7 +126,8 @@ export class ProjectsSettings {
 
       if (response.ok) {
         const data = await response.json();
-        this.isAdmin = data.user?.role === 'admin' || data.user?.role === 'super_admin';
+        // /api/user-role returns isAdmin directly (true for admin or super_admin)
+        this.isAdmin = data.isAdmin === true;
       }
     } catch (error) {
       console.warn('[ProjectsSettings] Could not check admin status:', error);
