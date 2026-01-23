@@ -119,6 +119,7 @@ const langSelect = document.getElementById('langSelect');
 // Admin UI elements
 const adminBtn = document.getElementById('adminBtn');
 const mobileAdminBtn = document.getElementById('mobileAdminBtn');
+const mobileProjectsBtn = document.getElementById('mobileProjectsBtn');
 const adminModal = document.getElementById('adminModal');
 const adminContent = document.getElementById('adminContent');
 const adminSaveBtn = document.getElementById('adminSaveBtn');
@@ -137,6 +138,14 @@ const adminScreenImportBtn = document.getElementById('adminScreenImportBtn');
 const adminScreenExportBtn = document.getElementById('adminScreenExportBtn');
 const adminScreenImportFile = document.getElementById('adminScreenImportFile');
 const mainEl = document.getElementById('main');
+
+// Projects Screen elements
+const projectsScreen = document.getElementById('projectsScreen');
+const projectsScreenContent = document.getElementById('projectsScreenContent');
+const projectsScreenTitleEl = document.getElementById('projectsScreenTitle');
+const projectsScreenCloseBtn = document.getElementById('projectsScreenCloseBtn');
+const projectsList = document.getElementById('projectsList');
+const addProjectBtn = document.getElementById('addProjectBtn');
 
 // Mobile menu elements
 const mobileMenuBtn = document.getElementById('mobileMenuBtn');
@@ -643,6 +652,44 @@ function closeAdminScreen() {
   if (mainEl) mainEl.style.display = '';
 }
 
+// Projects screen instance
+let projectsSettingsScreen = null;
+
+// Projects screen (separate view) open/close
+async function openProjectsScreen() {
+  if (!projectsScreen || !projectsScreenContent) return;
+
+  // Dynamically import ProjectsSettings to avoid circular dependencies
+  const { ProjectsSettings } = await import('../admin/projects-settings.js');
+
+  // Create or reuse ProjectsSettings instance for screen
+  projectsSettingsScreen = new ProjectsSettings({
+    container: projectsScreenContent,
+    t,
+    showToast,
+  });
+  await projectsSettingsScreen.render();
+
+  if (projectsScreenTitleEl) {
+    const titleText = projectsScreenTitleEl.querySelector('.admin-title-text');
+    if (titleText) titleText.textContent = t('projects.title');
+  }
+  if (mainEl) mainEl.style.display = 'none';
+  projectsScreen.style.display = 'block';
+  applyLangToStaticUI();
+}
+
+function closeProjectsScreen() {
+  if (projectsScreen) projectsScreen.style.display = 'none';
+  if (mainEl) mainEl.style.display = '';
+}
+
+function navigateToProjects() {
+  try { closeMobileMenu(); } catch (_) { }
+  try { location.hash = '#/projects'; } catch (_) { }
+  try { handleRoute(); } catch (_) { }
+}
+
 function navigateToAdmin() {
   try { closeMobileMenu(); } catch (_) { }
   try { location.hash = '#/admin'; } catch (_) { }
@@ -662,6 +709,19 @@ if (mobileAdminBtn) {
   mobileAdminBtn.addEventListener('click', openAdminFromMobile);
   try { mobileAdminBtn.addEventListener('touchend', openAdminFromMobile, { passive: false }); } catch (_) { mobileAdminBtn.addEventListener('touchend', openAdminFromMobile); }
 }
+
+// Projects button click handler
+if (mobileProjectsBtn) {
+  const openProjectsFromMobile = (e) => {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+    navigateToProjects();
+  };
+  // Use both click and touchend for broad Android compatibility
+  mobileProjectsBtn.addEventListener('click', openProjectsFromMobile);
+  try { mobileProjectsBtn.addEventListener('touchend', openProjectsFromMobile, { passive: false }); } catch (_) { mobileProjectsBtn.addEventListener('touchend', openProjectsFromMobile); }
+}
+
 // DOM references for login
 const loginPanel = document.getElementById('loginPanel');
 const authLoadingOverlay = document.getElementById('authLoadingOverlay');
@@ -783,6 +843,7 @@ function updateUserButtonVisibility(isSignedIn) {
 function handleRoute() {
   const hash = location.hash || '#/';
   const isAdmin = (hash === '#/admin');
+  const isProjects = (hash === '#/projects');
   const isLogin = (hash === '#/login');
   const isSignup = (hash === '#/signup');
   
@@ -834,9 +895,17 @@ function handleRoute() {
     // Prefer separate screen over modal
     try { closeAdminModal(); } catch (_) { }
     try { openAdminScreen(); } catch (_) { }
+    try { closeProjectsScreen(); } catch (_) { }
+  } else if (isProjects) {
+    // Handle projects route
+    try { document.body.classList.add('admin-screen'); } catch (_) { }
+    try { closeAdminModal(); } catch (_) { }
+    try { closeAdminScreen(); } catch (_) { }
+    try { openProjectsScreen(); } catch (_) { }
   } else {
     try { document.body.classList.remove('admin-screen'); } catch (_) { }
     try { closeAdminScreen(); } catch (_) { }
+    try { closeProjectsScreen(); } catch (_) { }
   }
 }
 
@@ -854,7 +923,7 @@ window.handleRoute = handleRoute;
 
 // Prevent scroll and zoom propagation from modals to the canvas
 function preventModalScrollPropagation() {
-  const modals = ['startPanel', 'homePanel', 'helpModal', 'adminModal', 'adminScreen'];
+  const modals = ['startPanel', 'homePanel', 'helpModal', 'adminModal', 'adminScreen', 'projectsScreen'];
   modals.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -1095,6 +1164,12 @@ if (adminScreenSaveBtn) adminScreenSaveBtn.addEventListener('click', () => {
 });
 if (adminScreenCancelBtn) adminScreenCancelBtn.addEventListener('click', () => {
   closeAdminScreen();
+  try { location.hash = '#/'; } catch (_) { }
+});
+
+// Projects screen close button handler
+if (projectsScreenCloseBtn) projectsScreenCloseBtn.addEventListener('click', () => {
+  closeProjectsScreen();
   try { location.hash = '#/'; } catch (_) { }
 });
 
