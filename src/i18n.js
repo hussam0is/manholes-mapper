@@ -59,6 +59,7 @@ export const i18n = {
     listDuplicate: 'שכפל',
     listDelete: 'מחק',
     listImportHistory: 'ייבא ערכים',
+    listChangeProject: 'שנה פרויקט',
     listCurrentSketch: 'פתוח כעת',
     noSketches: 'אין עדיין שרטוטים.',
     // Authentication
@@ -237,6 +238,7 @@ export const i18n = {
       deleteProject: 'מחק פרויקט',
       projectName: 'שם הפרויקט',
       projectDescription: 'תיאור',
+      updateInputFlow: 'עדכן הגדרות זרימת קלט',
       inputFlowConfig: 'הגדרות זרימת קלט',
       sketchCount: 'שרטוטים',
       noProjects: 'אין עדיין פרויקטים',
@@ -353,6 +355,7 @@ export const i18n = {
     listDuplicate: 'Duplicate',
     listDelete: 'Delete',
     listImportHistory: 'Import Values',
+    listChangeProject: 'Change Project',
     listCurrentSketch: 'Currently Open',
     noSketches: 'No sketches yet.',
     // Authentication
@@ -531,6 +534,7 @@ export const i18n = {
       deleteProject: 'Delete Project',
       projectName: 'Project Name',
       projectDescription: 'Description',
+      updateInputFlow: 'Update Input Flow Configuration',
       inputFlowConfig: 'Input Flow Configuration',
       sketchCount: 'Sketches',
       noProjects: 'No projects yet',
