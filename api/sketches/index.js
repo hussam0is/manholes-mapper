@@ -8,7 +8,7 @@
  */
 
 import { verifyAuth, parseBody, sanitizeErrorMessage } from '../_lib/auth.js';
-import { getSketchesByUser, createSketch, ensureDb } from '../_lib/db.js';
+import { getSketchesByUser, createSketch, ensureDb, getProjectById } from '../_lib/db.js';
 import { validateSketchInput } from '../_lib/validators.js';
 import { applyRateLimit } from '../_lib/rate-limit.js';
 
@@ -55,6 +55,8 @@ export default async function handler(req, res) {
         nodes: row.nodes || [],
         edges: row.edges || [],
         adminConfig: row.admin_config || {},
+        projectId: row.project_id,
+        snapshotInputFlowConfig: row.snapshot_input_flow_config || {},
       }));
       
       return res.status(200).json({ sketches: transformed });
@@ -74,8 +76,19 @@ export default async function handler(req, res) {
           edgesCount: Array.isArray(body.edges) ? body.edges.length : 'not array',
           adminConfigType: typeof body.adminConfig,
           creationDateType: typeof body.creationDate,
+          projectId: body.projectId,
         });
         return res.status(400).json({ error: 'Validation failed', details: validationErrors });
+      }
+      
+      // Get project's input flow config if projectId is provided
+      let snapshotInputFlowConfig = body.snapshotInputFlowConfig || {};
+      if (body.projectId) {
+        const project = await getProjectById(body.projectId);
+        if (project) {
+          // Copy the project's input flow config as a snapshot
+          snapshotInputFlowConfig = project.input_flow_config || {};
+        }
       }
       
       const sketch = await createSketch(userId, {
@@ -86,6 +99,8 @@ export default async function handler(req, res) {
         adminConfig: body.adminConfig || {},
         createdBy: body.createdBy,
         lastEditedBy: body.lastEditedBy,
+        projectId: body.projectId || null,
+        snapshotInputFlowConfig: snapshotInputFlowConfig,
       });
       
       const transformed = {
@@ -99,9 +114,11 @@ export default async function handler(req, res) {
         nodes: sketch.nodes || [],
         edges: sketch.edges || [],
         adminConfig: sketch.admin_config || {},
+        projectId: sketch.project_id,
+        snapshotInputFlowConfig: sketch.snapshot_input_flow_config || {},
       };
       
-      console.log(`[API /api/sketches] Created sketch ${transformed.id} for ${userId}`);
+      console.log(`[API /api/sketches] Created sketch ${transformed.id} for ${userId} in project ${body.projectId || 'none'}`);
       return res.status(201).json({ sketch: transformed });
     }
 

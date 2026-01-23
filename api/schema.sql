@@ -20,6 +20,13 @@ CREATE TABLE IF NOT EXISTS sketches (
 ALTER TABLE sketches ADD COLUMN IF NOT EXISTS created_by TEXT;
 ALTER TABLE sketches ADD COLUMN IF NOT EXISTS last_edited_by TEXT;
 
+-- Migration: Add project support to sketches
+ALTER TABLE sketches ADD COLUMN IF NOT EXISTS project_id UUID REFERENCES projects(id) ON DELETE SET NULL;
+ALTER TABLE sketches ADD COLUMN IF NOT EXISTS snapshot_input_flow_config JSONB DEFAULT '{}'::jsonb;
+
+-- Index for project queries on sketches
+CREATE INDEX IF NOT EXISTS idx_sketches_project_id ON sketches(project_id);
+
 -- Index for fast user queries
 CREATE INDEX IF NOT EXISTS idx_sketches_user_id ON sketches(user_id);
 
@@ -51,6 +58,31 @@ CREATE TABLE IF NOT EXISTS organizations (
     name TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- ============================================
+-- Projects Table (per organization)
+-- ============================================
+
+-- Projects table: templates with input flow configuration
+CREATE TABLE IF NOT EXISTS projects (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    description TEXT,
+    input_flow_config JSONB DEFAULT '{}'::jsonb,  -- Business input flow rules
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Index for organization project queries
+CREATE INDEX IF NOT EXISTS idx_projects_organization_id ON projects(organization_id);
+
+-- Trigger for projects updated_at
+DROP TRIGGER IF EXISTS update_projects_updated_at ON projects;
+CREATE TRIGGER update_projects_updated_at
+    BEFORE UPDATE ON projects
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
 
 -- Users table: stores user roles and organization membership
 CREATE TABLE IF NOT EXISTS users (

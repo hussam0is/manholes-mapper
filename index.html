@@ -283,6 +283,60 @@
   </div>
   <!-- Mobile menu backdrop overlay -->
   <div id="mobileMenuBackdrop" class="mobile-menu-backdrop" style="display:none;"></div>
+  <!-- Projects Management Screen -->
+  <div id="projectsScreen" class="admin-screen-wrapper" style="display:none;">
+    <div class="panel admin-container admin-screen-panel">
+      <div class="admin-header">
+        <h2 id="projectsScreenTitle">
+          <span class="material-icons">folder_open</span>
+          <span class="admin-title-text" data-i18n="projects.title">ניהול פרויקטים</span>
+        </h2>
+      </div>
+      <div id="projectsScreenContent" class="admin-content" role="region" aria-label="Projects management">
+        <div id="projectsList" class="projects-list"></div>
+        <button id="addProjectBtn" class="btn btn-add-rule">
+          <span class="material-icons">add</span>
+          <span data-i18n="projects.addProject">הוסף פרויקט</span>
+        </button>
+      </div>
+      <div class="admin-actions">
+        <div class="admin-action-buttons">
+          <button id="projectsScreenCloseBtn" class="btn btn-primary" type="button" data-i18n="buttons.close">סגור</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Input Flow Settings Screen -->
+  <div id="inputFlowScreen" class="admin-screen-wrapper" style="display:none;">
+    <div class="panel admin-container admin-screen-panel input-flow-screen-panel">
+      <div class="admin-header">
+        <h2 id="inputFlowScreenTitle">
+          <span class="material-icons">rule</span>
+          <span class="admin-title-text" data-i18n="inputFlow.title">הגדרות זרימת קלט</span>
+        </h2>
+      </div>
+      <div id="inputFlowScreenContent" class="admin-content input-flow-content" role="region" aria-label="Input flow settings"></div>
+      <div class="admin-actions">
+        <div class="admin-import-export">
+          <input id="inputFlowImportFile" type="file" accept="application/json,.json" class="visually-hidden" aria-label="Import input flow config file" />
+          <button id="inputFlowImportBtn" class="btn btn-ghost" type="button">
+            <span class="material-icons">upload_file</span>
+            <span class="label" data-i18n="inputFlow.import">יבא הגדרות</span>
+          </button>
+          <button id="inputFlowExportBtn" class="btn btn-ghost" type="button">
+            <span class="material-icons">download</span>
+            <span class="label" data-i18n="inputFlow.export">יצא הגדרות</span>
+          </button>
+        </div>
+        <div class="admin-action-buttons">
+          <button id="inputFlowCancelBtn" class="btn btn-ghost" type="button" data-i18n="buttons.cancel">ביטול</button>
+          <button id="inputFlowSaveBtn" class="btn btn-primary" type="button" data-i18n="buttons.save">שמור</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
   <!-- Dedicated Admin Screen (separate from the canvas) -->
   <div id="adminScreen" class="admin-screen-wrapper" style="display:none;">
     <div class="panel admin-container admin-screen-panel">
@@ -344,8 +398,16 @@
       <div id="startPanel" style="display: none;">
         <div class="panel">
           <h2 id="startTitle">התחלת שרטוט חדש</h2>
-          <label for="dateInput" id="creationDateLabel">תאריך יצירה</label>
-          <input type="date" id="dateInput" />
+          <div class="field">
+            <label for="projectSelect" id="projectSelectLabel">פרויקט</label>
+            <select id="projectSelect">
+              <option value="">בחר פרויקט...</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="dateInput" id="creationDateLabel">תאריך יצירה</label>
+            <input type="date" id="dateInput" />
+          </div>
           <div class="actions">
             <button id="cancelBtn" class="btn btn-ghost">ביטול</button>
             <button id="startBtn" class="btn btn-primary">התחל</button>

@@ -35,9 +35,17 @@ async function initializeDatabase() {
   // Migration: Add new columns if they don't exist
   await sql`ALTER TABLE sketches ADD COLUMN IF NOT EXISTS created_by TEXT`;
   await sql`ALTER TABLE sketches ADD COLUMN IF NOT EXISTS last_edited_by TEXT`;
+  
+  // Migration: Add project support to sketches
+  await sql`ALTER TABLE sketches ADD COLUMN IF NOT EXISTS project_id UUID REFERENCES projects(id) ON DELETE SET NULL`;
+  await sql`ALTER TABLE sketches ADD COLUMN IF NOT EXISTS snapshot_input_flow_config JSONB DEFAULT '{}'::jsonb`;
 
   await sql`
     CREATE INDEX IF NOT EXISTS idx_sketches_user_id ON sketches(user_id)
+  `;
+  
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_sketches_project_id ON sketches(project_id)
   `;
 
   await sql`
@@ -51,6 +59,23 @@ async function initializeDatabase() {
       name TEXT NOT NULL,
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
+  `;
+
+  // Projects table (per organization)
+  await sql`
+    CREATE TABLE IF NOT EXISTS projects (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      description TEXT,
+      input_flow_config JSONB DEFAULT '{}'::jsonb,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_projects_organization_id ON projects(organization_id)
   `;
 
   // Users table with roles
@@ -121,6 +146,17 @@ async function initializeDatabase() {
         FOR EACH ROW
         EXECUTE FUNCTION update_updated_at_column()
   `;
+
+  // Trigger for projects updated_at
+  await sql`
+    DROP TRIGGER IF EXISTS update_projects_updated_at ON projects
+  `;
+  await sql`
+    CREATE TRIGGER update_projects_updated_at
+        BEFORE UPDATE ON projects
+        FOR EACH ROW
+        EXECUTE FUNCTION update_updated_at_column()
+  `;
 }
 
 /**
@@ -146,7 +182,8 @@ export async function ensureDb() {
  */
 export async function getSketchesByUser(userId) {
   const result = await sql`
-    SELECT id, name, creation_date, nodes, edges, admin_config, created_by, last_edited_by, created_at, updated_at
+    SELECT id, name, creation_date, nodes, edges, admin_config, created_by, last_edited_by, 
+           project_id, snapshot_input_flow_config, created_at, updated_at
     FROM sketches
     WHERE user_id = ${userId}
     ORDER BY updated_at DESC
@@ -159,7 +196,8 @@ export async function getSketchesByUser(userId) {
  */
 export async function getSketchById(sketchId, userId) {
   const result = await sql`
-    SELECT id, name, creation_date, nodes, edges, admin_config, created_by, last_edited_by, created_at, updated_at
+    SELECT id, name, creation_date, nodes, edges, admin_config, created_by, last_edited_by,
+           project_id, snapshot_input_flow_config, created_at, updated_at
     FROM sketches
     WHERE id = ${sketchId} AND user_id = ${userId}
   `;
@@ -170,10 +208,10 @@ export async function getSketchById(sketchId, userId) {
  * Create a new sketch
  */
 export async function createSketch(userId, sketch) {
-  const { name, creationDate, nodes, edges, adminConfig, createdBy, lastEditedBy } = sketch;
+  const { name, creationDate, nodes, edges, adminConfig, createdBy, lastEditedBy, projectId, snapshotInputFlowConfig } = sketch;
   
   const result = await sql`
-    INSERT INTO sketches (user_id, name, creation_date, nodes, edges, admin_config, created_by, last_edited_by)
+    INSERT INTO sketches (user_id, name, creation_date, nodes, edges, admin_config, created_by, last_edited_by, project_id, snapshot_input_flow_config)
     VALUES (
       ${userId},
       ${name || null},
@@ -182,9 +220,12 @@ export async function createSketch(userId, sketch) {
       ${JSON.stringify(edges || [])}::jsonb,
       ${JSON.stringify(adminConfig || {})}::jsonb,
       ${createdBy || null},
-      ${lastEditedBy || null}
+      ${lastEditedBy || null},
+      ${projectId || null},
+      ${JSON.stringify(snapshotInputFlowConfig || {})}::jsonb
     )
-    RETURNING id, name, creation_date, nodes, edges, admin_config, created_by, last_edited_by, created_at, updated_at
+    RETURNING id, name, creation_date, nodes, edges, admin_config, created_by, last_edited_by, 
+              project_id, snapshot_input_flow_config, created_at, updated_at
   `;
   
   return result.rows[0];
@@ -194,7 +235,7 @@ export async function createSketch(userId, sketch) {
  * Update an existing sketch
  */
 export async function updateSketch(sketchId, userId, updates) {
-  const { name, creationDate, nodes, edges, adminConfig, lastEditedBy } = updates;
+  const { name, creationDate, nodes, edges, adminConfig, lastEditedBy, projectId, snapshotInputFlowConfig } = updates;
   
   const result = await sql`
     UPDATE sketches
@@ -205,9 +246,12 @@ export async function updateSketch(sketchId, userId, updates) {
       edges = COALESCE(${edges != null ? JSON.stringify(edges) : null}::jsonb, edges),
       admin_config = COALESCE(${adminConfig != null ? JSON.stringify(adminConfig) : null}::jsonb, admin_config),
       last_edited_by = COALESCE(${lastEditedBy}, last_edited_by),
+      project_id = COALESCE(${projectId}, project_id),
+      snapshot_input_flow_config = COALESCE(${snapshotInputFlowConfig != null ? JSON.stringify(snapshotInputFlowConfig) : null}::jsonb, snapshot_input_flow_config),
       updated_at = NOW()
     WHERE id = ${sketchId} AND user_id = ${userId}
-    RETURNING id, name, creation_date, nodes, edges, admin_config, created_by, last_edited_by, created_at, updated_at
+    RETURNING id, name, creation_date, nodes, edges, admin_config, created_by, last_edited_by,
+              project_id, snapshot_input_flow_config, created_at, updated_at
   `;
   
   return result.rows[0] || null;
@@ -406,6 +450,133 @@ export async function deleteOrganization(orgId) {
   `;
   
   return result.rows.length > 0;
+}
+
+// ============================================
+// Project Functions
+// ============================================
+
+/**
+ * Get all projects for an organization
+ */
+export async function getProjectsByOrganization(organizationId) {
+  const result = await sql`
+    SELECT p.id, p.organization_id, p.name, p.description, p.input_flow_config,
+           p.created_at, p.updated_at,
+           COUNT(s.id) as sketch_count
+    FROM projects p
+    LEFT JOIN sketches s ON p.id = s.project_id
+    WHERE p.organization_id = ${organizationId}
+    GROUP BY p.id, p.organization_id, p.name, p.description, p.input_flow_config, p.created_at, p.updated_at
+    ORDER BY p.name
+  `;
+  return result.rows;
+}
+
+/**
+ * Get a single project by ID
+ */
+export async function getProjectById(projectId) {
+  const result = await sql`
+    SELECT id, organization_id, name, description, input_flow_config, created_at, updated_at
+    FROM projects
+    WHERE id = ${projectId}
+  `;
+  return result.rows[0] || null;
+}
+
+/**
+ * Create a new project
+ */
+export async function createProject(organizationId, project) {
+  const { name, description, inputFlowConfig } = project;
+  
+  const result = await sql`
+    INSERT INTO projects (organization_id, name, description, input_flow_config)
+    VALUES (
+      ${organizationId},
+      ${name},
+      ${description || null},
+      ${JSON.stringify(inputFlowConfig || {})}::jsonb
+    )
+    RETURNING id, organization_id, name, description, input_flow_config, created_at, updated_at
+  `;
+  
+  return result.rows[0];
+}
+
+/**
+ * Update a project
+ */
+export async function updateProject(projectId, updates) {
+  const { name, description, inputFlowConfig } = updates;
+  
+  const result = await sql`
+    UPDATE projects
+    SET
+      name = COALESCE(${name}, name),
+      description = COALESCE(${description}, description),
+      input_flow_config = COALESCE(${inputFlowConfig != null ? JSON.stringify(inputFlowConfig) : null}::jsonb, input_flow_config),
+      updated_at = NOW()
+    WHERE id = ${projectId}
+    RETURNING id, organization_id, name, description, input_flow_config, created_at, updated_at
+  `;
+  
+  return result.rows[0] || null;
+}
+
+/**
+ * Delete a project
+ */
+export async function deleteProject(projectId) {
+  // First, remove project reference from all sketches
+  await sql`
+    UPDATE sketches SET project_id = NULL WHERE project_id = ${projectId}
+  `;
+  
+  // Delete the project
+  const result = await sql`
+    DELETE FROM projects
+    WHERE id = ${projectId}
+    RETURNING id
+  `;
+  
+  return result.rows.length > 0;
+}
+
+/**
+ * Duplicate a project with all its configuration
+ */
+export async function duplicateProject(projectId, newName) {
+  const original = await getProjectById(projectId);
+  if (!original) return null;
+  
+  const result = await sql`
+    INSERT INTO projects (organization_id, name, description, input_flow_config)
+    VALUES (
+      ${original.organization_id},
+      ${newName},
+      ${original.description},
+      ${JSON.stringify(original.input_flow_config || {})}::jsonb
+    )
+    RETURNING id, organization_id, name, description, input_flow_config, created_at, updated_at
+  `;
+  
+  return result.rows[0];
+}
+
+/**
+ * Get sketches by project ID
+ */
+export async function getSketchesByProject(projectId) {
+  const result = await sql`
+    SELECT id, user_id, name, creation_date, nodes, edges, admin_config, created_by, last_edited_by,
+           project_id, snapshot_input_flow_config, created_at, updated_at
+    FROM sketches
+    WHERE project_id = ${projectId}
+    ORDER BY updated_at DESC
+  `;
+  return result.rows;
 }
 
 // ============================================

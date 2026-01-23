@@ -40,6 +40,15 @@ import { drawNodeIcon } from '../features/node-icons.js';
 import { processLabels } from '../utils/label-collision.js';
 import { initBackupManager, clearHourlyBackups, saveDailyBackup, getAllBackups } from '../utils/backup-manager.js';
 import { getUsername as getAuthUsername } from '../auth/auth-guard.js';
+import { 
+  evaluateRules, 
+  applyActions, 
+  isFieldVisible, 
+  isFieldRequired,
+  getEffectiveInputFlowConfig,
+  normalizeEntityForRules 
+} from '../utils/input-flow-engine.js';
+import { DEFAULT_INPUT_FLOW_CONFIG } from '../state/constants.js';
 
 /**
  * Get the current username from authentication or return a default
@@ -223,6 +232,9 @@ let pendingEdgeStartPosition = null; // { x, y } or null - for creating inbound 
 let creationDate = null;
 let currentSketchId = null; // id in library; null means unsaved new sketch
 let currentSketchName = null; // human-friendly name for the sketch
+let currentProjectId = null; // id of the project this sketch belongs to
+let currentInputFlowConfig = DEFAULT_INPUT_FLOW_CONFIG; // input flow configuration for the current sketch
+let availableProjects = []; // list of projects available to the user (fetched from API)
 let autosaveEnabled = true;
 
 // Update the sketch name display in the header (desktop and mobile)
@@ -1469,6 +1481,8 @@ function loadFromStorage() {
     creationDate = parsed.creationDate || null;
     currentSketchId = parsed.sketchId || null;
     currentSketchName = parsed.sketchName || null;
+    currentProjectId = parsed.projectId || null;
+    currentInputFlowConfig = parsed.inputFlowConfig || DEFAULT_INPUT_FLOW_CONFIG;
     updateSketchNameDisplay();
     // Ensure each node has required properties
     nodes.forEach((node) => {
@@ -1565,6 +1579,8 @@ function saveToStorage() {
     creationDate: creationDate,
     sketchId: currentSketchId,
     sketchName: currentSketchName,
+    projectId: currentProjectId,
+    inputFlowConfig: currentInputFlowConfig,
     lastEditedBy: getCurrentUsername(),
     lastEditedAt: new Date().toISOString(),
   };
@@ -1583,6 +1599,8 @@ function saveToStorage() {
       nodes: nodes,
       edges: edges,
       adminConfig: typeof adminConfig !== 'undefined' ? adminConfig : {},
+      projectId: currentProjectId,
+      snapshotInputFlowConfig: currentInputFlowConfig,
       lastEditedBy: getCurrentUsername(),
       lastEditedAt: new Date().toISOString(),
     };
@@ -1959,8 +1977,10 @@ function hideHome() {
 /**
  * Initialize a brand new sketch and reset all transient state.
  * @param {string} date - ISO date string used for exported filenames
+ * @param {string} projectId - Optional project ID to associate with this sketch
+ * @param {Object} inputFlowConfig - Optional input flow configuration (copied from project)
  */
-function newSketch(date) {
+function newSketch(date, projectId = null, inputFlowConfig = null) {
   nodes = [];
   edges = [];
   nextNodeId = 1;
@@ -1972,6 +1992,8 @@ function newSketch(date) {
   creationDate = date;
   currentSketchId = null; // new unsaved sketch
   currentSketchName = null;
+  currentProjectId = projectId;
+  currentInputFlowConfig = inputFlowConfig || DEFAULT_INPUT_FLOW_CONFIG;
   updateSketchNameDisplay();
   saveToStorage();
   draw();
@@ -2767,6 +2789,18 @@ function renderDetails() {
   if (selectedNode) {
     const node = selectedNode;
     const container = document.createElement('div');
+    
+    // Evaluate input flow rules for this node
+    const normalizedNode = normalizeEntityForRules(node);
+    const ruleResults = evaluateRules(currentInputFlowConfig, 'nodes', normalizedNode);
+    
+    // Store rule results for use in event handlers
+    container.dataset.ruleResults = JSON.stringify({
+      disabled: Array.from(ruleResults.disabled),
+      required: Array.from(ruleResults.required),
+      nullified: Array.from(ruleResults.nullified)
+    });
+    
     // Build node details form with smart sorting based on usage history
     let materialOptions = '';
     const rawMaterialOptions = (adminConfig.nodes?.options?.material ?? NODE_MATERIAL_OPTIONS)
@@ -2836,27 +2870,28 @@ function renderDetails() {
             </div>
             <div class="field"></div>
             ${adminConfig.nodes.include.accuracy_level ? `
-            <div class="field">
-              <label for="accuracyLevelSelect">${t('labels.accuracyLevel')}</label>
+            <div class="field" data-flow-field="accuracy_level">
+              <label for="accuracyLevelSelect">${t('labels.accuracyLevel')}${ruleResults.required.has('accuracy_level') ? ' *' : ''}</label>
               <select id="accuracyLevelSelect">${accuracyLevelOptions}</select>
             </div>` : ''}
-            ${adminConfig.nodes.include.maintenance_status ? `
-            <div class="field">
-              <label for="nodeMaintenanceStatusSelect">${t('labels.maintenanceStatus')}</label>
+            ${adminConfig.nodes.include.maintenance_status && !ruleResults.disabled.has('maintenance_status') ? `
+            <div class="field" data-flow-field="maintenance_status">
+              <label for="nodeMaintenanceStatusSelect">${t('labels.maintenanceStatus')}${ruleResults.required.has('maintenance_status') ? ' *' : ''}</label>
               <select id="nodeMaintenanceStatusSelect">${maintenanceStatusOptions}</select>
             </div>` : ''}
-            ${adminConfig.nodes.include.cover_diameter ? `
-            <div class="field">
-              <label for="coverDiameterInput">${t('labels.coverDiameter')}</label>
+            ${adminConfig.nodes.include.cover_diameter && !ruleResults.disabled.has('cover_diameter') ? `
+            <div class="field" data-flow-field="cover_diameter">
+              <label for="coverDiameterInput">${t('labels.coverDiameter')}${ruleResults.required.has('cover_diameter') ? ' *' : ''}</label>
               <input id="coverDiameterInput" type="number" step="1" min="0" value="${node.coverDiameter !== '' ? node.coverDiameter : ''}" placeholder="${t('labels.optional')}" />
             </div>` : ''}
-            <div class="field">
-              <label for="materialSelect">${t('labels.coverMaterial')}</label>
+            ${!ruleResults.disabled.has('material') ? `
+            <div class="field" data-flow-field="material">
+              <label for="materialSelect">${t('labels.coverMaterial')}${ruleResults.required.has('material') ? ' *' : ''}</label>
               <select id="materialSelect">${materialOptions}</select>
-            </div>
-            ${adminConfig.nodes.include.access ? `
-            <div class="field">
-              <label for="accessSelect">${t('labels.access')}</label>
+            </div>` : ''}
+            ${adminConfig.nodes.include.access && !ruleResults.disabled.has('access') ? `
+            <div class="field" data-flow-field="access">
+              <label for="accessSelect">${t('labels.access')}${ruleResults.required.has('access') ? ' *' : ''}</label>
               <select id="accessSelect">${accessOptions}</select>
             </div>` : ''}
           </div>
@@ -3075,22 +3110,21 @@ function renderDetails() {
         const num = Number(e.target.value);
         node.accuracyLevel = Number.isFinite(num) ? num : 0;
         trackFieldUsage('nodes', 'accuracy_level', node.accuracyLevel);
-        // When accuracy level is "סכימטית" (code 1), reset other fields to "לא ידוע" / null
-        if (num === 1) {
-          // Reset maintenance status to "לא ידוע" (code 0)
-          node.maintenanceStatus = 0;
-          // Reset cover diameter to empty
-          node.coverDiameter = '';
-          // Reset material to "לא ידוע" (first option)
-          const matOptions = adminConfig.nodes?.options?.material ?? NODE_MATERIAL_OPTIONS;
-          const unknownMat = matOptions.find(o => o.code === 0 || o.label === 'לא ידוע');
-          node.material = unknownMat ? unknownMat.label : (matOptions[0]?.label || 'לא ידוע');
-          // Reset access to "לא ידוע" (code 0)
-          node.access = 0;
-        }
+        
+        // Apply input flow rules based on the new accuracy level
+        const normalizedNode = normalizeEntityForRules(node);
+        const newRuleResults = evaluateRules(currentInputFlowConfig, 'nodes', normalizedNode);
+        const defaults = {
+          material: adminConfig.nodes?.defaults?.material || 'לא ידוע'
+        };
+        const updatedNode = applyActions(node, newRuleResults, defaults);
+        
+        // Apply the changes to the node
+        Object.assign(node, updatedNode);
+        
         saveToStorage();
         scheduleDraw();
-        // Re-render to show updated values
+        // Re-render to show updated values and field visibility
         renderDetails();
       });
     }
@@ -3102,8 +3136,22 @@ function renderDetails() {
         const num = Number(e.target.value);
         node.maintenanceStatus = Number.isFinite(num) ? num : 0;
         trackFieldUsage('nodes', 'maintenance_status', node.maintenanceStatus);
+        
+        // Apply input flow rules based on the new maintenance status
+        const normalizedNode = normalizeEntityForRules(node);
+        const newRuleResults = evaluateRules(currentInputFlowConfig, 'nodes', normalizedNode);
+        const defaults = {
+          material: adminConfig.nodes?.defaults?.material || 'לא ידוע'
+        };
+        const updatedNode = applyActions(node, newRuleResults, defaults);
+        
+        // Apply the changes to the node
+        Object.assign(node, updatedNode);
+        
         saveToStorage();
         scheduleDraw();
+        // Re-render to show updated values and field visibility
+        renderDetails();
       });
     }
 
@@ -4114,8 +4162,74 @@ canvas.addEventListener('touchcancel', (e) => {
   pointerUp();
 });
 
+// ============================================
+// Project Management Functions
+// ============================================
+
+/**
+ * Fetch available projects from the API
+ * @returns {Promise<Array>} List of projects
+ */
+async function fetchProjects() {
+  try {
+    const token = await window.Clerk?.session?.getToken();
+    if (!token) {
+      console.warn('[Projects] No auth token available');
+      return [];
+    }
+    
+    const response = await fetch('/api/projects', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      console.error('[Projects] Failed to fetch projects:', response.status);
+      return [];
+    }
+    
+    const data = await response.json();
+    availableProjects = data.projects || [];
+    return availableProjects;
+  } catch (error) {
+    console.error('[Projects] Error fetching projects:', error);
+    return [];
+  }
+}
+
+/**
+ * Render the project dropdown in the start panel
+ */
+function renderProjectDropdown() {
+  const projectSelect = document.getElementById('projectSelect');
+  if (!projectSelect) return;
+  
+  projectSelect.innerHTML = `
+    <option value="">${t('labels.selectProject')}</option>
+    ${availableProjects.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
+  `;
+}
+
+/**
+ * Get the selected project's input flow config
+ * @param {string} projectId - Project ID
+ * @returns {Object} Input flow configuration
+ */
+function getProjectInputFlowConfig(projectId) {
+  if (!projectId) return DEFAULT_INPUT_FLOW_CONFIG;
+  
+  const project = availableProjects.find(p => p.id === projectId);
+  if (!project || !project.inputFlowConfig || Object.keys(project.inputFlowConfig).length === 0) {
+    return DEFAULT_INPUT_FLOW_CONFIG;
+  }
+  
+  return project.inputFlowConfig;
+}
+
 // Control buttons handlers
-newSketchBtn.addEventListener('click', () => {
+newSketchBtn.addEventListener('click', async () => {
   commitIdInputIfFocused();
   // Show start panel to choose date
   hideHome();
@@ -4135,6 +4249,11 @@ newSketchBtn.addEventListener('click', () => {
   renderDetails();
   // Reset date input to today by default
   dateInput.value = new Date().toISOString().substr(0, 10);
+  
+  // Fetch and render projects
+  await fetchProjects();
+  renderProjectDropdown();
+  
   startPanel.style.display = 'flex';
   showToast(t('toasts.startNew'));
   // If current sketch is not empty, reveal Cancel button
@@ -4148,12 +4267,29 @@ startBtn.addEventListener('click', () => {
     alert(t('alerts.pickDate'));
     return;
   }
+  
+  // Get selected project
+  const projectSelect = document.getElementById('projectSelect');
+  const selectedProjectId = projectSelect?.value || null;
+  
+  // If projects are available, require selection
+  if (availableProjects.length > 0 && !selectedProjectId) {
+    alert(t('alerts.selectProject') || 'Please select a project');
+    return;
+  }
+  
+  // Get the project's input flow config
+  const inputFlowConfig = getProjectInputFlowConfig(selectedProjectId);
+  
   // Confirm if existing sketch has content
   if ((nodes.length > 0 || edges.length > 0)) {
     const ok = confirm(t('confirms.newClears'));
     if (!ok) return;
   }
-  newSketch(dateVal);
+  
+  // Create new sketch with project info
+  newSketch(dateVal, selectedProjectId, inputFlowConfig);
+  
   // Reset mode and button states on new sketch
   currentMode = 'node';
   if (nodeModeBtn) nodeModeBtn.classList.add('active');

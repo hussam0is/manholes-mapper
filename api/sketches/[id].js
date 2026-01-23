@@ -9,7 +9,7 @@
  */
 
 import { verifyAuth, parseBody, sanitizeErrorMessage } from '../_lib/auth.js';
-import { getSketchById, updateSketch, deleteSketch, ensureDb } from '../_lib/db.js';
+import { getSketchById, updateSketch, deleteSketch, ensureDb, getProjectById } from '../_lib/db.js';
 import { validateSketchInput, validateUUID } from '../_lib/validators.js';
 import { applyRateLimit } from '../_lib/rate-limit.js';
 
@@ -71,6 +71,8 @@ export default async function handler(req, res) {
         nodes: sketch.nodes || [],
         edges: sketch.edges || [],
         adminConfig: sketch.admin_config || {},
+        projectId: sketch.project_id,
+        snapshotInputFlowConfig: sketch.snapshot_input_flow_config || {},
       };
       
       return res.status(200).json({ sketch: transformed });
@@ -90,8 +92,23 @@ export default async function handler(req, res) {
           edgesCount: Array.isArray(body.edges) ? body.edges.length : 'not array',
           adminConfigType: typeof body.adminConfig,
           creationDateType: typeof body.creationDate,
+          projectId: body.projectId,
         });
         return res.status(400).json({ error: 'Validation failed', details: validationErrors });
+      }
+      
+      // If projectId is being changed, get the new project's input flow config
+      let snapshotInputFlowConfig = body.snapshotInputFlowConfig;
+      if (body.projectId !== undefined && body.updateInputFlowSnapshot) {
+        if (body.projectId) {
+          const project = await getProjectById(body.projectId);
+          if (project) {
+            snapshotInputFlowConfig = project.input_flow_config || {};
+          }
+        } else {
+          // If project is being removed, keep the existing snapshot or clear it
+          snapshotInputFlowConfig = snapshotInputFlowConfig || {};
+        }
       }
       
       const updated = await updateSketch(sketchId, userId, {
@@ -101,6 +118,8 @@ export default async function handler(req, res) {
         edges: body.edges,
         adminConfig: body.adminConfig,
         lastEditedBy: body.lastEditedBy,
+        projectId: body.projectId,
+        snapshotInputFlowConfig: snapshotInputFlowConfig,
       });
       
       if (!updated) {
@@ -118,6 +137,8 @@ export default async function handler(req, res) {
         nodes: updated.nodes || [],
         edges: updated.edges || [],
         adminConfig: updated.admin_config || {},
+        projectId: updated.project_id,
+        snapshotInputFlowConfig: updated.snapshot_input_flow_config || {},
       };
       
       console.log(`[API /api/sketches/${sketchId}] Updated sketch`);
