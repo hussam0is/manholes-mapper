@@ -2017,6 +2017,10 @@ function renderHome() {
             <span class="material-icons">open_in_new</span>
             <span>${t('listOpen')}</span>
           </button>`}
+          <button class="sketch-action-btn" data-action="changeProject" data-id="${rec.id}">
+            <span class="material-icons">folder</span>
+            <span>${t('listChangeProject')}</span>
+          </button>
           <button class="sketch-action-btn" data-action="duplicate" data-id="${rec.id}">
             <span class="material-icons">content_copy</span>
             <span>${t('listDuplicate')}</span>
@@ -2040,6 +2044,140 @@ window.renderHome = renderHome;
 
 function hideHome() {
   if (homePanel) homePanel.style.display = 'none';
+}
+
+async function handleChangeProject(sketchId) {
+  try {
+    const authState = window.authGuard?.getAuthState?.() || {};
+    if (!authState.isSignedIn) {
+      showToast(t('auth.loginSubtitle'), 'error');
+      return;
+    }
+
+    // Fetch available projects
+    const response = await fetch('/api/projects');
+    if (!response.ok) throw new Error('Failed to fetch projects');
+    const data = await response.json();
+    const projects = data.projects || [];
+
+    if (projects.length === 0) {
+      showToast(t('projects.noProjects'), 'warning');
+      return;
+    }
+
+    // Get current sketch to find current project
+    const lib = getLibrary();
+    const sketch = lib.find(s => s.id === sketchId);
+    const currentProjectId = sketch?.projectId;
+
+    // Create modal
+    const overlay = document.createElement('div');
+    overlay.className = 'projects-modal-overlay';
+    
+    const modal = document.createElement('div');
+    modal.className = 'projects-modal';
+    
+    modal.innerHTML = `
+      <div class="projects-modal-header">
+        <h3>${t('listChangeProject')}</h3>
+        <button class="btn-icon projects-modal-close">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <div class="projects-modal-body">
+        <div class="form-group">
+          <label for="projectSelect">${t('labels.selectProject')}</label>
+          <select id="projectSelect" class="form-input">
+            <option value="">-- ${t('labels.selectProject')} --</option>
+            ${projects.map(p => `
+              <option value="${p.id}" ${p.id === currentProjectId ? 'selected' : ''}>
+                ${p.name}
+              </option>
+            `).join('')}
+          </select>
+        </div>
+        <div class="form-group checkbox-group" style="margin-top: 15px; display: flex; align-items: center;">
+          <input type="checkbox" id="updateConfigCheck" checked>
+          <label for="updateConfigCheck" style="margin-left: 8px; margin-right: 8px;">
+            ${t('projects.updateInputFlow')}
+          </label>
+        </div>
+      </div>
+      <div class="projects-modal-footer">
+        <button class="btn btn-secondary projects-modal-cancel">${t('buttons.cancel')}</button>
+        <button class="btn btn-primary projects-modal-save">${t('buttons.save')}</button>
+      </div>
+    `;
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    const closeModal = () => overlay.remove();
+
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeModal();
+    });
+
+    modal.querySelector('.projects-modal-close').addEventListener('click', closeModal);
+    modal.querySelector('.projects-modal-cancel').addEventListener('click', closeModal);
+
+    modal.querySelector('.projects-modal-save').addEventListener('click', async () => {
+      const select = modal.querySelector('#projectSelect');
+      const projectId = select.value;
+      const updateConfig = modal.querySelector('#updateConfigCheck').checked;
+
+      // Allow selecting empty value to unassign project
+      // if (!projectId) ... (Optional: decide if project is required. Current logic suggests we can assign to a project or not, but usually we want to assign)
+      // If user selects "Select Project" (empty), maybe we should warn or allow unassigning?
+      // The option value is "" for default.
+      // Let's assume user wants to assign a project.
+
+      if (!projectId) {
+         // If they want to unassign, they can pick empty? Or maybe we enforce selection.
+         // Let's enforce selection for now based on "Change Project".
+         showToast(t('alerts.selectProject'), 'error');
+         return;
+      }
+
+      try {
+        const res = await fetch(`/api/sketches/${sketchId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            projectId,
+            updateInputFlowSnapshot: updateConfig
+          })
+        });
+
+        if (!res.ok) throw new Error('Failed to update sketch project');
+
+        const updatedData = await res.json();
+        const updatedSketch = updatedData.sketch;
+
+        // Update local library
+        const lib = getLibrary();
+        const idx = lib.findIndex(s => s.id === sketchId);
+        if (idx !== -1) {
+          lib[idx] = { ...lib[idx], ...updatedSketch };
+          setLibrary(lib);
+          // Persist and Sync
+          idbSaveRecordCompat(lib[idx]);
+          // We don't need to push back to cloud immediately since we just updated cloud
+        }
+
+        renderHome();
+        showToast(t('toasts.saved'));
+        closeModal();
+      } catch (err) {
+        console.error(err);
+        showToast(err.message, 'error');
+      }
+    });
+
+  } catch (err) {
+    console.error(err);
+    showToast('Error loading projects', 'error');
+  }
 }
 
 /**
@@ -4772,6 +4910,8 @@ if (sketchListEl) {
         renderHome();
         showToast(t('toasts.duplicated'));
       }
+    } else if (action === 'changeProject') {
+      handleChangeProject(id);
     } else if (action === 'delete') {
       const ok = confirm(t('confirms.deleteSketch'));
       if (!ok) return;
