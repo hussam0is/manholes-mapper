@@ -46,6 +46,8 @@ import {
   applyActions, 
   isFieldVisible, 
   isFieldRequired,
+  isFieldAutoFilled,
+  getAutoFilledValue,
   getEffectiveInputFlowConfig,
   normalizeEntityForRules 
 } from '../utils/input-flow-engine.js';
@@ -1640,9 +1642,22 @@ function saveToStorage() {
   }
   // Trigger cloud sync if authenticated and online
   if (currentSketchId && window.syncService?.debouncedSyncToCloud) {
+    // Get the name from the library record if currentSketchName is null
+    // This ensures we sync with the preserved name from saveToLibrary()
+    let nameForSync = currentSketchName;
+    if (!nameForSync && currentSketchId) {
+      const lib = getLibrary();
+      const rec = lib.find((r) => r.id === currentSketchId);
+      if (rec && rec.name) {
+        nameForSync = rec.name;
+        // Also update currentSketchName so it stays in sync
+        currentSketchName = rec.name;
+        updateSketchNameDisplay();
+      }
+    }
     const sketchForSync = {
       id: currentSketchId,
-      name: currentSketchName,
+      name: nameForSync,
       creationDate: creationDate,
       nodes: nodes,
       edges: edges,
@@ -1716,21 +1731,26 @@ function saveToLibrary() {
     lastEditedBy: getCurrentUsername(),
   };
   const idx = lib.findIndex((s) => s.id === record.id);
+  let finalRecord = record;
   if (idx >= 0) {
     // Preserve existing name if current is null, so we don't accidentally clear it
     const existing = lib[idx];
     const merged = { ...record };
     if ((record.name == null || record.name === '') && (existing.name != null && existing.name !== '')) {
       merged.name = existing.name;
+      // Also update currentSketchName so subsequent syncs use the preserved name
+      currentSketchName = existing.name;
+      updateSketchNameDisplay();
     }
     lib[idx] = merged;
+    finalRecord = merged;
   } else {
     lib.unshift(record);
   }
   setLibrary(lib);
-  currentSketchId = record.id;
-  // Mirror into IndexedDB
-  idbSaveRecordCompat(record);
+  currentSketchId = finalRecord.id;
+  // Mirror into IndexedDB (use finalRecord which has the merged/preserved name)
+  idbSaveRecordCompat(finalRecord);
 }
 
 function loadFromLibrary(sketchId) {
@@ -2843,11 +2863,51 @@ function renderDetails() {
     const ruleResults = evaluateRules(currentInputFlowConfig, 'nodes', normalizedNode);
     
     // Store rule results for use in event handlers
+    // Convert fillValues Map to object for JSON serialization
+    const fillValuesObj = {};
+    if (ruleResults.fillValues) {
+      for (const [key, val] of ruleResults.fillValues) {
+        fillValuesObj[key] = val;
+      }
+    }
     container.dataset.ruleResults = JSON.stringify({
       disabled: Array.from(ruleResults.disabled),
       required: Array.from(ruleResults.required),
-      nullified: Array.from(ruleResults.nullified)
+      nullified: Array.from(ruleResults.nullified),
+      fillValues: fillValuesObj
     });
+    
+    // Helper to check if a field is auto-filled
+    const isAutoFilled = (fieldKey) => ruleResults.fillValues && ruleResults.fillValues.has(fieldKey);
+    const getFilledValue = (fieldKey) => ruleResults.fillValues ? ruleResults.fillValues.get(fieldKey) : undefined;
+    
+    // Apply fill values to the node and get effective values for rendering
+    // This ensures the correct option is selected in dropdowns
+    if (ruleResults.fillValues && ruleResults.fillValues.size > 0) {
+      let hasChanges = false;
+      for (const [field, value] of ruleResults.fillValues) {
+        // Map snake_case field keys to camelCase for comparison
+        const propMap = {
+          'accuracy_level': 'accuracyLevel',
+          'maintenance_status': 'maintenanceStatus', 
+          'cover_diameter': 'coverDiameter',
+          'material': 'material',
+          'access': 'access',
+          'engineering_status': 'nodeEngineeringStatus'
+        };
+        const propName = propMap[field] || field;
+        if (node[propName] !== value) {
+          hasChanges = true;
+          break;
+        }
+      }
+      if (hasChanges) {
+        const modifiedNode = applyActions(node, ruleResults, adminConfig.nodes?.defaults || {});
+        // Update node with fill values (persist the change)
+        Object.assign(node, modifiedNode);
+        saveToStorage();
+      }
+    }
     
     // Build node details form with smart sorting based on usage history
     let materialOptions = '';
@@ -2918,29 +2978,29 @@ function renderDetails() {
             </div>
             <div class="field"></div>
             ${adminConfig.nodes.include.accuracy_level ? `
-            <div class="field" data-flow-field="accuracy_level">
+            <div class="field${isAutoFilled('accuracy_level') ? ' field-auto-filled' : ''}" data-flow-field="accuracy_level">
               <label for="accuracyLevelSelect">${t('labels.accuracyLevel')}${ruleResults.required.has('accuracy_level') ? ' *' : ''}</label>
-              <select id="accuracyLevelSelect">${accuracyLevelOptions}</select>
+              <select id="accuracyLevelSelect" ${isAutoFilled('accuracy_level') ? 'disabled' : ''}>${accuracyLevelOptions}</select>
             </div>` : ''}
             ${adminConfig.nodes.include.maintenance_status && !ruleResults.disabled.has('maintenance_status') ? `
-            <div class="field" data-flow-field="maintenance_status">
+            <div class="field${isAutoFilled('maintenance_status') ? ' field-auto-filled' : ''}" data-flow-field="maintenance_status">
               <label for="nodeMaintenanceStatusSelect">${t('labels.maintenanceStatus')}${ruleResults.required.has('maintenance_status') ? ' *' : ''}</label>
-              <select id="nodeMaintenanceStatusSelect">${maintenanceStatusOptions}</select>
+              <select id="nodeMaintenanceStatusSelect" ${isAutoFilled('maintenance_status') ? 'disabled' : ''}>${maintenanceStatusOptions}</select>
             </div>` : ''}
             ${adminConfig.nodes.include.cover_diameter && !ruleResults.disabled.has('cover_diameter') ? `
-            <div class="field" data-flow-field="cover_diameter">
+            <div class="field${isAutoFilled('cover_diameter') ? ' field-auto-filled' : ''}" data-flow-field="cover_diameter">
               <label for="coverDiameterInput">${t('labels.coverDiameter')}${ruleResults.required.has('cover_diameter') ? ' *' : ''}</label>
-              <input id="coverDiameterInput" type="number" step="1" min="0" value="${node.coverDiameter !== '' ? node.coverDiameter : ''}" placeholder="${t('labels.optional')}" />
+              <input id="coverDiameterInput" type="number" step="1" min="0" value="${node.coverDiameter !== '' ? node.coverDiameter : ''}" placeholder="${t('labels.optional')}" ${isAutoFilled('cover_diameter') ? 'disabled' : ''} />
             </div>` : ''}
             ${!ruleResults.disabled.has('material') ? `
-            <div class="field" data-flow-field="material">
+            <div class="field${isAutoFilled('material') ? ' field-auto-filled' : ''}" data-flow-field="material">
               <label for="materialSelect">${t('labels.coverMaterial')}${ruleResults.required.has('material') ? ' *' : ''}</label>
-              <select id="materialSelect">${materialOptions}</select>
+              <select id="materialSelect" ${isAutoFilled('material') ? 'disabled' : ''}>${materialOptions}</select>
             </div>` : ''}
             ${adminConfig.nodes.include.access && !ruleResults.disabled.has('access') ? `
-            <div class="field" data-flow-field="access">
+            <div class="field${isAutoFilled('access') ? ' field-auto-filled' : ''}" data-flow-field="access">
               <label for="accessSelect">${t('labels.access')}${ruleResults.required.has('access') ? ' *' : ''}</label>
-              <select id="accessSelect">${accessOptions}</select>
+              <select id="accessSelect" ${isAutoFilled('access') ? 'disabled' : ''}>${accessOptions}</select>
             </div>` : ''}
           </div>
         </div>

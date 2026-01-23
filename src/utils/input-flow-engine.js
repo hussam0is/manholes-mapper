@@ -219,6 +219,26 @@ export function isFieldRequired(ruleResults, fieldKey) {
 }
 
 /**
+ * Check if a field has an auto-filled value from rules
+ * @param {Object} ruleResults - Results from evaluateRules()
+ * @param {string} fieldKey - The field key to check
+ * @returns {boolean} - Whether the field has an auto-filled value
+ */
+export function isFieldAutoFilled(ruleResults, fieldKey) {
+  return ruleResults.fillValues && ruleResults.fillValues.has(fieldKey);
+}
+
+/**
+ * Get the auto-filled value for a field
+ * @param {Object} ruleResults - Results from evaluateRules()
+ * @param {string} fieldKey - The field key to check
+ * @returns {*} - The auto-filled value or undefined
+ */
+export function getAutoFilledValue(ruleResults, fieldKey) {
+  return ruleResults.fillValues ? ruleResults.fillValues.get(fieldKey) : undefined;
+}
+
+/**
  * Validate entity against required fields
  * @param {Object} entity - The node or edge data
  * @param {Object} ruleResults - Results from evaluateRules()
