@@ -182,7 +182,9 @@ export async function refreshSession() {
       updateAuthState(data);
     }
   } catch (err) {
-    console.error('Session refresh error:', err);
+    // Network errors or API not available
+    console.warn('Session refresh error (API may not be configured):', err.message);
+    // Mark as loaded but not signed in so the app can still work
     updateAuthState({ session: null, user: null });
   }
 }
