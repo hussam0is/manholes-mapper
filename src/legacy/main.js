@@ -52,6 +52,17 @@ import {
   normalizeEntityForRules 
 } from '../utils/input-flow-engine.js';
 import { DEFAULT_INPUT_FLOW_CONFIG } from '../state/constants.js';
+import { 
+  importCoordinatesFromFile, 
+  applyCoordinatesToNodes, 
+  saveCoordinatesToStorage, 
+  loadCoordinatesFromStorage,
+  saveCoordinatesEnabled,
+  loadCoordinatesEnabled,
+  calculateCoordinateBounds,
+  surveyToCanvas,
+  approximateUncoordinatedNodePositions
+} from '../utils/coordinates.js';
 
 /**
  * Get the current username from authentication or return a default
@@ -189,6 +200,20 @@ const finishWorkdayConfirmBtn = document.getElementById('finishWorkdayConfirmBtn
 const danglingEdgesListEl = document.getElementById('danglingEdgesList');
 const finishWorkdayDescEl = document.getElementById('finishWorkdayDesc');
 const finishWorkdayTitleEl = document.getElementById('finishWorkdayTitle');
+
+// Coordinate elements
+const importCoordinatesBtn = document.getElementById('importCoordinatesBtn');
+const coordinatesToggle = document.getElementById('coordinatesToggle');
+const importCoordinatesFile = document.getElementById('importCoordinatesFile');
+const mobileImportCoordinatesBtn = document.getElementById('mobileImportCoordinatesBtn');
+const mobileCoordinatesToggle = document.getElementById('mobileCoordinatesToggle');
+// Scale control elements
+const scaleDecreaseBtn = document.getElementById('scaleDecreaseBtn');
+const scaleIncreaseBtn = document.getElementById('scaleIncreaseBtn');
+const scaleValueDisplay = document.getElementById('scaleValueDisplay');
+const mobileScaleDecreaseBtn = document.getElementById('mobileScaleDecreaseBtn');
+const mobileScaleIncreaseBtn = document.getElementById('mobileScaleIncreaseBtn');
+const mobileScaleValueDisplay = document.getElementById('mobileScaleValueDisplay');
 
 // iPad/iOS: ensure taps trigger clicks on header buttons (Safari sometimes suppresses click)
 function synthesizeClickOnTap(element) {
@@ -334,6 +359,15 @@ const EDGE_MATERIALS = EDGE_MATERIAL_OPTIONS.map(o => o.label);
 // Fall icon image (used to mark edges with a fall depth)
 let fallIconImage = null;
 let fallIconReady = false;
+
+// Coordinate system state
+let coordinatesMap = new Map(); // Map<nodeId, {x, y, z}>
+let coordinatesEnabled = false; // Whether to show coordinate indicators and use coordinate positions
+let originalNodePositions = new Map(); // Store original positions before applying coordinates
+let coordinateScale = 100; // Pixels per meter (100 = 1 pixel/cm)
+const SCALE_PRESETS = [50, 75, 100, 150, 200, 300]; // Available scale options
+const COORDINATE_SCALE_KEY = 'graphSketch.coordinateScale.v1';
+
 try {
   fallIconImage = new Image();
   fallIconImage.src = './fall_icon.png';
@@ -2895,10 +2929,10 @@ function drawEdgeLabels(edge) {
   const x1 = tailNode.x, y1 = tailNode.y, x2 = headNode.x, y2 = headNode.y;
   const dx = x2 - x1;
   const dy = y2 - y1;
-  const length = Math.sqrt(dx * dx + dy * dy);
-  if (length <= 0) return;
-  const normX = dx / length;
-  const normY = dy / length;
+  const lengthPx = Math.sqrt(dx * dx + dy * dy);
+  if (lengthPx <= 0) return;
+  const normX = dx / lengthPx;
+  const normY = dy / lengthPx;
   const offset = 6 * sizeScale;
   ctx.save();
   const fontSize = Math.round(14 * sizeScale);
@@ -2909,6 +2943,61 @@ function drawEdgeLabels(edge) {
   ctx.lineWidth = 4;
   ctx.strokeStyle = COLORS.edge.labelStroke;
   ctx.fillStyle = COLORS.edge.label;
+  
+  // Draw length in meters if coordinates are enabled
+  if (coordinatesEnabled && coordinatesMap.size > 0) {
+    // Calculate actual length in meters from survey coordinates or pixel distance
+    let lengthMeters = null;
+    
+    if (tailNode.surveyX !== undefined && headNode.surveyX !== undefined) {
+      // Both nodes have survey coordinates - calculate real distance
+      const surveyDx = headNode.surveyX - tailNode.surveyX;
+      const surveyDy = headNode.surveyY - tailNode.surveyY;
+      lengthMeters = Math.sqrt(surveyDx * surveyDx + surveyDy * surveyDy);
+    } else if (coordinateScale > 0) {
+      // Convert pixel distance to meters using current scale
+      lengthMeters = lengthPx / coordinateScale;
+    }
+    
+    if (lengthMeters !== null && lengthMeters > 0.01) {
+      // Format length: show 2 decimal places for small values, 1 for larger
+      const lengthText = lengthMeters < 10 
+        ? `${lengthMeters.toFixed(2)}m` 
+        : `${lengthMeters.toFixed(1)}m`;
+      
+      // Position at 0.5 (middle) but offset perpendicular to avoid the arrow
+      // The arrow is at the head end, so we offset in the perpendicular direction
+      const ratio = 0.5;
+      const px = x1 + dx * ratio;
+      const py = y1 + dy * ratio;
+      
+      // Offset perpendicular to the edge (opposite side from measurements)
+      // Use negative perpendicular to go to the other side
+      const lengthOffset = 16 * sizeScale;
+      const perpX = normY * lengthOffset;  // Note: positive normY for opposite side
+      const perpY = -normX * lengthOffset;
+      
+      // Draw with slightly smaller font and different style for length
+      const lengthFontSize = Math.round(12 * sizeScale);
+      ctx.font = `${lengthFontSize}px Arial`;
+      ctx.textBaseline = 'middle';
+      
+      // Use a distinct color for length labels
+      ctx.strokeStyle = COLORS.edge.labelStroke;
+      ctx.fillStyle = '#0369a1'; // sky-700 for length labels
+      ctx.lineWidth = 3;
+      
+      ctx.strokeText(lengthText, px + perpX, py + perpY);
+      ctx.fillText(lengthText, px + perpX, py + perpY);
+      
+      // Reset font for other labels
+      ctx.font = `${fontSize}px Arial`;
+      ctx.textBaseline = 'bottom';
+      ctx.fillStyle = COLORS.edge.label;
+      ctx.lineWidth = 4;
+    }
+  }
+  
   if (edge.tail_measurement) {
     const ratio = 0.25;
     const px = x1 + dx * ratio;
@@ -2935,8 +3024,12 @@ function drawEdgeLabels(edge) {
 function drawNode(node) {
   const radius = NODE_RADIUS * sizeScale;
 
-  // Draw the node icon using the new icon system
-  drawNodeIcon(ctx, node, radius, COLORS, selectedNode);
+  // Draw the node icon using the new icon system with coordinate options
+  const coordinateOptions = {
+    showCoordinateStatus: coordinatesEnabled && coordinatesMap.size > 0,
+    coordinatesMap: coordinatesMap
+  };
+  drawNodeIcon(ctx, node, radius, COLORS, selectedNode, coordinateOptions);
 
   // For Home nodes with directConnection badge, draw it on top
   if (node.nodeType === 'Home' && node.directConnection) {
@@ -4036,6 +4129,11 @@ function pointerMove(x, y) {
     }
   }
   if (isDragging && selectedNode) {
+    // Don't allow dragging if node position is locked (has coordinates)
+    if (selectedNode.positionLocked) {
+      isDragging = false;
+      return;
+    }
     selectedNode.x = world.x - dragOffset.x;
     selectedNode.y = world.y - dragOffset.y;
     saveToStorage();
@@ -5408,6 +5506,370 @@ if (finishWorkdayModal) {
   });
 }
 
+// ============================================
+// Coordinate System Handlers
+// ============================================
+
+/**
+ * Handle importing coordinates from CSV file
+ * @param {File} file - The CSV file to import
+ */
+async function handleCoordinatesImport(file) {
+  try {
+    const newCoordinates = await importCoordinatesFromFile(file);
+    
+    if (newCoordinates.size === 0) {
+      showToast(t('coordinates.noCoordinatesFound') || 'לא נמצאו קואורדינטות בקובץ');
+      return;
+    }
+    
+    // Debug: Log imported coordinates
+    console.log('=== COORDINATES IMPORT DEBUG ===');
+    console.log('Imported coordinates count:', newCoordinates.size);
+    console.log('Sample coordinates (first 5):');
+    let count = 0;
+    for (const [pointId, coords] of newCoordinates.entries()) {
+      if (count++ < 5) {
+        console.log(`  Point ID "${pointId}":`, coords);
+      }
+    }
+    
+    // Debug: Log current node IDs
+    console.log('Current node IDs in sketch:', nodes.map(n => `"${n.id}" (type: ${typeof n.id})`).slice(0, 10));
+    
+    // Check for matches
+    const matchingIds = [];
+    const nonMatchingNodeIds = [];
+    nodes.forEach(node => {
+      const nodeIdStr = String(node.id);
+      if (newCoordinates.has(nodeIdStr)) {
+        matchingIds.push(nodeIdStr);
+      } else {
+        nonMatchingNodeIds.push(nodeIdStr);
+      }
+    });
+    console.log('Matching node IDs:', matchingIds.length, matchingIds.slice(0, 10));
+    console.log('Non-matching node IDs:', nonMatchingNodeIds.length, nonMatchingNodeIds.slice(0, 10));
+    
+    // Check if any coordinate point_ids match node IDs
+    const coordPointIds = Array.from(newCoordinates.keys());
+    console.log('Coordinate point_ids (first 10):', coordPointIds.slice(0, 10));
+    
+    // Store coordinates
+    coordinatesMap = newCoordinates;
+    saveCoordinatesToStorage(coordinatesMap);
+    
+    // Show success message with match info
+    const matchCount = matchingIds.length;
+    const totalNodes = nodes.length;
+    showToast(`נטענו ${newCoordinates.size} קואורדינטות, ${matchCount}/${totalNodes} שוחות תואמות`);
+    
+    // Automatically enable coordinates if not already enabled
+    if (!coordinatesEnabled) {
+      coordinatesEnabled = true;
+      saveCoordinatesEnabled(true);
+      syncCoordinatesToggleUI();
+      applyCoordinatesIfEnabled();
+    } else {
+      // Re-apply if already enabled
+      applyCoordinatesIfEnabled();
+    }
+    
+    scheduleDraw();
+    
+  } catch (error) {
+    console.error('Failed to import coordinates:', error);
+    showToast(t('coordinates.importError') || 'שגיאה בטעינת קואורדינטות');
+  }
+}
+
+/**
+ * Apply coordinates to nodes if enabled
+ * Stores original positions and updates node positions based on survey coordinates
+ */
+function applyCoordinatesIfEnabled() {
+  if (!coordinatesEnabled || coordinatesMap.size === 0) {
+    return;
+  }
+  
+  // Store original positions before applying coordinates (if not already stored)
+  nodes.forEach(node => {
+    if (!originalNodePositions.has(node.id)) {
+      originalNodePositions.set(node.id, { x: node.x, y: node.y });
+    }
+  });
+  
+  // Get canvas dimensions - use actual canvas size, not bounding rect
+  // canvas.width and canvas.height are the actual pixel dimensions
+  let canvasWidth = canvas.width;
+  let canvasHeight = canvas.height;
+  
+  // If canvas dimensions are not yet set, use sensible defaults
+  if (!canvasWidth || canvasWidth <= 0) {
+    const rect = canvas.getBoundingClientRect();
+    canvasWidth = rect.width || 800;
+  }
+  if (!canvasHeight || canvasHeight <= 0) {
+    const rect = canvas.getBoundingClientRect();
+    canvasHeight = rect.height || 600;
+  }
+  
+  // Account for device pixel ratio if set
+  const dpr = window.devicePixelRatio || 1;
+  const logicalWidth = canvasWidth / dpr;
+  const logicalHeight = canvasHeight / dpr;
+  
+  console.log('Canvas dimensions for coordinate transform:', {
+    canvasWidth,
+    canvasHeight,
+    logicalWidth,
+    logicalHeight,
+    dpr
+  });
+  
+  // Apply coordinates to matching nodes using logical (CSS) dimensions and current scale
+  const result = applyCoordinatesToNodes(nodes, coordinatesMap, logicalWidth, logicalHeight, coordinateScale);
+  nodes = result.updatedNodes;
+  
+  // Log results for debugging
+  console.log(`Coordinates applied: ${result.matchedCount} matched, ${result.unmatchedCount} unmatched`);
+  
+  // Approximate positions for nodes without coordinates based on their neighbors
+  // Pass original positions to calculate distance ratios
+  if (result.unmatchedCount > 0 && result.matchedCount > 0) {
+    nodes = approximateUncoordinatedNodePositions(nodes, edges, originalNodePositions);
+  }
+  
+  // Auto-recenter view after applying coordinates
+  recenterView();
+  
+  saveToStorage();
+  scheduleDraw();
+}
+
+/**
+ * Restore original node positions (when coordinates are disabled)
+ */
+function restoreOriginalPositions() {
+  nodes.forEach(node => {
+    const original = originalNodePositions.get(node.id);
+    if (original) {
+      node.x = original.x;
+      node.y = original.y;
+    }
+    // Remove coordinate markers but keep hasCoordinates for indicator display
+    delete node.surveyX;
+    delete node.surveyY;
+    delete node.surveyZ;
+  });
+  
+  saveToStorage();
+  scheduleDraw();
+}
+
+/**
+ * Toggle coordinates enabled/disabled
+ */
+function toggleCoordinates(enabled) {
+  coordinatesEnabled = enabled;
+  saveCoordinatesEnabled(enabled);
+  syncCoordinatesToggleUI();
+  
+  if (enabled) {
+    applyCoordinatesIfEnabled();
+  } else {
+    restoreOriginalPositions();
+  }
+  
+  const msg = enabled 
+    ? (t('coordinates.enabled') || 'קואורדינטות הופעלו')
+    : (t('coordinates.disabled') || 'קואורדינטות כובו');
+  showToast(msg);
+}
+
+/**
+ * Sync the coordinates toggle UI elements
+ */
+function syncCoordinatesToggleUI() {
+  if (coordinatesToggle) {
+    coordinatesToggle.checked = coordinatesEnabled;
+  }
+  if (mobileCoordinatesToggle) {
+    mobileCoordinatesToggle.checked = coordinatesEnabled;
+  }
+}
+
+/**
+ * Update scale display in UI
+ */
+function updateScaleDisplay() {
+  const displayText = `1:${coordinateScale}`;
+  if (scaleValueDisplay) {
+    scaleValueDisplay.textContent = displayText;
+  }
+  if (mobileScaleValueDisplay) {
+    mobileScaleValueDisplay.textContent = displayText;
+  }
+}
+
+/**
+ * Save coordinate scale to storage
+ */
+function saveCoordinateScale() {
+  try {
+    localStorage.setItem(COORDINATE_SCALE_KEY, JSON.stringify(coordinateScale));
+  } catch (e) {
+    console.warn('Failed to save coordinate scale', e);
+  }
+}
+
+/**
+ * Load coordinate scale from storage
+ */
+function loadCoordinateScale() {
+  try {
+    const raw = localStorage.getItem(COORDINATE_SCALE_KEY);
+    if (raw) {
+      const scale = JSON.parse(raw);
+      if (typeof scale === 'number' && scale > 0) {
+        coordinateScale = scale;
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to load coordinate scale', e);
+  }
+}
+
+/**
+ * Change coordinate scale and re-apply coordinates
+ * @param {number} delta - Change direction: 1 for increase, -1 for decrease
+ */
+function changeCoordinateScale(delta) {
+  const currentIndex = SCALE_PRESETS.indexOf(coordinateScale);
+  let newIndex;
+  
+  if (currentIndex === -1) {
+    // Current scale is not in presets, find closest
+    newIndex = delta > 0 
+      ? SCALE_PRESETS.findIndex(s => s > coordinateScale)
+      : SCALE_PRESETS.findIndex(s => s >= coordinateScale) - 1;
+    if (newIndex < 0) newIndex = 0;
+    if (newIndex >= SCALE_PRESETS.length) newIndex = SCALE_PRESETS.length - 1;
+  } else {
+    newIndex = currentIndex + delta;
+  }
+  
+  // Clamp to valid range
+  newIndex = Math.max(0, Math.min(SCALE_PRESETS.length - 1, newIndex));
+  
+  const newScale = SCALE_PRESETS[newIndex];
+  if (newScale !== coordinateScale) {
+    coordinateScale = newScale;
+    saveCoordinateScale();
+    updateScaleDisplay();
+    
+    // Re-apply coordinates with new scale
+    if (coordinatesEnabled && coordinatesMap.size > 0) {
+      applyCoordinatesIfEnabled();
+    }
+    
+    showToast(`קנה מידה: 1:${coordinateScale}`);
+  }
+}
+
+/**
+ * Initialize coordinates from storage
+ */
+function initCoordinates() {
+  coordinatesMap = loadCoordinatesFromStorage();
+  coordinatesEnabled = loadCoordinatesEnabled();
+  loadCoordinateScale();
+  syncCoordinatesToggleUI();
+  updateScaleDisplay();
+  
+  // Mark nodes with coordinate status
+  if (coordinatesMap.size > 0) {
+    nodes.forEach(node => {
+      node.hasCoordinates = coordinatesMap.has(String(node.id));
+    });
+  }
+}
+
+// Import coordinates button handler (desktop)
+if (importCoordinatesBtn) {
+  importCoordinatesBtn.addEventListener('click', () => {
+    // Close dropdown menu first
+    if (exportDropdown) exportDropdown.classList.remove('open');
+    if (importCoordinatesFile) importCoordinatesFile.click();
+  });
+}
+
+// Import coordinates button handler (mobile)
+if (mobileImportCoordinatesBtn) {
+  mobileImportCoordinatesBtn.addEventListener('click', () => {
+    closeMobileMenu();
+    if (importCoordinatesFile) importCoordinatesFile.click();
+  });
+}
+
+// Coordinates file input handler
+if (importCoordinatesFile) {
+  importCoordinatesFile.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await handleCoordinatesImport(file);
+      e.target.value = ''; // Reset to allow re-importing same file
+    }
+  });
+}
+
+// Coordinates toggle handler (desktop)
+if (coordinatesToggle) {
+  coordinatesToggle.addEventListener('change', (e) => {
+    toggleCoordinates(e.target.checked);
+  });
+}
+
+// Coordinates toggle handler (mobile)
+if (mobileCoordinatesToggle) {
+  mobileCoordinatesToggle.addEventListener('change', (e) => {
+    toggleCoordinates(e.target.checked);
+    closeMobileMenu();
+  });
+}
+
+// Scale control handlers (desktop)
+if (scaleDecreaseBtn) {
+  scaleDecreaseBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // Prevent dropdown from closing
+    changeCoordinateScale(-1);
+  });
+}
+
+if (scaleIncreaseBtn) {
+  scaleIncreaseBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // Prevent dropdown from closing
+    changeCoordinateScale(1);
+  });
+}
+
+// Scale control handlers (mobile)
+if (mobileScaleDecreaseBtn) {
+  mobileScaleDecreaseBtn.addEventListener('click', () => {
+    changeCoordinateScale(-1);
+  });
+}
+
+if (mobileScaleIncreaseBtn) {
+  mobileScaleIncreaseBtn.addEventListener('click', () => {
+    changeCoordinateScale(1);
+  });
+}
+
+// ============================================
+// End Coordinate System Handlers
+// ============================================
+
 // Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
   const target = e.target;
@@ -5745,6 +6207,9 @@ async function init() {
     lastEditedBy: getCurrentUsername(),
   }));
   
+  // Initialize coordinates system
+  initCoordinates();
+
   // Default interaction mode is node creation
   currentMode = 'node';
   if (nodeModeBtn) nodeModeBtn.classList.add('active');
