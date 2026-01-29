@@ -60,7 +60,8 @@ import {
   saveCoordinatesEnabled,
   loadCoordinatesEnabled,
   calculateCoordinateBounds,
-  surveyToCanvas
+  surveyToCanvas,
+  approximateUncoordinatedNodePositions
 } from '../utils/coordinates.js';
 
 /**
@@ -5562,6 +5563,11 @@ function applyCoordinatesIfEnabled() {
   
   // Log results for debugging
   console.log(`Coordinates applied: ${result.matchedCount} matched, ${result.unmatchedCount} unmatched`);
+  
+  // Approximate positions for nodes without coordinates based on their neighbors
+  if (result.unmatchedCount > 0 && result.matchedCount > 0) {
+    nodes = approximateUncoordinatedNodePositions(nodes, edges);
+  }
   
   // Auto-recenter view after applying coordinates
   recenterView();

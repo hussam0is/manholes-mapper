@@ -185,15 +185,15 @@ export function calculateCoordinateBounds(coordinatesMap) {
  * @param {{minX: number, maxX: number, minY: number, maxY: number}} bounds - Coordinate bounds
  * @param {number} canvasWidth - Target canvas width
  * @param {number} canvasHeight - Target canvas height
- * @param {number} padding - Padding from edges (default 50)
+ * @param {number} padding - Padding from edges (default 100 for better visibility)
  * @returns {{x: number, y: number}} - Canvas coordinates
  */
-export function surveyToCanvas(surveyX, surveyY, bounds, canvasWidth, canvasHeight, padding = 50) {
+export function surveyToCanvas(surveyX, surveyY, bounds, canvasWidth, canvasHeight, padding = 100) {
   // Handle edge cases for canvas dimensions
   if (!canvasWidth || canvasWidth <= 0) canvasWidth = 800;
   if (!canvasHeight || canvasHeight <= 0) canvasHeight = 600;
   if (padding < 0) padding = 0;
-  if (padding * 2 >= Math.min(canvasWidth, canvasHeight)) padding = 20;
+  if (padding * 2 >= Math.min(canvasWidth, canvasHeight)) padding = 50;
   
   // Calculate survey extent with safety for zero-width/height
   const surveyWidth = Math.max(bounds.maxX - bounds.minX, 0.001);
@@ -231,6 +231,103 @@ export function surveyToCanvas(surveyX, surveyY, bounds, canvasWidth, canvasHeig
   const canvasY = offsetY + (bounds.maxY - surveyY) * scale;
   
   return { x: canvasX, y: canvasY };
+}
+
+/**
+ * Position nodes without coordinates based on their connected neighbors
+ * Uses a simple averaging approach: place unpositioned nodes at the centroid of their neighbors
+ * @param {Array} nodes - Array of node objects (some with hasCoordinates: true)
+ * @param {Array} edges - Array of edge objects with tail and head properties
+ * @returns {Array} - Updated nodes array with approximated positions for uncoordinated nodes
+ */
+export function approximateUncoordinatedNodePositions(nodes, edges) {
+  // Build adjacency map: nodeId -> list of connected nodeIds
+  const adjacency = new Map();
+  
+  nodes.forEach(node => {
+    adjacency.set(String(node.id), []);
+  });
+  
+  edges.forEach(edge => {
+    const tail = String(edge.tail);
+    const head = String(edge.head);
+    if (adjacency.has(tail) && head) {
+      adjacency.get(tail).push(head);
+    }
+    if (adjacency.has(head) && tail) {
+      adjacency.get(head).push(tail);
+    }
+  });
+  
+  // Create a map for quick node lookup
+  const nodeMap = new Map();
+  nodes.forEach(node => {
+    nodeMap.set(String(node.id), node);
+  });
+  
+  // Identify nodes that need positioning (no coordinates)
+  const unpositionedNodes = nodes.filter(n => !n.hasCoordinates);
+  const positionedNodes = nodes.filter(n => n.hasCoordinates);
+  
+  if (positionedNodes.length === 0 || unpositionedNodes.length === 0) {
+    return nodes; // Nothing to do
+  }
+  
+  console.log(`Approximating positions for ${unpositionedNodes.length} nodes without coordinates`);
+  
+  // Calculate centroid of positioned nodes as fallback
+  const centroid = {
+    x: positionedNodes.reduce((sum, n) => sum + n.x, 0) / positionedNodes.length,
+    y: positionedNodes.reduce((sum, n) => sum + n.y, 0) / positionedNodes.length
+  };
+  
+  // Multiple passes to propagate positions from neighbors
+  const maxIterations = 5;
+  let updated = true;
+  let iteration = 0;
+  
+  while (updated && iteration < maxIterations) {
+    updated = false;
+    iteration++;
+    
+    unpositionedNodes.forEach(node => {
+      if (node._positionApproximated) return; // Already positioned
+      
+      const neighbors = adjacency.get(String(node.id)) || [];
+      const positionedNeighbors = neighbors
+        .map(nid => nodeMap.get(nid))
+        .filter(n => n && (n.hasCoordinates || n._positionApproximated));
+      
+      if (positionedNeighbors.length > 0) {
+        // Position at centroid of positioned neighbors with small offset
+        const avgX = positionedNeighbors.reduce((sum, n) => sum + n.x, 0) / positionedNeighbors.length;
+        const avgY = positionedNeighbors.reduce((sum, n) => sum + n.y, 0) / positionedNeighbors.length;
+        
+        // Add small random offset to prevent exact overlap
+        const offset = 30;
+        node.x = avgX + (Math.random() - 0.5) * offset;
+        node.y = avgY + (Math.random() - 0.5) * offset;
+        node._positionApproximated = true;
+        updated = true;
+      }
+    });
+  }
+  
+  // Position any remaining unpositioned nodes at centroid
+  unpositionedNodes.forEach(node => {
+    if (!node._positionApproximated) {
+      node.x = centroid.x + (Math.random() - 0.5) * 50;
+      node.y = centroid.y + (Math.random() - 0.5) * 50;
+      node._positionApproximated = true;
+    }
+  });
+  
+  // Clean up temporary flags
+  nodes.forEach(node => {
+    delete node._positionApproximated;
+  });
+  
+  return nodes;
 }
 
 /**

@@ -4,7 +4,8 @@ import {
   calculateCoordinateBounds,
   surveyToCanvas,
   applyCoordinatesToNodes,
-  createCoordinateLookup
+  createCoordinateLookup,
+  approximateUncoordinatedNodePositions
 } from '../src/utils/coordinates.js';
 
 describe('Coordinates Module', () => {
@@ -372,6 +373,94 @@ invalid,abc,def,ghi
 
       expect(lookup.count()).toBe(2);
       expect(lookup.getAllEntries().length).toBe(2);
+    });
+  });
+
+  describe('approximateUncoordinatedNodePositions', () => {
+    it('should position uncoordinated nodes near their neighbors', () => {
+      // Node 1 and 3 have coordinates, node 2 doesn't
+      const nodes = [
+        { id: 1, x: 100, y: 100, hasCoordinates: true },
+        { id: 2, x: 500, y: 500, hasCoordinates: false }, // Far away, should be moved
+        { id: 3, x: 200, y: 100, hasCoordinates: true },
+      ];
+
+      // Edge connects node 2 to nodes 1 and 3
+      const edges = [
+        { tail: 1, head: 2 },
+        { tail: 2, head: 3 },
+      ];
+
+      const result = approximateUncoordinatedNodePositions(nodes, edges);
+      const node2 = result.find(n => n.id === 2);
+
+      // Node 2 should now be positioned near nodes 1 and 3 (around x=150, y=100)
+      // Allow some variance due to random offset
+      expect(node2!.x).toBeGreaterThan(50);
+      expect(node2!.x).toBeLessThan(250);
+      expect(node2!.y).toBeGreaterThan(50);
+      expect(node2!.y).toBeLessThan(150);
+    });
+
+    it('should position isolated uncoordinated nodes at centroid', () => {
+      const nodes = [
+        { id: 1, x: 100, y: 100, hasCoordinates: true },
+        { id: 2, x: 200, y: 200, hasCoordinates: true },
+        { id: 3, x: 900, y: 900, hasCoordinates: false }, // No edges
+      ];
+
+      const edges = [
+        { tail: 1, head: 2 },
+      ];
+
+      const result = approximateUncoordinatedNodePositions(nodes, edges);
+      const node3 = result.find(n => n.id === 3);
+
+      // Node 3 should be at centroid of positioned nodes (150, 150) with some variance
+      expect(node3!.x).toBeGreaterThan(100);
+      expect(node3!.x).toBeLessThan(200);
+      expect(node3!.y).toBeGreaterThan(100);
+      expect(node3!.y).toBeLessThan(200);
+    });
+
+    it('should not modify nodes with coordinates', () => {
+      const nodes = [
+        { id: 1, x: 100, y: 100, hasCoordinates: true },
+        { id: 2, x: 200, y: 200, hasCoordinates: true },
+      ];
+
+      const edges = [{ tail: 1, head: 2 }];
+
+      const result = approximateUncoordinatedNodePositions(nodes, edges);
+
+      expect(result[0].x).toBe(100);
+      expect(result[0].y).toBe(100);
+      expect(result[1].x).toBe(200);
+      expect(result[1].y).toBe(200);
+    });
+
+    it('should handle chain of uncoordinated nodes', () => {
+      // Chain: 1 (coord) -> 2 (no coord) -> 3 (no coord) -> 4 (coord)
+      const nodes = [
+        { id: 1, x: 100, y: 100, hasCoordinates: true },
+        { id: 2, x: 800, y: 800, hasCoordinates: false },
+        { id: 3, x: 900, y: 900, hasCoordinates: false },
+        { id: 4, x: 300, y: 100, hasCoordinates: true },
+      ];
+
+      const edges = [
+        { tail: 1, head: 2 },
+        { tail: 2, head: 3 },
+        { tail: 3, head: 4 },
+      ];
+
+      const result = approximateUncoordinatedNodePositions(nodes, edges);
+      const node2 = result.find(n => n.id === 2);
+      const node3 = result.find(n => n.id === 3);
+
+      // Both should be positioned much closer to the coordinate nodes
+      expect(node2!.x).toBeLessThan(400);
+      expect(node3!.x).toBeLessThan(400);
     });
   });
 });
