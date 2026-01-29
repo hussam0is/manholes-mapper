@@ -178,59 +178,81 @@ export function calculateCoordinateBounds(coordinatesMap) {
 }
 
 /**
- * Transform survey coordinates to canvas coordinates
+ * Transform survey coordinates to world/canvas coordinates
  * Survey coordinates (ITM) typically have Y increasing northward, but canvas has Y increasing downward
+ * 
+ * This uses a FIXED SCALE (pixels per meter) for consistent node spacing,
+ * rather than fitting to canvas size. The user can pan/zoom to navigate.
+ * 
  * @param {number} surveyX - X coordinate from survey (ITM easting)
  * @param {number} surveyY - Y coordinate from survey (ITM northing)
  * @param {{minX: number, maxX: number, minY: number, maxY: number}} bounds - Coordinate bounds
- * @param {number} canvasWidth - Target canvas width
- * @param {number} canvasHeight - Target canvas height
- * @param {number} padding - Padding from edges (default 100 for better visibility)
- * @returns {{x: number, y: number}} - Canvas coordinates
+ * @param {number} canvasWidth - Target canvas width (used for centering)
+ * @param {number} canvasHeight - Target canvas height (used for centering)
+ * @param {Object} options - Transformation options
+ * @param {number} options.pixelsPerMeter - Scale factor (default: 3 pixels per meter)
+ * @returns {{x: number, y: number}} - World coordinates
  */
-export function surveyToCanvas(surveyX, surveyY, bounds, canvasWidth, canvasHeight, padding = 100) {
+export function surveyToCanvas(surveyX, surveyY, bounds, canvasWidth, canvasHeight, options = {}) {
   // Handle edge cases for canvas dimensions
   if (!canvasWidth || canvasWidth <= 0) canvasWidth = 800;
   if (!canvasHeight || canvasHeight <= 0) canvasHeight = 600;
-  if (padding < 0) padding = 0;
-  if (padding * 2 >= Math.min(canvasWidth, canvasHeight)) padding = 50;
   
-  // Calculate survey extent with safety for zero-width/height
-  const surveyWidth = Math.max(bounds.maxX - bounds.minX, 0.001);
-  const surveyHeight = Math.max(bounds.maxY - bounds.minY, 0.001);
+  // Default scale: 3 pixels per meter gives good spacing for typical networks
+  // This means a 100m distance in survey = 300 pixels on screen
+  const pixelsPerMeter = options.pixelsPerMeter || 3;
   
-  const availableWidth = canvasWidth - 2 * padding;
-  const availableHeight = canvasHeight - 2 * padding;
+  // Calculate survey extent
+  const surveyWidth = Math.max(bounds.maxX - bounds.minX, 1);
+  const surveyHeight = Math.max(bounds.maxY - bounds.minY, 1);
   
-  // Guard against zero available space
-  if (availableWidth <= 0 || availableHeight <= 0) {
-    return { x: canvasWidth / 2, y: canvasHeight / 2 };
-  }
+  // Calculate center of survey coordinates
+  const surveyCenterX = (bounds.minX + bounds.maxX) / 2;
+  const surveyCenterY = (bounds.minY + bounds.maxY) / 2;
   
-  // Use aspect-ratio preserving scale
-  const scale = Math.min(
-    availableWidth / surveyWidth,
-    availableHeight / surveyHeight
-  );
+  // Canvas center (where we want the survey center to appear)
+  const canvasCenterX = canvasWidth / 2;
+  const canvasCenterY = canvasHeight / 2;
   
-  // Calculate scaled dimensions
-  const scaledWidth = surveyWidth * scale;
-  const scaledHeight = surveyHeight * scale;
+  // Transform: offset from survey center, scaled, then positioned at canvas center
+  // X: east is right (same direction as canvas X)
+  const canvasX = canvasCenterX + (surveyX - surveyCenterX) * pixelsPerMeter;
   
-  // Center the drawing in the canvas
-  const offsetX = (canvasWidth - scaledWidth) / 2;
-  const offsetY = (canvasHeight - scaledHeight) / 2;
-  
-  // Transform survey coordinates to canvas coordinates
-  // Map survey X directly to canvas X (east is right)
-  const canvasX = offsetX + (surveyX - bounds.minX) * scale;
-  
-  // Flip Y axis: survey Y (northing) up -> canvas Y down
-  // Survey: minY is at bottom, maxY is at top
-  // Canvas: 0 is at top, height is at bottom
-  const canvasY = offsetY + (bounds.maxY - surveyY) * scale;
+  // Y: north is up in survey, but down is positive in canvas, so we flip
+  const canvasY = canvasCenterY - (surveyY - surveyCenterY) * pixelsPerMeter;
   
   return { x: canvasX, y: canvasY };
+}
+
+/**
+ * Calculate optimal pixels-per-meter scale based on survey extent and canvas size
+ * Ensures the network fills a reasonable portion of the visible area
+ * @param {{minX: number, maxX: number, minY: number, maxY: number}} bounds
+ * @param {number} canvasWidth
+ * @param {number} canvasHeight
+ * @param {number} fillRatio - How much of the canvas to fill (0.0-1.0, default 0.7)
+ * @returns {number} - Recommended pixels per meter
+ */
+export function calculateOptimalScale(bounds, canvasWidth, canvasHeight, fillRatio = 0.7) {
+  const surveyWidth = Math.max(bounds.maxX - bounds.minX, 1);
+  const surveyHeight = Math.max(bounds.maxY - bounds.minY, 1);
+  
+  const targetWidth = canvasWidth * fillRatio;
+  const targetHeight = canvasHeight * fillRatio;
+  
+  // Calculate scale that would fit the survey in the target area
+  const scaleX = targetWidth / surveyWidth;
+  const scaleY = targetHeight / surveyHeight;
+  
+  // Use the smaller scale to preserve aspect ratio
+  let scale = Math.min(scaleX, scaleY);
+  
+  // Clamp scale to reasonable range
+  // Min: 0.5 pixels/meter (very zoomed out, 1km = 500px)
+  // Max: 20 pixels/meter (very zoomed in, 10m = 200px)
+  scale = Math.max(0.5, Math.min(20, scale));
+  
+  return scale;
 }
 
 /**
@@ -399,6 +421,10 @@ export function applyCoordinatesToNodes(nodes, coordinatesMap, canvasWidth = 800
     console.warn('This could mean all your coordinates are nearly identical.');
   }
   
+  // Calculate optimal scale for this network
+  const pixelsPerMeter = calculateOptimalScale(bounds, canvasWidth, canvasHeight, 0.8);
+  console.log('Calculated scale:', pixelsPerMeter.toFixed(2), 'pixels/meter');
+  
   // Log sample coordinates
   console.log('Sample matched coordinates:');
   matchedNodeCoords.slice(0, 5).forEach(({ nodeId, coords }) => {
@@ -413,7 +439,7 @@ export function applyCoordinatesToNodes(nodes, coordinatesMap, canvasWidth = 800
     const coords = coordinatesMap.get(nodeId);
     
     if (coords) {
-      const canvasCoords = surveyToCanvas(coords.x, coords.y, bounds, canvasWidth, canvasHeight);
+      const canvasCoords = surveyToCanvas(coords.x, coords.y, bounds, canvasWidth, canvasHeight, { pixelsPerMeter });
       matchedCount++;
       
       // Log first few transformations

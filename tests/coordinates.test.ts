@@ -124,7 +124,6 @@ invalid,abc,def,ghi
   describe('surveyToCanvas', () => {
     const canvasWidth = 800;
     const canvasHeight = 600;
-    const padding = 50;
 
     it('should transform ITM coordinates to canvas coordinates', () => {
       const bounds = {
@@ -134,44 +133,44 @@ invalid,abc,def,ghi
         maxY: 655000,
       };
 
-      // Test corner points
-      const bottomLeft = surveyToCanvas(182000, 654000, bounds, canvasWidth, canvasHeight, padding);
-      const topRight = surveyToCanvas(183000, 655000, bounds, canvasWidth, canvasHeight, padding);
-      const center = surveyToCanvas(182500, 654500, bounds, canvasWidth, canvasHeight, padding);
+      // Test corner points - use options object for pixelsPerMeter
+      const bottomLeft = surveyToCanvas(182000, 654000, bounds, canvasWidth, canvasHeight, { pixelsPerMeter: 0.5 });
+      const topRight = surveyToCanvas(183000, 655000, bounds, canvasWidth, canvasHeight, { pixelsPerMeter: 0.5 });
+      const center = surveyToCanvas(182500, 654500, bounds, canvasWidth, canvasHeight, { pixelsPerMeter: 0.5 });
 
-      // Canvas Y is flipped, so bottomLeft in survey becomes top in canvas (higher y value)
-      // And topRight in survey becomes bottom in canvas (lower y value)
+      // Canvas Y is flipped, so bottomLeft in survey becomes higher Y in canvas
+      // And topRight in survey becomes lower Y in canvas
       expect(bottomLeft.y).toBeGreaterThan(topRight.y);
       
-      // Center should be roughly in the middle
+      // Center of survey should map to center of canvas
       expect(center.x).toBeCloseTo(canvasWidth / 2, 0);
       expect(center.y).toBeCloseTo(canvasHeight / 2, 0);
-
-      // All coordinates should be within canvas bounds with padding
-      expect(bottomLeft.x).toBeGreaterThanOrEqual(padding);
-      expect(bottomLeft.x).toBeLessThanOrEqual(canvasWidth - padding);
-      expect(topRight.x).toBeGreaterThanOrEqual(padding);
-      expect(topRight.x).toBeLessThanOrEqual(canvasWidth - padding);
+      
+      // Points should maintain relative positions
+      expect(topRight.x).toBeGreaterThan(bottomLeft.x); // East is right
+      expect(bottomLeft.y).toBeGreaterThan(topRight.y); // North is up (flipped to down in canvas)
     });
 
     it('should maintain aspect ratio', () => {
-      // Square survey area
+      // Square survey area - 1000m x 1000m
       const squareBounds = {
         minX: 182000,
         maxX: 183000,
         minY: 654000,
-        maxY: 655000, // 1000x1000 square
+        maxY: 655000,
       };
 
-      const p1 = surveyToCanvas(182000, 654000, squareBounds, canvasWidth, canvasHeight, padding);
-      const p2 = surveyToCanvas(183000, 654000, squareBounds, canvasWidth, canvasHeight, padding);
-      const p3 = surveyToCanvas(182000, 655000, squareBounds, canvasWidth, canvasHeight, padding);
+      const scale = { pixelsPerMeter: 1 };
+      const p1 = surveyToCanvas(182000, 654000, squareBounds, canvasWidth, canvasHeight, scale);
+      const p2 = surveyToCanvas(183000, 654000, squareBounds, canvasWidth, canvasHeight, scale);
+      const p3 = surveyToCanvas(182000, 655000, squareBounds, canvasWidth, canvasHeight, scale);
 
       const canvasXDist = Math.abs(p2.x - p1.x);
       const canvasYDist = Math.abs(p3.y - p1.y);
 
-      // Should be approximately equal (aspect ratio preserved)
-      expect(Math.abs(canvasXDist - canvasYDist)).toBeLessThan(1);
+      // With uniform scale, X and Y distances should be equal (1000m each = 1000px each)
+      expect(canvasXDist).toBeCloseTo(1000, 0);
+      expect(canvasYDist).toBeCloseTo(1000, 0);
     });
 
     it('should handle very small coordinate differences', () => {
@@ -183,12 +182,20 @@ invalid,abc,def,ghi
         maxY: 654510,
       };
 
-      const p1 = surveyToCanvas(182500, 654500, smallBounds, canvasWidth, canvasHeight, padding);
-      const p2 = surveyToCanvas(182510, 654510, smallBounds, canvasWidth, canvasHeight, padding);
+      // With default 3 pixels/meter, 10m = 30 pixels
+      const p1 = surveyToCanvas(182500, 654500, smallBounds, canvasWidth, canvasHeight, { pixelsPerMeter: 3 });
+      const p2 = surveyToCanvas(182510, 654510, smallBounds, canvasWidth, canvasHeight, { pixelsPerMeter: 3 });
 
-      // Should still spread across the canvas
-      expect(Math.abs(p2.x - p1.x)).toBeGreaterThan(100);
-      expect(Math.abs(p2.y - p1.y)).toBeGreaterThan(100);
+      // 10 meters at 3 pixels/meter = 30 pixels difference
+      expect(Math.abs(p2.x - p1.x)).toBeCloseTo(30, 0);
+      expect(Math.abs(p2.y - p1.y)).toBeCloseTo(30, 0);
+      
+      // With higher scale (10 pixels/meter), should spread more
+      const p3 = surveyToCanvas(182500, 654500, smallBounds, canvasWidth, canvasHeight, { pixelsPerMeter: 10 });
+      const p4 = surveyToCanvas(182510, 654510, smallBounds, canvasWidth, canvasHeight, { pixelsPerMeter: 10 });
+      
+      expect(Math.abs(p4.x - p3.x)).toBeCloseTo(100, 0);
+      expect(Math.abs(p4.y - p3.y)).toBeCloseTo(100, 0);
     });
 
     it('should handle identical coordinates (single point)', () => {
@@ -199,16 +206,14 @@ invalid,abc,def,ghi
         maxY: 654500,
       };
 
-      // Should not throw and return valid coordinates within canvas
-      const result = surveyToCanvas(182500, 654500, singlePointBounds, canvasWidth, canvasHeight, padding);
+      // Should not throw and return valid coordinates
+      const result = surveyToCanvas(182500, 654500, singlePointBounds, canvasWidth, canvasHeight, { pixelsPerMeter: 3 });
       
       expect(Number.isFinite(result.x)).toBe(true);
       expect(Number.isFinite(result.y)).toBe(true);
-      // Should be within canvas bounds
-      expect(result.x).toBeGreaterThanOrEqual(0);
-      expect(result.x).toBeLessThanOrEqual(canvasWidth);
-      expect(result.y).toBeGreaterThanOrEqual(0);
-      expect(result.y).toBeLessThanOrEqual(canvasHeight);
+      // Single point at center of bounds should be at center of canvas
+      expect(result.x).toBeCloseTo(canvasWidth / 2, 0);
+      expect(result.y).toBeCloseTo(canvasHeight / 2, 0);
     });
   });
 
