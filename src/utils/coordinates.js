@@ -248,9 +248,9 @@ export function calculateOptimalScale(bounds, canvasWidth, canvasHeight, fillRat
   let scale = Math.min(scaleX, scaleY);
   
   // Clamp scale to reasonable range
-  // Min: 1 pixel/meter (zoomed out, 1km = 1000px)
-  // Max: 20 pixels/meter (zoomed in, 10m = 200px)
-  scale = Math.max(1, Math.min(20, scale));
+  // Min: 100 pixels/meter (1 pixel/cm, 10m = 1000px)
+  // Max: 200 pixels/meter (2 pixels/cm, very detailed)
+  scale = Math.max(100, Math.min(200, scale));
   
   return scale;
 }
