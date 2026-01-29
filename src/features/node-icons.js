@@ -373,8 +373,8 @@ export function drawNodeIcon(ctx, node, radius, colors, selectedNode, options = 
     drawManholeIcon(ctx, node.x, node.y, radius, colors, isSelected, fillColor);
   }
   
-  // Draw coordinate status indicator if enabled (for non-Home nodes)
-  if (showCoordinateStatus && node.nodeType !== 'Home') {
+  // Draw coordinate status indicator if enabled
+  if (showCoordinateStatus) {
     // Check if node has coordinates
     let hasCoordinates = false;
     if (node.hasCoordinates !== undefined) {
