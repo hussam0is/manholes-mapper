@@ -248,15 +248,94 @@ export function drawForLaterIcon(ctx, x, y, radius, colors, isSelected, fillColo
 }
 
 /**
+ * Draw a coordinate status indicator on a node
+ * - Green square with white checkmark (✓) when coordinates are available
+ * - Yellow circle with "!" when coordinates are missing
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} x - Node center x
+ * @param {number} y - Node center y
+ * @param {number} radius - Node radius
+ * @param {boolean} hasCoordinates - Whether the node has coordinates
+ */
+export function drawCoordinateStatusIndicator(ctx, x, y, radius, hasCoordinates) {
+  ctx.save();
+  
+  // Position at top-left of node
+  const indicatorSize = radius * 0.45;
+  const offsetX = -radius * 0.85;
+  const offsetY = -radius * 0.85;
+  const indicatorX = x + offsetX;
+  const indicatorY = y + offsetY;
+  
+  if (hasCoordinates) {
+    // Green square with white checkmark
+    ctx.fillStyle = '#16a34a'; // green-600
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.5;
+    
+    // Draw rounded square
+    const halfSize = indicatorSize / 2;
+    const cornerRadius = indicatorSize * 0.2;
+    ctx.beginPath();
+    ctx.roundRect(
+      indicatorX - halfSize,
+      indicatorY - halfSize,
+      indicatorSize,
+      indicatorSize,
+      cornerRadius
+    );
+    ctx.fill();
+    ctx.stroke();
+    
+    // Draw checkmark (✓)
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.8;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    // Checkmark path
+    const checkScale = indicatorSize * 0.25;
+    ctx.moveTo(indicatorX - checkScale * 0.8, indicatorY);
+    ctx.lineTo(indicatorX - checkScale * 0.1, indicatorY + checkScale * 0.6);
+    ctx.lineTo(indicatorX + checkScale * 0.9, indicatorY - checkScale * 0.5);
+    ctx.stroke();
+  } else {
+    // Yellow circle with "!" sign
+    ctx.fillStyle = '#eab308'; // yellow-500
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.5;
+    
+    // Draw circle
+    ctx.beginPath();
+    ctx.arc(indicatorX, indicatorY, indicatorSize / 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    
+    // Draw "!" symbol
+    ctx.fillStyle = '#000000';
+    ctx.font = `bold ${indicatorSize * 0.7}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('!', indicatorX, indicatorY + 1);
+  }
+  
+  ctx.restore();
+}
+
+/**
  * Dispatch to the appropriate icon drawer based on node type
  * @param {CanvasRenderingContext2D} ctx
  * @param {Object} node - Node object with properties
  * @param {number} radius - Node radius
  * @param {Object} colors - Color palette
  * @param {Object} selectedNode - Currently selected node
+ * @param {Object} options - Additional drawing options
+ * @param {boolean} options.showCoordinateStatus - Whether to show coordinate indicators
+ * @param {Map} options.coordinatesMap - Map of node ID to coordinates
  */
-export function drawNodeIcon(ctx, node, radius, colors, selectedNode) {
+export function drawNodeIcon(ctx, node, radius, colors, selectedNode, options = {}) {
   const isSelected = node === selectedNode;
+  const { showCoordinateStatus = false, coordinatesMap = null } = options;
   
   // Determine fill color based on node state
   let fillColor;
@@ -292,6 +371,18 @@ export function drawNodeIcon(ctx, node, radius, colors, selectedNode) {
   } else {
     // Default manhole icon
     drawManholeIcon(ctx, node.x, node.y, radius, colors, isSelected, fillColor);
+  }
+  
+  // Draw coordinate status indicator if enabled (for non-Home nodes)
+  if (showCoordinateStatus && node.nodeType !== 'Home') {
+    // Check if node has coordinates
+    let hasCoordinates = false;
+    if (node.hasCoordinates !== undefined) {
+      hasCoordinates = node.hasCoordinates;
+    } else if (coordinatesMap) {
+      hasCoordinates = coordinatesMap.has(String(node.id));
+    }
+    drawCoordinateStatusIndicator(ctx, node.x, node.y, radius, hasCoordinates);
   }
 }
 

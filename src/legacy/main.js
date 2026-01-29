@@ -52,6 +52,16 @@ import {
   normalizeEntityForRules 
 } from '../utils/input-flow-engine.js';
 import { DEFAULT_INPUT_FLOW_CONFIG } from '../state/constants.js';
+import { 
+  importCoordinatesFromFile, 
+  applyCoordinatesToNodes, 
+  saveCoordinatesToStorage, 
+  loadCoordinatesFromStorage,
+  saveCoordinatesEnabled,
+  loadCoordinatesEnabled,
+  calculateCoordinateBounds,
+  surveyToCanvas
+} from '../utils/coordinates.js';
 
 /**
  * Get the current username from authentication or return a default
@@ -189,6 +199,13 @@ const finishWorkdayConfirmBtn = document.getElementById('finishWorkdayConfirmBtn
 const danglingEdgesListEl = document.getElementById('danglingEdgesList');
 const finishWorkdayDescEl = document.getElementById('finishWorkdayDesc');
 const finishWorkdayTitleEl = document.getElementById('finishWorkdayTitle');
+
+// Coordinate elements
+const importCoordinatesBtn = document.getElementById('importCoordinatesBtn');
+const coordinatesToggle = document.getElementById('coordinatesToggle');
+const importCoordinatesFile = document.getElementById('importCoordinatesFile');
+const mobileImportCoordinatesBtn = document.getElementById('mobileImportCoordinatesBtn');
+const mobileCoordinatesToggle = document.getElementById('mobileCoordinatesToggle');
 
 // iPad/iOS: ensure taps trigger clicks on header buttons (Safari sometimes suppresses click)
 function synthesizeClickOnTap(element) {
@@ -334,6 +351,12 @@ const EDGE_MATERIALS = EDGE_MATERIAL_OPTIONS.map(o => o.label);
 // Fall icon image (used to mark edges with a fall depth)
 let fallIconImage = null;
 let fallIconReady = false;
+
+// Coordinate system state
+let coordinatesMap = new Map(); // Map<nodeId, {x, y, z}>
+let coordinatesEnabled = false; // Whether to show coordinate indicators and use coordinate positions
+let originalNodePositions = new Map(); // Store original positions before applying coordinates
+
 try {
   fallIconImage = new Image();
   fallIconImage.src = './fall_icon.png';
@@ -2935,8 +2958,12 @@ function drawEdgeLabels(edge) {
 function drawNode(node) {
   const radius = NODE_RADIUS * sizeScale;
 
-  // Draw the node icon using the new icon system
-  drawNodeIcon(ctx, node, radius, COLORS, selectedNode);
+  // Draw the node icon using the new icon system with coordinate options
+  const coordinateOptions = {
+    showCoordinateStatus: coordinatesEnabled && coordinatesMap.size > 0,
+    coordinatesMap: coordinatesMap
+  };
+  drawNodeIcon(ctx, node, radius, COLORS, selectedNode, coordinateOptions);
 
   // For Home nodes with directConnection badge, draw it on top
   if (node.nodeType === 'Home' && node.directConnection) {
@@ -5408,6 +5435,194 @@ if (finishWorkdayModal) {
   });
 }
 
+// ============================================
+// Coordinate System Handlers
+// ============================================
+
+/**
+ * Handle importing coordinates from CSV file
+ * @param {File} file - The CSV file to import
+ */
+async function handleCoordinatesImport(file) {
+  try {
+    const newCoordinates = await importCoordinatesFromFile(file);
+    
+    if (newCoordinates.size === 0) {
+      showToast(t('coordinates.noCoordinatesFound') || 'לא נמצאו קואורדינטות בקובץ');
+      return;
+    }
+    
+    // Store coordinates
+    coordinatesMap = newCoordinates;
+    saveCoordinatesToStorage(coordinatesMap);
+    
+    // Show success message
+    const count = coordinatesMap.size;
+    showToast(t('coordinates.imported', { count }) || `נטענו ${count} קואורדינטות`);
+    
+    // Automatically enable coordinates if not already enabled
+    if (!coordinatesEnabled) {
+      coordinatesEnabled = true;
+      saveCoordinatesEnabled(true);
+      syncCoordinatesToggleUI();
+      applyCoordinatesIfEnabled();
+    }
+    
+    scheduleDraw();
+    
+  } catch (error) {
+    console.error('Failed to import coordinates:', error);
+    showToast(t('coordinates.importError') || 'שגיאה בטעינת קואורדינטות');
+  }
+}
+
+/**
+ * Apply coordinates to nodes if enabled
+ * Stores original positions and updates node positions based on survey coordinates
+ */
+function applyCoordinatesIfEnabled() {
+  if (!coordinatesEnabled || coordinatesMap.size === 0) {
+    return;
+  }
+  
+  // Store original positions before applying coordinates (if not already stored)
+  nodes.forEach(node => {
+    if (!originalNodePositions.has(node.id)) {
+      originalNodePositions.set(node.id, { x: node.x, y: node.y });
+    }
+  });
+  
+  // Get canvas dimensions
+  const rect = canvas.getBoundingClientRect();
+  const canvasWidth = rect.width || 800;
+  const canvasHeight = rect.height || 600;
+  
+  // Apply coordinates to matching nodes
+  const result = applyCoordinatesToNodes(nodes, coordinatesMap, canvasWidth, canvasHeight);
+  nodes = result.updatedNodes;
+  
+  // Log results for debugging
+  console.log(`Coordinates applied: ${result.matchedCount} matched, ${result.unmatchedCount} unmatched`);
+  
+  saveToStorage();
+  scheduleDraw();
+}
+
+/**
+ * Restore original node positions (when coordinates are disabled)
+ */
+function restoreOriginalPositions() {
+  nodes.forEach(node => {
+    const original = originalNodePositions.get(node.id);
+    if (original) {
+      node.x = original.x;
+      node.y = original.y;
+    }
+    // Remove coordinate markers but keep hasCoordinates for indicator display
+    delete node.surveyX;
+    delete node.surveyY;
+    delete node.surveyZ;
+  });
+  
+  saveToStorage();
+  scheduleDraw();
+}
+
+/**
+ * Toggle coordinates enabled/disabled
+ */
+function toggleCoordinates(enabled) {
+  coordinatesEnabled = enabled;
+  saveCoordinatesEnabled(enabled);
+  syncCoordinatesToggleUI();
+  
+  if (enabled) {
+    applyCoordinatesIfEnabled();
+  } else {
+    restoreOriginalPositions();
+  }
+  
+  const msg = enabled 
+    ? (t('coordinates.enabled') || 'קואורדינטות הופעלו')
+    : (t('coordinates.disabled') || 'קואורדינטות כובו');
+  showToast(msg);
+}
+
+/**
+ * Sync the coordinates toggle UI elements
+ */
+function syncCoordinatesToggleUI() {
+  if (coordinatesToggle) {
+    coordinatesToggle.checked = coordinatesEnabled;
+  }
+  if (mobileCoordinatesToggle) {
+    mobileCoordinatesToggle.checked = coordinatesEnabled;
+  }
+}
+
+/**
+ * Initialize coordinates from storage
+ */
+function initCoordinates() {
+  coordinatesMap = loadCoordinatesFromStorage();
+  coordinatesEnabled = loadCoordinatesEnabled();
+  syncCoordinatesToggleUI();
+  
+  // Mark nodes with coordinate status
+  if (coordinatesMap.size > 0) {
+    nodes.forEach(node => {
+      node.hasCoordinates = coordinatesMap.has(String(node.id));
+    });
+  }
+}
+
+// Import coordinates button handler (desktop)
+if (importCoordinatesBtn) {
+  importCoordinatesBtn.addEventListener('click', () => {
+    // Close dropdown menu first
+    if (exportDropdown) exportDropdown.classList.remove('open');
+    if (importCoordinatesFile) importCoordinatesFile.click();
+  });
+}
+
+// Import coordinates button handler (mobile)
+if (mobileImportCoordinatesBtn) {
+  mobileImportCoordinatesBtn.addEventListener('click', () => {
+    closeMobileMenu();
+    if (importCoordinatesFile) importCoordinatesFile.click();
+  });
+}
+
+// Coordinates file input handler
+if (importCoordinatesFile) {
+  importCoordinatesFile.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await handleCoordinatesImport(file);
+      e.target.value = ''; // Reset to allow re-importing same file
+    }
+  });
+}
+
+// Coordinates toggle handler (desktop)
+if (coordinatesToggle) {
+  coordinatesToggle.addEventListener('change', (e) => {
+    toggleCoordinates(e.target.checked);
+  });
+}
+
+// Coordinates toggle handler (mobile)
+if (mobileCoordinatesToggle) {
+  mobileCoordinatesToggle.addEventListener('change', (e) => {
+    toggleCoordinates(e.target.checked);
+    closeMobileMenu();
+  });
+}
+
+// ============================================
+// End Coordinate System Handlers
+// ============================================
+
 // Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
   const target = e.target;
@@ -5745,6 +5960,9 @@ async function init() {
     lastEditedBy: getCurrentUsername(),
   }));
   
+  // Initialize coordinates system
+  initCoordinates();
+
   // Default interaction mode is node creation
   currentMode = 'node';
   if (nodeModeBtn) nodeModeBtn.classList.add('active');

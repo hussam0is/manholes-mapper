@@ -295,6 +295,18 @@ export const i18n = {
     validation: {
       required: 'שדה חובה',
     },
+    coordinates: {
+      import: 'יבא קואורדינטות',
+      enable: 'הפעל קואורדינטות',
+      enabled: 'קואורדינטות הופעלו',
+      disabled: 'קואורדינטות כובו',
+      imported: (count) => `נטענו ${count} קואורדינטות`,
+      noCoordinatesFound: 'לא נמצאו קואורדינטות בקובץ',
+      importError: 'שגיאה בטעינת קואורדינטות',
+      hasCoordinates: 'יש קואורדינטות',
+      missingCoordinates: 'חסרות קואורדינטות',
+      status: (matched, total) => `${matched}/${total} שוחות עם קואורדינטות`,
+    },
   },
   en: {
     appTitle: 'Manhole Mapper',
@@ -590,6 +602,18 @@ export const i18n = {
     },
     validation: {
       required: 'This field is required',
+    },
+    coordinates: {
+      import: 'Import Coordinates',
+      enable: 'Enable Coordinates',
+      enabled: 'Coordinates enabled',
+      disabled: 'Coordinates disabled',
+      imported: (count) => `Loaded ${count} coordinates`,
+      noCoordinatesFound: 'No coordinates found in file',
+      importError: 'Error loading coordinates',
+      hasCoordinates: 'Has coordinates',
+      missingCoordinates: 'Missing coordinates',
+      status: (matched, total) => `${matched}/${total} nodes with coordinates`,
     },
   },
 };

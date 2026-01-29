@@ -89,11 +89,23 @@
               <span class="material-icons">done_all</span>
               <span class="dropdown-label"></span>
             </button>
+            <hr class="dropdown-divider" />
+            <button id="importCoordinatesBtn" class="dropdown-item">
+              <span class="material-icons">place</span>
+              <span class="dropdown-label" data-i18n="coordinates.import">יבא קואורדינטות</span>
+            </button>
+            <label id="toggleCoordinatesBtn" class="dropdown-item dropdown-toggle-item">
+              <input type="checkbox" id="coordinatesToggle" />
+              <span class="material-icons">my_location</span>
+              <span class="dropdown-label" data-i18n="coordinates.enable">הפעל קואורדינטות</span>
+            </label>
           </div>
         </div>
       </div>
       <!-- Hidden file input for importing sketches -->
       <input type="file" id="importSketchFile" accept="application/json,.json" style="display:none;" aria-label="Import sketch file" />
+      <!-- Hidden file input for importing coordinates -->
+      <input type="file" id="importCoordinatesFile" accept=".csv,text/csv" style="display:none;" aria-label="Import coordinates file" />
 
       <!-- Size controls -->
       <div class="toolbar-group">
@@ -262,6 +274,15 @@
         <span class="material-icons">done_all</span>
         <span class="label"></span>
       </button>
+      <button id="mobileImportCoordinatesBtn" class="btn" title="">
+        <span class="material-icons">place</span>
+        <span class="label" data-i18n="coordinates.import">יבא קואורדינטות</span>
+      </button>
+      <label id="mobileToggleCoordinatesLabel" class="btn coordinates-toggle-btn">
+        <input type="checkbox" id="mobileCoordinatesToggle" />
+        <span class="material-icons">my_location</span>
+        <span class="label" data-i18n="coordinates.enable">הפעל קואורדינטות</span>
+      </label>
       
       <!-- Settings group -->
       <div class="menu-divider"></div>

@@ -2535,6 +2535,91 @@ input:checked + .slider:before {
   background: #f0fdf4 !important;
 }
 
+/* Coordinate toggle dropdown item */
+.dropdown-toggle-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  color: var(--color-text);
+  background: none;
+  border: none;
+  text-align: start;
+  cursor: pointer;
+}
+
+.dropdown-toggle-item:hover {
+  background: var(--color-bg);
+}
+
+.dropdown-toggle-item input[type="checkbox"] {
+  accent-color: #16a34a;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.dropdown-toggle-item .material-icons {
+  font-size: 1.1rem;
+  color: var(--color-muted);
+}
+
+.dropdown-toggle-item:has(input:checked) .material-icons {
+  color: #16a34a;
+}
+
+/* Coordinates toggle button for mobile menu */
+.coordinates-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.coordinates-toggle-btn input[type="checkbox"] {
+  accent-color: #16a34a;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.coordinates-toggle-btn:has(input:checked) {
+  color: #16a34a;
+}
+
+.coordinates-toggle-btn:has(input:checked) .material-icons {
+  color: #16a34a;
+}
+
+/* Coordinate status indicator for canvas toolbar */
+.coordinate-status {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.5rem;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.coordinate-status .material-icons {
+  font-size: 1rem;
+}
+
+.coordinate-status.active {
+  color: #16a34a;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.coordinate-status.active .material-icons {
+  color: #16a34a;
+}
+
 /* Mobile finish workday button */
 .btn-finish-workday {
   border-color: #22c55e !important;
