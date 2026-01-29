@@ -5452,19 +5452,55 @@ async function handleCoordinatesImport(file) {
       return;
     }
     
+    // Debug: Log imported coordinates
+    console.log('=== COORDINATES IMPORT DEBUG ===');
+    console.log('Imported coordinates count:', newCoordinates.size);
+    console.log('Sample coordinates (first 5):');
+    let count = 0;
+    for (const [pointId, coords] of newCoordinates.entries()) {
+      if (count++ < 5) {
+        console.log(`  Point ID "${pointId}":`, coords);
+      }
+    }
+    
+    // Debug: Log current node IDs
+    console.log('Current node IDs in sketch:', nodes.map(n => `"${n.id}" (type: ${typeof n.id})`).slice(0, 10));
+    
+    // Check for matches
+    const matchingIds = [];
+    const nonMatchingNodeIds = [];
+    nodes.forEach(node => {
+      const nodeIdStr = String(node.id);
+      if (newCoordinates.has(nodeIdStr)) {
+        matchingIds.push(nodeIdStr);
+      } else {
+        nonMatchingNodeIds.push(nodeIdStr);
+      }
+    });
+    console.log('Matching node IDs:', matchingIds.length, matchingIds.slice(0, 10));
+    console.log('Non-matching node IDs:', nonMatchingNodeIds.length, nonMatchingNodeIds.slice(0, 10));
+    
+    // Check if any coordinate point_ids match node IDs
+    const coordPointIds = Array.from(newCoordinates.keys());
+    console.log('Coordinate point_ids (first 10):', coordPointIds.slice(0, 10));
+    
     // Store coordinates
     coordinatesMap = newCoordinates;
     saveCoordinatesToStorage(coordinatesMap);
     
-    // Show success message
-    const count = coordinatesMap.size;
-    showToast(t('coordinates.imported', { count }) || `נטענו ${count} קואורדינטות`);
+    // Show success message with match info
+    const matchCount = matchingIds.length;
+    const totalNodes = nodes.length;
+    showToast(`נטענו ${newCoordinates.size} קואורדינטות, ${matchCount}/${totalNodes} שוחות תואמות`);
     
     // Automatically enable coordinates if not already enabled
     if (!coordinatesEnabled) {
       coordinatesEnabled = true;
       saveCoordinatesEnabled(true);
       syncCoordinatesToggleUI();
+      applyCoordinatesIfEnabled();
+    } else {
+      // Re-apply if already enabled
       applyCoordinatesIfEnabled();
     }
     

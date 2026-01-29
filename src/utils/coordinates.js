@@ -251,16 +251,56 @@ export function applyCoordinatesToNodes(nodes, coordinatesMap, canvasWidth = 800
   if (!canvasWidth || canvasWidth <= 0) canvasWidth = 800;
   if (!canvasHeight || canvasHeight <= 0) canvasHeight = 600;
   
-  // Calculate bounds from all coordinates in the map
-  const bounds = calculateCoordinateBounds(coordinatesMap);
+  // First, find which nodes have matching coordinates
+  const matchedNodeCoords = [];
+  nodes.forEach(node => {
+    const nodeId = String(node.id);
+    const coords = coordinatesMap.get(nodeId);
+    if (coords) {
+      matchedNodeCoords.push({ nodeId, coords });
+    }
+  });
+  
+  console.log('=== COORDINATE APPLICATION DEBUG ===');
+  console.log(`Found ${matchedNodeCoords.length} nodes with matching coordinates`);
+  
+  // If no matches, return early
+  if (matchedNodeCoords.length === 0) {
+    console.log('No coordinate matches found!');
+    return { 
+      updatedNodes: nodes.map(n => ({ ...n, hasCoordinates: false })), 
+      matchedCount: 0, 
+      unmatchedCount: nodes.length, 
+      bounds: null 
+    };
+  }
+  
+  // Calculate bounds ONLY from matched node coordinates (not all coordinates in map)
+  // This ensures we use the actual extent of the nodes we're placing
+  let minX = Infinity, maxX = -Infinity;
+  let minY = Infinity, maxY = -Infinity;
+  
+  matchedNodeCoords.forEach(({ coords }) => {
+    minX = Math.min(minX, coords.x);
+    maxX = Math.max(maxX, coords.x);
+    minY = Math.min(minY, coords.y);
+    maxY = Math.max(maxY, coords.y);
+  });
+  
+  const bounds = { minX, maxX, minY, maxY };
+  const surveyWidth = maxX - minX;
+  const surveyHeight = maxY - minY;
   
   // Log bounds for debugging
-  console.log('Coordinate bounds:', bounds);
-  console.log('Survey extent:', {
-    width: bounds.maxX - bounds.minX,
-    height: bounds.maxY - bounds.minY
+  console.log('Matched coordinate bounds:', bounds);
+  console.log('Survey extent (meters):', { width: surveyWidth, height: surveyHeight });
+  console.log('Canvas dimensions (pixels):', { width: canvasWidth, height: canvasHeight });
+  
+  // Log sample coordinates
+  console.log('Sample matched coordinates:');
+  matchedNodeCoords.slice(0, 5).forEach(({ nodeId, coords }) => {
+    console.log(`  Node ${nodeId}: ITM(${coords.x.toFixed(2)}, ${coords.y.toFixed(2)})`);
   });
-  console.log('Canvas dimensions:', { width: canvasWidth, height: canvasHeight });
   
   let matchedCount = 0;
   let unmatchedCount = 0;
@@ -272,6 +312,11 @@ export function applyCoordinatesToNodes(nodes, coordinatesMap, canvasWidth = 800
     if (coords) {
       const canvasCoords = surveyToCanvas(coords.x, coords.y, bounds, canvasWidth, canvasHeight);
       matchedCount++;
+      
+      // Log first few transformations
+      if (matchedCount <= 3) {
+        console.log(`Transform node ${nodeId}: ITM(${coords.x.toFixed(2)}, ${coords.y.toFixed(2)}) -> Canvas(${canvasCoords.x.toFixed(2)}, ${canvasCoords.y.toFixed(2)})`);
+      }
       
       // Validate the computed coordinates
       if (!Number.isFinite(canvasCoords.x) || !Number.isFinite(canvasCoords.y)) {
@@ -304,7 +349,23 @@ export function applyCoordinatesToNodes(nodes, coordinatesMap, canvasWidth = 800
     }
   });
   
+  // Log final position spread
+  const matchedNodes = updatedNodes.filter(n => n.hasCoordinates);
+  if (matchedNodes.length > 0) {
+    const xs = matchedNodes.map(n => n.x);
+    const ys = matchedNodes.map(n => n.y);
+    console.log('Canvas position spread:', {
+      xMin: Math.min(...xs).toFixed(2),
+      xMax: Math.max(...xs).toFixed(2),
+      xRange: (Math.max(...xs) - Math.min(...xs)).toFixed(2),
+      yMin: Math.min(...ys).toFixed(2),
+      yMax: Math.max(...ys).toFixed(2),
+      yRange: (Math.max(...ys) - Math.min(...ys)).toFixed(2)
+    });
+  }
+  
   console.log(`Applied coordinates: ${matchedCount} matched, ${unmatchedCount} unmatched`);
+  console.log('=== END COORDINATE DEBUG ===');
   
   return { updatedNodes, matchedCount, unmatchedCount, bounds };
 }
