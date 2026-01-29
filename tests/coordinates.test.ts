@@ -381,12 +381,19 @@ invalid,abc,def,ghi
   });
 
   describe('approximateUncoordinatedNodePositions', () => {
-    it('should position uncoordinated nodes near their neighbors', () => {
+    it('should position uncoordinated nodes using distance ratio and angle', () => {
       // Node 1 and 3 have coordinates, node 2 doesn't
+      // Original positions stored for calculating ratios
+      const originalPositions = new Map([
+        [1, { x: 0, y: 0 }],
+        [2, { x: 100, y: 0 }],  // 100px right of node 1
+        [3, { x: 200, y: 0 }],  // 200px right of node 1
+      ]);
+      
       const nodes = [
-        { id: 1, x: 100, y: 100, hasCoordinates: true },
-        { id: 2, x: 500, y: 500, hasCoordinates: false }, // Far away, should be moved
-        { id: 3, x: 200, y: 100, hasCoordinates: true },
+        { id: 1, x: 50, y: 50, hasCoordinates: true },   // Moved to new position
+        { id: 2, x: 500, y: 500, hasCoordinates: false }, // Should be repositioned
+        { id: 3, x: 150, y: 50, hasCoordinates: true },  // Moved to new position (100px from node 1)
       ];
 
       // Edge connects node 2 to nodes 1 and 3
@@ -395,15 +402,49 @@ invalid,abc,def,ghi
         { tail: 2, head: 3 },
       ];
 
-      const result = approximateUncoordinatedNodePositions(nodes, edges);
+      const result = approximateUncoordinatedNodePositions(nodes, edges, originalPositions);
       const node2 = result.find(n => n.id === 2);
 
-      // Node 2 should now be positioned near nodes 1 and 3 (around x=150, y=100)
-      // Allow some variance due to random offset
-      expect(node2!.x).toBeGreaterThan(50);
-      expect(node2!.x).toBeLessThan(250);
-      expect(node2!.y).toBeGreaterThan(50);
-      expect(node2!.y).toBeLessThan(150);
+      // Scale factor: new dist 1-3 (100px) / old dist 1-3 (200px) = 0.5
+      // Node 2 was 100px right of node 1 originally, so should be 50px right now
+      // Node 2 should be positioned between nodes 1 and 3
+      expect(node2!.x).toBeGreaterThan(40);
+      expect(node2!.x).toBeLessThan(160);
+    });
+
+    it('should lock nodes with coordinates', () => {
+      const nodes = [
+        { id: 1, x: 100, y: 100, hasCoordinates: true },
+        { id: 2, x: 200, y: 200, hasCoordinates: true },
+      ];
+
+      const edges = [{ tail: 1, head: 2 }];
+
+      const result = approximateUncoordinatedNodePositions(nodes, edges, new Map());
+
+      // Nodes with coordinates should be locked
+      expect(result[0].positionLocked).toBe(true);
+      expect(result[1].positionLocked).toBe(true);
+    });
+
+    it('should not lock uncoordinated nodes', () => {
+      const originalPositions = new Map([
+        [1, { x: 100, y: 100 }],
+        [2, { x: 200, y: 100 }],
+      ]);
+      
+      const nodes = [
+        { id: 1, x: 100, y: 100, hasCoordinates: true },
+        { id: 2, x: 500, y: 500, hasCoordinates: false },
+      ];
+
+      const edges = [{ tail: 1, head: 2 }];
+
+      const result = approximateUncoordinatedNodePositions(nodes, edges, originalPositions);
+      const node2 = result.find(n => n.id === 2);
+
+      // Uncoordinated node should NOT be locked (can still be moved manually)
+      expect(node2!.positionLocked).toBe(false);
     });
 
     it('should position isolated uncoordinated nodes at centroid', () => {
@@ -417,7 +458,7 @@ invalid,abc,def,ghi
         { tail: 1, head: 2 },
       ];
 
-      const result = approximateUncoordinatedNodePositions(nodes, edges);
+      const result = approximateUncoordinatedNodePositions(nodes, edges, new Map());
       const node3 = result.find(n => n.id === 3);
 
       // Node 3 should be at centroid of positioned nodes (150, 150) with some variance
@@ -427,44 +468,26 @@ invalid,abc,def,ghi
       expect(node3!.y).toBeLessThan(200);
     });
 
-    it('should not modify nodes with coordinates', () => {
+    it('should preserve angle from original sketch', () => {
+      // Original: node 2 is directly above node 1 (angle = -90 degrees / -π/2)
+      const originalPositions = new Map([
+        [1, { x: 100, y: 100 }],
+        [2, { x: 100, y: 0 }],   // Directly above (y is smaller = up in canvas coords)
+      ]);
+      
       const nodes = [
-        { id: 1, x: 100, y: 100, hasCoordinates: true },
-        { id: 2, x: 200, y: 200, hasCoordinates: true },
+        { id: 1, x: 200, y: 200, hasCoordinates: true },
+        { id: 2, x: 500, y: 500, hasCoordinates: false },
       ];
 
       const edges = [{ tail: 1, head: 2 }];
 
-      const result = approximateUncoordinatedNodePositions(nodes, edges);
-
-      expect(result[0].x).toBe(100);
-      expect(result[0].y).toBe(100);
-      expect(result[1].x).toBe(200);
-      expect(result[1].y).toBe(200);
-    });
-
-    it('should handle chain of uncoordinated nodes', () => {
-      // Chain: 1 (coord) -> 2 (no coord) -> 3 (no coord) -> 4 (coord)
-      const nodes = [
-        { id: 1, x: 100, y: 100, hasCoordinates: true },
-        { id: 2, x: 800, y: 800, hasCoordinates: false },
-        { id: 3, x: 900, y: 900, hasCoordinates: false },
-        { id: 4, x: 300, y: 100, hasCoordinates: true },
-      ];
-
-      const edges = [
-        { tail: 1, head: 2 },
-        { tail: 2, head: 3 },
-        { tail: 3, head: 4 },
-      ];
-
-      const result = approximateUncoordinatedNodePositions(nodes, edges);
+      const result = approximateUncoordinatedNodePositions(nodes, edges, originalPositions);
       const node2 = result.find(n => n.id === 2);
-      const node3 = result.find(n => n.id === 3);
 
-      // Both should be positioned much closer to the coordinate nodes
-      expect(node2!.x).toBeLessThan(400);
-      expect(node3!.x).toBeLessThan(400);
+      // Node 2 should be positioned above node 1 (same angle as original)
+      expect(node2!.x).toBeCloseTo(200, 0);  // Same x as anchor
+      expect(node2!.y).toBeLessThan(200);     // Above (smaller y)
     });
   });
 });

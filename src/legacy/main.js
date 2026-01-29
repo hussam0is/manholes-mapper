@@ -4074,6 +4074,11 @@ function pointerMove(x, y) {
     }
   }
   if (isDragging && selectedNode) {
+    // Don't allow dragging if node position is locked (has coordinates)
+    if (selectedNode.positionLocked) {
+      isDragging = false;
+      return;
+    }
     selectedNode.x = world.x - dragOffset.x;
     selectedNode.y = world.y - dragOffset.y;
     saveToStorage();
@@ -5575,8 +5580,9 @@ function applyCoordinatesIfEnabled() {
   console.log(`Coordinates applied: ${result.matchedCount} matched, ${result.unmatchedCount} unmatched`);
   
   // Approximate positions for nodes without coordinates based on their neighbors
+  // Pass original positions to calculate distance ratios
   if (result.unmatchedCount > 0 && result.matchedCount > 0) {
-    nodes = approximateUncoordinatedNodePositions(nodes, edges);
+    nodes = approximateUncoordinatedNodePositions(nodes, edges, originalNodePositions);
   }
   
   // Auto-recenter view after applying coordinates

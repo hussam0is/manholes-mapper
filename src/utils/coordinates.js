@@ -257,12 +257,16 @@ export function calculateOptimalScale(bounds, canvasWidth, canvasHeight, fillRat
 
 /**
  * Position nodes without coordinates based on their connected neighbors
- * Uses a simple averaging approach: place unpositioned nodes at the centroid of their neighbors
+ * Uses distance ratio and angle preservation:
+ * - Calculate scale factor from edges between coordinated nodes
+ * - Position uncoordinated nodes using original angle and scaled distance
+ * 
  * @param {Array} nodes - Array of node objects (some with hasCoordinates: true)
  * @param {Array} edges - Array of edge objects with tail and head properties
+ * @param {Map} originalPositions - Map of nodeId -> {x, y} original positions before coordinate transform
  * @returns {Array} - Updated nodes array with approximated positions for uncoordinated nodes
  */
-export function approximateUncoordinatedNodePositions(nodes, edges) {
+export function approximateUncoordinatedNodePositions(nodes, edges, originalPositions = new Map()) {
   // Build adjacency map: nodeId -> list of connected nodeIds
   const adjacency = new Map();
   
@@ -292,10 +296,48 @@ export function approximateUncoordinatedNodePositions(nodes, edges) {
   const positionedNodes = nodes.filter(n => n.hasCoordinates);
   
   if (positionedNodes.length === 0 || unpositionedNodes.length === 0) {
-    return nodes; // Nothing to do
+    // Lock all coordinated nodes
+    positionedNodes.forEach(node => {
+      node.positionLocked = true;
+    });
+    return nodes;
   }
   
   console.log(`Approximating positions for ${unpositionedNodes.length} nodes without coordinates`);
+  
+  // Calculate scale factor from edges between coordinated nodes
+  let scaleFactors = [];
+  edges.forEach(edge => {
+    const tailNode = nodeMap.get(String(edge.tail));
+    const headNode = nodeMap.get(String(edge.head));
+    
+    if (tailNode && headNode && tailNode.hasCoordinates && headNode.hasCoordinates) {
+      // Both nodes have coordinates - calculate scale factor
+      const tailOriginal = originalPositions.get(tailNode.id) || { x: tailNode.x, y: tailNode.y };
+      const headOriginal = originalPositions.get(headNode.id) || { x: headNode.x, y: headNode.y };
+      
+      const originalDist = Math.sqrt(
+        Math.pow(headOriginal.x - tailOriginal.x, 2) + 
+        Math.pow(headOriginal.y - tailOriginal.y, 2)
+      );
+      
+      const newDist = Math.sqrt(
+        Math.pow(headNode.x - tailNode.x, 2) + 
+        Math.pow(headNode.y - tailNode.y, 2)
+      );
+      
+      if (originalDist > 1) { // Avoid division by very small numbers
+        scaleFactors.push(newDist / originalDist);
+      }
+    }
+  });
+  
+  // Calculate average scale factor (or use 1 if no data)
+  const avgScaleFactor = scaleFactors.length > 0 
+    ? scaleFactors.reduce((a, b) => a + b, 0) / scaleFactors.length 
+    : 1;
+  
+  console.log(`Scale factor for uncoordinated nodes: ${avgScaleFactor.toFixed(3)} (from ${scaleFactors.length} edges)`);
   
   // Calculate centroid of positioned nodes as fallback
   const centroid = {
@@ -303,8 +345,13 @@ export function approximateUncoordinatedNodePositions(nodes, edges) {
     y: positionedNodes.reduce((sum, n) => sum + n.y, 0) / positionedNodes.length
   };
   
+  // Lock all coordinated nodes
+  positionedNodes.forEach(node => {
+    node.positionLocked = true;
+  });
+  
   // Multiple passes to propagate positions from neighbors
-  const maxIterations = 5;
+  const maxIterations = 10;
   let updated = true;
   let iteration = 0;
   
@@ -315,22 +362,36 @@ export function approximateUncoordinatedNodePositions(nodes, edges) {
     unpositionedNodes.forEach(node => {
       if (node._positionApproximated) return; // Already positioned
       
-      const neighbors = adjacency.get(String(node.id)) || [];
-      const positionedNeighbors = neighbors
-        .map(nid => nodeMap.get(nid))
-        .filter(n => n && (n.hasCoordinates || n._positionApproximated));
+      const nodeId = String(node.id);
+      const neighbors = adjacency.get(nodeId) || [];
       
-      if (positionedNeighbors.length > 0) {
-        // Position at centroid of positioned neighbors with small offset
-        const avgX = positionedNeighbors.reduce((sum, n) => sum + n.x, 0) / positionedNeighbors.length;
-        const avgY = positionedNeighbors.reduce((sum, n) => sum + n.y, 0) / positionedNeighbors.length;
+      // Find a positioned neighbor to use as anchor
+      const anchorNeighbor = neighbors
+        .map(nid => nodeMap.get(nid))
+        .find(n => n && (n.hasCoordinates || n._positionApproximated));
+      
+      if (anchorNeighbor) {
+        // Get original positions
+        const nodeOriginal = originalPositions.get(node.id) || { x: 0, y: 0 };
+        const anchorOriginal = originalPositions.get(anchorNeighbor.id) || { x: anchorNeighbor.x, y: anchorNeighbor.y };
         
-        // Add small random offset to prevent exact overlap
-        const offset = 30;
-        node.x = avgX + (Math.random() - 0.5) * offset;
-        node.y = avgY + (Math.random() - 0.5) * offset;
+        // Calculate original distance and angle
+        const dx = nodeOriginal.x - anchorOriginal.x;
+        const dy = nodeOriginal.y - anchorOriginal.y;
+        const originalDist = Math.sqrt(dx * dx + dy * dy);
+        const angle = Math.atan2(dy, dx);
+        
+        // Apply scale factor to distance
+        const scaledDist = originalDist * avgScaleFactor;
+        
+        // Position node using scaled distance and preserved angle
+        node.x = anchorNeighbor.x + Math.cos(angle) * scaledDist;
+        node.y = anchorNeighbor.y + Math.sin(angle) * scaledDist;
         node._positionApproximated = true;
+        node.positionLocked = false; // Uncoordinated nodes can still be moved
         updated = true;
+        
+        console.log(`Positioned node ${node.id}: angle=${(angle * 180 / Math.PI).toFixed(1)}°, dist=${scaledDist.toFixed(1)}px from node ${anchorNeighbor.id}`);
       }
     });
   }
@@ -338,9 +399,28 @@ export function approximateUncoordinatedNodePositions(nodes, edges) {
   // Position any remaining unpositioned nodes at centroid
   unpositionedNodes.forEach(node => {
     if (!node._positionApproximated) {
-      node.x = centroid.x + (Math.random() - 0.5) * 50;
-      node.y = centroid.y + (Math.random() - 0.5) * 50;
+      // Try to position based on any neighbor's original position
+      const nodeId = String(node.id);
+      const neighbors = adjacency.get(nodeId) || [];
+      const anyNeighbor = neighbors.map(nid => nodeMap.get(nid)).find(n => n);
+      
+      if (anyNeighbor) {
+        const nodeOriginal = originalPositions.get(node.id) || { x: centroid.x, y: centroid.y };
+        const neighborOriginal = originalPositions.get(anyNeighbor.id) || { x: anyNeighbor.x, y: anyNeighbor.y };
+        
+        const dx = nodeOriginal.x - neighborOriginal.x;
+        const dy = nodeOriginal.y - neighborOriginal.y;
+        const angle = Math.atan2(dy, dx);
+        const dist = Math.sqrt(dx * dx + dy * dy) * avgScaleFactor;
+        
+        node.x = anyNeighbor.x + Math.cos(angle) * dist;
+        node.y = anyNeighbor.y + Math.sin(angle) * dist;
+      } else {
+        node.x = centroid.x + (Math.random() - 0.5) * 50;
+        node.y = centroid.y + (Math.random() - 0.5) * 50;
+      }
       node._positionApproximated = true;
+      node.positionLocked = false;
     }
   });
   
