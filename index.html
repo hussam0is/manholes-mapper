@@ -423,6 +423,31 @@
           <button id="drainageNodeModeBtn" class="btn" title=""></button>
           <button id="edgeModeBtn" class="btn" title=""></button>
         </div>
+        <!-- Live Measure / GNSS Mode Button -->
+        <div class="segmented" id="gnssGroup" style="margin-top: 8px;">
+          <button id="liveMeasureBtn" class="btn live-measure-btn" title="Live Measure (GNSS)">
+            <span class="material-icons">gps_fixed</span>
+          </button>
+        </div>
+      </div>
+      <!-- GNSS Status Pill -->
+      <div id="gnssStatusPill" class="gnss-status-pill hidden">
+        <div class="status-indicator" id="gnssStatusIndicator"></div>
+        <div class="gnss-status-text">
+          <span class="gnss-status-main" id="gnssStatusMain">GNSS</span>
+          <span class="gnss-status-detail" id="gnssStatusDetail"></span>
+        </div>
+      </div>
+      <!-- GNSS Controls Panel (shown when Live Measure mode is active) -->
+      <div id="gnssControlsPanel" class="gnss-controls-panel hidden">
+        <button id="gnssConnectBtn" class="btn btn-ghost">
+          <span class="material-icons">bluetooth</span>
+          <span>התחבר ל-R780</span>
+        </button>
+        <button id="gnssCaptureBtn" class="capture-point-btn" disabled>
+          <span class="material-icons">add_location</span>
+          <span>לכוד נקודה</span>
+        </button>
       </div>
       <div id="toast"></div>
       <!-- Edge type legend -->

@@ -64,6 +64,16 @@ import {
   approximateUncoordinatedNodePositions
 } from '../utils/coordinates.js';
 
+// GNSS module imports
+import { 
+  drawGnssMarker, 
+  gnssToCanvas,
+  openPointCaptureDialog,
+  gnssState,
+  gnssConnection
+} from '../gnss/index.js';
+import { getMapReferencePoint } from '../map/govmap-layer.js';
+
 /**
  * Get the current username from authentication or return a default
  * @returns {string}
@@ -366,6 +376,9 @@ let coordinatesEnabled = false; // Whether to show coordinate indicators and use
 let originalNodePositions = new Map(); // Store original positions before applying coordinates
 let coordinateScale = 100; // Pixels per meter (100 = 1 pixel/cm)
 const SCALE_PRESETS = [50, 75, 100, 150, 200, 300]; // Available scale options
+
+// Live Measure / GNSS mode state
+let liveMeasureEnabled = false;
 const COORDINATE_SCALE_KEY = 'graphSketch.coordinateScale.v1';
 
 try {
@@ -2629,6 +2642,25 @@ function draw() {
   edges.forEach((edge) => {
     drawEdgeLabels(edge);
   });
+  
+  // Draw GNSS marker if Live Measure mode is enabled
+  if (liveMeasureEnabled && gnssState?.isLiveMeasureEnabled()) {
+    const position = gnssState.getPosition();
+    const referencePoint = getMapReferencePoint();
+    
+    if (position && position.isValid && referencePoint) {
+      drawGnssMarker(
+        ctx, 
+        position, 
+        referencePoint, 
+        coordinateScale, 
+        viewTranslate, 
+        viewScale,
+        { isStale: position.isStale }
+      );
+    }
+  }
+  
   ctx.restore();
   // Ensure edge legend is rendered/positioned
   renderEdgeLegend();
@@ -5599,8 +5631,13 @@ async function handleCoordinatesImport(file) {
 /**
  * Apply coordinates to nodes if enabled
  * Stores original positions and updates node positions based on survey coordinates
+ * @param {Object} options - Options for applying coordinates
+ * @param {boolean} options.recenter - Whether to recenter the view (default: true)
+ * @param {number} options.oldScale - Previous scale value (for maintaining focus during scale change)
  */
-function applyCoordinatesIfEnabled() {
+function applyCoordinatesIfEnabled(options = {}) {
+  const { recenter = true, oldScale = null } = options;
+  
   if (!coordinatesEnabled || coordinatesMap.size === 0) {
     return;
   }
@@ -5632,6 +5669,20 @@ function applyCoordinatesIfEnabled() {
   const logicalWidth = canvasWidth / dpr;
   const logicalHeight = canvasHeight / dpr;
   
+  // Canvas center in world/logical coordinates (where survey center maps to)
+  const canvasCenterX = logicalWidth / 2;
+  const canvasCenterY = logicalHeight / 2;
+  
+  // If we're changing scale (not recentering), capture current view center for focus preservation
+  let worldCenterBeforeChange = null;
+  if (!recenter && oldScale !== null && oldScale !== coordinateScale) {
+    // Get the current screen center in world coordinates
+    const rect = canvas.getBoundingClientRect();
+    const screenCenterX = rect.width / 2;
+    const screenCenterY = rect.height / 2;
+    worldCenterBeforeChange = screenToWorld(screenCenterX, screenCenterY);
+  }
+  
   console.log('Canvas dimensions for coordinate transform:', {
     canvasWidth,
     canvasHeight,
@@ -5653,8 +5704,28 @@ function applyCoordinatesIfEnabled() {
     nodes = approximateUncoordinatedNodePositions(nodes, edges, originalNodePositions);
   }
   
-  // Auto-recenter view after applying coordinates
-  recenterView();
+  // Handle view adjustment based on options
+  if (recenter) {
+    // Auto-recenter view after applying coordinates (first time or explicit recenter)
+    recenterView();
+  } else if (worldCenterBeforeChange !== null && oldScale !== null) {
+    // Maintain focus on the same part of the sketch during scale change
+    // When scale changes, node positions move relative to canvas center
+    // Calculate where the old world center point now is after the scale change
+    const scaleRatio = coordinateScale / oldScale;
+    
+    // The world center point moves: new position = canvasCenter + (oldPos - canvasCenter) * scaleRatio
+    const newWorldCenterX = canvasCenterX + (worldCenterBeforeChange.x - canvasCenterX) * scaleRatio;
+    const newWorldCenterY = canvasCenterY + (worldCenterBeforeChange.y - canvasCenterY) * scaleRatio;
+    
+    // Adjust viewTranslate so the new world position appears at screen center
+    const rect = canvas.getBoundingClientRect();
+    const screenCenterX = rect.width / 2;
+    const screenCenterY = rect.height / 2;
+    
+    viewTranslate.x = screenCenterX - viewScale * newWorldCenterX;
+    viewTranslate.y = screenCenterY - viewScale * newWorldCenterY;
+  }
   
   saveToStorage();
   scheduleDraw();
@@ -5755,6 +5826,7 @@ function loadCoordinateScale() {
 
 /**
  * Change coordinate scale and re-apply coordinates
+ * Maintains focus on the same part of the sketch when scale changes
  * @param {number} delta - Change direction: 1 for increase, -1 for decrease
  */
 function changeCoordinateScale(delta) {
@@ -5777,13 +5849,16 @@ function changeCoordinateScale(delta) {
   
   const newScale = SCALE_PRESETS[newIndex];
   if (newScale !== coordinateScale) {
+    // Save old scale before updating for focus preservation
+    const oldScale = coordinateScale;
+    
     coordinateScale = newScale;
     saveCoordinateScale();
     updateScaleDisplay();
     
-    // Re-apply coordinates with new scale
+    // Re-apply coordinates with new scale, maintaining focus (don't recenter)
     if (coordinatesEnabled && coordinatesMap.size > 0) {
-      applyCoordinatesIfEnabled();
+      applyCoordinatesIfEnabled({ recenter: false, oldScale: oldScale });
     }
     
     showToast(`קנה מידה: 1:${coordinateScale}`);
@@ -6266,3 +6341,126 @@ window.addEventListener('online', () => {
 window.addEventListener('offline', () => {
   /* handled in register-sw.js */
 });
+
+// ============================================
+// GNSS / Live Measure Mode Integration
+// ============================================
+
+/**
+ * Enable or disable Live Measure mode
+ * @param {boolean} enabled
+ */
+function setLiveMeasureMode(enabled) {
+  liveMeasureEnabled = enabled;
+  
+  // When enabling live measure, also enable coordinates display
+  if (enabled && !coordinatesEnabled) {
+    coordinatesEnabled = true;
+    saveCoordinatesEnabled(true);
+    syncCoordinatesToggleUI();
+  }
+  
+  scheduleDraw();
+}
+
+/**
+ * Open the GNSS point capture dialog
+ * Called when user clicks the "Capture Point" button
+ */
+function openGnssPointCaptureDialog() {
+  openPointCaptureDialog(
+    nodes,
+    (captureData) => {
+      handleGnssPointCapture(captureData);
+    },
+    () => {
+      // On cancel - nothing to do
+    }
+  );
+}
+
+/**
+ * Handle a captured GNSS point
+ * @param {object} captureData - Data from point capture dialog
+ */
+function handleGnssPointCapture(captureData) {
+  let targetNodeId = captureData.nodeId;
+  
+  // Create new node if requested
+  if (captureData.createNewNode) {
+    const newId = getNextNodeId();
+    const newNode = {
+      id: newId,
+      x: 400, // Will be updated by coordinates
+      y: 300,
+      type: 'type1',
+      nodeType: 'Manhole',
+      hasCoordinates: true
+    };
+    nodes.push(newNode);
+    targetNodeId = newId;
+  }
+  
+  // Store coordinates
+  coordinatesMap.set(String(targetNodeId), {
+    x: captureData.itm.x,
+    y: captureData.itm.y,
+    z: captureData.position.alt || 0
+  });
+  saveCoordinatesToStorage(coordinatesMap);
+  
+  // Mark the node as having coordinates
+  const node = nodes.find(n => String(n.id) === String(targetNodeId));
+  if (node) {
+    node.hasCoordinates = true;
+    node.surveyX = captureData.itm.x;
+    node.surveyY = captureData.itm.y;
+    node.surveyZ = captureData.position.alt || 0;
+    node.gnssFixQuality = captureData.position.fixQuality;
+    node.gnssHdop = captureData.position.hdop;
+  }
+  
+  // Create edge if requested
+  if (captureData.createEdge && captureData.edgeFromNode) {
+    const newEdge = {
+      id: getNextEdgeId(),
+      tail: captureData.edgeFromNode,
+      head: targetNodeId,
+      edge_type: captureData.edgeType || 'קו ראשי',
+      material: 0,
+      line_diameter: null
+    };
+    edges.push(newEdge);
+  }
+  
+  // Update gnss state with the captured point
+  gnssState?.capturePoint(targetNodeId, {
+    itm: captureData.itm,
+    fixQuality: captureData.position.fixQuality,
+    hdop: captureData.position.hdop
+  });
+  
+  // Re-apply coordinates to update node positions
+  applyCoordinatesIfEnabled();
+  
+  // Select the node
+  selectedNode = node;
+  selectedEdge = null;
+  renderDetails();
+  
+  scheduleDraw();
+  showToast(`נלכדה נקודה עבור שוחה ${targetNodeId}`);
+}
+
+/**
+ * Get the next available edge ID
+ */
+function getNextEdgeId() {
+  if (edges.length === 0) return 1;
+  return Math.max(...edges.map(e => typeof e.id === 'number' ? e.id : 0)) + 1;
+}
+
+// Expose functions globally for GNSS module integration
+window.scheduleDraw = scheduleDraw;
+window.setLiveMeasureMode = setLiveMeasureMode;
+window.openGnssPointCaptureDialog = openGnssPointCaptureDialog;

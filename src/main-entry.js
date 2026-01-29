@@ -11,6 +11,15 @@ import { initResizableDrawer } from './utils/resizable-drawer.js';
 import { initAuthMonitor, onAuthStateChange, getAuthState, updateAuthState, guardRoute, redirectIfAuthenticated, refreshSession } from './auth/auth-guard.js';
 import { initSyncService } from './auth/sync-service.js';
 import { authClient, signOutUser, getCurrentSession } from './auth/auth-client.js';
+import { menuEvents, setupEventDelegation } from './menu/menu-events.js';
+
+// GNSS Module imports
+import { 
+  initGnssModule, 
+  gnssConnection, 
+  gnssState, 
+  ConnectionState 
+} from './gnss/index.js';
 
 // Initialize Vercel Speed Insights only when deployed on Vercel (production)
 // The /_vercel/speed-insights/script.js endpoint only exists on Vercel's platform
@@ -152,7 +161,510 @@ if (typeof window !== 'undefined') {
   window.addEventListener('DOMContentLoaded', () => {
     attachFloatingKeyboard();
     initResizableDrawer();
+    
+    // Initialize new menu system
+    initMenuSystem();
+    
+    // Initialize GNSS module
+    initGnssModule();
+    initGnssUI();
   });
+}
+
+/**
+ * Initialize GNSS UI controls and event listeners
+ */
+function initGnssUI() {
+  const liveMeasureBtn = document.getElementById('liveMeasureBtn');
+  const gnssStatusPill = document.getElementById('gnssStatusPill');
+  const gnssControlsPanel = document.getElementById('gnssControlsPanel');
+  const gnssConnectBtn = document.getElementById('gnssConnectBtn');
+  const gnssCaptureBtn = document.getElementById('gnssCaptureBtn');
+  
+  if (!liveMeasureBtn) return;
+  
+  let liveMeasureEnabled = false;
+  
+  // Toggle Live Measure mode
+  liveMeasureBtn.addEventListener('click', () => {
+    liveMeasureEnabled = !liveMeasureEnabled;
+    gnssState.setLiveMeasureEnabled(liveMeasureEnabled);
+    
+    liveMeasureBtn.classList.toggle('active', liveMeasureEnabled);
+    gnssStatusPill?.classList.toggle('hidden', !liveMeasureEnabled);
+    gnssControlsPanel?.classList.toggle('hidden', !liveMeasureEnabled);
+    
+    // Notify legacy code
+    if (window.setLiveMeasureMode) {
+      window.setLiveMeasureMode(liveMeasureEnabled);
+    }
+    
+    console.log('Live Measure mode:', liveMeasureEnabled ? 'enabled' : 'disabled');
+  });
+  
+  // Connect button - show connection options
+  gnssConnectBtn?.addEventListener('click', async () => {
+    const connectionInfo = gnssState.getConnectionInfo();
+    
+    if (connectionInfo.isConnected) {
+      // Disconnect
+      await gnssConnection.disconnect();
+    } else {
+      // Show connection dialog or connect to mock for testing
+      // In production, this would show a dialog to select Bluetooth device or enter WiFi IP
+      
+      // Check if running in Capacitor
+      if (window.Capacitor) {
+        // Show device selection dialog
+        showConnectionDialog();
+      } else {
+        // In browser, use mock for testing
+        console.log('Connecting to Mock GNSS (browser mode)...');
+        await gnssConnection.connectMock();
+      }
+    }
+  });
+  
+  // Capture button
+  gnssCaptureBtn?.addEventListener('click', () => {
+    if (window.openGnssPointCaptureDialog) {
+      window.openGnssPointCaptureDialog();
+    }
+  });
+  
+  // Listen for connection state changes
+  gnssConnection.onConnectionChange((info) => {
+    updateGnssStatusUI(info);
+    
+    // Update connect button
+    if (gnssConnectBtn) {
+      const icon = gnssConnectBtn.querySelector('.material-icons');
+      const label = gnssConnectBtn.querySelector('span:not(.material-icons)');
+      
+      if (info.isConnected) {
+        if (icon) icon.textContent = 'bluetooth_connected';
+        if (label) label.textContent = 'נתק';
+        gnssConnectBtn.classList.add('connected');
+      } else {
+        if (icon) icon.textContent = 'bluetooth';
+        if (label) label.textContent = 'התחבר ל-R780';
+        gnssConnectBtn.classList.remove('connected');
+      }
+    }
+    
+    // Enable/disable capture button
+    if (gnssCaptureBtn) {
+      gnssCaptureBtn.disabled = !info.isConnected;
+    }
+  });
+  
+  // Listen for position updates
+  gnssConnection.onPositionUpdate((position) => {
+    updateGnssPositionUI(position);
+    
+    // Enable capture button when position is valid
+    if (gnssCaptureBtn) {
+      gnssCaptureBtn.disabled = !position.isValid;
+    }
+    
+    // Trigger canvas redraw
+    if (window.scheduleDraw) {
+      window.scheduleDraw();
+    }
+  });
+  
+  // Expose for legacy code
+  window.gnssConnection = gnssConnection;
+  window.gnssState = gnssState;
+}
+
+/**
+ * Update GNSS status UI elements
+ * @param {object} info - Connection info
+ */
+function updateGnssStatusUI(info) {
+  const statusIndicator = document.getElementById('gnssStatusIndicator');
+  const statusMain = document.getElementById('gnssStatusMain');
+  const statusDetail = document.getElementById('gnssStatusDetail');
+  const liveMeasureBtn = document.getElementById('liveMeasureBtn');
+  
+  if (statusIndicator) {
+    statusIndicator.className = 'status-indicator';
+    
+    if (info.state === ConnectionState.CONNECTED) {
+      statusIndicator.classList.add('connected');
+    } else if (info.state === ConnectionState.CONNECTING) {
+      statusIndicator.classList.add('connecting');
+    } else if (info.state === ConnectionState.ERROR) {
+      statusIndicator.classList.add('error');
+    }
+  }
+  
+  if (statusMain) {
+    switch (info.state) {
+      case ConnectionState.CONNECTED:
+        statusMain.textContent = 'מחובר';
+        break;
+      case ConnectionState.CONNECTING:
+        statusMain.textContent = 'מתחבר...';
+        break;
+      case ConnectionState.ERROR:
+        statusMain.textContent = 'שגיאה';
+        break;
+      default:
+        statusMain.textContent = 'לא מחובר';
+    }
+  }
+  
+  if (statusDetail) {
+    statusDetail.textContent = info.deviceName || '';
+  }
+  
+  // Update button state
+  if (liveMeasureBtn) {
+    liveMeasureBtn.classList.toggle('connecting', info.state === ConnectionState.CONNECTING);
+  }
+}
+
+/**
+ * Update GNSS position display
+ * @param {object} position - Position data
+ */
+function updateGnssPositionUI(position) {
+  const statusMain = document.getElementById('gnssStatusMain');
+  const statusDetail = document.getElementById('gnssStatusDetail');
+  const statusIndicator = document.getElementById('gnssStatusIndicator');
+  
+  if (!position.isValid) {
+    return;
+  }
+  
+  if (statusMain) {
+    statusMain.textContent = position.fixLabel || 'GPS';
+  }
+  
+  if (statusDetail) {
+    const parts = [];
+    if (position.satellites != null) {
+      parts.push(`${position.satellites} לוויינים`);
+    }
+    if (position.hdop != null) {
+      parts.push(`HDOP: ${position.hdop.toFixed(1)}`);
+    }
+    statusDetail.textContent = parts.join(' | ');
+  }
+  
+  if (statusIndicator && position.isStale) {
+    statusIndicator.classList.add('stale');
+  } else if (statusIndicator) {
+    statusIndicator.classList.remove('stale');
+  }
+}
+
+/**
+ * Show connection dialog for selecting Bluetooth device or WiFi
+ * This is a placeholder - will be implemented with actual device selection
+ */
+async function showConnectionDialog() {
+  // For now, try Bluetooth first
+  const isBluetoothAvailable = await gnssConnection.isBluetoothAvailable();
+  
+  if (isBluetoothAvailable) {
+    const devices = await gnssConnection.getPairedDevices();
+    
+    if (devices.length === 0) {
+      alert('לא נמצאו מכשירים מותאמים. אנא התאם את ה-R780 בהגדרות Bluetooth של המכשיר.');
+      return;
+    }
+    
+    // Find Trimble device or show first device
+    const trimbleDevice = devices.find(d => d.isTrimble);
+    const deviceToConnect = trimbleDevice || devices[0];
+    
+    console.log('Connecting to:', deviceToConnect.name);
+    await gnssConnection.connectBluetooth(deviceToConnect.address);
+  } else {
+    // Try WiFi with default IP
+    const host = prompt('הזן כתובת IP של ה-R780:', '192.168.1.10');
+    if (host) {
+      await gnssConnection.connectWifi(host, 5017);
+    }
+  }
+}
+
+/**
+ * Initialize the refactored menu system
+ * Sets up event delegation, dropdown behavior, and mobile menu
+ */
+function initMenuSystem() {
+  // Set up event delegation on header and mobile menu
+  const header = document.querySelector('.app-header');
+  const mobileMenu = document.getElementById('mobileMenu');
+  
+  if (header) {
+    setupEventDelegation(header);
+  }
+  if (mobileMenu) {
+    setupEventDelegation(mobileMenu);
+  }
+  
+  // Initialize command dropdown (More menu)
+  initCommandDropdown();
+  
+  // Initialize mobile menu behavior
+  initMobileMenuBehavior();
+  
+  // Expose menuEvents globally for legacy code access
+  window.menuEvents = menuEvents;
+}
+
+/**
+ * Initialize command dropdown behavior
+ */
+function initCommandDropdown() {
+  const menuBtn = document.getElementById('exportMenuBtn');
+  const dropdown = document.getElementById('exportDropdown');
+  
+  if (!menuBtn || !dropdown) return;
+
+  let isOpen = false;
+
+  function openDropdown() {
+    isOpen = true;
+    dropdown.classList.add('menu-dropdown--open');
+    menuBtn.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeDropdown() {
+    isOpen = false;
+    dropdown.classList.remove('menu-dropdown--open');
+    menuBtn.setAttribute('aria-expanded', 'false');
+  }
+
+  function toggleDropdown(e) {
+    e.stopPropagation();
+    if (isOpen) {
+      closeDropdown();
+    } else {
+      openDropdown();
+    }
+  }
+
+  // Toggle on button click
+  menuBtn.addEventListener('click', toggleDropdown);
+
+  // Close on outside click
+  document.addEventListener('click', (e) => {
+    if (isOpen && !dropdown.contains(e.target) && e.target !== menuBtn) {
+      closeDropdown();
+    }
+  });
+
+  // Close on escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isOpen) {
+      closeDropdown();
+      menuBtn.focus();
+    }
+  });
+
+  // Close after clicking non-toggle items
+  dropdown.addEventListener('click', (e) => {
+    const item = e.target.closest('.menu-dropdown__item');
+    if (item && !item.classList.contains('menu-dropdown__item--toggle') && 
+        !item.classList.contains('menu-dropdown__item--scale')) {
+      closeDropdown();
+    }
+  });
+
+  // Keyboard navigation within dropdown
+  dropdown.addEventListener('keydown', (e) => {
+    const items = Array.from(dropdown.querySelectorAll('button:not([disabled]), input:not([disabled])'));
+    const currentIndex = items.indexOf(document.activeElement);
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        const nextIndex = (currentIndex + 1) % items.length;
+        items[nextIndex]?.focus();
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        const prevIndex = (currentIndex - 1 + items.length) % items.length;
+        items[prevIndex]?.focus();
+        break;
+      case 'Home':
+        e.preventDefault();
+        items[0]?.focus();
+        break;
+      case 'End':
+        e.preventDefault();
+        items[items.length - 1]?.focus();
+        break;
+      case 'Tab':
+        // Close dropdown when tabbing out
+        closeDropdown();
+        break;
+    }
+  });
+  
+  // Focus first item when dropdown opens via keyboard
+  menuBtn.addEventListener('keydown', (e) => {
+    if ((e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') && !isOpen) {
+      e.preventDefault();
+      openDropdown();
+      // Focus first item
+      const firstItem = dropdown.querySelector('button:not([disabled]), input:not([disabled])');
+      if (firstItem) {
+        setTimeout(() => firstItem.focus(), 10);
+      }
+    }
+  });
+}
+
+/**
+ * Initialize mobile menu behavior
+ */
+function initMobileMenuBehavior() {
+  const menuBtn = document.getElementById('mobileMenuBtn');
+  const closeBtn = document.getElementById('mobileMenuCloseBtn');
+  const backdrop = document.getElementById('mobileMenuBackdrop');
+  const mobileMenu = document.getElementById('mobileMenu');
+
+  if (!menuBtn || !mobileMenu) return;
+
+  let isMobileMenuOpen = false;
+  let lastFocusedElement = null;
+
+  // Get all focusable elements in the mobile menu
+  function getFocusableElements() {
+    return Array.from(mobileMenu.querySelectorAll(
+      'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    ));
+  }
+
+  function openMobileMenu() {
+    isMobileMenuOpen = true;
+    lastFocusedElement = document.activeElement;
+    
+    mobileMenu.classList.add('mobile-menu--open');
+    mobileMenu.style.display = 'flex';
+    if (backdrop) backdrop.style.display = 'block';
+    menuBtn.setAttribute('aria-expanded', 'true');
+    document.body.classList.add('mobile-menu-open');
+    
+    // Focus close button for accessibility
+    if (closeBtn) {
+      closeBtn.focus();
+    } else {
+      const firstFocusable = mobileMenu.querySelector('button, input, select');
+      if (firstFocusable) firstFocusable.focus();
+    }
+    
+    // Announce to screen readers
+    mobileMenu.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeMobileMenu() {
+    isMobileMenuOpen = false;
+    mobileMenu.classList.remove('mobile-menu--open');
+    mobileMenu.style.display = 'none';
+    if (backdrop) backdrop.style.display = 'none';
+    menuBtn.setAttribute('aria-expanded', 'false');
+    document.body.classList.remove('mobile-menu-open');
+    mobileMenu.setAttribute('aria-hidden', 'true');
+    
+    // Return focus to the element that opened the menu
+    if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+      lastFocusedElement.focus();
+    } else {
+      menuBtn.focus();
+    }
+  }
+  
+  // Focus trap - keep focus within mobile menu when open
+  mobileMenu.addEventListener('keydown', (e) => {
+    if (!isMobileMenuOpen || e.key !== 'Tab') return;
+    
+    const focusableElements = getFocusableElements();
+    if (focusableElements.length === 0) return;
+    
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+    
+    if (e.shiftKey) {
+      // Shift+Tab - going backward
+      if (document.activeElement === firstElement) {
+        e.preventDefault();
+        lastElement.focus();
+      }
+    } else {
+      // Tab - going forward
+      if (document.activeElement === lastElement) {
+        e.preventDefault();
+        firstElement.focus();
+      }
+    }
+  });
+
+  // Toggle on menu button click
+  menuBtn.addEventListener('click', () => {
+    if (isMobileMenuOpen) {
+      closeMobileMenu();
+    } else {
+      openMobileMenu();
+    }
+  });
+
+  // Close on close button click
+  if (closeBtn) {
+    closeBtn.addEventListener('click', closeMobileMenu);
+  }
+
+  // Close on backdrop click
+  if (backdrop) {
+    backdrop.addEventListener('click', closeMobileMenu);
+  }
+
+  // Close on escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isMobileMenuOpen) {
+      closeMobileMenu();
+    }
+  });
+
+  // Close after clicking action buttons
+  mobileMenu.addEventListener('click', (e) => {
+    const btn = e.target.closest('.mobile-menu__btn');
+    if (btn) {
+      closeMobileMenu();
+    }
+  });
+
+  // Update visibility based on screen size
+  function updateResponsiveLayout() {
+    const width = window.innerWidth;
+    const controls = document.getElementById('controls');
+    
+    if (width <= 600) {
+      controls?.classList.add('menu-controls--hidden');
+      menuBtn.classList.remove('menu-toggle--hidden');
+    } else {
+      controls?.classList.remove('menu-controls--hidden');
+      menuBtn.classList.add('menu-toggle--hidden');
+      
+      // Close mobile menu if open when resizing to desktop
+      if (isMobileMenuOpen) {
+        closeMobileMenu();
+      }
+    }
+  }
+
+  window.addEventListener('resize', updateResponsiveLayout);
+  updateResponsiveLayout();
+  
+  // Expose close function for legacy code
+  window.closeMobileMenu = closeMobileMenu;
 }
 
 // After app scripts load, ensure header height and app height variables are synced

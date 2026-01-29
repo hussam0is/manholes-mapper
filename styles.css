@@ -6516,3 +6516,395 @@ html[dir="rtl"] .user-menu-dropdown {
 html[dir="rtl"] .user-menu-item {
   text-align: right;
 }
+
+/* ============================================
+   GNSS / Live Measure Mode Styles
+   ============================================ */
+
+/* Live Measure mode button in toolbar */
+.canvas-toolbar .btn.live-measure-btn {
+  position: relative;
+}
+
+.canvas-toolbar .btn.live-measure-btn.active {
+  background: #22c55e;
+  color: #fff;
+}
+
+.canvas-toolbar .btn.live-measure-btn.connecting {
+  background: #f59e0b;
+  color: #fff;
+}
+
+/* GNSS Status Pill */
+.gnss-status-pill {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  font-size: 0.75rem;
+  box-shadow: var(--shadow);
+  z-index: 100;
+  transition: all 0.2s;
+}
+
+.gnss-status-pill.hidden {
+  display: none;
+}
+
+.gnss-status-pill .status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #9ca3af;
+}
+
+.gnss-status-pill .status-indicator.connected {
+  background: #22c55e;
+  animation: pulse-green 2s infinite;
+}
+
+.gnss-status-pill .status-indicator.connecting {
+  background: #f59e0b;
+  animation: pulse-amber 1s infinite;
+}
+
+.gnss-status-pill .status-indicator.error {
+  background: #ef4444;
+}
+
+.gnss-status-pill .status-indicator.stale {
+  background: #f59e0b;
+}
+
+@keyframes pulse-green {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+}
+
+@keyframes pulse-amber {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+  50% { box-shadow: 0 0 0 4px rgba(245, 158, 11, 0); }
+}
+
+.gnss-status-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.gnss-status-main {
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.gnss-status-detail {
+  color: var(--color-muted);
+  font-size: 0.65rem;
+}
+
+/* GNSS Controls Panel */
+.gnss-controls-panel {
+  position: absolute;
+  bottom: 60px;
+  left: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  z-index: 100;
+}
+
+.gnss-controls-panel.hidden {
+  display: none;
+}
+
+.gnss-controls-panel .btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.gnss-controls-panel .btn .material-icons {
+  font-size: 1.25rem;
+}
+
+/* Capture Point Button */
+.capture-point-btn {
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.capture-point-btn:hover {
+  background: var(--color-primary-strong);
+}
+
+.capture-point-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Point Capture Dialog */
+.point-capture-dialog {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.point-capture-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.point-capture-content {
+  position: relative;
+  width: 90%;
+  max-width: 400px;
+  max-height: 90vh;
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.point-capture-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border-bottom: 1px solid var(--color-border);
+  background: #f8fafc;
+}
+
+.point-capture-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.point-capture-header .material-icons {
+  color: var(--color-primary);
+}
+
+.point-capture-close {
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  cursor: pointer;
+  color: var(--color-muted);
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.point-capture-close:hover {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+
+.point-capture-body {
+  padding: 1rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.capture-section {
+  margin-bottom: 1.25rem;
+}
+
+.capture-section:last-child {
+  margin-bottom: 0;
+}
+
+.capture-section h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.position-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: #f1f5f9;
+  border-radius: 8px;
+}
+
+.position-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.position-label {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  font-weight: 500;
+}
+
+.position-value {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text);
+  font-family: 'SF Mono', 'Consolas', monospace;
+}
+
+.position-value.fix-0 { color: #ef4444; }
+.position-value.fix-1,
+.position-value.fix-2 { color: #f59e0b; }
+.position-value.fix-4 { color: #22c55e; }
+.position-value.fix-5 { color: #3b82f6; }
+
+.capture-select {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.capture-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--ring);
+}
+
+.capture-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.capture-checkbox input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--color-primary);
+}
+
+.capture-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  font-size: 0.875rem;
+}
+
+.capture-field label {
+  color: var(--color-muted);
+}
+
+.point-capture-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-top: 1px solid var(--color-border);
+  background: #f8fafc;
+}
+
+.point-capture-footer .btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+/* Dark mode GNSS styles */
+@media (prefers-color-scheme: dark) {
+  .gnss-status-pill {
+    background: rgba(30, 41, 59, 0.95);
+    border-color: #334155;
+  }
+  
+  .gnss-status-main {
+    color: #f1f5f9;
+  }
+  
+  .gnss-controls-panel {
+    background: rgba(30, 41, 59, 0.95);
+    border-color: #334155;
+  }
+  
+  .point-capture-content {
+    background: #1e293b;
+  }
+  
+  .point-capture-header {
+    background: #0f172a;
+    border-color: #334155;
+  }
+  
+  .point-capture-footer {
+    background: #0f172a;
+    border-color: #334155;
+  }
+  
+  .position-info {
+    background: #0f172a;
+  }
+  
+  .capture-select {
+    background: #0f172a;
+    border-color: #334155;
+    color: #f1f5f9;
+  }
+}
+
+/* RTL adjustments */
+html[dir="rtl"] .gnss-status-pill {
+  left: auto;
+  right: 12px;
+}
+
+html[dir="rtl"] .gnss-controls-panel {
+  left: auto;
+  right: 12px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .gnss-status-pill {
+    bottom: calc(var(--drawer-height, 0px) + 12px);
+  }
+  
+  .gnss-controls-panel {
+    bottom: calc(var(--drawer-height, 0px) + 60px);
+  }
+  
+  .point-capture-content {
+    width: 95%;
+    max-height: 85vh;
+  }
+}

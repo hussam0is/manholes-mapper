@@ -90,18 +90,30 @@ manholes-mapper/
 │   ├── db.js               # IndexedDB database definition
 │   ├── dom/                # DOM manipulation utilities
 │   ├── features/           # Rendering engine and drawing primitives
+│   ├── gnss/               # GNSS/Live Measure module
+│   │   ├── bluetooth-adapter.js   # Bluetooth SPP connection
+│   │   ├── wifi-adapter.js        # WiFi TCP connection
+│   │   ├── mock-adapter.js        # Mock for development
+│   │   ├── nmea-parser.js         # NMEA sentence parsing
+│   │   ├── gnss-state.js          # State management
+│   │   ├── gnss-marker.js         # Canvas marker rendering
+│   │   ├── point-capture-dialog.js # Point capture UI
+│   │   └── connection-manager.js  # Unified connection interface
 │   ├── graph/              # Graph data structures and ID utilities
 │   ├── hooks/              # Custom React hooks
 │   ├── i18n.js             # Internationalization system
 │   ├── legacy/             # Core logic (being modularized)
 │   ├── main-entry.js       # Application entry point
+│   ├── map/                # Map tiles and user location
 │   ├── serviceWorker/      # SW registration and lifecycle
 │   ├── state/              # Global state and persistence logic
 │   └── utils/              # Shared utilities (CSV, Geometry, UI)
+├── android/                # Capacitor Android project
 ├── public/                 # Static assets and PWA manifest
 ├── dist/                   # Production build output
 ├── index.html              # Main entry HTML
 ├── styles.css              # Global styles and Tailwind directives
+├── capacitor.config.ts     # Capacitor configuration
 ├── vite.config.ts          # Vite & Build configuration
 └── package.json            # Dependencies and scripts
 ```
@@ -216,6 +228,94 @@ CSV exports are designed to be imported directly into ArcGIS:
 
 ### Health Monitoring
 A health check page is available at `/health/` to verify system status and PWA health.
+
+## GNSS Integration (Live Measure Mode)
+
+The application supports live GNSS coordinate capture from Trimble R780/R780-2 receivers for survey-grade positioning.
+
+### Overview
+
+Live Measure mode enables:
+- Real-time GNSS position display on the sketch canvas
+- Survey point capture and assignment to nodes
+- Automatic edge creation between captured points
+- RTK fix quality and accuracy indicators
+
+### Supported Connection Methods
+
+| Method | Platform | Description |
+| :--- | :--- | :--- |
+| Bluetooth SPP | Android | Bluetooth Classic Serial Port Profile connection |
+| WiFi TCP | Android | TCP connection over R780's WiFi hotspot |
+
+**Note**: The GNSS features require building as a native Android app using Capacitor, as browsers cannot access Bluetooth SPP or raw TCP sockets.
+
+### Trimble R780 Configuration
+
+1. **Enable NMEA Output**: Configure the R780 to output NMEA sentences (GGA and RMC at minimum).
+2. **Bluetooth Pairing**: Pair the R780 with your Android device in system Bluetooth settings.
+3. **WiFi Mode**: Alternatively, connect your device to the R780's WiFi hotspot (default IP: 192.168.1.10, port: 5017).
+
+### Building the Android App
+
+```bash
+# Build the web assets
+npm run build
+
+# Sync with Android platform
+npm run build:android
+
+# Open in Android Studio
+npm run open:android
+```
+
+### Installing Capacitor Plugins
+
+For Bluetooth SPP support:
+```bash
+npm install @niceprogrammer/capacitor-bluetooth-serial
+npx cap sync android
+```
+
+For WiFi TCP support:
+```bash
+npm install capacitor-tcp-socket
+npx cap sync android
+```
+
+### Using Live Measure Mode
+
+1. **Enable Live Measure**: Tap the GPS icon in the canvas toolbar.
+2. **Connect to R780**: Tap "Connect to R780" and select your paired device (or enter WiFi IP).
+3. **Monitor Position**: The status pill shows fix quality, satellite count, and HDOP.
+4. **Capture Points**: 
+   - Position yourself at a manhole.
+   - Tap "Capture Point".
+   - Select the node to assign coordinates to.
+   - Optionally create an edge from the previous point.
+5. **Verify**: Captured coordinates are stored and the node is repositioned on the canvas.
+
+### GNSS Status Indicators
+
+| Fix Quality | Color | Description |
+| :--- | :--- | :--- |
+| No Fix | Red | No GNSS fix available |
+| GPS | Amber | Standalone GPS fix |
+| DGPS | Amber | Differential GPS fix |
+| RTK Float | Blue | RTK float solution |
+| RTK Fixed | Green | RTK fixed solution (highest accuracy) |
+
+### Development Testing
+
+In web browser mode (without Capacitor), the app uses a mock GNSS adapter for testing:
+
+```javascript
+// Connect to mock GNSS
+await window.gnssConnection.connectMock();
+
+// Simulate movement
+window.gnssConnection.setMockPosition(32.0853, 34.7818);
+```
 
 ## License
 
