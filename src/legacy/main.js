@@ -2929,10 +2929,10 @@ function drawEdgeLabels(edge) {
   const x1 = tailNode.x, y1 = tailNode.y, x2 = headNode.x, y2 = headNode.y;
   const dx = x2 - x1;
   const dy = y2 - y1;
-  const length = Math.sqrt(dx * dx + dy * dy);
-  if (length <= 0) return;
-  const normX = dx / length;
-  const normY = dy / length;
+  const lengthPx = Math.sqrt(dx * dx + dy * dy);
+  if (lengthPx <= 0) return;
+  const normX = dx / lengthPx;
+  const normY = dy / lengthPx;
   const offset = 6 * sizeScale;
   ctx.save();
   const fontSize = Math.round(14 * sizeScale);
@@ -2943,6 +2943,61 @@ function drawEdgeLabels(edge) {
   ctx.lineWidth = 4;
   ctx.strokeStyle = COLORS.edge.labelStroke;
   ctx.fillStyle = COLORS.edge.label;
+  
+  // Draw length in meters if coordinates are enabled
+  if (coordinatesEnabled && coordinatesMap.size > 0) {
+    // Calculate actual length in meters from survey coordinates or pixel distance
+    let lengthMeters = null;
+    
+    if (tailNode.surveyX !== undefined && headNode.surveyX !== undefined) {
+      // Both nodes have survey coordinates - calculate real distance
+      const surveyDx = headNode.surveyX - tailNode.surveyX;
+      const surveyDy = headNode.surveyY - tailNode.surveyY;
+      lengthMeters = Math.sqrt(surveyDx * surveyDx + surveyDy * surveyDy);
+    } else if (coordinateScale > 0) {
+      // Convert pixel distance to meters using current scale
+      lengthMeters = lengthPx / coordinateScale;
+    }
+    
+    if (lengthMeters !== null && lengthMeters > 0.01) {
+      // Format length: show 2 decimal places for small values, 1 for larger
+      const lengthText = lengthMeters < 10 
+        ? `${lengthMeters.toFixed(2)}m` 
+        : `${lengthMeters.toFixed(1)}m`;
+      
+      // Position at 0.5 (middle) but offset perpendicular to avoid the arrow
+      // The arrow is at the head end, so we offset in the perpendicular direction
+      const ratio = 0.5;
+      const px = x1 + dx * ratio;
+      const py = y1 + dy * ratio;
+      
+      // Offset perpendicular to the edge (opposite side from measurements)
+      // Use negative perpendicular to go to the other side
+      const lengthOffset = 16 * sizeScale;
+      const perpX = normY * lengthOffset;  // Note: positive normY for opposite side
+      const perpY = -normX * lengthOffset;
+      
+      // Draw with slightly smaller font and different style for length
+      const lengthFontSize = Math.round(12 * sizeScale);
+      ctx.font = `${lengthFontSize}px Arial`;
+      ctx.textBaseline = 'middle';
+      
+      // Use a distinct color for length labels
+      ctx.strokeStyle = COLORS.edge.labelStroke;
+      ctx.fillStyle = '#0369a1'; // sky-700 for length labels
+      ctx.lineWidth = 3;
+      
+      ctx.strokeText(lengthText, px + perpX, py + perpY);
+      ctx.fillText(lengthText, px + perpX, py + perpY);
+      
+      // Reset font for other labels
+      ctx.font = `${fontSize}px Arial`;
+      ctx.textBaseline = 'bottom';
+      ctx.fillStyle = COLORS.edge.label;
+      ctx.lineWidth = 4;
+    }
+  }
+  
   if (edge.tail_measurement) {
     const ratio = 0.25;
     const px = x1 + dx * ratio;
