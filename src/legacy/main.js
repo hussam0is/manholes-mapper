@@ -5492,17 +5492,43 @@ function applyCoordinatesIfEnabled() {
     }
   });
   
-  // Get canvas dimensions
-  const rect = canvas.getBoundingClientRect();
-  const canvasWidth = rect.width || 800;
-  const canvasHeight = rect.height || 600;
+  // Get canvas dimensions - use actual canvas size, not bounding rect
+  // canvas.width and canvas.height are the actual pixel dimensions
+  let canvasWidth = canvas.width;
+  let canvasHeight = canvas.height;
   
-  // Apply coordinates to matching nodes
-  const result = applyCoordinatesToNodes(nodes, coordinatesMap, canvasWidth, canvasHeight);
+  // If canvas dimensions are not yet set, use sensible defaults
+  if (!canvasWidth || canvasWidth <= 0) {
+    const rect = canvas.getBoundingClientRect();
+    canvasWidth = rect.width || 800;
+  }
+  if (!canvasHeight || canvasHeight <= 0) {
+    const rect = canvas.getBoundingClientRect();
+    canvasHeight = rect.height || 600;
+  }
+  
+  // Account for device pixel ratio if set
+  const dpr = window.devicePixelRatio || 1;
+  const logicalWidth = canvasWidth / dpr;
+  const logicalHeight = canvasHeight / dpr;
+  
+  console.log('Canvas dimensions for coordinate transform:', {
+    canvasWidth,
+    canvasHeight,
+    logicalWidth,
+    logicalHeight,
+    dpr
+  });
+  
+  // Apply coordinates to matching nodes using logical (CSS) dimensions
+  const result = applyCoordinatesToNodes(nodes, coordinatesMap, logicalWidth, logicalHeight);
   nodes = result.updatedNodes;
   
   // Log results for debugging
   console.log(`Coordinates applied: ${result.matchedCount} matched, ${result.unmatchedCount} unmatched`);
+  
+  // Auto-recenter view after applying coordinates
+  recenterView();
   
   saveToStorage();
   scheduleDraw();

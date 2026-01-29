@@ -179,9 +179,9 @@ export function calculateCoordinateBounds(coordinatesMap) {
 
 /**
  * Transform survey coordinates to canvas coordinates
- * Survey coordinates typically have Y increasing northward, but canvas has Y increasing downward
- * @param {number} surveyX - X coordinate from survey
- * @param {number} surveyY - Y coordinate from survey
+ * Survey coordinates (ITM) typically have Y increasing northward, but canvas has Y increasing downward
+ * @param {number} surveyX - X coordinate from survey (ITM easting)
+ * @param {number} surveyY - Y coordinate from survey (ITM northing)
  * @param {{minX: number, maxX: number, minY: number, maxY: number}} bounds - Coordinate bounds
  * @param {number} canvasWidth - Target canvas width
  * @param {number} canvasHeight - Target canvas height
@@ -189,11 +189,23 @@ export function calculateCoordinateBounds(coordinatesMap) {
  * @returns {{x: number, y: number}} - Canvas coordinates
  */
 export function surveyToCanvas(surveyX, surveyY, bounds, canvasWidth, canvasHeight, padding = 50) {
-  const surveyWidth = bounds.maxX - bounds.minX || 1;
-  const surveyHeight = bounds.maxY - bounds.minY || 1;
+  // Handle edge cases for canvas dimensions
+  if (!canvasWidth || canvasWidth <= 0) canvasWidth = 800;
+  if (!canvasHeight || canvasHeight <= 0) canvasHeight = 600;
+  if (padding < 0) padding = 0;
+  if (padding * 2 >= Math.min(canvasWidth, canvasHeight)) padding = 20;
+  
+  // Calculate survey extent with safety for zero-width/height
+  const surveyWidth = Math.max(bounds.maxX - bounds.minX, 0.001);
+  const surveyHeight = Math.max(bounds.maxY - bounds.minY, 0.001);
   
   const availableWidth = canvasWidth - 2 * padding;
   const availableHeight = canvasHeight - 2 * padding;
+  
+  // Guard against zero available space
+  if (availableWidth <= 0 || availableHeight <= 0) {
+    return { x: canvasWidth / 2, y: canvasHeight / 2 };
+  }
   
   // Use aspect-ratio preserving scale
   const scale = Math.min(
@@ -201,39 +213,54 @@ export function surveyToCanvas(surveyX, surveyY, bounds, canvasWidth, canvasHeig
     availableHeight / surveyHeight
   );
   
-  // Normalize to 0-1 range
-  const normalizedX = (surveyX - bounds.minX) / surveyWidth;
-  const normalizedY = (surveyY - bounds.minY) / surveyHeight;
-  
-  // Transform to canvas coordinates
-  // Center the drawing
+  // Calculate scaled dimensions
   const scaledWidth = surveyWidth * scale;
   const scaledHeight = surveyHeight * scale;
+  
+  // Center the drawing in the canvas
   const offsetX = (canvasWidth - scaledWidth) / 2;
   const offsetY = (canvasHeight - scaledHeight) / 2;
   
-  return {
-    x: offsetX + normalizedX * scaledWidth,
-    // Flip Y axis: survey Y up -> canvas Y down
-    y: canvasHeight - (offsetY + normalizedY * scaledHeight)
-  };
+  // Transform survey coordinates to canvas coordinates
+  // Map survey X directly to canvas X (east is right)
+  const canvasX = offsetX + (surveyX - bounds.minX) * scale;
+  
+  // Flip Y axis: survey Y (northing) up -> canvas Y down
+  // Survey: minY is at bottom, maxY is at top
+  // Canvas: 0 is at top, height is at bottom
+  const canvasY = offsetY + (bounds.maxY - surveyY) * scale;
+  
+  return { x: canvasX, y: canvasY };
 }
 
 /**
  * Apply coordinates to nodes array
+ * Transforms ITM survey coordinates to canvas positions while preserving spatial relationships
  * @param {Array} nodes - Array of node objects
  * @param {Map<string, {x: number, y: number, z: number}>} coordinatesMap
  * @param {number} canvasWidth - Canvas width for transformation
  * @param {number} canvasHeight - Canvas height for transformation
- * @returns {{updatedNodes: Array, matchedCount: number, unmatchedCount: number}}
+ * @returns {{updatedNodes: Array, matchedCount: number, unmatchedCount: number, bounds: object}}
  */
 export function applyCoordinatesToNodes(nodes, coordinatesMap, canvasWidth = 800, canvasHeight = 600) {
   if (!coordinatesMap || coordinatesMap.size === 0) {
-    return { updatedNodes: nodes, matchedCount: 0, unmatchedCount: nodes.length };
+    return { updatedNodes: nodes, matchedCount: 0, unmatchedCount: nodes.length, bounds: null };
   }
   
-  // Calculate bounds from all coordinates
+  // Ensure valid canvas dimensions
+  if (!canvasWidth || canvasWidth <= 0) canvasWidth = 800;
+  if (!canvasHeight || canvasHeight <= 0) canvasHeight = 600;
+  
+  // Calculate bounds from all coordinates in the map
   const bounds = calculateCoordinateBounds(coordinatesMap);
+  
+  // Log bounds for debugging
+  console.log('Coordinate bounds:', bounds);
+  console.log('Survey extent:', {
+    width: bounds.maxX - bounds.minX,
+    height: bounds.maxY - bounds.minY
+  });
+  console.log('Canvas dimensions:', { width: canvasWidth, height: canvasHeight });
   
   let matchedCount = 0;
   let unmatchedCount = 0;
@@ -245,6 +272,20 @@ export function applyCoordinatesToNodes(nodes, coordinatesMap, canvasWidth = 800
     if (coords) {
       const canvasCoords = surveyToCanvas(coords.x, coords.y, bounds, canvasWidth, canvasHeight);
       matchedCount++;
+      
+      // Validate the computed coordinates
+      if (!Number.isFinite(canvasCoords.x) || !Number.isFinite(canvasCoords.y)) {
+        console.warn(`Invalid canvas coordinates for node ${nodeId}:`, canvasCoords);
+        return {
+          ...node,
+          hasCoordinates: true,
+          surveyX: coords.x,
+          surveyY: coords.y,
+          surveyZ: coords.z
+          // Keep original x, y positions
+        };
+      }
+      
       return {
         ...node,
         x: canvasCoords.x,
@@ -262,6 +303,8 @@ export function applyCoordinatesToNodes(nodes, coordinatesMap, canvasWidth = 800
       };
     }
   });
+  
+  console.log(`Applied coordinates: ${matchedCount} matched, ${unmatchedCount} unmatched`);
   
   return { updatedNodes, matchedCount, unmatchedCount, bounds };
 }
