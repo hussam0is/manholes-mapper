@@ -4,7 +4,9 @@ import {
   syncSketchToCloud, 
   debouncedSyncToCloud,
   processSyncQueue,
-  getSyncState
+  getSyncState,
+  deduplicateSketches,
+  cleanupDuplicateSketches
 } from '../src/auth/sync-service.js';
 import * as db from '../src/db.js';
 import * as authGuard from '../src/auth/auth-guard.js';
@@ -242,6 +244,86 @@ describe('Sync Service Unit Tests', () => {
         id: 'new-uuid-from-cloud',
         cloudSynced: true
       }));
+    });
+  });
+
+  describe('Sketch Deduplication', () => {
+    it('should detect and remove duplicates with same content', () => {
+      const uuid = '12345678-1234-1234-1234-123456789012';
+      const sketches = [
+        { id: uuid, name: 'Test', creationDate: '2023-01-01', nodes: [{ id: 1 }], edges: [], cloudSynced: true },
+        { id: 'sk_abc123', name: 'Test', creationDate: '2023-01-01', nodes: [{ id: 1 }], edges: [], cloudSynced: false }
+      ];
+      
+      const result = deduplicateSketches(sketches);
+      
+      expect(result.removedCount).toBe(1);
+      expect(result.deduplicated.length).toBe(1);
+      expect(result.deduplicated[0].id).toBe(uuid); // Cloud ID should be kept
+      expect(result.removedIds).toContain('sk_abc123');
+    });
+
+    it('should keep all sketches if no duplicates', () => {
+      const sketches = [
+        { id: 'sk_1', name: 'Sketch 1', creationDate: '2023-01-01', nodes: [], edges: [] },
+        { id: 'sk_2', name: 'Sketch 2', creationDate: '2023-01-02', nodes: [], edges: [] }
+      ];
+      
+      const result = deduplicateSketches(sketches);
+      
+      expect(result.removedCount).toBe(0);
+      expect(result.deduplicated.length).toBe(2);
+    });
+
+    it('should prefer cloud UUID over local sk_ ID', () => {
+      const uuid = '12345678-1234-1234-1234-123456789012';
+      const sketches = [
+        { id: 'sk_local', name: 'Same', creationDate: '2023-01-01', nodes: [], edges: [], updatedAt: '2023-06-01' },
+        { id: uuid, name: 'Same', creationDate: '2023-01-01', nodes: [], edges: [], updatedAt: '2023-05-01' }
+      ];
+      
+      const result = deduplicateSketches(sketches);
+      
+      expect(result.deduplicated[0].id).toBe(uuid);
+      expect(result.removedIds).toContain('sk_local');
+    });
+
+    it('should prefer newer sketch when both have same ID type', () => {
+      const sketches = [
+        { id: 'sk_old', name: 'Same', creationDate: '2023-01-01', nodes: [], edges: [], updatedAt: '2023-01-01' },
+        { id: 'sk_new', name: 'Same', creationDate: '2023-01-01', nodes: [], edges: [], updatedAt: '2023-06-01' }
+      ];
+      
+      const result = deduplicateSketches(sketches);
+      
+      expect(result.deduplicated[0].id).toBe('sk_new');
+      expect(result.removedIds).toContain('sk_old');
+    });
+
+    it('should handle empty array', () => {
+      const result = deduplicateSketches([]);
+      expect(result.removedCount).toBe(0);
+      expect(result.deduplicated).toEqual([]);
+    });
+
+    it('should handle multiple groups of duplicates', () => {
+      const uuid1 = '12345678-1234-1234-1234-123456789011';
+      const uuid2 = '12345678-1234-1234-1234-123456789022';
+      const sketches = [
+        // Group 1 - same fingerprint
+        { id: uuid1, name: 'A', creationDate: '2023-01-01', nodes: [{ id: 1 }], edges: [] },
+        { id: 'sk_a1', name: 'A', creationDate: '2023-01-01', nodes: [{ id: 1 }], edges: [] },
+        { id: 'sk_a2', name: 'A', creationDate: '2023-01-01', nodes: [{ id: 1 }], edges: [] },
+        // Group 2 - different fingerprint
+        { id: uuid2, name: 'B', creationDate: '2023-02-01', nodes: [{ id: 2 }], edges: [] },
+        { id: 'sk_b1', name: 'B', creationDate: '2023-02-01', nodes: [{ id: 2 }], edges: [] },
+      ];
+      
+      const result = deduplicateSketches(sketches);
+      
+      expect(result.deduplicated.length).toBe(2);
+      expect(result.removedCount).toBe(3);
+      expect(result.deduplicated.map(s => s.id).sort()).toEqual([uuid1, uuid2].sort());
     });
   });
 });

@@ -304,6 +304,14 @@ export async function syncFromCloud() {
       }
     }
 
+    // Run deduplication to clean up any local sketches that got synced
+    // This handles cases where sk_xxx local IDs weren't cleaned up when synced to cloud UUID
+    try {
+      await cleanupDuplicateSketchesInternal();
+    } catch (err) {
+      console.warn('[Sync] Deduplication after sync failed:', err);
+    }
+
     updateSyncState({
       isSyncing: false,
       lastSyncTime: new Date(),
@@ -412,6 +420,7 @@ export async function syncSketchToCloud(sketch) {
       });
     } else {
       // Create new sketch in cloud
+      const oldId = sketch.id; // Remember old local ID for cleanup
       const cloudSketch = await createSketchInCloud({
         name: sketch.name,
         creationDate: sketch.creationDate,
@@ -426,6 +435,37 @@ export async function syncSketchToCloud(sketch) {
       sketch.id = cloudSketch.id;
       sketch.cloudSynced = true;
       await saveSketchToIdb(sketch);
+      
+      // Also remove the old local ID from IndexedDB to prevent duplicates
+      if (oldId && oldId !== cloudSketch.id) {
+        try {
+          await deleteSketchFromIdb(oldId);
+        } catch (_) {
+          // Ignore errors - old ID might not exist
+        }
+      }
+      
+      // Update localStorage to replace old ID with new UUID
+      // This prevents duplicates when the legacy UI re-reads the library
+      if (typeof window !== 'undefined' && window.localStorage) {
+        try {
+          const raw = window.localStorage.getItem('graphSketch.library');
+          if (raw) {
+            const lib = JSON.parse(raw);
+            if (Array.isArray(lib)) {
+              // Find entry with old ID and update it to new ID
+              const idx = lib.findIndex(s => s.id === oldId);
+              if (idx >= 0) {
+                lib[idx] = { ...lib[idx], id: cloudSketch.id, cloudSynced: true };
+                window.localStorage.setItem('graphSketch.library', JSON.stringify(lib));
+                console.log(`Updated localStorage: ${oldId} → ${cloudSketch.id}`);
+              }
+            }
+          }
+        } catch (err) {
+          console.warn('Failed to update localStorage with new cloud ID:', err);
+        }
+      }
     }
 
     updateSyncState({
@@ -606,6 +646,175 @@ export async function processSyncQueue() {
 }
 
 /**
+ * Compute a simple content hash for a sketch to identify duplicates.
+ * Uses creationDate + node count + edge count + first/last node IDs as a fingerprint.
+ * @param {Object} sketch - Sketch object
+ * @returns {string} Content hash
+ */
+function computeSketchFingerprint(sketch) {
+  const nodes = sketch.nodes || [];
+  const edges = sketch.edges || [];
+  const creationDate = sketch.creationDate || sketch.createdAt || '';
+  const nodeCount = nodes.length;
+  const edgeCount = edges.length;
+  const firstNodeId = nodes[0]?.id || '';
+  const lastNodeId = nodes[nodes.length - 1]?.id || '';
+  const name = sketch.name || '';
+  
+  return `${creationDate}|${nodeCount}|${edgeCount}|${firstNodeId}|${lastNodeId}|${name}`;
+}
+
+/**
+ * Check if a sketch ID is a cloud UUID format
+ * @param {string} id - Sketch ID
+ * @returns {boolean}
+ */
+function isCloudId(id) {
+  return id && /^[0-9a-f-]{36}$/i.test(id);
+}
+
+/**
+ * Deduplicate sketches by removing local versions that have cloud counterparts.
+ * This handles the case where a sketch was created locally (sk_xxx ID) and later
+ * synced to cloud (UUID), resulting in two entries with the same content.
+ * 
+ * @param {Array} sketches - Array of sketch objects
+ * @returns {Object} { deduplicated: Array, removedCount: number, removedIds: Array }
+ */
+export function deduplicateSketches(sketches) {
+  if (!Array.isArray(sketches) || sketches.length === 0) {
+    return { deduplicated: sketches, removedCount: 0, removedIds: [] };
+  }
+  
+  // Group sketches by fingerprint
+  const fingerprintGroups = new Map();
+  
+  for (const sketch of sketches) {
+    const fingerprint = computeSketchFingerprint(sketch);
+    if (!fingerprintGroups.has(fingerprint)) {
+      fingerprintGroups.set(fingerprint, []);
+    }
+    fingerprintGroups.get(fingerprint).push(sketch);
+  }
+  
+  const deduplicated = [];
+  const removedIds = [];
+  
+  for (const [_fingerprint, group] of fingerprintGroups) {
+    if (group.length === 1) {
+      // No duplicates for this fingerprint
+      deduplicated.push(group[0]);
+    } else {
+      // Multiple sketches with same fingerprint - keep the cloud version
+      // Sort: cloud IDs first, then by updatedAt (newest first)
+      group.sort((a, b) => {
+        const aIsCloud = isCloudId(a.id);
+        const bIsCloud = isCloudId(b.id);
+        if (aIsCloud && !bIsCloud) return -1;
+        if (!aIsCloud && bIsCloud) return 1;
+        // Both are cloud or both are local - prefer newer
+        const aTime = new Date(a.updatedAt || a.createdAt || 0).getTime();
+        const bTime = new Date(b.updatedAt || b.createdAt || 0).getTime();
+        return bTime - aTime;
+      });
+      
+      // Keep the first (best) version, mark others as duplicates
+      deduplicated.push(group[0]);
+      for (let i = 1; i < group.length; i++) {
+        removedIds.push(group[i].id);
+      }
+    }
+  }
+  
+  return { deduplicated, removedCount: removedIds.length, removedIds };
+}
+
+/**
+ * Internal cleanup function - doesn't refresh UI (called during sync)
+ * @returns {Promise<Object>} { removedCount: number, removedIds: Array }
+ */
+async function cleanupDuplicateSketchesInternal() {
+  let totalRemoved = 0;
+  const allRemovedIds = [];
+  
+  // 1. Clean up localStorage
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const raw = window.localStorage.getItem('graphSketch.library');
+      if (raw) {
+        const lib = JSON.parse(raw);
+        if (Array.isArray(lib)) {
+          const { deduplicated, removedCount, removedIds } = deduplicateSketches(lib);
+          if (removedCount > 0) {
+            window.localStorage.setItem('graphSketch.library', JSON.stringify(deduplicated));
+            console.log(`[Sync] Removed ${removedCount} duplicate(s) from localStorage:`, removedIds);
+            totalRemoved += removedCount;
+            allRemovedIds.push(...removedIds);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[Sync] Failed to dedupe localStorage:', err);
+    }
+  }
+  
+  // 2. Clean up IndexedDB
+  try {
+    const idbSketches = await getAllSketchesFromIdb();
+    const { deduplicated, removedCount, removedIds } = deduplicateSketches(idbSketches);
+    if (removedCount > 0) {
+      // Delete the duplicate entries from IndexedDB
+      for (const id of removedIds) {
+        try {
+          await deleteSketchFromIdb(id);
+        } catch (_) {
+          // Ignore individual delete errors
+        }
+      }
+      console.log(`[Sync] Removed ${removedCount} duplicate(s) from IndexedDB:`, removedIds);
+      totalRemoved += removedCount;
+      // Only add IDs not already in allRemovedIds
+      for (const id of removedIds) {
+        if (!allRemovedIds.includes(id)) {
+          allRemovedIds.push(id);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[Sync] Failed to dedupe IndexedDB:', err);
+  }
+  
+  if (totalRemoved > 0) {
+    console.log(`[Sync] Duplicate cleanup complete. Total removed: ${totalRemoved}`);
+  }
+  
+  return { removedCount: totalRemoved, removedIds: allRemovedIds };
+}
+
+/**
+ * Clean up duplicate sketches from all storage locations.
+ * This should be called after sync or when duplicates are detected.
+ * 
+ * @returns {Promise<Object>} { removedCount: number, removedIds: Array }
+ */
+export async function cleanupDuplicateSketches() {
+  console.log('[Sync] Starting duplicate sketch cleanup...');
+  
+  const result = await cleanupDuplicateSketchesInternal();
+  
+  if (result.removedCount > 0) {
+    // Trigger UI refresh if available
+    if (typeof window !== 'undefined' && typeof window.renderHome === 'function') {
+      window.renderHome();
+    }
+  } else {
+    console.log('[Sync] No duplicate sketches found.');
+  }
+  
+  return result;
+}
+
+/**
  * Initialize sync service
  * Sets up online/offline listeners
  */
@@ -663,5 +872,7 @@ if (typeof window !== 'undefined') {
     getSyncState,
     onSyncStateChange,
     resetApiAvailability,
+    deduplicateSketches,
+    cleanupDuplicateSketches,
   };
 }
