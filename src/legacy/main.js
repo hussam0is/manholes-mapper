@@ -207,6 +207,13 @@ const coordinatesToggle = document.getElementById('coordinatesToggle');
 const importCoordinatesFile = document.getElementById('importCoordinatesFile');
 const mobileImportCoordinatesBtn = document.getElementById('mobileImportCoordinatesBtn');
 const mobileCoordinatesToggle = document.getElementById('mobileCoordinatesToggle');
+// Scale control elements
+const scaleDecreaseBtn = document.getElementById('scaleDecreaseBtn');
+const scaleIncreaseBtn = document.getElementById('scaleIncreaseBtn');
+const scaleValueDisplay = document.getElementById('scaleValueDisplay');
+const mobileScaleDecreaseBtn = document.getElementById('mobileScaleDecreaseBtn');
+const mobileScaleIncreaseBtn = document.getElementById('mobileScaleIncreaseBtn');
+const mobileScaleValueDisplay = document.getElementById('mobileScaleValueDisplay');
 
 // iPad/iOS: ensure taps trigger clicks on header buttons (Safari sometimes suppresses click)
 function synthesizeClickOnTap(element) {
@@ -357,6 +364,9 @@ let fallIconReady = false;
 let coordinatesMap = new Map(); // Map<nodeId, {x, y, z}>
 let coordinatesEnabled = false; // Whether to show coordinate indicators and use coordinate positions
 let originalNodePositions = new Map(); // Store original positions before applying coordinates
+let coordinateScale = 100; // Pixels per meter (100 = 1 pixel/cm)
+const SCALE_PRESETS = [50, 75, 100, 150, 200, 300]; // Available scale options
+const COORDINATE_SCALE_KEY = 'graphSketch.coordinateScale.v1';
 
 try {
   fallIconImage = new Image();
@@ -5557,8 +5567,8 @@ function applyCoordinatesIfEnabled() {
     dpr
   });
   
-  // Apply coordinates to matching nodes using logical (CSS) dimensions
-  const result = applyCoordinatesToNodes(nodes, coordinatesMap, logicalWidth, logicalHeight);
+  // Apply coordinates to matching nodes using logical (CSS) dimensions and current scale
+  const result = applyCoordinatesToNodes(nodes, coordinatesMap, logicalWidth, logicalHeight, coordinateScale);
   nodes = result.updatedNodes;
   
   // Log results for debugging
@@ -5629,12 +5639,92 @@ function syncCoordinatesToggleUI() {
 }
 
 /**
+ * Update scale display in UI
+ */
+function updateScaleDisplay() {
+  const displayText = `1:${coordinateScale}`;
+  if (scaleValueDisplay) {
+    scaleValueDisplay.textContent = displayText;
+  }
+  if (mobileScaleValueDisplay) {
+    mobileScaleValueDisplay.textContent = displayText;
+  }
+}
+
+/**
+ * Save coordinate scale to storage
+ */
+function saveCoordinateScale() {
+  try {
+    localStorage.setItem(COORDINATE_SCALE_KEY, JSON.stringify(coordinateScale));
+  } catch (e) {
+    console.warn('Failed to save coordinate scale', e);
+  }
+}
+
+/**
+ * Load coordinate scale from storage
+ */
+function loadCoordinateScale() {
+  try {
+    const raw = localStorage.getItem(COORDINATE_SCALE_KEY);
+    if (raw) {
+      const scale = JSON.parse(raw);
+      if (typeof scale === 'number' && scale > 0) {
+        coordinateScale = scale;
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to load coordinate scale', e);
+  }
+}
+
+/**
+ * Change coordinate scale and re-apply coordinates
+ * @param {number} delta - Change direction: 1 for increase, -1 for decrease
+ */
+function changeCoordinateScale(delta) {
+  const currentIndex = SCALE_PRESETS.indexOf(coordinateScale);
+  let newIndex;
+  
+  if (currentIndex === -1) {
+    // Current scale is not in presets, find closest
+    newIndex = delta > 0 
+      ? SCALE_PRESETS.findIndex(s => s > coordinateScale)
+      : SCALE_PRESETS.findIndex(s => s >= coordinateScale) - 1;
+    if (newIndex < 0) newIndex = 0;
+    if (newIndex >= SCALE_PRESETS.length) newIndex = SCALE_PRESETS.length - 1;
+  } else {
+    newIndex = currentIndex + delta;
+  }
+  
+  // Clamp to valid range
+  newIndex = Math.max(0, Math.min(SCALE_PRESETS.length - 1, newIndex));
+  
+  const newScale = SCALE_PRESETS[newIndex];
+  if (newScale !== coordinateScale) {
+    coordinateScale = newScale;
+    saveCoordinateScale();
+    updateScaleDisplay();
+    
+    // Re-apply coordinates with new scale
+    if (coordinatesEnabled && coordinatesMap.size > 0) {
+      applyCoordinatesIfEnabled();
+    }
+    
+    showToast(`קנה מידה: 1:${coordinateScale}`);
+  }
+}
+
+/**
  * Initialize coordinates from storage
  */
 function initCoordinates() {
   coordinatesMap = loadCoordinatesFromStorage();
   coordinatesEnabled = loadCoordinatesEnabled();
+  loadCoordinateScale();
   syncCoordinatesToggleUI();
+  updateScaleDisplay();
   
   // Mark nodes with coordinate status
   if (coordinatesMap.size > 0) {
@@ -5684,6 +5774,34 @@ if (mobileCoordinatesToggle) {
   mobileCoordinatesToggle.addEventListener('change', (e) => {
     toggleCoordinates(e.target.checked);
     closeMobileMenu();
+  });
+}
+
+// Scale control handlers (desktop)
+if (scaleDecreaseBtn) {
+  scaleDecreaseBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // Prevent dropdown from closing
+    changeCoordinateScale(-1);
+  });
+}
+
+if (scaleIncreaseBtn) {
+  scaleIncreaseBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // Prevent dropdown from closing
+    changeCoordinateScale(1);
+  });
+}
+
+// Scale control handlers (mobile)
+if (mobileScaleDecreaseBtn) {
+  mobileScaleDecreaseBtn.addEventListener('click', () => {
+    changeCoordinateScale(-1);
+  });
+}
+
+if (mobileScaleIncreaseBtn) {
+  mobileScaleIncreaseBtn.addEventListener('click', () => {
+    changeCoordinateScale(1);
   });
 }
 

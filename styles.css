@@ -2620,6 +2620,93 @@ input:checked + .slider:before {
   color: #16a34a;
 }
 
+/* Coordinate scale controls */
+.coordinate-scale-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid var(--color-border);
+  margin-top: 0.25rem;
+}
+
+.coordinate-scale-controls .material-icons {
+  font-size: 1.1rem;
+  color: var(--color-muted);
+}
+
+.scale-adjuster {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+
+.scale-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.scale-btn:hover {
+  background: var(--color-bg);
+  border-color: var(--color-primary);
+}
+
+.scale-btn:active {
+  background: var(--color-primary);
+  color: white;
+}
+
+.scale-value {
+  min-width: 50px;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+/* Mobile scale controls */
+.mobile-scale-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-bg);
+  border-radius: 8px;
+  margin: 0.25rem 0;
+}
+
+.mobile-scale-controls .material-icons {
+  font-size: 1.2rem;
+  color: var(--color-muted);
+}
+
+.mobile-scale-controls .scale-adjuster {
+  margin-left: auto;
+}
+
+.mobile-scale-controls .scale-btn {
+  width: 36px;
+  height: 36px;
+  font-size: 1.3rem;
+}
+
+.mobile-scale-controls .scale-value {
+  min-width: 60px;
+  font-size: 0.9rem;
+}
+
 /* Mobile finish workday button */
 .btn-finish-workday {
   border-color: #22c55e !important;

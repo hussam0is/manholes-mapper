@@ -359,9 +359,10 @@ export function approximateUncoordinatedNodePositions(nodes, edges) {
  * @param {Map<string, {x: number, y: number, z: number}>} coordinatesMap
  * @param {number} canvasWidth - Canvas width for transformation
  * @param {number} canvasHeight - Canvas height for transformation
+ * @param {number} userScale - User-specified scale in pixels per meter (optional, overrides calculated)
  * @returns {{updatedNodes: Array, matchedCount: number, unmatchedCount: number, bounds: object}}
  */
-export function applyCoordinatesToNodes(nodes, coordinatesMap, canvasWidth = 800, canvasHeight = 600) {
+export function applyCoordinatesToNodes(nodes, coordinatesMap, canvasWidth = 800, canvasHeight = 600, userScale = null) {
   if (!coordinatesMap || coordinatesMap.size === 0) {
     return { updatedNodes: nodes, matchedCount: 0, unmatchedCount: nodes.length, bounds: null };
   }
@@ -421,9 +422,9 @@ export function applyCoordinatesToNodes(nodes, coordinatesMap, canvasWidth = 800
     console.warn('This could mean all your coordinates are nearly identical.');
   }
   
-  // Calculate optimal scale for this network
-  const pixelsPerMeter = calculateOptimalScale(bounds, canvasWidth, canvasHeight, 0.8);
-  console.log('Calculated scale:', pixelsPerMeter.toFixed(2), 'pixels/meter');
+  // Use user-specified scale or calculate optimal scale for this network
+  const pixelsPerMeter = userScale || calculateOptimalScale(bounds, canvasWidth, canvasHeight, 0.8);
+  console.log('Using scale:', pixelsPerMeter.toFixed(2), 'pixels/meter', userScale ? '(user specified)' : '(auto calculated)');
   
   // Log sample coordinates
   console.log('Sample matched coordinates:');

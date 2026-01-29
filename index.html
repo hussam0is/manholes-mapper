@@ -99,6 +99,15 @@
               <span class="material-icons">my_location</span>
               <span class="dropdown-label" data-i18n="coordinates.enable">הפעל קואורדינטות</span>
             </label>
+            <div id="coordinateScaleControls" class="dropdown-item coordinate-scale-controls">
+              <span class="material-icons">straighten</span>
+              <span class="dropdown-label" data-i18n="coordinates.scale">קנה מידה:</span>
+              <div class="scale-adjuster">
+                <button id="scaleDecreaseBtn" class="scale-btn" title="הקטן">−</button>
+                <span id="scaleValueDisplay" class="scale-value">1:100</span>
+                <button id="scaleIncreaseBtn" class="scale-btn" title="הגדל">+</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -283,6 +292,15 @@
         <span class="material-icons">my_location</span>
         <span class="label" data-i18n="coordinates.enable">הפעל קואורדינטות</span>
       </label>
+      <div id="mobileCoordinateScaleControls" class="mobile-scale-controls">
+        <span class="material-icons">straighten</span>
+        <span class="label" data-i18n="coordinates.scale">קנה מידה:</span>
+        <div class="scale-adjuster">
+          <button id="mobileScaleDecreaseBtn" class="scale-btn" title="הקטן">−</button>
+          <span id="mobileScaleValueDisplay" class="scale-value">1:100</span>
+          <button id="mobileScaleIncreaseBtn" class="scale-btn" title="הגדל">+</button>
+        </div>
+      </div>
       
       <!-- Settings group -->
       <div class="menu-divider"></div>
