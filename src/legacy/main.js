@@ -2001,6 +2001,10 @@ function renderHome() {
     `;
     sketchListEl.appendChild(empty);
   } else {
+    // Check if user is admin to show owner info
+    const userRole = window.permissionsService?.getUserRole?.();
+    const isAdminUser = userRole?.isAdmin === true;
+    
     lib.forEach((rec) => {
       const item = document.createElement('div');
       const isCurrentSketch = rec.id === currentSketchId;
@@ -2019,6 +2023,11 @@ function renderHome() {
       const title = displayName || t('listTitle', rec.id.slice(-6), formattedDate);
       const nodeCount = (rec.nodes || []).length;
       const edgeCount = (rec.edges || []).length;
+      
+      // Show owner info for admin users viewing other users' sketches
+      const ownerDisplay = rec.ownerUsername || rec.createdBy || rec.ownerEmail || '';
+      const showOwnerInfo = isAdminUser && !rec.isOwner && ownerDisplay;
+      
       item.innerHTML = `
         ${isCurrentSketch ? `<div class="sketch-card-active-badge">
           <span class="material-icons">check_circle</span>
@@ -2034,6 +2043,10 @@ function renderHome() {
               <span class="material-icons">schedule</span>
               ${t('listUpdated', new Date(rec.updatedAt || rec.createdAt).toLocaleString(currentLang === 'he' ? 'he-IL' : 'en-GB'))}
             </div>
+            ${showOwnerInfo ? `<div class="sketch-card-meta sketch-card-owner">
+              <span class="material-icons">person</span>
+              <span>${ownerDisplay}</span>
+            </div>` : ''}
           </div>
         </div>
         <div class="sketch-card-stats">

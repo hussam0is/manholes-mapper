@@ -9,7 +9,7 @@
  */
 
 import { verifyAuth, parseBody, sanitizeErrorMessage } from '../_lib/auth.js';
-import { getSketchById, updateSketch, deleteSketch, ensureDb, getProjectById } from '../_lib/db.js';
+import { getSketchById, getSketchByIdAdmin, updateSketch, deleteSketch, ensureDb, getProjectById, getOrCreateUser } from '../_lib/db.js';
 import { validateSketchInput, validateUUID } from '../_lib/validators.js';
 import { applyRateLimit } from '../_lib/rate-limit.js';
 
@@ -48,13 +48,41 @@ export default async function handler(req, res) {
     await ensureDb();
 
     // Verify authentication
-    const { userId, error: authError } = await verifyAuth(request);
+    const { userId, error: authError, user: authUser } = await verifyAuth(request);
     if (authError) {
       return res.status(401).json({ error: authError });
     }
 
     if (req.method === 'GET') {
-      const sketch = await getSketchById(sketchId, userId);
+      // Get user info to check role and organization
+      const username = authUser?.name || null;
+      const email = authUser?.email || null;
+      const userRecord = await getOrCreateUser(userId, { username, email });
+      const userRole = userRecord?.role || 'user';
+      const userOrgId = userRecord?.organization_id;
+      
+      let sketch;
+      let isOwner = false;
+      
+      // Role-based access:
+      // - super_admin: can view any sketch
+      // - admin: can view sketches from their organization
+      // - user: can only view their own sketches
+      if (userRole === 'super_admin') {
+        sketch = await getSketchByIdAdmin(sketchId);
+        isOwner = sketch?.user_id === userId;
+      } else if (userRole === 'admin' && userOrgId) {
+        sketch = await getSketchByIdAdmin(sketchId);
+        // Admins can only access sketches from users in their organization
+        if (sketch && sketch.owner_organization_id !== userOrgId) {
+          sketch = null; // Not authorized
+        }
+        isOwner = sketch?.user_id === userId;
+      } else {
+        // Regular users can only see their own sketches
+        sketch = await getSketchById(sketchId, userId);
+        isOwner = true;
+      }
       
       if (!sketch) {
         return res.status(404).json({ error: 'Sketch not found' });
@@ -73,6 +101,11 @@ export default async function handler(req, res) {
         adminConfig: sketch.admin_config || {},
         projectId: sketch.project_id,
         snapshotInputFlowConfig: sketch.snapshot_input_flow_config || {},
+        // Include owner info and access level
+        ownerId: sketch.user_id,
+        ownerUsername: sketch.owner_username || null,
+        ownerEmail: sketch.owner_email || null,
+        isOwner: isOwner,
       };
       
       return res.status(200).json({ sketch: transformed });

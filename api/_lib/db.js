@@ -214,14 +214,31 @@ export async function getSketchesByUser(userId) {
 }
 
 /**
- * Get a single sketch by ID
+ * Get a single sketch by ID (for owner access)
  */
 export async function getSketchById(sketchId, userId) {
   const result = await sql`
-    SELECT id, name, creation_date, nodes, edges, admin_config, created_by, last_edited_by,
+    SELECT id, user_id, name, creation_date, nodes, edges, admin_config, created_by, last_edited_by,
            project_id, snapshot_input_flow_config, created_at, updated_at
     FROM sketches
     WHERE id = ${sketchId} AND user_id = ${userId}
+  `;
+  return result.rows[0] || null;
+}
+
+/**
+ * Get a single sketch by ID with owner info (for admin access)
+ * Does not filter by user_id - use for admin view only
+ */
+export async function getSketchByIdAdmin(sketchId) {
+  const result = await sql`
+    SELECT s.id, s.user_id, s.name, s.creation_date, s.nodes, s.edges, s.admin_config, 
+           s.created_by, s.last_edited_by, s.project_id, s.snapshot_input_flow_config, 
+           s.created_at, s.updated_at,
+           u.username as owner_username, u.email as owner_email, u.organization_id as owner_organization_id
+    FROM sketches s
+    LEFT JOIN users u ON s.user_id = u.id
+    WHERE s.id = ${sketchId}
   `;
   return result.rows[0] || null;
 }
@@ -634,6 +651,41 @@ export async function getSketchesByProject(projectId) {
     FROM sketches
     WHERE project_id = ${projectId}
     ORDER BY updated_at DESC
+  `;
+  return result.rows;
+}
+
+/**
+ * Get all sketches (for super admin)
+ * Returns all sketches from all users
+ */
+export async function getAllSketches() {
+  const result = await sql`
+    SELECT s.id, s.user_id, s.name, s.creation_date, s.nodes, s.edges, s.admin_config, 
+           s.created_by, s.last_edited_by, s.project_id, s.snapshot_input_flow_config, 
+           s.created_at, s.updated_at,
+           u.username as owner_username, u.email as owner_email
+    FROM sketches s
+    LEFT JOIN users u ON s.user_id = u.id
+    ORDER BY s.updated_at DESC
+  `;
+  return result.rows;
+}
+
+/**
+ * Get all sketches for an organization (for admin)
+ * Returns all sketches from users in the organization
+ */
+export async function getSketchesByOrganization(organizationId) {
+  const result = await sql`
+    SELECT s.id, s.user_id, s.name, s.creation_date, s.nodes, s.edges, s.admin_config, 
+           s.created_by, s.last_edited_by, s.project_id, s.snapshot_input_flow_config, 
+           s.created_at, s.updated_at,
+           u.username as owner_username, u.email as owner_email
+    FROM sketches s
+    INNER JOIN users u ON s.user_id = u.id
+    WHERE u.organization_id = ${organizationId}
+    ORDER BY s.updated_at DESC
   `;
   return result.rows;
 }

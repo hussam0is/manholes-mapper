@@ -8,7 +8,15 @@
  */
 
 import { verifyAuth, parseBody, sanitizeErrorMessage } from '../_lib/auth.js';
-import { getSketchesByUser, createSketch, ensureDb, getProjectById } from '../_lib/db.js';
+import { 
+  getSketchesByUser, 
+  getAllSketches, 
+  getSketchesByOrganization, 
+  createSketch, 
+  ensureDb, 
+  getProjectById,
+  getOrCreateUser
+} from '../_lib/db.js';
 import { validateSketchInput } from '../_lib/validators.js';
 import { applyRateLimit } from '../_lib/rate-limit.js';
 
@@ -41,8 +49,32 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'GET') {
-      const sketches = await getSketchesByUser(userId);
-      console.log(`[API /api/sketches] Fetched ${sketches?.length} sketches for ${userId}`);
+      // Get user info to check role and organization
+      const { user: authUser } = await verifyAuth(request);
+      const username = authUser?.name || null;
+      const email = authUser?.email || null;
+      
+      // Get or create user record to access role and organization
+      const userRecord = await getOrCreateUser(userId, { username, email });
+      const userRole = userRecord?.role || 'user';
+      const organizationId = userRecord?.organization_id;
+      
+      let sketches;
+      
+      // Role-based sketch access:
+      // - super_admin: sees all sketches
+      // - admin: sees all sketches in their organization
+      // - user: sees only their own sketches
+      if (userRole === 'super_admin') {
+        sketches = await getAllSketches();
+        console.log(`[API /api/sketches] Super admin ${userId} fetched ${sketches?.length} total sketches`);
+      } else if (userRole === 'admin' && organizationId) {
+        sketches = await getSketchesByOrganization(organizationId);
+        console.log(`[API /api/sketches] Admin ${userId} fetched ${sketches?.length} sketches for org ${organizationId}`);
+      } else {
+        sketches = await getSketchesByUser(userId);
+        console.log(`[API /api/sketches] User ${userId} fetched ${sketches?.length} own sketches`);
+      }
       
       const transformed = (sketches || []).map(row => ({
         id: row.id,
@@ -57,6 +89,12 @@ export default async function handler(req, res) {
         adminConfig: row.admin_config || {},
         projectId: row.project_id,
         snapshotInputFlowConfig: row.snapshot_input_flow_config || {},
+        // Include owner info for admin views
+        ownerId: row.user_id,
+        ownerUsername: row.owner_username || null,
+        ownerEmail: row.owner_email || null,
+        // Flag to indicate if this sketch belongs to the current user
+        isOwner: row.user_id === userId,
       }));
       
       return res.status(200).json({ sketches: transformed });

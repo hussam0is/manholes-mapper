@@ -5627,6 +5627,23 @@ select.invalid:focus {
   font-size: 0.9rem;
 }
 
+/* Owner info display for admin view */
+.sketch-card-owner {
+  margin-top: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  background: var(--color-surface);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: var(--color-primary);
+  display: inline-flex;
+  width: fit-content;
+}
+
+.sketch-card-owner .material-icons {
+  font-size: 0.85rem;
+  color: var(--color-primary);
+}
+
 /* Stats row */
 .sketch-card-stats {
   display: flex;
@@ -5869,6 +5886,15 @@ select.invalid:focus {
 
   .sketch-card-meta {
     color: #94a3b8;
+  }
+
+  .sketch-card-owner {
+    background: #334155;
+    color: #60a5fa;
+  }
+
+  .sketch-card-owner .material-icons {
+    color: #60a5fa;
   }
 
   .sketch-card-stats {
