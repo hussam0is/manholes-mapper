@@ -296,6 +296,12 @@ export function applyCoordinatesToNodes(nodes, coordinatesMap, canvasWidth = 800
   console.log('Survey extent (meters):', { width: surveyWidth, height: surveyHeight });
   console.log('Canvas dimensions (pixels):', { width: canvasWidth, height: canvasHeight });
   
+  // Warn if extent is very small (less than 1 meter)
+  if (surveyWidth < 1 || surveyHeight < 1) {
+    console.warn('⚠️ WARNING: Coordinate extent is very small! All points may cluster together.');
+    console.warn('This could mean all your coordinates are nearly identical.');
+  }
+  
   // Log sample coordinates
   console.log('Sample matched coordinates:');
   matchedNodeCoords.slice(0, 5).forEach(({ nodeId, coords }) => {
