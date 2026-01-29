@@ -24,149 +24,155 @@
   <link rel="manifest" href="./manifest.json" />
   <link rel="icon" type="image/png" href="./app_icon.png?v=3" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="./src/menu/menu.css" />
   <title>Manhole Mapper (ממפה שוחות)</title>
   <!-- Styles moved to styles.css -->
 </head>
 
 <body>
-  <header class="soft-blue-header">
-    <div id="brand">
-      <img id="brandLogo" src="./geopoint_logo.png" alt="Geopoint" />
-      <h1 id="appTitle">Manhole Mapper (ממפה שוחות)</h1>
-      <span id="sketchNameDisplay" class="sketch-name-display"></span>
+  <header class="soft-blue-header app-header">
+    <!-- Brand section -->
+    <div id="brand" class="menu-brand">
+      <img id="brandLogo" class="menu-brand__logo" src="./geopoint_logo.png" alt="Geopoint" />
+      <h1 id="appTitle" class="menu-brand__title">
+        <span class="menu-brand__title-main">Manhole</span>
+        <span class="menu-brand__title-highlight">Mapper</span>
+      </h1>
+      <span id="sketchNameDisplay" class="menu-sketch-name"></span>
     </div>
-    <!-- Mobile sketch name display (positioned after header on small screens) -->
-    <span id="sketchNameDisplayMobile" class="sketch-name-display-mobile"></span>
-    <div id="controls">
-      <!-- Primary actions -->
-      <div class="toolbar-group">
-        <button id="newSketchBtn" class="btn btn-ghost" title="">
+    
+    <!-- Mobile sketch name display -->
+    <span id="sketchNameDisplayMobile" class="menu-sketch-name menu-sketch-name--mobile"></span>
+    
+    <!-- Desktop controls -->
+    <nav id="controls" class="menu-controls" role="navigation" aria-label="Main navigation">
+      <!-- Primary actions group -->
+      <div class="menu-group menu-group--primary">
+        <button id="newSketchBtn" class="menu-btn menu-btn--primary" title="" data-action="newSketch">
           <span class="material-icons">note_add</span>
-          <span class="label"></span>
+          <span class="menu-btn__label"></span>
         </button>
-        <button id="saveBtn" class="btn btn-ghost" title="">
-          <span class="material-icons">save</span>
-          <span class="label"></span>
-        </button>
-      </div>
-
-      <!-- Search node by ID -->
-      <div class="toolbar-group search-group">
-        <div class="search-container">
-          <span class="material-icons search-icon">search</span>
-          <input id="searchNodeInput" type="text" placeholder="" title="" class="search-input" />
-        </div>
-      </div>
-
-
-
-      <!-- Export controls - consolidated into dropdown -->
-      <div class="toolbar-group">
-        <div class="dropdown">
-          <button id="exportMenuBtn" class="btn btn-ghost btn-icon" title="">
-            <span class="material-icons">more_vert</span>
+        <div class="menu-save-group">
+          <button id="saveBtn" class="menu-btn menu-btn--ghost" title="" data-action="save">
+            <span class="material-icons">save</span>
+            <span class="menu-btn__label"></span>
           </button>
-          <div class="dropdown-menu" id="exportDropdown">
-            <button id="exportSketchBtn" class="dropdown-item">
-              <span class="material-icons">download</span>
-              <span class="dropdown-label"></span>
-            </button>
-            <button id="importSketchBtn" class="dropdown-item">
-              <span class="material-icons">upload</span>
-              <span class="dropdown-label"></span>
-            </button>
-            <hr class="dropdown-divider" />
-            <button id="exportNodesBtn" class="dropdown-item">
-              <span class="material-icons">donut_large</span>
-              <span class="dropdown-label"></span>
-            </button>
-            <button id="exportEdgesBtn" class="dropdown-item">
-              <span class="material-icons">call_split</span>
-              <span class="dropdown-label"></span>
-            </button>
-            <hr class="dropdown-divider" />
-            <button id="finishWorkdayBtn" class="dropdown-item dropdown-item-primary">
-              <span class="material-icons">done_all</span>
-              <span class="dropdown-label"></span>
-            </button>
-            <hr class="dropdown-divider" />
-            <button id="importCoordinatesBtn" class="dropdown-item">
-              <span class="material-icons">place</span>
-              <span class="dropdown-label" data-i18n="coordinates.import">יבא קואורדינטות</span>
-            </button>
-            <label id="toggleCoordinatesBtn" class="dropdown-item dropdown-toggle-item">
-              <input type="checkbox" id="coordinatesToggle" />
-              <span class="material-icons">my_location</span>
-              <span class="dropdown-label" data-i18n="coordinates.enable">הפעל קואורדינטות</span>
-            </label>
-            <div id="coordinateScaleControls" class="dropdown-item coordinate-scale-controls">
-              <span class="material-icons">straighten</span>
-              <span class="dropdown-label" data-i18n="coordinates.scale">קנה מידה:</span>
-              <div class="scale-adjuster">
-                <button id="scaleDecreaseBtn" class="scale-btn" title="הקטן">−</button>
-                <span id="scaleValueDisplay" class="scale-value">1:100</span>
-                <button id="scaleIncreaseBtn" class="scale-btn" title="הגדל">+</button>
-              </div>
-            </div>
-          </div>
+          <label class="menu-autosave">
+            <input id="autosaveToggle" type="checkbox" />
+            <span class="menu-autosave__label"></span>
+          </label>
         </div>
       </div>
-      <!-- Hidden file input for importing sketches -->
-      <input type="file" id="importSketchFile" accept="application/json,.json" style="display:none;" aria-label="Import sketch file" />
-      <!-- Hidden file input for importing coordinates -->
-      <input type="file" id="importCoordinatesFile" accept=".csv,text/csv" style="display:none;" aria-label="Import coordinates file" />
+
+      <!-- Search group -->
+      <div class="menu-group menu-group--search">
+        <div class="menu-search">
+          <span class="material-icons menu-search__icon">search</span>
+          <input id="searchNodeInput" type="text" placeholder="" title="" class="menu-search__input" />
+        </div>
+      </div>
 
       <!-- Size controls -->
-      <div class="toolbar-group">
-        <div class="segmented">
-          <button id="sizeDecreaseBtn" class="btn btn-icon" title="">
+      <div class="menu-group menu-group--size">
+        <div class="menu-segmented">
+          <button id="sizeDecreaseBtn" class="menu-btn menu-btn--small menu-btn--icon-only" title="" data-action="sizeDecrease">
             <span class="material-icons">remove_circle_outline</span>
           </button>
-          <button id="sizeIncreaseBtn" class="btn btn-icon" title="">
+          <button id="sizeIncreaseBtn" class="menu-btn menu-btn--small menu-btn--icon-only" title="" data-action="sizeIncrease">
             <span class="material-icons">add_circle_outline</span>
           </button>
         </div>
       </div>
 
-      <!-- Autosave toggle -->
-      <div class="toolbar-group">
-        <label class="btn btn-ghost autosave-btn">
-          <input id="autosaveToggle" type="checkbox" />
-          <span class="label"></span>
-        </label>
+      <!-- Command menu (More dropdown) -->
+      <div class="menu-group menu-group--command">
+        <button id="exportMenuBtn" class="menu-btn menu-btn--ghost menu-btn--icon-only" title="" aria-haspopup="menu" aria-expanded="false">
+          <span class="material-icons">more_vert</span>
+        </button>
+        <div class="menu-dropdown" id="exportDropdown" role="menu">
+          <button id="exportSketchBtn" class="menu-dropdown__item" role="menuitem" data-action="exportSketch">
+            <span class="material-icons">download</span>
+            <span class="menu-dropdown__label"></span>
+          </button>
+          <button id="importSketchBtn" class="menu-dropdown__item" role="menuitem" data-action="importSketch">
+            <span class="material-icons">upload</span>
+            <span class="menu-dropdown__label"></span>
+          </button>
+          <hr class="menu-dropdown__divider" />
+          <button id="exportNodesBtn" class="menu-dropdown__item" role="menuitem" data-action="exportNodes">
+            <span class="material-icons">donut_large</span>
+            <span class="menu-dropdown__label"></span>
+          </button>
+          <button id="exportEdgesBtn" class="menu-dropdown__item" role="menuitem" data-action="exportEdges">
+            <span class="material-icons">call_split</span>
+            <span class="menu-dropdown__label"></span>
+          </button>
+          <hr class="menu-dropdown__divider" />
+          <button id="finishWorkdayBtn" class="menu-dropdown__item menu-dropdown__item--primary" role="menuitem" data-action="finishWorkday">
+            <span class="material-icons">done_all</span>
+            <span class="menu-dropdown__label"></span>
+          </button>
+          <hr class="menu-dropdown__divider" />
+          <button id="importCoordinatesBtn" class="menu-dropdown__item" role="menuitem" data-action="importCoordinates">
+            <span class="material-icons">place</span>
+            <span class="menu-dropdown__label" data-i18n="coordinates.import">יבא קואורדינטות</span>
+          </button>
+          <label id="toggleCoordinatesBtn" class="menu-dropdown__item menu-dropdown__item--toggle">
+            <input type="checkbox" id="coordinatesToggle" />
+            <span class="material-icons">my_location</span>
+            <span class="menu-dropdown__label" data-i18n="coordinates.enable">הפעל קואורדינטות</span>
+          </label>
+          <div id="coordinateScaleControls" class="menu-dropdown__item menu-dropdown__item--scale">
+            <span class="material-icons">straighten</span>
+            <span class="menu-dropdown__label" data-i18n="coordinates.scale">קנה מידה:</span>
+            <div class="menu-scale-adjuster">
+              <button id="scaleDecreaseBtn" class="menu-scale-btn" title="הקטן">−</button>
+              <span id="scaleValueDisplay" class="menu-scale-value">1:100</span>
+              <button id="scaleIncreaseBtn" class="menu-scale-btn" title="הגדל">+</button>
+            </div>
+          </div>
+          <hr class="menu-dropdown__divider" />
+          <label id="toggleLiveMeasureBtn" class="menu-dropdown__item menu-dropdown__item--toggle">
+            <input type="checkbox" id="liveMeasureToggle" />
+            <span class="material-icons">gps_fixed</span>
+            <span class="menu-dropdown__label" data-i18n="liveMeasure.enable">מדידה חיה</span>
+          </label>
+        </div>
       </div>
 
-      <!-- Language selector -->
-      <div class="toolbar-group">
-        <select id="langSelect" class="btn btn-ghost" title="">
+      <!-- Utility group -->
+      <div class="menu-group menu-group--utility">
+        <select id="langSelect" class="menu-select" title="">
           <option value="he">עברית</option>
           <option value="en">English</option>
         </select>
-      </div>
-
-      <!-- Utility actions -->
-      <div class="toolbar-group">
-        <button id="helpBtn" class="btn btn-ghost btn-icon" title="">
+        <button id="helpBtn" class="menu-btn menu-btn--ghost menu-btn--icon-only" title="" data-action="help">
           <span class="material-icons">help_outline</span>
         </button>
-        <button id="adminBtn" class="btn btn-ghost btn-icon" title="">
+        <button id="adminBtn" class="menu-btn menu-btn--ghost menu-btn--icon-only" title="" data-action="admin">
           <span class="material-icons">tune</span>
         </button>
-        <button id="projectsBtn" class="btn btn-ghost btn-icon" title="">
+        <button id="projectsBtn" class="menu-btn menu-btn--ghost menu-btn--icon-only" title="" data-action="projects">
           <span class="material-icons">folder_open</span>
         </button>
-        <button id="homeBtn" class="btn btn-ghost" title="">
+        <button id="homeBtn" class="menu-btn menu-btn--ghost" title="" data-action="home">
           <span class="material-icons">home</span>
-          <span class="label"></span>
+          <span class="menu-btn__label"></span>
         </button>
       </div>
+
       <!-- User account button -->
-      <div class="toolbar-group" id="userButtonContainer">
+      <div class="menu-group menu-group--user" id="userButtonContainer">
         <div id="clerkUserButton"></div>
       </div>
-    </div>
-    <!-- Mobile only: toggle to open overflow menu (moved outside #controls so it remains visible on small screens) -->
-    <button id="mobileMenuBtn" class="btn btn-ghost" title="">
+    </nav>
+
+    <!-- Hidden file inputs -->
+    <input type="file" id="importSketchFile" accept="application/json,.json" style="display:none;" aria-label="Import sketch file" />
+    <input type="file" id="importCoordinatesFile" accept=".csv,text/csv" style="display:none;" aria-label="Import coordinates file" />
+
+    <!-- Mobile menu toggle -->
+    <button id="mobileMenuBtn" class="menu-toggle" title="" aria-label="Open menu" aria-expanded="false" aria-controls="mobileMenu">
       <span class="material-icons">menu</span>
     </button>
   </header>
