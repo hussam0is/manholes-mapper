@@ -281,6 +281,14 @@ export async function syncFromCloud() {
           nodes: s.nodes || [],
           edges: s.edges || [],
           adminConfig: s.adminConfig || {},
+          projectId: s.projectId,
+          // Include owner info for admin views
+          ownerId: s.ownerId,
+          ownerUsername: s.ownerUsername,
+          ownerEmail: s.ownerEmail,
+          isOwner: s.isOwner,
+          createdBy: s.createdBy,
+          lastEditedBy: s.lastEditedBy,
           cloudSynced: true
         }));
         window.localStorage.setItem('graphSketch.library', JSON.stringify(legacyLib));
