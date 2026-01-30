@@ -427,5 +427,5 @@ export function getCacheStats() {
   };
 }
 
-// Export constants and utility functions for external use
-export { TILE_SIZE, GOVMAP_RESOLUTIONS, GOVMAP_ORIGIN, latLonToTile, tileToLatLon };
+// Export constants for external use (latLonToTile and tileToLatLon are already exported above)
+export { TILE_SIZE, GOVMAP_RESOLUTIONS, GOVMAP_ORIGIN };
