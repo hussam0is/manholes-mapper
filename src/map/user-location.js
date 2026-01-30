@@ -67,12 +67,12 @@ export async function checkPermission() {
 
 /**
  * Request location permission and get current position
- * @returns {Promise<{lat: number, lon: number, accuracy: number}|null>}
+ * @returns {Promise<{lat: number, lon: number, accuracy: number, error?: string}|null>}
  */
 export function requestLocationPermission() {
   return new Promise((resolve) => {
     if (!isGeolocationSupported()) {
-      resolve(null);
+      resolve({ error: 'not_supported' });
       return;
     }
     
@@ -89,11 +89,23 @@ export function requestLocationPermission() {
         resolve(currentPosition);
       },
       (error) => {
-        console.warn('Location permission denied or error:', error.message);
-        if (error.code === error.PERMISSION_DENIED) {
-          permissionState = 'denied';
+        console.warn('Location error:', error.code, error.message);
+        let errorType = 'unknown';
+        
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            permissionState = 'denied';
+            errorType = 'permission_denied';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorType = 'position_unavailable';
+            break;
+          case error.TIMEOUT:
+            errorType = 'timeout';
+            break;
         }
-        resolve(null);
+        
+        resolve({ error: errorType });
       },
       LOCATION_OPTIONS
     );

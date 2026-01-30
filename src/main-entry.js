@@ -194,7 +194,7 @@ function initMyLocationUI() {
     // Check if geolocation is supported
     if (!isGeolocationSupported()) {
       if (window.showToast) {
-        window.showToast(window.t?.('location.notSupported') || 'Location not supported');
+        window.showToast(window.t?.('location.notSupported') || 'Location not supported on this device');
       }
       return;
     }
@@ -205,19 +205,39 @@ function initMyLocationUI() {
     
     try {
       // Request location permission and get current position
-      const position = await requestLocationPermission();
+      const result = await requestLocationPermission();
       
-      if (position) {
-        // Center the map on the user's location
+      if (result && result.error) {
+        // Handle specific error types
+        if (window.showToast) {
+          switch (result.error) {
+            case 'permission_denied':
+              window.showToast(window.t?.('location.permissionDenied') || 'Location permission denied. Please enable location in your browser/app settings.');
+              break;
+            case 'position_unavailable':
+              window.showToast(window.t?.('location.positionUnavailable') || 'Location unavailable. Please check GPS is enabled.');
+              break;
+            case 'timeout':
+              window.showToast(window.t?.('location.timeout') || 'Location request timed out. Please try again.');
+              break;
+            case 'not_supported':
+              window.showToast(window.t?.('location.notSupported') || 'Location not supported on this device');
+              break;
+            default:
+              window.showToast(window.t?.('location.error') || 'Could not get location');
+          }
+        }
+      } else if (result && result.lat !== undefined) {
+        // Successfully got position - center the map
         if (window.centerOnGpsLocation) {
-          window.centerOnGpsLocation(position.lat, position.lon);
+          window.centerOnGpsLocation(result.lat, result.lon);
         } else if (window.showToast) {
           window.showToast(window.t?.('location.error') || 'Could not center on location');
         }
       } else {
-        // Location permission denied or error
+        // Unknown error
         if (window.showToast) {
-          window.showToast(window.t?.('location.permissionDenied') || 'Could not get location');
+          window.showToast(window.t?.('location.error') || 'Could not get location');
         }
       }
     } catch (error) {
