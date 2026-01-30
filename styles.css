@@ -6037,7 +6037,7 @@ select.invalid:focus {
   color: var(--color-muted);
 }
 
-.clerk-auth-container {
+.auth-form-wrapper {
   padding: 1.5rem 2rem 2rem;
   min-height: 300px;
   display: flex;
@@ -6099,12 +6099,12 @@ select.invalid:focus {
   color: var(--color-primary);
 }
 
-/* Clerk component overrides */
-.clerk-root-box {
+/* Auth component overrides */
+.auth-root-box {
   width: 100%;
 }
 
-.clerk-card {
+.auth-card {
   box-shadow: none !important;
   border: none !important;
 }
@@ -6115,12 +6115,12 @@ select.invalid:focus {
   align-items: center;
 }
 
-#clerkUserButton {
+#authUserButton {
   display: flex;
   align-items: center;
 }
 
-.clerk-avatar {
+.auth-avatar {
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -6137,7 +6137,7 @@ select.invalid:focus {
   border-bottom: 1px solid var(--color-border);
 }
 
-#mobileClerkUserButton {
+#mobileAuthUserButton {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -6205,7 +6205,7 @@ body.show-login #adminScreen {
 
 /* RTL adjustments for login */
 html[dir="rtl"] .login-panel-header,
-html[dir="rtl"] .clerk-auth-container {
+html[dir="rtl"] .auth-form-wrapper {
   direction: rtl;
 }
 

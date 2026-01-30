@@ -2,7 +2,7 @@
  * Auth Guard - Route protection for the Manholes Mapper PWA
  * 
  * Handles authentication state checking and route protection.
- * Works with Better Auth session management (replaces Clerk).
+ * Works with Better Auth session management.
  */
 
 import { authClient, getCurrentSession } from './auth-client.js';

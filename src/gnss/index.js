@@ -31,13 +31,20 @@ export {
   FIX_COLORS 
 } from './gnss-marker.js';
 
-// Point capture dialog
-export { 
+// Point capture dialog - import for local use AND re-export
+import { 
   initPointCaptureDialog, 
   openPointCaptureDialog, 
   closeDialog as closePointCaptureDialog, 
   isDialogOpen as isPointCaptureDialogOpen 
 } from './point-capture-dialog.js';
+
+export { 
+  initPointCaptureDialog, 
+  openPointCaptureDialog, 
+  closePointCaptureDialog, 
+  isPointCaptureDialogOpen 
+};
 
 // Adapters (for advanced usage)
 export { BluetoothAdapter } from './bluetooth-adapter.js';

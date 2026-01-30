@@ -178,7 +178,7 @@ export function createMobileMenu(t, currentLang = 'he') {
         </button>
       </div>
       <div id="mobileUserButtonContainer" class="mobile-menu__user">
-        <div id="mobileClerkUserButton"></div>
+        <div id="mobileAuthUserButton"></div>
       </div>
       <div class="mobile-menu__content">
         ${groups}
@@ -202,7 +202,7 @@ export function createHeader(t, currentLang = 'he') {
         ${createActionBar(t, currentLang)}
         ${createCommandMenu(t)}
         <div class="menu-group menu-group--user" id="userButtonContainer">
-          <div id="clerkUserButton"></div>
+          <div id="authUserButton"></div>
         </div>
       </div>
       ${createMobileMenuToggle(t)}

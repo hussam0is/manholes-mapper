@@ -4,12 +4,12 @@ This file documents the routing logic for the Manhole Mapper application.
 
 ## App Routing Logic
 
-The application uses hash-based routing with Clerk authentication.
+The application uses hash-based routing with Better Auth authentication.
 
 | Path | Description | Page | Auth Required |
 | :--- | :--- | :--- | :--- |
-| `#/login` | Login page with Clerk SignIn | Login | No |
-| `#/signup` | Sign up page with Clerk SignUp | Signup | No |
+| `#/login` | Login page with SignIn form | Login | No |
+| `#/signup` | Sign up page with SignUp form | Signup | No |
 | `#/` | Main application view (Home/Canvas) | Home | Yes |
 | `#/admin` | Administration and configuration settings | Admin | Yes |
 
@@ -36,14 +36,16 @@ A dedicated screen for advanced configuration:
 
 ## Authentication & Cloud Sync
 
-### Authentication (Clerk)
-- **Provider**: Clerk (Email/Password authentication)
+### Authentication (Better Auth)
+- **Provider**: Better Auth (Email/Password authentication with Neon Postgres)
 - **Config Files**: 
-  - `src/auth/clerk-provider.jsx` - Clerk React components
+  - `src/auth/auth-provider.jsx` - Auth React components
+  - `src/auth/auth-client.js` - Better Auth client
   - `src/auth/auth-guard.js` - Route protection and auth state
+  - `lib/auth.js` - Better Auth server configuration
 - **Environment Variables**:
-  - `VITE_CLERK_PUBLISHABLE_KEY` - Frontend key
-  - `CLERK_SECRET_KEY` - Backend API key
+  - `BETTER_AUTH_SECRET` - Server-side secret key
+  - `POSTGRES_URL` - Neon Postgres connection string
 
 ### Cloud Sync (Vercel Postgres)
 - **Sync Service**: `src/auth/sync-service.js` - Handles cloud synchronization

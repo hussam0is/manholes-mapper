@@ -42,42 +42,42 @@ Manholes Mapper is a lightweight yet powerful tool designed for field workers to
 - **Rendering**: HTML5 Canvas API for the graph engine.
 - **Storage**: IndexedDB for durable storage, mirrored with localStorage for synchronous access.
 - **Offline**: Service Worker (Workbox-inspired) for asset caching and offline fallback.
-- **Authentication**: **Clerk** for user authentication and session management.
+- **Authentication**: **Better Auth** for user authentication and session management with Neon Postgres.
 
-## Authentication (Clerk)
+## Authentication (Better Auth)
 
-This project uses [Clerk](https://clerk.com) for user authentication, providing secure sign-in, sign-up, and session management.
+This project uses [Better Auth](https://better-auth.com) for user authentication, providing secure sign-in, sign-up, and session management backed by Neon Postgres.
 
-### Clerk Integration
+### Better Auth Integration
 
 | Component | Package | Purpose |
 | :--- | :--- | :--- |
-| Frontend Auth | `@clerk/clerk-react` | React hooks and components |
-| JS SDK | `@clerk/clerk-js` | Core JavaScript authentication |
-| Backend Verification | `@clerk/backend` | Token verification for API routes |
+| Auth Library | `better-auth` | Core authentication library |
+| Client SDK | `better-auth/client` | Client-side authentication |
+| Database | `@neondatabase/serverless` | Neon Postgres for session storage |
 
 ### Environment Variables
 
 | Variable | Location | Description |
 | :--- | :--- | :--- |
-| `VITE_CLERK_PUBLISHABLE_KEY` | `.env.local` | Frontend publishable key (starts with `pk_`) |
-| `CLERK_SECRET_KEY` | Vercel Environment | Backend secret key (starts with `sk_`) |
+| `BETTER_AUTH_SECRET` | Vercel Environment | Secret key for signing sessions |
+| `POSTGRES_URL` | Vercel Environment | Neon Postgres connection string |
+| `BETTER_AUTH_URL` | Vercel Environment | Base URL for auth endpoints (optional) |
 
 ### Setup Instructions
 
-1. **Create a Clerk Application**: Sign up at [dashboard.clerk.com](https://dashboard.clerk.com) and create a new application.
-2. **Get API Keys**: Navigate to **API Keys** in the Clerk dashboard to find your publishable and secret keys.
-3. **Configure Frontend**: Create a `.env.local` file in the project root:
+1. **Configure Database**: Ensure your Neon Postgres database is connected via Vercel Storage.
+2. **Set Secret Key**: Add `BETTER_AUTH_SECRET` to your Vercel project's environment variables:
    ```bash
-   VITE_CLERK_PUBLISHABLE_KEY=pk_test_your_key_here
+   BETTER_AUTH_SECRET=your-secure-random-secret-here
    ```
-4. **Configure Backend (Vercel)**: Add `CLERK_SECRET_KEY` to your Vercel project's environment variables.
+3. **Database Tables**: Better Auth will automatically create the required tables (`user`, `session`, `account`, `verification`).
 
 ### Authentication Features
 
 - **Hash-based Routing**: Sign-in (`#/login`) and sign-up (`#/signup`) use hash routing for PWA compatibility.
-- **Session Persistence**: Automatic session management across page refreshes.
-- **API Token Verification**: Backend routes verify JWT tokens using Clerk's backend SDK.
+- **Session Persistence**: Cookie-based session management with 7-day expiration.
+- **API Session Verification**: Backend routes verify sessions using Better Auth's session API.
 - **User Button**: Integrated user menu for profile management and sign-out.
 
 ## Project Structure

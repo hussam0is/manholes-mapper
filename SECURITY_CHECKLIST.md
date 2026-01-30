@@ -2,36 +2,17 @@
 
 This checklist should be reviewed before deploying to production and periodically thereafter.
 
-## Clerk Dashboard Verification
-
-Access your Clerk Dashboard at: https://dashboard.clerk.com
+## Authentication Configuration (Better Auth)
 
 ### Authentication Settings
-- [ ] **Allowed redirect URLs**: Only contains production domain and localhost for dev
-  - Production: `https://your-app.vercel.app`
-  - Development: `http://localhost:5173`, `http://localhost:3000`
-  - Remove any unused or test URLs
-- [ ] **Unused authentication methods**: Disable any auth methods not in use
-- [ ] **Email verification**: Enable "Require email verification" if appropriate for your app
-
-### JWT Templates
-- [ ] Verify no sensitive claims are being added to tokens
-- [ ] Check token lifetime is reasonable (default 60 minutes is typically fine)
-- [ ] No custom session claims expose internal data
+- [ ] **BETTER_AUTH_SECRET**: Ensure a strong, random secret is set (at least 32 characters)
+- [ ] **Session lifetime**: Review session duration (default 7 days)
+- [ ] **Email verification**: Configure if appropriate for your app
 
 ### Users
 - [ ] Review users with elevated roles (admin, super_admin)
-- [ ] Get the Clerk User ID for your super admin: Dashboard -> Users -> Select user -> Copy User ID
-- [ ] Add this ID to `INITIAL_SUPER_ADMIN_CLERK_ID` environment variable in Vercel
-
-### Sessions
-- [ ] Review session lifetime settings (default is reasonable)
-- [ ] Consider enabling "Single session mode" if users should only be logged in on one device
-
-### Webhooks (if used)
-- [ ] Webhook signing secret is set
-- [ ] Webhook endpoint validates signatures
-- [ ] Webhook endpoint is not publicly guessable
+- [ ] Get the User ID for your super admin from the database
+- [ ] Add this ID to `INITIAL_SUPER_ADMIN_USER_ID` environment variable in Vercel
 
 ---
 
@@ -45,18 +26,16 @@ Navigate to: Project Settings -> Environment Variables
 
 | Variable | Production | Preview | Development | Notes |
 |----------|------------|---------|-------------|-------|
-| `CLERK_SECRET_KEY` | ✓ Required | ✓ Required | ✓ Required | Server-side only, never expose |
-| `VITE_CLERK_PUBLISHABLE_KEY` | ✓ Required | ✓ Required | ✓ Required | Safe for client-side |
+| `BETTER_AUTH_SECRET` | ✓ Required | ✓ Required | ✓ Required | Server-side only, never expose |
 | `POSTGRES_URL` | ✓ Auto | ✓ Auto | Manual | Provided by Vercel Postgres |
-| `INITIAL_SUPER_ADMIN_CLERK_ID` | ✓ Required | ✓ Optional | ✓ Optional | Clerk user ID of your admin |
-| `CLERK_AUTHORIZED_PARTIES` | ✓ Recommended | Optional | Optional | Your production URL |
+| `INITIAL_SUPER_ADMIN_USER_ID` | ✓ Required | ✓ Optional | ✓ Optional | User ID of your admin |
+| `BETTER_AUTH_URL` | ✓ Optional | Optional | Optional | Base URL for auth (auto-detected) |
 
 **Security checks:**
-- [ ] `CLERK_SECRET_KEY` is set for all environments
-- [ ] `CLERK_SECRET_KEY` is NOT visible in build logs (should be auto-hidden)
+- [ ] `BETTER_AUTH_SECRET` is set for all environments
+- [ ] `BETTER_AUTH_SECRET` is NOT visible in build logs (should be auto-hidden)
 - [ ] `POSTGRES_URL` is properly configured via Vercel Storage
-- [ ] `INITIAL_SUPER_ADMIN_CLERK_ID` is set with the correct Clerk user ID
-- [ ] `CLERK_AUTHORIZED_PARTIES` includes your production URL
+- [ ] `INITIAL_SUPER_ADMIN_USER_ID` is set with the correct user ID
 - [ ] No `.env.local` or secrets committed to git repository
 
 ### Deployment Protection
@@ -140,4 +119,4 @@ Set up alerts for:
 Consider using:
 - Vercel Analytics for performance monitoring
 - Sentry or similar for error tracking
-- Clerk's built-in security logs for auth events
+- Database logs for auth events

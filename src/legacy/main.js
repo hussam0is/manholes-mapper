@@ -778,7 +778,7 @@ if (mobileProjectsBtn) {
 // DOM references for login
 const loginPanel = document.getElementById('loginPanel');
 const authLoadingOverlay = document.getElementById('authLoadingOverlay');
-const clerkAuthContainer = document.getElementById('clerkAuthContainer');
+const authContainer = document.getElementById('authContainer');
 const loginTitle = document.getElementById('loginTitle');
 const loginSubtitle = document.getElementById('loginSubtitle');
 const loginLoadingText = document.getElementById('loginLoadingText');
@@ -823,33 +823,33 @@ function hideAuthLoading() {
 
 // Mount SignIn component (Better Auth)
 function mountAuthSignIn() {
-  if (!clerkAuthContainer) return;
+  if (!authContainer) return;
   
   // Dynamically import and mount the SignIn form
   import('../auth/auth-provider.jsx').then(({ mountSignIn }) => {
-    clerkAuthContainer.innerHTML = '';
-    mountSignIn(clerkAuthContainer, {
+    authContainer.innerHTML = '';
+    mountSignIn(authContainer, {
       signUpUrl: '#/signup',
     });
   }).catch(err => {
     console.error('Failed to load auth provider:', err);
-    clerkAuthContainer.innerHTML = '<p>Failed to load sign in form</p>';
+    authContainer.innerHTML = '<p>Failed to load sign in form</p>';
   });
 }
 
 // Mount SignUp component (Better Auth)
 function mountAuthSignUp() {
-  if (!clerkAuthContainer) return;
+  if (!authContainer) return;
   
   // Dynamically import and mount the SignUp form
   import('../auth/auth-provider.jsx').then(({ mountSignUp }) => {
-    clerkAuthContainer.innerHTML = '';
-    mountSignUp(clerkAuthContainer, {
+    authContainer.innerHTML = '';
+    mountSignUp(authContainer, {
       signInUrl: '#/login',
     });
   }).catch(err => {
     console.error('Failed to load auth provider:', err);
-    clerkAuthContainer.innerHTML = '<p>Failed to load sign up form</p>';
+    authContainer.innerHTML = '<p>Failed to load sign up form</p>';
   });
 }
 

@@ -2,7 +2,7 @@
  * Better Auth Client
  * 
  * Client-side authentication using Better Auth.
- * Replaces @clerk/clerk-react functionality.
+ * Provides sign-in, sign-up, and session management.
  */
 
 import { createAuthClient } from "better-auth/client";

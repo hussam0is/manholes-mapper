@@ -2,7 +2,7 @@
  * Better Auth UI Components
  * 
  * Custom authentication UI components for Better Auth.
- * Replaces Clerk's SignIn, SignUp, and UserButton components.
+ * Provides SignIn, SignUp, and UserButton components.
  */
 
 import React, { useState } from 'react';

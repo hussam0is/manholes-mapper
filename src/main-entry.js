@@ -42,8 +42,8 @@ if (typeof window !== 'undefined') {
   
   // Function to render user menu (desktop and mobile)
   const renderUserMenu = (user) => {
-    const userBtnContainer = document.getElementById('clerkUserButton');
-    const mobileUserBtnContainer = document.getElementById('mobileClerkUserButton');
+    const userBtnContainer = document.getElementById('authUserButton');
+    const mobileUserBtnContainer = document.getElementById('mobileAuthUserButton');
     
     const renderButton = (container) => {
       if (!container) return;
@@ -187,7 +187,10 @@ function initMyLocationUI() {
   const myLocationBtn = document.getElementById('myLocationBtn');
   if (!myLocationBtn) return;
   
-  myLocationBtn.addEventListener('click', async () => {
+  myLocationBtn.addEventListener('click', async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     // Check if geolocation is supported
     if (!isGeolocationSupported()) {
       if (window.showToast) {
@@ -207,15 +210,9 @@ function initMyLocationUI() {
       if (position) {
         // Center the map on the user's location
         if (window.centerOnGpsLocation) {
-          const success = window.centerOnGpsLocation(position.lat, position.lon);
-          if (success && window.showToast) {
-            window.showToast(window.t?.('location.centered') || 'Centered on your location');
-          }
-        } else {
-          console.warn('centerOnGpsLocation not available');
-          if (window.showToast) {
-            window.showToast(window.t?.('location.error') || 'Could not center on location');
-          }
+          window.centerOnGpsLocation(position.lat, position.lon);
+        } else if (window.showToast) {
+          window.showToast(window.t?.('location.error') || 'Could not center on location');
         }
       } else {
         // Location permission denied or error

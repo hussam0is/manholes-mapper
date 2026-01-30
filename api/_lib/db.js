@@ -79,7 +79,7 @@ async function initializeDatabase() {
   `;
 
   // Users table with roles
-  // Migration: Changed from clerk_id to user_id (UUID) for Better Auth compatibility
+  // Uses user_id (UUID) for Better Auth compatibility
   await sql`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
@@ -92,7 +92,7 @@ async function initializeDatabase() {
     )
   `;
 
-  // Migration: Add id column if table was created with old schema (clerk_id as PK)
+  // Migration: Ensure id and username columns exist
   // This handles existing installations
   try {
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS id UUID DEFAULT gen_random_uuid()`;
@@ -372,20 +372,6 @@ export async function getUserById(userId) {
   return result.rows[0] || null;
 }
 
-/**
- * Get a user by Clerk ID (legacy - for backwards compatibility during migration)
- * @deprecated Use getUserById instead
- */
-export async function getUserByClerkId(clerkId) {
-  // Try to find by old clerk_id column if it exists, or by id
-  const result = await sql`
-    SELECT id, username, email, role, organization_id, created_at, updated_at
-    FROM users
-    WHERE id::text = ${clerkId} OR email = ${clerkId}
-    LIMIT 1
-  `;
-  return result.rows[0] || null;
-}
 
 /**
  * Get all users (for super admin)
