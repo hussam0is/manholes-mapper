@@ -1,67 +1,91 @@
 /**
  * Command Menu Component
  * Dropdown menu for secondary actions (export, import, coordinates)
+ * Organized with visual group headers for better UX
  */
 
 import { menuConfig } from './menu-config.js';
 import { menuEvents } from './menu-events.js';
 
 /**
- * Create the command menu dropdown
+ * Create a single menu item
+ * @param {Object} item - Item configuration
+ * @param {Function} t - Translation function
+ * @returns {string} HTML string
+ */
+function createMenuItem(item, t) {
+  if (item.type === 'toggle') {
+    return `
+      <label class="menu-dropdown__item menu-dropdown__item--toggle">
+        <input type="checkbox" id="${item.id}Toggle" data-action="${item.id}" />
+        <span class="material-icons" aria-hidden="true">${item.icon}</span>
+        <span class="menu-dropdown__label">${t(item.labelKey)}</span>
+      </label>
+    `;
+  }
+
+  if (item.type === 'scale') {
+    return `
+      <div class="menu-dropdown__item menu-dropdown__item--scale" id="coordinateScaleControls">
+        <span class="material-icons" aria-hidden="true">${item.icon}</span>
+        <span class="menu-dropdown__label">${t(item.labelKey)}:</span>
+        <div class="menu-scale-adjuster">
+          <button 
+            class="menu-scale-btn" 
+            data-action="scaleDecrease"
+            title="${t('sizeDecrease')}"
+            aria-label="${t('sizeDecrease')}"
+          >−</button>
+          <span id="scaleValueDisplay" class="menu-scale-value">1:100</span>
+          <button 
+            class="menu-scale-btn" 
+            data-action="scaleIncrease"
+            title="${t('sizeIncrease')}"
+            aria-label="${t('sizeIncrease')}"
+          >+</button>
+        </div>
+      </div>
+    `;
+  }
+
+  const variantClass = item.variant ? `menu-dropdown__item--${item.variant}` : '';
+  
+  return `
+    <button 
+      id="${item.id}Btn"
+      class="menu-dropdown__item ${variantClass}"
+      data-action="${item.id}"
+    >
+      <span class="material-icons" aria-hidden="true">${item.icon}</span>
+      <span class="menu-dropdown__label">${t(item.labelKey)}</span>
+    </button>
+  `;
+}
+
+/**
+ * Create the command menu dropdown with grouped sections
  * @param {Function} t - Translation function
  * @returns {string} HTML string
  */
 export function createCommandMenu(t) {
-  const items = menuConfig.secondary.map(item => {
-    if (item.type === 'divider') {
-      return '<hr class="menu-dropdown__divider" />';
-    }
-
-    if (item.type === 'toggle') {
-      return `
-        <label class="menu-dropdown__item menu-dropdown__item--toggle">
-          <input type="checkbox" id="${item.id}Toggle" data-action="${item.id}" />
-          <span class="material-icons" aria-hidden="true">${item.icon}</span>
-          <span class="menu-dropdown__label">${t(item.labelKey)}</span>
-        </label>
-      `;
-    }
-
-    if (item.type === 'scale') {
-      return `
-        <div class="menu-dropdown__item menu-dropdown__item--scale" id="coordinateScaleControls">
-          <span class="material-icons" aria-hidden="true">${item.icon}</span>
-          <span class="menu-dropdown__label">${t(item.labelKey)}:</span>
-          <div class="menu-scale-adjuster">
-            <button 
-              class="menu-scale-btn" 
-              data-action="scaleDecrease"
-              title="${t('sizeDecrease')}"
-              aria-label="${t('sizeDecrease')}"
-            >−</button>
-            <span id="scaleValueDisplay" class="menu-scale-value">1:100</span>
-            <button 
-              class="menu-scale-btn" 
-              data-action="scaleIncrease"
-              title="${t('sizeIncrease')}"
-              aria-label="${t('sizeIncrease')}"
-            >+</button>
-          </div>
-        </div>
-      `;
-    }
-
-    const variantClass = item.variant ? `menu-dropdown__item--${item.variant}` : '';
+  // Use the new grouped structure for better organization
+  const groups = menuConfig.secondaryGroups || [];
+  
+  const groupsHtml = groups.map((group, index) => {
+    const items = group.items.map(item => createMenuItem(item, t)).join('');
+    const isFirst = index === 0;
     
     return `
-      <button 
-        id="${item.id}Btn"
-        class="menu-dropdown__item ${variantClass}"
-        data-action="${item.id}"
-      >
-        <span class="material-icons" aria-hidden="true">${item.icon}</span>
-        <span class="menu-dropdown__label">${t(item.labelKey)}</span>
-      </button>
+      ${!isFirst ? '<hr class="menu-dropdown__divider" />' : ''}
+      <div class="menu-dropdown__group" data-group="${group.id}">
+        <div class="menu-dropdown__group-header">
+          <span class="material-icons menu-dropdown__group-icon" aria-hidden="true">${group.icon}</span>
+          <span class="menu-dropdown__group-label">${t(group.labelKey)}</span>
+        </div>
+        <div class="menu-dropdown__group-items">
+          ${items}
+        </div>
+      </div>
     `;
   }).join('');
 
@@ -69,22 +93,28 @@ export function createCommandMenu(t) {
     <div class="menu-group menu-group--command">
       <button 
         id="commandMenuBtn"
-        class="menu-btn menu-btn--ghost menu-btn--icon-only"
+        class="menu-btn menu-btn--ghost menu-btn--icon-only menu-btn--command"
         aria-haspopup="menu"
         aria-expanded="false"
         aria-controls="commandDropdown"
         title="${t('menu')}"
         aria-label="${t('menu')}"
       >
-        <span class="material-icons" aria-hidden="true">more_vert</span>
+        <span class="material-icons" aria-hidden="true">apps</span>
       </button>
       <div 
         id="commandDropdown" 
-        class="menu-dropdown" 
+        class="menu-dropdown menu-dropdown--grouped" 
         role="menu"
         aria-label="${t('menu')}"
       >
-        ${items}
+        <div class="menu-dropdown__header">
+          <span class="material-icons" aria-hidden="true">dashboard</span>
+          <span>${t('menuGroup.actions')}</span>
+        </div>
+        <div class="menu-dropdown__content">
+          ${groupsHtml}
+        </div>
       </div>
     </div>
   `;

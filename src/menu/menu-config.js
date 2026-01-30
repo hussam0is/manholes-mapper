@@ -28,19 +28,107 @@ export const menuConfig = {
     titleKey: 'searchNodeTitle',
   },
 
-  // Secondary actions - grouped in dropdown on smaller screens
+  // Secondary actions - organized in dropdown with clear groups
+  secondaryGroups: [
+    {
+      id: 'sketch',
+      labelKey: 'menuGroup.sketch',
+      icon: 'description',
+      items: [
+        {
+          id: 'exportSketch',
+          icon: 'download',
+          labelKey: 'exportSketch',
+        },
+        {
+          id: 'importSketch',
+          icon: 'upload',
+          labelKey: 'importSketch',
+        },
+      ],
+    },
+    {
+      id: 'csv',
+      labelKey: 'menuGroup.csv',
+      icon: 'table_chart',
+      items: [
+        {
+          id: 'exportNodes',
+          icon: 'donut_large',
+          labelKey: 'exportNodes',
+        },
+        {
+          id: 'exportEdges',
+          icon: 'call_split',
+          labelKey: 'exportEdges',
+        },
+      ],
+    },
+    {
+      id: 'workday',
+      labelKey: 'menuGroup.workday',
+      icon: 'schedule',
+      items: [
+        {
+          id: 'finishWorkday',
+          icon: 'done_all',
+          labelKey: 'finishWorkday.button',
+          variant: 'success',
+        },
+      ],
+    },
+    {
+      id: 'location',
+      labelKey: 'menuGroup.location',
+      icon: 'location_on',
+      items: [
+        {
+          id: 'importCoordinates',
+          icon: 'place',
+          labelKey: 'coordinates.import',
+        },
+        {
+          id: 'toggleCoordinates',
+          icon: 'my_location',
+          labelKey: 'coordinates.enable',
+          type: 'toggle',
+        },
+        {
+          id: 'coordinateScale',
+          icon: 'straighten',
+          labelKey: 'coordinates.scale',
+          type: 'scale',
+        },
+      ],
+    },
+    {
+      id: 'gnss',
+      labelKey: 'menuGroup.gnss',
+      icon: 'satellite_alt',
+      items: [
+        {
+          id: 'toggleLiveMeasure',
+          icon: 'gps_fixed',
+          labelKey: 'liveMeasure.enable',
+          type: 'toggle',
+        },
+      ],
+    },
+  ],
+
+  // Legacy flat secondary array (for compatibility)
   secondary: [
     {
       id: 'exportSketch',
       icon: 'download',
       labelKey: 'exportSketch',
-      group: 'export',
+      group: 'sketch',
     },
     {
       id: 'importSketch',
       icon: 'upload',
       labelKey: 'importSketch',
-      group: 'export',
+      group: 'sketch',
     },
     { type: 'divider' },
     {
@@ -60,7 +148,7 @@ export const menuConfig = {
       id: 'finishWorkday',
       icon: 'done_all',
       labelKey: 'finishWorkday.button',
-      variant: 'primary',
+      variant: 'success',
       group: 'workday',
     },
     { type: 'divider' },
@@ -68,21 +156,21 @@ export const menuConfig = {
       id: 'importCoordinates',
       icon: 'place',
       labelKey: 'coordinates.import',
-      group: 'coordinates',
+      group: 'location',
     },
     {
       id: 'toggleCoordinates',
       icon: 'my_location',
       labelKey: 'coordinates.enable',
       type: 'toggle',
-      group: 'coordinates',
+      group: 'location',
     },
     {
       id: 'coordinateScale',
       icon: 'straighten',
       labelKey: 'coordinates.scale',
       type: 'scale',
-      group: 'coordinates',
+      group: 'location',
     },
     { type: 'divider' },
     {
@@ -158,36 +246,49 @@ export const menuConfig = {
     {
       id: 'nav',
       labelKey: 'menuGroupNav',
+      icon: 'home',
       items: ['home', 'newSketch'],
     },
     {
       id: 'search',
       labelKey: 'menuGroupSearch',
+      icon: 'search',
       items: ['searchNode'],
     },
     {
       id: 'view',
       labelKey: 'menuGroupView',
+      icon: 'visibility',
       items: ['sizeDecrease', 'sizeIncrease'],
     },
     {
-      id: 'data',
-      labelKey: 'menuGroupData',
-      items: [
-        'exportSketch',
-        'importSketch',
-        'exportNodes',
-        'exportEdges',
-        'save',
-        'finishWorkday',
-        'importCoordinates',
-        'toggleCoordinates',
-        'coordinateScale',
-      ],
+      id: 'sketch',
+      labelKey: 'menuGroup.sketch',
+      icon: 'description',
+      items: ['save', 'exportSketch', 'importSketch'],
+    },
+    {
+      id: 'csv',
+      labelKey: 'menuGroup.csv',
+      icon: 'table_chart',
+      items: ['exportNodes', 'exportEdges'],
+    },
+    {
+      id: 'location',
+      labelKey: 'menuGroup.location',
+      icon: 'location_on',
+      items: ['importCoordinates', 'toggleCoordinates', 'coordinateScale'],
+    },
+    {
+      id: 'workday',
+      labelKey: 'menuGroup.workday',
+      icon: 'schedule',
+      items: ['finishWorkday'],
     },
     {
       id: 'settings',
       labelKey: 'menuGroupSettings',
+      icon: 'settings',
       items: ['autosave', 'language', 'help', 'admin', 'projects'],
     },
   ],

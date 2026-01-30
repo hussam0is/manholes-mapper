@@ -150,9 +150,13 @@ export function createMobileMenu(t, currentLang = 'he') {
       `;
     }).join('');
 
+    const groupIcon = group.icon || 'folder';
     return `
-      <div class="mobile-menu__group">
-        <p class="mobile-menu__group-label" id="menuGroup${group.id.charAt(0).toUpperCase() + group.id.slice(1)}">${t(group.labelKey)}</p>
+      <div class="mobile-menu__group" data-group="${group.id}">
+        <div class="mobile-menu__group-header" id="menuGroup${group.id.charAt(0).toUpperCase() + group.id.slice(1)}">
+          <span class="material-icons mobile-menu__group-icon" aria-hidden="true">${groupIcon}</span>
+          <span class="mobile-menu__group-label">${t(group.labelKey)}</span>
+        </div>
         ${items}
       </div>
     `;

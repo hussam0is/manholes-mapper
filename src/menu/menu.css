@@ -588,18 +588,85 @@
 
 .menu-dropdown--open {
   display: block;
-  animation: menuDropdownIn 0.15s ease;
+  animation: menuDropdownIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes menuDropdownIn {
   from {
     opacity: 0;
-    transform: translateY(-4px);
+    transform: translateY(-8px) scale(0.96);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
+}
+
+/* Grouped dropdown styling */
+.menu-dropdown--grouped {
+  min-width: 280px;
+  max-width: 340px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.menu-dropdown__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  padding: 0.75rem 1rem;
+  
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  
+  background: linear-gradient(135deg, var(--color-primary, #2563eb), var(--color-primary-strong, #1d4ed8));
+}
+
+.menu-dropdown__header .material-icons {
+  font-size: 1.125rem;
+}
+
+.menu-dropdown__content {
+  padding: 0.5rem 0;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* Dropdown group */
+.menu-dropdown__group {
+  padding: 0.25rem 0;
+}
+
+.menu-dropdown__group-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  padding: 0.5rem 1rem 0.375rem;
+  
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--color-muted, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.menu-dropdown__group-icon {
+  font-size: 0.875rem !important;
+  opacity: 0.7;
+}
+
+.menu-dropdown__group-label {
+  flex: 1;
+}
+
+.menu-dropdown__group-items {
+  display: flex;
+  flex-direction: column;
 }
 
 .menu-dropdown__item {
@@ -608,7 +675,7 @@
   gap: 0.75rem;
   
   width: 100%;
-  padding: 0.625rem 1rem;
+  padding: 0.625rem 1rem 0.625rem 2.5rem;
   
   font-size: 0.875rem;
   color: var(--color-text, #0f172a);
@@ -618,22 +685,31 @@
   border: none;
   cursor: pointer;
   
-  transition: background 0.1s ease;
+  transition: all 0.15s ease;
+}
+
+[dir="rtl"] .menu-dropdown__item {
+  padding: 0.625rem 2.5rem 0.625rem 1rem;
 }
 
 .menu-dropdown__item:hover {
-  background: var(--color-bg, #f8fafc);
+  background: linear-gradient(90deg, rgba(37, 99, 235, 0.08), rgba(37, 99, 235, 0.04));
 }
 
 .menu-dropdown__item:focus-visible {
   outline: none;
-  background: var(--color-bg, #f8fafc);
+  background: linear-gradient(90deg, rgba(37, 99, 235, 0.12), rgba(37, 99, 235, 0.06));
 }
 
 .menu-dropdown__item .material-icons {
   font-size: 1.125rem;
   color: var(--color-muted, #64748b);
   flex-shrink: 0;
+  transition: color 0.15s ease;
+}
+
+.menu-dropdown__item:hover .material-icons {
+  color: var(--color-primary, #2563eb);
 }
 
 .menu-dropdown__label {
@@ -646,13 +722,46 @@
 }
 
 .menu-dropdown__item--primary .material-icons {
-  color: #22c55e;
+  color: var(--color-primary, #2563eb);
+}
+
+/* Success variant for finish workday */
+.menu-dropdown__item--success {
+  color: #059669;
+  font-weight: 500;
+}
+
+.menu-dropdown__item--success .material-icons {
+  color: #10b981;
+}
+
+.menu-dropdown__item--success:hover {
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.12), rgba(16, 185, 129, 0.06));
+}
+
+.menu-dropdown__item--success:hover .material-icons {
+  color: #059669;
 }
 
 .menu-dropdown__divider {
-  margin: 0.25rem 0;
+  margin: 0.375rem 1rem;
   border: none;
   border-top: 1px solid var(--menu-border);
+}
+
+/* Command menu button styling */
+.menu-btn--command {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(37, 99, 235, 0.05));
+  border-color: rgba(37, 99, 235, 0.2);
+}
+
+.menu-btn--command:hover {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(37, 99, 235, 0.1));
+  border-color: var(--color-primary, #2563eb);
+}
+
+.menu-btn--command .material-icons {
+  color: var(--color-primary, #2563eb);
 }
 
 /* Toggle items */
@@ -937,8 +1046,33 @@
   border-top: 1px solid var(--menu-border);
 }
 
+.mobile-menu__group-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  padding: 0.625rem 1rem 0.5rem;
+  
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--color-muted, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.mobile-menu__group-icon {
+  font-size: 0.9375rem;
+  opacity: 0.7;
+}
+
 .mobile-menu__group-label {
+  flex: 1;
+}
+
+/* Legacy support for old group-label class */
+p.mobile-menu__group-label {
   padding: 0.5rem 1rem;
+  margin: 0;
   
   font-size: 0.75rem;
   font-weight: 600;
@@ -988,7 +1122,17 @@
 }
 
 .mobile-menu__btn--primary .material-icons {
-  color: #22c55e;
+  color: var(--color-primary, #2563eb);
+}
+
+/* Success variant for finish workday */
+.mobile-menu__btn--success {
+  color: #059669;
+  font-weight: 500;
+}
+
+.mobile-menu__btn--success .material-icons {
+  color: #10b981;
 }
 
 /* Mobile menu search */
