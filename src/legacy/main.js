@@ -4838,17 +4838,20 @@ if (exportEdgesBtn) {
 if (exportMenuBtn && exportDropdown) {
   exportMenuBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    exportDropdown.classList.toggle('open');
+    const isOpen = exportDropdown.classList.toggle('menu-dropdown--open');
+    exportMenuBtn.setAttribute('aria-expanded', isOpen);
   });
 
   // Close dropdown when clicking outside
   document.addEventListener('click', () => {
-    exportDropdown.classList.remove('open');
+    exportDropdown.classList.remove('menu-dropdown--open');
+    exportMenuBtn.setAttribute('aria-expanded', 'false');
   });
 
   // Close dropdown when clicking a dropdown item
   exportDropdown.addEventListener('click', () => {
-    exportDropdown.classList.remove('open');
+    exportDropdown.classList.remove('menu-dropdown--open');
+    exportMenuBtn.setAttribute('aria-expanded', 'false');
   });
 }
 
@@ -5504,7 +5507,7 @@ async function completeFinishWorkday() {
 if (finishWorkdayBtn) {
   finishWorkdayBtn.addEventListener('click', () => {
     // Close dropdown menu first
-    if (exportDropdown) exportDropdown.classList.remove('open');
+    if (exportDropdown) exportDropdown.classList.remove('menu-dropdown--open');
     showFinishWorkdayModal();
   });
 }
@@ -5887,7 +5890,7 @@ function initCoordinates() {
 if (importCoordinatesBtn) {
   importCoordinatesBtn.addEventListener('click', () => {
     // Close dropdown menu first
-    if (exportDropdown) exportDropdown.classList.remove('open');
+    if (exportDropdown) exportDropdown.classList.remove('menu-dropdown--open');
     if (importCoordinatesFile) importCoordinatesFile.click();
   });
 }
