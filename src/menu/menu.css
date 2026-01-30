@@ -568,31 +568,22 @@
    Search Input
    ============================================ */
 .menu-search {
-  position: relative;
   display: flex;
   align-items: center;
+  gap: 0.5rem;
 }
 
 .menu-search__icon {
-  position: absolute;
-  left: 0.625rem;
-  top: 50%;
-  transform: translateY(-50%);
   color: var(--color-muted, #64748b);
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   line-height: 1;
-  pointer-events: none;
-}
-
-[dir="rtl"] .menu-search__icon {
-  left: auto;
-  right: 0.625rem;
+  flex-shrink: 0;
 }
 
 .menu-search__input {
   height: var(--menu-btn-height);
   width: 160px;
-  padding: 0 0.75rem 0 2.25rem;
+  padding: 0 0.75rem;
   
   font-size: 0.875rem;
   color: var(--color-text, #0f172a);
@@ -605,7 +596,6 @@
 }
 
 [dir="rtl"] .menu-search__input {
-  padding: 0 2.25rem 0 0.75rem;
   text-align: right;
 }
 
