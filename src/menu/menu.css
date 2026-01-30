@@ -579,6 +579,7 @@
   color: var(--color-muted, #64748b);
   font-size: 1.125rem;
   pointer-events: none;
+  z-index: 0;
 }
 
 [dir="rtl"] .menu-search__icon {
@@ -587,6 +588,8 @@
 }
 
 .menu-search__input {
+  position: relative;
+  z-index: 1;
   height: var(--menu-btn-height);
   width: 160px;
   padding: 0 0.75rem 0 2.5rem;
