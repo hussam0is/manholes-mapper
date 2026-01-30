@@ -575,24 +575,24 @@
 
 .menu-search__icon {
   position: absolute;
-  left: 0.5rem;
+  left: 0.625rem;
   top: 50%;
   transform: translateY(-50%);
   color: var(--color-muted, #64748b);
-  font-size: 1rem;
+  font-size: 1.125rem;
+  line-height: 1;
   pointer-events: none;
-  z-index: 2;
 }
 
 [dir="rtl"] .menu-search__icon {
   left: auto;
-  right: 0.5rem;
+  right: 0.625rem;
 }
 
 .menu-search__input {
   height: var(--menu-btn-height);
   width: 160px;
-  padding: 0 0.75rem 0 1.75rem;
+  padding: 0 0.75rem 0 2.25rem;
   
   font-size: 0.875rem;
   color: var(--color-text, #0f172a);
@@ -605,7 +605,7 @@
 }
 
 [dir="rtl"] .menu-search__input {
-  padding: 0 1.75rem 0 0.75rem;
+  padding: 0 2.25rem 0 0.75rem;
   text-align: right;
 }
 
