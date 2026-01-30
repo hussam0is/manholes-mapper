@@ -177,11 +177,13 @@ export function initCommandMenu(container) {
     }
   });
 
-  // Close after action (except toggles)
+  // Close after action (except toggles, scales, and selects)
   dropdown.addEventListener('click', (e) => {
     const item = e.target.closest('.menu-dropdown__item');
-    if (item && !item.classList.contains('menu-dropdown__item--toggle') && 
-        !item.classList.contains('menu-dropdown__item--scale')) {
+    if (item && 
+        !item.classList.contains('menu-dropdown__item--toggle') && 
+        !item.classList.contains('menu-dropdown__item--scale') &&
+        !item.classList.contains('menu-dropdown__item--select')) {
       closeMenu();
     }
   });

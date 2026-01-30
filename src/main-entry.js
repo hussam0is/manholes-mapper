@@ -520,11 +520,14 @@ function initCommandDropdown() {
     }
   });
 
-  // Close after clicking non-toggle items
+  // Close after clicking action items (not toggles, scales, or selects)
   dropdown.addEventListener('click', (e) => {
     const item = e.target.closest('.menu-dropdown__item');
-    if (item && !item.classList.contains('menu-dropdown__item--toggle') && 
-        !item.classList.contains('menu-dropdown__item--scale')) {
+    // Don't close for interactive control items
+    if (item && 
+        !item.classList.contains('menu-dropdown__item--toggle') && 
+        !item.classList.contains('menu-dropdown__item--scale') &&
+        !item.classList.contains('menu-dropdown__item--select')) {
       closeDropdown();
     }
   });
