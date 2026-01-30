@@ -12,6 +12,8 @@ import {
   calculateViewBoundsItm,
   calculateZoomLevel,
   tileToItm,
+  tileToLatLon,
+  latLonToTile,
   TILE_SIZE,
   GOVMAP_RESOLUTIONS
 } from './tile-manager.js';
@@ -193,6 +195,7 @@ export function getMapType() {
  */
 export async function drawMapTiles(ctx, canvasWidth, canvasHeight, viewTranslate, viewScale, coordinateScale, onTilesLoaded) {
   if (!mapLayerEnabled || !referencePoint) {
+    console.log('Map layer disabled or no reference point', { mapLayerEnabled, referencePoint });
     return;
   }
   
@@ -207,15 +210,24 @@ export async function drawMapTiles(ctx, canvasWidth, canvasHeight, viewTranslate
   );
   
   if (!viewBounds) {
+    console.log('No view bounds calculated');
     return;
   }
   
-  // Calculate appropriate zoom level
+  // Calculate appropriate zoom level based on effective scale
   const effectiveScale = coordinateScale * viewScale;
   const zoom = calculateZoomLevel(effectiveScale);
   
   // Get visible tiles
   const tiles = calculateVisibleTiles(viewBounds, zoom);
+  
+  console.log('Drawing map tiles', { 
+    viewBounds, 
+    zoom, 
+    tilesCount: tiles.length,
+    referencePoint,
+    coordinateScale 
+  });
   
   // Track if we need to request a redraw after loading
   let newTilesLoading = false;
@@ -238,24 +250,33 @@ export async function drawMapTiles(ctx, canvasWidth, canvasHeight, viewTranslate
       continue;
     }
     
-    // Calculate tile position on canvas
-    const tileItm = tileToItm(x, y, z);
-    const tileSizeMeters = TILE_SIZE * GOVMAP_RESOLUTIONS[z];
+    // Get tile corners in lat/lon
+    const topLeft = tileToLatLon(x, y, z);
+    const bottomRight = tileToLatLon(x + 1, y + 1, z);
     
-    // Convert ITM to canvas coordinates
-    const canvasX = referencePoint.canvas.x + (tileItm.itmX - referencePoint.itm.x) * coordinateScale;
-    const canvasY = referencePoint.canvas.y - (tileItm.itmY - referencePoint.itm.y) * coordinateScale;
+    // Convert tile corners to ITM
+    const topLeftItm = wgs84ToItm(topLeft.lat, topLeft.lon);
+    const bottomRightItm = wgs84ToItm(bottomRight.lat, bottomRight.lon);
+    
+    // Calculate tile dimensions in meters
+    const tileWidthMeters = Math.abs(bottomRightItm.x - topLeftItm.x);
+    const tileHeightMeters = Math.abs(topLeftItm.y - bottomRightItm.y);
+    
+    // Convert ITM to canvas coordinates using reference point
+    const canvasX = referencePoint.canvas.x + (topLeftItm.x - referencePoint.itm.x) * coordinateScale;
+    const canvasY = referencePoint.canvas.y - (topLeftItm.y - referencePoint.itm.y) * coordinateScale;
     
     // Calculate tile size on canvas
-    const tileSizeCanvas = tileSizeMeters * coordinateScale;
+    const tileSizeCanvasX = tileWidthMeters * coordinateScale;
+    const tileSizeCanvasY = tileHeightMeters * coordinateScale;
     
     // Draw the tile
     ctx.drawImage(
       tileImage,
       canvasX,
       canvasY,
-      tileSizeCanvas,
-      tileSizeCanvas
+      tileSizeCanvasX,
+      tileSizeCanvasY
     );
   }
   

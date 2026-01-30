@@ -12,6 +12,8 @@ export {
   calculateZoomLevel,
   itmToTile,
   tileToItm,
+  latLonToTile,
+  tileToLatLon,
   getTileSizeMeters,
   clearTileCache,
   getCacheStats,

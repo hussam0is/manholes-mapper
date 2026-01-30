@@ -1,6 +1,7 @@
 /**
  * Tile Manager Module
  * Handles tile loading, caching, and coordinate calculations for map background layers
+ * Uses standard Web Mercator (EPSG:3857) XYZ tile scheme for compatibility with OSM-style tile servers
  */
 
 // Tile size in pixels (standard for most tile servers)
@@ -15,39 +16,25 @@ const tileCache = new Map();
 // Pending tile loads: Map<string, Promise<HTMLImageElement>>
 const pendingLoads = new Map();
 
-// GovMap uses Israeli TM Grid (EPSG:2039)
-// Origin and resolution values for the tile pyramid
-// These values are from the GovMap tile matrix set
+// Web Mercator constants
+const EARTH_RADIUS = 6378137; // meters
+const MAX_LATITUDE = 85.051128779806604; // Web Mercator limit
+
+// Resolution (meters per pixel) for each zoom level in Web Mercator
+// Formula: (2 * PI * EARTH_RADIUS) / (TILE_SIZE * 2^zoom)
+const WEB_MERCATOR_RESOLUTIONS = [];
+for (let z = 0; z <= 20; z++) {
+  WEB_MERCATOR_RESOLUTIONS[z] = (2 * Math.PI * EARTH_RADIUS) / (TILE_SIZE * Math.pow(2, z));
+}
+
+// Legacy GOVMAP constants kept for backward compatibility
 const GOVMAP_ORIGIN = {
-  x: -5765124.00000001,  // Top-left X in EPSG:2039
-  y: 7492749.99999997    // Top-left Y in EPSG:2039
+  x: -5765124.00000001,
+  y: 7492749.99999997
 };
 
-// Resolution (meters per pixel) for each zoom level
-// GovMap typically uses zoom levels 0-20
-const GOVMAP_RESOLUTIONS = [
-  78271.51696402048,    // 0
-  39135.75848201024,    // 1
-  19567.87924100512,    // 2
-  9783.93962050256,     // 3
-  4891.96981025128,     // 4
-  2445.98490512564,     // 5
-  1222.99245256282,     // 6
-  611.49622628141,      // 7
-  305.748113140705,     // 8
-  152.8740565703525,    // 9
-  76.43702828517625,    // 10
-  38.21851414258813,    // 11
-  19.10925707129406,    // 12
-  9.55462853564703,     // 13
-  4.777314267823515,    // 14
-  2.3886571339117577,   // 15
-  1.1943285669558788,   // 16
-  0.5971642834779394,   // 17
-  0.2985821417389697,   // 18
-  0.14929107086948486,  // 19
-  0.07464553543474243   // 20
-];
+// Use Web Mercator resolutions 
+const GOVMAP_RESOLUTIONS = WEB_MERCATOR_RESOLUTIONS;
 
 /**
  * Generate a cache key for a tile
@@ -111,47 +98,171 @@ export function storeTileInCache(x, y, z, type, image) {
 }
 
 /**
- * Convert ITM coordinates to tile coordinates
- * @param {number} itmX - ITM X coordinate (easting)
- * @param {number} itmY - ITM Y coordinate (northing)
- * @param {number} zoom - Zoom level
- * @returns {{tileX: number, tileY: number, pixelX: number, pixelY: number}}
+ * Convert latitude to Web Mercator Y
+ * @param {number} lat - Latitude in degrees
+ * @returns {number} Y in meters
  */
-export function itmToTile(itmX, itmY, zoom) {
-  const resolution = GOVMAP_RESOLUTIONS[zoom];
-  
-  // Calculate pixel coordinates from origin
-  const pixelX = (itmX - GOVMAP_ORIGIN.x) / resolution;
-  const pixelY = (GOVMAP_ORIGIN.y - itmY) / resolution; // Y is inverted
-  
-  // Calculate tile coordinates
-  const tileX = Math.floor(pixelX / TILE_SIZE);
-  const tileY = Math.floor(pixelY / TILE_SIZE);
-  
-  // Calculate position within tile (0-255)
-  const offsetX = Math.floor(pixelX % TILE_SIZE);
-  const offsetY = Math.floor(pixelY % TILE_SIZE);
-  
-  return { tileX, tileY, pixelX: offsetX, pixelY: offsetY };
+function latToMercatorY(lat) {
+  const latRad = lat * Math.PI / 180;
+  return EARTH_RADIUS * Math.log(Math.tan(Math.PI / 4 + latRad / 2));
 }
 
 /**
- * Convert tile coordinates back to ITM
+ * Convert longitude to Web Mercator X
+ * @param {number} lon - Longitude in degrees
+ * @returns {number} X in meters
+ */
+function lonToMercatorX(lon) {
+  return lon * Math.PI / 180 * EARTH_RADIUS;
+}
+
+/**
+ * Convert Web Mercator Y to latitude
+ * @param {number} y - Y in meters
+ * @returns {number} Latitude in degrees
+ */
+function mercatorYToLat(y) {
+  return (2 * Math.atan(Math.exp(y / EARTH_RADIUS)) - Math.PI / 2) * 180 / Math.PI;
+}
+
+/**
+ * Convert Web Mercator X to longitude
+ * @param {number} x - X in meters
+ * @returns {number} Longitude in degrees
+ */
+function mercatorXToLon(x) {
+  return x / EARTH_RADIUS * 180 / Math.PI;
+}
+
+/**
+ * Convert lat/lon to tile coordinates (standard XYZ/slippy map)
+ * @param {number} lat - Latitude in degrees
+ * @param {number} lon - Longitude in degrees
+ * @param {number} zoom - Zoom level
+ * @returns {{tileX: number, tileY: number}}
+ */
+export function latLonToTile(lat, lon, zoom) {
+  const n = Math.pow(2, zoom);
+  const latRad = lat * Math.PI / 180;
+  
+  const tileX = Math.floor((lon + 180) / 360 * n);
+  const tileY = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n);
+  
+  return { tileX, tileY };
+}
+
+/**
+ * Convert tile coordinates to lat/lon (top-left corner of tile)
  * @param {number} tileX - Tile X coordinate
  * @param {number} tileY - Tile Y coordinate
  * @param {number} zoom - Zoom level
+ * @returns {{lat: number, lon: number}}
+ */
+export function tileToLatLon(tileX, tileY, zoom) {
+  const n = Math.pow(2, zoom);
+  const lon = tileX / n * 360 - 180;
+  const latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * tileY / n)));
+  const lat = latRad * 180 / Math.PI;
+  
+  return { lat, lon };
+}
+
+/**
+ * Convert ITM coordinates to tile coordinates via WGS84
+ * @param {number} itmX - ITM X coordinate (easting)
+ * @param {number} itmY - ITM Y coordinate (northing)
+ * @param {number} zoom - Zoom level
+ * @param {Function} itmToWgs84Fn - Conversion function from ITM to WGS84
+ * @returns {{tileX: number, tileY: number, pixelX: number, pixelY: number}}
+ */
+export function itmToTile(itmX, itmY, zoom, itmToWgs84Fn) {
+  // Default ITM to WGS84 conversion if not provided
+  if (!itmToWgs84Fn) {
+    itmToWgs84Fn = itmToWgs84Simple;
+  }
+  
+  const { lat, lon } = itmToWgs84Fn(itmX, itmY);
+  const { tileX, tileY } = latLonToTile(lat, lon, zoom);
+  
+  // Calculate pixel offset within tile
+  const n = Math.pow(2, zoom);
+  const latRad = lat * Math.PI / 180;
+  
+  const exactX = (lon + 180) / 360 * n;
+  const exactY = (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n;
+  
+  const pixelX = Math.floor((exactX - tileX) * TILE_SIZE);
+  const pixelY = Math.floor((exactY - tileY) * TILE_SIZE);
+  
+  return { tileX, tileY, pixelX, pixelY };
+}
+
+/**
+ * Convert tile coordinates back to ITM via WGS84
+ * @param {number} tileX - Tile X coordinate
+ * @param {number} tileY - Tile Y coordinate
+ * @param {number} zoom - Zoom level
+ * @param {Function} wgs84ToItmFn - Conversion function from WGS84 to ITM
  * @returns {{itmX: number, itmY: number}} ITM coordinates of tile top-left corner
  */
-export function tileToItm(tileX, tileY, zoom) {
-  const resolution = GOVMAP_RESOLUTIONS[zoom];
+export function tileToItm(tileX, tileY, zoom, wgs84ToItmFn) {
+  // Default WGS84 to ITM conversion if not provided
+  if (!wgs84ToItmFn) {
+    wgs84ToItmFn = wgs84ToItmSimple;
+  }
   
-  const pixelX = tileX * TILE_SIZE;
-  const pixelY = tileY * TILE_SIZE;
-  
-  const itmX = GOVMAP_ORIGIN.x + (pixelX * resolution);
-  const itmY = GOVMAP_ORIGIN.y - (pixelY * resolution);
+  const { lat, lon } = tileToLatLon(tileX, tileY, zoom);
+  const { x: itmX, y: itmY } = wgs84ToItmFn(lat, lon);
   
   return { itmX, itmY };
+}
+
+/**
+ * Simple ITM to WGS84 conversion (approximate, good for Israel)
+ * @param {number} x - ITM X (easting)
+ * @param {number} y - ITM Y (northing)
+ * @returns {{lat: number, lon: number}}
+ */
+function itmToWgs84Simple(x, y) {
+  const refLat = 31.5;
+  const refLon = 35.0;
+  const refItmX = 200000;
+  const refItmY = 600000;
+  
+  const metersPerDegLat = 110940;
+  const metersPerDegLon = 95500;
+  
+  const dX = x - refItmX;
+  const dY = y - refItmY;
+  
+  const lat = refLat + (dY / metersPerDegLat);
+  const lon = refLon + (dX / metersPerDegLon);
+  
+  return { lat, lon };
+}
+
+/**
+ * Simple WGS84 to ITM conversion (approximate, good for Israel)
+ * @param {number} lat - Latitude
+ * @param {number} lon - Longitude
+ * @returns {{x: number, y: number}}
+ */
+function wgs84ToItmSimple(lat, lon) {
+  const refLat = 31.5;
+  const refLon = 35.0;
+  const refItmX = 200000;
+  const refItmY = 600000;
+  
+  const metersPerDegLat = 110940;
+  const metersPerDegLon = 95500;
+  
+  const dLat = lat - refLat;
+  const dLon = lon - refLon;
+  
+  const x = refItmX + (dLon * metersPerDegLon);
+  const y = refItmY + (dLat * metersPerDegLat);
+  
+  return { x, y };
 }
 
 /**
@@ -316,5 +427,5 @@ export function getCacheStats() {
   };
 }
 
-// Export constants for external use
-export { TILE_SIZE, GOVMAP_RESOLUTIONS, GOVMAP_ORIGIN };
+// Export constants and utility functions for external use
+export { TILE_SIZE, GOVMAP_RESOLUTIONS, GOVMAP_ORIGIN, latLonToTile, tileToLatLon };

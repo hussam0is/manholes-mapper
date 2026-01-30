@@ -5859,6 +5859,7 @@ function updateMapReferencePoint() {
     if (node.surveyX != null && node.surveyY != null) {
       const refPoint = createReferenceFromNode(node);
       if (refPoint) {
+        console.log('Map reference point set from node surveyX/surveyY:', refPoint);
         setMapReferencePoint(refPoint);
         return true;
       }
@@ -5875,13 +5876,33 @@ function updateMapReferencePoint() {
           itm: { x: coords.x, y: coords.y },
           canvas: { x: node.x, y: node.y }
         };
+        console.log('Map reference point set from coordinatesMap:', refPoint);
         setMapReferencePoint(refPoint);
         return true;
       }
     }
   }
   
-  return false;
+  // Fallback: use a default location in central Israel (Tel Aviv area)
+  // This allows testing the map layer without loading coordinates
+  const rect = canvas.getBoundingClientRect();
+  const canvasCenterX = rect.width / 2;
+  const canvasCenterY = rect.height / 2;
+  
+  // Default ITM coordinates for Tel Aviv area (approximately)
+  const defaultItm = {
+    x: 180000,  // ITM Easting
+    y: 665000   // ITM Northing
+  };
+  
+  const refPoint = {
+    itm: defaultItm,
+    canvas: { x: canvasCenterX, y: canvasCenterY }
+  };
+  
+  console.log('Map reference point set to default (Tel Aviv area):', refPoint);
+  setMapReferencePoint(refPoint);
+  return true;
 }
 
 /**
