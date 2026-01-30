@@ -66,6 +66,14 @@
   z-index: 200;
 }
 
+/* Medium screens - tablet/small desktop */
+@media (max-width: 900px) and (min-width: 601px) {
+  .app-header {
+    padding: 0.5rem 0.75rem;
+    gap: 0.5rem;
+  }
+}
+
 @media (max-width: 600px) {
   .app-header {
     grid-template-columns: 1fr auto auto;
@@ -117,6 +125,21 @@
   color: transparent;
 }
 
+/* Medium screens - reduce title size for better fit */
+@media (max-width: 900px) and (min-width: 601px) {
+  .menu-brand__title {
+    font-size: 1.25rem;
+  }
+  
+  .menu-brand__logo {
+    height: 32px;
+  }
+  
+  .menu-brand {
+    gap: 0.5rem;
+  }
+}
+
 @media (max-width: 600px) {
   .menu-brand__title {
     font-size: 1.1rem;
@@ -164,6 +187,19 @@
 
 .menu-sketch-name--mobile {
   display: none !important;
+}
+
+/* Medium screens - reduce sketch name size */
+@media (max-width: 900px) and (min-width: 601px) {
+  .menu-sketch-name {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    max-width: 120px;
+  }
+  
+  .menu-sketch-name::before {
+    font-size: 0.875rem;
+  }
 }
 
 @media (max-width: 600px) {
@@ -227,6 +263,23 @@
 
 .menu-controls--hidden {
   display: none !important;
+}
+
+/* Medium screens - ensure controls don't overflow */
+@media (max-width: 900px) and (min-width: 601px) {
+  .menu-controls {
+    gap: 0.25rem;
+    max-width: calc(100vw - 350px); /* Leave space for brand */
+  }
+  
+  .menu-group {
+    gap: 0.125rem;
+    padding: 2px 4px;
+  }
+  
+  .menu-group--primary {
+    gap: 0.25rem;
+  }
 }
 
 /* ============================================
@@ -399,6 +452,18 @@
   }
 }
 
+/* Medium screens - slightly smaller buttons */
+@media (max-width: 900px) and (min-width: 801px) {
+  :root {
+    --menu-btn-height: 34px;
+    --menu-btn-height-sm: 28px;
+  }
+  
+  .menu-btn .material-icons {
+    font-size: 1.15rem;
+  }
+}
+
 /* Even more compact on smaller screens */
 @media (max-width: 800px) {
   :root {
@@ -510,7 +575,7 @@
 
 .menu-search__icon {
   position: absolute;
-  left: 0.75rem;
+  left: 0.625rem;
   color: var(--color-muted, #64748b);
   font-size: 1.125rem;
   pointer-events: none;
@@ -518,13 +583,13 @@
 
 [dir="rtl"] .menu-search__icon {
   left: auto;
-  right: 0.75rem;
+  right: 0.625rem;
 }
 
 .menu-search__input {
   height: var(--menu-btn-height);
   width: 160px;
-  padding: 0 0.75rem 0 2.25rem;
+  padding: 0 0.75rem 0 2.5rem;
   
   font-size: 0.875rem;
   color: var(--color-text, #0f172a);
@@ -537,7 +602,7 @@
 }
 
 [dir="rtl"] .menu-search__input {
-  padding: 0 2.25rem 0 0.75rem;
+  padding: 0 2.5rem 0 0.75rem;
   text-align: right;
 }
 
