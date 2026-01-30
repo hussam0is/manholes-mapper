@@ -1466,9 +1466,14 @@ function applyLangToStaticUI() {
   // Update desktop command menu labels (dropdown menu)
   const commandDropdown = document.getElementById('commandDropdown');
   if (commandDropdown) {
-    // Update the main header
-    const header = commandDropdown.querySelector('.menu-dropdown__header span:last-child');
-    if (header) header.textContent = t('menuGroup.actions');
+    // Update aria-label
+    commandDropdown.setAttribute('aria-label', t('menu'));
+    
+    // Update the main header text
+    const headerSpans = commandDropdown.querySelectorAll('.menu-dropdown__header > span');
+    if (headerSpans.length > 1) {
+      headerSpans[1].textContent = t('menuGroup.actions');
+    }
     
     // Update group labels
     const groupLabelMap = {
@@ -1488,25 +1493,28 @@ function applyLangToStaticUI() {
     });
     
     // Update item labels within the dropdown
-    const itemLabelMap = {
-      'exportSketchBtn': 'exportSketch',
-      'importSketchBtn': 'importSketch',
-      'exportNodesBtn': 'exportNodes',
-      'exportEdgesBtn': 'exportEdges',
-      'finishWorkdayBtn': 'finishWorkday.button',
-      'importCoordinatesBtn': 'coordinates.import',
-      'toggleCoordinatesToggle': 'coordinates.enable',
-      'toggleMapLayerToggle': 'mapLayer.enable',
-      'toggleLiveMeasureToggle': 'liveMeasure.enable',
+    // Helper to update a dropdown item label (handles both buttons and toggles)
+    const updateDropdownItemLabel = (id, key) => {
+      const el = commandDropdown.querySelector(`#${id}`);
+      if (!el) return;
+      // For toggles (checkbox inside label), get parent label element
+      const container = el.closest('.menu-dropdown__item') || el;
+      const label = container.querySelector('.menu-dropdown__label');
+      if (label) label.textContent = t(key);
     };
     
-    Object.entries(itemLabelMap).forEach(([id, key]) => {
-      const el = commandDropdown.querySelector(`#${id}`);
-      if (el) {
-        const label = el.querySelector('.menu-dropdown__label');
-        if (label) label.textContent = t(key);
-      }
-    });
+    // Button items
+    updateDropdownItemLabel('exportSketchBtn', 'exportSketch');
+    updateDropdownItemLabel('importSketchBtn', 'importSketch');
+    updateDropdownItemLabel('exportNodesBtn', 'exportNodes');
+    updateDropdownItemLabel('exportEdgesBtn', 'exportEdges');
+    updateDropdownItemLabel('finishWorkdayBtn', 'finishWorkday.button');
+    updateDropdownItemLabel('importCoordinatesBtn', 'coordinates.import');
+    
+    // Toggle items (checkbox inside label)
+    updateDropdownItemLabel('toggleCoordinatesToggle', 'coordinates.enable');
+    updateDropdownItemLabel('toggleMapLayerToggle', 'mapLayer.enable');
+    updateDropdownItemLabel('toggleLiveMeasureToggle', 'liveMeasure.enable');
     
     // Update coordinate scale label
     const scaleControls = commandDropdown.querySelector('#coordinateScaleControls');
