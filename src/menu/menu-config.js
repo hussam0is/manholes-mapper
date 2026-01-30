@@ -99,6 +99,12 @@ export const menuConfig = {
           labelKey: 'coordinates.scale',
           type: 'scale',
         },
+        {
+          id: 'toggleMapLayer',
+          icon: 'map',
+          labelKey: 'mapLayer.enable',
+          type: 'toggle',
+        },
       ],
     },
     {
@@ -170,6 +176,13 @@ export const menuConfig = {
       icon: 'straighten',
       labelKey: 'coordinates.scale',
       type: 'scale',
+      group: 'location',
+    },
+    {
+      id: 'toggleMapLayer',
+      icon: 'map',
+      labelKey: 'mapLayer.enable',
+      type: 'toggle',
       group: 'location',
     },
     { type: 'divider' },
@@ -277,7 +290,7 @@ export const menuConfig = {
       id: 'location',
       labelKey: 'menuGroup.location',
       icon: 'location_on',
-      items: ['importCoordinates', 'toggleCoordinates', 'coordinateScale'],
+      items: ['importCoordinates', 'toggleCoordinates', 'coordinateScale', 'toggleMapLayer'],
     },
     {
       id: 'workday',

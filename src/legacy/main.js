@@ -72,7 +72,20 @@ import {
   gnssState,
   gnssConnection
 } from '../gnss/index.js';
-import { getMapReferencePoint } from '../map/govmap-layer.js';
+import { 
+  getMapReferencePoint,
+  setMapReferencePoint,
+  setMapLayerEnabled,
+  isMapLayerEnabled,
+  setMapType,
+  getMapType,
+  drawMapTiles,
+  drawMapAttribution,
+  createReferenceFromNode,
+  MAP_TYPES,
+  saveMapSettings,
+  loadMapSettings
+} from '../map/govmap-layer.js';
 import { calculateCenterOnUser } from '../map/user-location.js';
 
 /**
@@ -225,6 +238,9 @@ const scaleValueDisplay = document.getElementById('scaleValueDisplay');
 const mobileScaleDecreaseBtn = document.getElementById('mobileScaleDecreaseBtn');
 const mobileScaleIncreaseBtn = document.getElementById('mobileScaleIncreaseBtn');
 const mobileScaleValueDisplay = document.getElementById('mobileScaleValueDisplay');
+// Map layer toggle elements
+const mapLayerToggle = document.getElementById('mapLayerToggle');
+const mobileMapLayerToggle = document.getElementById('mobileMapLayerToggle');
 
 // iPad/iOS: ensure taps trigger clicks on header buttons (Safari sometimes suppresses click)
 function synthesizeClickOnTap(element) {
@@ -381,6 +397,9 @@ const SCALE_PRESETS = [50, 75, 100, 150, 200, 300]; // Available scale options
 // Live Measure / GNSS mode state
 let liveMeasureEnabled = false;
 const COORDINATE_SCALE_KEY = 'graphSketch.coordinateScale.v1';
+
+// Map layer state - initialized from localStorage via loadMapSettings() in govmap-layer.js
+let mapLayerEnabled = isMapLayerEnabled();
 
 try {
   fallIconImage = new Image();
@@ -2494,6 +2513,24 @@ function draw() {
   // Clear canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.save();
+  
+  // Draw map tiles as background layer (before grid and other elements)
+  if (mapLayerEnabled && getMapReferencePoint()) {
+    ctx.save();
+    ctx.translate(viewTranslate.x, viewTranslate.y);
+    ctx.scale(viewScale, viewScale);
+    drawMapTiles(
+      ctx, 
+      canvas.width, 
+      canvas.height, 
+      viewTranslate, 
+      viewScale, 
+      coordinateScale, 
+      () => scheduleDraw() // Callback to redraw when tiles load
+    );
+    ctx.restore();
+  }
+  
   // Since we scaled for device pixel ratio, treat coordinates unscaled.
   // Apply view transform for zooming and translation
   // Draw infinite grid first in screen space but offset by transform
@@ -2663,6 +2700,12 @@ function draw() {
   }
   
   ctx.restore();
+  
+  // Draw map attribution in screen space (after restore)
+  if (mapLayerEnabled && getMapReferencePoint()) {
+    drawMapAttribution(ctx, canvas.width, canvas.height);
+  }
+  
   // Ensure edge legend is rendered/positioned
   renderEdgeLegend();
   // Update incomplete edge tracker
@@ -5713,6 +5756,11 @@ function applyCoordinatesIfEnabled(options = {}) {
     viewTranslate.y = screenCenterY - viewScale * newWorldCenterY;
   }
   
+  // Update map reference point with new node positions
+  if (mapLayerEnabled) {
+    updateMapReferencePoint();
+  }
+  
   saveToStorage();
   scheduleDraw();
 }
@@ -5767,6 +5815,73 @@ function syncCoordinatesToggleUI() {
   if (mobileCoordinatesToggle) {
     mobileCoordinatesToggle.checked = coordinatesEnabled;
   }
+}
+
+/**
+ * Toggle map layer enabled/disabled
+ */
+function toggleMapLayer(enabled) {
+  mapLayerEnabled = enabled;
+  setMapLayerEnabled(enabled);
+  saveMapSettings();
+  syncMapLayerToggleUI();
+  
+  // Set up reference point if we have coordinates and a node with survey data
+  if (enabled) {
+    updateMapReferencePoint();
+  }
+  
+  const msg = enabled 
+    ? (t('mapLayer.enabled') || 'Map layer enabled')
+    : (t('mapLayer.disabled') || 'Map layer disabled');
+  showToast(msg);
+  scheduleDraw();
+}
+
+/**
+ * Sync the map layer toggle UI elements
+ */
+function syncMapLayerToggleUI() {
+  if (mapLayerToggle) {
+    mapLayerToggle.checked = mapLayerEnabled;
+  }
+  if (mobileMapLayerToggle) {
+    mobileMapLayerToggle.checked = mapLayerEnabled;
+  }
+}
+
+/**
+ * Update the map reference point from available survey coordinates
+ */
+function updateMapReferencePoint() {
+  // Find a node with survey coordinates to use as reference
+  for (const node of nodes) {
+    if (node.surveyX != null && node.surveyY != null) {
+      const refPoint = createReferenceFromNode(node);
+      if (refPoint) {
+        setMapReferencePoint(refPoint);
+        return true;
+      }
+    }
+  }
+  
+  // No reference point available - check if coordinates are loaded
+  if (coordinatesMap.size > 0) {
+    // Find a node that has coordinates in the map
+    for (const node of nodes) {
+      const coords = coordinatesMap.get(String(node.id));
+      if (coords) {
+        const refPoint = {
+          itm: { x: coords.x, y: coords.y },
+          canvas: { x: node.x, y: node.y }
+        };
+        setMapReferencePoint(refPoint);
+        return true;
+      }
+    }
+  }
+  
+  return false;
 }
 
 /**
@@ -5867,6 +5982,15 @@ function initCoordinates() {
       node.hasCoordinates = coordinatesMap.has(String(node.id));
     });
   }
+  
+  // Initialize map layer state from saved settings
+  mapLayerEnabled = isMapLayerEnabled();
+  syncMapLayerToggleUI();
+  
+  // Set up map reference point if we have coordinates
+  if (mapLayerEnabled) {
+    updateMapReferencePoint();
+  }
 }
 
 // Import coordinates button handler (desktop)
@@ -5908,6 +6032,21 @@ if (coordinatesToggle) {
 if (mobileCoordinatesToggle) {
   mobileCoordinatesToggle.addEventListener('change', (e) => {
     toggleCoordinates(e.target.checked);
+    closeMobileMenu();
+  });
+}
+
+// Map layer toggle handler (desktop)
+if (mapLayerToggle) {
+  mapLayerToggle.addEventListener('change', (e) => {
+    toggleMapLayer(e.target.checked);
+  });
+}
+
+// Map layer toggle handler (mobile)
+if (mobileMapLayerToggle) {
+  mobileMapLayerToggle.addEventListener('change', (e) => {
+    toggleMapLayer(e.target.checked);
     closeMobileMenu();
   });
 }

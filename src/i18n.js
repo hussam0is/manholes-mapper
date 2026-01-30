@@ -318,6 +318,14 @@ export const i18n = {
       scale: 'קנה מידה',
       scaleChanged: (scale) => `קנה מידה: 1:${scale}`,
     },
+    mapLayer: {
+      enable: 'שכבת מפה',
+      enabled: 'שכבת מפה הופעלה',
+      disabled: 'שכבת מפה כובתה',
+      orthophoto: 'תצלום אוויר',
+      street: 'מפת רחובות',
+      noReference: 'נדרשות קואורדינטות להצגת מפה',
+    },
   },
   en: {
     appTitle: 'Manhole Mapper',
@@ -636,6 +644,14 @@ export const i18n = {
       status: (matched, total) => `${matched}/${total} nodes with coordinates`,
       scale: 'Scale',
       scaleChanged: (scale) => `Scale: 1:${scale}`,
+    },
+    mapLayer: {
+      enable: 'Map Layer',
+      enabled: 'Map layer enabled',
+      disabled: 'Map layer disabled',
+      orthophoto: 'Aerial Photo',
+      street: 'Street Map',
+      noReference: 'Coordinates required to display map',
     },
   },
 };
