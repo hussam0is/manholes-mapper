@@ -469,18 +469,6 @@
   display: inline;
 }
 
-@media (max-width: 900px) {
-  .menu-autosave__label {
-    display: none;
-  }
-  
-  .menu-autosave {
-    padding: 0 0.5rem;
-    min-width: var(--menu-btn-height);
-    justify-content: center;
-  }
-}
-
 /* ============================================
    Segmented Controls
    ============================================ */
