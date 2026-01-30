@@ -334,6 +334,11 @@ export const i18n = {
       error: 'לא ניתן לקבל מיקום',
       enableCoordinatesFirst: 'יש להפעיל קואורדינטות תחילה',
     },
+    liveMeasure: {
+      enable: 'מדידה חיה',
+      enabled: 'מדידה חיה הופעלה',
+      disabled: 'מדידה חיה כובתה',
+    },
   },
   en: {
     appTitle: 'Manhole Mapper',
@@ -668,6 +673,11 @@ export const i18n = {
       timeout: 'Location request timed out. Please try again.',
       error: 'Could not get location',
       enableCoordinatesFirst: 'Enable coordinates first',
+    },
+    liveMeasure: {
+      enable: 'Live Measurement',
+      enabled: 'Live measurement enabled',
+      disabled: 'Live measurement disabled',
     },
   },
 };

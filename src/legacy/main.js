@@ -195,7 +195,10 @@ const mobileMenuTitle = document.getElementById('mobileMenuTitle');
 const menuGroupNav = document.getElementById('menuGroupNav');
 const menuGroupSearch = document.getElementById('menuGroupSearch');
 const menuGroupView = document.getElementById('menuGroupView');
-const menuGroupData = document.getElementById('menuGroupData');
+const menuGroupSketch = document.getElementById('menuGroupSketch');
+const menuGroupCsv = document.getElementById('menuGroupCsv');
+const menuGroupLocation = document.getElementById('menuGroupLocation');
+const menuGroupWorkday = document.getElementById('menuGroupWorkday');
 const menuGroupSettings = document.getElementById('menuGroupSettings');
 const mobileHomeBtn = document.getElementById('mobileHomeBtn');
 const mobileNewSketchBtn = document.getElementById('mobileNewSketchBtn');
@@ -1281,10 +1284,10 @@ if (window.ResizeObserver) {
 
 function applyLangToStaticUI() {
   if (appTitleEl) appTitleEl.textContent = t('appTitle');
-  // Helper to set a button's visible label if it has a `.label` span
+  // Helper to set a button's visible label if it has a `.label` or `.menu-btn__label` span
   const setBtnLabel = (btn, text) => {
     if (!btn) return;
-    const label = btn.querySelector && btn.querySelector('.label');
+    const label = btn.querySelector && (btn.querySelector('.menu-btn__label') || btn.querySelector('.label'));
     if (label) {
       label.textContent = text;
     } else if (!btn.classList || !btn.classList.contains('btn-icon')) {
@@ -1345,7 +1348,8 @@ function applyLangToStaticUI() {
   setBtnLabel(saveBtn, t('save'));
   if (saveBtn) saveBtn.title = t('save');
   if (autosaveToggle) {
-    const autosaveLabelEl = autosaveToggle.parentElement && autosaveToggle.parentElement.querySelector('.label');
+    const parent = autosaveToggle.closest('.menu-autosave') || autosaveToggle.parentElement;
+    const autosaveLabelEl = parent && (parent.querySelector('.menu-autosave__label') || parent.querySelector('.label'));
     if (autosaveLabelEl) autosaveLabelEl.textContent = t('autosave');
   }
   if (helpBtn) { helpBtn.title = t('help'); setBtnLabel(helpBtn, t('help')); }
@@ -1365,11 +1369,22 @@ function applyLangToStaticUI() {
   // Mobile menu header and group labels
   if (mobileMenuTitle) { mobileMenuTitle.textContent = t('menu'); }
   if (mobileMenuCloseBtn) { mobileMenuCloseBtn.title = t('close'); }
-  if (menuGroupNav) { menuGroupNav.textContent = t('menuGroupNav'); }
-  if (menuGroupSearch) { menuGroupSearch.textContent = t('menuGroupSearch'); }
-  if (menuGroupView) { menuGroupView.textContent = t('menuGroupView'); }
-  if (menuGroupData) { menuGroupData.textContent = t('menuGroupData'); }
-  if (menuGroupSettings) { menuGroupSettings.textContent = t('menuGroupSettings'); }
+  // Update mobile menu group labels (target the label span to preserve icons)
+  const updateGroupLabel = (groupEl, key) => {
+    if (!groupEl) return;
+    const labelSpan = groupEl.querySelector('.mobile-menu__group-label');
+    if (labelSpan) {
+      labelSpan.textContent = t(key);
+    }
+  };
+  updateGroupLabel(menuGroupNav, 'menuGroupNav');
+  updateGroupLabel(menuGroupSearch, 'menuGroupSearch');
+  updateGroupLabel(menuGroupView, 'menuGroupView');
+  updateGroupLabel(menuGroupSketch, 'menuGroup.sketch');
+  updateGroupLabel(menuGroupCsv, 'menuGroup.csv');
+  updateGroupLabel(menuGroupLocation, 'menuGroup.location');
+  updateGroupLabel(menuGroupWorkday, 'menuGroup.workday');
+  updateGroupLabel(menuGroupSettings, 'menuGroupSettings');
   if (sidebarTitleEl) sidebarTitleEl.textContent = t('sidebarTitle');
   if (detailsDefaultEl) detailsDefaultEl.textContent = t('detailsDefault');
   if (startTitleEl) startTitleEl.textContent = t('startTitle');
@@ -1393,86 +1408,121 @@ function applyLangToStaticUI() {
   document.body.classList.toggle('rtl', isRTL(currentLang));
 
   // Update labels in the mobile overflow menu when language changes
-  if (mobileHomeBtn) {
-    const lbl = mobileHomeBtn.querySelector('.label');
-    if (lbl) lbl.textContent = t('home');
-    mobileHomeBtn.title = t('home');
-  }
-  if (mobileNewSketchBtn) {
-    const lbl = mobileNewSketchBtn.querySelector('.label');
-    if (lbl) lbl.textContent = t('newSketch');
-    mobileNewSketchBtn.title = t('newSketch');
-  }
-  if (mobileZoomInBtn) {
-    mobileZoomInBtn.title = t('zoomIn');
-    const lbl = mobileZoomInBtn.querySelector('.label');
-    if (lbl) lbl.textContent = t('zoomIn');
-  }
-  if (mobileZoomOutBtn) {
-    mobileZoomOutBtn.title = t('zoomOut');
-    const lbl = mobileZoomOutBtn.querySelector('.label');
-    if (lbl) lbl.textContent = t('zoomOut');
-  }
-  if (mobileSizeIncreaseBtn) {
-    mobileSizeIncreaseBtn.title = t('sizeIncrease');
-    const lbl = mobileSizeIncreaseBtn.querySelector('.label');
-    if (lbl) lbl.textContent = t('sizeIncrease');
-  }
-  if (mobileSizeDecreaseBtn) {
-    mobileSizeDecreaseBtn.title = t('sizeDecrease');
-    const lbl = mobileSizeDecreaseBtn.querySelector('.label');
-    if (lbl) lbl.textContent = t('sizeDecrease');
-  }
-  if (mobileExportSketchBtn) {
-    mobileExportSketchBtn.title = t('exportSketch');
-    const lbl = mobileExportSketchBtn.querySelector('.label');
-    if (lbl) lbl.textContent = t('exportSketch');
-  }
-  if (mobileImportSketchBtn) {
-    mobileImportSketchBtn.title = t('importSketch');
-    const lbl = mobileImportSketchBtn.querySelector('.label');
-    if (lbl) lbl.textContent = t('importSketch');
-  }
-  if (mobileExportNodesBtn) {
-    mobileExportNodesBtn.title = t('exportNodes');
-    const lbl = mobileExportNodesBtn.querySelector('.label');
-    if (lbl) lbl.textContent = t('exportNodes');
-  }
-  if (mobileExportEdgesBtn) {
-    mobileExportEdgesBtn.title = t('exportEdges');
-    const lbl = mobileExportEdgesBtn.querySelector('.label');
-    if (lbl) lbl.textContent = t('exportEdges');
-  }
-  if (mobileSaveBtn) {
-    mobileSaveBtn.title = t('save');
-    const lbl = mobileSaveBtn.querySelector('.label');
-    if (lbl) lbl.textContent = t('save');
-  }
-  if (mobileHelpBtn) {
-    const lbl = mobileHelpBtn.querySelector('.label');
-    if (lbl) lbl.textContent = t('help');
-    mobileHelpBtn.title = t('help');
-  }
-  if (mobileAdminBtn) {
-    const lbl = mobileAdminBtn.querySelector('.label');
-    if (lbl) lbl.textContent = t('admin.manage');
-    mobileAdminBtn.title = t('admin.manage');
-  }
-  // Finish Workday buttons
+  // Helper to update mobile button labels (supports both old .label and new .mobile-menu__label)
+  const updateMobileBtnLabel = (btn, key) => {
+    if (!btn) return;
+    const lbl = btn.querySelector('.mobile-menu__label') || btn.querySelector('.label');
+    if (lbl) lbl.textContent = t(key);
+    btn.title = t(key);
+  };
+  updateMobileBtnLabel(mobileHomeBtn, 'home');
+  updateMobileBtnLabel(mobileNewSketchBtn, 'newSketch');
+  updateMobileBtnLabel(mobileZoomInBtn, 'zoomIn');
+  updateMobileBtnLabel(mobileZoomOutBtn, 'zoomOut');
+  updateMobileBtnLabel(mobileSizeIncreaseBtn, 'sizeIncrease');
+  updateMobileBtnLabel(mobileSizeDecreaseBtn, 'sizeDecrease');
+  updateMobileBtnLabel(mobileExportSketchBtn, 'exportSketch');
+  updateMobileBtnLabel(mobileImportSketchBtn, 'importSketch');
+  updateMobileBtnLabel(mobileExportNodesBtn, 'exportNodes');
+  updateMobileBtnLabel(mobileExportEdgesBtn, 'exportEdges');
+  updateMobileBtnLabel(mobileSaveBtn, 'save');
+  updateMobileBtnLabel(mobileHelpBtn, 'help');
+  updateMobileBtnLabel(mobileAdminBtn, 'admin.manage');
+  updateMobileBtnLabel(mobileProjectsBtn, 'projects.title');
+  updateMobileBtnLabel(mobileFinishWorkdayBtn, 'finishWorkday.button');
+  updateMobileBtnLabel(mobileImportCoordinatesBtn, 'coordinates.import');
+  // Finish Workday desktop button
   if (finishWorkdayBtn) {
     const lbl = finishWorkdayBtn.querySelector('.dropdown-label');
     if (lbl) lbl.textContent = t('finishWorkday.button');
     finishWorkdayBtn.title = t('finishWorkday.button');
   }
-  if (mobileFinishWorkdayBtn) {
-    const lbl = mobileFinishWorkdayBtn.querySelector('.label');
-    if (lbl) lbl.textContent = t('finishWorkday.button');
-    mobileFinishWorkdayBtn.title = t('finishWorkday.button');
-  }
+  // Mobile autosave toggle label (supports both old .label and new .mobile-menu__label)
   if (mobileAutosaveToggle) {
-    const lbl = mobileAutosaveLabel && mobileAutosaveLabel.querySelector('.label');
+    const parent = mobileAutosaveToggle.closest('.mobile-menu__toggle') || mobileAutosaveToggle.parentElement;
+    const lbl = parent && (parent.querySelector('.mobile-menu__label') || parent.querySelector('.label'));
     if (lbl) lbl.textContent = t('autosave');
   }
+  // Mobile coordinates toggle label
+  const mobileCoordinatesToggle = document.getElementById('mobileCoordinatesToggle');
+  if (mobileCoordinatesToggle) {
+    const parent = mobileCoordinatesToggle.closest('.mobile-menu__toggle');
+    const lbl = parent && parent.querySelector('.mobile-menu__label');
+    if (lbl) lbl.textContent = t('coordinates.enable');
+  }
+  // Mobile map layer toggle label
+  const mobileMapLayerToggle = document.getElementById('mobileToggleMapLayerBtn');
+  if (mobileMapLayerToggle) {
+    const lbl = mobileMapLayerToggle.querySelector('.mobile-menu__label');
+    if (lbl) lbl.textContent = t('mapLayer.enable');
+  }
+  // Mobile scale controls label
+  const mobileScaleControls = document.getElementById('mobileCoordinateScaleControls');
+  if (mobileScaleControls) {
+    const lbl = mobileScaleControls.querySelector('.mobile-menu__label');
+    if (lbl) lbl.textContent = t('coordinates.scale');
+  }
+
+  // Update desktop command menu labels (dropdown menu)
+  const commandDropdown = document.getElementById('commandDropdown');
+  if (commandDropdown) {
+    // Update the main header
+    const header = commandDropdown.querySelector('.menu-dropdown__header span:last-child');
+    if (header) header.textContent = t('menuGroup.actions');
+    
+    // Update group labels
+    const groupLabelMap = {
+      'sketch': 'menuGroup.sketch',
+      'csv': 'menuGroup.csv',
+      'workday': 'menuGroup.workday',
+      'location': 'menuGroup.location',
+      'gnss': 'menuGroup.gnss',
+    };
+    
+    Object.entries(groupLabelMap).forEach(([groupId, key]) => {
+      const group = commandDropdown.querySelector(`[data-group="${groupId}"]`);
+      if (group) {
+        const label = group.querySelector('.menu-dropdown__group-label');
+        if (label) label.textContent = t(key);
+      }
+    });
+    
+    // Update item labels within the dropdown
+    const itemLabelMap = {
+      'exportSketchBtn': 'exportSketch',
+      'importSketchBtn': 'importSketch',
+      'exportNodesBtn': 'exportNodes',
+      'exportEdgesBtn': 'exportEdges',
+      'finishWorkdayBtn': 'finishWorkday.button',
+      'importCoordinatesBtn': 'coordinates.import',
+      'toggleCoordinatesToggle': 'coordinates.enable',
+      'toggleMapLayerToggle': 'mapLayer.enable',
+      'toggleLiveMeasureToggle': 'liveMeasure.enable',
+    };
+    
+    Object.entries(itemLabelMap).forEach(([id, key]) => {
+      const el = commandDropdown.querySelector(`#${id}`);
+      if (el) {
+        const label = el.querySelector('.menu-dropdown__label');
+        if (label) label.textContent = t(key);
+      }
+    });
+    
+    // Update coordinate scale label
+    const scaleControls = commandDropdown.querySelector('#coordinateScaleControls');
+    if (scaleControls) {
+      const label = scaleControls.querySelector('.menu-dropdown__label');
+      if (label) label.textContent = t('coordinates.scale') + ':';
+    }
+  }
+  
+  // Update command menu button title
+  const commandMenuBtn = document.getElementById('commandMenuBtn');
+  if (commandMenuBtn) {
+    commandMenuBtn.title = t('menu');
+    commandMenuBtn.setAttribute('aria-label', t('menu'));
+  }
+
   // Update edge legend alignment per language
   renderEdgeLegend();
   // Update labels for admin import/export buttons
