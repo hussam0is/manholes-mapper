@@ -326,6 +326,14 @@ export const i18n = {
       street: 'מפת רחובות',
       noReference: 'נדרשות קואורדינטות להצגת מפה',
     },
+    location: {
+      notSupported: 'מיקום אינו נתמך במכשיר זה',
+      permissionDenied: 'הרשאת מיקום נדחתה. אנא אפשר מיקום בהגדרות הדפדפן/האפליקציה.',
+      positionUnavailable: 'מיקום לא זמין. אנא ודא ש-GPS מופעל.',
+      timeout: 'בקשת מיקום נכשלה בזמן קצוב. אנא נסה שוב.',
+      error: 'לא ניתן לקבל מיקום',
+      enableCoordinatesFirst: 'יש להפעיל קואורדינטות תחילה',
+    },
   },
   en: {
     appTitle: 'Manhole Mapper',
@@ -652,6 +660,14 @@ export const i18n = {
       orthophoto: 'Aerial Photo',
       street: 'Street Map',
       noReference: 'Coordinates required to display map',
+    },
+    location: {
+      notSupported: 'Location not supported on this device',
+      permissionDenied: 'Location permission denied. Please enable location in your browser/app settings.',
+      positionUnavailable: 'Location unavailable. Please check GPS is enabled.',
+      timeout: 'Location request timed out. Please try again.',
+      error: 'Could not get location',
+      enableCoordinatesFirst: 'Enable coordinates first',
     },
   },
 };
