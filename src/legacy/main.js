@@ -4834,26 +4834,8 @@ if (exportEdgesBtn) {
   });
 }
 
-// Export dropdown toggle
-if (exportMenuBtn && exportDropdown) {
-  exportMenuBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const isOpen = exportDropdown.classList.toggle('menu-dropdown--open');
-    exportMenuBtn.setAttribute('aria-expanded', isOpen);
-  });
-
-  // Close dropdown when clicking outside
-  document.addEventListener('click', () => {
-    exportDropdown.classList.remove('menu-dropdown--open');
-    exportMenuBtn.setAttribute('aria-expanded', 'false');
-  });
-
-  // Close dropdown when clicking a dropdown item
-  exportDropdown.addEventListener('click', () => {
-    exportDropdown.classList.remove('menu-dropdown--open');
-    exportMenuBtn.setAttribute('aria-expanded', 'false');
-  });
-}
+// Export dropdown toggle - Now handled by main-entry.js initCommandDropdown()
+// The new implementation uses fixed positioning to avoid overflow clipping issues
 
 // Export complete sketch as JSON
 if (exportSketchBtn) {

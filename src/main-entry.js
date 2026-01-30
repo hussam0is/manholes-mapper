@@ -429,8 +429,51 @@ function initCommandDropdown() {
 
   let isOpen = false;
 
+  /**
+   * Position the dropdown relative to the button using fixed positioning
+   * This avoids clipping issues from parent overflow properties
+   */
+  function positionDropdown() {
+    const btnRect = menuBtn.getBoundingClientRect();
+    const isRTL = document.dir === 'rtl' || document.documentElement.dir === 'rtl';
+    
+    // Position below the button with a small gap
+    dropdown.style.top = `${btnRect.bottom + 4}px`;
+    
+    // In RTL, align to the left edge of the button; in LTR, align to the right edge
+    if (isRTL) {
+      dropdown.style.left = `${btnRect.left}px`;
+      dropdown.style.right = 'auto';
+    } else {
+      // Align dropdown's right edge to button's right edge
+      dropdown.style.right = `${window.innerWidth - btnRect.right}px`;
+      dropdown.style.left = 'auto';
+    }
+    
+    // Ensure dropdown doesn't go off-screen
+    requestAnimationFrame(() => {
+      const dropdownRect = dropdown.getBoundingClientRect();
+      
+      // Check if dropdown goes below viewport
+      if (dropdownRect.bottom > window.innerHeight) {
+        const maxHeight = window.innerHeight - btnRect.bottom - 16;
+        dropdown.style.maxHeight = `${maxHeight}px`;
+      }
+      
+      // Check if dropdown goes off left edge (RTL) or right edge (LTR)
+      if (dropdownRect.left < 8) {
+        dropdown.style.left = '8px';
+        dropdown.style.right = 'auto';
+      } else if (dropdownRect.right > window.innerWidth - 8) {
+        dropdown.style.right = '8px';
+        dropdown.style.left = 'auto';
+      }
+    });
+  }
+
   function openDropdown() {
     isOpen = true;
+    positionDropdown();
     dropdown.classList.add('menu-dropdown--open');
     menuBtn.setAttribute('aria-expanded', 'true');
   }
@@ -439,6 +482,8 @@ function initCommandDropdown() {
     isOpen = false;
     dropdown.classList.remove('menu-dropdown--open');
     menuBtn.setAttribute('aria-expanded', 'false');
+    // Reset max-height when closing
+    dropdown.style.maxHeight = '';
   }
 
   function toggleDropdown(e) {
@@ -452,6 +497,13 @@ function initCommandDropdown() {
 
   // Toggle on button click
   menuBtn.addEventListener('click', toggleDropdown);
+  
+  // Reposition on window resize if open
+  window.addEventListener('resize', () => {
+    if (isOpen) {
+      positionDropdown();
+    }
+  });
 
   // Close on outside click
   document.addEventListener('click', (e) => {
