@@ -21,6 +21,12 @@ import {
   ConnectionState 
 } from './gnss/index.js';
 
+// User location imports
+import { 
+  requestLocationPermission, 
+  isGeolocationSupported 
+} from './map/user-location.js';
+
 // Initialize Vercel Speed Insights only when deployed on Vercel (production)
 // The /_vercel/speed-insights/script.js endpoint only exists on Vercel's platform
 if (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')) {
@@ -167,229 +173,71 @@ if (typeof window !== 'undefined') {
     
     // Initialize GNSS module
     initGnssModule();
-    initGnssUI();
+    
+    // Initialize My Location button
+    initMyLocationUI();
   });
 }
 
 /**
- * Initialize GNSS UI controls and event listeners
+ * Initialize My Location button UI
+ * Centers the map on the user's GPS location when clicked
  */
-function initGnssUI() {
-  const liveMeasureBtn = document.getElementById('liveMeasureBtn');
-  const gnssStatusPill = document.getElementById('gnssStatusPill');
-  const gnssControlsPanel = document.getElementById('gnssControlsPanel');
-  const gnssConnectBtn = document.getElementById('gnssConnectBtn');
-  const gnssCaptureBtn = document.getElementById('gnssCaptureBtn');
+function initMyLocationUI() {
+  const myLocationBtn = document.getElementById('myLocationBtn');
+  if (!myLocationBtn) return;
   
-  if (!liveMeasureBtn) return;
-  
-  let liveMeasureEnabled = false;
-  
-  // Toggle Live Measure mode
-  liveMeasureBtn.addEventListener('click', () => {
-    liveMeasureEnabled = !liveMeasureEnabled;
-    gnssState.setLiveMeasureEnabled(liveMeasureEnabled);
-    
-    liveMeasureBtn.classList.toggle('active', liveMeasureEnabled);
-    gnssStatusPill?.classList.toggle('hidden', !liveMeasureEnabled);
-    gnssControlsPanel?.classList.toggle('hidden', !liveMeasureEnabled);
-    
-    // Notify legacy code
-    if (window.setLiveMeasureMode) {
-      window.setLiveMeasureMode(liveMeasureEnabled);
-    }
-    
-    console.log('Live Measure mode:', liveMeasureEnabled ? 'enabled' : 'disabled');
-  });
-  
-  // Connect button - show connection options
-  gnssConnectBtn?.addEventListener('click', async () => {
-    const connectionInfo = gnssState.getConnectionInfo();
-    
-    if (connectionInfo.isConnected) {
-      // Disconnect
-      await gnssConnection.disconnect();
-    } else {
-      // Show connection dialog or connect to mock for testing
-      // In production, this would show a dialog to select Bluetooth device or enter WiFi IP
-      
-      // Check if running in Capacitor
-      if (window.Capacitor) {
-        // Show device selection dialog
-        showConnectionDialog();
-      } else {
-        // In browser, use mock for testing
-        console.log('Connecting to Mock GNSS (browser mode)...');
-        await gnssConnection.connectMock();
+  myLocationBtn.addEventListener('click', async () => {
+    // Check if geolocation is supported
+    if (!isGeolocationSupported()) {
+      if (window.showToast) {
+        window.showToast(window.t?.('location.notSupported') || 'Location not supported');
       }
-    }
-  });
-  
-  // Capture button
-  gnssCaptureBtn?.addEventListener('click', () => {
-    if (window.openGnssPointCaptureDialog) {
-      window.openGnssPointCaptureDialog();
-    }
-  });
-  
-  // Listen for connection state changes
-  gnssConnection.onConnectionChange((info) => {
-    updateGnssStatusUI(info);
-    
-    // Update connect button
-    if (gnssConnectBtn) {
-      const icon = gnssConnectBtn.querySelector('.material-icons');
-      const label = gnssConnectBtn.querySelector('span:not(.material-icons)');
-      
-      if (info.isConnected) {
-        if (icon) icon.textContent = 'bluetooth_connected';
-        if (label) label.textContent = 'נתק';
-        gnssConnectBtn.classList.add('connected');
-      } else {
-        if (icon) icon.textContent = 'bluetooth';
-        if (label) label.textContent = 'התחבר ל-R780';
-        gnssConnectBtn.classList.remove('connected');
-      }
-    }
-    
-    // Enable/disable capture button
-    if (gnssCaptureBtn) {
-      gnssCaptureBtn.disabled = !info.isConnected;
-    }
-  });
-  
-  // Listen for position updates
-  gnssConnection.onPositionUpdate((position) => {
-    updateGnssPositionUI(position);
-    
-    // Enable capture button when position is valid
-    if (gnssCaptureBtn) {
-      gnssCaptureBtn.disabled = !position.isValid;
-    }
-    
-    // Trigger canvas redraw
-    if (window.scheduleDraw) {
-      window.scheduleDraw();
-    }
-  });
-  
-  // Expose for legacy code
-  window.gnssConnection = gnssConnection;
-  window.gnssState = gnssState;
-}
-
-/**
- * Update GNSS status UI elements
- * @param {object} info - Connection info
- */
-function updateGnssStatusUI(info) {
-  const statusIndicator = document.getElementById('gnssStatusIndicator');
-  const statusMain = document.getElementById('gnssStatusMain');
-  const statusDetail = document.getElementById('gnssStatusDetail');
-  const liveMeasureBtn = document.getElementById('liveMeasureBtn');
-  
-  if (statusIndicator) {
-    statusIndicator.className = 'status-indicator';
-    
-    if (info.state === ConnectionState.CONNECTED) {
-      statusIndicator.classList.add('connected');
-    } else if (info.state === ConnectionState.CONNECTING) {
-      statusIndicator.classList.add('connecting');
-    } else if (info.state === ConnectionState.ERROR) {
-      statusIndicator.classList.add('error');
-    }
-  }
-  
-  if (statusMain) {
-    switch (info.state) {
-      case ConnectionState.CONNECTED:
-        statusMain.textContent = 'מחובר';
-        break;
-      case ConnectionState.CONNECTING:
-        statusMain.textContent = 'מתחבר...';
-        break;
-      case ConnectionState.ERROR:
-        statusMain.textContent = 'שגיאה';
-        break;
-      default:
-        statusMain.textContent = 'לא מחובר';
-    }
-  }
-  
-  if (statusDetail) {
-    statusDetail.textContent = info.deviceName || '';
-  }
-  
-  // Update button state
-  if (liveMeasureBtn) {
-    liveMeasureBtn.classList.toggle('connecting', info.state === ConnectionState.CONNECTING);
-  }
-}
-
-/**
- * Update GNSS position display
- * @param {object} position - Position data
- */
-function updateGnssPositionUI(position) {
-  const statusMain = document.getElementById('gnssStatusMain');
-  const statusDetail = document.getElementById('gnssStatusDetail');
-  const statusIndicator = document.getElementById('gnssStatusIndicator');
-  
-  if (!position.isValid) {
-    return;
-  }
-  
-  if (statusMain) {
-    statusMain.textContent = position.fixLabel || 'GPS';
-  }
-  
-  if (statusDetail) {
-    const parts = [];
-    if (position.satellites != null) {
-      parts.push(`${position.satellites} לוויינים`);
-    }
-    if (position.hdop != null) {
-      parts.push(`HDOP: ${position.hdop.toFixed(1)}`);
-    }
-    statusDetail.textContent = parts.join(' | ');
-  }
-  
-  if (statusIndicator && position.isStale) {
-    statusIndicator.classList.add('stale');
-  } else if (statusIndicator) {
-    statusIndicator.classList.remove('stale');
-  }
-}
-
-/**
- * Show connection dialog for selecting Bluetooth device or WiFi
- * This is a placeholder - will be implemented with actual device selection
- */
-async function showConnectionDialog() {
-  // For now, try Bluetooth first
-  const isBluetoothAvailable = await gnssConnection.isBluetoothAvailable();
-  
-  if (isBluetoothAvailable) {
-    const devices = await gnssConnection.getPairedDevices();
-    
-    if (devices.length === 0) {
-      alert('לא נמצאו מכשירים מותאמים. אנא התאם את ה-R780 בהגדרות Bluetooth של המכשיר.');
       return;
     }
     
-    // Find Trimble device or show first device
-    const trimbleDevice = devices.find(d => d.isTrimble);
-    const deviceToConnect = trimbleDevice || devices[0];
+    // Add loading state
+    myLocationBtn.classList.add('loading');
+    myLocationBtn.disabled = true;
     
-    console.log('Connecting to:', deviceToConnect.name);
-    await gnssConnection.connectBluetooth(deviceToConnect.address);
-  } else {
-    // Try WiFi with default IP
-    const host = prompt('הזן כתובת IP של ה-R780:', '192.168.1.10');
-    if (host) {
-      await gnssConnection.connectWifi(host, 5017);
+    try {
+      // Request location permission and get current position
+      const position = await requestLocationPermission();
+      
+      if (position) {
+        // Center the map on the user's location
+        if (window.centerOnGpsLocation) {
+          const success = window.centerOnGpsLocation(position.lat, position.lon);
+          if (success && window.showToast) {
+            window.showToast(window.t?.('location.centered') || 'Centered on your location');
+          }
+        } else {
+          console.warn('centerOnGpsLocation not available');
+          if (window.showToast) {
+            window.showToast(window.t?.('location.error') || 'Could not center on location');
+          }
+        }
+      } else {
+        // Location permission denied or error
+        if (window.showToast) {
+          window.showToast(window.t?.('location.permissionDenied') || 'Could not get location');
+        }
+      }
+    } catch (error) {
+      console.error('Error getting location:', error);
+      if (window.showToast) {
+        window.showToast(window.t?.('location.error') || 'Error getting location');
+      }
+    } finally {
+      // Remove loading state
+      myLocationBtn.classList.remove('loading');
+      myLocationBtn.disabled = false;
     }
-  }
+  });
+  
+  // Expose GNSS connection for legacy code (still needed for other features)
+  window.gnssConnection = gnssConnection;
+  window.gnssState = gnssState;
 }
 
 /**

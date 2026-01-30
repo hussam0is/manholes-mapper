@@ -73,6 +73,7 @@ import {
   gnssConnection
 } from '../gnss/index.js';
 import { getMapReferencePoint } from '../map/govmap-layer.js';
+import { calculateCenterOnUser } from '../map/user-location.js';
 
 /**
  * Get the current username from authentication or return a default
@@ -6445,7 +6446,40 @@ function getNextEdgeId() {
   return Math.max(...edges.map(e => typeof e.id === 'number' ? e.id : 0)) + 1;
 }
 
+/**
+ * Center the view on a GPS location (lat/lon)
+ * @param {number} lat - Latitude
+ * @param {number} lon - Longitude
+ * @returns {boolean} True if centering was successful
+ */
+function centerOnGpsLocation(lat, lon) {
+  const referencePoint = getMapReferencePoint();
+  if (!referencePoint) {
+    showToast(t('location.enableCoordinatesFirst') || 'Enable coordinates first');
+    return false;
+  }
+  
+  const position = { lat, lon };
+  const rect = canvas.getBoundingClientRect();
+  const newTranslate = calculateCenterOnUser(
+    position, 
+    referencePoint, 
+    coordinateScale, 
+    rect.width, 
+    rect.height
+  );
+  
+  if (newTranslate) {
+    viewTranslate.x = newTranslate.x;
+    viewTranslate.y = newTranslate.y;
+    scheduleDraw();
+    return true;
+  }
+  return false;
+}
+
 // Expose functions globally for GNSS module integration
 window.scheduleDraw = scheduleDraw;
 window.setLiveMeasureMode = setLiveMeasureMode;
 window.openGnssPointCaptureDialog = openGnssPointCaptureDialog;
+window.centerOnGpsLocation = centerOnGpsLocation;
