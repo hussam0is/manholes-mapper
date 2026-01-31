@@ -1957,8 +1957,8 @@ function loadFromLibrary(sketchId) {
   saveToStorage();
   draw();
   renderDetails();
-  // Recenters view to the current sketch center, keeping the existing zoom level
-  try { recenterView(); } catch (_) { }
+  // Fit all content into view when loading a sketch
+  try { fitToContent(); } catch (_) { }
   return true;
 }
 
@@ -2772,7 +2772,13 @@ function draw() {
 
 function renderEdgeLegend() {
   const legend = document.getElementById('edgeLegend');
-  renderEdgeLegendFeature(legend, EDGE_TYPE_COLORS);
+  // Pass translated labels for the legend
+  const labels = {
+    mainLine: t('edgeLegend.mainLine'),
+    branchLine: t('edgeLegend.branchLine'),
+    secondaryLine: t('edgeLegend.secondaryLine'),
+  };
+  renderEdgeLegendFeature(legend, EDGE_TYPE_COLORS, labels);
 }
 
 /**
@@ -5265,6 +5271,8 @@ if (langSelect) {
       renderHome();
     }
     renderDetails();
+    // Re-render edge legend with translated labels
+    renderEdgeLegend();
     // If admin modal is open, rebuild its UI to apply new translations
     if (adminModal && adminModal.style.display !== 'none') {
       openAdminModal();
@@ -6366,10 +6374,84 @@ function recenterView() {
   scheduleDraw();
 }
 
-// Recenter button handler
+/**
+ * Fit all nodes in view by adjusting both zoom and translation.
+ * Adds padding around the content and respects min/max zoom limits.
+ * @param {number} paddingPercent - Padding as a percentage of viewport (default 10%)
+ */
+function fitToContent(paddingPercent = 10) {
+  if (!Array.isArray(nodes) || nodes.length === 0) {
+    // No nodes - just reset to default view
+    viewScale = 1;
+    viewTranslate.x = 0;
+    viewTranslate.y = 0;
+    scheduleDraw();
+    return;
+  }
+  
+  // Calculate bounding box of all nodes
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const node of nodes) {
+    if (!node) continue;
+    if (typeof node.x !== 'number' || typeof node.y !== 'number') continue;
+    if (node.x < minX) minX = node.x;
+    if (node.y < minY) minY = node.y;
+    if (node.x > maxX) maxX = node.x;
+    if (node.y > maxY) maxY = node.y;
+  }
+  
+  // If we couldn't find valid bounds, fallback to recenter
+  if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) {
+    recenterView();
+    return;
+  }
+  
+  const contentWidth = maxX - minX;
+  const contentHeight = maxY - minY;
+  const contentCenterX = (minX + maxX) / 2;
+  const contentCenterY = (minY + maxY) / 2;
+  
+  // Handle case where all nodes are at the same point
+  if (contentWidth === 0 && contentHeight === 0) {
+    // Single point or all nodes stacked - just center on it with current zoom
+    const rect = canvas.getBoundingClientRect();
+    viewTranslate.x = rect.width / 2 - viewScale * contentCenterX;
+    viewTranslate.y = rect.height / 2 - viewScale * contentCenterY;
+    scheduleDraw();
+    return;
+  }
+  
+  const rect = canvas.getBoundingClientRect();
+  const viewportWidth = rect.width;
+  const viewportHeight = rect.height;
+  
+  // Calculate available space with padding
+  const padding = Math.min(viewportWidth, viewportHeight) * (paddingPercent / 100);
+  const availableWidth = viewportWidth - 2 * padding;
+  const availableHeight = viewportHeight - 2 * padding;
+  
+  // Calculate scale needed to fit content
+  const scaleX = contentWidth > 0 ? availableWidth / contentWidth : 1;
+  const scaleY = contentHeight > 0 ? availableHeight / contentHeight : 1;
+  let newScale = Math.min(scaleX, scaleY);
+  
+  // Clamp scale to reasonable limits
+  const minScale = 0.01;
+  const maxScale = 10;
+  newScale = Math.max(minScale, Math.min(maxScale, newScale));
+  
+  // Apply new scale and center
+  viewScale = newScale;
+  viewTranslate.x = viewportWidth / 2 - viewScale * contentCenterX;
+  viewTranslate.y = viewportHeight / 2 - viewScale * contentCenterY;
+  
+  scheduleDraw();
+}
+
+// Recenter button handler - fits all content into view
 if (recenterBtn) {
   recenterBtn.addEventListener('click', () => {
-    try { recenterView(); } catch (_) { }
+    try { fitToContent(); } catch (_) { }
   });
 }
 

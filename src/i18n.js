@@ -7,6 +7,11 @@ export const i18n = {
     modeDrainage: 'קולטן',
     modeForLater: 'למדידה מאוחרת',
     modeEdge: 'קו',
+    edgeLegend: {
+      mainLine: 'קו ראשי',
+      branchLine: 'קו סניקה',
+      secondaryLine: 'קו משני',
+    },
     home: 'בית',
     drainage: 'קולטן',
     forLater: 'למדידה מאוחרת',
@@ -347,6 +352,11 @@ export const i18n = {
     modeDrainage: 'Drainage',
     modeForLater: 'For Later',
     modeEdge: 'Line',
+    edgeLegend: {
+      mainLine: 'Main Line',
+      branchLine: 'Branch Line',
+      secondaryLine: 'Secondary Line',
+    },
     home: 'Home',
     drainage: 'Drainage',
     forLater: 'For Later',

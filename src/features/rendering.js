@@ -5,13 +5,18 @@ import { COLORS } from '../state/constants.js';
  * Render the edge type legend into the provided container element.
  * @param {HTMLElement|null} legendEl
  * @param {Record<string, string>} edgeTypeColors
+ * @param {Object} labels - Optional translated labels { mainLine, branchLine, secondaryLine }
  */
-export function renderEdgeLegend(legendEl, edgeTypeColors) {
+export function renderEdgeLegend(legendEl, edgeTypeColors, labels = null) {
   if (!legendEl) return;
+  // Use provided labels or fall back to Hebrew defaults for backward compatibility
+  const mainLabel = labels?.mainLine || 'קו ראשי';
+  const branchLabel = labels?.branchLine || 'קו סניקה';
+  const secondaryLabel = labels?.secondaryLine || 'קו משני';
   const items = [
-    { label: 'קו ראשי', color: edgeTypeColors['קו ראשי'] || '#2563eb' },
-    { label: 'קו סניקה', color: edgeTypeColors['קו סניקה'] || '#fb923c' },
-    { label: 'קו משני', color: edgeTypeColors['קו משני'] || '#0d9488' },
+    { label: mainLabel, color: edgeTypeColors['קו ראשי'] || '#2563eb' },
+    { label: branchLabel, color: edgeTypeColors['קו סניקה'] || '#fb923c' },
+    { label: secondaryLabel, color: edgeTypeColors['קו משני'] || '#0d9488' },
   ];
   legendEl.innerHTML = items
     .map((i) => `<span class="item"><span class="swatch" style="background:${i.color}"></span>${i.label}</span>`) 
