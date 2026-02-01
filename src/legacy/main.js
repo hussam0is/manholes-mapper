@@ -323,8 +323,8 @@ try { window.currentLang = currentLang; } catch (_) { }
 // Zoom state
 let viewScale = 1;
 let viewTranslate = { x: 0, y: 0 }; // screen-space translation (for pan/anchored zoom)
-const MIN_SCALE = 0.1;
-const MAX_SCALE = 1.0;
+const MIN_SCALE = 0.001;
+const MAX_SCALE = 10.0;
 const SCALE_STEP = 1.1; // 10%
 // Size scale state for nodes and fonts
 let sizeScale = 1.0;
