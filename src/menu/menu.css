@@ -320,6 +320,9 @@
   border: none;
   box-shadow: none;
   padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .menu-group--size {
