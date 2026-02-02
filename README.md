@@ -9,6 +9,7 @@ Manholes Mapper is a lightweight yet powerful tool designed for field workers to
 ## Key Features
 
 - **Interactive Canvas Editor**: High-performance HTML5 Canvas rendering for node-edge network visualization.
+- **Map Layer Integration**: Background map tiles with Israel TM Grid (ITM) coordinate alignment for GIS-accurate positioning.
 - **Multi-Node Modes**: Specialized support for different infrastructure types:
   - **Manholes**: Standard network nodes.
   - **Home Nodes**: Residential/Building connections.
@@ -220,6 +221,31 @@ The application is built with a relative base path (`./`) for flexible deploymen
 3. **Note**: HTTPS is required for Service Worker functionality.
 
 ## Data Management
+
+### Map Layer Integration
+
+The application supports background map tiles with accurate coordinate alignment using the **Israel TM Grid (ITM)** projection system (EPSG:2039).
+
+**Features:**
+- Survey-grade coordinate transformations using proj4
+- Background tiles from Israel Hiking Map and OpenStreetMap
+- Automatic alignment of ITM coordinates with map imagery
+- Support for orthophoto and street map views
+
+**Usage:**
+1. Import ITM coordinates from CSV: `point_id,x,y,z`
+2. Enable map layer from the menu
+3. Map tiles automatically align with node positions
+
+**Documentation:**
+- [Complete Map Coordinate Guide](MAP_COORDINATES.md)
+- [Debugging Map Issues](MAP_DEBUGGING.md)
+- [Map Layer Fixes Summary](MAP_LAYER_FIXES.md)
+
+**Coordinate System:**
+- Primary: Israel TM Grid (EPSG:2039)
+- Valid range: X: 100,000-300,000m, Y: 350,000-800,000m
+- Accuracy: <1 meter with proj4 transformations
 
 ### ArcGIS Integration
 CSV exports are designed to be imported directly into ArcGIS:

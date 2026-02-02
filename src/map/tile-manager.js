@@ -2,7 +2,13 @@
  * Tile Manager Module
  * Handles tile loading, caching, and coordinate calculations for map background layers
  * Uses standard Web Mercator (EPSG:3857) XYZ tile scheme for compatibility with OSM-style tile servers
+ * Coordinate transformations use accurate proj4 for Israel TM Grid (EPSG:2039)
  */
+
+import {
+  wgs84ToItm as projectWgs84ToItm,
+  itmToWgs84 as projectItmToWgs84
+} from './projections.js';
 
 // Tile size in pixels (standard for most tile servers)
 const TILE_SIZE = 256;
@@ -169,16 +175,17 @@ export function tileToLatLon(tileX, tileY, zoom) {
 
 /**
  * Convert ITM coordinates to tile coordinates via WGS84
+ * Uses accurate proj4 conversion
  * @param {number} itmX - ITM X coordinate (easting)
  * @param {number} itmY - ITM Y coordinate (northing)
  * @param {number} zoom - Zoom level
- * @param {Function} itmToWgs84Fn - Conversion function from ITM to WGS84
+ * @param {Function} itmToWgs84Fn - Optional conversion function (defaults to accurate proj4)
  * @returns {{tileX: number, tileY: number, pixelX: number, pixelY: number}}
  */
 export function itmToTile(itmX, itmY, zoom, itmToWgs84Fn) {
-  // Default ITM to WGS84 conversion if not provided
+  // Use accurate projection by default
   if (!itmToWgs84Fn) {
-    itmToWgs84Fn = itmToWgs84Simple;
+    itmToWgs84Fn = projectItmToWgs84;
   }
   
   const { lat, lon } = itmToWgs84Fn(itmX, itmY);
@@ -199,70 +206,23 @@ export function itmToTile(itmX, itmY, zoom, itmToWgs84Fn) {
 
 /**
  * Convert tile coordinates back to ITM via WGS84
+ * Uses accurate proj4 conversion
  * @param {number} tileX - Tile X coordinate
  * @param {number} tileY - Tile Y coordinate
  * @param {number} zoom - Zoom level
- * @param {Function} wgs84ToItmFn - Conversion function from WGS84 to ITM
+ * @param {Function} wgs84ToItmFn - Optional conversion function (defaults to accurate proj4)
  * @returns {{itmX: number, itmY: number}} ITM coordinates of tile top-left corner
  */
 export function tileToItm(tileX, tileY, zoom, wgs84ToItmFn) {
-  // Default WGS84 to ITM conversion if not provided
+  // Use accurate projection by default
   if (!wgs84ToItmFn) {
-    wgs84ToItmFn = wgs84ToItmSimple;
+    wgs84ToItmFn = projectWgs84ToItm;
   }
   
   const { lat, lon } = tileToLatLon(tileX, tileY, zoom);
   const { x: itmX, y: itmY } = wgs84ToItmFn(lat, lon);
   
   return { itmX, itmY };
-}
-
-/**
- * Simple ITM to WGS84 conversion (approximate, good for Israel)
- * @param {number} x - ITM X (easting)
- * @param {number} y - ITM Y (northing)
- * @returns {{lat: number, lon: number}}
- */
-function itmToWgs84Simple(x, y) {
-  const refLat = 31.5;
-  const refLon = 35.0;
-  const refItmX = 200000;
-  const refItmY = 600000;
-  
-  const metersPerDegLat = 110940;
-  const metersPerDegLon = 95500;
-  
-  const dX = x - refItmX;
-  const dY = y - refItmY;
-  
-  const lat = refLat + (dY / metersPerDegLat);
-  const lon = refLon + (dX / metersPerDegLon);
-  
-  return { lat, lon };
-}
-
-/**
- * Simple WGS84 to ITM conversion (approximate, good for Israel)
- * @param {number} lat - Latitude
- * @param {number} lon - Longitude
- * @returns {{x: number, y: number}}
- */
-function wgs84ToItmSimple(lat, lon) {
-  const refLat = 31.5;
-  const refLon = 35.0;
-  const refItmX = 200000;
-  const refItmY = 600000;
-  
-  const metersPerDegLat = 110940;
-  const metersPerDegLon = 95500;
-  
-  const dLat = lat - refLat;
-  const dLon = lon - refLon;
-  
-  const x = refItmX + (dLon * metersPerDegLon);
-  const y = refItmY + (dLat * metersPerDegLat);
-  
-  return { x, y };
 }
 
 /**
@@ -292,6 +252,7 @@ export function calculateZoomLevel(pixelsPerMeter) {
 
 /**
  * Calculate visible tiles for the current view
+ * Uses accurate ITM to tile conversion
  * @param {object} viewBounds - View bounds in ITM coordinates {minX, minY, maxX, maxY}
  * @param {number} zoom - Tile zoom level
  * @returns {Array<{x: number, y: number, z: number}>} Array of tile coordinates
@@ -299,7 +260,7 @@ export function calculateZoomLevel(pixelsPerMeter) {
 export function calculateVisibleTiles(viewBounds, zoom) {
   const tiles = [];
   
-  // Get tile coordinates for corners
+  // Get tile coordinates for corners using accurate conversion
   const topLeft = itmToTile(viewBounds.minX, viewBounds.maxY, zoom);
   const bottomRight = itmToTile(viewBounds.maxX, viewBounds.minY, zoom);
   

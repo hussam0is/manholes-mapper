@@ -1,6 +1,7 @@
 /**
  * GovMap Layer Module
  * Handles tile URL construction, loading, and rendering for GovMap Israel tiles
+ * Uses accurate proj4 coordinate transformations for Israel TM Grid (EPSG:2039)
  */
 
 import {
@@ -17,6 +18,11 @@ import {
   TILE_SIZE,
   GOVMAP_RESOLUTIONS
 } from './tile-manager.js';
+
+import {
+  wgs84ToItm as projectWgs84ToItm,
+  itmToWgs84 as projectItmToWgs84
+} from './projections.js';
 
 // Map layer types
 export const MAP_TYPES = {
@@ -250,13 +256,13 @@ export async function drawMapTiles(ctx, canvasWidth, canvasHeight, viewTranslate
       continue;
     }
     
-    // Get tile corners in lat/lon
+    // Convert tile corners to lat/lon
     const topLeft = tileToLatLon(x, y, z);
     const bottomRight = tileToLatLon(x + 1, y + 1, z);
     
-    // Convert tile corners to ITM
-    const topLeftItm = wgs84ToItm(topLeft.lat, topLeft.lon);
-    const bottomRightItm = wgs84ToItm(bottomRight.lat, bottomRight.lon);
+    // Convert tile corners to ITM using accurate projection
+    const topLeftItm = projectWgs84ToItm(topLeft.lat, topLeft.lon);
+    const bottomRightItm = projectWgs84ToItm(bottomRight.lat, bottomRight.lon);
     
     // Calculate tile dimensions in meters
     const tileWidthMeters = Math.abs(bottomRightItm.x - topLeftItm.x);
@@ -339,16 +345,15 @@ export function createReferenceFromNode(node) {
 
 /**
  * Create a reference point from WGS84 coordinates
- * Requires conversion to ITM
+ * Requires conversion to ITM using accurate projection
  * @param {number} lat - Latitude
  * @param {number} lon - Longitude
  * @param {object} canvasPos - Canvas position {x, y}
  * @returns {object} Reference point
  */
 export function createReferenceFromWgs84(lat, lon, canvasPos) {
-  // Convert WGS84 to ITM (approximate)
-  // This uses a simplified conversion - for production use a proper projection library
-  const itm = wgs84ToItm(lat, lon);
+  // Convert WGS84 to ITM using accurate proj4 projection
+  const itm = projectWgs84ToItm(lat, lon);
   
   return {
     itm: itm,
@@ -357,65 +362,20 @@ export function createReferenceFromWgs84(lat, lon, canvasPos) {
 }
 
 /**
- * Simplified WGS84 to ITM conversion
- * For accurate conversion, consider using proj4js
- * @param {number} lat - Latitude in degrees
- * @param {number} lon - Longitude in degrees
- * @returns {{x: number, y: number}} ITM coordinates
+ * Export the accurate projection functions
  */
-export function wgs84ToItm(lat, lon) {
-  // Reference point: Center of Israel approximately
-  // WGS84: 31.5, 35.0 -> ITM: ~200000, ~600000
-  
-  // Simplified linear approximation (good for small areas)
-  // These values are approximate for Israel
-  const refLat = 31.5;
-  const refLon = 35.0;
-  const refItmX = 200000;
-  const refItmY = 600000;
-  
-  // Approximate meters per degree at Israel's latitude
-  const metersPerDegLat = 110940;
-  const metersPerDegLon = 95500; // at ~31.5N
-  
-  const dLat = lat - refLat;
-  const dLon = lon - refLon;
-  
-  const itmX = refItmX + (dLon * metersPerDegLon);
-  const itmY = refItmY + (dLat * metersPerDegLat);
-  
-  return { x: itmX, y: itmY };
-}
-
-/**
- * Simplified ITM to WGS84 conversion
- * @param {number} x - ITM X (easting)
- * @param {number} y - ITM Y (northing)
- * @returns {{lat: number, lon: number}} WGS84 coordinates
- */
-export function itmToWgs84(x, y) {
-  const refLat = 31.5;
-  const refLon = 35.0;
-  const refItmX = 200000;
-  const refItmY = 600000;
-  
-  const metersPerDegLat = 110940;
-  const metersPerDegLon = 95500;
-  
-  const dX = x - refItmX;
-  const dY = y - refItmY;
-  
-  const lat = refLat + (dY / metersPerDegLat);
-  const lon = refLon + (dX / metersPerDegLon);
-  
-  return { lat, lon };
-}
+export const wgs84ToItm = projectWgs84ToItm;
+export const itmToWgs84 = projectItmToWgs84;
 
 /**
  * Save map layer settings to localStorage
  */
 export function saveMapSettings() {
   try {
+    // Check if localStorage is available (not in Node.js/test environment)
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
     const settings = {
       enabled: mapLayerEnabled,
       type: currentMapType
@@ -431,6 +391,10 @@ export function saveMapSettings() {
  */
 export function loadMapSettings() {
   try {
+    // Check if localStorage is available (not in Node.js/test environment)
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
     const raw = localStorage.getItem('graphSketch.mapLayer.v1');
     if (raw) {
       const settings = JSON.parse(raw);
