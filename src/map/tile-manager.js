@@ -14,7 +14,7 @@ import {
 const TILE_SIZE = 256;
 
 // Maximum number of tiles to cache in memory
-const MAX_CACHE_SIZE = 100;
+const MAX_CACHE_SIZE = 300;
 
 // Tile cache: Map<string, { image: HTMLImageElement, timestamp: number }>
 const tileCache = new Map();
