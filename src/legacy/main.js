@@ -330,7 +330,7 @@ const SCALE_STEP = 1.1; // 10%
 // Size scale state for nodes and fonts
 let sizeScale = 1.0;
 const MIN_SIZE_SCALE = 0.5;
-const MAX_SIZE_SCALE = 3.0;
+const MAX_SIZE_SCALE = 10.0;
 const SIZE_SCALE_STEP = 0.2; // 20% increments
 // Pinch zoom state
 let isPinching = false;
