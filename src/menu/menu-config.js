@@ -27,6 +27,11 @@ export const menuConfig = {
     placeholderKey: 'searchNode',
     titleKey: 'searchNodeTitle',
   },
+  searchAddress: {
+    id: 'searchAddress',
+    placeholderKey: 'searchAddress',
+    titleKey: 'searchAddressTitle',
+  },
 
   // Secondary actions - organized in dropdown with clear groups
   secondaryGroups: [
@@ -266,7 +271,7 @@ export const menuConfig = {
       id: 'search',
       labelKey: 'menuGroupSearch',
       icon: 'search',
-      items: ['searchNode'],
+      items: ['searchNode', 'searchAddress'],
     },
     {
       id: 'view',

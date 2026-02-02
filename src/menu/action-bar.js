@@ -82,7 +82,7 @@ export function createPrimaryActions(t) {
  * @returns {string} HTML string
  */
 export function createSearchGroup(t) {
-  const { search } = menuConfig;
+  const { search, searchAddress } = menuConfig;
   return `
     <div class="menu-group menu-group--search">
       <div class="menu-search">
@@ -94,6 +94,17 @@ export function createSearchGroup(t) {
           placeholder="${t(search.placeholderKey)}"
           title="${t(search.titleKey)}"
           aria-label="${t(search.titleKey)}"
+        />
+      </div>
+      <div class="menu-search">
+        <span class="material-icons menu-search__icon" aria-hidden="true">place</span>
+        <input 
+          type="text" 
+          id="searchAddressInput"
+          class="menu-search__input" 
+          placeholder="${t(searchAddress.placeholderKey)}"
+          title="${t(searchAddress.titleKey)}"
+          aria-label="${t(searchAddress.titleKey)}"
         />
       </div>
     </div>

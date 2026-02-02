@@ -66,6 +66,7 @@ export function createMobileMenu(t, currentLang = 'he') {
         ...menuConfig.sizeControls,
         ...menuConfig.utility,
         { id: 'searchNode', type: 'search' },
+        { id: 'searchAddress', type: 'searchAddress' },
       ];
       
       const item = allItems.find(i => i.id === itemId);
@@ -81,6 +82,21 @@ export function createMobileMenu(t, currentLang = 'he') {
               class="mobile-menu__search-input" 
               placeholder="${t('searchNode')}"
               aria-label="${t('searchNodeTitle')}"
+            />
+          </div>
+        `;
+      }
+
+      if (item.type === 'searchAddress' || itemId === 'searchAddress') {
+        return `
+          <div class="mobile-menu__search">
+            <span class="material-icons" aria-hidden="true">place</span>
+            <input 
+              type="text" 
+              id="mobileSearchAddressInput"
+              class="mobile-menu__search-input" 
+              placeholder="${t('searchAddress')}"
+              aria-label="${t('searchAddressTitle')}"
             />
           </div>
         `;
@@ -382,11 +398,21 @@ export class HeaderComponent {
       }
     });
 
-    // Update search placeholder
+    // Update search placeholders
     const searchInput = document.getElementById('searchNodeInput');
     if (searchInput) {
       searchInput.placeholder = this.t(menuConfig.search.placeholderKey);
       searchInput.title = this.t(menuConfig.search.titleKey);
+    }
+    const searchAddressInput = document.getElementById('searchAddressInput');
+    if (searchAddressInput) {
+      searchAddressInput.placeholder = this.t(menuConfig.searchAddress.placeholderKey);
+      searchAddressInput.title = this.t(menuConfig.searchAddress.titleKey);
+    }
+    const mobileSearchAddressInput = document.getElementById('mobileSearchAddressInput');
+    if (mobileSearchAddressInput) {
+      mobileSearchAddressInput.placeholder = this.t(menuConfig.searchAddress.placeholderKey);
+      mobileSearchAddressInput.setAttribute('aria-label', this.t(menuConfig.searchAddress.titleKey));
     }
 
     // Emit event for other components to update

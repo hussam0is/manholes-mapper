@@ -84,7 +84,8 @@ import {
   createReferenceFromNode,
   MAP_TYPES,
   saveMapSettings,
-  loadMapSettings
+  loadMapSettings,
+  wgs84ToItm
 } from '../map/govmap-layer.js';
 import { calculateCenterOnUser } from '../map/user-location.js';
 
@@ -1583,6 +1584,14 @@ function applyLangToStaticUI() {
   if (typeof mobileSearchNodeInput !== 'undefined' && mobileSearchNodeInput) {
     mobileSearchNodeInput.placeholder = t('searchNode');
     mobileSearchNodeInput.title = t('searchNodeTitle');
+  }
+  if (typeof searchAddressInput !== 'undefined' && searchAddressInput) {
+    searchAddressInput.placeholder = t('searchAddress');
+    searchAddressInput.title = t('searchAddressTitle');
+  }
+  if (typeof mobileSearchAddressInput !== 'undefined' && mobileSearchAddressInput) {
+    mobileSearchAddressInput.placeholder = t('searchAddress');
+    mobileSearchAddressInput.title = t('searchAddressTitle');
   }
 }
 
@@ -6411,6 +6420,54 @@ function searchAndCenterNode(searchId) {
   } else {
     // Show error toast
     showToast(t('toasts.nodeNotFound', searchIdStr) || `שוחה ${searchIdStr} לא נמצאה`, 'error');
+  }
+}
+
+/**
+ * Geocode an address/city/street query via Nominatim (OpenStreetMap).
+ * @param {string} query - Address, city or street search text
+ * @returns {Promise<{lat: number, lon: number, display_name: string}|null>}
+ */
+async function geocodeAddress(query) {
+  const q = encodeURIComponent(query.trim());
+  if (!q) return null;
+  const url = `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`;
+  const res = await fetch(url, {
+    headers: { 'Accept': 'application/json', 'Accept-Language': 'en,he', 'User-Agent': 'ManholesMapper/1.0' }
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (!Array.isArray(data) || data.length === 0) return null;
+  const first = data[0];
+  const lat = parseFloat(first.lat);
+  const lon = parseFloat(first.lon);
+  if (Number.isNaN(lat) || Number.isNaN(lon)) return null;
+  return { lat, lon, display_name: first.display_name || '' };
+}
+
+/**
+ * Search by address/city/street, geocode and center the map on the result.
+ * @param {string} query - Address, city or street search text
+ */
+async function searchAddressAndCenter(query) {
+  if (!query || query.toString().trim() === '') return;
+  const q = String(query).trim();
+  try {
+    const result = await geocodeAddress(q);
+    if (!result) {
+      showToast(t('toasts.addressNotFound') || 'כתובת לא נמצאה', 'error');
+      return;
+    }
+    const { x, y } = wgs84ToItm(result.lat, result.lon);
+    const rect = canvas.getBoundingClientRect();
+    const centerScreen = { x: rect.width / 2, y: rect.height / 2 };
+    viewTranslate.x = centerScreen.x - viewScale * x;
+    viewTranslate.y = centerScreen.y - viewScale * y;
+    scheduleDraw();
+    showToast(result.display_name || t('toasts.addressFound') || 'נמצא');
+  } catch (err) {
+    console.warn('Geocode error:', err);
+    showToast(t('toasts.geocodeError') || 'שגיאה בחיפוש כתובת', 'error');
   }
 }
 
