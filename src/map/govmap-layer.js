@@ -231,8 +231,10 @@ export async function drawMapTiles(ctx, canvasWidth, canvasHeight, viewTranslate
     viewBounds, 
     zoom, 
     tilesCount: tiles.length,
+    effectiveScale,
     referencePoint,
-    coordinateScale 
+    coordinateScale,
+    viewScale
   });
   
   // Track if we need to request a redraw after loading
@@ -269,20 +271,21 @@ export async function drawMapTiles(ctx, canvasWidth, canvasHeight, viewTranslate
     const tileHeightMeters = Math.abs(topLeftItm.y - bottomRightItm.y);
     
     // Convert ITM to canvas coordinates using reference point
-    const canvasX = referencePoint.canvas.x + (topLeftItm.x - referencePoint.itm.x) * coordinateScale;
-    const canvasY = referencePoint.canvas.y - (topLeftItm.y - referencePoint.itm.y) * coordinateScale;
+    // These are in WORLD coordinates (before view transform)
+    const worldX = referencePoint.canvas.x + (topLeftItm.x - referencePoint.itm.x) * coordinateScale;
+    const worldY = referencePoint.canvas.y - (topLeftItm.y - referencePoint.itm.y) * coordinateScale;
     
-    // Calculate tile size on canvas
-    const tileSizeCanvasX = tileWidthMeters * coordinateScale;
-    const tileSizeCanvasY = tileHeightMeters * coordinateScale;
+    // Calculate tile size in world coordinates
+    const worldWidth = tileWidthMeters * coordinateScale;
+    const worldHeight = tileHeightMeters * coordinateScale;
     
-    // Draw the tile
+    // Draw the tile (context is already transformed, so use world coordinates)
     ctx.drawImage(
       tileImage,
-      canvasX,
-      canvasY,
-      tileSizeCanvasX,
-      tileSizeCanvasY
+      worldX,
+      worldY,
+      worldWidth,
+      worldHeight
     );
   }
   

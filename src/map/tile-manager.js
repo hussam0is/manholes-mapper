@@ -271,7 +271,8 @@ export function calculateVisibleTiles(viewBounds, zoom) {
   const maxTileY = bottomRight.tileY + 1;
   
   // Limit total tiles to prevent overload
-  const maxTiles = 25; // 5x5 grid max
+  // Increased from 25 to 100 to support zoomed-out views
+  const maxTiles = 100; // 10x10 grid max
   let tileCount = 0;
   
   for (let x = minTileX; x <= maxTileX && tileCount < maxTiles; x++) {
