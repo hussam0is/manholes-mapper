@@ -6517,6 +6517,33 @@ if (mobileSearchNodeInput) {
   });
 }
 
+// Address search input handlers
+const searchAddressInput = document.getElementById('searchAddressInput');
+const mobileSearchAddressInput = document.getElementById('mobileSearchAddressInput');
+
+function runAddressSearch(inputEl) {
+  if (!inputEl || !inputEl.value.trim()) return;
+  searchAddressAndCenter(inputEl.value);
+  inputEl.blur();
+}
+
+if (searchAddressInput) {
+  searchAddressInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      runAddressSearch(searchAddressInput);
+    }
+  });
+}
+if (mobileSearchAddressInput) {
+  mobileSearchAddressInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      runAddressSearch(mobileSearchAddressInput);
+    }
+  });
+}
+
 /**
  * Application entry point: set defaults, load persisted state, size canvas and render UI.
  */
