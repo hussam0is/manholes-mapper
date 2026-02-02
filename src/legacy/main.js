@@ -85,7 +85,8 @@ import {
   MAP_TYPES,
   saveMapSettings,
   loadMapSettings,
-  wgs84ToItm
+  wgs84ToItm,
+  precacheTilesForMeasurementBounds
 } from '../map/govmap-layer.js';
 import { calculateCenterOnUser } from '../map/user-location.js';
 
@@ -5829,9 +5830,10 @@ function applyCoordinatesIfEnabled(options = {}) {
     viewTranslate.y = screenCenterY - viewScale * newWorldCenterY;
   }
   
-  // Update map reference point with new node positions
+  // Update map reference point and precache tiles for measurement area when map is on
   if (mapLayerEnabled) {
     updateMapReferencePoint();
+    startMeasurementTilesPrecache();
   }
   
   saveToStorage();
@@ -5899,7 +5901,7 @@ function toggleMapLayer(enabled) {
   saveMapSettings();
   syncMapLayerToggleUI();
   
-  // Set up reference point if we have coordinates and a node with survey data
+  // Set up reference point (and precache tiles for measurement area) when enabling map
   if (enabled) {
     updateMapReferencePoint();
   }
@@ -5924,6 +5926,46 @@ function syncMapLayerToggleUI() {
 }
 
 /**
+ * Get ITM bounds of all nodes that have survey coordinates (measurement polygon extent).
+ * @returns {{ minX: number, maxX: number, minY: number, maxY: number } | null}
+ */
+function getMeasurementBoundsItm() {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  let hasAny = false;
+  for (const node of nodes) {
+    if (node.surveyX != null && node.surveyY != null) {
+      if (node.surveyX < minX) minX = node.surveyX;
+      if (node.surveyY < minY) minY = node.surveyY;
+      if (node.surveyX > maxX) maxX = node.surveyX;
+      if (node.surveyY > maxY) maxY = node.surveyY;
+      hasAny = true;
+    }
+  }
+  if (!hasAny && coordinatesMap.size > 0) {
+    for (const node of nodes) {
+      const coords = coordinatesMap.get(String(node.id));
+      if (coords) {
+        if (coords.x < minX) minX = coords.x;
+        if (coords.y < minY) minY = coords.y;
+        if (coords.x > maxX) maxX = coords.x;
+        if (coords.y > maxY) maxY = coords.y;
+        hasAny = true;
+      }
+    }
+  }
+  if (!hasAny || !Number.isFinite(minX)) return null;
+  return { minX, maxX, minY, maxY };
+}
+
+/**
+ * Start precaching map tiles for the measurement extent so tiles are ready when viewing.
+ */
+function startMeasurementTilesPrecache() {
+  const bounds = getMeasurementBoundsItm();
+  if (bounds) precacheTilesForMeasurementBounds(bounds);
+}
+
+/**
  * Update the map reference point from available survey coordinates
  */
 function updateMapReferencePoint() {
@@ -5934,6 +5976,7 @@ function updateMapReferencePoint() {
       if (refPoint) {
         console.log('Map reference point set from node surveyX/surveyY:', refPoint);
         setMapReferencePoint(refPoint);
+        startMeasurementTilesPrecache();
         return true;
       }
     }
@@ -5951,6 +5994,7 @@ function updateMapReferencePoint() {
         };
         console.log('Map reference point set from coordinatesMap:', refPoint);
         setMapReferencePoint(refPoint);
+        startMeasurementTilesPrecache();
         return true;
       }
     }

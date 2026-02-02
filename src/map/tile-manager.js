@@ -13,11 +13,17 @@ import {
 // Tile size in pixels (standard for most tile servers)
 const TILE_SIZE = 256;
 
-// Maximum number of tiles to cache in memory
-const MAX_CACHE_SIZE = 300;
+// Maximum cache size: 500MB (decoded bitmap: width * height * 4 bytes per tile)
+const MAX_CACHE_BYTES = 500 * 1024 * 1024;
 
-// Tile cache: Map<string, { image: HTMLImageElement, timestamp: number }>
+// Estimated bytes per tile (decoded RGBA in memory: 256*256*4)
+const BYTES_PER_TILE = TILE_SIZE * TILE_SIZE * 4;
+
+// Tile cache: Map<string, { image: HTMLImageElement, timestamp: number, bytes: number }>
 const tileCache = new Map();
+
+// Total bytes currently in cache (for size-based eviction)
+let totalCacheBytes = 0;
 
 // Pending tile loads: Map<string, Promise<HTMLImageElement>>
 const pendingLoads = new Map();
@@ -55,18 +61,23 @@ function getCacheKey(x, y, z, type) {
 }
 
 /**
- * Evict oldest tiles from cache if over limit
+ * Evict oldest tiles from cache until under byte limit
  */
 function evictOldTiles() {
-  if (tileCache.size <= MAX_CACHE_SIZE) return;
+  if (totalCacheBytes <= MAX_CACHE_BYTES) return;
   
-  // Sort by timestamp and remove oldest
   const entries = Array.from(tileCache.entries())
     .sort((a, b) => a[1].timestamp - b[1].timestamp);
   
-  const toRemove = entries.slice(0, tileCache.size - MAX_CACHE_SIZE);
-  toRemove.forEach(([key]) => tileCache.delete(key));
+  for (const [key, entry] of entries) {
+    if (totalCacheBytes <= MAX_CACHE_BYTES) break;
+    totalCacheBytes -= entry.bytes;
+    tileCache.delete(key);
+  }
 }
+
+/** Max cache size in bytes (500MB) for external use */
+export const MAX_CACHE_BYTES_EXPORT = MAX_CACHE_BYTES;
 
 /**
  * Get a tile from cache
@@ -96,10 +107,12 @@ export function getTileFromCache(x, y, z, type) {
  */
 export function storeTileInCache(x, y, z, type, image) {
   const key = getCacheKey(x, y, z, type);
-  tileCache.set(key, {
-    image,
-    timestamp: Date.now()
-  });
+  const bytes = (image.naturalWidth || image.width || TILE_SIZE) * (image.naturalHeight || image.height || TILE_SIZE) * 4;
+  const entry = { image, timestamp: Date.now(), bytes };
+  const existing = tileCache.get(key);
+  if (existing) totalCacheBytes -= existing.bytes;
+  tileCache.set(key, entry);
+  totalCacheBytes += bytes;
   evictOldTiles();
 }
 
@@ -286,6 +299,33 @@ export function calculateVisibleTiles(viewBounds, zoom) {
 }
 
 /**
+ * Calculate all tile coordinates that overlap an ITM bounds (for precaching).
+ * Same as calculateVisibleTiles but with configurable max count and optional buffer.
+ * @param {object} viewBounds - View bounds in ITM {minX, minY, maxX, maxY}
+ * @param {number} zoom - Tile zoom level
+ * @param {number} [maxTiles=10000] - Maximum number of tiles to return
+ * @param {number} [bufferTiles=1] - Extra tiles on each side
+ * @returns {Array<{x: number, y: number, z: number}>} Array of tile coordinates
+ */
+export function calculateTilesInBounds(viewBounds, zoom, maxTiles = 10000, bufferTiles = 1) {
+  const topLeft = itmToTile(viewBounds.minX, viewBounds.maxY, zoom);
+  const bottomRight = itmToTile(viewBounds.maxX, viewBounds.minY, zoom);
+  const minTileX = Math.max(0, topLeft.tileX - bufferTiles);
+  const maxTileX = bottomRight.tileX + bufferTiles;
+  const minTileY = Math.max(0, topLeft.tileY - bufferTiles);
+  const maxTileY = bottomRight.tileY + bufferTiles;
+  const tiles = [];
+  let count = 0;
+  for (let x = minTileX; x <= maxTileX && count < maxTiles; x++) {
+    for (let y = minTileY; y <= maxTileY && count < maxTiles; y++) {
+      tiles.push({ x, y, z: zoom });
+      count++;
+    }
+  }
+  return tiles;
+}
+
+/**
  * Calculate view bounds in ITM coordinates from canvas state
  * @param {number} canvasWidth - Canvas width in pixels
  * @param {number} canvasHeight - Canvas height in pixels
@@ -375,17 +415,20 @@ export function markTileLoadPending(x, y, z, type, promise) {
  */
 export function clearTileCache() {
   tileCache.clear();
+  totalCacheBytes = 0;
   pendingLoads.clear();
 }
 
 /**
  * Get cache statistics
- * @returns {{size: number, pending: number}}
+ * @returns {{size: number, pending: number, bytesUsed: number, maxBytes: number}}
  */
 export function getCacheStats() {
   return {
     size: tileCache.size,
-    pending: pendingLoads.size
+    pending: pendingLoads.size,
+    bytesUsed: totalCacheBytes,
+    maxBytes: MAX_CACHE_BYTES
   };
 }
 

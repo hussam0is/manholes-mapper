@@ -10,6 +10,7 @@ import {
   isTileLoadPending,
   markTileLoadPending,
   calculateVisibleTiles,
+  calculateTilesInBounds,
   calculateViewBoundsItm,
   calculateZoomLevel,
   tileToItm,
@@ -409,6 +410,58 @@ export function loadMapSettings() {
   } catch (e) {
     console.warn('Failed to load map layer settings', e);
   }
+}
+
+/**
+ * Precache map tiles for the polygon/extent that surrounds measurements (ITM bounds).
+ * Loads tiles in the background so they are already in cache when the user views the area.
+ * @param {object} itmBounds - Bounds in ITM {minX, maxX, minY, maxY}
+ * @param {number} [paddingMeters=50] - Extra margin in meters around the bounds
+ * @param {Function} [onProgress] - Optional callback (loaded, total, zoom) for progress
+ */
+export function precacheTilesForMeasurementBounds(itmBounds, paddingMeters = 50, onProgress) {
+  if (!itmBounds || typeof itmBounds.minX !== 'number' || typeof itmBounds.maxX !== 'number' ||
+      typeof itmBounds.minY !== 'number' || typeof itmBounds.maxY !== 'number') {
+    return;
+  }
+  const pad = paddingMeters;
+  const bounds = {
+    minX: itmBounds.minX - pad,
+    maxX: itmBounds.maxX + pad,
+    minY: itmBounds.minY - pad,
+    maxY: itmBounds.maxY + pad
+  };
+  // Precache at zoom levels typically used for surveying (16–18)
+  const zooms = [16, 17, 18];
+  const type = currentMapType;
+  const maxTilesPerZoom = 3000;
+  const scheduled = [];
+  for (const z of zooms) {
+    const tiles = calculateTilesInBounds(bounds, z, maxTilesPerZoom, 1);
+    for (const t of tiles) {
+      if (getTileFromCache(t.x, t.y, t.z, type)) continue;
+      if (isTileLoadPending(t.x, t.y, t.z, type)) continue;
+      scheduled.push({ x: t.x, y: t.y, z: t.z });
+    }
+  }
+  let loaded = 0;
+  const concurrency = 8;
+  let running = 0;
+  let index = 0;
+  function runNext() {
+    while (running < concurrency && index < scheduled.length) {
+      const t = scheduled[index++];
+      running++;
+      loadTile(t.x, t.y, t.z, type).then(() => {
+        loaded++;
+        if (onProgress) onProgress(loaded, scheduled.length, t.z);
+      }).finally(() => {
+        running--;
+        runNext();
+      });
+    }
+  }
+  runNext();
 }
 
 // Initialize settings on module load

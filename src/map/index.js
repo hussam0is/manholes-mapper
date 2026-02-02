@@ -8,6 +8,7 @@ export {
   getTileFromCache,
   storeTileInCache,
   calculateVisibleTiles,
+  calculateTilesInBounds,
   calculateViewBoundsItm,
   calculateZoomLevel,
   itmToTile,
@@ -17,6 +18,7 @@ export {
   getTileSizeMeters,
   clearTileCache,
   getCacheStats,
+  MAX_CACHE_BYTES_EXPORT,
   TILE_SIZE,
   GOVMAP_RESOLUTIONS,
   GOVMAP_ORIGIN
@@ -38,7 +40,8 @@ export {
   wgs84ToItm,
   itmToWgs84,
   saveMapSettings,
-  loadMapSettings
+  loadMapSettings,
+  precacheTilesForMeasurementBounds
 } from './govmap-layer.js';
 
 // User location
