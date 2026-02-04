@@ -5666,6 +5666,19 @@ select.invalid:focus {
   color: var(--color-primary);
 }
 
+/* Created by and modified by labels */
+.sketch-card-creator,
+.sketch-card-modifier {
+  margin-top: 0.15rem;
+  font-size: 0.75rem;
+}
+
+.sketch-card-creator .material-icons,
+.sketch-card-modifier .material-icons {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
 /* Stats row */
 .sketch-card-stats {
   display: flex;
