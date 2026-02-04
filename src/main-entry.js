@@ -24,7 +24,8 @@ import {
 // User location imports
 import { 
   requestLocationPermission, 
-  isGeolocationSupported 
+  isGeolocationSupported,
+  isLocationEnabled
 } from './map/user-location.js';
 
 // Initialize Vercel Speed Insights only when deployed on Vercel (production)
@@ -278,6 +279,36 @@ function initMenuSystem() {
   
   // Initialize mobile menu behavior
   initMobileMenuBehavior();
+  
+  // Register handler for userLocation action
+  menuEvents.on('userLocation', async ({ element }) => {
+    // Check if geolocation is supported
+    if (!isGeolocationSupported()) {
+      if (window.showToast) {
+        window.showToast(window.t?.('location.notSupported') || 'Location not supported on this device');
+      }
+      return;
+    }
+    
+    // Toggle user location tracking
+    if (window.toggleUserLocationTracking) {
+      const enabled = await window.toggleUserLocationTracking();
+      
+      // Update button state to show active/inactive
+      const userLocationBtn = document.getElementById('userLocationBtn');
+      const mobileUserLocationBtn = document.getElementById('mobileUserLocationBtn');
+      
+      [userLocationBtn, mobileUserLocationBtn].forEach(btn => {
+        if (btn) {
+          if (enabled) {
+            btn.classList.add('active');
+          } else {
+            btn.classList.remove('active');
+          }
+        }
+      });
+    }
+  });
   
   // Expose menuEvents globally for legacy code access
   window.menuEvents = menuEvents;

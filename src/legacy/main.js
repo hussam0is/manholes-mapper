@@ -88,7 +88,15 @@ import {
   wgs84ToItm,
   precacheTilesForMeasurementBounds
 } from '../map/govmap-layer.js';
-import { calculateCenterOnUser } from '../map/user-location.js';
+import { 
+  calculateCenterOnUser,
+  drawUserLocationMarker,
+  getCurrentPosition,
+  startWatchingLocation,
+  stopWatchingLocation,
+  isLocationEnabled,
+  toggleLocation
+} from '../map/user-location.js';
 
 /**
  * Get the current username from authentication or return a default
@@ -405,6 +413,9 @@ const COORDINATE_SCALE_KEY = 'graphSketch.coordinateScale.v1';
 
 // Map layer state - initialized from localStorage via loadMapSettings() in govmap-layer.js
 let mapLayerEnabled = isMapLayerEnabled();
+
+// User location tracking state (browser GPS, not external GNSS)
+let userLocationEnabled = false;
 
 try {
   fallIconImage = new Image();
@@ -2772,6 +2783,23 @@ function draw() {
         viewTranslate, 
         viewScale,
         { isStale: position.isStale }
+      );
+    }
+  }
+  
+  // Draw user location marker if enabled (browser GPS)
+  if (userLocationEnabled && isLocationEnabled()) {
+    const userPosition = getCurrentPosition();
+    const referencePoint = getMapReferencePoint();
+    
+    if (userPosition && referencePoint) {
+      drawUserLocationMarker(
+        ctx,
+        userPosition,
+        referencePoint,
+        coordinateScale,
+        viewTranslate,
+        viewScale
       );
     }
   }
@@ -6833,8 +6861,50 @@ function centerOnGpsLocation(lat, lon) {
   return false;
 }
 
+/**
+ * Toggle user location tracking (browser GPS)
+ * @returns {Promise<boolean>} True if now enabled
+ */
+async function toggleUserLocationTracking() {
+  const wasEnabled = userLocationEnabled;
+  
+  if (wasEnabled) {
+    // Disable tracking
+    stopWatchingLocation();
+    userLocationEnabled = false;
+    scheduleDraw();
+    if (window.showToast) {
+      window.showToast(window.t?.('location.disabled') || 'Location tracking disabled');
+    }
+    return false;
+  } else {
+    // Enable tracking
+    const enabled = await toggleLocation(() => {
+      // Callback on position update - trigger redraw
+      scheduleDraw();
+    });
+    
+    if (enabled) {
+      userLocationEnabled = true;
+      scheduleDraw();
+      if (window.showToast) {
+        window.showToast(window.t?.('location.enabled') || 'Location tracking enabled');
+      }
+      
+      // Center on user location if we have a reference point
+      const position = getCurrentPosition();
+      if (position) {
+        centerOnGpsLocation(position.lat, position.lon);
+      }
+    }
+    
+    return enabled;
+  }
+}
+
 // Expose functions globally for GNSS module integration
 window.scheduleDraw = scheduleDraw;
 window.setLiveMeasureMode = setLiveMeasureMode;
 window.openGnssPointCaptureDialog = openGnssPointCaptureDialog;
 window.centerOnGpsLocation = centerOnGpsLocation;
+window.toggleUserLocationTracking = toggleUserLocationTracking;
