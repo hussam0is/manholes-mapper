@@ -2098,6 +2098,9 @@ if (window.syncService?.onSyncStateChange) {
   window.syncService.onSyncStateChange(updateSyncStatusUI);
 }
 
+// Track the current sketch tab (personal or organization)
+let currentSketchTab = 'personal';
+
 function renderHome() {
   if (!homePanel || !sketchListEl) return;
   startPanel.style.display = 'none';
@@ -2108,22 +2111,71 @@ function renderHome() {
     updateSyncStatusUI(window.syncService.getSyncState());
   }
   
+  // Check if user is admin to show organization tab
+  const userRole = window.permissionsService?.getUserRole?.();
+  const isAdminUser = userRole?.isAdmin === true;
+  
+  // Setup tabs
+  const sketchTabs = document.getElementById('sketchTabs');
+  const personalTab = document.getElementById('personalTab');
+  const organizationTab = document.getElementById('organizationTab');
+  
+  if (sketchTabs) {
+    // Show organization tab only for admin users
+    if (isAdminUser) {
+      sketchTabs.classList.add('show-org');
+    } else {
+      sketchTabs.classList.remove('show-org');
+      currentSketchTab = 'personal'; // Reset to personal if not admin
+    }
+    
+    // Update active tab state
+    if (personalTab) {
+      personalTab.classList.toggle('active', currentSketchTab === 'personal');
+    }
+    if (organizationTab) {
+      organizationTab.classList.toggle('active', currentSketchTab === 'organization');
+    }
+    
+    // Add tab click handlers (remove old ones first to avoid duplicates)
+    if (personalTab && !personalTab._hasTabHandler) {
+      personalTab.addEventListener('click', () => {
+        currentSketchTab = 'personal';
+        renderHome();
+      });
+      personalTab._hasTabHandler = true;
+    }
+    if (organizationTab && !organizationTab._hasTabHandler) {
+      organizationTab.addEventListener('click', () => {
+        currentSketchTab = 'organization';
+        renderHome();
+      });
+      organizationTab._hasTabHandler = true;
+    }
+  }
+  
   const lib = getLibrary();
+  
+  // Filter sketches based on selected tab
+  const filteredLib = lib.filter(rec => {
+    if (currentSketchTab === 'personal') {
+      return rec.isOwner === true || rec.isOwner === undefined; // Include undefined for backwards compatibility
+    } else {
+      return rec.isOwner === false; // Organization sketches (not owned by current user)
+    }
+  });
+  
   sketchListEl.innerHTML = '';
-  if (lib.length === 0) {
+  if (filteredLib.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'sketch-list-empty';
     empty.innerHTML = `
       <span class="material-icons">inbox</span>
-      <span>${t('noSketches')}</span>
+      <span>${currentSketchTab === 'organization' ? t('noOrganizationSketches') || 'No organization sketches' : t('noSketches')}</span>
     `;
     sketchListEl.appendChild(empty);
   } else {
-    // Check if user is admin to show owner info
-    const userRole = window.permissionsService?.getUserRole?.();
-    const isAdminUser = userRole?.isAdmin === true;
-    
-    lib.forEach((rec) => {
+    filteredLib.forEach((rec) => {
       const item = document.createElement('div');
       const isCurrentSketch = rec.id === currentSketchId;
       item.className = `sketch-card${isCurrentSketch ? ' sketch-card-active' : ''}`;

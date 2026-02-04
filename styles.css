@@ -6187,6 +6187,72 @@ select.invalid:focus {
   margin-inline-end: 0.5rem;
 }
 
+/* Sketch tabs for Personal/Organization */
+.sketch-tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 1rem;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sketch-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.sketch-tab:hover {
+  color: var(--color-text);
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.sketch-tab.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.sketch-tab .material-icons {
+  font-size: 1.125rem;
+}
+
+/* Hide organization tab for non-admin users */
+.sketch-tabs:not(.show-org) #organizationTab {
+  display: none;
+}
+
+.sketch-tabs:not(.show-org) #personalTab {
+  flex: 1;
+}
+
+/* Dark mode sketch tabs */
+@media (prefers-color-scheme: dark) {
+  .sketch-tabs {
+    background: #1e293b;
+  }
+  
+  .sketch-tab:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+}
+
+/* RTL support for tabs */
+html[dir="rtl"] .sketch-tab {
+  flex-direction: row-reverse;
+}
+
 /* Hide main content when login panel is shown */
 body.show-login header,
 body.show-login #main,

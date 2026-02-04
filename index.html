@@ -647,6 +647,17 @@
             <span class="material-icons sync-icon">cloud_sync</span>
             <span id="syncStatusText">מסונכרן</span>
           </div>
+          <!-- Tabs for Personal/Organization sketches -->
+          <div class="sketch-tabs" id="sketchTabs">
+            <button class="sketch-tab active" data-tab="personal" id="personalTab">
+              <span class="material-icons">person</span>
+              <span data-i18n="sketches.personal">שרטוטים שלי</span>
+            </button>
+            <button class="sketch-tab" data-tab="organization" id="organizationTab">
+              <span class="material-icons">business</span>
+              <span data-i18n="sketches.organization">שרטוטי הארגון</span>
+            </button>
+          </div>
           <!-- Sketch list -->
           <div class="home-panel-content">
             <div id="sketchList" class="sketch-list"></div>
