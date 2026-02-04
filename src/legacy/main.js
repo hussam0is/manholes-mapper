@@ -2811,7 +2811,7 @@ function draw() {
   if (mapLayerEnabled && getMapReferencePoint()) {
     ctx.save();
     ctx.translate(viewTranslate.x, viewTranslate.y);
-    ctx.scale(viewScale * viewStretchX, viewScale * viewStretchY);
+    ctx.scale(viewScale, viewScale);
     // Use logical (CSS) dimensions for tile calculations since viewTranslate is in CSS pixels
     // canvas.width/height are in device pixels (CSS * devicePixelRatio)
     const dpr = window.devicePixelRatio || 1;
@@ -2832,8 +2832,8 @@ function draw() {
   // Draw infinite grid first in screen space but offset by transform
   drawInfiniteGrid();
   ctx.translate(viewTranslate.x, viewTranslate.y);
-  ctx.scale(viewScale * viewStretchX, viewScale * viewStretchY);
-  // Draw edges first
+  ctx.scale(viewScale, viewScale);
+  // Draw edges first (positions will be stretched, shapes won't)
   edges.forEach((edge) => {
     drawEdge(edge);
   });
@@ -2842,17 +2842,17 @@ function draw() {
     let x1, y1, x2, y2;
     
     if (pendingEdgeTail) {
-      // Normal preview: from node to cursor
-      x1 = pendingEdgeTail.x;
-      y1 = pendingEdgeTail.y;
-      x2 = pendingEdgePreview.x;
-      y2 = pendingEdgePreview.y;
+      // Normal preview: from node to cursor (apply stretch to positions)
+      x1 = pendingEdgeTail.x * viewStretchX;
+      y1 = pendingEdgeTail.y * viewStretchY;
+      x2 = pendingEdgePreview.x * viewStretchX;
+      y2 = pendingEdgePreview.y * viewStretchY;
     } else if (pendingEdgeStartPosition) {
-      // Inbound preview: from start position to cursor
-      x1 = pendingEdgeStartPosition.x;
-      y1 = pendingEdgeStartPosition.y;
-      x2 = pendingEdgePreview.x;
-      y2 = pendingEdgePreview.y;
+      // Inbound preview: from start position to cursor (apply stretch to positions)
+      x1 = pendingEdgeStartPosition.x * viewStretchX;
+      y1 = pendingEdgeStartPosition.y * viewStretchY;
+      x2 = pendingEdgePreview.x * viewStretchX;
+      y2 = pendingEdgePreview.y * viewStretchY;
     } else {
       x1 = x2 = y1 = y2 = 0; // Should not happen
     }
@@ -3053,8 +3053,11 @@ function ensureVirtualPadding() {
   let maxScreenX = -Infinity;
   let maxScreenY = -Infinity;
   for (const n of nodes) {
-    const sx = n.x * viewScale * viewStretchX + viewTranslate.x;
-    const sy = n.y * viewScale * viewStretchY + viewTranslate.y;
+    // Apply stretch to positions for screen coordinate calculation
+    const stretchedX = n.x * viewStretchX;
+    const stretchedY = n.y * viewStretchY;
+    const sx = stretchedX * viewScale + viewTranslate.x;
+    const sy = stretchedY * viewScale + viewTranslate.y;
     if (sx < minScreenX) minScreenX = sx;
     if (sy < minScreenY) minScreenY = sy;
     if (sx > maxScreenX) maxScreenX = sx;
@@ -3131,6 +3134,10 @@ function drawEdge(edge) {
   const tailNode = edge.tail != null ? nodes.find((n) => n.id === edge.tail) : null;
   const headNode = edge.head != null ? nodes.find((n) => n.id === edge.head) : null;
   
+  // Apply stretch to node positions for drawing
+  const stretchedTail = stretchedNode(tailNode);
+  const stretchedHead = stretchedNode(headNode);
+  
   // Handle inbound dangling edges (tail is null, head is a node)
   if (edge.tail === null && headNode && edge.tailPosition) {
     drawDanglingEdgeLocal(edge, headNode, 'inbound');
@@ -3143,18 +3150,18 @@ function drawEdge(edge) {
     return;
   }
   
-  const angle = tailNode && headNode ? Math.atan2(headNode.y - tailNode.y, headNode.x - tailNode.x) : 0;
-  drawEdgeFeature(ctx, edge, tailNode, headNode, {
+  const angle = stretchedTail && stretchedHead ? Math.atan2(stretchedHead.y - stretchedTail.y, stretchedHead.x - stretchedTail.x) : 0;
+  drawEdgeFeature(ctx, edge, stretchedTail, stretchedHead, {
     selectedEdge,
     edgeTypeColors: EDGE_TYPE_COLORS,
     highlightedHalfEdge,
     colors: COLORS,
   });
-  if (!tailNode || !headNode) return;
+  if (!stretchedTail || !stretchedHead) return;
   if (edge.fall_depth !== '' && edge.fall_depth !== null && edge.fall_depth !== undefined) {
     const iconDistanceFromHead = ((typeof NODE_RADIUS === 'number' ? NODE_RADIUS : 20) * sizeScale) + (7 * sizeScale);
-    const iconX = headNode.x - Math.cos(angle) * iconDistanceFromHead;
-    const iconY = headNode.y - Math.sin(angle) * iconDistanceFromHead;
+    const iconX = stretchedHead.x - Math.cos(angle) * iconDistanceFromHead;
+    const iconY = stretchedHead.y - Math.sin(angle) * iconDistanceFromHead;
     const size = 16 * sizeScale;
     if (fallIconImage && fallIconReady) {
       ctx.save();
@@ -3188,7 +3195,7 @@ function drawEdge(edge) {
     }
   }
   // mid-arrow remains inline; labels are drawn in a later pass above nodes
-  const x1 = tailNode.x, y1 = tailNode.y, x2 = headNode.x, y2 = headNode.y;
+  const x1 = stretchedTail.x, y1 = stretchedTail.y, x2 = stretchedHead.x, y2 = stretchedHead.y;
   const midX = (x1 + x2) / 2;
   const midY = (y1 + y2) / 2;
   const midArrowLen = 8;
@@ -3219,22 +3226,30 @@ function drawDanglingEdgeLocal(edge, connectedNode, type = 'outbound') {
   const isSelected = edge === selectedEdge;
   const defaultOffset = 80 * sizeScale;
   
+  // Apply stretch to positions
+  const stretchedConnected = stretchedNode(connectedNode);
+  
   let startX, startY, endX, endY, openEndX, openEndY;
   
   if (type === 'outbound') {
     // Outbound: draw from node to dangling endpoint
-    startX = connectedNode.x;
-    startY = connectedNode.y;
-    endX = edge.danglingEndpoint?.x ?? (connectedNode.x + defaultOffset);
-    endY = edge.danglingEndpoint?.y ?? (connectedNode.y - defaultOffset * 0.5);
+    startX = stretchedConnected.x;
+    startY = stretchedConnected.y;
+    // Apply stretch to dangling endpoint
+    const rawEndX = edge.danglingEndpoint?.x ?? (connectedNode.x + defaultOffset);
+    const rawEndY = edge.danglingEndpoint?.y ?? (connectedNode.y - defaultOffset * 0.5);
+    endX = rawEndX * viewStretchX;
+    endY = rawEndY * viewStretchY;
     openEndX = endX;
     openEndY = endY;
   } else {
     // Inbound: draw from tailPosition to node
-    startX = edge.tailPosition?.x ?? (connectedNode.x - defaultOffset);
-    startY = edge.tailPosition?.y ?? (connectedNode.y - defaultOffset * 0.5);
-    endX = connectedNode.x;
-    endY = connectedNode.y;
+    const rawStartX = edge.tailPosition?.x ?? (connectedNode.x - defaultOffset);
+    const rawStartY = edge.tailPosition?.y ?? (connectedNode.y - defaultOffset * 0.5);
+    startX = rawStartX * viewStretchX;
+    startY = rawStartY * viewStretchY;
+    endX = stretchedConnected.x;
+    endY = stretchedConnected.y;
     openEndX = startX;
     openEndY = startY;
   }
@@ -3431,16 +3446,24 @@ function drawEdgeLabels(edge) {
 function drawNode(node) {
   const radius = NODE_RADIUS * sizeScale;
 
+  // Apply stretch to position for drawing (shapes stay the same, only position stretches)
+  const stretchedN = stretchedNode(node);
+  
+  // Check if this node is selected (compare by ID since we're using stretched copies)
+  const isSelected = selectedNode && String(selectedNode.id) === String(node.id);
+
   // Draw the node icon using the new icon system with coordinate options
   const coordinateOptions = {
     showCoordinateStatus: coordinatesEnabled && coordinatesMap.size > 0,
-    coordinatesMap: coordinatesMap
+    coordinatesMap: coordinatesMap,
+    isSelected: isSelected  // Pass selection state explicitly
   };
-  drawNodeIcon(ctx, node, radius, COLORS, selectedNode, coordinateOptions);
+  // Pass the same node for both if selected, so identity comparison works
+  drawNodeIcon(ctx, stretchedN, radius, COLORS, isSelected ? stretchedN : null, coordinateOptions);
 
   // For Home nodes with directConnection badge, draw it on top
   if (node.nodeType === 'Home' && node.directConnection) {
-    drawDirectConnectionBadge(node.x, node.y, radius);
+    drawDirectConnectionBadge(stretchedN.x, stretchedN.y, radius);
   }
 
   // Return label data for deferred rendering (smart positioning)
@@ -3458,8 +3481,8 @@ function drawNode(node) {
 
   return {
     text: labelText,
-    nodeX: node.x,
-    nodeY: node.y,
+    nodeX: stretchedN.x,
+    nodeY: stretchedN.y,
     nodeRadius: radius,
     fontSize: fontSize
   };
@@ -6803,6 +6826,34 @@ function screenToWorld(x, y) {
   return {
     x: (x - viewTranslate.x) / (viewScale * viewStretchX),
     y: (y - viewTranslate.y) / (viewScale * viewStretchY),
+  };
+}
+
+/**
+ * Apply stretch factors to world coordinates for drawing.
+ * This stretches positions without affecting shapes.
+ * @param {number} x - World X coordinate
+ * @param {number} y - World Y coordinate
+ * @returns {{x: number, y: number}} Stretched coordinates
+ */
+function applyStretch(x, y) {
+  return {
+    x: x * viewStretchX,
+    y: y * viewStretchY,
+  };
+}
+
+/**
+ * Create a stretched version of a node for drawing (position only, not the actual node).
+ * @param {object} node - The node object
+ * @returns {object} A copy with stretched x and y coordinates
+ */
+function stretchedNode(node) {
+  if (!node) return null;
+  return {
+    ...node,
+    x: node.x * viewStretchX,
+    y: node.y * viewStretchY,
   };
 }
 
