@@ -111,6 +111,24 @@ function getCurrentUsername() {
   }
 }
 
+/**
+ * Update timestamp fields on a node when it's modified
+ * @param {object} node - The node to update
+ */
+function updateNodeTimestamp(node) {
+  node.updatedAt = new Date().toISOString();
+  node.modifiedBy = getCurrentUsername();
+}
+
+/**
+ * Update timestamp fields on an edge when it's modified
+ * @param {object} edge - The edge to update
+ */
+function updateEdgeTimestamp(edge) {
+  edge.updatedAt = new Date().toISOString();
+  edge.modifiedBy = getCurrentUsername();
+}
+
 // DOM references
 const canvas = document.getElementById('graphCanvas');
 const ctx = canvas.getContext('2d');
@@ -3675,6 +3693,7 @@ function renderDetails() {
     const noteInput = container.querySelector('#noteInput');
     noteInput.addEventListener('input', (e) => {
       node.note = e.target.value;
+      updateNodeTimestamp(node);
       debouncedSaveToStorage();
     });
     // Direct connection toggle (Home only)
@@ -3682,6 +3701,7 @@ function renderDetails() {
     if (directToggle) {
       directToggle.addEventListener('change', (e) => {
         node.directConnection = !!e.target.checked;
+        updateNodeTimestamp(node);
         // Keep the same ID regardless of direct connection status
         saveToStorage();
         scheduleDraw();
@@ -3693,6 +3713,7 @@ function renderDetails() {
     if (materialSelect) {
       materialSelect.addEventListener('change', (e) => {
         node.material = e.target.value;
+        updateNodeTimestamp(node);
         trackFieldUsage('nodes', 'material', e.target.value);
         saveToStorage();
         scheduleDraw();
@@ -3705,6 +3726,7 @@ function renderDetails() {
         const val = e.target.value;
         const n = Number(val);
         node.coverDiameter = val === '' || !Number.isFinite(n) ? '' : Math.round(n);
+        updateNodeTimestamp(node);
         if (node.coverDiameter !== '') {
           trackFieldUsage('nodes', 'cover_diameter', node.coverDiameter);
         }
@@ -3718,6 +3740,7 @@ function renderDetails() {
       accessSelect.addEventListener('change', (e) => {
         const num = Number(e.target.value);
         node.access = Number.isFinite(num) ? num : 0;
+        updateNodeTimestamp(node);
         trackFieldUsage('nodes', 'access', node.access);
         saveToStorage();
         scheduleDraw();
@@ -3729,6 +3752,7 @@ function renderDetails() {
       accuracyLevelSelect.addEventListener('change', (e) => {
         const num = Number(e.target.value);
         node.accuracyLevel = Number.isFinite(num) ? num : 0;
+        updateNodeTimestamp(node);
         trackFieldUsage('nodes', 'accuracy_level', node.accuracyLevel);
         
         // Apply input flow rules based on the new accuracy level
@@ -3755,6 +3779,7 @@ function renderDetails() {
       nodeMaintenanceStatusSelect.addEventListener('change', (e) => {
         const num = Number(e.target.value);
         node.maintenanceStatus = Number.isFinite(num) ? num : 0;
+        updateNodeTimestamp(node);
         trackFieldUsage('nodes', 'maintenance_status', node.maintenanceStatus);
         
         // Apply input flow rules based on the new maintenance status
@@ -3950,12 +3975,14 @@ function renderDetails() {
     const fallPositionSelect = container.querySelector('#fallPositionSelect');
     edgeTypeSelect.addEventListener('change', (e) => {
       edge.edge_type = e.target.value;
+      updateEdgeTimestamp(edge);
       trackFieldUsage('edges', 'edge_type', e.target.value);
       saveToStorage();
       scheduleDraw();
     });
     edgeMaterialSelect.addEventListener('change', (e) => {
       edge.material = e.target.value;
+      updateEdgeTimestamp(edge);
       trackFieldUsage('edges', 'material', e.target.value);
       saveToStorage();
       scheduleDraw();
@@ -3963,6 +3990,7 @@ function renderDetails() {
     if (edgeDiameterSelect) {
       edgeDiameterSelect.addEventListener('change', (e) => {
         edge.line_diameter = String(e.target.value || '');
+        updateEdgeTimestamp(edge);
         if (edge.line_diameter !== '') {
           trackFieldUsage('edges', 'line_diameter', edge.line_diameter);
         }
@@ -3974,6 +4002,7 @@ function renderDetails() {
       edgeEngineeringStatusSelect.addEventListener('change', (e) => {
         const num = Number(e.target.value);
         edge.engineeringStatus = Number.isFinite(num) ? num : 0;
+        updateEdgeTimestamp(edge);
         trackFieldUsage('edges', 'engineering_status', edge.engineeringStatus);
         saveToStorage();
         scheduleDraw();
@@ -3984,6 +4013,7 @@ function renderDetails() {
         const raw = e.target.value;
         const num = Number(raw);
         edge.fall_position = raw === '' || !Number.isFinite(num) ? '' : num;
+        updateEdgeTimestamp(edge);
         if (edge.fall_position !== '') {
           trackFieldUsage('edges', 'fall_position', edge.fall_position);
         }
@@ -4004,6 +4034,7 @@ function renderDetails() {
           e.target.value = sanitized;
         }
         edge.tail_measurement = sanitized;
+        updateEdgeTimestamp(edge);
         // Recompute node types because missing measurement may affect connected node type
         computeNodeTypes();
         debouncedSaveToStorage();
@@ -4020,6 +4051,7 @@ function renderDetails() {
           e.target.value = sanitized;
         }
         edge.head_measurement = sanitized;
+        updateEdgeTimestamp(edge);
         computeNodeTypes();
         debouncedSaveToStorage();
         scheduleDraw();
@@ -4044,6 +4076,7 @@ function renderDetails() {
           edge.fall_depth = Number.isFinite(num) ? num : val;
         }
 
+        updateEdgeTimestamp(edge);
         debouncedSaveToStorage();
         scheduleDraw();
       });
@@ -4417,6 +4450,7 @@ function pointerMove(x, y) {
     }
     selectedNode.x = world.x - dragOffset.x;
     selectedNode.y = world.y - dragOffset.y;
+    updateNodeTimestamp(selectedNode);
     saveToStorage();
     scheduleDraw();
     // Auto-pan only while dragging to create infinite feel, not every frame in draw
