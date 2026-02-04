@@ -9,9 +9,10 @@
    Note: Core tokens are defined in styles.css
    ============================================ */
 :root {
-  /* Menu layout - uses core tokens from styles.css */
-  --menu-height: var(--header-h, 56px);
-  --menu-height-mobile: var(--header-h-mobile, 48px);
+  /* Menu layout - fixed min-height values (not referencing --header-h to avoid circular dependency) */
+  /* Note: --header-h is the measured/output value synced by JS for other elements to use */
+  --menu-height: 56px;
+  --menu-height-mobile: 48px;
   --menu-bg: linear-gradient(135deg, var(--color-primary-bg, #eff6ff) 0%, var(--color-primary-light, #dbeafe) 100%);
   --menu-border: var(--color-border);
   --menu-shadow: var(--shadow-sm);
@@ -907,14 +908,8 @@
 .menu-dropdown__item--scale {
   cursor: default;
   padding: 0.5rem 0.75rem !important;
-  min-height: auto !important;
-  max-height: none;
-  height: auto;
-  flex-shrink: 0;
-  flex-grow: 0;
+  min-height: auto;
   justify-content: flex-start;
-  /* Prevent height transitions that could cause visual glitches */
-  transition: background-color 0.15s ease;
 }
 
 .menu-dropdown__item--scale .menu-dropdown__label {
@@ -996,15 +991,11 @@
   align-items: center;
   gap: 2px;
   flex-shrink: 0;
-  flex-grow: 0;
   
   padding: 2px;
   background: var(--color-bg, #f8fafc);
   border: 1px solid var(--menu-border);
   border-radius: 6px;
-  /* Ensure consistent sizing */
-  height: auto;
-  max-height: 32px;
 }
 
 .menu-scale-btn {
@@ -1678,19 +1669,6 @@ body.mobile-menu-open {
 .mobile-menu--open ~ .mobile-menu__backdrop,
 body.mobile-menu-open .mobile-menu__backdrop {
   opacity: 1;
-}
-
-/* ============================================
-   Touch Device Overrides
-   ============================================ */
-/* Ensure scale items don't get forced min-height on touch devices */
-@media (hover: none) and (pointer: coarse) {
-  .menu-dropdown__item--scale,
-  .menu-dropdown__item--select {
-    min-height: auto !important;
-    height: auto !important;
-    flex-grow: 0 !important;
-  }
 }
 
 /* ============================================
