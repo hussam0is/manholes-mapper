@@ -31,6 +31,8 @@ let lastPulseTime = 0;
  * @param {object} viewTranslate - View translation {x, y}
  * @param {number} viewScale - View zoom scale
  * @param {object} options - Drawing options
+ * @param {number} options.stretchX - Horizontal stretch factor (default 1)
+ * @param {number} options.stretchY - Vertical stretch factor (default 1)
  */
 export function drawGnssMarker(ctx, position, referencePoint, coordinateScale, viewTranslate, viewScale, options = {}) {
   if (!position || !position.isValid || position.lat == null || position.lon == null) {
@@ -42,6 +44,8 @@ export function drawGnssMarker(ctx, position, referencePoint, coordinateScale, v
     return;
   }
 
+  const { stretchX = 1, stretchY = 1 } = options;
+
   // Convert GNSS position (WGS84) to ITM
   const posItm = wgs84ToItm(position.lat, position.lon);
 
@@ -52,9 +56,10 @@ export function drawGnssMarker(ctx, position, referencePoint, coordinateScale, v
   const worldX = referencePoint.canvas.x + (dx * coordinateScale);
   const worldY = referencePoint.canvas.y - (dy * coordinateScale); // Flip Y axis
 
-  // Apply view transform to get screen coordinates
-  const screenX = worldX * viewScale + viewTranslate.x;
-  const screenY = worldY * viewScale + viewTranslate.y;
+  // Apply view transform with stretch to get screen coordinates
+  // Stretch is applied to positions (worldX, worldY) to align with stretched coordinate system
+  const screenX = (worldX * stretchX) * viewScale + viewTranslate.x;
+  const screenY = (worldY * stretchY) * viewScale + viewTranslate.y;
 
   // Update pulse animation
   const now = Date.now();

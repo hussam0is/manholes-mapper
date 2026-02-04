@@ -2808,10 +2808,12 @@ function draw() {
   ctx.save();
   
   // Draw map tiles as background layer (before grid and other elements)
+  // Map layer stretches with coordinates (like the grid) to align with positions
   if (mapLayerEnabled && getMapReferencePoint()) {
     ctx.save();
     ctx.translate(viewTranslate.x, viewTranslate.y);
-    ctx.scale(viewScale, viewScale);
+    // Apply stretch to map layer so it aligns with stretched coordinates
+    ctx.scale(viewScale * viewStretchX, viewScale * viewStretchY);
     // Use logical (CSS) dimensions for tile calculations since viewTranslate is in CSS pixels
     // canvas.width/height are in device pixels (CSS * devicePixelRatio)
     const dpr = window.devicePixelRatio || 1;
@@ -2990,7 +2992,7 @@ function draw() {
         coordinateScale, 
         viewTranslate, 
         viewScale,
-        { isStale: position.isStale }
+        { isStale: position.isStale, stretchX: viewStretchX, stretchY: viewStretchY }
       );
     }
   }
@@ -3007,7 +3009,8 @@ function draw() {
         referencePoint,
         coordinateScale,
         viewTranslate,
-        viewScale
+        viewScale,
+        { stretchX: viewStretchX, stretchY: viewStretchY }
       );
     }
   }

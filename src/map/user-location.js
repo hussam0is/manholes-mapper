@@ -244,11 +244,16 @@ export function getPermissionState() {
  * @param {number} coordinateScale - Pixels per meter
  * @param {object} viewTranslate - View translation
  * @param {number} viewScale - View zoom scale
+ * @param {object} options - Drawing options
+ * @param {number} options.stretchX - Horizontal stretch factor (default 1)
+ * @param {number} options.stretchY - Vertical stretch factor (default 1)
  */
-export function drawUserLocationMarker(ctx, position, referencePoint, coordinateScale, viewTranslate, viewScale) {
+export function drawUserLocationMarker(ctx, position, referencePoint, coordinateScale, viewTranslate, viewScale, options = {}) {
   if (!position || !referencePoint) {
     return;
   }
+  
+  const { stretchX = 1, stretchY = 1 } = options;
   
   // Convert position to ITM
   const posItm = wgs84ToItm(position.lat, position.lon);
@@ -260,9 +265,9 @@ export function drawUserLocationMarker(ctx, position, referencePoint, coordinate
   const canvasX = referencePoint.canvas.x + (dx * coordinateScale);
   const canvasY = referencePoint.canvas.y - (dy * coordinateScale); // Flip Y
   
-  // Apply view transform
-  const screenX = canvasX * viewScale + viewTranslate.x;
-  const screenY = canvasY * viewScale + viewTranslate.y;
+  // Apply view transform with stretch to align with stretched coordinate system
+  const screenX = (canvasX * stretchX) * viewScale + viewTranslate.x;
+  const screenY = (canvasY * stretchY) * viewScale + viewTranslate.y;
   
   ctx.save();
   
