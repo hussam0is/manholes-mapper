@@ -65,6 +65,11 @@ async function initializeDatabase() {
   // Migration: Add project support to sketches (now safe since projects table exists)
   await sql`ALTER TABLE sketches ADD COLUMN IF NOT EXISTS project_id UUID REFERENCES projects(id) ON DELETE SET NULL`;
   await sql`ALTER TABLE sketches ADD COLUMN IF NOT EXISTS snapshot_input_flow_config JSONB DEFAULT '{}'::jsonb`;
+  
+  // Migration: Add locking support to sketches
+  await sql`ALTER TABLE sketches ADD COLUMN IF NOT EXISTS locked_by TEXT`;
+  await sql`ALTER TABLE sketches ADD COLUMN IF NOT EXISTS locked_at TIMESTAMPTZ`;
+  await sql`ALTER TABLE sketches ADD COLUMN IF NOT EXISTS lock_expires_at TIMESTAMPTZ`;
 
   await sql`
     CREATE INDEX IF NOT EXISTS idx_sketches_user_id ON sketches(user_id)
@@ -241,6 +246,180 @@ export async function getSketchByIdAdmin(sketchId) {
     WHERE s.id = ${sketchId}
   `;
   return result.rows[0] || null;
+}
+
+// ============================================
+// Sketch Locking Functions
+// ============================================
+
+// Lock duration in minutes (30 minutes default)
+const LOCK_DURATION_MINUTES = 30;
+
+/**
+ * Acquire a lock on a sketch
+ * @param {string} sketchId - Sketch ID
+ * @param {string} userId - User ID acquiring the lock
+ * @param {string} username - Username for display purposes
+ * @returns {object} Lock result { success, lockedBy, lockedAt, lockExpiresAt, message }
+ */
+export async function acquireSketchLock(sketchId, userId, username) {
+  // Check if sketch exists and get current lock status
+  const checkResult = await sql`
+    SELECT id, user_id, locked_by, locked_at, lock_expires_at
+    FROM sketches
+    WHERE id = ${sketchId}
+  `;
+  
+  if (checkResult.rows.length === 0) {
+    return { success: false, message: 'Sketch not found' };
+  }
+  
+  const sketch = checkResult.rows[0];
+  const now = new Date();
+  
+  // Check if locked by another user and lock hasn't expired
+  if (sketch.locked_by && sketch.locked_by !== userId) {
+    const lockExpires = new Date(sketch.lock_expires_at);
+    if (lockExpires > now) {
+      return {
+        success: false,
+        lockedBy: sketch.locked_by,
+        lockedAt: sketch.locked_at,
+        lockExpiresAt: sketch.lock_expires_at,
+        message: 'Sketch is locked by another user'
+      };
+    }
+    // Lock has expired, can be taken over
+  }
+  
+  // Calculate lock expiration
+  const lockExpiresAt = new Date(now.getTime() + LOCK_DURATION_MINUTES * 60 * 1000);
+  
+  // Acquire lock
+  const result = await sql`
+    UPDATE sketches
+    SET locked_by = ${userId},
+        locked_at = ${now.toISOString()}::timestamptz,
+        lock_expires_at = ${lockExpiresAt.toISOString()}::timestamptz
+    WHERE id = ${sketchId}
+    RETURNING id, locked_by, locked_at, lock_expires_at
+  `;
+  
+  if (result.rows.length === 0) {
+    return { success: false, message: 'Failed to acquire lock' };
+  }
+  
+  return {
+    success: true,
+    lockedBy: result.rows[0].locked_by,
+    lockedAt: result.rows[0].locked_at,
+    lockExpiresAt: result.rows[0].lock_expires_at
+  };
+}
+
+/**
+ * Release a lock on a sketch
+ * @param {string} sketchId - Sketch ID
+ * @param {string} userId - User ID releasing the lock
+ * @returns {object} { success, message }
+ */
+export async function releaseSketchLock(sketchId, userId) {
+  const result = await sql`
+    UPDATE sketches
+    SET locked_by = NULL,
+        locked_at = NULL,
+        lock_expires_at = NULL
+    WHERE id = ${sketchId} AND (locked_by = ${userId} OR locked_by IS NULL)
+    RETURNING id
+  `;
+  
+  return {
+    success: result.rows.length > 0,
+    message: result.rows.length > 0 ? 'Lock released' : 'Could not release lock'
+  };
+}
+
+/**
+ * Refresh a lock's expiration time
+ * @param {string} sketchId - Sketch ID
+ * @param {string} userId - User ID with the lock
+ * @returns {object} { success, lockExpiresAt, message }
+ */
+export async function refreshSketchLock(sketchId, userId) {
+  const now = new Date();
+  const lockExpiresAt = new Date(now.getTime() + LOCK_DURATION_MINUTES * 60 * 1000);
+  
+  const result = await sql`
+    UPDATE sketches
+    SET lock_expires_at = ${lockExpiresAt.toISOString()}::timestamptz
+    WHERE id = ${sketchId} AND locked_by = ${userId}
+    RETURNING id, lock_expires_at
+  `;
+  
+  if (result.rows.length === 0) {
+    return { success: false, message: 'Lock not held or sketch not found' };
+  }
+  
+  return {
+    success: true,
+    lockExpiresAt: result.rows[0].lock_expires_at
+  };
+}
+
+/**
+ * Check lock status of a sketch
+ * @param {string} sketchId - Sketch ID
+ * @returns {object} { isLocked, lockedBy, lockedAt, lockExpiresAt, isExpired }
+ */
+export async function checkSketchLock(sketchId) {
+  const result = await sql`
+    SELECT locked_by, locked_at, lock_expires_at
+    FROM sketches
+    WHERE id = ${sketchId}
+  `;
+  
+  if (result.rows.length === 0) {
+    return { isLocked: false, message: 'Sketch not found' };
+  }
+  
+  const sketch = result.rows[0];
+  const now = new Date();
+  
+  if (!sketch.locked_by) {
+    return { isLocked: false };
+  }
+  
+  const lockExpires = new Date(sketch.lock_expires_at);
+  const isExpired = lockExpires <= now;
+  
+  return {
+    isLocked: !isExpired,
+    lockedBy: sketch.locked_by,
+    lockedAt: sketch.locked_at,
+    lockExpiresAt: sketch.lock_expires_at,
+    isExpired
+  };
+}
+
+/**
+ * Force release a lock (for admin use)
+ * @param {string} sketchId - Sketch ID
+ * @returns {object} { success, message }
+ */
+export async function forceReleaseSketchLock(sketchId) {
+  const result = await sql`
+    UPDATE sketches
+    SET locked_by = NULL,
+        locked_at = NULL,
+        lock_expires_at = NULL
+    WHERE id = ${sketchId}
+    RETURNING id
+  `;
+  
+  return {
+    success: result.rows.length > 0,
+    message: result.rows.length > 0 ? 'Lock force released' : 'Sketch not found'
+  };
 }
 
 /**

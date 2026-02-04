@@ -1905,10 +1905,31 @@ function saveToLibrary() {
   idbSaveRecordCompat(finalRecord);
 }
 
-function loadFromLibrary(sketchId) {
+async function loadFromLibrary(sketchId) {
   const lib = getLibrary();
   const rec = lib.find((r) => r.id === sketchId);
   if (!rec) return false;
+  
+  // Release lock on previous sketch if we held one
+  if (currentSketchId && window.syncService?.releaseSketchLock) {
+    await window.syncService.releaseSketchLock(currentSketchId).catch(() => {});
+  }
+  
+  // Try to acquire lock on the new sketch
+  if (window.syncService?.acquireSketchLock) {
+    const lockResult = await window.syncService.acquireSketchLock(sketchId);
+    if (!lockResult.success && !lockResult.offline) {
+      // Show warning that sketch is locked
+      if (showToast) {
+        const lockedBy = lockResult.lock?.lockedBy || 'another user';
+        showToast(t('sketches.lockedByOther') || `Sketch is being edited by ${lockedBy}. Opening in view-only mode.`, 'warning');
+      }
+      // Still allow opening in read-only mode
+      window.__sketchReadOnly = true;
+    } else {
+      window.__sketchReadOnly = false;
+    }
+  }
   nodes = rec.nodes || [];
   edges = rec.edges || [];
   // Backward compatibility for nodes
@@ -5154,7 +5175,7 @@ if (homePanelCloseBtn) {
   });
 }
 if (sketchListEl) {
-  sketchListEl.addEventListener('click', (e) => {
+  sketchListEl.addEventListener('click', async (e) => {
     const target = e.target;
     if (!(target instanceof HTMLElement)) return;
     // Inline title editing: clicking on title turns it into an input
@@ -5227,7 +5248,7 @@ if (sketchListEl) {
     if (!action || !id) return;
     if (action === 'open') {
       hideHome();
-      loadFromLibrary(id);
+      await loadFromLibrary(id);
       showToast(t('toasts.opened'));
     } else if (action === 'duplicate') {
       const lib = getLibrary();

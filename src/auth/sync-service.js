@@ -361,6 +361,177 @@ export async function syncFromCloud() {
   }
 }
 
+// ============================================
+// Sketch Lock Management
+// ============================================
+
+// Currently held lock
+let currentLock = null;
+let lockRefreshTimer = null;
+const LOCK_REFRESH_INTERVAL_MS = 15 * 60 * 1000; // Refresh every 15 minutes
+
+/**
+ * Acquire a lock on a sketch
+ * @param {string} sketchId - Sketch ID to lock
+ * @returns {Promise<{success: boolean, lock?: object, error?: string}>}
+ */
+export async function acquireSketchLock(sketchId) {
+  if (!apiAvailable) {
+    return { success: true, offline: true }; // Allow editing offline
+  }
+  
+  if (!navigator.onLine) {
+    return { success: true, offline: true }; // Allow editing offline
+  }
+  
+  try {
+    const response = await apiRequest(`/api/sketches/${sketchId}`, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'lock' }),
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok) {
+      currentLock = {
+        sketchId,
+        ...data.lock,
+      };
+      
+      // Start refresh timer
+      startLockRefreshTimer(sketchId);
+      
+      console.log('[SyncService] Lock acquired for sketch:', sketchId);
+      return { success: true, lock: data.lock };
+    } else {
+      console.warn('[SyncService] Failed to acquire lock:', data.error);
+      return { success: false, error: data.error, lock: data.lock };
+    }
+  } catch (error) {
+    if (error.isExpectedDevError) {
+      return { success: true, offline: true };
+    }
+    console.error('[SyncService] Error acquiring lock:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Release the current lock
+ * @param {string} sketchId - Sketch ID to unlock
+ * @returns {Promise<{success: boolean}>}
+ */
+export async function releaseSketchLock(sketchId) {
+  // Stop refresh timer
+  stopLockRefreshTimer();
+  
+  if (!apiAvailable || !navigator.onLine) {
+    currentLock = null;
+    return { success: true };
+  }
+  
+  try {
+    const response = await apiRequest(`/api/sketches/${sketchId}`, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'unlock' }),
+    });
+    
+    currentLock = null;
+    
+    if (response.ok) {
+      console.log('[SyncService] Lock released for sketch:', sketchId);
+      return { success: true };
+    } else {
+      const data = await response.json();
+      console.warn('[SyncService] Failed to release lock:', data.error);
+      return { success: false, error: data.error };
+    }
+  } catch (error) {
+    if (error.isExpectedDevError) {
+      return { success: true };
+    }
+    console.error('[SyncService] Error releasing lock:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Refresh the current lock
+ */
+async function refreshCurrentLock() {
+  if (!currentLock || !currentLock.sketchId) {
+    return;
+  }
+  
+  try {
+    const response = await apiRequest(`/api/sketches/${currentLock.sketchId}`, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'refresh' }),
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      currentLock.lockExpiresAt = data.lockExpiresAt;
+      console.log('[SyncService] Lock refreshed, expires at:', data.lockExpiresAt);
+    } else {
+      console.warn('[SyncService] Failed to refresh lock');
+    }
+  } catch (error) {
+    console.error('[SyncService] Error refreshing lock:', error);
+  }
+}
+
+/**
+ * Start the lock refresh timer
+ */
+function startLockRefreshTimer(sketchId) {
+  stopLockRefreshTimer();
+  lockRefreshTimer = setInterval(refreshCurrentLock, LOCK_REFRESH_INTERVAL_MS);
+}
+
+/**
+ * Stop the lock refresh timer
+ */
+function stopLockRefreshTimer() {
+  if (lockRefreshTimer) {
+    clearInterval(lockRefreshTimer);
+    lockRefreshTimer = null;
+  }
+}
+
+/**
+ * Get the current lock status
+ * @returns {object|null}
+ */
+export function getCurrentLock() {
+  return currentLock;
+}
+
+/**
+ * Check if we currently hold a lock for a sketch
+ * @param {string} sketchId - Sketch ID
+ * @returns {boolean}
+ */
+export function hasLockForSketch(sketchId) {
+  return currentLock && currentLock.sketchId === sketchId;
+}
+
+// Release lock on page unload
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    if (currentLock && currentLock.sketchId) {
+      // Use sendBeacon for reliable delivery during page unload
+      const token = window.__authToken; // Need to store token globally for this
+      if (token && navigator.sendBeacon) {
+        navigator.sendBeacon(
+          `/api/sketches/${currentLock.sketchId}`,
+          JSON.stringify({ action: 'unlock' })
+        );
+      }
+    }
+  });
+}
+
 /**
  * Sync a single sketch to the cloud
  * Called after local changes with debouncing

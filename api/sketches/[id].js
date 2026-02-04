@@ -1,15 +1,29 @@
 /**
  * API Route: /api/sketches/[id]
  * 
- * GET    - Get a single sketch by ID
+ * GET    - Get a single sketch by ID (includes lock status)
  * PUT    - Update a sketch
  * DELETE - Delete a sketch
+ * POST   - Lock operations (action=lock, action=unlock, action=refresh)
  * 
  * Note: Uses standard Node.js (req, res) signature for better compatibility with vercel dev.
  */
 
 import { verifyAuth, parseBody, sanitizeErrorMessage } from '../_lib/auth.js';
-import { getSketchById, getSketchByIdAdmin, updateSketch, deleteSketch, ensureDb, getProjectById, getOrCreateUser } from '../_lib/db.js';
+import { 
+  getSketchById, 
+  getSketchByIdAdmin, 
+  updateSketch, 
+  deleteSketch, 
+  ensureDb, 
+  getProjectById, 
+  getOrCreateUser,
+  acquireSketchLock,
+  releaseSketchLock,
+  refreshSketchLock,
+  checkSketchLock,
+  forceReleaseSketchLock
+} from '../_lib/db.js';
 import { validateSketchInput, validateUUID } from '../_lib/validators.js';
 import { applyRateLimit } from '../_lib/rate-limit.js';
 
@@ -88,6 +102,9 @@ export default async function handler(req, res) {
         return res.status(404).json({ error: 'Sketch not found' });
       }
       
+      // Check lock status
+      const lockStatus = await checkSketchLock(sketchId);
+      
       const transformed = {
         id: sketch.id,
         name: sketch.name,
@@ -106,13 +123,100 @@ export default async function handler(req, res) {
         ownerUsername: sketch.owner_username || null,
         ownerEmail: sketch.owner_email || null,
         isOwner: isOwner,
+        // Include lock status
+        lock: {
+          isLocked: lockStatus.isLocked || false,
+          lockedBy: lockStatus.lockedBy || null,
+          lockedAt: lockStatus.lockedAt || null,
+          lockExpiresAt: lockStatus.lockExpiresAt || null,
+          canEdit: !lockStatus.isLocked || lockStatus.lockedBy === userId,
+        },
       };
       
       return res.status(200).json({ sketch: transformed });
     }
 
+    if (req.method === 'POST') {
+      // Handle lock operations
+      const body = await parseBody(request);
+      const action = body.action;
+      
+      if (!action) {
+        return res.status(400).json({ error: 'Action is required (lock, unlock, refresh, forceUnlock)' });
+      }
+      
+      // Get user info
+      const username = authUser?.name || authUser?.email || userId;
+      
+      switch (action) {
+        case 'lock': {
+          const result = await acquireSketchLock(sketchId, userId, username);
+          if (result.success) {
+            console.log(`[API /api/sketches/${sketchId}] Lock acquired by ${userId}`);
+            return res.status(200).json({ success: true, lock: result });
+          } else {
+            console.log(`[API /api/sketches/${sketchId}] Lock failed: ${result.message}`);
+            return res.status(409).json({ 
+              error: result.message, 
+              lock: {
+                lockedBy: result.lockedBy,
+                lockedAt: result.lockedAt,
+                lockExpiresAt: result.lockExpiresAt
+              }
+            });
+          }
+        }
+        
+        case 'unlock': {
+          const result = await releaseSketchLock(sketchId, userId);
+          console.log(`[API /api/sketches/${sketchId}] Lock released by ${userId}`);
+          return res.status(200).json({ success: result.success, message: result.message });
+        }
+        
+        case 'refresh': {
+          const result = await refreshSketchLock(sketchId, userId);
+          if (result.success) {
+            return res.status(200).json({ success: true, lockExpiresAt: result.lockExpiresAt });
+          } else {
+            return res.status(400).json({ success: false, message: result.message });
+          }
+        }
+        
+        case 'forceUnlock': {
+          // Only allow admins to force unlock
+          const userRecord = await getOrCreateUser(userId, { username: authUser?.name, email: authUser?.email });
+          const userRole = userRecord?.role || 'user';
+          
+          if (userRole !== 'admin' && userRole !== 'super_admin') {
+            return res.status(403).json({ error: 'Only admins can force unlock sketches' });
+          }
+          
+          const result = await forceReleaseSketchLock(sketchId);
+          console.log(`[API /api/sketches/${sketchId}] Lock force released by admin ${userId}`);
+          return res.status(200).json({ success: result.success, message: result.message });
+        }
+        
+        default:
+          return res.status(400).json({ error: 'Unknown action. Use: lock, unlock, refresh, forceUnlock' });
+      }
+    }
+
     if (req.method === 'PUT') {
       const body = await parseBody(request);
+      
+      // Check lock status before allowing update
+      const lockStatus = await checkSketchLock(sketchId);
+      if (lockStatus.isLocked && lockStatus.lockedBy !== userId) {
+        console.warn(`[API /api/sketches/${sketchId}] Update blocked - locked by ${lockStatus.lockedBy}`);
+        return res.status(409).json({ 
+          error: 'Sketch is locked by another user',
+          lock: {
+            lockedBy: lockStatus.lockedBy,
+            lockedAt: lockStatus.lockedAt,
+            lockExpiresAt: lockStatus.lockExpiresAt
+          }
+        });
+      }
       
       // Validate input
       const validationErrors = validateSketchInput(body);
