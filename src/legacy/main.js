@@ -423,7 +423,7 @@ let coordinatesMap = new Map(); // Map<nodeId, {x, y, z}>
 let coordinatesEnabled = false; // Whether to show coordinate indicators and use coordinate positions
 let originalNodePositions = new Map(); // Store original positions before applying coordinates
 let coordinateScale = 100; // Pixels per meter (100 = 1 pixel/cm)
-const SCALE_PRESETS = [50, 75, 100, 150, 200, 300]; // Available scale options
+const SCALE_PRESETS = [5, 10, 25, 50, 75, 100, 150, 200, 300]; // Available scale options
 
 // Live Measure / GNSS mode state
 let liveMeasureEnabled = false;
