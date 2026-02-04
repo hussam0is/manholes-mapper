@@ -1790,54 +1790,84 @@ function loadFromStorage() {
 
 /**
  * Persist the current sketch to localStorage.
+ * Uses requestIdleCallback to defer heavy JSON serialization off the main thread.
  */
 function saveToStorage() {
-  const payload = {
-    nodes: nodes,
-    edges: edges,
-    nextNodeId: nextNodeId,
-    creationDate: creationDate,
-    sketchId: currentSketchId,
-    sketchName: currentSketchName,
-    projectId: currentProjectId,
-    inputFlowConfig: currentInputFlowConfig,
-    lastEditedBy: getCurrentUsername(),
-    lastEditedAt: new Date().toISOString(),
-  };
-  localStorage.setItem('graphSketch', JSON.stringify(payload));
-  // Persist to IndexedDB for durability
-  idbSaveCurrentCompat(payload);
-  if (autosaveEnabled) {
-    saveToLibrary();
-  }
-  // Trigger cloud sync if authenticated and online
-  if (currentSketchId && window.syncService?.debouncedSyncToCloud) {
-    // Get the name from the library record if currentSketchName is null
-    // This ensures we sync with the preserved name from saveToLibrary()
-    let nameForSync = currentSketchName;
-    if (!nameForSync && currentSketchId) {
-      const lib = getLibrary();
-      const rec = lib.find((r) => r.id === currentSketchId);
-      if (rec && rec.name) {
-        nameForSync = rec.name;
-        // Also update currentSketchName so it stays in sync
-        currentSketchName = rec.name;
-        updateSketchNameDisplay();
-      }
-    }
-    const sketchForSync = {
-      id: currentSketchId,
-      name: nameForSync,
-      creationDate: creationDate,
-      nodes: nodes,
-      edges: edges,
-      adminConfig: typeof adminConfig !== 'undefined' ? adminConfig : {},
-      projectId: currentProjectId,
-      snapshotInputFlowConfig: currentInputFlowConfig,
-      lastEditedBy: getCurrentUsername(),
-      lastEditedAt: new Date().toISOString(),
+  const nowIso = new Date().toISOString();
+  const username = getCurrentUsername();
+  
+  // Capture current state references (these are lightweight)
+  const currentNodes = nodes;
+  const currentEdges = edges;
+  const currentNextNodeId = nextNodeId;
+  const currentCreationDate = creationDate;
+  const savedSketchId = currentSketchId;
+  const savedSketchName = currentSketchName;
+  const savedProjectId = currentProjectId;
+  const savedInputFlowConfig = currentInputFlowConfig;
+  const savedAdminConfig = typeof adminConfig !== 'undefined' ? adminConfig : {};
+  
+  // Schedule the heavy work to run when browser is idle
+  const doSave = () => {
+    const payload = {
+      nodes: currentNodes,
+      edges: currentEdges,
+      nextNodeId: currentNextNodeId,
+      creationDate: currentCreationDate,
+      sketchId: savedSketchId,
+      sketchName: savedSketchName,
+      projectId: savedProjectId,
+      inputFlowConfig: savedInputFlowConfig,
+      lastEditedBy: username,
+      lastEditedAt: nowIso,
     };
-    window.syncService.debouncedSyncToCloud(sketchForSync);
+    
+    // Single JSON.stringify call, reuse the string
+    const payloadJson = JSON.stringify(payload);
+    localStorage.setItem('graphSketch', payloadJson);
+    
+    // Persist to IndexedDB for durability (fire-and-forget)
+    idbSaveCurrentCompat(payload);
+    
+    if (autosaveEnabled) {
+      saveToLibrary();
+    }
+    
+    // Trigger cloud sync if authenticated and online
+    if (savedSketchId && window.syncService?.debouncedSyncToCloud) {
+      // Get the name from the library record if currentSketchName is null
+      let nameForSync = savedSketchName;
+      if (!nameForSync && savedSketchId) {
+        const lib = getLibrary();
+        const rec = lib.find((r) => r.id === savedSketchId);
+        if (rec && rec.name) {
+          nameForSync = rec.name;
+          // Also update currentSketchName so it stays in sync
+          currentSketchName = rec.name;
+          updateSketchNameDisplay();
+        }
+      }
+      const sketchForSync = {
+        id: savedSketchId,
+        name: nameForSync,
+        creationDate: currentCreationDate,
+        nodes: currentNodes,
+        edges: currentEdges,
+        adminConfig: savedAdminConfig,
+        projectId: savedProjectId,
+        snapshotInputFlowConfig: savedInputFlowConfig,
+        lastEditedBy: username,
+        lastEditedAt: nowIso,
+      };
+      window.syncService.debouncedSyncToCloud(sketchForSync);
+    }
+  };
+  
+  // Use requestIdleCallback if available, otherwise setTimeout(0)
+  if (typeof requestIdleCallback === 'function') {
+    requestIdleCallback(doSave, { timeout: 100 });
+  } else {
+    setTimeout(doSave, 0);
   }
 }
 
@@ -1865,21 +1895,68 @@ function clearStorage() {
 }
 
 // === Library management (multiple sketches) ===
+// Cache for library to avoid repeated JSON.parse() on large datasets
+let _libraryCache = null;
+let _libraryCacheValid = false;
+
 function getLibrary() {
+  if (_libraryCacheValid && _libraryCache !== null) {
+    return _libraryCache;
+  }
   try {
     const raw = localStorage.getItem('graphSketch.library');
-    if (!raw) return [];
+    if (!raw) {
+      _libraryCache = [];
+      _libraryCacheValid = true;
+      return [];
+    }
     const lib = JSON.parse(raw);
-    if (Array.isArray(lib)) return lib;
+    if (Array.isArray(lib)) {
+      _libraryCache = lib;
+      _libraryCacheValid = true;
+      return lib;
+    }
+    _libraryCache = [];
+    _libraryCacheValid = true;
     return [];
   } catch (e) {
     console.error('Failed to parse library', e);
+    _libraryCache = [];
+    _libraryCacheValid = true;
     return [];
   }
 }
 
+// Pending localStorage write for library (to batch writes)
+let _libraryWritePending = false;
+
 function setLibrary(list) {
-  localStorage.setItem('graphSketch.library', JSON.stringify(list));
+  // Update cache immediately for responsive reads
+  _libraryCache = list;
+  _libraryCacheValid = true;
+  
+  // Defer the heavy localStorage write to avoid blocking UI
+  if (!_libraryWritePending) {
+    _libraryWritePending = true;
+    const doWrite = () => {
+      _libraryWritePending = false;
+      // Use the cached version to ensure we write the latest state
+      if (_libraryCache !== null) {
+        localStorage.setItem('graphSketch.library', JSON.stringify(_libraryCache));
+      }
+    };
+    
+    if (typeof requestIdleCallback === 'function') {
+      requestIdleCallback(doWrite, { timeout: 100 });
+    } else {
+      setTimeout(doWrite, 0);
+    }
+  }
+}
+
+function invalidateLibraryCache() {
+  _libraryCacheValid = false;
+  _libraryCache = null;
 }
 
 function generateSketchId() {
@@ -3001,15 +3078,20 @@ function autoPanWhenDragging(screenX, screenY) {
  * Nodes connected to an edge with a missing/empty measurement become type2; otherwise type1.
  */
 function computeNodeTypes() {
-  // default all nodes to type1
-  nodes.forEach((node) => {
-    node.type = 'type1';
-  });
-  edges.forEach((edge) => {
+  // Build a Map for O(1) node lookups instead of O(n) find() calls
+  const nodeMap = new Map();
+  for (const node of nodes) {
+    node.type = 'type1'; // default all nodes to type1
+    nodeMap.set(String(node.id), node);
+  }
+  
+  for (const edge of edges) {
     // Ignore self-loops when computing node types to avoid false orange coloring
-    if (String(edge.tail) === String(edge.head)) return;
-    const tailNode = nodes.find((n) => String(n.id) === String(edge.tail));
-    const headNode = nodes.find((n) => String(n.id) === String(edge.head));
+    if (String(edge.tail) === String(edge.head)) continue;
+    
+    const tailNode = nodeMap.get(String(edge.tail));
+    const headNode = nodeMap.get(String(edge.head));
+    
     // If tail measurement missing or empty, mark tail node as type2
     if (tailNode && (!edge.tail_measurement || edge.tail_measurement.trim() === '')) {
       tailNode.type = 'type2';
@@ -3018,7 +3100,7 @@ function computeNodeTypes() {
     if (headNode && (!edge.head_measurement || edge.head_measurement.trim() === '')) {
       headNode.type = 'type2';
     }
-  });
+  }
 }
 
 function drawEdge(edge) {
@@ -5334,12 +5416,23 @@ if (sketchListEl) {
 // Save button and autosave toggle
 if (saveBtn) {
   saveBtn.addEventListener('click', () => {
-    const before = autosaveEnabled;
-    autosaveEnabled = false; // avoid double-save side effects
-    saveToLibrary();
-    autosaveEnabled = before;
-    saveToStorage();
+    // Show feedback immediately for responsive UI
     showToast(t('toasts.saved'));
+    
+    // Defer heavy save work to avoid blocking UI
+    const doSave = () => {
+      const before = autosaveEnabled;
+      autosaveEnabled = false; // avoid double-save side effects
+      saveToLibrary();
+      autosaveEnabled = before;
+      saveToStorage();
+    };
+    
+    if (typeof requestIdleCallback === 'function') {
+      requestIdleCallback(doSave, { timeout: 50 });
+    } else {
+      setTimeout(doSave, 0);
+    }
   });
 }
 if (autosaveToggle) {
