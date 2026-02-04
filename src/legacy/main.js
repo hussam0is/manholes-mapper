@@ -269,6 +269,23 @@ const scaleValueDisplay = document.getElementById('scaleValueDisplay');
 const mobileScaleDecreaseBtn = document.getElementById('mobileScaleDecreaseBtn');
 const mobileScaleIncreaseBtn = document.getElementById('mobileScaleIncreaseBtn');
 const mobileScaleValueDisplay = document.getElementById('mobileScaleValueDisplay');
+// Stretch control elements (horizontal)
+const stretchXDecreaseBtn = document.getElementById('stretchXDecreaseBtn');
+const stretchXIncreaseBtn = document.getElementById('stretchXIncreaseBtn');
+const stretchXValueDisplay = document.getElementById('stretchXValueDisplay');
+const mobileStretchXDecreaseBtn = document.getElementById('mobileStretchXDecreaseBtn');
+const mobileStretchXIncreaseBtn = document.getElementById('mobileStretchXIncreaseBtn');
+const mobileStretchXValueDisplay = document.getElementById('mobileStretchXValueDisplay');
+// Stretch control elements (vertical)
+const stretchYDecreaseBtn = document.getElementById('stretchYDecreaseBtn');
+const stretchYIncreaseBtn = document.getElementById('stretchYIncreaseBtn');
+const stretchYValueDisplay = document.getElementById('stretchYValueDisplay');
+const mobileStretchYDecreaseBtn = document.getElementById('mobileStretchYDecreaseBtn');
+const mobileStretchYIncreaseBtn = document.getElementById('mobileStretchYIncreaseBtn');
+const mobileStretchYValueDisplay = document.getElementById('mobileStretchYValueDisplay');
+// Stretch reset buttons
+const resetStretchBtn = document.getElementById('resetStretchBtn');
+const mobileResetStretchBtn = document.getElementById('mobileResetStretchBtn');
 // Map layer toggle elements
 const mapLayerToggle = document.getElementById('mapLayerToggle');
 const mobileMapLayerToggle = document.getElementById('mobileMapLayerToggle');
@@ -354,6 +371,13 @@ let viewTranslate = { x: 0, y: 0 }; // screen-space translation (for pan/anchore
 const MIN_SCALE = 0.001;
 const MAX_SCALE = 5.0;
 const SCALE_STEP = 1.1; // 10%
+// Canvas stretch state (separate X and Y scaling factors)
+let viewStretchX = 1.0;
+let viewStretchY = 1.0;
+const MIN_STRETCH = 0.2;
+const MAX_STRETCH = 3.0;
+const STRETCH_STEP = 0.1;
+const VIEW_STRETCH_KEY = 'graphSketch.viewStretch.v1';
 // Size scale state for nodes and fonts
 let sizeScale = 1.0;
 const MIN_SIZE_SCALE = 0.5;
@@ -2337,11 +2361,11 @@ function renderHome() {
             </div>
             <div class="sketch-card-user-info">
               ${showCreatedBy ? `<div class="sketch-card-meta sketch-card-creator">
-                <span class="material-icons">person_add</span>
+                <span class="material-icons" aria-hidden="true">person_add</span>
                 <span>${t('createdBy') || 'Created by'}: ${createdByUser}</span>
               </div>` : ''}
               ${showModifiedBy ? `<div class="sketch-card-meta sketch-card-modifier">
-                <span class="material-icons">edit</span>
+                <span class="material-icons" aria-hidden="true">edit</span>
                 <span>${t('modifiedBy') || 'Modified by'}: ${modifiedByUser}</span>
               </div>` : ''}
             </div>
@@ -2379,8 +2403,8 @@ function renderHome() {
             <span class="material-icons">history</span>
             <span>${t('listImportHistory')}</span>
           </button>` : ''}
-          <button class="sketch-action-btn sketch-action-danger" data-action="delete" data-id="${rec.id}">
-            <span class="material-icons">delete_outline</span>
+          <button class="sketch-action-btn sketch-action-danger" data-action="delete" data-id="${rec.id}" aria-label="${t('listDelete')}" title="${t('listDelete')}">
+            <span class="material-icons" aria-hidden="true">delete_outline</span>
           </button>
         </div>`;
       sketchListEl.appendChild(item);
@@ -2787,7 +2811,7 @@ function draw() {
   if (mapLayerEnabled && getMapReferencePoint()) {
     ctx.save();
     ctx.translate(viewTranslate.x, viewTranslate.y);
-    ctx.scale(viewScale, viewScale);
+    ctx.scale(viewScale * viewStretchX, viewScale * viewStretchY);
     // Use logical (CSS) dimensions for tile calculations since viewTranslate is in CSS pixels
     // canvas.width/height are in device pixels (CSS * devicePixelRatio)
     const dpr = window.devicePixelRatio || 1;
@@ -2808,7 +2832,7 @@ function draw() {
   // Draw infinite grid first in screen space but offset by transform
   drawInfiniteGrid();
   ctx.translate(viewTranslate.x, viewTranslate.y);
-  ctx.scale(viewScale, viewScale);
+  ctx.scale(viewScale * viewStretchX, viewScale * viewStretchY);
   // Draw edges first
   edges.forEach((edge) => {
     drawEdge(edge);
@@ -3011,7 +3035,7 @@ function renderEdgeLegend() {
  * The grid is rendered in screen space but aligned to world units so it scrolls with pan and zoom.
  */
 function drawInfiniteGrid() {
-  drawInfiniteGridFeature(ctx, viewTranslate, viewScale, canvas);
+  drawInfiniteGridFeature(ctx, viewTranslate, viewScale, canvas, viewStretchX, viewStretchY);
 }
 
 /**
@@ -3029,8 +3053,8 @@ function ensureVirtualPadding() {
   let maxScreenX = -Infinity;
   let maxScreenY = -Infinity;
   for (const n of nodes) {
-    const sx = n.x * viewScale + viewTranslate.x;
-    const sy = n.y * viewScale + viewTranslate.y;
+    const sx = n.x * viewScale * viewStretchX + viewTranslate.x;
+    const sy = n.y * viewScale * viewStretchY + viewTranslate.y;
     if (sx < minScreenX) minScreenX = sx;
     if (sy < minScreenY) minScreenY = sy;
     if (sx > maxScreenX) maxScreenX = sx;
@@ -4812,8 +4836,8 @@ canvas.addEventListener('touchmove', (e) => {
         viewScale = clamped;
         const centerScreen = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
         // Keep the original world center under the same screen point
-        viewTranslate.x = centerScreen.x - viewScale * pinchCenterWorld.x;
-        viewTranslate.y = centerScreen.y - viewScale * pinchCenterWorld.y;
+        viewTranslate.x = centerScreen.x - viewScale * viewStretchX * pinchCenterWorld.x;
+        viewTranslate.y = centerScreen.y - viewScale * viewStretchY * pinchCenterWorld.y;
         scheduleDraw();
       }
       // Any multi-touch cancels pending tap-to-add
@@ -6073,8 +6097,8 @@ function applyCoordinatesIfEnabled(options = {}) {
     const screenCenterX = rect.width / 2;
     const screenCenterY = rect.height / 2;
     
-    viewTranslate.x = screenCenterX - viewScale * newWorldCenterX;
-    viewTranslate.y = screenCenterY - viewScale * newWorldCenterY;
+    viewTranslate.x = screenCenterX - viewScale * viewStretchX * newWorldCenterX;
+    viewTranslate.y = screenCenterY - viewScale * viewStretchY * newWorldCenterY;
   }
   
   // Update map reference point and precache tiles for measurement area when map is on
@@ -6311,6 +6335,92 @@ function loadCoordinateScale() {
 }
 
 /**
+ * Update stretch display in UI
+ */
+function updateStretchDisplay() {
+  const displayX = viewStretchX.toFixed(1);
+  const displayY = viewStretchY.toFixed(1);
+  if (stretchXValueDisplay) {
+    stretchXValueDisplay.textContent = displayX;
+  }
+  if (mobileStretchXValueDisplay) {
+    mobileStretchXValueDisplay.textContent = displayX;
+  }
+  if (stretchYValueDisplay) {
+    stretchYValueDisplay.textContent = displayY;
+  }
+  if (mobileStretchYValueDisplay) {
+    mobileStretchYValueDisplay.textContent = displayY;
+  }
+}
+
+/**
+ * Save view stretch to storage
+ */
+function saveViewStretch() {
+  try {
+    localStorage.setItem(VIEW_STRETCH_KEY, JSON.stringify({ x: viewStretchX, y: viewStretchY }));
+  } catch (e) {
+    console.warn('Failed to save view stretch', e);
+  }
+}
+
+/**
+ * Load view stretch from storage
+ */
+function loadViewStretch() {
+  try {
+    const raw = localStorage.getItem(VIEW_STRETCH_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (data && typeof data.x === 'number' && typeof data.y === 'number') {
+        viewStretchX = Math.max(MIN_STRETCH, Math.min(MAX_STRETCH, data.x));
+        viewStretchY = Math.max(MIN_STRETCH, Math.min(MAX_STRETCH, data.y));
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to load view stretch', e);
+  }
+}
+
+/**
+ * Change view stretch (horizontal or vertical)
+ * @param {'x' | 'y'} axis - Which axis to change
+ * @param {number} delta - Change direction: 1 for increase, -1 for decrease
+ */
+function changeViewStretch(axis, delta) {
+  const currentValue = axis === 'x' ? viewStretchX : viewStretchY;
+  const newValue = currentValue + (delta * STRETCH_STEP);
+  const clamped = Math.max(MIN_STRETCH, Math.min(MAX_STRETCH, newValue));
+  
+  // Round to 1 decimal place to avoid floating point issues
+  const rounded = Math.round(clamped * 10) / 10;
+  
+  if (axis === 'x') {
+    viewStretchX = rounded;
+  } else {
+    viewStretchY = rounded;
+  }
+  
+  saveViewStretch();
+  updateStretchDisplay();
+  scheduleDraw();
+  showToast(t('stretch.changed', axis, rounded));
+}
+
+/**
+ * Reset view stretch to default (1.0, 1.0)
+ */
+function resetViewStretch() {
+  viewStretchX = 1.0;
+  viewStretchY = 1.0;
+  saveViewStretch();
+  updateStretchDisplay();
+  scheduleDraw();
+  showToast(t('stretch.resetDone'));
+}
+
+/**
  * Change coordinate scale and re-apply coordinates
  * Maintains focus on the same part of the sketch when scale changes
  * @param {number} delta - Change direction: 1 for increase, -1 for decrease
@@ -6358,8 +6468,10 @@ function initCoordinates() {
   coordinatesMap = loadCoordinatesFromStorage();
   coordinatesEnabled = loadCoordinatesEnabled();
   loadCoordinateScale();
+  loadViewStretch();
   syncCoordinatesToggleUI();
   updateScaleDisplay();
+  updateStretchDisplay();
   
   // Mark nodes with coordinate status
   if (coordinatesMap.size > 0) {
@@ -6461,6 +6573,78 @@ if (mobileScaleDecreaseBtn) {
 if (mobileScaleIncreaseBtn) {
   mobileScaleIncreaseBtn.addEventListener('click', () => {
     changeCoordinateScale(1);
+  });
+}
+
+// Stretch control handlers (desktop - horizontal)
+if (stretchXDecreaseBtn) {
+  stretchXDecreaseBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // Prevent dropdown from closing
+    changeViewStretch('x', -1);
+  });
+}
+
+if (stretchXIncreaseBtn) {
+  stretchXIncreaseBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // Prevent dropdown from closing
+    changeViewStretch('x', 1);
+  });
+}
+
+// Stretch control handlers (desktop - vertical)
+if (stretchYDecreaseBtn) {
+  stretchYDecreaseBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // Prevent dropdown from closing
+    changeViewStretch('y', -1);
+  });
+}
+
+if (stretchYIncreaseBtn) {
+  stretchYIncreaseBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // Prevent dropdown from closing
+    changeViewStretch('y', 1);
+  });
+}
+
+// Stretch reset handler (desktop)
+if (resetStretchBtn) {
+  resetStretchBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // Prevent dropdown from closing
+    resetViewStretch();
+  });
+}
+
+// Stretch control handlers (mobile - horizontal)
+if (mobileStretchXDecreaseBtn) {
+  mobileStretchXDecreaseBtn.addEventListener('click', () => {
+    changeViewStretch('x', -1);
+  });
+}
+
+if (mobileStretchXIncreaseBtn) {
+  mobileStretchXIncreaseBtn.addEventListener('click', () => {
+    changeViewStretch('x', 1);
+  });
+}
+
+// Stretch control handlers (mobile - vertical)
+if (mobileStretchYDecreaseBtn) {
+  mobileStretchYDecreaseBtn.addEventListener('click', () => {
+    changeViewStretch('y', -1);
+  });
+}
+
+if (mobileStretchYIncreaseBtn) {
+  mobileStretchYIncreaseBtn.addEventListener('click', () => {
+    changeViewStretch('y', 1);
+  });
+}
+
+// Stretch reset handler (mobile)
+if (mobileResetStretchBtn) {
+  mobileResetStretchBtn.addEventListener('click', () => {
+    closeMobileMenu();
+    resetViewStretch();
   });
 }
 
@@ -6605,19 +6789,20 @@ canvas.addEventListener('wheel', (e) => {
   if (Math.abs(clamped - viewScale) < 0.0001) return;
   viewScale = clamped;
   // Anchor zoom at mouse position
-  viewTranslate.x = mouseX - viewScale * focusWorld.x;
-  viewTranslate.y = mouseY - viewScale * focusWorld.y;
+  viewTranslate.x = mouseX - viewScale * viewStretchX * focusWorld.x;
+  viewTranslate.y = mouseY - viewScale * viewStretchY * focusWorld.y;
   scheduleDraw();
   showToast(t('toasts.zoom', (viewScale * 100).toFixed(0)));
 }, { passive: false });
 
 /**
  * Convert screen space (canvas client) coords to world coords (pre-zoom space).
+ * Accounts for both view scale and stretch factors.
  */
 function screenToWorld(x, y) {
   return {
-    x: (x - viewTranslate.x) / viewScale,
-    y: (y - viewTranslate.y) / viewScale,
+    x: (x - viewTranslate.x) / (viewScale * viewStretchX),
+    y: (y - viewTranslate.y) / (viewScale * viewStretchY),
   };
 }
 
@@ -6632,8 +6817,8 @@ function setZoom(newScale) {
   const centerScreen = { x: rect.width / 2, y: rect.height / 2 };
   const centerWorld = screenToWorld(centerScreen.x, centerScreen.y);
   viewScale = clamped;
-  viewTranslate.x = centerScreen.x - viewScale * centerWorld.x;
-  viewTranslate.y = centerScreen.y - viewScale * centerWorld.y;
+  viewTranslate.x = centerScreen.x - viewScale * viewStretchX * centerWorld.x;
+  viewTranslate.y = centerScreen.y - viewScale * viewStretchY * centerWorld.y;
   scheduleDraw();
   showToast(t('toasts.zoom', (viewScale * 100).toFixed(0)));
 }
@@ -6667,8 +6852,8 @@ function recenterView() {
   const rect = canvas.getBoundingClientRect();
   const centerScreen = { x: rect.width / 2, y: rect.height / 2 };
   const centerWorld = getSketchCenter();
-  viewTranslate.x = centerScreen.x - viewScale * centerWorld.x;
-  viewTranslate.y = centerScreen.y - viewScale * centerWorld.y;
+  viewTranslate.x = centerScreen.x - viewScale * viewStretchX * centerWorld.x;
+  viewTranslate.y = centerScreen.y - viewScale * viewStretchY * centerWorld.y;
   scheduleDraw();
 }
 
@@ -6695,8 +6880,8 @@ function searchAndCenterNode(searchId) {
     // Center the view on the found node
     const rect = canvas.getBoundingClientRect();
     const centerScreen = { x: rect.width / 2, y: rect.height / 2 };
-    viewTranslate.x = centerScreen.x - viewScale * foundNode.x;
-    viewTranslate.y = centerScreen.y - viewScale * foundNode.y;
+    viewTranslate.x = centerScreen.x - viewScale * viewStretchX * foundNode.x;
+    viewTranslate.y = centerScreen.y - viewScale * viewStretchY * foundNode.y;
 
     // Select the node to highlight it
     selectedNode = foundNode;
@@ -6752,8 +6937,8 @@ async function searchAddressAndCenter(query) {
     const { x, y } = wgs84ToItm(result.lat, result.lon);
     const rect = canvas.getBoundingClientRect();
     const centerScreen = { x: rect.width / 2, y: rect.height / 2 };
-    viewTranslate.x = centerScreen.x - viewScale * x;
-    viewTranslate.y = centerScreen.y - viewScale * y;
+    viewTranslate.x = centerScreen.x - viewScale * viewStretchX * x;
+    viewTranslate.y = centerScreen.y - viewScale * viewStretchY * y;
     scheduleDraw();
     showToast(result.display_name || t('toasts.addressFound') || 'נמצא');
   } catch (err) {

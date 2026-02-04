@@ -179,6 +179,28 @@
                     <button id="scaleIncreaseBtn" class="menu-scale-btn" title="הגדל">+</button>
                   </div>
                 </div>
+                <div id="stretchXControls" class="menu-dropdown__item menu-dropdown__item--scale">
+                  <span class="material-icons">swap_horiz</span>
+                  <span class="menu-dropdown__label" data-i18n="stretch.horizontal">מתיחה אופקית:</span>
+                  <div class="menu-scale-adjuster">
+                    <button id="stretchXDecreaseBtn" class="menu-scale-btn" title="הקטן">−</button>
+                    <span id="stretchXValueDisplay" class="menu-scale-value">1.0</span>
+                    <button id="stretchXIncreaseBtn" class="menu-scale-btn" title="הגדל">+</button>
+                  </div>
+                </div>
+                <div id="stretchYControls" class="menu-dropdown__item menu-dropdown__item--scale">
+                  <span class="material-icons">swap_vert</span>
+                  <span class="menu-dropdown__label" data-i18n="stretch.vertical">מתיחה אנכית:</span>
+                  <div class="menu-scale-adjuster">
+                    <button id="stretchYDecreaseBtn" class="menu-scale-btn" title="הקטן">−</button>
+                    <span id="stretchYValueDisplay" class="menu-scale-value">1.0</span>
+                    <button id="stretchYIncreaseBtn" class="menu-scale-btn" title="הגדל">+</button>
+                  </div>
+                </div>
+                <button id="resetStretchBtn" class="menu-dropdown__item" role="menuitem" data-action="resetStretch">
+                  <span class="material-icons">refresh</span>
+                  <span class="menu-dropdown__label" data-i18n="stretch.reset">אפס מתיחה</span>
+                </button>
               </div>
             </div>
             
@@ -425,6 +447,28 @@
             <button id="mobileScaleIncreaseBtn" class="mobile-menu__scale-btn" title="הגדל">+</button>
           </div>
         </div>
+        <div id="mobileStretchXControls" class="mobile-menu__scale">
+          <span class="material-icons">swap_horiz</span>
+          <span class="mobile-menu__label" data-i18n="stretch.horizontal">מתיחה אופקית:</span>
+          <div class="mobile-menu__scale-adjuster">
+            <button id="mobileStretchXDecreaseBtn" class="mobile-menu__scale-btn" title="הקטן">−</button>
+            <span id="mobileStretchXValueDisplay" class="mobile-menu__scale-value">1.0</span>
+            <button id="mobileStretchXIncreaseBtn" class="mobile-menu__scale-btn" title="הגדל">+</button>
+          </div>
+        </div>
+        <div id="mobileStretchYControls" class="mobile-menu__scale">
+          <span class="material-icons">swap_vert</span>
+          <span class="mobile-menu__label" data-i18n="stretch.vertical">מתיחה אנכית:</span>
+          <div class="mobile-menu__scale-adjuster">
+            <button id="mobileStretchYDecreaseBtn" class="mobile-menu__scale-btn" title="הקטן">−</button>
+            <span id="mobileStretchYValueDisplay" class="mobile-menu__scale-value">1.0</span>
+            <button id="mobileStretchYIncreaseBtn" class="mobile-menu__scale-btn" title="הגדל">+</button>
+          </div>
+        </div>
+        <button id="mobileResetStretchBtn" class="mobile-menu__btn" title="">
+          <span class="material-icons">refresh</span>
+          <span class="mobile-menu__label" data-i18n="stretch.reset">אפס מתיחה</span>
+        </button>
       </div>
       
       <!-- Map Layer group -->

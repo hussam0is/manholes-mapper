@@ -1,7 +1,10 @@
 /**
  * Test fixtures for sketch data
+ * 
+ * Provides reusable test data for unit, integration, and E2E tests.
  */
 
+// Valid sketch with full data
 export const validSketch = {
   name: 'Test Sketch',
   creationDate: new Date().toISOString(),
@@ -15,12 +18,14 @@ export const validSketch = {
   adminConfig: { theme: 'light' },
 };
 
+// Minimal valid sketch
 export const minimalSketch = {
   name: 'Minimal Sketch',
   nodes: [],
   edges: [],
 };
 
+// Sketch with dangling edges (valid - represents incomplete connections)
 export const danglingEdgeSketch = {
   name: 'Dangling Edge Sketch',
   nodes: [{ id: 'n1', x: 100, y: 200, type: 'manhole' }],
@@ -30,6 +35,7 @@ export const danglingEdgeSketch = {
   ],
 };
 
+// Invalid sketch - node with non-numeric coordinates
 export const invalidNodeSketch = {
   name: 'Invalid Node Sketch',
   nodes: [
@@ -38,6 +44,7 @@ export const invalidNodeSketch = {
   edges: [],
 };
 
+// Generate oversized sketch for limit testing
 export const oversizedSketch = (nodeCount: number) => {
   const nodes = [];
   for (let i = 0; i < nodeCount; i++) {
@@ -49,3 +56,76 @@ export const oversizedSketch = (nodeCount: number) => {
     edges: [],
   };
 };
+
+// Sketch with complex node types
+export const complexSketch = {
+  name: 'Complex Sketch',
+  creationDate: new Date().toISOString(),
+  nodes: [
+    { id: 'n1', x: 0, y: 0, type: 'manhole', note: 'Entry point' },
+    { id: 'n2', x: 100, y: 0, type: 'home', note: 'Connection point' },
+    { id: 'n3', x: 200, y: 0, type: 'drainage', note: 'Drain' },
+    { id: 'n4', x: 100, y: 100, type: 'manhole' },
+  ],
+  edges: [
+    { id: 'e1', tail: 'n1', head: 'n2', type: 'pipe' },
+    { id: 'e2', tail: 'n2', head: 'n3', type: 'pipe' },
+    { id: 'e3', tail: 'n2', head: 'n4', type: 'pipe' },
+  ],
+  adminConfig: {
+    theme: 'dark',
+    nodeTypes: ['manhole', 'home', 'drainage'],
+    edgeTypes: ['pipe', 'cable'],
+  },
+};
+
+// Mock user data for tests
+export const mockUser = {
+  id: 'test-user-id-12345',
+  email: 'test@example.com',
+  name: 'Test User',
+  role: 'user',
+};
+
+export const mockAdminUser = {
+  id: 'admin-user-id-67890',
+  email: 'admin@example.com',
+  name: 'Admin User',
+  role: 'admin',
+};
+
+export const mockSuperAdminUser = {
+  id: 'super-admin-id-99999',
+  email: 'superadmin@example.com',
+  name: 'Super Admin',
+  role: 'super_admin',
+};
+
+// Mock organization data
+export const mockOrganization = {
+  id: '550e8400-e29b-41d4-a716-446655440000',
+  name: 'Test Organization',
+  createdAt: new Date().toISOString(),
+};
+
+// Mock project data
+export const mockProject = {
+  id: '7f33d02b-871c-4394-884b-017e88c79219',
+  name: 'Test Project',
+  organizationId: '550e8400-e29b-41d4-a716-446655440000',
+  createdAt: new Date().toISOString(),
+};
+
+// Helper to create mock response object for API tests
+export const createMockResponse = () => {
+  const res: any = {
+    status: vi.fn().mockReturnThis(),
+    json: vi.fn().mockReturnThis(),
+    setHeader: vi.fn().mockReturnThis(),
+    end: vi.fn().mockReturnThis(),
+  };
+  return res;
+};
+
+// Import vi for mocking (will be available in test context)
+import { vi } from 'vitest';

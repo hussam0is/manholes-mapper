@@ -323,6 +323,13 @@ export const i18n = {
       scale: 'קנה מידה',
       scaleChanged: (scale) => `קנה מידה: 1:${scale}`,
     },
+    stretch: {
+      horizontal: 'מתיחה אופקית',
+      vertical: 'מתיחה אנכית',
+      reset: 'אפס מתיחה',
+      changed: (axis, value) => `מתיחה ${axis === 'x' ? 'אופקית' : 'אנכית'}: ${value.toFixed(1)}`,
+      resetDone: 'המתיחה אופסה',
+    },
     mapLayer: {
       enable: 'שכבת מפה',
       enabled: 'שכבת מפה הופעלה',
@@ -667,6 +674,13 @@ export const i18n = {
       status: (matched, total) => `${matched}/${total} nodes with coordinates`,
       scale: 'Scale',
       scaleChanged: (scale) => `Scale: 1:${scale}`,
+    },
+    stretch: {
+      horizontal: 'Horizontal Stretch',
+      vertical: 'Vertical Stretch',
+      reset: 'Reset Stretch',
+      changed: (axis, value) => `${axis === 'x' ? 'Horizontal' : 'Vertical'} stretch: ${value.toFixed(1)}`,
+      resetDone: 'Stretch reset',
     },
     mapLayer: {
       enable: 'Map Layer',

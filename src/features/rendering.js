@@ -26,27 +26,31 @@ export function renderEdgeLegend(legendEl, edgeTypeColors) {
  * @param {{x:number,y:number}} viewTranslate
  * @param {number} viewScale
  * @param {HTMLCanvasElement} canvas
+ * @param {number} [viewStretchX=1] - Horizontal stretch factor
+ * @param {number} [viewStretchY=1] - Vertical stretch factor
  */
-export function drawInfiniteGrid(ctx, viewTranslate, viewScale, canvas) {
+export function drawInfiniteGrid(ctx, viewTranslate, viewScale, canvas, viewStretchX = 1, viewStretchY = 1) {
   const rect = canvas.getBoundingClientRect();
   const screenWidth = rect.width;
   const screenHeight = rect.height;
   const worldStep = 20;
-  const screenStep = worldStep * viewScale;
-  if (screenStep < 8) return;
-  const startXWorld = Math.floor(-viewTranslate.x / screenStep) * worldStep;
-  const startYWorld = Math.floor(-viewTranslate.y / screenStep) * worldStep;
-  const startXScreen = startXWorld * viewScale + viewTranslate.x;
-  const startYScreen = startYWorld * viewScale + viewTranslate.y;
+  const screenStepX = worldStep * viewScale * viewStretchX;
+  const screenStepY = worldStep * viewScale * viewStretchY;
+  // Skip drawing if steps are too small
+  if (screenStepX < 8 || screenStepY < 8) return;
+  const startXWorld = Math.floor(-viewTranslate.x / screenStepX) * worldStep;
+  const startYWorld = Math.floor(-viewTranslate.y / screenStepY) * worldStep;
+  const startXScreen = startXWorld * viewScale * viewStretchX + viewTranslate.x;
+  const startYScreen = startYWorld * viewScale * viewStretchY + viewTranslate.y;
   ctx.save();
   ctx.beginPath();
   ctx.strokeStyle = COLORS.grid.stroke;
   ctx.lineWidth = 1;
-  for (let x = startXScreen; x <= screenWidth; x += screenStep) {
+  for (let x = startXScreen; x <= screenWidth; x += screenStepX) {
     ctx.moveTo(x, 0);
     ctx.lineTo(x, screenHeight);
   }
-  for (let y = startYScreen; y <= screenHeight; y += screenStep) {
+  for (let y = startYScreen; y <= screenHeight; y += screenStepY) {
     ctx.moveTo(0, y);
     ctx.lineTo(screenWidth, y);
   }
