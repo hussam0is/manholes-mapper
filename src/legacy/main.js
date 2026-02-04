@@ -2593,10 +2593,13 @@ function draw() {
     ctx.save();
     ctx.translate(viewTranslate.x, viewTranslate.y);
     ctx.scale(viewScale, viewScale);
+    // Use logical (CSS) dimensions for tile calculations since viewTranslate is in CSS pixels
+    // canvas.width/height are in device pixels (CSS * devicePixelRatio)
+    const dpr = window.devicePixelRatio || 1;
     drawMapTiles(
       ctx, 
-      canvas.width, 
-      canvas.height, 
+      canvas.width / dpr,  // Logical width
+      canvas.height / dpr, // Logical height
       viewTranslate, 
       viewScale, 
       coordinateScale, 
