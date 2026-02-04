@@ -2237,11 +2237,12 @@ function renderHome() {
       const ownerDisplay = rec.ownerUsername || rec.createdBy || rec.ownerEmail || '';
       const showOwnerInfo = isAdminUser && !rec.isOwner && ownerDisplay;
       
-      // Get created by and modified by labels
+      // Get created by and modified by labels (show both next to each other when available)
       const createdByUser = rec.createdBy || '';
       const modifiedByUser = rec.lastEditedBy || '';
       const showCreatedBy = createdByUser && createdByUser.length > 0;
-      const showModifiedBy = modifiedByUser && modifiedByUser.length > 0 && modifiedByUser !== createdByUser;
+      const showModifiedBy = modifiedByUser && modifiedByUser.length > 0;
+      const showUserLabels = showCreatedBy || showModifiedBy;
       
       item.innerHTML = `
         ${isCurrentSketch ? `<div class="sketch-card-active-badge">
@@ -2258,13 +2259,10 @@ function renderHome() {
               <span class="material-icons">schedule</span>
               ${t('listUpdated', new Date(rec.updatedAt || rec.createdAt).toLocaleString(currentLang === 'he' ? 'he-IL' : 'en-GB'))}
             </div>
-            ${showCreatedBy ? `<div class="sketch-card-meta sketch-card-creator">
-              <span class="material-icons">person_add</span>
-              <span>${t('createdBy') || 'Created by'}: ${createdByUser}</span>
-            </div>` : ''}
-            ${showModifiedBy ? `<div class="sketch-card-meta sketch-card-modifier">
-              <span class="material-icons">edit</span>
-              <span>${t('modifiedBy') || 'Modified by'}: ${modifiedByUser}</span>
+            ${showUserLabels ? `<div class="sketch-card-meta sketch-card-user-labels">
+              ${showCreatedBy ? `<span class="sketch-card-creator"><span class="material-icons">person_add</span> ${t('createdBy') || 'Created by'}: ${createdByUser}</span>` : ''}
+              ${showCreatedBy && showModifiedBy ? '<span class="sketch-card-label-sep">·</span>' : ''}
+              ${showModifiedBy ? `<span class="sketch-card-modifier"><span class="material-icons">edit</span> ${t('modifiedBy') || 'Modified by'}: ${modifiedByUser}</span>` : ''}
             </div>` : ''}
             ${showOwnerInfo ? `<div class="sketch-card-meta sketch-card-owner">
               <span class="material-icons">person</span>

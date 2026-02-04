@@ -5666,15 +5666,30 @@ select.invalid:focus {
   color: var(--color-primary);
 }
 
-/* Created by and modified by labels */
-.sketch-card-creator,
-.sketch-card-modifier {
+/* Created by and modified by labels (next to each other) */
+.sketch-card-user-labels {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
   margin-top: 0.15rem;
   font-size: 0.75rem;
 }
 
-.sketch-card-creator .material-icons,
-.sketch-card-modifier .material-icons {
+.sketch-card-user-labels .sketch-card-creator,
+.sketch-card-user-labels .sketch-card-modifier {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.sketch-card-label-sep {
+  color: var(--color-muted);
+  opacity: 0.7;
+  user-select: none;
+}
+
+.sketch-card-user-labels .material-icons {
   font-size: 0.85rem;
   opacity: 0.7;
 }
