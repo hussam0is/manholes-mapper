@@ -5,44 +5,43 @@
  */
 
 /* ============================================
-   CSS Custom Properties
+   Menu-specific CSS Custom Properties
+   Note: Core tokens are defined in styles.css
    ============================================ */
 :root {
-  --menu-height: 56px;
-  --menu-height-mobile: 48px;
-  --menu-bg: linear-gradient(135deg, #eaf2ff 0%, #dbeafe 100%);
-  --menu-border: var(--color-border, #e5e7eb);
-  --menu-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  /* Menu layout - uses core tokens from styles.css */
+  --menu-height: var(--header-h, 56px);
+  --menu-height-mobile: var(--header-h-mobile, 48px);
+  --menu-bg: linear-gradient(135deg, var(--color-primary-bg, #eff6ff) 0%, var(--color-primary-light, #dbeafe) 100%);
+  --menu-border: var(--color-border);
+  --menu-shadow: var(--shadow-sm);
   
-  /* Button styles */
-  --menu-btn-radius: 999px;
+  /* Menu button styles */
+  --menu-btn-radius: var(--radius-full);
   --menu-btn-height: 34px;
   --menu-btn-height-sm: 28px;
-  --menu-btn-padding: 0 0.75rem;
+  --menu-btn-padding: 0 var(--space-3);
   --menu-btn-padding-icon: 0 0.375rem;
-  --menu-btn-gap: 0.375rem;
+  --menu-btn-gap: var(--space-2);
   
-  /* Colors */
-  --menu-btn-primary-bg: var(--color-primary, #2563eb);
+  /* Menu button colors - reference core tokens */
+  --menu-btn-primary-bg: var(--color-primary);
   --menu-btn-primary-color: #ffffff;
-  --menu-btn-primary-hover: var(--color-primary-strong, #1d4ed8);
+  --menu-btn-primary-hover: var(--color-primary-hover);
   
   --menu-btn-ghost-bg: rgba(255, 255, 255, 0.7);
-  --menu-btn-ghost-color: var(--color-text, #0f172a);
+  --menu-btn-ghost-color: var(--color-text);
   --menu-btn-ghost-hover: rgba(255, 255, 255, 0.9);
-  --menu-btn-ghost-border: var(--color-border, #e5e7eb);
+  --menu-btn-ghost-border: var(--color-border);
   
   /* Dropdown */
-  --menu-dropdown-bg: var(--color-surface, #ffffff);
-  --menu-dropdown-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  --menu-dropdown-radius: 12px;
+  --menu-dropdown-bg: var(--color-surface);
+  --menu-dropdown-shadow: var(--shadow-lg);
+  --menu-dropdown-radius: var(--radius-lg);
   
   /* Mobile menu */
   --mobile-menu-width: 300px;
-  --mobile-menu-bg: var(--color-surface, #ffffff);
-  
-  /* Touch target minimum */
-  --touch-target-min: 44px;
+  --mobile-menu-bg: var(--color-surface);
 }
 
 /* ============================================
@@ -850,20 +849,20 @@
 
 /* Success variant for finish workday */
 .menu-dropdown__item--success {
-  color: #059669;
+  color: var(--color-success-hover);
   font-weight: 500;
 }
 
 .menu-dropdown__item--success .material-icons {
-  color: #10b981;
+  color: var(--color-success);
 }
 
 .menu-dropdown__item--success:hover {
-  background: linear-gradient(90deg, rgba(16, 185, 129, 0.12), rgba(16, 185, 129, 0.06));
+  background: linear-gradient(90deg, rgba(34, 197, 94, 0.12), rgba(34, 197, 94, 0.06));
 }
 
 .menu-dropdown__item--success:hover .material-icons {
-  color: #059669;
+  color: var(--color-success-hover);
 }
 
 .menu-dropdown__divider {
@@ -1277,12 +1276,12 @@ p.mobile-menu__group-label {
 
 /* Success variant for finish workday */
 .mobile-menu__btn--success {
-  color: #059669;
+  color: var(--color-success-hover);
   font-weight: 500;
 }
 
 .mobile-menu__btn--success .material-icons {
-  color: #10b981;
+  color: var(--color-success);
 }
 
 /* Mobile menu search */
