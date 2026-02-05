@@ -167,6 +167,7 @@ const toastEl = document.getElementById('toast');
 const zoomInBtn = document.getElementById('zoomInBtn');
 const zoomOutBtn = document.getElementById('zoomOutBtn');
 const recenterBtn = document.getElementById('recenterBtn');
+const recenterDensityBtn = document.getElementById('recenterDensityBtn');
 const sizeIncreaseBtn = document.getElementById('sizeIncreaseBtn');
 const sizeDecreaseBtn = document.getElementById('sizeDecreaseBtn');
 const appTitleEl = document.getElementById('appTitle');
@@ -1413,6 +1414,10 @@ function applyLangToStaticUI() {
   if (recenterBtn) {
     recenterBtn.title = t('recenter');
     recenterBtn.setAttribute('aria-label', t('recenter'));
+  }
+  if (recenterDensityBtn) {
+    recenterDensityBtn.title = t('recenterDensity');
+    recenterDensityBtn.setAttribute('aria-label', t('recenterDensity'));
   }
   // Update incomplete edge tracker tooltip
   const incompleteTrackerEl = document.getElementById('incompleteEdgeTracker');
@@ -7007,10 +7012,86 @@ function recenterView() {
   scheduleDraw();
 }
 
+/**
+ * Compute the sketch density center in world coordinates.
+ * Finds the area with the highest concentration of nodes.
+ */
+function getSketchDensityCenter() {
+  if (!Array.isArray(nodes) || nodes.length === 0) return { x: 0, y: 0 };
+  if (nodes.length === 1) return { x: nodes[0].x, y: nodes[0].y };
+
+  // Calculate a reasonable search radius based on the bounding box
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const node of nodes) {
+    if (!node || typeof node.x !== 'number' || typeof node.y !== 'number') continue;
+    if (node.x < minX) minX = node.x;
+    if (node.y < minY) minY = node.y;
+    if (node.x > maxX) maxX = node.x;
+    if (node.y > maxY) maxY = node.y;
+  }
+  const width = maxX - minX;
+  const height = maxY - minY;
+  const radius = Math.min(width, height) / 5 || 50; // Use 1/5th of the smaller dimension or 50 units
+
+  let maxNeighbors = -1;
+  let bestPoint = { x: 0, y: 0 };
+
+  // For each node, count neighbors within radius
+  for (let i = 0; i < nodes.length; i++) {
+    const n1 = nodes[i];
+    if (!n1 || typeof n1.x !== 'number' || typeof n1.y !== 'number') continue;
+    
+    let neighbors = 0;
+    let sumX = 0;
+    let sumY = 0;
+    
+    for (let j = 0; j < nodes.length; j++) {
+      const n2 = nodes[j];
+      if (!n2 || typeof n2.x !== 'number' || typeof n2.y !== 'number') continue;
+      
+      const dx = n1.x - n2.x;
+      const dy = n1.y - n2.y;
+      const distSq = dx * dx + dy * dy;
+      
+      if (distSq < radius * radius) {
+        neighbors++;
+        sumX += n2.x;
+        sumY += n2.y;
+      }
+    }
+    
+    if (neighbors > maxNeighbors) {
+      maxNeighbors = neighbors;
+      bestPoint = { x: sumX / neighbors, y: sumY / neighbors };
+    }
+  }
+  
+  return bestPoint;
+}
+
+/**
+ * Recenters the view so the sketch density center maps to the canvas center.
+ */
+function recenterDensityView() {
+  const rect = canvas.getBoundingClientRect();
+  const centerScreen = { x: rect.width / 2, y: rect.height / 2 };
+  const centerWorld = getSketchDensityCenter();
+  viewTranslate.x = centerScreen.x - viewScale * viewStretchX * centerWorld.x;
+  viewTranslate.y = centerScreen.y - viewScale * viewStretchY * centerWorld.y;
+  scheduleDraw();
+}
+
 // Recenter button handler
 if (recenterBtn) {
   recenterBtn.addEventListener('click', () => {
     try { recenterView(); } catch (_) { }
+  });
+}
+
+// Recenter by density button handler
+if (recenterDensityBtn) {
+  recenterDensityBtn.addEventListener('click', () => {
+    try { recenterDensityView(); } catch (_) { }
   });
 }
 

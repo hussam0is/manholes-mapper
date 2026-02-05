@@ -1301,11 +1301,15 @@ canvas {
   box-shadow: var(--shadow);
 }
 
+#recenterDensityBtn {
+  bottom: 68px;
+}
+
 /* Incomplete edge tracker - shows count of dangling edges */
 .incomplete-tracker {
   position: absolute;
   right: 12px;
-  bottom: 68px; /* Above the recenter button */
+  bottom: 124px; /* Above both recenter buttons */
   z-index: 16;
   background: rgba(107, 114, 128, 0.9); /* grey-500 with transparency */
   color: #fff;
