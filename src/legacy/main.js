@@ -2824,7 +2824,9 @@ function draw() {
       viewTranslate, 
       viewScale, 
       coordinateScale, 
-      () => scheduleDraw() // Callback to redraw when tiles load
+      () => scheduleDraw(), // Callback to redraw when tiles load
+      viewStretchX,
+      viewStretchY
     );
     ctx.restore();
   }
@@ -6411,6 +6413,7 @@ function loadViewStretch() {
 
 /**
  * Change view stretch (horizontal or vertical)
+ * Maintains focus on the screen center when stretch changes
  * @param {'x' | 'y'} axis - Which axis to change
  * @param {number} delta - Change direction: 1 for increase, -1 for decrease
  */
@@ -6422,11 +6425,29 @@ function changeViewStretch(axis, delta) {
   // Round to 1 decimal place to avoid floating point issues
   const rounded = Math.round(clamped * 10) / 10;
   
+  // If no change, skip
+  if (rounded === currentValue) return;
+  
+  // Get the screen center point
+  const rect = canvas.getBoundingClientRect();
+  const screenCenterX = rect.width / 2;
+  const screenCenterY = rect.height / 2;
+  
+  // Get the world point currently at screen center (using current stretch)
+  const worldCenter = screenToWorld(screenCenterX, screenCenterY);
+  
+  // Update the stretch value
   if (axis === 'x') {
     viewStretchX = rounded;
   } else {
     viewStretchY = rounded;
   }
+  
+  // Adjust viewTranslate to keep the same world point at screen center
+  // screenX = worldX * stretchX * viewScale + viewTranslate.x
+  // viewTranslate.x = screenX - worldX * stretchX * viewScale
+  viewTranslate.x = screenCenterX - worldCenter.x * viewStretchX * viewScale;
+  viewTranslate.y = screenCenterY - worldCenter.y * viewStretchY * viewScale;
   
   saveViewStretch();
   updateStretchDisplay();
@@ -6436,10 +6457,28 @@ function changeViewStretch(axis, delta) {
 
 /**
  * Reset view stretch to default (1.0, 1.0)
+ * Maintains focus on the screen center when resetting
  */
 function resetViewStretch() {
+  // If already at default, skip
+  if (viewStretchX === 1.0 && viewStretchY === 1.0) return;
+  
+  // Get the screen center point
+  const rect = canvas.getBoundingClientRect();
+  const screenCenterX = rect.width / 2;
+  const screenCenterY = rect.height / 2;
+  
+  // Get the world point currently at screen center (using current stretch)
+  const worldCenter = screenToWorld(screenCenterX, screenCenterY);
+  
+  // Reset stretch values
   viewStretchX = 1.0;
   viewStretchY = 1.0;
+  
+  // Adjust viewTranslate to keep the same world point at screen center
+  viewTranslate.x = screenCenterX - worldCenter.x * viewStretchX * viewScale;
+  viewTranslate.y = screenCenterY - worldCenter.y * viewStretchY * viewScale;
+  
   saveViewStretch();
   updateStretchDisplay();
   scheduleDraw();

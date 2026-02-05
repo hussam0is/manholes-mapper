@@ -199,21 +199,25 @@ export function getMapType() {
  * @param {number} viewScale - View zoom scale
  * @param {number} coordinateScale - Pixels per meter
  * @param {Function} onTilesLoaded - Callback when new tiles are loaded
+ * @param {number} stretchX - Horizontal stretch factor (default 1)
+ * @param {number} stretchY - Vertical stretch factor (default 1)
  */
-export async function drawMapTiles(ctx, canvasWidth, canvasHeight, viewTranslate, viewScale, coordinateScale, onTilesLoaded) {
+export async function drawMapTiles(ctx, canvasWidth, canvasHeight, viewTranslate, viewScale, coordinateScale, onTilesLoaded, stretchX = 1, stretchY = 1) {
   if (!mapLayerEnabled || !referencePoint) {
     console.log('Map layer disabled or no reference point', { mapLayerEnabled, referencePoint });
     return;
   }
   
-  // Calculate view bounds in ITM
+  // Calculate view bounds in ITM (account for stretch to determine visible area)
   const viewBounds = calculateViewBoundsItm(
     canvasWidth,
     canvasHeight,
     viewTranslate,
     viewScale,
     coordinateScale,
-    referencePoint
+    referencePoint,
+    stretchX,
+    stretchY
   );
   
   if (!viewBounds) {

@@ -335,12 +335,13 @@ export function calculateTilesInBounds(viewBounds, zoom, maxTiles = 10000, buffe
  * @param {object} referencePoint - Reference point {itm: {x, y}, canvas: {x, y}}
  * @returns {object} Bounds in ITM {minX, minY, maxX, maxY}
  */
-export function calculateViewBoundsItm(canvasWidth, canvasHeight, viewTranslate, viewScale, coordinateScale, referencePoint) {
+export function calculateViewBoundsItm(canvasWidth, canvasHeight, viewTranslate, viewScale, coordinateScale, referencePoint, stretchX = 1, stretchY = 1) {
   if (!referencePoint || !referencePoint.itm || !referencePoint.canvas) {
     return null;
   }
   
   // Convert canvas corners to world coordinates
+  // Account for stretch factors when converting screen to world
   const corners = [
     { x: 0, y: 0 },
     { x: canvasWidth, y: 0 },
@@ -349,8 +350,8 @@ export function calculateViewBoundsItm(canvasWidth, canvasHeight, viewTranslate,
   ];
   
   const worldCorners = corners.map(c => ({
-    x: (c.x - viewTranslate.x) / viewScale,
-    y: (c.y - viewTranslate.y) / viewScale
+    x: (c.x - viewTranslate.x) / (viewScale * stretchX),
+    y: (c.y - viewTranslate.y) / (viewScale * stretchY)
   }));
   
   // Convert world coordinates to ITM
