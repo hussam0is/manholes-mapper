@@ -2961,11 +2961,11 @@ function draw() {
     if (label) {
       labelData.push(label);
     }
-    // Collect node data for collision detection
+    // Collect node data for collision detection (use stretched positions)
     const radius = NODE_RADIUS * sizeScale;
     nodeData.push({
-      x: node.x,
-      y: node.y,
+      x: node.x * viewStretchX,
+      y: node.y * viewStretchY,
       radius: radius
     });
   });
@@ -2977,7 +2977,9 @@ function draw() {
     const headNode = nodes.find((n) => n.id === edge.head);
     if (!tailNode || !headNode) return;
 
-    const x1 = tailNode.x, y1 = tailNode.y, x2 = headNode.x, y2 = headNode.y;
+    // Apply stretch to positions for label placement
+    const x1 = tailNode.x * viewStretchX, y1 = tailNode.y * viewStretchY;
+    const x2 = headNode.x * viewStretchX, y2 = headNode.y * viewStretchY;
     const dx = x2 - x1;
     const dy = y2 - y1;
     const length = Math.sqrt(dx * dx + dy * dy);
@@ -3408,7 +3410,9 @@ function drawEdgeLabels(edge) {
   const tailNode = nodes.find((n) => n.id === edge.tail);
   const headNode = nodes.find((n) => n.id === edge.head);
   if (!tailNode || !headNode) return;
-  const x1 = tailNode.x, y1 = tailNode.y, x2 = headNode.x, y2 = headNode.y;
+  // Apply stretch to positions for label placement
+  const x1 = tailNode.x * viewStretchX, y1 = tailNode.y * viewStretchY;
+  const x2 = headNode.x * viewStretchX, y2 = headNode.y * viewStretchY;
   const dx = x2 - x1;
   const dy = y2 - y1;
   const lengthPx = Math.sqrt(dx * dx + dy * dy);
