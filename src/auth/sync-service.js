@@ -625,11 +625,11 @@ export async function syncSketchToCloud(sketch) {
   // Check if sketch is empty and hasn't been explicitly allowed to save
   if (isSketchEmpty(sketch) && !isEmptySaveAllowed(sketch.id)) {
     // Get translation function if available, otherwise use default message
-    const confirmMessage = window.t?.('confirms.saveEmptySketch') || 
+    const confirmMessage = (typeof window !== 'undefined' && window.t) ? window.t('confirms.saveEmptySketch') : 
       'This sketch is empty (no nodes or edges). Save anyway?';
     
     // Show confirmation dialog
-    const userConfirmed = confirm(confirmMessage);
+    const userConfirmed = (typeof window !== 'undefined' && typeof confirm !== 'undefined') ? confirm(confirmMessage) : true;
     
     if (!userConfirmed) {
       console.log('User declined to save empty sketch - sync cancelled');

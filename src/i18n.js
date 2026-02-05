@@ -150,6 +150,7 @@ export const i18n = {
       importFailed: 'שגיאה ביבוא השרטוט',
       confirmImportReplace: 'יבוא שרטוט ידרוס את השרטוט הנוכחי. להמשיך?',
       nodeIdUnique: 'מספר השוחה חייב להיות ייחודי.',
+      selectProject: 'יש לבחור פרויקט',
     },
     labels: {
       nodeId: 'מספר שוחה',
@@ -188,6 +189,7 @@ export const i18n = {
       selectNodeType: 'בחר סוג נקודה',
       resolveDanglingEdges: 'השלם קווים לא מחוברים',
       resolveDanglingDesc: 'הקווים הבאים אינם מחוברים בשני הקצוות. בחר סוג נקודה לכל קצה חסר:',
+      selectProject: 'בחר פרויקט...',
     },
     finishWorkday: {
       title: 'סיום יום עבודה',
@@ -293,12 +295,6 @@ export const i18n = {
       invalidConfig: 'קובץ הגדרות לא תקין',
       validationErrors: 'שגיאות אימות',
       confirmDelete: 'האם אתה בטוח שברצונך למחוק כלל זה?',
-    },
-    labels: {
-      selectProject: 'בחר פרויקט...',
-    },
-    alerts: {
-      selectProject: 'יש לבחור פרויקט',
     },
     buttons: {
       cancel: 'ביטול',
@@ -503,6 +499,7 @@ export const i18n = {
       importFailed: 'Error importing sketch',
       confirmImportReplace: 'Importing a sketch will replace the current sketch. Continue?',
       nodeIdUnique: 'Node ID must be unique.',
+      selectProject: 'Please select a project',
     },
     labels: {
       nodeId: 'Node ID',
@@ -541,6 +538,7 @@ export const i18n = {
       selectNodeType: 'Select node type',
       resolveDanglingEdges: 'Resolve Dangling Edges',
       resolveDanglingDesc: 'The following edges are not connected at both ends. Select a node type for each missing end:',
+      selectProject: 'Select project...',
     },
     finishWorkday: {
       title: 'Finish Workday',
@@ -646,12 +644,6 @@ export const i18n = {
       invalidConfig: 'Invalid configuration file',
       validationErrors: 'Validation errors',
       confirmDelete: 'Are you sure you want to delete this rule?',
-    },
-    labels: {
-      selectProject: 'Select project...',
-    },
-    alerts: {
-      selectProject: 'Please select a project',
     },
     buttons: {
       cancel: 'Cancel',

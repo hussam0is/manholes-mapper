@@ -434,16 +434,18 @@ function initCommandDropdown() {
     const currentIndex = items.indexOf(document.activeElement);
 
     switch (e.key) {
-      case 'ArrowDown':
+      case 'ArrowDown': {
         e.preventDefault();
         const nextIndex = (currentIndex + 1) % items.length;
         items[nextIndex]?.focus();
         break;
-      case 'ArrowUp':
+      }
+      case 'ArrowUp': {
         e.preventDefault();
         const prevIndex = (currentIndex - 1 + items.length) % items.length;
         items[prevIndex]?.focus();
         break;
+      }
       case 'Home':
         e.preventDefault();
         items[0]?.focus();

@@ -31,6 +31,9 @@ vi.mock('../src/auth/auth-guard.js', () => ({
 // Mock global fetch
 global.fetch = vi.fn();
 
+// Mock global confirm
+global.confirm = vi.fn(() => true);
+
 // Mock navigator.onLine
 const mockOnLine = (value: boolean) => {
   Object.defineProperty(navigator, 'onLine', {

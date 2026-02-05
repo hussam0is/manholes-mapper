@@ -3,19 +3,31 @@
  * Exports all GNSS-related functionality
  */
 
+// Connection management
+import { 
+  gnssConnection, 
+  GNSSConnectionManager 
+} from './connection-manager.js';
+
 // State management
-export { 
+import { 
   gnssState, 
   GNSSStateManager, 
   ConnectionState, 
   ConnectionType 
 } from './gnss-state.js';
 
-// Connection management
+export { 
+  gnssState, 
+  GNSSStateManager, 
+  ConnectionState, 
+  ConnectionType 
+}
+
 export { 
   gnssConnection, 
   GNSSConnectionManager 
-} from './connection-manager.js';
+};
 
 // NMEA parsing
 export { 
