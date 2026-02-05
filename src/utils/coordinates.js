@@ -303,7 +303,7 @@ export function approximateUncoordinatedNodePositions(nodes, edges, originalPosi
     return nodes;
   }
   
-  console.log(`Approximating positions for ${unpositionedNodes.length} nodes without coordinates`);
+  console.debug(`Approximating positions for ${unpositionedNodes.length} nodes without coordinates`);
   
   // Calculate scale factor from edges between coordinated nodes
   let scaleFactors = [];
@@ -337,7 +337,7 @@ export function approximateUncoordinatedNodePositions(nodes, edges, originalPosi
     ? scaleFactors.reduce((a, b) => a + b, 0) / scaleFactors.length 
     : 1;
   
-  console.log(`Scale factor for uncoordinated nodes: ${avgScaleFactor.toFixed(3)} (from ${scaleFactors.length} edges)`);
+  console.debug(`Scale factor for uncoordinated nodes: ${avgScaleFactor.toFixed(3)} (from ${scaleFactors.length} edges)`);
   
   // Calculate centroid of positioned nodes as fallback
   const centroid = {
@@ -391,7 +391,7 @@ export function approximateUncoordinatedNodePositions(nodes, edges, originalPosi
         node.positionLocked = false; // Uncoordinated nodes can still be moved
         updated = true;
         
-        console.log(`Positioned node ${node.id}: angle=${(angle * 180 / Math.PI).toFixed(1)}°, dist=${scaledDist.toFixed(1)}px from node ${anchorNeighbor.id}`);
+        console.debug(`Positioned node ${node.id}: angle=${(angle * 180 / Math.PI).toFixed(1)}°, dist=${scaledDist.toFixed(1)}px from node ${anchorNeighbor.id}`);
       }
     });
   }
@@ -461,12 +461,12 @@ export function applyCoordinatesToNodes(nodes, coordinatesMap, canvasWidth = 800
     }
   });
   
-  console.log('=== COORDINATE APPLICATION DEBUG ===');
-  console.log(`Found ${matchedNodeCoords.length} nodes with matching coordinates`);
+  console.debug('=== COORDINATE APPLICATION DEBUG ===');
+  console.debug(`Found ${matchedNodeCoords.length} nodes with matching coordinates`);
   
   // If no matches, return early
   if (matchedNodeCoords.length === 0) {
-    console.log('No coordinate matches found!');
+    console.debug('No coordinate matches found!');
     return { 
       updatedNodes: nodes.map(n => ({ ...n, hasCoordinates: false })), 
       matchedCount: 0, 
@@ -492,9 +492,9 @@ export function applyCoordinatesToNodes(nodes, coordinatesMap, canvasWidth = 800
   const surveyHeight = maxY - minY;
   
   // Log bounds for debugging
-  console.log('Matched coordinate bounds:', bounds);
-  console.log('Survey extent (meters):', { width: surveyWidth, height: surveyHeight });
-  console.log('Canvas dimensions (pixels):', { width: canvasWidth, height: canvasHeight });
+  console.debug('Matched coordinate bounds:', bounds);
+  console.debug('Survey extent (meters):', { width: surveyWidth, height: surveyHeight });
+  console.debug('Canvas dimensions (pixels):', { width: canvasWidth, height: canvasHeight });
   
   // Warn if extent is very small (less than 1 meter)
   if (surveyWidth < 1 || surveyHeight < 1) {
@@ -504,12 +504,12 @@ export function applyCoordinatesToNodes(nodes, coordinatesMap, canvasWidth = 800
   
   // Use user-specified scale or calculate optimal scale for this network
   const pixelsPerMeter = userScale || calculateOptimalScale(bounds, canvasWidth, canvasHeight, 0.8);
-  console.log('Using scale:', pixelsPerMeter.toFixed(2), 'pixels/meter', userScale ? '(user specified)' : '(auto calculated)');
+  console.debug('Using scale:', pixelsPerMeter.toFixed(2), 'pixels/meter', userScale ? '(user specified)' : '(auto calculated)');
   
   // Log sample coordinates
-  console.log('Sample matched coordinates:');
+  console.debug('Sample matched coordinates:');
   matchedNodeCoords.slice(0, 5).forEach(({ nodeId, coords }) => {
-    console.log(`  Node ${nodeId}: ITM(${coords.x.toFixed(2)}, ${coords.y.toFixed(2)})`);
+    console.debug(`  Node ${nodeId}: ITM(${coords.x.toFixed(2)}, ${coords.y.toFixed(2)})`);
   });
   
   let matchedCount = 0;
@@ -525,7 +525,7 @@ export function applyCoordinatesToNodes(nodes, coordinatesMap, canvasWidth = 800
       
       // Log first few transformations
       if (matchedCount <= 3) {
-        console.log(`Transform node ${nodeId}: ITM(${coords.x.toFixed(2)}, ${coords.y.toFixed(2)}) -> Canvas(${canvasCoords.x.toFixed(2)}, ${canvasCoords.y.toFixed(2)})`);
+        console.debug(`Transform node ${nodeId}: ITM(${coords.x.toFixed(2)}, ${coords.y.toFixed(2)}) -> Canvas(${canvasCoords.x.toFixed(2)}, ${canvasCoords.y.toFixed(2)})`);
       }
       
       // Validate the computed coordinates
@@ -564,7 +564,7 @@ export function applyCoordinatesToNodes(nodes, coordinatesMap, canvasWidth = 800
   if (matchedNodes.length > 0) {
     const xs = matchedNodes.map(n => n.x);
     const ys = matchedNodes.map(n => n.y);
-    console.log('Canvas position spread:', {
+    console.debug('Canvas position spread:', {
       xMin: Math.min(...xs).toFixed(2),
       xMax: Math.max(...xs).toFixed(2),
       xRange: (Math.max(...xs) - Math.min(...xs)).toFixed(2),
@@ -574,8 +574,8 @@ export function applyCoordinatesToNodes(nodes, coordinatesMap, canvasWidth = 800
     });
   }
   
-  console.log(`Applied coordinates: ${matchedCount} matched, ${unmatchedCount} unmatched`);
-  console.log('=== END COORDINATE DEBUG ===');
+  console.debug(`Applied coordinates: ${matchedCount} matched, ${unmatchedCount} unmatched`);
+  console.debug('=== END COORDINATE DEBUG ===');
   
   return { updatedNodes, matchedCount, unmatchedCount, bounds };
 }

@@ -232,7 +232,7 @@ export async function drawMapTiles(ctx, canvasWidth, canvasHeight, viewTranslate
   // Get visible tiles
   const tiles = calculateVisibleTiles(viewBounds, zoom);
   
-  console.log('Drawing map tiles', { 
+  console.debug('Drawing map tiles', { 
     viewBounds, 
     zoom, 
     tilesCount: tiles.length,

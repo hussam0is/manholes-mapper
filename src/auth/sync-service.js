@@ -256,7 +256,7 @@ export async function syncFromCloud() {
   updateSyncState({ isSyncing: true, error: null });
 
   try {
-    console.log('Starting cloud sync...');
+    console.groupCollapsed('[Sync] Starting cloud sync...');
     // Fetch sketches from cloud
     const cloudSketches = await fetchSketchesFromCloud();
     console.log(`Fetched ${cloudSketches.length} sketches from cloud`);
@@ -327,8 +327,10 @@ export async function syncFromCloud() {
     });
 
     console.log(`Synced ${cloudSketches.length} sketches from cloud successfully`);
+    console.groupEnd();
     return cloudSketches;
   } catch (error) {
+    console.groupEnd();
     // Check if this is an "API not available" error - don't show as error in dev
     const isApiUnavailable = error.isExpectedDevError ||
                              error.message?.includes('API not available') || 
@@ -339,7 +341,7 @@ export async function syncFromCloud() {
     if (isApiUnavailable) {
       // Only log once when first detected
       if (apiAvailable) {
-        console.log('Cloud sync: API not available (development mode). Using local data only.');
+        console.info('Cloud sync: API not available (development mode). Using local data only.');
       }
       apiAvailable = false;
       updateSyncState({
@@ -401,7 +403,7 @@ export async function acquireSketchLock(sketchId) {
       // Start refresh timer
       startLockRefreshTimer(sketchId);
       
-      console.log('[SyncService] Lock acquired for sketch:', sketchId);
+      console.debug('[SyncService] Lock acquired for sketch:', sketchId);
       return { success: true, lock: data.lock };
     } else {
       console.warn('[SyncService] Failed to acquire lock:', data.error);
@@ -439,7 +441,7 @@ export async function releaseSketchLock(sketchId) {
     currentLock = null;
     
     if (response.ok) {
-      console.log('[SyncService] Lock released for sketch:', sketchId);
+      console.debug('[SyncService] Lock released for sketch:', sketchId);
       return { success: true };
     } else {
       const data = await response.json();
@@ -472,7 +474,7 @@ async function refreshCurrentLock() {
     if (response.ok) {
       const data = await response.json();
       currentLock.lockExpiresAt = data.lockExpiresAt;
-      console.log('[SyncService] Lock refreshed, expires at:', data.lockExpiresAt);
+      console.debug('[SyncService] Lock refreshed, expires at:', data.lockExpiresAt);
     } else {
       console.warn('[SyncService] Failed to refresh lock');
     }
@@ -599,7 +601,7 @@ export function isEmptySaveAllowed(sketchId) {
 export async function syncSketchToCloud(sketch) {
   // Skip if API not available (dev mode)
   if (!apiAvailable) {
-    console.log('Cloud sync skipped - API not available (development mode)');
+    console.debug('Cloud sync skipped - API not available (development mode)');
     return;
   }
 
@@ -659,7 +661,7 @@ export async function syncSketchToCloud(sketch) {
     const isCloudSketch = sketch.id && /^[0-9a-f-]{36}$/i.test(sketch.id);
     
     // Log sketch data for debugging validation issues
-    console.log(`Syncing sketch "${sketch.name}" (${sketch.id}):`, {
+    console.debug(`Syncing sketch "${sketch.name}" (${sketch.id}):`, {
       nodesCount: sketch.nodes?.length ?? 0,
       edgesCount: sketch.edges?.length ?? 0,
       hasAdminConfig: !!sketch.adminConfig,
@@ -1004,7 +1006,7 @@ async function cleanupDuplicateSketchesInternal() {
           const { deduplicated, removedCount, removedIds } = deduplicateSketches(lib);
           if (removedCount > 0) {
             window.localStorage.setItem('graphSketch.library', JSON.stringify(deduplicated));
-            console.log(`[Sync] Removed ${removedCount} duplicate(s) from localStorage:`, removedIds);
+            console.debug(`[Sync] Removed ${removedCount} duplicate(s) from localStorage:`, removedIds);
             totalRemoved += removedCount;
             allRemovedIds.push(...removedIds);
           }
@@ -1028,7 +1030,7 @@ async function cleanupDuplicateSketchesInternal() {
           // Ignore individual delete errors
         }
       }
-      console.log(`[Sync] Removed ${removedCount} duplicate(s) from IndexedDB:`, removedIds);
+      console.debug(`[Sync] Removed ${removedCount} duplicate(s) from IndexedDB:`, removedIds);
       totalRemoved += removedCount;
       // Only add IDs not already in allRemovedIds
       for (const id of removedIds) {
@@ -1042,7 +1044,7 @@ async function cleanupDuplicateSketchesInternal() {
   }
   
   if (totalRemoved > 0) {
-    console.log(`[Sync] Duplicate cleanup complete. Total removed: ${totalRemoved}`);
+    console.debug(`[Sync] Duplicate cleanup complete. Total removed: ${totalRemoved}`);
   }
   
   return { removedCount: totalRemoved, removedIds: allRemovedIds };

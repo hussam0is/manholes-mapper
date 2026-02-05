@@ -116,7 +116,7 @@ if (typeof window !== 'undefined') {
   
   // Listen for auth state changes
   onAuthStateChange((state) => {
-    console.log('Auth state changed:', state.isSignedIn ? 'signed in' : 'signed out');
+    console.debug('Auth state changed:', state.isSignedIn ? 'signed in' : 'signed out');
     renderUserMenu(state.user);
     
     // Force a route check when auth state changes

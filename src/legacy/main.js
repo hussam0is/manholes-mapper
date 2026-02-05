@@ -951,7 +951,7 @@ function handleRoute() {
   // Get auth state if available
   const authState = window.authGuard?.getAuthState?.() || { isLoaded: false, isSignedIn: false };
   
-  console.log('handleRoute:', { hash, isLoaded: authState.isLoaded, isSignedIn: authState.isSignedIn });
+  console.debug('handleRoute:', { hash, isLoaded: authState.isLoaded, isSignedIn: authState.isSignedIn });
   
   // If auth is not yet loaded, show loading
   if (!authState.isLoaded) {
@@ -2036,13 +2036,13 @@ function saveToLibrary() {
     _emptySketchConfirmPending = false;
     
     if (!userConfirmed) {
-      console.log('User declined to save empty sketch - save cancelled');
+      console.debug('User declined to save empty sketch - save cancelled');
       return;
     }
     
     // User confirmed - mark this sketch as allowed to save empty
     setAllowedEmptySketchId(sketchId);
-    console.log('User allowed saving empty sketch:', sketchId);
+    console.debug('User allowed saving empty sketch:', sketchId);
   }
   
   const record = {
@@ -6030,18 +6030,18 @@ async function handleCoordinatesImport(file) {
     }
     
     // Debug: Log imported coordinates
-    console.log('=== COORDINATES IMPORT DEBUG ===');
-    console.log('Imported coordinates count:', newCoordinates.size);
-    console.log('Sample coordinates (first 5):');
+    console.debug('=== COORDINATES IMPORT DEBUG ===');
+    console.debug('Imported coordinates count:', newCoordinates.size);
+    console.debug('Sample coordinates (first 5):');
     let count = 0;
     for (const [pointId, coords] of newCoordinates.entries()) {
       if (count++ < 5) {
-        console.log(`  Point ID "${pointId}":`, coords);
+        console.debug(`  Point ID "${pointId}":`, coords);
       }
     }
     
     // Debug: Log current node IDs
-    console.log('Current node IDs in sketch:', nodes.map(n => `"${n.id}" (type: ${typeof n.id})`).slice(0, 10));
+    console.debug('Current node IDs in sketch:', nodes.map(n => `"${n.id}" (type: ${typeof n.id})`).slice(0, 10));
     
     // Check for matches
     const matchingIds = [];
@@ -6054,12 +6054,12 @@ async function handleCoordinatesImport(file) {
         nonMatchingNodeIds.push(nodeIdStr);
       }
     });
-    console.log('Matching node IDs:', matchingIds.length, matchingIds.slice(0, 10));
-    console.log('Non-matching node IDs:', nonMatchingNodeIds.length, nonMatchingNodeIds.slice(0, 10));
+    console.debug('Matching node IDs:', matchingIds.length, matchingIds.slice(0, 10));
+    console.debug('Non-matching node IDs:', nonMatchingNodeIds.length, nonMatchingNodeIds.slice(0, 10));
     
     // Check if any coordinate point_ids match node IDs
     const coordPointIds = Array.from(newCoordinates.keys());
-    console.log('Coordinate point_ids (first 10):', coordPointIds.slice(0, 10));
+    console.debug('Coordinate point_ids (first 10):', coordPointIds.slice(0, 10));
     
     // Store coordinates
     coordinatesMap = newCoordinates;
@@ -6144,7 +6144,7 @@ function applyCoordinatesIfEnabled(options = {}) {
     worldCenterBeforeChange = screenToWorld(screenCenterX, screenCenterY);
   }
   
-  console.log('Canvas dimensions for coordinate transform:', {
+  console.debug('Canvas dimensions for coordinate transform:', {
     canvasWidth,
     canvasHeight,
     logicalWidth,
@@ -6157,7 +6157,7 @@ function applyCoordinatesIfEnabled(options = {}) {
   nodes = result.updatedNodes;
   
   // Log results for debugging
-  console.log(`Coordinates applied: ${result.matchedCount} matched, ${result.unmatchedCount} unmatched`);
+  console.debug(`Coordinates applied: ${result.matchedCount} matched, ${result.unmatchedCount} unmatched`);
   
   // Approximate positions for nodes without coordinates based on their neighbors
   // Pass original positions to calculate distance ratios
@@ -6332,7 +6332,7 @@ function updateMapReferencePoint() {
     if (node.surveyX != null && node.surveyY != null) {
       const refPoint = createReferenceFromNode(node);
       if (refPoint) {
-        console.log('Map reference point set from node surveyX/surveyY:', refPoint);
+        console.debug('Map reference point set from node surveyX/surveyY:', refPoint);
         setMapReferencePoint(refPoint);
         startMeasurementTilesPrecache();
         return true;
@@ -6350,7 +6350,7 @@ function updateMapReferencePoint() {
           itm: { x: coords.x, y: coords.y },
           canvas: { x: node.x, y: node.y }
         };
-        console.log('Map reference point set from coordinatesMap:', refPoint);
+        console.debug('Map reference point set from coordinatesMap:', refPoint);
         setMapReferencePoint(refPoint);
         startMeasurementTilesPrecache();
         return true;
@@ -6375,7 +6375,7 @@ function updateMapReferencePoint() {
     canvas: { x: canvasCenterX, y: canvasCenterY }
   };
   
-  console.log('Map reference point set to default (Tel Aviv area):', refPoint);
+  console.debug('Map reference point set to default (Tel Aviv area):', refPoint);
   setMapReferencePoint(refPoint);
   return true;
 }
