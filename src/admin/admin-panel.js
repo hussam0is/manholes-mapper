@@ -6,7 +6,7 @@
  */
 
 import { getToken } from '../auth/auth-guard.js';
-import { isSuperAdmin, isAdmin, getUserRole } from '../auth/permissions.js';
+import { isSuperAdmin } from '../auth/permissions.js';
 
 /**
  * Feature display names for UI

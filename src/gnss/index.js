@@ -3,13 +3,10 @@
  * Exports all GNSS-related functionality
  */
 
-// Connection management
 import { 
   gnssConnection, 
   GNSSConnectionManager 
 } from './connection-manager.js';
-
-// State management
 import { 
   gnssState, 
   GNSSStateManager, 
@@ -43,7 +40,6 @@ export {
   FIX_COLORS 
 } from './gnss-marker.js';
 
-// Point capture dialog - import for local use AND re-export
 import { 
   initPointCaptureDialog, 
   openPointCaptureDialog, 

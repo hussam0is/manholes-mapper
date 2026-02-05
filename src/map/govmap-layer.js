@@ -13,11 +13,7 @@ import {
   calculateTilesInBounds,
   calculateViewBoundsItm,
   calculateZoomLevel,
-  tileToItm,
-  tileToLatLon,
-  latLonToTile,
-  TILE_SIZE,
-  GOVMAP_RESOLUTIONS
+  tileToLatLon
 } from './tile-manager.js';
 
 import {
@@ -49,10 +45,8 @@ const FALLBACK_URLS = {
 let mapLayerEnabled = false;
 let currentMapType = MAP_TYPES.ORTHOPHOTO;
 let referencePoint = null; // {itm: {x, y}, canvas: {x, y}}
-let lastDrawnTiles = []; // Track tiles currently on screen
 
 // Tile load error tracking
-const failedTiles = new Set();
 const MAX_RETRY_COUNT = 2;
 const tileRetryCount = new Map();
 
@@ -242,9 +236,6 @@ export async function drawMapTiles(ctx, canvasWidth, canvasHeight, viewTranslate
     viewScale
   });
   
-  // Track if we need to request a redraw after loading
-  let newTilesLoading = false;
-  
   // Draw each tile
   for (const tile of tiles) {
     const { x, y, z } = tile;
@@ -259,7 +250,6 @@ export async function drawMapTiles(ctx, canvasWidth, canvasHeight, viewTranslate
           onTilesLoaded();
         }
       });
-      newTilesLoading = true;
       continue;
     }
     
@@ -293,8 +283,6 @@ export async function drawMapTiles(ctx, canvasWidth, canvasHeight, viewTranslate
       worldHeight
     );
   }
-  
-  lastDrawnTiles = tiles;
 }
 
 /**

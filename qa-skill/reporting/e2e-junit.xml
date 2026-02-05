@@ -1,0 +1,60 @@
+<testsuites id="" name="" tests="27" failures="0" skipped="0" errors="0" time="38.922924">
+<testsuite name="auth.spec.ts" timestamp="2026-02-05T12:50:12.845Z" hostname="chromium" tests="10" failures="0" skipped="0" time="51.774" errors="0">
+<testcase name="Authentication › should show login panel when not authenticated" classname="auth.spec.ts" time="7.613">
+</testcase>
+<testcase name="Authentication › should have login form elements" classname="auth.spec.ts" time="8.152">
+</testcase>
+<testcase name="Authentication › should show app title correctly" classname="auth.spec.ts" time="4.8">
+</testcase>
+<testcase name="Authentication › should display brand logo" classname="auth.spec.ts" time="4.861">
+</testcase>
+<testcase name="Navigation › should have main navigation elements" classname="auth.spec.ts" time="6.203">
+</testcase>
+<testcase name="Navigation › should have mobile menu button" classname="auth.spec.ts" time="3.979">
+</testcase>
+<testcase name="Navigation › should toggle mobile menu on click" classname="auth.spec.ts" time="5.798">
+</testcase>
+<testcase name="Accessibility › should have proper ARIA labels" classname="auth.spec.ts" time="2.454">
+</testcase>
+<testcase name="Accessibility › should have proper document structure" classname="auth.spec.ts" time="2.286">
+</testcase>
+<testcase name="Accessibility › should have proper form labels" classname="auth.spec.ts" time="5.628">
+</testcase>
+</testsuite>
+<testsuite name="sketch.spec.ts" timestamp="2026-02-05T12:50:12.845Z" hostname="chromium" tests="17" failures="0" skipped="0" time="78.123" errors="0">
+<testcase name="Sketch Canvas › should have canvas element" classname="sketch.spec.ts" time="5.457">
+</testcase>
+<testcase name="Sketch Canvas › should have canvas container" classname="sketch.spec.ts" time="5.195">
+</testcase>
+<testcase name="Sketch Canvas › should have mode selection buttons" classname="sketch.spec.ts" time="4.188">
+</testcase>
+<testcase name="Sketch Canvas › should have toolbar with mode group" classname="sketch.spec.ts" time="5.687">
+</testcase>
+<testcase name="Sketch Canvas › should have recenter button" classname="sketch.spec.ts" time="5.255">
+</testcase>
+<testcase name="Sidebar › should have sidebar element" classname="sketch.spec.ts" time="4.914">
+</testcase>
+<testcase name="Sidebar › should have details container" classname="sketch.spec.ts" time="4.797">
+</testcase>
+<testcase name="Sidebar › should have sidebar close button" classname="sketch.spec.ts" time="4.243">
+</testcase>
+<testcase name="Dialogs and Modals › should have help modal (hidden by default)" classname="sketch.spec.ts" time="4.933">
+</testcase>
+<testcase name="Dialogs and Modals › should have admin modal (hidden by default)" classname="sketch.spec.ts" time="6.236">
+</testcase>
+<testcase name="Dialogs and Modals › should have start panel (attached to DOM)" classname="sketch.spec.ts" time="5.503">
+</testcase>
+<testcase name="Dialogs and Modals › should have home panel (hidden by default)" classname="sketch.spec.ts" time="4.416">
+</testcase>
+<testcase name="Toast Notifications › should have toast container" classname="sketch.spec.ts" time="2.298">
+</testcase>
+<testcase name="Responsive Design › should show mobile menu on small screens" classname="sketch.spec.ts" time="4.13">
+</testcase>
+<testcase name="Responsive Design › should show desktop controls on large screens" classname="sketch.spec.ts" time="5.163">
+</testcase>
+<testcase name="Language Selection › should have language selector" classname="sketch.spec.ts" time="2.749">
+</testcase>
+<testcase name="Language Selection › mobile language selector should exist" classname="sketch.spec.ts" time="2.959">
+</testcase>
+</testsuite>
+</testsuites>

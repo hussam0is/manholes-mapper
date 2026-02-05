@@ -2,30 +2,25 @@
 // Load small utilities first so legacy code can rely on them during migration.
 import './utils/toast.js';
 import './serviceWorker/register-sw.js';
+
 import { injectSpeedInsights } from '@vercel/speed-insights';
 import { i18n as I18N_DICT, createTranslator, isRTL as i18nIsRTL } from './i18n.js';
 import { syncHeaderHeightVar, syncAppHeightVar } from './dom/dom-utils.js';
 import * as CONSTS from './state/constants.js';
 import { attachFloatingKeyboard } from './utils/floating-keyboard.js';
 import { initResizableDrawer } from './utils/resizable-drawer.js';
-import { initAuthMonitor, onAuthStateChange, getAuthState, updateAuthState, guardRoute, redirectIfAuthenticated, refreshSession } from './auth/auth-guard.js';
+import { onAuthStateChange, getAuthState, updateAuthState, guardRoute, redirectIfAuthenticated, refreshSession } from './auth/auth-guard.js';
 import { initSyncService } from './auth/sync-service.js';
 import { authClient, signOutUser, getCurrentSession } from './auth/auth-client.js';
 import { menuEvents, setupEventDelegation } from './menu/menu-events.js';
-
-// GNSS Module imports
 import { 
   initGnssModule, 
   gnssConnection, 
-  gnssState, 
-  ConnectionState 
+  gnssState
 } from './gnss/index.js';
-
-// User location imports
 import { 
   requestLocationPermission, 
-  isGeolocationSupported,
-  isLocationEnabled
+  isGeolocationSupported
 } from './map/user-location.js';
 
 // Initialize Vercel Speed Insights only when deployed on Vercel (production)
@@ -281,7 +276,7 @@ function initMenuSystem() {
   initMobileMenuBehavior();
   
   // Register handler for userLocation action
-  menuEvents.on('userLocation', async ({ element }) => {
+  menuEvents.on('userLocation', async ({ element: _element }) => {
     // Check if geolocation is supported
     if (!isGeolocationSupported()) {
       if (window.showToast) {

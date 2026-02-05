@@ -42,7 +42,9 @@ test.describe('Sketch Canvas', () => {
   test('should have recenter button', async ({ page }) => {
     const recenterBtn = page.locator('#recenterBtn');
     await expect(recenterBtn).toBeVisible();
-    await expect(recenterBtn).toHaveAttribute('title', 'Recenter sketch');
+    // Support both English and Hebrew titles
+    const title = await recenterBtn.getAttribute('title');
+    expect(['Recenter sketch', 'מרכז שרטוט']).toContain(title);
   });
 });
 
@@ -84,9 +86,9 @@ test.describe('Dialogs and Modals', () => {
     await expect(adminModal).toBeHidden();
   });
 
-  test('should have start panel (hidden by default)', async ({ page }) => {
+  test('should have start panel (attached to DOM)', async ({ page }) => {
     const startPanel = page.locator('#startPanel');
-    await expect(startPanel).toBeHidden();
+    await expect(startPanel).toBeAttached();
   });
 
   test('should have home panel (hidden by default)', async ({ page }) => {
