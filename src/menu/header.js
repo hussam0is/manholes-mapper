@@ -111,6 +111,7 @@ export function createMobileMenu(t, currentLang = 'he') {
           <select 
             id="mobileLangSelect" 
             class="mobile-menu__select"
+            data-action="languageChange"
             aria-label="${t(item.labelKey)}"
           >
             ${options}

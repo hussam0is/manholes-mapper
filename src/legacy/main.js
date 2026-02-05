@@ -97,6 +97,7 @@ import {
   isLocationEnabled,
   toggleLocation
 } from '../map/user-location.js';
+import { menuEvents } from '../menu/menu-events.js';
 
 /**
  * Get the current username from authentication or return a default
@@ -5625,32 +5626,43 @@ if (helpModal) {
 }
 
 // Language selector
-if (langSelect) {
-  langSelect.addEventListener('change', () => {
-    const value = langSelect.value === 'en' ? 'en' : 'he';
-    currentLang = value;
-    try { window.currentLang = currentLang; } catch (_) { }
-    localStorage.setItem('graphSketch.lang', currentLang);
-    applyLangToStaticUI();
-    // Dispatch custom event for language change (for floating keyboard and other modules)
-    document.dispatchEvent(new Event('appLanguageChanged'));
-    // Re-render dynamic lists and details with translated labels
-    if (homePanel && homePanel.style.display === 'flex') {
-      renderHome();
+menuEvents.on('languageChange', ({ value, element }) => {
+  const newValue = value === 'en' ? 'en' : 'he';
+  currentLang = newValue;
+  try { window.currentLang = currentLang; } catch (_) { }
+  localStorage.setItem('graphSketch.lang', currentLang);
+  
+  // Sync all language selects
+  document.querySelectorAll('[data-action="languageChange"]').forEach(select => {
+    if (select.value !== newValue) {
+      select.value = newValue;
     }
-    renderDetails();
-    // If admin modal is open, rebuild its UI to apply new translations
-    if (adminModal && adminModal.style.display !== 'none') {
-      openAdminModal();
-    }
-    // If admin screen is active (#/admin), rebuild it as well
-    try {
-      if (location.hash === '#/admin') {
-        openAdminScreen();
-      }
-    } catch (_) { }
   });
-}
+
+  applyLangToStaticUI();
+  // Dispatch custom event for language change (for floating keyboard and other modules)
+  document.dispatchEvent(new Event('appLanguageChanged'));
+  // Re-render dynamic lists and details with translated labels
+  if (homePanel && homePanel.style.display === 'flex') {
+    renderHome();
+  }
+  renderDetails();
+  // If admin modal is open, rebuild its UI to apply new translations
+  if (adminModal && adminModal.style.display !== 'none') {
+    openAdminModal();
+  }
+  // If admin screen is active (#/admin), rebuild it as well
+  try {
+    if (location.hash === '#/admin') {
+      openAdminScreen();
+    }
+  } catch (_) { }
+
+  // Close mobile menu if change came from mobile
+  if (element && element.id === 'mobileLangSelect') {
+    closeMobileMenu();
+  }
+});
 
 // === Mobile menu controls ===
 // Helper to show the mobile menu with backdrop
@@ -5758,20 +5770,6 @@ if (mobileAutosaveToggle && autosaveToggle) {
   // When desktop toggle changes (e.g. via settings), update mobile toggle
   autosaveToggle.addEventListener('change', () => {
     mobileAutosaveToggle.checked = autosaveToggle.checked;
-  });
-}
-// Language selector sync
-if (mobileLangSelect && langSelect) {
-  // Initialize to current value
-  mobileLangSelect.value = langSelect.value;
-  mobileLangSelect.addEventListener('change', () => {
-    langSelect.value = mobileLangSelect.value;
-    langSelect.dispatchEvent(new Event('change'));
-    closeMobileMenu();
-  });
-  // Update when desktop selector changes
-  langSelect.addEventListener('change', () => {
-    mobileLangSelect.value = langSelect.value;
   });
 }
 // Help button
@@ -7187,6 +7185,7 @@ async function init() {
   if (savedLang === 'en' || savedLang === 'he') currentLang = savedLang; else currentLang = 'he';
   try { window.currentLang = currentLang; } catch (_) { }
   if (langSelect) langSelect.value = currentLang;
+  if (mobileLangSelect) mobileLangSelect.value = currentLang;
   applyLangToStaticUI();
   const hasLib = getLibrary().length > 0;
   if (hasLib) {

@@ -96,6 +96,19 @@ export function setupEventDelegation(container) {
       }
     }
   });
+
+  // Change delegation (for selects, inputs)
+  container.addEventListener('change', (e) => {
+    const actionEl = e.target.closest('[data-action]');
+    if (actionEl) {
+      const action = actionEl.dataset.action;
+      menuEvents.emit(action, { 
+        element: actionEl, 
+        value: actionEl.value,
+        originalEvent: e 
+      });
+    }
+  });
 }
 
 /**

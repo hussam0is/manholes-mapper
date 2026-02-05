@@ -148,6 +148,7 @@ export function createUtilityActions(t, currentLang = 'he') {
         <select 
           id="langSelect" 
           class="menu-select"
+          data-action="languageChange"
           title="${t(action.labelKey)}"
           aria-label="${t(action.labelKey)}"
         >
