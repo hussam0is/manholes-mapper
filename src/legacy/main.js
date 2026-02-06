@@ -98,7 +98,6 @@ import {
   isLocationEnabled,
   toggleLocation
 } from '../map/user-location.js';
-import { menuEvents } from '../menu/menu-events.js';
 
 /**
  * Get the current username from authentication or return a default
