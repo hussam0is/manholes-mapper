@@ -41,7 +41,6 @@ import { drawNodeIcon } from '../features/node-icons.js';
 import { processLabels } from '../utils/label-collision.js';
 import { initBackupManager, clearHourlyBackups, saveDailyBackup, getAllBackups } from '../utils/backup-manager.js';
 import { getUsername as getAuthUsername } from '../auth/auth-guard.js';
-import { menuEvents } from '../menu/menu-events.js';
 import { 
   evaluateRules, 
   applyActions, 
@@ -98,6 +97,7 @@ import {
   isLocationEnabled,
   toggleLocation
 } from '../map/user-location.js';
+import { menuEvents } from '../menu/menu-events.js';
 
 /**
  * Get the current username from authentication or return a default
@@ -5669,26 +5669,104 @@ menuEvents.on('languageChange', ({ value, element }) => {
   }
 });
 
-// === Mobile menu controls (Handled by src/main-entry.js) ===
+// === Mobile menu controls ===
+// Delegate to the main-entry.js closeMobileMenu (which properly manages
+// the isMobileMenuOpen state and accessibility attributes).
+// Falls back to direct DOM manipulation if the window version isn't available yet.
+function closeMobileMenu() {
+  if (window.closeMobileMenu && window.closeMobileMenu !== closeMobileMenu) {
+    window.closeMobileMenu();
+    return;
+  }
+  // Fallback: direct DOM close (before main-entry.js has initialised)
+  if (mobileMenu) mobileMenu.style.display = 'none';
+  if (mobileMenuBackdrop) mobileMenuBackdrop.style.display = 'none';
+  document.body.style.overflow = ''; // Restore scrolling
+}
 
-// Wire up mobile buttons that don't have direct desktop counterparts
-menuEvents.on('zoomIn', () => {
-  if (typeof setZoom === 'function' && typeof viewScale !== 'undefined' && typeof SCALE_STEP !== 'undefined') {
+// NOTE: Toggle, close-button, and backdrop click handlers are managed by
+// initMobileMenuBehavior() in main-entry.js. Do NOT duplicate them here
+// — having two handlers causes a state-desync bug where the menu opens
+// and immediately closes (see isMobileMenuOpen flag in main-entry.js).
+
+// Wire up mobile buttons to mimic their desktop counterparts
+if (mobileHomeBtn && homeBtn) {
+  mobileHomeBtn.addEventListener('click', () => {
+    closeMobileMenu();
+    homeBtn.click();
+  });
+}
+if (mobileNewSketchBtn && newSketchBtn) {
+  mobileNewSketchBtn.addEventListener('click', () => {
+    closeMobileMenu();
+    newSketchBtn.click();
+  });
+}
+if (mobileZoomInBtn) {
+  mobileZoomInBtn.addEventListener('click', () => {
+    closeMobileMenu();
     setZoom(viewScale * SCALE_STEP);
-  }
-});
-
-menuEvents.on('zoomOut', () => {
-  if (typeof setZoom === 'function' && typeof viewScale !== 'undefined' && typeof SCALE_STEP !== 'undefined') {
+  });
+}
+if (mobileZoomOutBtn) {
+  mobileZoomOutBtn.addEventListener('click', () => {
+    closeMobileMenu();
     setZoom(viewScale / SCALE_STEP);
-  }
-});
-
-menuEvents.on('mapTypeChange', ({ value }) => {
-  if (window.setMapType) {
-    window.setMapType(value);
-  }
-});
+  });
+}
+if (mobileExportSketchBtn && exportSketchBtn) {
+  mobileExportSketchBtn.addEventListener('click', () => {
+    closeMobileMenu();
+    exportSketchBtn.click();
+  });
+}
+if (mobileImportSketchBtn && importSketchBtn) {
+  mobileImportSketchBtn.addEventListener('click', () => {
+    closeMobileMenu();
+    importSketchBtn.click();
+  });
+}
+if (mobileExportNodesBtn && exportNodesBtn) {
+  mobileExportNodesBtn.addEventListener('click', () => {
+    closeMobileMenu();
+    exportNodesBtn.click();
+  });
+}
+if (mobileExportEdgesBtn && exportEdgesBtn) {
+  mobileExportEdgesBtn.addEventListener('click', () => {
+    closeMobileMenu();
+    exportEdgesBtn.click();
+  });
+}
+if (mobileSaveBtn && saveBtn) {
+  mobileSaveBtn.addEventListener('click', () => {
+    closeMobileMenu();
+    saveBtn.click();
+  });
+}
+// Autosave toggle: keep both toggles in sync and dispatch change on original toggle
+if (mobileAutosaveToggle && autosaveToggle) {
+  // Initialize mobile toggle to match saved preference
+  mobileAutosaveToggle.checked = autosaveToggle.checked;
+  // When mobile toggle changes, propagate to desktop toggle
+  mobileAutosaveToggle.addEventListener('change', () => {
+    autosaveToggle.checked = mobileAutosaveToggle.checked;
+    // Trigger change event on desktop toggle
+    autosaveToggle.dispatchEvent(new Event('change'));
+    closeMobileMenu();
+  });
+  // When desktop toggle changes (e.g. via settings), update mobile toggle
+  autosaveToggle.addEventListener('change', () => {
+    mobileAutosaveToggle.checked = autosaveToggle.checked;
+  });
+}
+// Help button
+if (mobileHelpBtn && helpBtn) {
+  mobileHelpBtn.addEventListener('click', () => {
+    closeMobileMenu();
+    helpBtn.click();
+  });
+}
 
 // === Finish Workday Functionality ===
 

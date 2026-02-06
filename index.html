@@ -320,32 +320,32 @@
   <!-- Mobile overflow menu. This menu is hidden on larger screens and shows a vertical list of actions on small screens. -->
   <div id="mobileMenu" class="mobile-menu" style="display:none;">
     <!-- Menu header with close button -->
-    <div class="mobile-menu__header">
+    <div class="mobile-menu-header">
       <h3>
         <span class="material-icons">menu</span>
-        <span id="mobileMenuTitle" data-i18n="mobileMenu.title">תפריט</span>
+        <span id="mobileMenuTitle">תפריט</span>
       </h3>
-      <button id="mobileMenuCloseBtn" class="mobile-menu__close" title="סגור" aria-label="Close menu">
+      <button id="mobileMenuCloseBtn" class="mobile-menu-close" title="סגור" aria-label="Close menu">
         <span class="material-icons">close</span>
       </button>
     </div>
     <!-- User account badge - shown in mobile menu -->
-    <div id="mobileUserButtonContainer" class="mobile-menu__user">
+    <div id="mobileUserButtonContainer" class="mobile-user-container">
       <div id="mobileAuthUserButton"></div>
     </div>
     <!-- Scrollable content area -->
-    <div class="mobile-menu__content">
+    <div class="mobile-menu-content">
       <!-- Navigation group -->
       <div class="mobile-menu__group" data-group="nav">
-        <div class="mobile-menu__group-header">
+        <div class="mobile-menu__group-header" id="menuGroupNav">
           <span class="material-icons mobile-menu__group-icon">home</span>
           <span class="mobile-menu__group-label" data-i18n="menuGroupNav">ניווט</span>
         </div>
-        <button id="mobileHomeBtn" class="mobile-menu__btn" title="" data-action="home">
+        <button id="mobileHomeBtn" class="mobile-menu__btn" title="">
           <span class="material-icons">home</span>
           <span class="mobile-menu__label" data-i18n="home">בית</span>
         </button>
-        <button id="mobileNewSketchBtn" class="mobile-menu__btn" title="" data-action="newSketch">
+        <button id="mobileNewSketchBtn" class="mobile-menu__btn" title="">
           <span class="material-icons">note_add</span>
           <span class="mobile-menu__label" data-i18n="newSketch">שרטוט חדש</span>
         </button>
@@ -353,7 +353,7 @@
       
       <!-- Search group -->
       <div class="mobile-menu__group" data-group="search">
-        <div class="mobile-menu__group-header">
+        <div class="mobile-menu__group-header" id="menuGroupSearch">
           <span class="material-icons mobile-menu__group-icon">search</span>
           <span class="mobile-menu__group-label" data-i18n="menuGroupSearch">חיפוש</span>
         </div>
@@ -365,23 +365,23 @@
       
       <!-- View controls group -->
       <div class="mobile-menu__group" data-group="view">
-        <div class="mobile-menu__group-header">
+        <div class="mobile-menu__group-header" id="menuGroupView">
           <span class="material-icons mobile-menu__group-icon">visibility</span>
           <span class="mobile-menu__group-label" data-i18n="menuGroupView">תצוגה</span>
         </div>
-        <button id="mobileZoomOutBtn" class="mobile-menu__btn" title="" data-action="zoomOut">
+        <button id="mobileZoomOutBtn" class="mobile-menu__btn" title="">
           <span class="material-icons">zoom_out</span>
           <span class="mobile-menu__label" data-i18n="zoomOut">הקטן זום</span>
         </button>
-        <button id="mobileZoomInBtn" class="mobile-menu__btn" title="" data-action="zoomIn">
+        <button id="mobileZoomInBtn" class="mobile-menu__btn" title="">
           <span class="material-icons">zoom_in</span>
           <span class="mobile-menu__label" data-i18n="zoomIn">הגדל זום</span>
         </button>
-        <button id="mobileSizeDecreaseBtn" class="mobile-menu__btn" title="" data-action="sizeDecrease">
+        <button id="mobileSizeDecreaseBtn" class="mobile-menu__btn" title="">
           <span class="material-icons">remove_circle_outline</span>
           <span class="mobile-menu__label" data-i18n="sizeDecrease">הקטן גודל</span>
         </button>
-        <button id="mobileSizeIncreaseBtn" class="mobile-menu__btn" title="" data-action="sizeIncrease">
+        <button id="mobileSizeIncreaseBtn" class="mobile-menu__btn" title="">
           <span class="material-icons">add_circle_outline</span>
           <span class="mobile-menu__label" data-i18n="sizeIncrease">הגדל גודל</span>
         </button>
@@ -389,19 +389,19 @@
       
       <!-- Sketch group -->
       <div class="mobile-menu__group" data-group="sketch">
-        <div class="mobile-menu__group-header">
+        <div class="mobile-menu__group-header" id="menuGroupSketch">
           <span class="material-icons mobile-menu__group-icon">description</span>
           <span class="mobile-menu__group-label" data-i18n="menuGroup.sketch">שרטוט</span>
         </div>
-        <button id="mobileSaveBtn" class="mobile-menu__btn" title="" data-action="save">
+        <button id="mobileSaveBtn" class="mobile-menu__btn" title="">
           <span class="material-icons">save</span>
           <span class="mobile-menu__label" data-i18n="save">שמירה</span>
         </button>
-        <button id="mobileExportSketchBtn" class="mobile-menu__btn" title="" data-action="exportSketch">
+        <button id="mobileExportSketchBtn" class="mobile-menu__btn" title="">
           <span class="material-icons">download</span>
           <span class="mobile-menu__label" data-i18n="exportSketch">יצוא שרטוט</span>
         </button>
-        <button id="mobileImportSketchBtn" class="mobile-menu__btn" title="" data-action="importSketch">
+        <button id="mobileImportSketchBtn" class="mobile-menu__btn" title="">
           <span class="material-icons">upload</span>
           <span class="mobile-menu__label" data-i18n="importSketch">יבוא שרטוט</span>
         </button>
@@ -409,15 +409,15 @@
       
       <!-- CSV Export group -->
       <div class="mobile-menu__group" data-group="csv">
-        <div class="mobile-menu__group-header">
+        <div class="mobile-menu__group-header" id="menuGroupCsv">
           <span class="material-icons mobile-menu__group-icon">table_chart</span>
           <span class="mobile-menu__group-label" data-i18n="menuGroup.csv">יצוא נתונים</span>
         </div>
-        <button id="mobileExportNodesBtn" class="mobile-menu__btn" title="" data-action="exportNodes">
+        <button id="mobileExportNodesBtn" class="mobile-menu__btn" title="">
           <span class="material-icons">donut_large</span>
           <span class="mobile-menu__label" data-i18n="exportNodes">יצוא שוחות</span>
         </button>
-        <button id="mobileExportEdgesBtn" class="mobile-menu__btn" title="" data-action="exportEdges">
+        <button id="mobileExportEdgesBtn" class="mobile-menu__btn" title="">
           <span class="material-icons">call_split</span>
           <span class="mobile-menu__label" data-i18n="exportEdges">יצוא קווים</span>
         </button>
@@ -425,15 +425,15 @@
       
       <!-- Location group -->
       <div class="mobile-menu__group" data-group="location">
-        <div class="mobile-menu__group-header">
+        <div class="mobile-menu__group-header" id="menuGroupLocation">
           <span class="material-icons mobile-menu__group-icon">location_on</span>
           <span class="mobile-menu__group-label" data-i18n="menuGroup.location">מיקום וקואורדינטות</span>
         </div>
-        <button id="mobileImportCoordinatesBtn" class="mobile-menu__btn" title="" data-action="importCoordinates">
+        <button id="mobileImportCoordinatesBtn" class="mobile-menu__btn" title="">
           <span class="material-icons">place</span>
           <span class="mobile-menu__label" data-i18n="coordinates.import">יבא קואורדינטות</span>
         </button>
-        <label id="mobileToggleCoordinatesLabel" class="mobile-menu__toggle" data-action="toggleCoordinates">
+        <label id="mobileToggleCoordinatesLabel" class="mobile-menu__toggle">
           <input type="checkbox" id="mobileCoordinatesToggle" />
           <span class="material-icons">my_location</span>
           <span class="mobile-menu__label" data-i18n="coordinates.enable">הפעל קואורדינטות</span>
@@ -465,7 +465,7 @@
             <button id="mobileStretchYIncreaseBtn" class="mobile-menu__scale-btn" title="הגדל">+</button>
           </div>
         </div>
-        <button id="mobileResetStretchBtn" class="mobile-menu__btn" title="" data-action="resetStretch">
+        <button id="mobileResetStretchBtn" class="mobile-menu__btn" title="">
           <span class="material-icons">refresh</span>
           <span class="mobile-menu__label" data-i18n="stretch.reset">אפס מתיחה</span>
         </button>
@@ -473,11 +473,11 @@
       
       <!-- Map Layer group -->
       <div class="mobile-menu__group" data-group="map">
-        <div class="mobile-menu__group-header">
+        <div class="mobile-menu__group-header" id="menuGroupMap">
           <span class="material-icons mobile-menu__group-icon">map</span>
           <span class="mobile-menu__group-label" data-i18n="menuGroup.map">שכבת מפה</span>
         </div>
-        <label id="mobileToggleMapLayerLabel" class="mobile-menu__toggle" data-action="toggleMapLayer">
+        <label id="mobileToggleMapLayerLabel" class="mobile-menu__toggle">
           <input type="checkbox" id="mobileMapLayerToggle" />
           <span class="material-icons">layers</span>
           <span class="mobile-menu__label" data-i18n="mapLayer.enable">שכבת מפה</span>
@@ -485,7 +485,7 @@
         <div id="mobileMapTypeControls" class="mobile-menu__select-row">
           <span class="material-icons">terrain</span>
           <span class="mobile-menu__label" data-i18n="map.type">סוג מפה:</span>
-          <select id="mobileMapTypeSelect" class="mobile-menu__inline-select" data-action="mapTypeChange">
+          <select id="mobileMapTypeSelect" class="mobile-menu__inline-select">
             <option value="orthophoto" data-i18n="map.orthophoto">אורתופוטו</option>
             <option value="street" data-i18n="map.street">רחובות</option>
           </select>
@@ -499,11 +499,11 @@
       
       <!-- Workday group -->
       <div class="mobile-menu__group" data-group="workday">
-        <div class="mobile-menu__group-header">
+        <div class="mobile-menu__group-header" id="menuGroupWorkday">
           <span class="material-icons mobile-menu__group-icon">schedule</span>
           <span class="mobile-menu__group-label" data-i18n="menuGroup.workday">יום עבודה</span>
         </div>
-        <button id="mobileFinishWorkdayBtn" class="mobile-menu__btn mobile-menu__btn--success" title="" data-action="finishWorkday">
+        <button id="mobileFinishWorkdayBtn" class="mobile-menu__btn mobile-menu__btn--success" title="">
           <span class="material-icons">done_all</span>
           <span class="mobile-menu__label" data-i18n="finishWorkday.button">סיים יום עבודה</span>
         </button>
@@ -511,11 +511,11 @@
       
       <!-- Settings group -->
       <div class="mobile-menu__group" data-group="settings">
-        <div class="mobile-menu__group-header">
+        <div class="mobile-menu__group-header" id="menuGroupSettings">
           <span class="material-icons mobile-menu__group-icon">settings</span>
           <span class="mobile-menu__group-label" data-i18n="menuGroupSettings">הגדרות</span>
         </div>
-        <label id="mobileAutosaveLabel" class="mobile-menu__toggle" data-action="toggleAutosave">
+        <label id="mobileAutosaveLabel" class="mobile-menu__toggle">
           <input id="mobileAutosaveToggle" type="checkbox" />
           <span class="mobile-menu__label" data-i18n="autosave">שמירה אוטומטית</span>
         </label>
@@ -523,15 +523,15 @@
           <option value="he">עברית</option>
           <option value="en">English</option>
         </select>
-        <button id="mobileHelpBtn" class="mobile-menu__btn" title="" data-action="help">
+        <button id="mobileHelpBtn" class="mobile-menu__btn" title="">
           <span class="material-icons">help_outline</span>
           <span class="mobile-menu__label" data-i18n="help">עזרה</span>
         </button>
-        <button id="mobileAdminBtn" class="mobile-menu__btn" title="" data-action="admin">
+        <button id="mobileAdminBtn" class="mobile-menu__btn" title="">
           <span class="material-icons">tune</span>
           <span class="mobile-menu__label" data-i18n="admin.manage">ניהול</span>
         </button>
-        <button id="mobileProjectsBtn" class="mobile-menu__btn" title="" data-action="projects">
+        <button id="mobileProjectsBtn" class="mobile-menu__btn" title="">
           <span class="material-icons">folder_open</span>
           <span class="mobile-menu__label" data-i18n="projects.title">ניהול פרויקטים</span>
         </button>
@@ -539,7 +539,7 @@
     </div>
   </div>
   <!-- Mobile menu backdrop overlay -->
-  <div id="mobileMenuBackdrop" class="mobile-menu__backdrop" style="display:none;"></div>
+  <div id="mobileMenuBackdrop" class="mobile-menu-backdrop" style="display:none;"></div>
   <!-- Projects Management Screen -->
   <div id="projectsScreen" class="admin-screen-wrapper" style="display:none;">
     <div class="panel admin-container admin-screen-panel">
