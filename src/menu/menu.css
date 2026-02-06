@@ -1656,6 +1656,64 @@ body.mobile-menu-open .mobile-menu__backdrop {
 }
 
 /* ============================================
+   Reference Layers Toggle List
+   ============================================ */
+
+.ref-layers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px 8px 4px 24px;
+}
+
+.ref-layer-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  user-select: none;
+  transition: background-color 0.1s ease;
+}
+
+.ref-layer-toggle:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.ref-layer-toggle input[type="checkbox"] {
+  margin: 0;
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+
+.ref-layer-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-color, #333);
+}
+
+.ref-layer-count {
+  font-size: 10px;
+  color: var(--text-secondary, #888);
+  flex-shrink: 0;
+}
+
+/* Mobile reference layers */
+.mobile-menu__sub-group .ref-layers-list {
+  padding: 2px 12px 6px 28px;
+}
+
+.mobile-menu__sub-group .ref-layer-toggle {
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+/* ============================================
    Print Styles
    ============================================ */
 @media print {

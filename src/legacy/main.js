@@ -97,6 +97,17 @@ import {
   isLocationEnabled,
   toggleLocation
 } from '../map/user-location.js';
+import {
+  drawReferenceLayers,
+  setReferenceLayers,
+  getReferenceLayers,
+  setLayerVisibility,
+  setRefLayersEnabled,
+  isRefLayersEnabled,
+  saveRefLayerSettings,
+  loadRefLayerSettings,
+  clearReferenceLayers
+} from '../map/reference-layers.js';
 import { menuEvents } from '../menu/menu-events.js';
 
 /**
@@ -1811,6 +1822,8 @@ function loadFromStorage() {
     nextNodeId = maxNumericId + 1;
     // Recompute node types based on measurements
     computeNodeTypes();
+    // Load reference layers for the project (if sketch belongs to one)
+    loadProjectReferenceLayers(currentProjectId);
     return true;
   } catch (e) {
     console.error('Error loading sketch from storage:', e);
@@ -2187,8 +2200,84 @@ async function loadFromLibrary(sketchId) {
   renderDetails();
   // Recenters view to the current sketch center, keeping the existing zoom level
   try { recenterView(); } catch (_) { }
+  
+  // Load reference layers for the project (if sketch belongs to one)
+  loadProjectReferenceLayers(currentProjectId);
+  
   return true;
 }
+
+/**
+ * Fetch and load reference layers for a given project.
+ * Layers are cached in IndexedDB keyed by projectId.
+ * @param {string|null} projectId
+ */
+async function loadProjectReferenceLayers(projectId) {
+  if (!projectId) {
+    clearReferenceLayers();
+    scheduleDraw();
+    return;
+  }
+  
+  try {
+    // Check IndexedDB cache first
+    const cacheKey = `refLayers_${projectId}`;
+    let cached = null;
+    try {
+      const raw = localStorage.getItem(cacheKey);
+      if (raw) {
+        const data = JSON.parse(raw);
+        // Use cache if less than 1 hour old
+        if (data.timestamp && Date.now() - data.timestamp < 3600000) {
+          cached = data.layers;
+        }
+      }
+    } catch (_) { /* ignore cache errors */ }
+    
+    if (cached) {
+      setReferenceLayers(cached);
+      loadRefLayerSettings();
+      renderRefLayerToggles();
+      scheduleDraw();
+      console.log(`[RefLayers] Loaded ${cached.length} layers from cache for project ${projectId}`);
+    }
+    
+    // Fetch from server (always, to get latest data)
+    const response = await fetch(`/api/layers?projectId=${projectId}&full=true`);
+    if (!response.ok) {
+      console.warn('[RefLayers] Failed to fetch layers:', response.status);
+      return;
+    }
+    
+    const data = await response.json();
+    const layers = data.layers || [];
+    
+    setReferenceLayers(layers);
+    loadRefLayerSettings();
+    renderRefLayerToggles();
+    scheduleDraw();
+    
+    // Cache in localStorage
+    try {
+      localStorage.setItem(cacheKey, JSON.stringify({
+        timestamp: Date.now(),
+        layers
+      }));
+    } catch (_) { /* localStorage may be full */ }
+    
+    console.log(`[RefLayers] Loaded ${layers.length} layers from server for project ${projectId}`);
+  } catch (err) {
+    console.warn('[RefLayers] Error loading reference layers:', err);
+  }
+}
+
+// Expose for external use (menu, admin)
+window.loadProjectReferenceLayers = loadProjectReferenceLayers;
+window.getReferenceLayers = getReferenceLayers;
+window.setLayerVisibility = setLayerVisibility;
+window.setRefLayersEnabled = setRefLayersEnabled;
+window.isRefLayersEnabled = isRefLayersEnabled;
+window.saveRefLayerSettings = saveRefLayerSettings;
 
 function deleteFromLibrary(sketchId) {
   const lib = getLibrary();
@@ -2898,6 +2987,23 @@ function draw() {
   drawInfiniteGrid();
   ctx.translate(viewTranslate.x, viewTranslate.y);
   ctx.scale(viewScale, viewScale);
+  
+  // Draw GIS reference layers (sections, survey data, streets, addresses)
+  // Drawn after grid but before edges/nodes so user data appears on top
+  {
+    const dpr = window.devicePixelRatio || 1;
+    drawReferenceLayers(
+      ctx,
+      coordinateScale,
+      viewScale,
+      viewStretchX,
+      viewStretchY,
+      viewTranslate,
+      canvas.width / dpr,
+      canvas.height / dpr
+    );
+  }
+  
   // Draw edges first (positions will be stretched, shapes won't)
   edges.forEach((edge) => {
     drawEdge(edge);
@@ -6657,6 +6763,105 @@ if (mobileMapLayerToggle) {
     closeMobileMenu();
   });
 }
+
+// ============================================
+// Reference Layers UI Controls
+// ============================================
+
+/**
+ * Render the per-layer toggles in both desktop and mobile menus
+ */
+function renderRefLayerToggles() {
+  const layers = getReferenceLayers();
+  const desktopSection = document.getElementById('refLayersSection');
+  const mobileSection = document.getElementById('mobileRefLayersSection');
+  const desktopList = document.getElementById('refLayersList');
+  const mobileList = document.getElementById('mobileRefLayersList');
+  
+  if (!layers || layers.length === 0) {
+    if (desktopSection) desktopSection.style.display = 'none';
+    if (mobileSection) mobileSection.style.display = 'none';
+    return;
+  }
+  
+  if (desktopSection) desktopSection.style.display = '';
+  if (mobileSection) mobileSection.style.display = '';
+  
+  // Build layer toggle HTML
+  const buildToggleHtml = (prefix) => layers.map(l => `
+    <label class="ref-layer-toggle" title="${l.name} (${l.featureCount} features)">
+      <input type="checkbox" data-layer-id="${l.id}" ${l.visible ? 'checked' : ''} class="${prefix}-ref-layer-cb" />
+      <span class="ref-layer-name">${l.name}</span>
+      <span class="ref-layer-count">(${l.featureCount})</span>
+    </label>
+  `).join('');
+  
+  if (desktopList) desktopList.innerHTML = buildToggleHtml('desktop');
+  if (mobileList) mobileList.innerHTML = buildToggleHtml('mobile');
+  
+  // Attach event listeners
+  const attachListeners = (container, closeFn) => {
+    if (!container) return;
+    container.querySelectorAll('input[data-layer-id]').forEach(cb => {
+      cb.addEventListener('change', (e) => {
+        e.stopPropagation();
+        setLayerVisibility(e.target.dataset.layerId, e.target.checked);
+        saveRefLayerSettings();
+        scheduleDraw();
+        // Sync the other menu
+        syncRefLayerCheckboxes();
+      });
+    });
+  };
+  
+  attachListeners(desktopList);
+  attachListeners(mobileList);
+}
+
+/**
+ * Sync checkbox states between desktop and mobile menus
+ */
+function syncRefLayerCheckboxes() {
+  const layers = getReferenceLayers();
+  for (const l of layers) {
+    document.querySelectorAll(`input[data-layer-id="${l.id}"]`).forEach(cb => {
+      cb.checked = l.visible;
+    });
+  }
+}
+
+// Reference layers global toggle (desktop)
+const refLayersToggle = document.getElementById('refLayersToggle');
+if (refLayersToggle) {
+  refLayersToggle.checked = isRefLayersEnabled();
+  refLayersToggle.addEventListener('change', (e) => {
+    e.stopPropagation();
+    setRefLayersEnabled(e.target.checked);
+    saveRefLayerSettings();
+    scheduleDraw();
+    // Sync mobile
+    const mobileToggle = document.getElementById('mobileRefLayersToggle');
+    if (mobileToggle) mobileToggle.checked = e.target.checked;
+  });
+}
+
+// Reference layers global toggle (mobile)
+const mobileRefLayersToggle = document.getElementById('mobileRefLayersToggle');
+if (mobileRefLayersToggle) {
+  mobileRefLayersToggle.checked = isRefLayersEnabled();
+  mobileRefLayersToggle.addEventListener('change', (e) => {
+    e.stopPropagation();
+    setRefLayersEnabled(e.target.checked);
+    saveRefLayerSettings();
+    scheduleDraw();
+    // Sync desktop
+    const desktopToggle = document.getElementById('refLayersToggle');
+    if (desktopToggle) desktopToggle.checked = e.target.checked;
+  });
+}
+
+// Expose render function for use after layers are loaded
+window.renderRefLayerToggles = renderRefLayerToggles;
 
 // Scale control handlers (desktop)
 if (scaleDecreaseBtn) {

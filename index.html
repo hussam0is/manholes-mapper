@@ -243,6 +243,15 @@
                     <option value="street" data-i18n="map.street">רחובות</option>
                   </select>
                 </div>
+                <!-- Reference Layers Sub-section -->
+                <div id="refLayersSection" class="menu-dropdown__sub-group" style="display:none;">
+                  <label class="menu-dropdown__item menu-dropdown__item--toggle">
+                    <input type="checkbox" id="refLayersToggle" checked />
+                    <span class="material-icons">layers</span>
+                    <span class="menu-dropdown__label" data-i18n="refLayers.enable">שכבות ייחוס</span>
+                  </label>
+                  <div id="refLayersList" class="ref-layers-list"></div>
+                </div>
                 <button id="userLocationBtn" class="menu-dropdown__item" role="menuitem" data-action="userLocation">
                   <span class="material-icons">my_location</span>
                   <span class="menu-dropdown__label" data-i18n="location.myLocation">המיקום שלי</span>
@@ -489,6 +498,15 @@
             <option value="orthophoto" data-i18n="map.orthophoto">אורתופוטו</option>
             <option value="street" data-i18n="map.street">רחובות</option>
           </select>
+        </div>
+        <!-- Reference Layers Sub-section (mobile) -->
+        <div id="mobileRefLayersSection" class="mobile-menu__sub-group" style="display:none;">
+          <label class="mobile-menu__toggle">
+            <input type="checkbox" id="mobileRefLayersToggle" checked />
+            <span class="material-icons">layers</span>
+            <span class="mobile-menu__label" data-i18n="refLayers.enable">שכבות ייחוס</span>
+          </label>
+          <div id="mobileRefLayersList" class="ref-layers-list"></div>
         </div>
         <button id="mobileUserLocationBtn" class="mobile-menu__btn" data-action="userLocation">
           <span class="material-icons">my_location</span>

@@ -122,3 +122,31 @@ CREATE TABLE IF NOT EXISTS user_features (
 
 -- Index for feature lookups
 CREATE INDEX IF NOT EXISTS idx_user_features_target ON user_features(target_type, target_id);
+
+-- ============================================
+-- Project Reference Layers Table
+-- ============================================
+
+-- GIS reference layers per project (sections, survey manholes/pipes, streets, addresses)
+CREATE TABLE IF NOT EXISTS project_layers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    layer_type TEXT NOT NULL,          -- 'sections', 'survey_manholes', 'survey_pipes', 'streets', 'addresses'
+    geojson JSONB NOT NULL,            -- GeoJSON FeatureCollection (ITM coordinates)
+    style JSONB DEFAULT '{}'::jsonb,   -- Rendering style: color, lineWidth, opacity, fill, labelField
+    visible BOOLEAN DEFAULT true,
+    display_order INT DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Index for fast project layer queries
+CREATE INDEX IF NOT EXISTS idx_project_layers_project ON project_layers(project_id);
+
+-- Trigger for project_layers updated_at
+DROP TRIGGER IF EXISTS update_project_layers_updated_at ON project_layers;
+CREATE TRIGGER update_project_layers_updated_at
+    BEFORE UPDATE ON project_layers
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();

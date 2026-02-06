@@ -176,6 +176,37 @@ async function initializeDatabase() {
         FOR EACH ROW
         EXECUTE FUNCTION update_updated_at_column()
   `;
+
+  // Project reference layers table
+  await sql`
+    CREATE TABLE IF NOT EXISTS project_layers (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      layer_type TEXT NOT NULL,
+      geojson JSONB NOT NULL,
+      style JSONB DEFAULT '{}'::jsonb,
+      visible BOOLEAN DEFAULT true,
+      display_order INT DEFAULT 0,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_project_layers_project ON project_layers(project_id)
+  `;
+
+  // Trigger for project_layers updated_at
+  await sql`
+    DROP TRIGGER IF EXISTS update_project_layers_updated_at ON project_layers
+  `;
+  await sql`
+    CREATE TRIGGER update_project_layers_updated_at
+        BEFORE UPDATE ON project_layers
+        FOR EACH ROW
+        EXECUTE FUNCTION update_updated_at_column()
+  `;
 }
 
 /**
@@ -963,6 +994,105 @@ export async function deleteFeature(targetType, targetId, featureKey) {
   const result = await sql`
     DELETE FROM user_features
     WHERE target_type = ${targetType} AND target_id = ${targetId} AND feature_key = ${featureKey}
+    RETURNING id
+  `;
+  return result.rows.length > 0;
+}
+
+// ============================================
+// Project Reference Layer Functions
+// ============================================
+
+/**
+ * Get all layers for a project (metadata only, without geojson)
+ */
+export async function getProjectLayersMeta(projectId) {
+  const result = await sql`
+    SELECT id, project_id, name, layer_type, style, visible, display_order, created_at, updated_at
+    FROM project_layers
+    WHERE project_id = ${projectId}
+    ORDER BY display_order, name
+  `;
+  return result.rows;
+}
+
+/**
+ * Get a single layer with full geojson
+ */
+export async function getProjectLayer(layerId) {
+  const result = await sql`
+    SELECT id, project_id, name, layer_type, geojson, style, visible, display_order, created_at, updated_at
+    FROM project_layers
+    WHERE id = ${layerId}
+  `;
+  return result.rows[0] || null;
+}
+
+/**
+ * Get full layer data (with geojson) for all visible layers of a project
+ */
+export async function getProjectLayersFull(projectId) {
+  const result = await sql`
+    SELECT id, project_id, name, layer_type, geojson, style, visible, display_order, created_at, updated_at
+    FROM project_layers
+    WHERE project_id = ${projectId}
+    ORDER BY display_order, name
+  `;
+  return result.rows;
+}
+
+/**
+ * Create a new project layer
+ */
+export async function createProjectLayer(projectId, layer) {
+  const { name, layerType, geojson, style, visible, displayOrder } = layer;
+  
+  const result = await sql`
+    INSERT INTO project_layers (project_id, name, layer_type, geojson, style, visible, display_order)
+    VALUES (
+      ${projectId},
+      ${name},
+      ${layerType},
+      ${JSON.stringify(geojson)}::jsonb,
+      ${JSON.stringify(style || {})}::jsonb,
+      ${visible !== false},
+      ${displayOrder || 0}
+    )
+    RETURNING id, project_id, name, layer_type, style, visible, display_order, created_at, updated_at
+  `;
+  
+  return result.rows[0];
+}
+
+/**
+ * Update a project layer (metadata or geojson)
+ */
+export async function updateProjectLayer(layerId, updates) {
+  const { name, style, visible, displayOrder, geojson } = updates;
+  
+  const result = await sql`
+    UPDATE project_layers
+    SET
+      name = COALESCE(${name}, name),
+      style = COALESCE(${style != null ? JSON.stringify(style) : null}::jsonb, style),
+      visible = COALESCE(${visible}, visible),
+      display_order = COALESCE(${displayOrder}, display_order),
+      geojson = COALESCE(${geojson != null ? JSON.stringify(geojson) : null}::jsonb, geojson),
+      updated_at = NOW()
+    WHERE id = ${layerId}
+    RETURNING id, project_id, name, layer_type, style, visible, display_order, created_at, updated_at
+  `;
+  
+  return result.rows[0] || null;
+}
+
+/**
+ * Delete a project layer
+ */
+export async function deleteProjectLayer(layerId) {
+  const result = await sql`
+    DELETE FROM project_layers
+    WHERE id = ${layerId}
     RETURNING id
   `;
   return result.rows.length > 0;

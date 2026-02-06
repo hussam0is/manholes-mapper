@@ -2541,6 +2541,100 @@ input.floating-keyboard-active {
   border-top: 1px solid var(--color-border, #e0e0e0);
 }
 
+/* Wide modal variant for layers management */
+.projects-modal--wide {
+  max-width: 650px;
+}
+
+.projects-modal--wide .projects-modal-body {
+  max-height: 60vh;
+}
+
+/* Layers list inside modal */
+.layers-list-container {
+  margin-bottom: 1rem;
+}
+
+.layer-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border, #e0e0e0);
+  border-radius: 8px;
+  margin-bottom: 0.4rem;
+  background: var(--color-surface, #fafafa);
+}
+
+.layer-card-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.layer-card-info .layer-icon {
+  color: var(--color-primary, #2196f3);
+  font-size: 20px;
+}
+
+.layer-card-info strong {
+  font-size: 0.875rem;
+}
+
+.layer-type-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  background: var(--color-primary-light, #e3f2fd);
+  color: var(--color-primary, #2196f3);
+  margin-left: 0.4rem;
+}
+
+.layer-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.layer-visibility-toggle {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+}
+
+.layer-visibility-toggle input {
+  display: none;
+}
+
+.layer-visibility-toggle .material-icons {
+  font-size: 18px;
+  color: var(--color-text-secondary, #888);
+}
+
+.layers-upload-section {
+  border-top: 1px solid var(--color-border, #e0e0e0);
+  padding-top: 1rem;
+  margin-top: 0.5rem;
+}
+
+.layers-upload-section h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.9rem;
+  color: var(--color-text, #333);
+}
+
+.layers-empty,
+.layers-error {
+  text-align: center;
+  padding: 1rem;
+  color: var(--color-text-secondary, #888);
+  font-size: 0.875rem;
+}
+
 /* Responsive adjustments for project cards */
 @media (max-width: 480px) {
   .project-card-actions .btn-label {
