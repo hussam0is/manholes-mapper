@@ -1582,23 +1582,7 @@ body.mobile-menu-open {
   outline-offset: 2px;
 }
 
-/* Skip link for accessibility */
-.skip-link {
-  position: absolute;
-  top: -40px;
-  left: 0;
-  background: var(--color-primary, #2563eb);
-  color: white;
-  padding: 8px 16px;
-  z-index: 1000;
-  text-decoration: none;
-  border-radius: 0 0 4px 0;
-  transition: top 0.2s ease;
-}
-
-.skip-link:focus {
-  top: 0;
-}
+/* Skip link for accessibility - styles defined in styles.css */
 
 /* Screen reader only text */
 .sr-only {
