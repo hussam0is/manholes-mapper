@@ -12,7 +12,7 @@ import { initResizableDrawer } from './utils/resizable-drawer.js';
 import { onAuthStateChange, getAuthState, updateAuthState, guardRoute, redirectIfAuthenticated, refreshSession } from './auth/auth-guard.js';
 import { initSyncService } from './auth/sync-service.js';
 import { authClient, signOutUser, getCurrentSession } from './auth/auth-client.js';
-import { menuEvents, setupEventDelegation } from './menu/menu-events.js';
+import { menuEvents, setupEventDelegation, bridgeAllToLegacy, legacyMappings } from './menu/menu-events.js';
 import { 
   initGnssModule, 
   gnssConnection, 
@@ -258,6 +258,9 @@ function initMyLocationUI() {
  * Sets up event delegation, dropdown behavior, and mobile menu
  */
 function initMenuSystem() {
+  // Bridge new action IDs to legacy element clicks
+  bridgeAllToLegacy(legacyMappings);
+
   // Set up event delegation on header and mobile menu
   const header = document.querySelector('.app-header');
   const mobileMenu = document.getElementById('mobileMenu');

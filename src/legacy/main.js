@@ -41,6 +41,7 @@ import { drawNodeIcon } from '../features/node-icons.js';
 import { processLabels } from '../utils/label-collision.js';
 import { initBackupManager, clearHourlyBackups, saveDailyBackup, getAllBackups } from '../utils/backup-manager.js';
 import { getUsername as getAuthUsername } from '../auth/auth-guard.js';
+import { menuEvents } from '../menu/menu-events.js';
 import { 
   evaluateRules, 
   applyActions, 
@@ -5669,121 +5670,26 @@ menuEvents.on('languageChange', ({ value, element }) => {
   }
 });
 
-// === Mobile menu controls ===
-// Helper to show the mobile menu with backdrop
-function openMobileMenu() {
-  if (mobileMenu) mobileMenu.style.display = 'flex';
-  if (mobileMenuBackdrop) mobileMenuBackdrop.style.display = 'block';
-  document.body.style.overflow = 'hidden'; // Prevent background scroll
-}
+// === Mobile menu controls (Handled by src/main-entry.js) ===
 
-// Helper to hide the mobile menu and backdrop
-function closeMobileMenu() {
-  if (mobileMenu) mobileMenu.style.display = 'none';
-  if (mobileMenuBackdrop) mobileMenuBackdrop.style.display = 'none';
-  document.body.style.overflow = ''; // Restore scrolling
-}
-
-// Toggle the overflow menu on small screens
-if (mobileMenuBtn && mobileMenu) {
-  mobileMenuBtn.addEventListener('click', () => {
-    const isOpen = mobileMenu.style.display === 'flex' || mobileMenu.style.display === 'block';
-    if (isOpen) {
-      closeMobileMenu();
-    } else {
-      openMobileMenu();
-    }
-  });
-}
-
-// Close button in mobile menu header
-if (mobileMenuCloseBtn) {
-  mobileMenuCloseBtn.addEventListener('click', closeMobileMenu);
-}
-
-// Close menu when clicking the backdrop
-if (mobileMenuBackdrop) {
-  mobileMenuBackdrop.addEventListener('click', closeMobileMenu);
-}
-
-// Wire up mobile buttons to mimic their desktop counterparts
-if (mobileHomeBtn && homeBtn) {
-  mobileHomeBtn.addEventListener('click', () => {
-    closeMobileMenu();
-    homeBtn.click();
-  });
-}
-if (mobileNewSketchBtn && newSketchBtn) {
-  mobileNewSketchBtn.addEventListener('click', () => {
-    closeMobileMenu();
-    newSketchBtn.click();
-  });
-}
-if (mobileZoomInBtn) {
-  mobileZoomInBtn.addEventListener('click', () => {
-    closeMobileMenu();
+// Wire up mobile buttons that don't have direct desktop counterparts
+menuEvents.on('zoomIn', () => {
+  if (typeof setZoom === 'function' && typeof viewScale !== 'undefined' && typeof SCALE_STEP !== 'undefined') {
     setZoom(viewScale * SCALE_STEP);
-  });
-}
-if (mobileZoomOutBtn) {
-  mobileZoomOutBtn.addEventListener('click', () => {
-    closeMobileMenu();
+  }
+});
+
+menuEvents.on('zoomOut', () => {
+  if (typeof setZoom === 'function' && typeof viewScale !== 'undefined' && typeof SCALE_STEP !== 'undefined') {
     setZoom(viewScale / SCALE_STEP);
-  });
-}
-if (mobileExportSketchBtn && exportSketchBtn) {
-  mobileExportSketchBtn.addEventListener('click', () => {
-    closeMobileMenu();
-    exportSketchBtn.click();
-  });
-}
-if (mobileImportSketchBtn && importSketchBtn) {
-  mobileImportSketchBtn.addEventListener('click', () => {
-    closeMobileMenu();
-    importSketchBtn.click();
-  });
-}
-if (mobileExportNodesBtn && exportNodesBtn) {
-  mobileExportNodesBtn.addEventListener('click', () => {
-    closeMobileMenu();
-    exportNodesBtn.click();
-  });
-}
-if (mobileExportEdgesBtn && exportEdgesBtn) {
-  mobileExportEdgesBtn.addEventListener('click', () => {
-    closeMobileMenu();
-    exportEdgesBtn.click();
-  });
-}
-if (mobileSaveBtn && saveBtn) {
-  mobileSaveBtn.addEventListener('click', () => {
-    closeMobileMenu();
-    saveBtn.click();
-  });
-}
-// Autosave toggle: keep both toggles in sync and dispatch change on original toggle
-if (mobileAutosaveToggle && autosaveToggle) {
-  // Initialize mobile toggle to match saved preference
-  mobileAutosaveToggle.checked = autosaveToggle.checked;
-  // When mobile toggle changes, propagate to desktop toggle
-  mobileAutosaveToggle.addEventListener('change', () => {
-    autosaveToggle.checked = mobileAutosaveToggle.checked;
-    // Trigger change event on desktop toggle
-    autosaveToggle.dispatchEvent(new Event('change'));
-    closeMobileMenu();
-  });
-  // When desktop toggle changes (e.g. via settings), update mobile toggle
-  autosaveToggle.addEventListener('change', () => {
-    mobileAutosaveToggle.checked = autosaveToggle.checked;
-  });
-}
-// Help button
-if (mobileHelpBtn && helpBtn) {
-  mobileHelpBtn.addEventListener('click', () => {
-    closeMobileMenu();
-    helpBtn.click();
-  });
-}
+  }
+});
+
+menuEvents.on('mapTypeChange', ({ value }) => {
+  if (window.setMapType) {
+    window.setMapType(value);
+  }
+});
 
 // === Finish Workday Functionality ===
 
