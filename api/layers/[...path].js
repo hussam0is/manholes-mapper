@@ -1,7 +1,8 @@
 /**
- * API Route: /api/layers/[[...path]]
+ * API Route: /api/layers/[...path]
  * 
- * Optional catch-all handler for layers API (consolidated to save serverless function slots).
+ * Catch-all handler for layers API (consolidated to save serverless function slots).
+ * Uses vercel.json rewrite: /api/layers -> /api/layers/_  so this catch-all handles both.
  * 
  * /api/layers          GET  - List layers for a project (metadata or full with ?full=true)
  * /api/layers          POST - Create a new layer (admin/super_admin only)
@@ -32,9 +33,12 @@ export default async function handler(req, res) {
     request.headers.get = (name) => req.headers[name.toLowerCase()];
   }
 
-  // Parse path segments: /api/layers -> [], /api/layers/abc-123 -> ['abc-123']
+  // Parse path segments: /api/layers/_ -> ['_'] (collection), /api/layers/abc-123 -> ['abc-123']
   const pathSegments = req.query.path || [];
-  const layerId = pathSegments.length > 0 ? pathSegments[0] : null;
+  const firstSegment = pathSegments.length > 0 ? pathSegments[0] : '_';
+  // '_' is the collection route (rewritten from /api/layers by vercel.json)
+  const isCollection = firstSegment === '_';
+  const layerId = isCollection ? null : firstSegment;
 
   console.log(`[API /api/layers${layerId ? '/' + layerId : ''}] ${req.method} request started`);
 

@@ -8,6 +8,10 @@
     {
       "source": "/api/auth/:path*",
       "destination": "/api/auth"
+    },
+    {
+      "source": "/api/layers",
+      "destination": "/api/layers/_"
     }
   ],
   "headers": [
