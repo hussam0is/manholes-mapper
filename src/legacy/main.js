@@ -2075,6 +2075,8 @@ function saveToLibrary() {
     nextNodeId,
     creationDate: creationDate || nowIso,
     name: currentSketchName || null,
+    projectId: currentProjectId || null,
+    inputFlowConfig: currentInputFlowConfig || null,
     lastEditedBy: getCurrentUsername(),
   };
   const idx = lib.findIndex((s) => s.id === record.id);
@@ -2189,6 +2191,8 @@ async function loadFromLibrary(sketchId) {
   creationDate = rec.creationDate || rec.createdAt || null;
   currentSketchId = rec.id;
   currentSketchName = rec.name || null;
+  currentProjectId = rec.projectId || null;
+  currentInputFlowConfig = rec.inputFlowConfig || DEFAULT_INPUT_FLOW_CONFIG;
   updateSketchNameDisplay();
   // Reset edge creation state
   pendingEdgeTail = null;
@@ -2687,7 +2691,14 @@ async function handleChangeProject(sketchId) {
           setLibrary(lib);
           // Persist and Sync
           idbSaveRecordCompat(lib[idx]);
-          // We don't need to push back to cloud immediately since we just updated cloud
+          
+          // If this is the active sketch, update the runtime state immediately
+          if (currentSketchId === sketchId) {
+            currentProjectId = updatedSketch.projectId || null;
+            currentInputFlowConfig = updatedSketch.inputFlowConfig || DEFAULT_INPUT_FLOW_CONFIG;
+            loadProjectReferenceLayers(currentProjectId);
+            saveToStorage();
+          }
         }
 
         renderHome();
@@ -5475,6 +5486,8 @@ if (importSketchBtn && importSketchFile) {
       creationDate = importedSketch.creationDate;
       currentSketchId = null; // Will get new ID when saved
       currentSketchName = importedSketch.sketchName;
+      currentProjectId = importedSketch.projectId || null;
+      currentInputFlowConfig = importedSketch.inputFlowConfig || DEFAULT_INPUT_FLOW_CONFIG;
       updateSketchNameDisplay();
 
       // Recompute node types and save

@@ -18,6 +18,8 @@ export function exportSketchToJson(sketch, filename = null) {
       createdBy: sketch.createdBy || null,
       lastEditedBy: sketch.lastEditedBy || null,
       nextNodeId: sketch.nextNodeId || 1,
+      projectId: sketch.projectId || null,
+      inputFlowConfig: sketch.inputFlowConfig || null,
       nodes: sketch.nodes || [],
       edges: sketch.edges || []
     }
@@ -105,6 +107,8 @@ export function importSketchFromJson(file) {
           creationDate: sketch.creationDate || null,
           createdBy: sketch.createdBy || null,
           lastEditedBy: sketch.lastEditedBy || null,
+          projectId: sketch.projectId || null,
+          inputFlowConfig: sketch.inputFlowConfig || null,
           sketchId: null, // Generate new ID when saving
           sketchName: sketch.name || null,
           importDate: jsonData.exportDate || null,
