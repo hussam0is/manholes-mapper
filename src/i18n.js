@@ -335,6 +335,11 @@ export const i18n = {
       changed: (axis, value) => `מתיחה ${axis === 'x' ? 'אופקית' : 'אנכית'}: ${value.toFixed(1)}`,
       resetDone: 'המתיחה אופסה',
     },
+    map: {
+      type: 'סוג מפה:',
+      orthophoto: 'תצלום אוויר',
+      street: 'מפת רחובות',
+    },
     mapLayer: {
       enable: 'שכבת מפה',
       enabled: 'שכבת מפה הופעלה',
@@ -701,6 +706,11 @@ export const i18n = {
       reset: 'Reset Stretch',
       changed: (axis, value) => `${axis === 'x' ? 'Horizontal' : 'Vertical'} stretch: ${value.toFixed(1)}`,
       resetDone: 'Stretch reset',
+    },
+    map: {
+      type: 'Map Type:',
+      orthophoto: 'Aerial Photo',
+      street: 'Street Map',
     },
     mapLayer: {
       enable: 'Map Layer',

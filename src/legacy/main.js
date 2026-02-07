@@ -302,6 +302,8 @@ const mobileResetStretchBtn = document.getElementById('mobileResetStretchBtn');
 // Map layer toggle elements
 const mapLayerToggle = document.getElementById('mapLayerToggle');
 const mobileMapLayerToggle = document.getElementById('mobileMapLayerToggle');
+const mapTypeSelect = document.getElementById('mapTypeSelect');
+const mobileMapTypeSelect = document.getElementById('mobileMapTypeSelect');
 
 // iPad/iOS: ensure taps trigger clicks on header buttons (Safari sometimes suppresses click)
 function synthesizeClickOnTap(element) {
@@ -6373,6 +6375,14 @@ function syncMapLayerToggleUI() {
   if (mobileMapLayerToggle) {
     mobileMapLayerToggle.checked = mapLayerEnabled;
   }
+  
+  const currentType = getMapType();
+  if (mapTypeSelect) {
+    mapTypeSelect.value = currentType;
+  }
+  if (mobileMapTypeSelect) {
+    mobileMapTypeSelect.value = currentType;
+  }
 }
 
 /**
@@ -6760,6 +6770,29 @@ if (mapLayerToggle) {
 if (mobileMapLayerToggle) {
   mobileMapLayerToggle.addEventListener('change', (e) => {
     toggleMapLayer(e.target.checked);
+    closeMobileMenu();
+  });
+}
+
+// Map type selector handler (desktop)
+if (mapTypeSelect) {
+  mapTypeSelect.addEventListener('change', (e) => {
+    const type = e.target.value;
+    setMapType(type);
+    saveMapSettings();
+    if (mobileMapTypeSelect) mobileMapTypeSelect.value = type;
+    scheduleDraw();
+  });
+}
+
+// Map type selector handler (mobile)
+if (mobileMapTypeSelect) {
+  mobileMapTypeSelect.addEventListener('change', (e) => {
+    const type = e.target.value;
+    setMapType(type);
+    saveMapSettings();
+    if (mapTypeSelect) mapTypeSelect.value = type;
+    scheduleDraw();
     closeMobileMenu();
   });
 }
