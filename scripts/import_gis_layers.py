@@ -46,6 +46,7 @@ LAYERS = [
         "layer_type": "survey_manholes",
         "source": r"W:\GIS\תאגידי מים\מי רקת\analyzed_data\GDB\Raqat_GDB_1_12_2024\WaterEntities.gdb\SW_Manholes",
         "output": "survey_manholes.geojson",
+        "fields": ["OBJECTID", "ManholeNum", "TL", "ManholeDia", "ManholeMat", "Status", "StreetName", "HouseNum", "Depth"],
         "style": {
             "strokeColor": "rgba(180, 60, 20, 0.7)",
             "fillColor": "rgba(180, 60, 20, 0.5)",
@@ -61,6 +62,7 @@ LAYERS = [
         "layer_type": "survey_pipes",
         "source": r"W:\GIS\תאגידי מים\מי רקת\analyzed_data\GDB\Raqat_GDB_1_12_2024\WaterEntities.gdb\SW_Pipe",
         "output": "survey_pipes.geojson",
+        "fields": ["OBJECTID", "PipeNum", "PipeDia", "PipeMat", "Status", "StreetName", "Length"],
         "style": {
             "strokeColor": "rgba(60, 140, 60, 0.7)",
             "fillColor": "rgba(60, 140, 60, 0.2)",
@@ -118,13 +120,13 @@ def get_geometry_type(shape_type):
     return mapping.get(shape_type, shape_type)
 
 
-def shape_to_geojson_coords(geometry, geom_type):
+def shape_to_geojson_coords(geometry, geom_type, precision=3):
     """Convert an ArcPy geometry to GeoJSON coordinates."""
     if geom_type == "Point":
-        return [geometry.centroid.X, geometry.centroid.Y]
+        return [round(geometry.centroid.X, precision), round(geometry.centroid.Y, precision)]
     
     elif geom_type == "MultiPoint":
-        return [[pt.X, pt.Y] for pt in geometry]
+        return [[round(pt.X, precision), round(pt.Y, precision)] for pt in geometry]
     
     elif geom_type == "LineString":
         # Polyline may have multiple parts
@@ -133,7 +135,7 @@ def shape_to_geojson_coords(geometry, geom_type):
             line = []
             for pt in part:
                 if pt is not None:
-                    line.append([pt.X, pt.Y])
+                    line.append([round(pt.X, precision), round(pt.Y, precision)])
             parts.append(line)
         
         if len(parts) == 1:
@@ -148,7 +150,7 @@ def shape_to_geojson_coords(geometry, geom_type):
             ring = []
             for pt in part:
                 if pt is not None:
-                    ring.append([pt.X, pt.Y])
+                    ring.append([round(pt.X, precision), round(pt.Y, precision)])
             if ring:
                 rings.append(ring)
         return rings
@@ -163,9 +165,24 @@ def convert_value(val):
     if isinstance(val, (int, float)):
         if val != val:  # NaN check
             return None
+        # Round floats to save space
+        if isinstance(val, float):
+            return round(val, 3)
         return val
     if isinstance(val, datetime):
         return val.isoformat()
+    
+    # Handle string encoding and whitespace
+    if isinstance(val, str):
+        cleaned = val.strip()
+        if not cleaned:
+            return None
+        try:
+            # Basic cleanup of potentially garbled text
+            return cleaned.encode('utf-8', 'ignore').decode('utf-8')
+        except:
+            return cleaned
+            
     return str(val)
 
 
@@ -240,8 +257,13 @@ def extract_layer(layer_config, output_dir):
                 
                 # Build properties
                 properties = {}
+                whitelist = layer_config.get("fields")
                 for i, fname in enumerate(field_names):
-                    properties[fname] = convert_value(row[i + 1])
+                    if whitelist and fname not in whitelist:
+                        continue
+                    val = convert_value(row[i + 1])
+                    if val is not None:
+                        properties[fname] = val
                 
                 feature = {
                     "type": "Feature",

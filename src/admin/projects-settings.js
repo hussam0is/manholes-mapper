@@ -627,7 +627,7 @@ export class ProjectsSettings {
             } else {
               const text = await response.text();
               if (response.status === 413) {
-                errorMsg = 'File is too large for the web interface (max ~5MB). Please use the command-line import script for large GIS layers.';
+                errorMsg = 'File is too large for the web interface (max ~5MB). Try running "node scripts/slim_geojson.js" to compress it, or use the CLI import script.';
               } else {
                 console.warn('[ProjectsSettings] Non-JSON error response:', text.substring(0, 100));
               }
