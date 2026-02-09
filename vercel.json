@@ -10,8 +10,8 @@
       "destination": "/api/auth"
     },
     {
-      "source": "/api/layers",
-      "destination": "/api/layers/_"
+      "source": "/api/layers/:path*",
+      "destination": "/api/layers"
     }
   ],
   "headers": [

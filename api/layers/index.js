@@ -33,14 +33,41 @@ export default async function handler(req, res) {
     request.headers.get = (name) => req.headers[name.toLowerCase()];
   }
 
-  // Parse path segments: /api/layers/_ -> ['_'] (collection), /api/layers/abc-123 -> ['abc-123']
-  const pathSegments = req.query.path || [];
+  // Parse path segments from URL if query.path is missing (common with rewrites)
+  let pathSegments = req.query.path || [];
+  if (typeof pathSegments === 'string') pathSegments = [pathSegments];
+  
+  if (pathSegments.length === 0 && req.url.includes('/api/layers/')) {
+    const parts = req.url.split('?')[0].split('/');
+    const layersIdx = parts.indexOf('layers');
+    if (layersIdx !== -1 && layersIdx < parts.length - 1) {
+      const segment = parts[layersIdx + 1];
+      if (segment && segment !== '_') {
+        pathSegments = [segment];
+      }
+    }
+  }
+
   const firstSegment = pathSegments.length > 0 ? pathSegments[0] : '_';
   // '_' is the collection route (rewritten from /api/layers by vercel.json)
   const isCollection = firstSegment === '_';
   const layerId = isCollection ? null : firstSegment;
 
-  console.log(`[API /api/layers${layerId ? '/' + layerId : ''}] ${req.method} request started`);
+  console.log(`[API /api/layers${layerId ? '/' + layerId : ''}] ${req.method} request started. Path segments:`, pathSegments);
+
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', request.headers.get('origin') || '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    return res.status(204).end();
+  }
+
+  // Set CORS headers for all responses
+  const origin = request.headers.get('origin') || '*';
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
 
   if (applyRateLimit(req, res)) return;
 
@@ -158,7 +185,8 @@ async function handleCollection(req, res, request, currentUser, isSuperAdmin, is
     });
   }
 
-  return res.status(405).json({ error: 'Method not allowed' });
+  console.log(`[API /api/layers/${layerId}] Method ${req.method} not allowed for single layer`);
+  return res.status(405).json({ error: `Method ${req.method} not allowed for single layer` });
 }
 
 // ─── /api/layers/[id] (GET single, PUT update, DELETE) ───
@@ -244,5 +272,6 @@ async function handleSingleLayer(req, res, request, layerId, currentUser, isSupe
     return res.status(200).json({ success: true });
   }
 
-  return res.status(405).json({ error: 'Method not allowed' });
+  console.log(`[API /api/layers/${layerId}] Method ${req.method} not allowed for single layer`);
+  return res.status(405).json({ error: `Method ${req.method} not allowed for single layer` });
 }
