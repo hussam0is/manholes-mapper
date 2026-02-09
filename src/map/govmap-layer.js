@@ -27,12 +27,12 @@ export const MAP_TYPES = {
   STREET: 'street'
 };
 
-// Tile server URLs (these may need adjustment based on actual GovMap endpoints)
+// Tile server URLs
 const TILE_URLS = {
-  // GovMap orthophoto tiles
-  orthophoto: 'https://israelhiking.osm.org.il/Tiles/{z}/{x}/{y}.png',
-  // Alternative: use Israel Hiking Map for street view
-  street: 'https://israelhiking.osm.org.il/Hebrew/{z}/{x}/{y}.png'
+  // Esri World Imagery – free satellite/aerial tiles (no API key required)
+  orthophoto: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  // Esri World Street Map
+  street: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}'
 };
 
 // Fallback tile URLs if primary fails
@@ -296,7 +296,7 @@ export function drawMapAttribution(ctx, canvasWidth, canvasHeight) {
   
   ctx.save();
   
-  const text = 'Map: Israel Hiking Map / OSM';
+  const text = 'Map: Esri World Imagery';
   const padding = 4;
   const fontSize = 10;
   
