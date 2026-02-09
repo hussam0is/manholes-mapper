@@ -70,7 +70,8 @@ LAYERS = [
             "lineDash": [],
             "labelField": None,
             "labelColor": "#3c8c3c",
-            "labelFontSize": 9
+            "labelFontSize": 9,
+            "showArrows": True
         }
     },
     {

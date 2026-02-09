@@ -53,7 +53,8 @@ const DEFAULT_STYLES = {
     lineWidth: 2.5,
     lineDash: [],
     labelColor: '#3c8c3c',
-    labelFontSize: 9
+    labelFontSize: 9,
+    showArrows: true
   },
   streets: {
     strokeColor: 'rgba(100, 100, 100, 0.5)',

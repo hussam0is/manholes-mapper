@@ -52,7 +52,8 @@ const DEFAULT_STYLES = {
     lineDash: [],
     labelField: null,
     labelColor: '#3c8c3c',
-    labelFontSize: 9
+    labelFontSize: 9,
+    showArrows: true // Enable direction arrows
   },
   streets: {
     strokeColor: 'rgba(100, 100, 100, 0.5)',
@@ -243,6 +244,16 @@ export function drawReferenceLayers(ctx, coordinateScale, viewScale, stretchX, s
 
     const style = { ...(DEFAULT_STYLES[layer.layerType] || {}), ...(layer.style || {}) };
     
+    // Debug info for pipes
+    if (layer.layerType === 'survey_pipes' || layer.name.toLowerCase().includes('pipe')) {
+      const geomTypes = new Set(layer.geojson.features.map(f => f.geometry?.type));
+      console.log(`[ReferenceLayers] Rendering ${layer.name} (${layer.layerType}):`, {
+        featureCount: layer.geojson.features.length,
+        geometryTypes: Array.from(geomTypes),
+        style
+      });
+    }
+
     ctx.save();
     drawLayerFeatures(ctx, layer, style, refPoint, coordinateScale, stretchX, stretchY, viewScale, visMinX, visMinY, visMaxX, visMaxY);
     ctx.restore();
@@ -368,6 +379,8 @@ function drawLineString(ctx, coords, properties, style, refPoint, coordScale, st
 
   ctx.strokeStyle = style.strokeColor || 'rgba(0,0,0,0.5)';
   ctx.lineWidth = (style.lineWidth || 2) / viewScale;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
   if (style.lineDash && style.lineDash.length > 0) {
     ctx.setLineDash(style.lineDash.map(d => d / viewScale));
   } else {
@@ -375,12 +388,65 @@ function drawLineString(ctx, coords, properties, style, refPoint, coordScale, st
   }
   ctx.stroke();
   ctx.setLineDash([]);
+  ctx.lineCap = 'butt';
+  ctx.lineJoin = 'miter';
+
+  // Draw direction arrows if requested
+  if (style.showArrows && points.length >= 2) {
+    drawDirectionArrows(ctx, points, style, viewScale);
+  }
 
   // Label at midpoint
   if (style.labelField && properties && properties[style.labelField] != null) {
     const mid = points[Math.floor(points.length / 2)];
     labelsToDraw.push({ x: mid.x, y: mid.y, text: String(properties[style.labelField]) });
   }
+}
+
+/**
+ * Draw direction arrows along a line
+ */
+function drawDirectionArrows(ctx, points, style, viewScale) {
+  const arrowSize = (style.arrowSize || 8) / viewScale;
+  const arrowColor = style.strokeColor || 'rgba(60, 140, 60, 0.7)';
+  
+  ctx.save();
+  ctx.fillStyle = arrowColor;
+  ctx.strokeStyle = arrowColor;
+  ctx.lineWidth = (style.lineWidth || 2) / viewScale;
+
+  // Draw arrow at the end of each segment (or just the last one?)
+  // For pipes, usually one arrow in the middle or at the end is enough.
+  // Let's draw one in the middle of each segment if it's long enough.
+  for (let i = 0; i < points.length - 1; i++) {
+    const p1 = points[i];
+    const p2 = points[i+1];
+    
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    const len = Math.sqrt(dx*dx + dy*dy);
+    
+    if (len < arrowSize * 2) continue;
+
+    // Draw arrow at the midpoint of the segment
+    const mx = (p1.x + p2.x) / 2;
+    const my = (p1.y + p2.y) / 2;
+    const angle = Math.atan2(dy, dx);
+
+    ctx.save();
+    ctx.translate(mx, my);
+    ctx.rotate(angle);
+    
+    ctx.beginPath();
+    ctx.moveTo(-arrowSize, -arrowSize / 1.5);
+    ctx.lineTo(0, 0);
+    ctx.lineTo(-arrowSize, arrowSize / 1.5);
+    ctx.stroke();
+    
+    ctx.restore();
+  }
+  
+  ctx.restore();
 }
 
 /**
