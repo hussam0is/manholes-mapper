@@ -382,6 +382,7 @@ let pendingEdgePreview = null; // { x, y } or null
 try { window.currentLang = currentLang; } catch (_) { }
 // Zoom state
 let viewScale = 1;
+let drawScheduled = false;
 let viewTranslate = { x: 0, y: 0 }; // screen-space translation (for pan/anchored zoom)
 const MIN_SCALE = 0.001;
 const MAX_SCALE = 5.0;
@@ -456,6 +457,9 @@ const EDGE_MATERIALS = EDGE_MATERIAL_OPTIONS.map(o => o.label);
 // Fall icon image (used to mark edges with a fall depth)
 let fallIconImage = null;
 let fallIconReady = false;
+
+// Fast node lookup map – rebuilt at the start of each draw() frame
+let nodeMap = new Map(); // Map<String(id), node>
 
 // Coordinate system state
 let coordinatesMap = new Map(); // Map<nodeId, {x, y, z}>
@@ -2966,6 +2970,12 @@ function connectDanglingEdge(edge, nodeId, type = 'outbound') {
  * Redraw the entire scene (edges first, then nodes).
  */
 function draw() {
+  // Rebuild fast node lookup map once per frame
+  nodeMap.clear();
+  for (let i = 0; i < nodes.length; i++) {
+    nodeMap.set(String(nodes[i].id), nodes[i]);
+  }
+
   // Clear canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.save();
@@ -3017,10 +3027,31 @@ function draw() {
     );
   }
   
+  // Compute visible world-coordinate bounds for culling (with generous margin)
+  const dprCull = window.devicePixelRatio || 1;
+  const canvasLogicalW = canvas.width / dprCull;
+  const canvasLogicalH = canvas.height / dprCull;
+  const cullMargin = 100 / viewScale; // extra margin in world coords
+  const visMinX = -viewTranslate.x / viewScale - cullMargin;
+  const visMinY = -viewTranslate.y / viewScale - cullMargin;
+  const visMaxX = (canvasLogicalW - viewTranslate.x) / viewScale + cullMargin;
+  const visMaxY = (canvasLogicalH - viewTranslate.y) / viewScale + cullMargin;
+
   // Draw edges first (positions will be stretched, shapes won't)
-  edges.forEach((edge) => {
+  for (let i = 0; i < edges.length; i++) {
+    const edge = edges[i];
+    // Quick cull for normal (non-dangling) edges
+    const tn = edge.tail != null ? nodeMap.get(String(edge.tail)) : null;
+    const hn = edge.head != null ? nodeMap.get(String(edge.head)) : null;
+    if (tn && hn) {
+      const sx1 = tn.x * viewStretchX, sy1 = tn.y * viewStretchY;
+      const sx2 = hn.x * viewStretchX, sy2 = hn.y * viewStretchY;
+      const eMinX = Math.min(sx1, sx2), eMaxX = Math.max(sx1, sx2);
+      const eMinY = Math.min(sy1, sy2), eMaxY = Math.max(sy1, sy2);
+      if (eMaxX < visMinX || eMinX > visMaxX || eMaxY < visMinY || eMinY > visMaxY) continue;
+    }
     drawEdge(edge);
-  });
+  }
   // Draw a rubber-band preview when creating an edge
   if (currentMode === 'edge' && pendingEdgePreview) {
     let x1, y1, x2, y2;
@@ -3080,26 +3111,30 @@ function draw() {
   // Draw nodes on top and collect label data
   const labelData = [];
   const nodeData = [];
+  const nodeRadius = NODE_RADIUS * sizeScale;
 
-  nodes.forEach((node) => {
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+    // Viewport cull: skip nodes entirely outside the visible area
+    const sx = node.x * viewStretchX;
+    const sy = node.y * viewStretchY;
+    if (sx + nodeRadius < visMinX || sx - nodeRadius > visMaxX ||
+        sy + nodeRadius < visMinY || sy - nodeRadius > visMaxY) {
+      continue;
+    }
     const label = drawNode(node);
     if (label) {
       labelData.push(label);
     }
     // Collect node data for collision detection (use stretched positions)
-    const radius = NODE_RADIUS * sizeScale;
-    nodeData.push({
-      x: node.x * viewStretchX,
-      y: node.y * viewStretchY,
-      radius: radius
-    });
-  });
+    nodeData.push({ x: sx, y: sy, radius: nodeRadius });
+  }
 
   // Collect edge label data for collision detection
   const edgeLabelData = [];
   edges.forEach((edge) => {
-    const tailNode = nodes.find((n) => n.id === edge.tail);
-    const headNode = nodes.find((n) => n.id === edge.head);
+    const tailNode = edge.tail != null ? nodeMap.get(String(edge.tail)) : undefined;
+    const headNode = edge.head != null ? nodeMap.get(String(edge.head)) : undefined;
     if (!tailNode || !headNode) return;
 
     // Apply stretch to positions for label placement
@@ -3144,24 +3179,51 @@ function draw() {
     }
   });
 
-  // Process labels with smart positioning to avoid overlaps (including edge labels)
-  const positionedLabels = processLabels(ctx, labelData, nodeData, edgeLabelData);
+  // Process labels – use smart collision avoidance for small-to-medium graphs,
+  // but fall back to simple positioning when there are many visible labels to
+  // keep frame times low.
+  const LABEL_COLLISION_THRESHOLD = 120;
+  let positionedLabels;
+  if (labelData.length <= LABEL_COLLISION_THRESHOLD) {
+    positionedLabels = processLabels(ctx, labelData, nodeData, edgeLabelData);
+  } else {
+    // Fast path: place labels above center without collision detection
+    positionedLabels = labelData.map(l => ({
+      text: l.text,
+      x: l.nodeX,
+      y: l.nodeY - l.nodeRadius * 1.1,
+      align: 'center',
+      baseline: 'bottom',
+      fontSize: l.fontSize
+    }));
+  }
 
   // Draw the optimally positioned labels
   ctx.fillStyle = COLORS.node.label;
-  positionedLabels.forEach((label) => {
+  for (let i = 0; i < positionedLabels.length; i++) {
+    const label = positionedLabels[i];
     ctx.save();
     ctx.font = `${label.fontSize}px Arial`;
     ctx.textAlign = label.align;
     ctx.textBaseline = label.baseline;
     ctx.fillText(label.text, label.x, label.y);
     ctx.restore();
-  });
+  }
 
   // Draw edge measurement labels after node labels to ensure they're on top
-  edges.forEach((edge) => {
+  for (let i = 0; i < edges.length; i++) {
+    const edge = edges[i];
+    // Quick viewport cull for edge labels (same as edge drawing)
+    const tn = edge.tail != null ? nodeMap.get(String(edge.tail)) : null;
+    const hn = edge.head != null ? nodeMap.get(String(edge.head)) : null;
+    if (tn && hn) {
+      const sx1 = tn.x * viewStretchX, sy1 = tn.y * viewStretchY;
+      const sx2 = hn.x * viewStretchX, sy2 = hn.y * viewStretchY;
+      if (Math.max(sx1, sx2) < visMinX || Math.min(sx1, sx2) > visMaxX ||
+          Math.max(sy1, sy2) < visMinY || Math.min(sy1, sy2) > visMaxY) continue;
+    }
     drawEdgeLabels(edge);
-  });
+  }
   
   // Draw GNSS marker if Live Measure mode is enabled
   if (liveMeasureEnabled && gnssState?.isLiveMeasureEnabled()) {
@@ -3206,10 +3268,31 @@ function draw() {
     drawMapAttribution(ctx, canvas.width, canvas.height);
   }
   
-  // Ensure edge legend is rendered/positioned
-  renderEdgeLegend();
-  // Update incomplete edge tracker
-  updateIncompleteEdgeTracker();
+  // Ensure edge legend is rendered/positioned (throttled to avoid layout thrash)
+  scheduleEdgeLegendUpdate();
+  // Update incomplete edge tracker (throttled)
+  scheduleIncompleteEdgeUpdate();
+}
+
+// Throttled DOM updates – avoid running inside every draw frame
+let _edgeLegendDirty = false;
+function scheduleEdgeLegendUpdate() {
+  if (_edgeLegendDirty) return;
+  _edgeLegendDirty = true;
+  queueMicrotask(() => {
+    _edgeLegendDirty = false;
+    renderEdgeLegend();
+  });
+}
+
+let _incompleteEdgeDirty = false;
+function scheduleIncompleteEdgeUpdate() {
+  if (_incompleteEdgeDirty) return;
+  _incompleteEdgeDirty = true;
+  queueMicrotask(() => {
+    _incompleteEdgeDirty = false;
+    updateIncompleteEdgeTracker();
+  });
 }
 
 function renderEdgeLegend() {
@@ -3318,8 +3401,8 @@ function computeNodeTypes() {
 }
 
 function drawEdge(edge) {
-  const tailNode = edge.tail != null ? nodes.find((n) => n.id === edge.tail) : null;
-  const headNode = edge.head != null ? nodes.find((n) => n.id === edge.head) : null;
+  const tailNode = edge.tail != null ? nodeMap.get(String(edge.tail)) || null : null;
+  const headNode = edge.head != null ? nodeMap.get(String(edge.head)) || null : null;
   
   // Apply stretch to node positions for drawing
   const stretchedTail = stretchedNode(tailNode);
@@ -3532,8 +3615,8 @@ function drawDanglingEdgeLocal(edge, connectedNode, type = 'outbound') {
 }
 
 function drawEdgeLabels(edge) {
-  const tailNode = nodes.find((n) => n.id === edge.tail);
-  const headNode = nodes.find((n) => n.id === edge.head);
+  const tailNode = edge.tail != null ? nodeMap.get(String(edge.tail)) : undefined;
+  const headNode = edge.head != null ? nodeMap.get(String(edge.head)) : undefined;
   if (!tailNode || !headNode) return;
   // Apply stretch to positions for label placement
   const x1 = tailNode.x * viewStretchX, y1 = tailNode.y * viewStretchY;
@@ -3695,7 +3778,12 @@ function drawDirectConnectionBadge(cx, cy, radius) {
  * Schedule a redraw on the next animation frame.
  */
 function scheduleDraw() {
-  window.requestAnimationFrame(draw);
+  if (drawScheduled) return;
+  drawScheduled = true;
+  window.requestAnimationFrame(() => {
+    drawScheduled = false;
+    draw();
+  });
 }
 
 /**
