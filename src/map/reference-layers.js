@@ -230,10 +230,10 @@ export function drawReferenceLayers(ctx, coordinateScale, viewScale, stretchX, s
   if (!refPoint) return;
 
   // Calculate visible bounds in world coordinates for culling
-  const visMinX = -viewTranslate.x / (viewScale * stretchX);
-  const visMinY = -viewTranslate.y / (viewScale * stretchY);
-  const visMaxX = (canvasWidth - viewTranslate.x) / (viewScale * stretchX);
-  const visMaxY = (canvasHeight - viewTranslate.y) / (viewScale * stretchY);
+  const visMinX = -viewTranslate.x / viewScale;
+  const visMinY = -viewTranslate.y / viewScale;
+  const visMaxX = (canvasWidth - viewTranslate.x) / viewScale;
+  const visMaxY = (canvasHeight - viewTranslate.y) / viewScale;
 
   // Draw layers in display order
   const sortedLayers = [...layers].sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
@@ -244,16 +244,6 @@ export function drawReferenceLayers(ctx, coordinateScale, viewScale, stretchX, s
 
     const style = { ...(DEFAULT_STYLES[layer.layerType] || {}), ...(layer.style || {}) };
     
-    // Debug info for pipes
-    if (layer.layerType === 'survey_pipes' || layer.name.toLowerCase().includes('pipe')) {
-      const geomTypes = new Set(layer.geojson.features.map(f => f.geometry?.type));
-      console.log(`[ReferenceLayers] Rendering ${layer.name} (${layer.layerType}):`, {
-        featureCount: layer.geojson.features.length,
-        geometryTypes: Array.from(geomTypes),
-        style
-      });
-    }
-
     ctx.save();
     drawLayerFeatures(ctx, layer, style, refPoint, coordinateScale, stretchX, stretchY, viewScale, visMinX, visMinY, visMaxX, visMaxY);
     ctx.restore();
