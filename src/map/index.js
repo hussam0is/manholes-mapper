@@ -44,6 +44,13 @@ export {
   precacheTilesForMeasurementBounds
 } from './govmap-layer.js';
 
+// Street View
+export {
+  initStreetView,
+  setStreetViewVisible,
+  updateStreetViewTranslations
+} from './street-view.js';
+
 // User location
 export {
   isGeolocationSupported,

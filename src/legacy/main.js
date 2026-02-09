@@ -108,6 +108,11 @@ import {
   loadRefLayerSettings,
   clearReferenceLayers
 } from '../map/reference-layers.js';
+import {
+  initStreetView,
+  setStreetViewVisible,
+  updateStreetViewTranslations
+} from '../map/street-view.js';
 import { menuEvents } from '../menu/menu-events.js';
 
 /**
@@ -1670,6 +1675,9 @@ function applyLangToStaticUI() {
     mobileSearchAddressInput.placeholder = t('searchAddress');
     mobileSearchAddressInput.title = t('searchAddressTitle');
   }
+
+  // Update street view pegman labels
+  updateStreetViewTranslations(t);
 }
 
 // CSV helpers moved to src/utils/csv.js
@@ -2601,7 +2609,7 @@ async function handleChangeProject(sketchId) {
     // Get current sketch to find current project
     const lib = getLibrary();
     const sketch = lib.find(s => s.id === sketchId);
-    const currentProjectId = sketch?.projectId;
+    const sketchProjectId = sketch?.projectId;
 
     // Create modal
     const overlay = document.createElement('div');
@@ -2623,7 +2631,7 @@ async function handleChangeProject(sketchId) {
           <select id="projectSelect" class="form-input">
             <option value="">-- ${t('labels.selectProject')} --</option>
             ${projects.map(p => `
-              <option value="${p.id}" ${p.id === currentProjectId ? 'selected' : ''}>
+              <option value="${p.id}" ${p.id === sketchProjectId ? 'selected' : ''}>
                 ${p.name}
               </option>
             `).join('')}
@@ -6387,6 +6395,9 @@ function applyCoordinatesIfEnabled(options = {}) {
   if (mapLayerEnabled) {
     updateMapReferencePoint();
     startMeasurementTilesPrecache();
+  } else {
+    // Even without map layer, update reference point for Street View pegman
+    updateMapReferencePoint();
   }
   
   saveToStorage();
@@ -6538,6 +6549,7 @@ function updateMapReferencePoint() {
         console.debug('Map reference point set from node surveyX/surveyY:', refPoint);
         setMapReferencePoint(refPoint);
         startMeasurementTilesPrecache();
+        setStreetViewVisible(true);
         return true;
       }
     }
@@ -6556,6 +6568,7 @@ function updateMapReferencePoint() {
         console.debug('Map reference point set from coordinatesMap:', refPoint);
         setMapReferencePoint(refPoint);
         startMeasurementTilesPrecache();
+        setStreetViewVisible(true);
         return true;
       }
     }
@@ -6580,6 +6593,8 @@ function updateMapReferencePoint() {
   
   console.debug('Map reference point set to default (Tel Aviv area):', refPoint);
   setMapReferencePoint(refPoint);
+  // Show street-view pegman whenever a reference point becomes available
+  setStreetViewVisible(true);
   return true;
 }
 
@@ -6815,6 +6830,23 @@ function initCoordinates() {
   if (mapLayerEnabled) {
     updateMapReferencePoint();
   }
+
+  // Initialize Street View pegman widget
+  initStreetView({
+    canvasContainer: canvas.parentElement,
+    canvas,
+    getViewState: () => ({
+      viewTranslate: { x: viewTranslate.x, y: viewTranslate.y },
+      viewScale,
+      viewStretchX,
+      viewStretchY,
+    }),
+    getCoordinateScale: () => coordinateScale,
+    showToast,
+    t,
+  });
+  // Show pegman only when a reference point is available
+  setStreetViewVisible(!!getMapReferencePoint());
 }
 
 // Import coordinates button handler (desktop)

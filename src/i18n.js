@@ -348,6 +348,12 @@ export const i18n = {
       street: 'מפת רחובות',
       noReference: 'נדרשות קואורדינטות להצגת מפה',
     },
+    streetView: {
+      dragHint: 'גרור לרחוב',
+      noCoordinates: 'יש להפעיל קואורדינטות כדי להשתמש ב-Street View',
+      opening: 'פותח Street View...',
+      conversionError: 'לא ניתן לקבוע מיקום',
+    },
     refLayers: {
       enable: 'שכבות ייחוס',
       enabled: 'שכבות ייחוס הופעלו',
@@ -719,6 +725,12 @@ export const i18n = {
       orthophoto: 'Aerial Photo',
       street: 'Street Map',
       noReference: 'Coordinates required to display map',
+    },
+    streetView: {
+      dragHint: 'Drag to street',
+      noCoordinates: 'Enable coordinates first to use Street View',
+      opening: 'Opening Street View...',
+      conversionError: 'Could not determine location',
     },
     refLayers: {
       enable: 'Reference Layers',
