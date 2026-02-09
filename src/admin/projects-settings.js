@@ -618,8 +618,24 @@ export class ProjectsSettings {
         });
 
         if (!response.ok) {
-          const err = await response.json();
-          throw new Error(err.error || 'Failed to upload layer');
+          let errorMsg = 'Failed to upload layer';
+          try {
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+              const err = await response.json();
+              errorMsg = err.error || errorMsg;
+            } else {
+              const text = await response.text();
+              if (response.status === 413) {
+                errorMsg = 'File is too large for the web interface (max ~5MB). Please use the command-line import script for large GIS layers.';
+              } else {
+                console.warn('[ProjectsSettings] Non-JSON error response:', text.substring(0, 100));
+              }
+            }
+          } catch (e) {
+            console.error('[ProjectsSettings] Error parsing error response:', e);
+          }
+          throw new Error(errorMsg);
         }
 
         this.showToast(`Layer "${name}" uploaded successfully`, 'success');

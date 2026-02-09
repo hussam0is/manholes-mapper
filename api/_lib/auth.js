@@ -65,8 +65,8 @@ function getCookie(request, name) {
   return cookies[name] || null;
 }
 
-// Maximum request body size (5MB)
-const MAX_BODY_SIZE = 5 * 1024 * 1024;
+// Maximum request body size (15MB)
+const MAX_BODY_SIZE = 15 * 1024 * 1024;
 
 /**
  * Parse JSON body from request (handles both Web API and Node.js formats)
