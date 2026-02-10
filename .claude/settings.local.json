@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(npm run dev:*)",
+      "Bash(\"/c/Program Files/nodejs/npm.cmd\" --version)",
+      "Bash(\"/c/Program Files \\(x86\\)/nodejs/npm.cmd\" --version)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfix\\(security\\): audit fixes — XSS, CORS, auth secret, memory leaks, race conditions\n\nCRITICAL:\n- Escape user data in innerHTML to prevent XSS \\(main-entry.js\\)\n- CORS origin whitelisting via ALLOWED_ORIGINS env var \\(auth, layers, lib/auth\\)\n- Auth secret throws in production if BETTER_AUTH_SECRET is missing\n- Remove error.message leak from auth 500 response\n\nMAJOR:\n- Fix memory leak: AbortController cleans up document listeners on re-render\n- Fix uncancellable auth refresh interval accumulation\n- Remove duplicate verifyAuth call in sketches API\n- Atomic sketch lock acquisition \\(single UPDATE instead of SELECT+UPDATE\\)\n- Fix updateUser silently clearing organization when field is omitted\n\nMINOR:\n- Replace silent catch blocks with console.warn\n- Change console.log to console.debug across all API routes\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
+    ]
+  }
+}
