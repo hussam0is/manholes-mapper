@@ -308,8 +308,7 @@ api/
 │   ├── index.js                   # UPDATED: Project support
 │   └── [id].js                    # UPDATED: Project support
 └── _lib/
-    ├── db.js                      # UPDATED: Project functions
-    └── schema.sql                 # UPDATED: Projects table
+    └── db.js                      # UPDATED: Project functions, inline schema
 ```
 
 ---

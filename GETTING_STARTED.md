@@ -8,8 +8,8 @@ Before you begin, ensure you have the following installed:
 
 | Requirement | Version | Check Command |
 |-------------|---------|---------------|
-| **Node.js** | 16.x or higher (18+ recommended) | `node --version` |
-| **npm** | 7.x or higher | `npm --version` |
+| **Node.js** | 24.x or higher | `node --version` |
+| **npm** | 10.x or higher | `npm --version` |
 | **Git** | 2.x or higher | `git --version` |
 
 ## Quick Start
@@ -141,11 +141,16 @@ This lets you test the production build locally at http://localhost:4173
 | Command | Description |
 |---------|-------------|
 | `npm run dev` | Start dev server (http://localhost:5173) |
+| `npm run start` | Start with Vercel CLI (API routes + frontend) |
 | `npm run build` | Build for production |
 | `npm run preview` | Preview production build locally |
+| `npm test` | Run unit tests in watch mode (Vitest) |
+| `npm run test:run` | Run unit tests once |
 | `npm run lint` | Check code for errors |
 | `npm run lint:fix` | Auto-fix linting errors |
 | `npm run format` | Format code with Prettier |
+| `npm run build:android` | Build and sync Capacitor Android |
+| `npm run open:android` | Open Android project in Android Studio |
 
 ---
 
@@ -198,14 +203,30 @@ If you need to reset the app state:
 ```
 manholes-mapper/
 ├── src/
-│   ├── admin/              # Admin settings UI
+│   ├── admin/              # Admin panel, settings, projects, input flow
+│   ├── auth/               # Better Auth client, provider, guard, permissions
 │   ├── db.js               # IndexedDB wrapper
-│   ├── features/           # Canvas rendering
+│   ├── dom/                # DOM manipulation utilities
+│   ├── features/           # Canvas rendering and drawing primitives
+│   ├── gnss/               # GNSS/GPS live measure module
+│   ├── graph/              # Graph data structures and ID utilities
 │   ├── legacy/main.js      # Core app logic
+│   ├── map/                # Map tiles, projections, reference layers, Street View
+│   ├── menu/               # Responsive menu system and command palette
+│   ├── serviceWorker/      # SW registration
 │   ├── state/              # State & constants
-│   ├── utils/              # Utility functions
+│   ├── utils/              # Utility functions (CSV, coordinates, geometry, UI)
 │   ├── i18n.js             # Hebrew/English translations
 │   └── main-entry.js       # Entry point
+├── api/                    # Vercel serverless API routes
+│   ├── auth/               # Better Auth endpoints
+│   ├── sketches/           # Sketch CRUD and locking
+│   ├── projects/           # Project management
+│   ├── organizations/      # Organization management
+│   ├── layers/             # GIS reference layer data
+│   ├── users/              # User management
+│   └── _lib/               # Shared backend (db, auth, validators, rate-limit)
+├── tests/                  # Vitest + Playwright tests
 ├── public/
 │   ├── service-worker.js   # Offline support
 │   └── manifest.json       # PWA config

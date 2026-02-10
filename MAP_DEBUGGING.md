@@ -109,7 +109,7 @@ nodes.forEach(node => {
 
 ```javascript
 // Open Network tab in DevTools
-// Look for requests to israelhiking.osm.org.il
+// Look for requests to server.arcgisonline.com (Esri tiles)
 // Status should be 200 (OK)
 
 // If tiles fail to load:
@@ -125,9 +125,9 @@ const testLat = 32.0853; // Tel Aviv
 const testLon = 34.7818;
 const testZoom = 17;
 const { tileX, tileY } = latLonToTile(testLat, testLon, testZoom);
-const url = `https://israelhiking.osm.org.il/Tiles/${testZoom}/${tileX}/${tileY}.png`;
+const url = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${testZoom}/${tileY}/${tileX}`;
 console.log('Test URL:', url);
-// Open URL in browser - should show map tile
+// Open URL in browser - should show satellite tile
 ```
 
 ### Problem: Wrong zoom level

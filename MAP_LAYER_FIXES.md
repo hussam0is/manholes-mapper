@@ -212,7 +212,7 @@ Potential enhancements:
 
 ## Known Limitations
 
-1. **Tile Server Availability**: Depends on Israel Hiking Map servers
+1. **Tile Server Availability**: Depends on Esri tile servers (with OpenStreetMap fallback)
 2. **Coordinate Validation**: Warns but doesn't prevent invalid ITM coords
 3. **Performance**: Accurate projection is slightly slower (negligible)
 4. **Browser Support**: Requires modern JavaScript (ES6+)

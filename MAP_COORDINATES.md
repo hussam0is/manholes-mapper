@@ -40,7 +40,7 @@ The Manholes Mapper application uses the **Israel TM Grid (ITM)** coordinate sys
 
 **Tile coordinate system for web maps**
 
-- Used by OpenStreetMap, Google Maps, and other tile servers
+- Used by Esri, OpenStreetMap, Google Maps, and other tile servers
 - Tiles organized in XYZ scheme at different zoom levels
 - Zoom level 0: entire world in one 256×256 pixel tile
 - Each zoom level doubles the number of tiles in each direction

@@ -11,8 +11,8 @@ This checklist should be reviewed before deploying to production and periodicall
 
 ### Users
 - [ ] Review users with elevated roles (admin, super_admin)
-- [ ] Get the User ID for your super admin from the database
-- [ ] Add this ID to `INITIAL_SUPER_ADMIN_USER_ID` environment variable in Vercel
+- [ ] Get the email for your super admin
+- [ ] Add this email to `INITIAL_SUPER_ADMIN_EMAIL` environment variable in Vercel
 
 ---
 
@@ -28,14 +28,14 @@ Navigate to: Project Settings -> Environment Variables
 |----------|------------|---------|-------------|-------|
 | `BETTER_AUTH_SECRET` | ✓ Required | ✓ Required | ✓ Required | Server-side only, never expose |
 | `POSTGRES_URL` | ✓ Auto | ✓ Auto | Manual | Provided by Vercel Postgres |
-| `INITIAL_SUPER_ADMIN_USER_ID` | ✓ Required | ✓ Optional | ✓ Optional | User ID of your admin |
+| `INITIAL_SUPER_ADMIN_EMAIL` | ✓ Required | ✓ Optional | ✓ Optional | Email of your super admin |
 | `BETTER_AUTH_URL` | ✓ Optional | Optional | Optional | Base URL for auth (auto-detected) |
 
 **Security checks:**
 - [ ] `BETTER_AUTH_SECRET` is set for all environments
 - [ ] `BETTER_AUTH_SECRET` is NOT visible in build logs (should be auto-hidden)
 - [ ] `POSTGRES_URL` is properly configured via Vercel Storage
-- [ ] `INITIAL_SUPER_ADMIN_USER_ID` is set with the correct user ID
+- [ ] `INITIAL_SUPER_ADMIN_EMAIL` is set with the correct email address
 - [ ] No `.env.local` or secrets committed to git repository
 
 ### Deployment Protection

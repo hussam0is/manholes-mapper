@@ -9,7 +9,7 @@ Manholes Mapper is a lightweight yet powerful tool designed for field workers to
 ## Key Features
 
 - **Interactive Canvas Editor**: High-performance HTML5 Canvas rendering for node-edge network visualization.
-- **Map Layer Integration**: Background map tiles with Israel TM Grid (ITM) coordinate alignment for GIS-accurate positioning.
+- **Map Layer Integration**: Background map tiles (Esri World Imagery / Esri World Street Map) with Israel TM Grid (ITM) coordinate alignment for GIS-accurate positioning.
 - **Multi-Node Modes**: Specialized support for different infrastructure types:
   - **Manholes**: Standard network nodes.
   - **Home Nodes**: Residential/Building connections.
@@ -29,10 +29,17 @@ Manholes Mapper is a lightweight yet powerful tool designed for field workers to
   - **Real-time Autosave**: Automatic background persistence to prevent data loss.
   - **GIS Integration**: Export nodes and edges separately as CSV files optimized for ArcGIS.
   - **Backup & Sharing**: Export/Import entire sketches as JSON.
+- **Reference Layers**: GIS data overlays for sections, survey manholes, survey pipes (with direction arrows), streets, and addresses.
+- **Google Street View**: Drag-and-drop pegman widget to open Street View at any canvas location.
+- **Multi-Tenancy**: Organizations, projects, and role-based access control (user / admin / super_admin).
+- **Sketch Locking**: Collaborative editing with 30-minute lock expiration and admin force-unlock.
+- **Intelligent Input Flow**: Context-aware form rules that hide, disable, or reset fields based on business logic.
+- **Feature Flags**: Per-user and per-organization feature toggles (CSV export, sketch export, admin settings, etc.).
 - **Bilingual Support**: Full Hebrew (RTL) and English (LTR) localization.
 - **Navigation & Search**:
   - Hash-based routing for quick switching between workspace and settings.
-  - Top-bar search to instantly locate nodes by ID.
+  - Top-bar search to instantly locate nodes by ID or address.
+  - Command menu for quick action access.
   - Recenter view and edge legend for better orientation.
 
 ## Technology Stack
@@ -42,7 +49,7 @@ Manholes Mapper is a lightweight yet powerful tool designed for field workers to
 - **Build Tool**: **Vite 7.x** with stable output filenames for service worker compatibility.
 - **Rendering**: HTML5 Canvas API for the graph engine.
 - **Storage**: IndexedDB for durable storage, mirrored with localStorage for synchronous access.
-- **Offline**: Service Worker (Workbox-inspired) for asset caching and offline fallback.
+- **Offline**: Service Worker for asset caching and offline fallback.
 - **Authentication**: **Better Auth** for user authentication and session management with Neon Postgres.
 
 ## Authentication (Better Auth)
@@ -86,8 +93,8 @@ This project uses [Better Auth](https://better-auth.com) for user authentication
 ```
 manholes-mapper/
 ├── src/                    # Application source code
-│   ├── admin/              # Admin UI logic and helpers
-│   ├── components/         # React components (Admin, Canvas, Layout)
+│   ├── admin/              # Admin panel, settings, projects, input flow
+│   ├── auth/               # Better Auth client, provider, guard, permissions
 │   ├── db.js               # IndexedDB database definition
 │   ├── dom/                # DOM manipulation utilities
 │   ├── features/           # Rendering engine and drawing primitives
@@ -101,16 +108,28 @@ manholes-mapper/
 │   │   ├── point-capture-dialog.js # Point capture UI
 │   │   └── connection-manager.js  # Unified connection interface
 │   ├── graph/              # Graph data structures and ID utilities
-│   ├── hooks/              # Custom React hooks
-│   ├── i18n.js             # Internationalization system
+│   ├── i18n.js             # Internationalization system (Hebrew/English)
 │   ├── legacy/             # Core logic (being modularized)
 │   ├── main-entry.js       # Application entry point
-│   ├── map/                # Map tiles and user location
+│   ├── map/                # Map tiles, projections, reference layers, Street View
+│   ├── menu/               # Responsive menu system, command palette, action bar
 │   ├── serviceWorker/      # SW registration and lifecycle
-│   ├── state/              # Global state and persistence logic
-│   └── utils/              # Shared utilities (CSV, Geometry, UI)
+│   ├── state/              # Global state, constants, and persistence logic
+│   └── utils/              # Shared utilities (CSV, Geometry, Coordinates, UI)
+├── api/                    # Vercel serverless API routes
+│   ├── auth/               # Better Auth endpoints
+│   ├── features/           # Feature flags CRUD
+│   ├── layers/             # GIS reference layer data
+│   ├── organizations/      # Organization management
+│   ├── projects/           # Project CRUD
+│   ├── sketches/           # Sketch CRUD and locking
+│   ├── users/              # User management
+│   ├── user-role/          # Role and permissions
+│   └── _lib/               # Shared backend (db, auth, validators, rate-limit)
+├── lib/                    # Better Auth server configuration
 ├── android/                # Capacitor Android project
 ├── public/                 # Static assets and PWA manifest
+├── tests/                  # Vitest unit/integration + Playwright E2E tests
 ├── dist/                   # Production build output
 ├── index.html              # Main entry HTML
 ├── styles.css              # Global styles and Tailwind directives
@@ -123,8 +142,8 @@ manholes-mapper/
 
 ### Prerequisites
 
-- Node.js 18.x or higher
-- npm 9.x or higher
+- Node.js 24.x or higher
+- npm 10.x or higher
 
 ### Installation
 
@@ -187,7 +206,7 @@ This project is deployed on **Vercel** with automatic deployments from Git.
 
 #### Deployment Process
 
-1. **Automatic Deployments**: Push to `main` branch triggers production deployment; push to `dev` triggers preview deployment.
+1. **Automatic Deployments**: Push to `master` branch triggers production deployment; push to `dev` triggers preview deployment.
 2. **Manual Deployment**: Use Vercel CLI or dashboard to trigger deployments.
 
 ```bash
@@ -206,7 +225,7 @@ vercel --prod
 ```json
 {
   "framework": "vite",
-  "devCommand": "vite",
+  "devCommand": "vite --port $PORT",
   "buildCommand": "vite build",
   "outputDirectory": "dist"
 }
@@ -228,7 +247,7 @@ The application supports background map tiles with accurate coordinate alignment
 
 **Features:**
 - Survey-grade coordinate transformations using proj4
-- Background tiles from Israel Hiking Map and OpenStreetMap
+- Background tiles from Esri World Imagery and Esri World Street Map (OpenStreetMap fallback)
 - Automatic alignment of ITM coordinates with map imagery
 - Support for orthophoto and street map views
 
