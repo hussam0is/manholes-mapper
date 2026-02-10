@@ -17,11 +17,20 @@ export const config = {
 const betterAuthHandler = toNodeHandler(auth);
 
 export default async function authHandler(req, res) {
-  console.log('[Auth API] Request:', req.method, req.url);
+  console.debug('[Auth API] Request:', req.method, req.url);
   
+  // CORS origin resolution
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+    : null; // null = allow all (development mode)
+  const requestOrigin = req.headers.origin;
+  const resolvedOrigin = !allowedOrigins
+    ? (requestOrigin || '*')
+    : (requestOrigin && allowedOrigins.includes(requestOrigin) ? requestOrigin : allowedOrigins[0]);
+
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.setHeader('Access-Control-Allow-Origin', resolvedOrigin);
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -29,17 +38,15 @@ export default async function authHandler(req, res) {
   }
 
   // Set CORS headers for all requests
-  const origin = req.headers.origin || req.headers.referer?.replace(/\/$/, '') || '*';
-  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Access-Control-Allow-Origin', resolvedOrigin);
   res.setHeader('Access-Control-Allow-Credentials', 'true');
 
   try {
     return await betterAuthHandler(req, res);
   } catch (error) {
     console.error('[Auth API] Error:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: 'Internal server error',
-      message: error.message,
     });
   }
 }

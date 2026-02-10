@@ -53,11 +53,20 @@ export default async function handler(req, res) {
   const isCollection = firstSegment === '_';
   const layerId = isCollection ? null : firstSegment;
 
-  console.log(`[API /api/layers${layerId ? '/' + layerId : ''}] ${req.method} request started. Path segments:`, pathSegments);
+  console.debug(`[API /api/layers${layerId ? '/' + layerId : ''}] ${req.method} request started. Path segments:`, pathSegments);
+
+  // CORS origin resolution
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+    : null; // null = allow all (development mode)
+  const requestOrigin = request.headers.get('origin');
+  const resolvedOrigin = !allowedOrigins
+    ? (requestOrigin || '*')
+    : (requestOrigin && allowedOrigins.includes(requestOrigin) ? requestOrigin : allowedOrigins[0]);
 
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', request.headers.get('origin') || '*');
+    res.setHeader('Access-Control-Allow-Origin', resolvedOrigin);
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -65,8 +74,7 @@ export default async function handler(req, res) {
   }
 
   // Set CORS headers for all responses
-  const origin = request.headers.get('origin') || '*';
-  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Access-Control-Allow-Origin', resolvedOrigin);
   res.setHeader('Access-Control-Allow-Credentials', 'true');
 
   if (applyRateLimit(req, res)) return;
@@ -136,7 +144,7 @@ async function handleCollection(req, res, request, currentUser, isSuperAdmin, is
       ...(l.geojson ? { geojson: l.geojson } : {})
     }));
 
-    console.log(`[API /api/layers] Returning ${transformed.length} layers for project ${projectId}`);
+    console.debug(`[API /api/layers] Returning ${transformed.length} layers for project ${projectId}`);
     return res.status(200).json({ layers: transformed });
   }
 
@@ -169,7 +177,7 @@ async function handleCollection(req, res, request, currentUser, isSuperAdmin, is
       displayOrder: displayOrder || 0
     });
 
-    console.log(`[API /api/layers] Created layer ${layer.id} (${layerType}) for project ${projectId} by ${userId}`);
+    console.debug(`[API /api/layers] Created layer ${layer.id} (${layerType}) for project ${projectId} by ${userId}`);
     return res.status(201).json({
       layer: {
         id: layer.id,
@@ -185,7 +193,7 @@ async function handleCollection(req, res, request, currentUser, isSuperAdmin, is
     });
   }
 
-  console.log(`[API /api/layers/${layerId}] Method ${req.method} not allowed for single layer`);
+  console.debug(`[API /api/layers/${layerId}] Method ${req.method} not allowed for single layer`);
   return res.status(405).json({ error: `Method ${req.method} not allowed for single layer` });
 }
 
@@ -242,7 +250,7 @@ async function handleSingleLayer(req, res, request, layerId, currentUser, isSupe
       return res.status(500).json({ error: 'Failed to update layer' });
     }
 
-    console.log(`[API /api/layers/${layerId}] Updated by ${userId}`);
+    console.debug(`[API /api/layers/${layerId}] Updated by ${userId}`);
     return res.status(200).json({
       layer: {
         id: updated.id,
@@ -268,10 +276,10 @@ async function handleSingleLayer(req, res, request, layerId, currentUser, isSupe
       return res.status(500).json({ error: 'Failed to delete layer' });
     }
 
-    console.log(`[API /api/layers/${layerId}] Deleted by ${userId}`);
+    console.debug(`[API /api/layers/${layerId}] Deleted by ${userId}`);
     return res.status(200).json({ success: true });
   }
 
-  console.log(`[API /api/layers/${layerId}] Method ${req.method} not allowed for single layer`);
+  console.debug(`[API /api/layers/${layerId}] Method ${req.method} not allowed for single layer`);
   return res.status(405).json({ error: `Method ${req.method} not allowed for single layer` });
 }

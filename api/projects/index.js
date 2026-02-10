@@ -26,7 +26,7 @@ export default async function handler(req, res) {
     request.headers.get = (name) => req.headers[name.toLowerCase()];
   }
 
-  console.log(`[API /api/projects] ${req.method} request started`);
+  console.debug(`[API /api/projects] ${req.method} request started`);
 
   // Apply rate limiting
   if (applyRateLimit(req, res)) {
@@ -67,7 +67,7 @@ export default async function handler(req, res) {
       if (isSuperAdmin && !orgId) {
         const { getAllProjects } = await import('../_lib/db.js');
         projects = await getAllProjects();
-        console.log(`[API /api/projects] Super admin: returning all ${projects.length} projects`);
+        console.debug(`[API /api/projects] Super admin: returning all ${projects.length} projects`);
       } else if (!orgId) {
         // Non-super admin without org - return empty
         return res.status(200).json({ projects: [] });
@@ -77,7 +77,7 @@ export default async function handler(req, res) {
           return res.status(403).json({ error: 'Access denied to this organization' });
         }
         projects = await getProjectsByOrganization(orgId);
-        console.log(`[API /api/projects] Returning ${projects.length} projects for org ${orgId}`);
+        console.debug(`[API /api/projects] Returning ${projects.length} projects for org ${orgId}`);
       }
       
       const transformed = projects.map(p => ({
@@ -125,7 +125,7 @@ export default async function handler(req, res) {
         inputFlowConfig: inputFlowConfig || {},
       });
 
-      console.log(`[API /api/projects] Created project ${project.id} in org ${targetOrgId} by ${userId}`);
+      console.debug(`[API /api/projects] Created project ${project.id} in org ${targetOrgId} by ${userId}`);
       return res.status(201).json({
         project: {
           id: project.id,

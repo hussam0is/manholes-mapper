@@ -24,7 +24,7 @@ export default async function handler(req, res) {
     request.headers.get = (name) => req.headers[name.toLowerCase()];
   }
 
-  console.log(`[API /api/users] ${req.method} request started`);
+  console.debug(`[API /api/users] ${req.method} request started`);
 
   // Apply rate limiting
   if (applyRateLimit(req, res)) {
@@ -83,7 +83,7 @@ export default async function handler(req, res) {
       updatedAt: u.updated_at,
     }));
 
-    console.log(`[API /api/users] Returning ${transformed.length} users`);
+    console.debug(`[API /api/users] Returning ${transformed.length} users`);
     return res.status(200).json({ users: transformed });
 
   } catch (error) {

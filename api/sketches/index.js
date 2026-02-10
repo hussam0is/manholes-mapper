@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     request.headers.get = (name) => req.headers[name.toLowerCase()];
   }
 
-  console.log(`[API /api/sketches] ${req.method} request started`);
+  console.debug(`[API /api/sketches] ${req.method} request started`);
   
   // Apply rate limiting
   if (applyRateLimit(req, res)) {
@@ -41,16 +41,14 @@ export default async function handler(req, res) {
     await ensureDb();
 
     // Verify authentication
-    const { userId, error: authError } = await verifyAuth(request);
-    
+    const { userId, error: authError, user: authUser } = await verifyAuth(request);
+
     if (authError) {
       console.warn(`[API /api/sketches] Auth failed: ${authError}`);
       return res.status(401).json({ error: authError });
     }
 
     if (req.method === 'GET') {
-      // Get user info to check role and organization
-      const { user: authUser } = await verifyAuth(request);
       const username = authUser?.name || null;
       const email = authUser?.email || null;
       
@@ -67,13 +65,13 @@ export default async function handler(req, res) {
       // - user: sees only their own sketches
       if (userRole === 'super_admin') {
         sketches = await getAllSketches();
-        console.log(`[API /api/sketches] Super admin ${userId} fetched ${sketches?.length} total sketches`);
+        console.debug(`[API /api/sketches] Super admin ${userId} fetched ${sketches?.length} total sketches`);
       } else if (userRole === 'admin' && organizationId) {
         sketches = await getSketchesByOrganization(organizationId);
-        console.log(`[API /api/sketches] Admin ${userId} fetched ${sketches?.length} sketches for org ${organizationId}`);
+        console.debug(`[API /api/sketches] Admin ${userId} fetched ${sketches?.length} sketches for org ${organizationId}`);
       } else {
         sketches = await getSketchesByUser(userId);
-        console.log(`[API /api/sketches] User ${userId} fetched ${sketches?.length} own sketches`);
+        console.debug(`[API /api/sketches] User ${userId} fetched ${sketches?.length} own sketches`);
       }
       
       const transformed = (sketches || []).map(row => ({
@@ -156,7 +154,7 @@ export default async function handler(req, res) {
         snapshotInputFlowConfig: sketch.snapshot_input_flow_config || {},
       };
       
-      console.log(`[API /api/sketches] Created sketch ${transformed.id} for ${userId} in project ${body.projectId || 'none'}`);
+      console.debug(`[API /api/sketches] Created sketch ${transformed.id} for ${userId} in project ${body.projectId || 'none'}`);
       return res.status(201).json({ sketch: transformed });
     }
 

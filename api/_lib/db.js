@@ -224,7 +224,7 @@ export async function ensureDb() {
       }
       
       await initializeDatabase();
-      console.log('[DB] Database initialized successfully');
+      console.debug('[DB] Database initialized successfully');
     } catch (err) {
       dbInitializationPromise = null;
       console.error('[DB] Database initialization failed:', err.message);
@@ -294,57 +294,46 @@ const LOCK_DURATION_MINUTES = 30;
  * @returns {object} Lock result { success, lockedBy, lockedAt, lockExpiresAt, message }
  */
 export async function acquireSketchLock(sketchId, userId, username) {
-  // Check if sketch exists and get current lock status
-  const checkResult = await sql`
-    SELECT id, user_id, locked_by, locked_at, lock_expires_at
-    FROM sketches
-    WHERE id = ${sketchId}
-  `;
-  
-  if (checkResult.rows.length === 0) {
-    return { success: false, message: 'Sketch not found' };
-  }
-  
-  const sketch = checkResult.rows[0];
-  const now = new Date();
-  
-  // Check if locked by another user and lock hasn't expired
-  if (sketch.locked_by && sketch.locked_by !== userId) {
-    const lockExpires = new Date(sketch.lock_expires_at);
-    if (lockExpires > now) {
-      return {
-        success: false,
-        lockedBy: sketch.locked_by,
-        lockedAt: sketch.locked_at,
-        lockExpiresAt: sketch.lock_expires_at,
-        message: 'Sketch is locked by another user'
-      };
-    }
-    // Lock has expired, can be taken over
-  }
-  
-  // Calculate lock expiration
-  const lockExpiresAt = new Date(now.getTime() + LOCK_DURATION_MINUTES * 60 * 1000);
-  
-  // Acquire lock
+  const lockExpiresAt = new Date(Date.now() + LOCK_DURATION_MINUTES * 60 * 1000);
+
+  // Atomic: only acquire if unlocked, held by same user, or expired
   const result = await sql`
     UPDATE sketches
     SET locked_by = ${userId},
-        locked_at = ${now.toISOString()}::timestamptz,
+        locked_at = NOW(),
         lock_expires_at = ${lockExpiresAt.toISOString()}::timestamptz
     WHERE id = ${sketchId}
+      AND (locked_by IS NULL OR locked_by = ${userId} OR lock_expires_at <= NOW())
     RETURNING id, locked_by, locked_at, lock_expires_at
   `;
-  
-  if (result.rows.length === 0) {
-    return { success: false, message: 'Failed to acquire lock' };
+
+  if (result.rows.length > 0) {
+    return {
+      success: true,
+      lockedBy: result.rows[0].locked_by,
+      lockedAt: result.rows[0].locked_at,
+      lockExpiresAt: result.rows[0].lock_expires_at
+    };
   }
-  
+
+  // Lock not acquired — fetch current lock info for the error response
+  const checkResult = await sql`
+    SELECT locked_by, locked_at, lock_expires_at
+    FROM sketches
+    WHERE id = ${sketchId}
+  `;
+
+  if (checkResult.rows.length === 0) {
+    return { success: false, message: 'Sketch not found' };
+  }
+
+  const sketch = checkResult.rows[0];
   return {
-    success: true,
-    lockedBy: result.rows[0].locked_by,
-    lockedAt: result.rows[0].locked_at,
-    lockExpiresAt: result.rows[0].lock_expires_at
+    success: false,
+    lockedBy: sketch.locked_by,
+    lockedAt: sketch.locked_at,
+    lockExpiresAt: sketch.lock_expires_at,
+    message: 'Sketch is locked by another user'
   };
 }
 
@@ -617,16 +606,22 @@ export async function getUsersByOrganization(organizationId) {
  */
 export async function updateUser(userId, updates) {
   const { role, organizationId } = updates;
-  
+  const shouldUpdateOrg = organizationId !== undefined;
+  const orgValue = shouldUpdateOrg ? organizationId : null;
+
   const result = await sql`
     UPDATE users
     SET
       role = COALESCE(${role}, role),
-      organization_id = ${organizationId === undefined ? null : organizationId},
+      organization_id = CASE
+        WHEN ${shouldUpdateOrg} THEN ${orgValue}
+        ELSE organization_id
+      END,
       updated_at = NOW()
-    WHERE id = ${userId}    RETURNING id, username, email, role, organization_id, created_at, updated_at
+    WHERE id = ${userId}
+    RETURNING id, username, email, role, organization_id, created_at, updated_at
   `;
-  
+
   return result.rows[0] || null;
 }
 

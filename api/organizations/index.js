@@ -25,7 +25,7 @@ export default async function handler(req, res) {
     request.headers.get = (name) => req.headers[name.toLowerCase()];
   }
 
-  console.log(`[API /api/organizations] ${req.method} request started`);
+  console.debug(`[API /api/organizations] ${req.method} request started`);
 
   // Apply rate limiting
   if (applyRateLimit(req, res)) {
@@ -65,7 +65,7 @@ export default async function handler(req, res) {
         createdAt: o.created_at,
       }));
 
-      console.log(`[API /api/organizations] Returning ${transformed.length} organizations`);
+      console.debug(`[API /api/organizations] Returning ${transformed.length} organizations`);
       return res.status(200).json({ organizations: transformed });
     }
 
@@ -84,7 +84,7 @@ export default async function handler(req, res) {
 
       const org = await createOrganization(name.trim());
 
-      console.log(`[API /api/organizations] Created org ${org.id} by ${userId}`);
+      console.debug(`[API /api/organizations] Created org ${org.id} by ${userId}`);
       return res.status(201).json({
         organization: {
           id: org.id,

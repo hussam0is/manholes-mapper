@@ -41,7 +41,7 @@ export default async function handler(req, res) {
   const pathParts = (urlPath || '').split('/');
   const sketchId = pathParts[pathParts.length - 1].split('?')[0];
 
-  console.log(`[API /api/sketches/${sketchId}] ${req.method} request started`);
+  console.debug(`[API /api/sketches/${sketchId}] ${req.method} request started`);
 
   // Apply rate limiting
   if (applyRateLimit(req, res)) {
@@ -152,10 +152,10 @@ export default async function handler(req, res) {
         case 'lock': {
           const result = await acquireSketchLock(sketchId, userId, username);
           if (result.success) {
-            console.log(`[API /api/sketches/${sketchId}] Lock acquired by ${userId}`);
+            console.debug(`[API /api/sketches/${sketchId}] Lock acquired by ${userId}`);
             return res.status(200).json({ success: true, lock: result });
           } else {
-            console.log(`[API /api/sketches/${sketchId}] Lock failed: ${result.message}`);
+            console.debug(`[API /api/sketches/${sketchId}] Lock failed: ${result.message}`);
             return res.status(409).json({ 
               error: result.message, 
               lock: {
@@ -169,7 +169,7 @@ export default async function handler(req, res) {
         
         case 'unlock': {
           const result = await releaseSketchLock(sketchId, userId);
-          console.log(`[API /api/sketches/${sketchId}] Lock released by ${userId}`);
+          console.debug(`[API /api/sketches/${sketchId}] Lock released by ${userId}`);
           return res.status(200).json({ success: result.success, message: result.message });
         }
         
@@ -192,7 +192,7 @@ export default async function handler(req, res) {
           }
           
           const result = await forceReleaseSketchLock(sketchId);
-          console.log(`[API /api/sketches/${sketchId}] Lock force released by admin ${userId}`);
+          console.debug(`[API /api/sketches/${sketchId}] Lock force released by admin ${userId}`);
           return res.status(200).json({ success: result.success, message: result.message });
         }
         
@@ -278,7 +278,7 @@ export default async function handler(req, res) {
         snapshotInputFlowConfig: updated.snapshot_input_flow_config || {},
       };
       
-      console.log(`[API /api/sketches/${sketchId}] Updated sketch`);
+      console.debug(`[API /api/sketches/${sketchId}] Updated sketch`);
       return res.status(200).json({ sketch: transformed });
     }
 
@@ -289,7 +289,7 @@ export default async function handler(req, res) {
         return res.status(404).json({ error: 'Sketch not found' });
       }
       
-      console.log(`[API /api/sketches/${sketchId}] Deleted sketch`);
+      console.debug(`[API /api/sketches/${sketchId}] Deleted sketch`);
       return res.status(200).json({ success: true });
     }
 

@@ -19,6 +19,9 @@ let authState = {
 // Callbacks for auth state changes
 const authStateListeners = new Set();
 
+// Session refresh interval ID (to prevent accumulation on re-init)
+let sessionRefreshInterval = null;
+
 /**
  * Subscribe to auth state changes
  * @param {Function} callback - Called when auth state changes
@@ -38,7 +41,7 @@ export function onAuthStateChange(callback) {
  */
 function notifyAuthStateChange() {
   authStateListeners.forEach(cb => {
-    try { cb(authState); } catch (_) {}
+    try { cb(authState); } catch (e) { console.warn('[auth-guard] Auth state listener threw:', e); }
   });
 }
 
@@ -199,7 +202,10 @@ export async function initAuthMonitor() {
   await refreshSession();
   
   // Set up periodic session refresh (every 5 minutes)
-  setInterval(refreshSession, 5 * 60 * 1000);
+  if (sessionRefreshInterval) {
+    clearInterval(sessionRefreshInterval);
+  }
+  sessionRefreshInterval = setInterval(refreshSession, 5 * 60 * 1000);
 }
 
 // Initialize on module load

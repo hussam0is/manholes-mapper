@@ -26,7 +26,7 @@ export default async function handler(req, res) {
   }
 
   const { id: targetUserId } = req.query;
-  console.log(`[API /api/users/${targetUserId}] ${req.method} request started`);
+  console.debug(`[API /api/users/${targetUserId}] ${req.method} request started`);
 
   // Apply rate limiting
   if (applyRateLimit(req, res)) {
@@ -117,7 +117,7 @@ export default async function handler(req, res) {
 
       const updatedUser = await updateUser(targetUserId, updates);
 
-      console.log(`[API /api/users/${targetUserId}] Updated by ${userId}`);
+      console.debug(`[API /api/users/${targetUserId}] Updated by ${userId}`);
       return res.status(200).json({
         user: {
           id: updatedUser.id,

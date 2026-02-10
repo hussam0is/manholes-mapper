@@ -29,15 +29,34 @@ if (typeof window !== 'undefined' && window.location.hostname.includes('vercel.a
   injectSpeedInsights();
 }
 
+/** Escape HTML special characters to prevent XSS */
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 // Initialize Better Auth
 if (typeof window !== 'undefined') {
   console.log('Auth: Initializing Better Auth');
-  
+
   // Store auth client globally for legacy code access
   window.__authClient = authClient;
-  
+
+  // AbortController to clean up document-level listeners when menu re-renders
+  let userMenuAbortController = null;
+
   // Function to render user menu (desktop and mobile)
   const renderUserMenu = (user) => {
+    // Abort previous document-level listeners to prevent accumulation
+    if (userMenuAbortController) {
+      userMenuAbortController.abort();
+    }
+    userMenuAbortController = new AbortController();
     const userBtnContainer = document.getElementById('authUserButton');
     const mobileUserBtnContainer = document.getElementById('mobileAuthUserButton');
     
@@ -48,15 +67,15 @@ if (typeof window !== 'undefined') {
         // User is signed in - show user menu
         container.innerHTML = `
           <div class="user-menu">
-            <button class="user-menu-trigger" title="${user.name || user.email}">
+            <button class="user-menu-trigger" title="${escapeHtml(user.name || user.email)}">
               <div class="user-avatar">
-                ${user.image ? `<img src="${user.image}" alt="${user.name || 'User'}" />` : `<span>${(user.name || user.email || 'U')[0].toUpperCase()}</span>`}
+                ${user.image ? `<img src="${escapeHtml(user.image)}" alt="${escapeHtml(user.name || 'User')}" />` : `<span>${escapeHtml((user.name || user.email || 'U')[0].toUpperCase())}</span>`}
               </div>
             </button>
             <div class="user-menu-dropdown" style="display: none;">
               <div class="user-menu-header">
-                <div class="user-menu-name">${user.name || 'User'}</div>
-                <div class="user-menu-email">${user.email || ''}</div>
+                <div class="user-menu-name">${escapeHtml(user.name || 'User')}</div>
+                <div class="user-menu-email">${escapeHtml(user.email || '')}</div>
               </div>
               <hr class="user-menu-divider" />
               <button class="user-menu-item user-menu-signout">
@@ -78,10 +97,10 @@ if (typeof window !== 'undefined') {
             dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
           });
           
-          // Close dropdown when clicking outside
+          // Close dropdown when clicking outside (uses AbortController to prevent listener accumulation)
           document.addEventListener('click', () => {
             dropdown.style.display = 'none';
-          });
+          }, { signal: userMenuAbortController.signal });
         }
         
         if (signOutBtn) {
@@ -617,5 +636,5 @@ function initMobileMenuBehavior() {
 
 // After app scripts load, ensure header height and app height variables are synced
 // syncAppHeightVar fixes Android devices (e.g., Samsung Note 10) where 100dvh doesn't work correctly
-try { syncAppHeightVar(); } catch (_) { }
-try { syncHeaderHeightVar(); } catch (_) { }
+try { syncAppHeightVar(); } catch (e) { console.warn('[main-entry] syncAppHeightVar failed:', e); }
+try { syncHeaderHeightVar(); } catch (e) { console.warn('[main-entry] syncHeaderHeightVar failed:', e); }

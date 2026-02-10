@@ -26,7 +26,7 @@ export default async function handler(req, res) {
     request.headers.get = (name) => req.headers[name.toLowerCase()];
   }
 
-  console.log(`[API /api/user-role] ${req.method} request started`);
+  console.debug(`[API /api/user-role] ${req.method} request started`);
 
   // Apply rate limiting
   if (applyRateLimit(req, res)) {
@@ -72,7 +72,7 @@ export default async function handler(req, res) {
       updatedAt: user.updated_at,
     };
 
-    console.log(`[API /api/user-role] User ${userId} role: ${user.role}`);
+    console.debug(`[API /api/user-role] User ${userId} role: ${user.role}`);
     return res.status(200).json(response);
 
   } catch (error) {

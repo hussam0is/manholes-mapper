@@ -30,7 +30,7 @@ export default async function handler(req, res) {
   }
 
   const { id: projectId } = req.query;
-  console.log(`[API /api/projects/${projectId}] ${req.method} request started`);
+  console.debug(`[API /api/projects/${projectId}] ${req.method} request started`);
 
   // Apply rate limiting
   if (applyRateLimit(req, res)) {
@@ -118,7 +118,7 @@ export default async function handler(req, res) {
 
       const updatedProject = await updateProject(projectId, updates);
 
-      console.log(`[API /api/projects/${projectId}] Updated by ${userId}`);
+      console.debug(`[API /api/projects/${projectId}] Updated by ${userId}`);
       return res.status(200).json({
         project: {
           id: updatedProject.id,
@@ -140,7 +140,7 @@ export default async function handler(req, res) {
 
       await deleteProject(projectId);
 
-      console.log(`[API /api/projects/${projectId}] Deleted by ${userId}`);
+      console.debug(`[API /api/projects/${projectId}] Deleted by ${userId}`);
       return res.status(200).json({ success: true });
     }
 
@@ -157,7 +157,7 @@ export default async function handler(req, res) {
         const newName = body.name || `${project.name} (Copy)`;
         const duplicated = await duplicateProject(projectId, newName);
 
-        console.log(`[API /api/projects/${projectId}] Duplicated to ${duplicated.id} by ${userId}`);
+        console.debug(`[API /api/projects/${projectId}] Duplicated to ${duplicated.id} by ${userId}`);
         return res.status(201).json({
           project: {
             id: duplicated.id,

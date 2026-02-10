@@ -36,7 +36,7 @@ export default async function handler(req, res) {
   }
 
   const [targetType, targetId] = slug;
-  console.log(`[API /api/features/${targetType}/${targetId}] ${req.method} request started`);
+  console.debug(`[API /api/features/${targetType}/${targetId}] ${req.method} request started`);
 
   // Apply rate limiting
   if (applyRateLimit(req, res)) {
@@ -125,7 +125,7 @@ export default async function handler(req, res) {
       // Return updated features
       const updatedFeatures = await getFeatures(targetType, targetId);
 
-      console.log(`[API /api/features/${targetType}/${targetId}] Updated by ${userId}`);
+      console.debug(`[API /api/features/${targetType}/${targetId}] Updated by ${userId}`);
       return res.status(200).json({
         targetType,
         targetId,
