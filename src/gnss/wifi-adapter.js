@@ -18,7 +18,7 @@ let tcpSocketPlugin = null;
  */
 async function getTcpPlugin() {
   if (!isCapacitor) {
-    console.warn('TCP Sockets require Capacitor native runtime');
+    console.warn('[GNSS] TCP Sockets require Capacitor native runtime');
     return null;
   }
 
@@ -33,10 +33,10 @@ async function getTcpPlugin() {
       tcpSocketPlugin = window.Capacitor.Plugins.CapacitorTcpSocket;
       return tcpSocketPlugin;
     }
-    console.warn('TCP Socket plugin not registered. Install with: npm install capacitor-tcp-socket');
+    console.warn('[GNSS] TCP Socket plugin not registered');
     return null;
   } catch (e) {
-    console.warn('TCP Socket plugin not available:', e);
+    console.warn('[GNSS] TCP Socket plugin not available:', e.message);
     return null;
   }
 }
@@ -136,7 +136,7 @@ export class WifiAdapter {
 
       return true;
     } catch (e) {
-      console.error('TCP connection failed:', e);
+      console.error('[GNSS] TCP connection failed:', e.message);
       if (this.onError) {
         this.onError(e);
       }
@@ -158,7 +158,7 @@ export class WifiAdapter {
     try {
       await this.plugin.disconnect({ socketId: this.socketId });
     } catch (e) {
-      console.warn('TCP disconnect error:', e);
+      console.warn('[GNSS] TCP disconnect error:', e.message);
     }
 
     this.isConnected = false;
@@ -203,7 +203,7 @@ export class WifiAdapter {
    * @param {Error} error
    */
   handleError(error) {
-    console.error('TCP error:', error);
+    console.error('[GNSS] TCP error:', error.message);
     
     this.isConnected = false;
     this.socketId = null;
@@ -222,7 +222,7 @@ export class WifiAdapter {
    */
   scheduleReconnect() {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.warn('Max reconnection attempts reached');
+      console.warn('[GNSS] Max reconnection attempts reached');
       if (this.onDisconnect) {
         this.onDisconnect();
       }
@@ -232,11 +232,11 @@ export class WifiAdapter {
     this.cancelReconnect();
 
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts);
-    console.log(`Scheduling reconnect in ${delay}ms (attempt ${this.reconnectAttempts + 1})`);
+    console.debug(`[GNSS] Scheduling reconnect in ${delay}ms (attempt ${this.reconnectAttempts + 1})`);
 
     this.reconnectTimer = setTimeout(async () => {
       this.reconnectAttempts++;
-      console.log(`Reconnecting to ${this.host}:${this.port}...`);
+      console.debug(`[GNSS] Reconnecting to ${this.host}:${this.port}...`);
       await this.connect(this.host, this.port);
     }, delay);
   }

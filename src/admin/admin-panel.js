@@ -215,7 +215,7 @@ export class AdminPanel {
         }
       }
     } catch (error) {
-      console.error('Failed to load admin data:', error);
+      console.error('[AdminPanel] Failed to load admin data:', error.message);
       this._showToast(this._label('error'), 'error');
     } finally {
       this._setLoading(false);
@@ -495,7 +495,7 @@ export class AdminPanel {
           this._showToast(error.error || this._label('error'), 'error');
         }
       } catch (error) {
-        console.error('Failed to update user:', error);
+        console.error('[AdminPanel] Failed to update user:', error.message);
         this._showToast(this._label('error'), 'error');
       }
     });
@@ -561,7 +561,7 @@ export class AdminPanel {
           this._showToast(error.error || this._label('error'), 'error');
         }
       } catch (error) {
-        console.error('Failed to create organization:', error);
+        console.error('[AdminPanel] Failed to create organization:', error.message);
         this._showToast(this._label('error'), 'error');
       }
     });
@@ -583,7 +583,7 @@ export class AdminPanel {
         features = data.features || {};
       }
     } catch (error) {
-      console.error('Failed to fetch features:', error);
+      console.error('[AdminPanel] Failed to fetch features:', error.message);
     }
 
     const targetName = targetType === 'user'
@@ -648,7 +648,7 @@ export class AdminPanel {
           this._showToast(error.error || this._label('error'), 'error');
         }
       } catch (error) {
-        console.error('Failed to update features:', error);
+        console.error('[AdminPanel] Failed to update features:', error.message);
         this._showToast(this._label('error'), 'error');
       }
     });
@@ -674,7 +674,7 @@ export class AdminPanel {
         this._showToast(error.error || this._label('error'), 'error');
       }
     } catch (error) {
-      console.error('Failed to delete organization:', error);
+      console.error('[AdminPanel] Failed to delete organization:', error.message);
       this._showToast(this._label('error'), 'error');
     }
   }
@@ -686,7 +686,7 @@ export class AdminPanel {
     if (window.showToast) {
       window.showToast(message, type === 'error' ? 'error' : 'success');
     } else {
-      console.log(`Toast (${type}):`, message);
+      console.debug(`[AdminPanel] Toast (${type}):`, message);
     }
   }
 

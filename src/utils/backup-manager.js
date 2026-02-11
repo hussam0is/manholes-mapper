@@ -35,7 +35,7 @@ function generateBackupId(type) {
  */
 export async function createBackup(type = 'hourly') {
   if (!getSketchDataFn) {
-    console.warn('Backup manager not initialized - no sketch data function provided');
+    console.warn('[Backup] Not initialized — no sketch data function provided');
     return null;
   }
 
@@ -43,7 +43,7 @@ export async function createBackup(type = 'hourly') {
     const sketchData = getSketchDataFn();
     
     if (!sketchData || (!sketchData.nodes?.length && !sketchData.edges?.length)) {
-      console.log('No sketch data to backup');
+      console.debug('[Backup] No sketch data to backup');
       return null;
     }
 
@@ -64,14 +64,14 @@ export async function createBackup(type = 'hourly') {
     };
 
     await saveBackup(backup);
-    console.log(`Created ${type} backup:`, backup.id);
+    console.debug(`[Backup] Created ${type} backup:`, backup.id);
     
     // Notify listeners
     notifyBackupCreated(backup);
     
     return backup;
   } catch (error) {
-    console.error('Failed to create backup:', error);
+    console.error('[Backup] Failed to create backup:', error.message);
     return null;
   }
 }
@@ -81,20 +81,20 @@ export async function createBackup(type = 'hourly') {
  */
 export function startAutoBackup() {
   if (backupIntervalId) {
-    console.log('Auto-backup already running');
+    console.debug('[Backup] Auto-backup already running');
     return;
   }
 
-  console.log('Starting auto-backup (every 3 hours)');
+  console.debug('[Backup] Starting auto-backup (every 3 hours)');
   
   // Create initial backup after a short delay (5 seconds) to allow app to fully load
   setTimeout(() => {
-    createBackup('hourly').catch(err => console.error('Initial backup failed:', err));
+    createBackup('hourly').catch(err => console.error('[Backup] Initial backup failed:', err.message));
   }, 5000);
 
   // Set up the 3-hour interval
   backupIntervalId = setInterval(() => {
-    createBackup('hourly').catch(err => console.error('Auto-backup failed:', err));
+    createBackup('hourly').catch(err => console.error('[Backup] Auto-backup failed:', err.message));
   }, BACKUP_INTERVAL_MS);
 }
 
@@ -105,7 +105,7 @@ export function stopAutoBackup() {
   if (backupIntervalId) {
     clearInterval(backupIntervalId);
     backupIntervalId = null;
-    console.log('Auto-backup stopped');
+    console.debug('[Backup] Auto-backup stopped');
   }
 }
 
@@ -139,7 +139,7 @@ export async function getAllBackups() {
  */
 export async function clearHourlyBackups() {
   const count = await clearBackupsByType('hourly');
-  console.log(`Cleared ${count} hourly backups`);
+  console.debug(`[Backup] Cleared ${count} hourly backups`);
   return count;
 }
 
@@ -159,7 +159,7 @@ export async function saveDailyBackup() {
  */
 export async function removeBackup(backupId) {
   await deleteBackup(backupId);
-  console.log('Deleted backup:', backupId);
+  console.debug('[Backup] Deleted backup:', backupId);
 }
 
 /**
@@ -211,7 +211,7 @@ function notifyBackupCreated(backup) {
  */
 export function initBackupManager(getSketchData) {
   if (isInitialized) {
-    console.log('Backup manager already initialized');
+    console.debug('[Backup] Already initialized');
     return;
   }
 
@@ -221,7 +221,7 @@ export function initBackupManager(getSketchData) {
   // Start auto-backup
   startAutoBackup();
   
-  console.log('Backup manager initialized');
+  console.debug('[Backup] Initialized');
 }
 
 /**
@@ -232,7 +232,7 @@ export function cleanupBackupManager() {
   getSketchDataFn = null;
   isInitialized = false;
   backupListeners.clear();
-  console.log('Backup manager cleaned up');
+  console.debug('[Backup] Cleaned up');
 }
 
 // Export for global access

@@ -88,7 +88,7 @@ export function onSessionChange(callback) {
         });
       }
     } catch (error) {
-      console.error('Session check failed:', error);
+      console.error('[Auth] Session check failed:', error.message);
     }
   };
   

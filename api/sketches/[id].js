@@ -155,7 +155,7 @@ export default async function handler(req, res) {
             console.debug(`[API /api/sketches/${sketchId}] Lock acquired by ${userId}`);
             return res.status(200).json({ success: true, lock: result });
           } else {
-            console.debug(`[API /api/sketches/${sketchId}] Lock failed: ${result.message}`);
+            console.warn(`[API /api/sketches/${sketchId}] Lock failed: ${result.message}`);
             return res.status(409).json({ 
               error: result.message, 
               lock: {
@@ -295,7 +295,7 @@ export default async function handler(req, res) {
 
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
-    console.error(`[API /api/sketches/${sketchId}] Error:`, error.message, error.stack);
+    console.error(`[API /api/sketches/${sketchId}] Error:`, error.message);
     
     // Check for specific error types
     if (error.message?.includes('Database connection not configured')) {

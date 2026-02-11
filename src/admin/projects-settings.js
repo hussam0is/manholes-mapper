@@ -708,7 +708,7 @@ export class ProjectsSettings {
             const icon = e.target.parentElement.querySelector('.material-icons');
             if (icon) icon.textContent = visible ? 'visibility' : 'visibility_off';
           } catch (err) {
-            console.error('Failed to toggle layer visibility:', err);
+            console.error('[ProjectsSettings] Failed to toggle layer visibility:', err.message);
           }
         });
       });
@@ -727,7 +727,7 @@ export class ProjectsSettings {
             this.showToast('Layer deleted', 'success');
             await this._loadLayersList(projectId, container);
           } catch (err) {
-            console.error('Failed to delete layer:', err);
+            console.error('[ProjectsSettings] Failed to delete layer:', err.message);
             this.showToast('Error deleting layer', 'error');
           }
         });

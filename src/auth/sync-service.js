@@ -133,11 +133,11 @@ async function apiRequest(endpoint, options = {}) {
       // Include validation details if present
       if (errorData.details && Array.isArray(errorData.details)) {
         errorMessage += ': ' + errorData.details.join(', ');
-        console.error('Validation errors:', errorData.details);
+        console.error('[Sync] Validation errors:', errorData.details);
       }
       
       if (response.status === 401) {
-        console.error('Authentication error. Is BETTER_AUTH_SECRET set in .env.local?');
+        console.error('[Sync] Authentication failed (401). Check server auth configuration.');
         throw new Error(`Authentication failed (401). Please check your server configuration.`);
       }
       
@@ -185,7 +185,7 @@ export async function fetchSketchesFromCloud() {
         error.message?.includes('network error')) {
       throw error; // Let syncFromCloud handle the logging
     }
-    console.error('Failed to fetch sketches from cloud:', error);
+    console.error('[Sync] Failed to fetch sketches from cloud:', error);
     throw error;
   }
 }
@@ -238,17 +238,17 @@ export async function deleteSketchFromCloud(sketchId) {
 export async function syncFromCloud() {
   const authState = getAuthState();
   if (!authState.isSignedIn) {
-    console.warn('Cannot sync: not signed in');
+    console.warn('[Sync] Cannot sync: not signed in');
     return;
   }
 
   if (!navigator.onLine) {
-    console.log('Offline - loading from cache');
+    console.debug('[Sync] Offline — loading from cache');
     return;
   }
 
   if (isSyncInProgress) {
-    console.log('Sync already in progress, skipping concurrent call');
+    console.debug('[Sync] Sync already in progress, skipping');
     return;
   }
 
@@ -256,10 +256,10 @@ export async function syncFromCloud() {
   updateSyncState({ isSyncing: true, error: null });
 
   try {
-    console.groupCollapsed('[Sync] Starting cloud sync...');
+    console.debug('[Sync] Starting cloud sync...');
     // Fetch sketches from cloud
     const cloudSketches = await fetchSketchesFromCloud();
-    console.log(`Fetched ${cloudSketches.length} sketches from cloud`);
+    console.debug(`[Sync] Fetched ${cloudSketches.length} sketches from cloud`);
     
     // Get local sketches
     const localSketches = await getAllSketchesFromIdb();
@@ -292,14 +292,14 @@ export async function syncFromCloud() {
           cloudSynced: true
         }));
         window.localStorage.setItem('graphSketch.library', JSON.stringify(legacyLib));
-        console.log(`Updated legacy localStorage with ${legacyLib.length} sketches`);
+        console.debug(`[Sync] Updated legacy localStorage with ${legacyLib.length} sketches`);
         
         // Trigger a re-render of the home panel if the legacy function is available
         if (typeof window.renderHome === 'function') {
           window.renderHome();
         }
       } catch (err) {
-        console.warn('Failed to update legacy localStorage:', err);
+        console.warn('[Sync] Failed to update legacy localStorage:', err);
       }
     }
     
@@ -326,11 +326,9 @@ export async function syncFromCloud() {
       pendingChanges: 0,
     });
 
-    console.log(`Synced ${cloudSketches.length} sketches from cloud successfully`);
-    console.groupEnd();
+    console.debug(`[Sync] Synced ${cloudSketches.length} sketches from cloud successfully`);
     return cloudSketches;
   } catch (error) {
-    console.groupEnd();
     // Check if this is an "API not available" error - don't show as error in dev
     const isApiUnavailable = error.isExpectedDevError ||
                              error.message?.includes('API not available') || 
@@ -341,7 +339,7 @@ export async function syncFromCloud() {
     if (isApiUnavailable) {
       // Only log once when first detected
       if (apiAvailable) {
-        console.info('Cloud sync: API not available (development mode). Using local data only.');
+        console.debug('[Sync] API not available (development mode). Using local data only.');
       }
       apiAvailable = false;
       updateSyncState({
@@ -352,7 +350,7 @@ export async function syncFromCloud() {
       return [];
     }
     
-    console.error('Sync from cloud failed:', error);
+    console.error('[Sync] Cloud sync failed:', error);
     updateSyncState({
       isSyncing: false,
       error: error.message,
@@ -403,17 +401,17 @@ export async function acquireSketchLock(sketchId) {
       // Start refresh timer
       startLockRefreshTimer(sketchId);
       
-      console.debug('[SyncService] Lock acquired for sketch:', sketchId);
+      console.debug('[Sync] Lock acquired for sketch:', sketchId);
       return { success: true, lock: data.lock };
     } else {
-      console.warn('[SyncService] Failed to acquire lock:', data.error);
+      console.warn('[Sync] Failed to acquire lock:', data.error);
       return { success: false, error: data.error, lock: data.lock };
     }
   } catch (error) {
     if (error.isExpectedDevError) {
       return { success: true, offline: true };
     }
-    console.error('[SyncService] Error acquiring lock:', error);
+    console.error('[Sync] Error acquiring lock:', error);
     return { success: false, error: error.message };
   }
 }
@@ -441,18 +439,18 @@ export async function releaseSketchLock(sketchId) {
     currentLock = null;
     
     if (response.ok) {
-      console.debug('[SyncService] Lock released for sketch:', sketchId);
+      console.debug('[Sync] Lock released for sketch:', sketchId);
       return { success: true };
     } else {
       const data = await response.json();
-      console.warn('[SyncService] Failed to release lock:', data.error);
+      console.warn('[Sync] Failed to release lock:', data.error);
       return { success: false, error: data.error };
     }
   } catch (error) {
     if (error.isExpectedDevError) {
       return { success: true };
     }
-    console.error('[SyncService] Error releasing lock:', error);
+    console.error('[Sync] Error releasing lock:', error);
     return { success: false, error: error.message };
   }
 }
@@ -474,12 +472,12 @@ async function refreshCurrentLock() {
     if (response.ok) {
       const data = await response.json();
       currentLock.lockExpiresAt = data.lockExpiresAt;
-      console.debug('[SyncService] Lock refreshed, expires at:', data.lockExpiresAt);
+      console.debug('[Sync] Lock refreshed, expires at:', data.lockExpiresAt);
     } else {
-      console.warn('[SyncService] Failed to refresh lock');
+      console.warn('[Sync] Failed to refresh lock');
     }
   } catch (error) {
-    console.error('[SyncService] Error refreshing lock:', error);
+    console.error('[Sync] Error refreshing lock:', error);
   }
 }
 
@@ -601,7 +599,7 @@ export function isEmptySaveAllowed(sketchId) {
 export async function syncSketchToCloud(sketch) {
   // Skip if API not available (dev mode)
   if (!apiAvailable) {
-    console.debug('Cloud sync skipped - API not available (development mode)');
+    console.debug('[Sync] Cloud sync skipped — API not available');
     return;
   }
 
@@ -632,17 +630,17 @@ export async function syncSketchToCloud(sketch) {
     const userConfirmed = (typeof window !== 'undefined' && typeof confirm !== 'undefined') ? confirm(confirmMessage) : true;
     
     if (!userConfirmed) {
-      console.log('User declined to save empty sketch - sync cancelled');
+      console.debug('[Sync] User declined to save empty sketch');
       return;
     }
     
     // User confirmed - mark this sketch as allowed to save empty
     allowEmptySave(sketch.id);
-    console.log('User allowed saving empty sketch:', sketch.id);
+    console.debug('[Sync] User allowed saving empty sketch:', sketch.id);
   }
 
   if (isSyncInProgress) {
-    console.log('Sync already in progress, queuing this update');
+    console.debug('[Sync] Sync in progress, queuing update');
     await enqueueSyncOperation({
       type: 'UPDATE',
       sketchId: sketch.id,
@@ -661,7 +659,7 @@ export async function syncSketchToCloud(sketch) {
     const isCloudSketch = sketch.id && /^[0-9a-f-]{36}$/i.test(sketch.id);
     
     // Log sketch data for debugging validation issues
-    console.debug(`Syncing sketch "${sketch.name}" (${sketch.id}):`, {
+    console.debug(`[Sync] Syncing sketch "${sketch.name}" (${sketch.id}):`, {
       nodesCount: sketch.nodes?.length ?? 0,
       edgesCount: sketch.edges?.length ?? 0,
       hasAdminConfig: !!sketch.adminConfig,
@@ -717,12 +715,12 @@ export async function syncSketchToCloud(sketch) {
               if (idx >= 0) {
                 lib[idx] = { ...lib[idx], id: cloudSketch.id, cloudSynced: true };
                 window.localStorage.setItem('graphSketch.library', JSON.stringify(lib));
-                console.log(`Updated localStorage: ${oldId} → ${cloudSketch.id}`);
+                console.debug(`[Sync] Updated localStorage: ${oldId} → ${cloudSketch.id}`);
               }
             }
           }
         } catch (err) {
-          console.warn('Failed to update localStorage with new cloud ID:', err);
+          console.warn('[Sync] Failed to update localStorage with new cloud ID:', err);
         }
       }
     }
@@ -735,12 +733,12 @@ export async function syncSketchToCloud(sketch) {
     // Check if API became unavailable
     const isApiUnavailable = error.message?.includes('API not available');
     if (isApiUnavailable) {
-      console.log('Cloud sync skipped - API not available (development mode)');
+      console.debug('[Sync] Cloud sync skipped — API not available');
       updateSyncState({ isSyncing: false });
       return;
     }
 
-    console.error('Failed to sync sketch to cloud:', error);
+    console.error('[Sync] Failed to sync sketch to cloud:', error);
     updateSyncState({
       isSyncing: false,
       error: error.message,
@@ -783,7 +781,7 @@ export async function deleteSketchEverywhere(sketchId) {
 
   // Skip cloud delete if API not available
   if (!apiAvailable) {
-    console.log('Cloud delete skipped - API not available (development mode)');
+    console.debug('[Sync] Cloud delete skipped — API not available');
     return;
   }
 
@@ -794,10 +792,10 @@ export async function deleteSketchEverywhere(sketchId) {
     } catch (error) {
       // Ignore API unavailable errors
       if (error.message?.includes('API not available')) {
-        console.log('Cloud delete skipped - API not available (development mode)');
+        console.debug('[Sync] Cloud delete skipped — API not available');
         return;
       }
-      console.error('Failed to delete from cloud:', error);
+      console.error('[Sync] Failed to delete from cloud:', error);
       // Queue for later
       await enqueueSyncOperation({
         type: 'DELETE',
@@ -821,7 +819,7 @@ export async function deleteSketchEverywhere(sketchId) {
  */
 export function resetApiAvailability() {
   apiAvailable = true;
-  console.log('API availability reset - will retry on next request');
+  console.debug('[Sync] API availability reset');
 }
 
 /**
@@ -837,11 +835,11 @@ export async function processSyncQueue() {
   if (operations.length === 0) return;
 
   if (isSyncInProgress) {
-    console.log('Sync already in progress, will retry processing queue later');
+    console.debug('[Sync] Sync in progress, will retry queue later');
     return;
   }
 
-  console.log(`Processing ${operations.length} queued sync operations`);
+  console.debug(`[Sync] Processing ${operations.length} queued operations`);
   isSyncInProgress = true;
   updateSyncState({ isSyncing: true });
 
@@ -884,7 +882,7 @@ export async function processSyncQueue() {
           await deleteSketchFromCloud(op.sketchId);
         }
       } catch (error) {
-        console.error('Failed to process sync op:', op, error);
+        console.error('[Sync] Failed to process queued operation:', op, error);
         failedOps.push(op);
       }
     }
@@ -1057,7 +1055,7 @@ async function cleanupDuplicateSketchesInternal() {
  * @returns {Promise<Object>} { removedCount: number, removedIds: Array }
  */
 export async function cleanupDuplicateSketches() {
-  console.log('[Sync] Starting duplicate sketch cleanup...');
+  console.debug('[Sync] Starting duplicate sketch cleanup...');
   
   const result = await cleanupDuplicateSketchesInternal();
   
@@ -1067,7 +1065,7 @@ export async function cleanupDuplicateSketches() {
       window.renderHome();
     }
   } else {
-    console.log('[Sync] No duplicate sketches found.');
+    console.debug('[Sync] No duplicate sketches found');
   }
   
   return result;
@@ -1081,13 +1079,13 @@ export function initSyncService() {
   // Listen for online/offline events
   window.addEventListener('online', () => {
     updateSyncState({ isOnline: true });
-    console.log('Back online - processing sync queue');
+    console.debug('[Sync] Back online — processing sync queue');
     processSyncQueue();
   });
 
   window.addEventListener('offline', () => {
     updateSyncState({ isOnline: false });
-    console.log('Gone offline - changes will be queued');
+    console.debug('[Sync] Gone offline — changes will be queued');
   });
 
   // Initial sync on auth ready
@@ -1104,7 +1102,7 @@ export function initSyncService() {
               // Already handled - silent in dev mode
               return;
             }
-            console.error('Sync error:', error);
+            console.error('[Sync] Sync error:', error);
           });
         }, 500);
       }

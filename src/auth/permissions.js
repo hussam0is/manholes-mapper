@@ -75,7 +75,7 @@ export async function fetchUserRole(forceRefresh = false) {
       });
 
       if (!response.ok) {
-        console.error('Failed to fetch user role:', response.status);
+        console.error('[Auth] Failed to fetch user role:', response.status);
         return null;
       }
 
@@ -85,7 +85,7 @@ export async function fetchUserRole(forceRefresh = false) {
       return data;
 
     } catch (error) {
-      console.error('Error fetching user role:', error);
+      console.error('[Auth] Error fetching user role:', error.message);
       return null;
     } finally {
       fetchPromise = null;
@@ -161,7 +161,7 @@ export function initPermissionsService() {
       if (authState.isSignedIn && authState.isLoaded) {
         // Fetch permissions when signed in
         fetchUserRole().catch(err => {
-          console.error('Failed to fetch user permissions:', err);
+          console.error('[Auth] Failed to fetch user permissions:', err.message);
         });
       } else if (!authState.isSignedIn) {
         // Clear permissions on sign out

@@ -31,7 +31,7 @@
       });
     })
     .catch((err) => {
-      console.error('Service worker registration failed:', err);
+      console.error('[SW] Service worker registration failed:', err.message);
     });
 
   let reloaded = false;

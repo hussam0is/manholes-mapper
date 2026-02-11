@@ -586,7 +586,7 @@ let adminConfig = (() => {
     merged.edges.defaults = merged.edges.defaults || {};
     return merged;
   } catch (e) {
-    console.warn('Failed to load admin config; using defaults', e);
+    console.warn('[App] Failed to load admin config; using defaults', e.message);
     return JSON.parse(JSON.stringify(defaultAdminConfig));
   }
 })();
@@ -606,7 +606,7 @@ function loadFieldHistory() {
     if (!raw) return { nodes: {}, edges: {} };
     return JSON.parse(raw);
   } catch (e) {
-    console.warn('Failed to load field history', e);
+    console.warn('[App] Failed to load field history', e.message);
     return { nodes: {}, edges: {} };
   }
 }
@@ -616,7 +616,7 @@ function saveFieldHistory(history) {
   try {
     localStorage.setItem(FIELD_HISTORY_KEY, JSON.stringify(history));
   } catch (e) {
-    console.warn('Failed to save field history', e);
+    console.warn('[App] Failed to save field history', e.message);
   }
 }
 
@@ -933,7 +933,7 @@ function mountAuthSignIn() {
       signUpUrl: '#/signup',
     });
   }).catch(err => {
-    console.error('Failed to load auth provider:', err);
+    console.error('[Auth] Failed to load auth provider:', err.message);
     authContainer.innerHTML = '<p>Failed to load sign in form</p>';
   });
 }
@@ -949,7 +949,7 @@ function mountAuthSignUp() {
       signInUrl: '#/login',
     });
   }).catch(err => {
-    console.error('Failed to load auth provider:', err);
+    console.error('[Auth] Failed to load auth provider:', err.message);
     authContainer.innerHTML = '<p>Failed to load sign up form</p>';
   });
 }
@@ -975,7 +975,7 @@ function handleRoute() {
   // Get auth state if available
   const authState = window.authGuard?.getAuthState?.() || { isLoaded: false, isSignedIn: false };
   
-  console.debug('handleRoute:', { hash, isLoaded: authState.isLoaded, isSignedIn: authState.isSignedIn });
+  console.debug('[App] handleRoute:', { hash, isLoaded: authState.isLoaded, isSignedIn: authState.isSignedIn });
   
   // If auth is not yet loaded, show loading
   if (!authState.isLoaded) {
@@ -1183,7 +1183,7 @@ if (adminImportBtn && adminImportFile) {
       renderDetails();
       showToast(t('admin.importSuccess'));
     } catch (_) {
-      console.warn('Admin import failed', _);
+      console.warn('[Admin] Import failed', _);
       showToast(t('admin.importInvalid'));
     }
   });
@@ -1840,7 +1840,7 @@ function loadFromStorage() {
     loadProjectReferenceLayers(currentProjectId);
     return true;
   } catch (e) {
-    console.error('Error loading sketch from storage:', e);
+    console.error('[App] Error loading sketch from storage:', e.message);
     return false;
   }
 }
@@ -1977,7 +1977,7 @@ function getLibrary() {
     _libraryCacheValid = true;
     return [];
   } catch (e) {
-    console.error('Failed to parse library', e);
+    console.error('[App] Failed to parse library', e.message);
     _libraryCache = [];
     _libraryCacheValid = true;
     return [];
@@ -2069,13 +2069,13 @@ function saveToLibrary() {
     _emptySketchConfirmPending = false;
     
     if (!userConfirmed) {
-      console.debug('User declined to save empty sketch - save cancelled');
+      console.debug('[App] User declined to save empty sketch — save cancelled');
       return;
     }
     
     // User confirmed - mark this sketch as allowed to save empty
     setAllowedEmptySketchId(sketchId);
-    console.debug('User allowed saving empty sketch:', sketchId);
+    console.debug('[App] User allowed saving empty sketch:', sketchId);
   }
   
   const record = {
@@ -2257,7 +2257,7 @@ async function loadProjectReferenceLayers(projectId) {
       loadRefLayerSettings();
       renderRefLayerToggles();
       scheduleDraw();
-      console.log(`[RefLayers] Loaded ${cached.length} layers from cache for project ${projectId}`);
+      console.debug(`[RefLayers] Loaded ${cached.length} layers from cache for project ${projectId}`);
     }
     
     // Fetch from server (always, to get latest data)
@@ -2283,9 +2283,9 @@ async function loadProjectReferenceLayers(projectId) {
       }));
     } catch (_) { /* localStorage may be full */ }
     
-    console.log(`[RefLayers] Loaded ${layers.length} layers from server for project ${projectId}`);
+    console.debug(`[RefLayers] Loaded ${layers.length} layers from server for project ${projectId}`);
   } catch (err) {
-    console.warn('[RefLayers] Error loading reference layers:', err);
+    console.warn('[RefLayers] Error loading reference layers:', err.message);
   }
 }
 
@@ -2308,7 +2308,7 @@ function deleteFromLibrary(sketchId) {
   idbDeleteRecordCompat(sketchId);
   // Remove from cloud if sync service is available
   if (window.syncService?.deleteSketchEverywhere) {
-    window.syncService.deleteSketchEverywhere(sketchId).catch(console.error);
+    window.syncService.deleteSketchEverywhere(sketchId).catch(err => console.error('[Sync] Failed to delete sketch everywhere:', err.message));
   }
 }
 
@@ -2338,7 +2338,7 @@ function migrateSingleSketchToLibraryIfNeeded() {
     // Also populate IndexedDB with the migrated record
     idbSaveRecordCompat(record);
   } catch (e) {
-    console.warn('Migration skipped', e);
+    console.warn('[App] Migration skipped', e.message);
   }
 }
 
@@ -2717,13 +2717,13 @@ async function handleChangeProject(sketchId) {
         showToast(t('toasts.saved'));
         closeModal();
       } catch (err) {
-        console.error(err);
+        console.error('[Projects] Failed to save project assignment:', err.message);
         showToast(err.message, 'error');
       }
     });
 
   } catch (err) {
-    console.error(err);
+    console.error('[Projects] Error loading projects:', err.message);
     showToast('Error loading projects', 'error');
   }
 }
@@ -5542,7 +5542,7 @@ if (exportSketchBtn) {
       exportSketchToJson(sketchData);
       showToast(t('toasts.sketchExported'));
     } catch (error) {
-      console.error('Export error:', error);
+      console.error('[App] Export error:', error.message);
       alert(t('alerts.exportFailed'));
     }
   });
@@ -5598,7 +5598,7 @@ if (importSketchBtn && importSketchFile) {
       showToast(t('toasts.sketchImported'));
 
     } catch (error) {
-      console.error('Import error:', error);
+      console.error('[App] Import error:', error.message);
       alert(t('alerts.importFailed') + '\n' + error.message);
     } finally {
       // Reset file input so same file can be imported again
@@ -5791,7 +5791,7 @@ try {
     }
   }
 } catch (e) {
-  console.warn('Failed to load size scale preference:', e);
+  console.warn('[App] Failed to load size scale preference:', e.message);
 }
 
 // Size control buttons
@@ -6159,7 +6159,7 @@ async function completeFinishWorkday() {
     scheduleDraw();
     
   } catch (error) {
-    console.error('Error completing finish workday:', error);
+    console.error('[App] Error completing finish workday:', error.message);
     showToast(t('finishWorkday.error') || 'Error completing workday');
   }
 }
@@ -6233,18 +6233,18 @@ async function handleCoordinatesImport(file) {
     }
     
     // Debug: Log imported coordinates
-    console.debug('=== COORDINATES IMPORT DEBUG ===');
-    console.debug('Imported coordinates count:', newCoordinates.size);
-    console.debug('Sample coordinates (first 5):');
+    console.debug('[Coordinates] === IMPORT DEBUG ===');
+    console.debug('[Coordinates] Imported coordinates count:', newCoordinates.size);
+    console.debug('[Coordinates] Sample coordinates (first 5):');
     let count = 0;
     for (const [pointId, coords] of newCoordinates.entries()) {
       if (count++ < 5) {
-        console.debug(`  Point ID "${pointId}":`, coords);
+        console.debug(`[Coordinates]   Point ID "${pointId}":`, coords);
       }
     }
     
     // Debug: Log current node IDs
-    console.debug('Current node IDs in sketch:', nodes.map(n => `"${n.id}" (type: ${typeof n.id})`).slice(0, 10));
+    console.debug('[Coordinates] Current node IDs in sketch:', nodes.map(n => `"${n.id}" (type: ${typeof n.id})`).slice(0, 10));
     
     // Check for matches
     const matchingIds = [];
@@ -6257,12 +6257,12 @@ async function handleCoordinatesImport(file) {
         nonMatchingNodeIds.push(nodeIdStr);
       }
     });
-    console.debug('Matching node IDs:', matchingIds.length, matchingIds.slice(0, 10));
-    console.debug('Non-matching node IDs:', nonMatchingNodeIds.length, nonMatchingNodeIds.slice(0, 10));
+    console.debug('[Coordinates] Matching node IDs:', matchingIds.length, matchingIds.slice(0, 10));
+    console.debug('[Coordinates] Non-matching node IDs:', nonMatchingNodeIds.length, nonMatchingNodeIds.slice(0, 10));
     
     // Check if any coordinate point_ids match node IDs
     const coordPointIds = Array.from(newCoordinates.keys());
-    console.debug('Coordinate point_ids (first 10):', coordPointIds.slice(0, 10));
+    console.debug('[Coordinates] Coordinate point_ids (first 10):', coordPointIds.slice(0, 10));
     
     // Store coordinates
     coordinatesMap = newCoordinates;
@@ -6287,7 +6287,7 @@ async function handleCoordinatesImport(file) {
     scheduleDraw();
     
   } catch (error) {
-    console.error('Failed to import coordinates:', error);
+    console.error('[Coordinates] Failed to import coordinates:', error.message);
     showToast(t('coordinates.importError') || 'שגיאה בטעינת קואורדינטות');
   }
 }
@@ -6347,7 +6347,7 @@ function applyCoordinatesIfEnabled(options = {}) {
     worldCenterBeforeChange = screenToWorld(screenCenterX, screenCenterY);
   }
   
-  console.debug('Canvas dimensions for coordinate transform:', {
+  console.debug('[Coordinates] Canvas dimensions for coordinate transform:', {
     canvasWidth,
     canvasHeight,
     logicalWidth,
@@ -6360,7 +6360,7 @@ function applyCoordinatesIfEnabled(options = {}) {
   nodes = result.updatedNodes;
   
   // Log results for debugging
-  console.debug(`Coordinates applied: ${result.matchedCount} matched, ${result.unmatchedCount} unmatched`);
+  console.debug(`[Coordinates] Applied: ${result.matchedCount} matched, ${result.unmatchedCount} unmatched`);
   
   // Approximate positions for nodes without coordinates based on their neighbors
   // Pass original positions to calculate distance ratios
@@ -6546,7 +6546,7 @@ function updateMapReferencePoint() {
     if (node.surveyX != null && node.surveyY != null) {
       const refPoint = createReferenceFromNode(node);
       if (refPoint) {
-        console.debug('Map reference point set from node surveyX/surveyY:', refPoint);
+        console.debug('[Map] Reference point set from node surveyX/surveyY:', refPoint);
         setMapReferencePoint(refPoint);
         startMeasurementTilesPrecache();
         setStreetViewVisible(true);
@@ -6565,7 +6565,7 @@ function updateMapReferencePoint() {
           itm: { x: coords.x, y: coords.y },
           canvas: { x: node.x, y: node.y }
         };
-        console.debug('Map reference point set from coordinatesMap:', refPoint);
+        console.debug('[Map] Reference point set from coordinatesMap:', refPoint);
         setMapReferencePoint(refPoint);
         startMeasurementTilesPrecache();
         setStreetViewVisible(true);
@@ -6591,7 +6591,7 @@ function updateMapReferencePoint() {
     canvas: { x: canvasCenterX, y: canvasCenterY }
   };
   
-  console.debug('Map reference point set to default (Tel Aviv area):', refPoint);
+  console.debug('[Map] Reference point set to default (Tel Aviv area):', refPoint);
   setMapReferencePoint(refPoint);
   // Show street-view pegman whenever a reference point becomes available
   setStreetViewVisible(true);
@@ -6618,7 +6618,7 @@ function saveCoordinateScale() {
   try {
     localStorage.setItem(COORDINATE_SCALE_KEY, JSON.stringify(coordinateScale));
   } catch (e) {
-    console.warn('Failed to save coordinate scale', e);
+    console.warn('[Coordinates] Failed to save coordinate scale', e.message);
   }
 }
 
@@ -6635,7 +6635,7 @@ function loadCoordinateScale() {
       }
     }
   } catch (e) {
-    console.warn('Failed to load coordinate scale', e);
+    console.warn('[Coordinates] Failed to load coordinate scale', e.message);
   }
 }
 
@@ -6666,7 +6666,7 @@ function saveViewStretch() {
   try {
     localStorage.setItem(VIEW_STRETCH_KEY, JSON.stringify({ x: viewStretchX, y: viewStretchY }));
   } catch (e) {
-    console.warn('Failed to save view stretch', e);
+    console.warn('[App] Failed to save view stretch', e.message);
   }
 }
 
@@ -6684,7 +6684,7 @@ function loadViewStretch() {
       }
     }
   } catch (e) {
-    console.warn('Failed to load view stretch', e);
+    console.warn('[App] Failed to load view stretch', e.message);
   }
 }
 
@@ -7527,7 +7527,7 @@ async function searchAddressAndCenter(query) {
     scheduleDraw();
     showToast(result.display_name || t('toasts.addressFound') || 'נמצא');
   } catch (err) {
-    console.warn('Geocode error:', err);
+    console.warn('[App] Geocode error:', err.message);
     showToast(t('toasts.geocodeError') || 'שגיאה בחיפוש כתובת', 'error');
   }
 }
@@ -7680,12 +7680,12 @@ if (window.matchMedia) {
 // surfaced via the toast.  Developers can hook into this to send
 // telemetry.
 window.addEventListener('error', (e) => {
-  console.error('Unhandled error:', e.error || e.message || e);
+  console.error('[App] Unhandled error:', e.error?.message || e.message || e);
   showToast('⚠️ ' + (e.message || 'Unexpected error'));
 });
 
 window.addEventListener('unhandledrejection', (e) => {
-  console.error('Unhandled rejection:', e.reason);
+  console.error('[App] Unhandled rejection:', e.reason?.message || e.reason);
   showToast('⚠️ ' + (e.reason && e.reason.message ? e.reason.message : 'Unexpected error'));
 });
 

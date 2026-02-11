@@ -41,7 +41,7 @@ export function onAuthStateChange(callback) {
  */
 function notifyAuthStateChange() {
   authStateListeners.forEach(cb => {
-    try { cb(authState); } catch (e) { console.warn('[auth-guard] Auth state listener threw:', e); }
+    try { cb(authState); } catch (e) { console.warn('[Auth] State listener threw:', e.message); }
   });
 }
 
@@ -179,14 +179,14 @@ export async function refreshSession() {
   try {
     const { data, error } = await getCurrentSession();
     if (error) {
-      console.warn('Session refresh failed:', error);
+      console.warn('[Auth] Session refresh failed:', error);
       updateAuthState({ session: null, user: null });
     } else {
       updateAuthState(data);
     }
   } catch (err) {
     // Network errors or API not available
-    console.warn('Session refresh error (API may not be configured):', err.message);
+    console.warn('[Auth] Session refresh error (API may not be configured):', err.message);
     // Mark as loaded but not signed in so the app can still work
     updateAuthState({ session: null, user: null });
   }
@@ -196,7 +196,7 @@ export async function refreshSession() {
  * Initialize auth state monitoring with Better Auth
  */
 export async function initAuthMonitor() {
-  console.log('Auth Guard: Initializing Better Auth session monitoring');
+  console.debug('[Auth] Initializing session monitoring');
   
   // Check for existing session
   await refreshSession();

@@ -342,7 +342,7 @@ export class FloatingKeyboard {
         }
       }
     } catch (err) {
-      console.warn('Failed to load floating keyboard preferences:', err);
+      console.warn('[UI] Failed to load floating keyboard preferences:', err.message);
     }
   }
 

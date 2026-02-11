@@ -24,7 +24,7 @@ export function wgs84ToItm(lat, lon) {
     const [x, y] = proj4('EPSG:4326', 'EPSG:2039', [lon, lat]);
     return { x, y };
   } catch (error) {
-    console.error('WGS84 to ITM conversion error:', error);
+    console.error('[Map] WGS84 to ITM conversion error:', error.message);
     // Fallback to approximate conversion
     return wgs84ToItmSimple(lat, lon);
   }
@@ -41,7 +41,7 @@ export function itmToWgs84(x, y) {
     const [lon, lat] = proj4('EPSG:2039', 'EPSG:4326', [x, y]);
     return { lat, lon };
   } catch (error) {
-    console.error('ITM to WGS84 conversion error:', error);
+    console.error('[Map] ITM to WGS84 conversion error:', error.message);
     // Fallback to approximate conversion
     return itmToWgs84Simple(x, y);
   }

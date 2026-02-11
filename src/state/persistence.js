@@ -24,7 +24,7 @@ export async function restoreFromIndexedDbIfNeeded() {
       }
     } catch (_) {}
   } catch (err) {
-    console.warn('restoreFromIndexedDbIfNeeded failed', err);
+    console.warn('[State] restoreFromIndexedDbIfNeeded failed', err.message);
   }
 }
 

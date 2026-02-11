@@ -42,7 +42,7 @@ function escapeHtml(str) {
 
 // Initialize Better Auth
 if (typeof window !== 'undefined') {
-  console.log('Auth: Initializing Better Auth');
+  console.debug('[Auth] Initializing Better Auth');
 
   // Store auth client globally for legacy code access
   window.__authClient = authClient;
@@ -110,7 +110,7 @@ if (typeof window !== 'undefined') {
               await refreshSession();
               window.location.hash = '#/login';
             } catch (err) {
-              console.error('Sign out failed:', err);
+              console.error('[Auth] Sign out failed:', err.message);
             }
           });
         }
@@ -130,7 +130,7 @@ if (typeof window !== 'undefined') {
   
   // Listen for auth state changes
   onAuthStateChange((state) => {
-    console.debug('Auth state changed:', state.isSignedIn ? 'signed in' : 'signed out');
+    console.debug('[Auth] State changed:', state.isSignedIn ? 'signed in' : 'signed out');
     renderUserMenu(state.user);
     
     // Force a route check when auth state changes
@@ -142,7 +142,7 @@ if (typeof window !== 'undefined') {
   // Dispatch custom event so other parts of the app know auth is ready
   getCurrentSession().then(({ data }) => {
     if (data?.session) {
-      console.log('Auth: Session restored');
+      console.debug('[Auth] Session restored');
     }
     window.dispatchEvent(new CustomEvent('auth-loaded', { detail: { authClient } }));
   });
@@ -256,7 +256,7 @@ function initMyLocationUI() {
         }
       }
     } catch (error) {
-      console.error('Error getting location:', error);
+      console.error('[Location] Error getting location:', error.message);
       if (window.showToast) {
         window.showToast(window.t?.('location.error') || 'Error getting location');
       }

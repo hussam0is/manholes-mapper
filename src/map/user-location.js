@@ -60,7 +60,7 @@ export async function checkPermission() {
     // Fallback: assume prompt state
     return 'prompt';
   } catch (e) {
-    console.warn('Permission check failed:', e);
+    console.warn('[Location] Permission check failed:', e.message);
     return 'prompt';
   }
 }
@@ -89,7 +89,7 @@ export function requestLocationPermission() {
         resolve(currentPosition);
       },
       (error) => {
-        console.warn('Location error:', error.code, error.message);
+        console.warn('[Location] Location error:', error.code, error.message);
         let errorType = 'unknown';
         
         switch (error.code) {
@@ -156,12 +156,12 @@ export function startWatchingLocation(callback) {
         try {
           cb(currentPosition);
         } catch (e) {
-          console.error('Location callback error:', e);
+          console.error('[Location] Callback error:', e.message);
         }
       });
     },
     (error) => {
-      console.warn('Location watch error:', error.message);
+      console.warn('[Location] Watch error:', error.message);
       if (error.code === error.PERMISSION_DENIED) {
         permissionState = 'denied';
         stopWatchingLocation();

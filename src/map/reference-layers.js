@@ -166,7 +166,7 @@ export function saveRefLayerSettings() {
     };
     localStorage.setItem('graphSketch.refLayers.v1', JSON.stringify(settings));
   } catch (e) {
-    console.warn('Failed to save reference layer settings', e);
+    console.warn('[Map] Failed to save reference layer settings', e.message);
   }
 }
 
@@ -187,7 +187,7 @@ export function loadRefLayerSettings() {
       }
     }
   } catch (e) {
-    console.warn('Failed to load reference layer settings', e);
+    console.warn('[Map] Failed to load reference layer settings', e.message);
   }
 }
 

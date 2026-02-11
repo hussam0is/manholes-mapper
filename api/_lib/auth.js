@@ -174,7 +174,7 @@ export async function verifyAuth(request) {
       user: session.user,
     };
   } catch (error) {
-    console.error('Auth verification failed:', error.message);
+    console.error('[Auth] Verification failed:', error.message);
     return { userId: null, error: 'Authentication failed', user: null };
   }
 }

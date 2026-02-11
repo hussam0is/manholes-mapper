@@ -67,7 +67,7 @@ export function initGnssModule() {
   // Initialize point capture dialog
   initPointCaptureDialog();
   
-  console.log('GNSS module initialized');
+  console.debug('[GNSS] Module initialized');
 }
 
 /**
@@ -78,7 +78,7 @@ export async function setupMockGnss() {
   const success = await gnssConnection.connectMock();
   if (success) {
     gnssState.setLiveMeasureEnabled(true);
-    console.log('Mock GNSS connected and Live Measure enabled');
+    console.debug('[GNSS] Mock GNSS connected and Live Measure enabled');
   }
   return success;
 }

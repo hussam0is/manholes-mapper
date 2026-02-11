@@ -46,7 +46,7 @@ class MenuEventEmitter {
         try {
           callback(data);
         } catch (err) {
-          console.error(`Error in menu event handler for "${event}":`, err);
+          console.error(`[Menu] Error in event handler for "${event}":`, err.message);
         }
       });
     }

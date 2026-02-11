@@ -69,7 +69,7 @@ export class NMEAParser {
   parseSentence(sentence) {
     // Validate checksum if present
     if (!this.validateChecksum(sentence)) {
-      console.warn('NMEA checksum failed:', sentence);
+      console.warn('[GNSS] NMEA checksum failed:', sentence);
       return false;
     }
 
@@ -280,7 +280,7 @@ export class NMEAParser {
       try {
         listener(state);
       } catch (e) {
-        console.error('NMEA listener error:', e);
+        console.error('[GNSS] NMEA listener error:', e.message);
       }
     }
   }

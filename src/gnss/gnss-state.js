@@ -275,7 +275,7 @@ class GNSSStateManager {
         try {
           callback(data);
         } catch (e) {
-          console.error(`GNSS state listener error (${event}):`, e);
+          console.error(`[GNSS] State listener error (${event}):`, e.message);
         }
       }
     }

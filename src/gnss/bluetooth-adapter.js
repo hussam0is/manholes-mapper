@@ -18,7 +18,7 @@ let bluetoothSerialPlugin = null;
  */
 async function getBluetoothPlugin() {
   if (!isCapacitor) {
-    console.warn('Bluetooth SPP requires Capacitor native runtime');
+    console.warn('[GNSS] Bluetooth SPP requires Capacitor native runtime');
     return null;
   }
 
@@ -33,10 +33,10 @@ async function getBluetoothPlugin() {
       bluetoothSerialPlugin = window.Capacitor.Plugins.BluetoothSerial;
       return bluetoothSerialPlugin;
     }
-    console.warn('Bluetooth Serial plugin not registered. Install with: npm install @niceprogrammer/capacitor-bluetooth-serial');
+    console.warn('[GNSS] Bluetooth Serial plugin not registered');
     return null;
   } catch (e) {
-    console.warn('Bluetooth Serial plugin not available:', e);
+    console.warn('[GNSS] Bluetooth Serial plugin not available:', e.message);
     return null;
   }
 }
@@ -86,7 +86,7 @@ export class BluetoothAdapter {
       const { enabled } = await this.plugin.isEnabled();
       return enabled;
     } catch (e) {
-      console.error('Bluetooth availability check failed:', e);
+      console.error('[GNSS] Bluetooth availability check failed:', e.message);
       return false;
     }
   }
@@ -104,7 +104,7 @@ export class BluetoothAdapter {
       await this.plugin.enable();
       return true;
     } catch (e) {
-      console.warn('Failed to enable Bluetooth:', e);
+      console.warn('[GNSS] Failed to enable Bluetooth:', e.message);
       return false;
     }
   }
@@ -132,7 +132,7 @@ export class BluetoothAdapter {
                    device.name?.toLowerCase().includes('r780')
       }));
     } catch (e) {
-      console.error('Failed to list paired devices:', e);
+      console.error('[GNSS] Failed to list paired devices:', e.message);
       return [];
     }
   }
@@ -183,7 +183,7 @@ export class BluetoothAdapter {
 
       return true;
     } catch (e) {
-      console.error('Bluetooth connection failed:', e);
+      console.error('[GNSS] Bluetooth connection failed:', e.message);
       if (this.onError) {
         this.onError(e);
       }
@@ -209,7 +209,7 @@ export class BluetoothAdapter {
       // Disconnect
       await this.plugin.disconnect();
     } catch (e) {
-      console.warn('Disconnect error:', e);
+      console.warn('[GNSS] Disconnect error:', e.message);
     }
 
     this.isConnected = false;
@@ -244,7 +244,7 @@ export class BluetoothAdapter {
    * @param {Error} error
    */
   handleError(error) {
-    console.error('Bluetooth error:', error);
+    console.error('[GNSS] Bluetooth error:', error.message);
     
     if (this.onError) {
       this.onError(error);

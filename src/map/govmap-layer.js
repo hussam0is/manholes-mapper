@@ -119,7 +119,7 @@ async function loadTile(x, y, z, type) {
       
       fallbackImg.onerror = () => {
         tileRetryCount.set(cacheKey, retries + 1);
-        console.warn(`Failed to load tile ${cacheKey}`);
+        console.warn(`[Map] Failed to load tile ${cacheKey}`);
         resolve(null);
       };
       
@@ -198,7 +198,7 @@ export function getMapType() {
  */
 export async function drawMapTiles(ctx, canvasWidth, canvasHeight, viewTranslate, viewScale, coordinateScale, onTilesLoaded, stretchX = 1, stretchY = 1) {
   if (!mapLayerEnabled || !referencePoint) {
-    console.log('Map layer disabled or no reference point', { mapLayerEnabled, referencePoint });
+    console.debug('[Map] Map layer disabled or no reference point', { mapLayerEnabled, referencePoint });
     return;
   }
   
@@ -215,7 +215,7 @@ export async function drawMapTiles(ctx, canvasWidth, canvasHeight, viewTranslate
   );
   
   if (!viewBounds) {
-    console.log('No view bounds calculated');
+    console.debug('[Map] No view bounds calculated');
     return;
   }
   
@@ -226,7 +226,7 @@ export async function drawMapTiles(ctx, canvasWidth, canvasHeight, viewTranslate
   // Get visible tiles
   const tiles = calculateVisibleTiles(viewBounds, zoom);
   
-  console.debug('Drawing map tiles', { 
+  console.debug('[Map] Drawing map tiles', { 
     viewBounds, 
     zoom, 
     tilesCount: tiles.length,
@@ -378,7 +378,7 @@ export function saveMapSettings() {
     };
     localStorage.setItem('graphSketch.mapLayer.v1', JSON.stringify(settings));
   } catch (e) {
-    console.warn('Failed to save map layer settings', e);
+    console.warn('[Map] Failed to save map layer settings', e.message);
   }
 }
 
@@ -400,7 +400,7 @@ export function loadMapSettings() {
       }
     }
   } catch (e) {
-    console.warn('Failed to load map layer settings', e);
+    console.warn('[Map] Failed to load map layer settings', e.message);
   }
 }
 
