@@ -114,7 +114,7 @@ export class MockGNSSAdapter {
    */
   generateGGA(lat, lon) {
     const now = new Date();
-    const utcTime = now.toISOString().substr(11, 8).replace(/:/g, '');
+    const utcTime = now.toISOString().substring(11, 19).replace(/:/g, '');
 
     // Convert decimal degrees to NMEA format (ddmm.mmmm)
     const latNmea = this.decimalToNmea(Math.abs(lat));
@@ -157,6 +157,14 @@ export class MockGNSSAdapter {
       checksum ^= data.charCodeAt(i);
     }
     return checksum.toString(16).toUpperCase().padStart(2, '0');
+  }
+
+  /**
+   * Check if currently connected
+   * @returns {boolean}
+   */
+  getIsConnected() {
+    return this.isConnected;
   }
 
   /**

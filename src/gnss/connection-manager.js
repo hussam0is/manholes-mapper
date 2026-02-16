@@ -168,11 +168,14 @@ class GNSSConnectionManager {
     if (this.wifiAdapter.getIsConnected()) {
       await this.wifiAdapter.disconnect();
     }
-    if (this.mockAdapter.isConnected) {
+    if (this.mockAdapter.getIsConnected()) {
       this.mockAdapter.disconnect();
     }
 
-    gnssState.setConnectionState(ConnectionState.DISCONNECTED);
+    // Only fire DISCONNECTED if not already set by adapter callback
+    if (gnssState.connectionState !== ConnectionState.DISCONNECTED) {
+      gnssState.setConnectionState(ConnectionState.DISCONNECTED);
+    }
   }
 
   /**

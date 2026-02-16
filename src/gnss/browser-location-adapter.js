@@ -91,7 +91,7 @@ export function stopBrowserLocationAdapter() {
     watchId = null;
   }
   gnssState.setConnectionState(ConnectionState.DISCONNECTED);
-  gnssState.position.isValid = false;
+  gnssState.updatePosition({ isValid: false });
 }
 
 /**

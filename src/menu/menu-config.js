@@ -298,6 +298,12 @@ export const menuConfig = {
       items: ['importCoordinates', 'toggleCoordinates', 'coordinateScale', 'toggleMapLayer'],
     },
     {
+      id: 'gnss',
+      labelKey: 'menuGroup.gnss',
+      icon: 'satellite_alt',
+      items: ['toggleLiveMeasure'],
+    },
+    {
       id: 'workday',
       labelKey: 'menuGroup.workday',
       icon: 'schedule',
