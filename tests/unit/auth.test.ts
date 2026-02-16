@@ -45,7 +45,7 @@ describe('parseBody', () => {
   it('should reject body exceeding max size based on Content-Length', async () => {
     const mockRequest = {
       headers: {
-        'content-length': (10 * 1024 * 1024).toString(), // 10MB
+        'content-length': (20 * 1024 * 1024).toString(), // 20MB (exceeds 15MB max)
       },
     };
 

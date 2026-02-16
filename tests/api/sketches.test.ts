@@ -83,11 +83,11 @@ describe('Sketches API Integration Tests', () => {
 
     it('should return sketches for authenticated user', async () => {
       const { verifyAuth } = await import('../../api/_lib/auth.js');
-      (verifyAuth as any).mockResolvedValue({ userId: TEST_USER_ID, error: null });
+      (verifyAuth as any).mockResolvedValue({ userId: TEST_USER_ID, error: null, user: { name: 'Test', email: 'test@test.com' } });
 
       const { default: handler } = await import('../../api/sketches/index.js');
       const res = mockRes();
-      await handler({ method: 'GET', headers: {} } as any, res);
+      await handler({ method: 'GET', headers: {}, query: {} } as any, res);
 
       expect(res.status).toHaveBeenCalledWith(200);
       const data = res.json.mock.calls[0][0];
@@ -97,11 +97,11 @@ describe('Sketches API Integration Tests', () => {
 
     it('should not return sketches of other users', async () => {
       const { verifyAuth } = await import('../../api/_lib/auth.js');
-      (verifyAuth as any).mockResolvedValue({ userId: OTHER_USER_ID, error: null });
+      (verifyAuth as any).mockResolvedValue({ userId: OTHER_USER_ID, error: null, user: { name: 'Other', email: 'other@test.com' } });
 
       const { default: handler } = await import('../../api/sketches/index.js');
       const res = mockRes();
-      await handler({ method: 'GET', headers: {} } as any, res);
+      await handler({ method: 'GET', headers: {}, query: {} } as any, res);
 
       expect(res.status).toHaveBeenCalledWith(200);
       const data = res.json.mock.calls[0][0];
