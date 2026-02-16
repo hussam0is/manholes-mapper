@@ -13,13 +13,14 @@ import { onAuthStateChange, getAuthState, updateAuthState, guardRoute, redirectI
 import { initSyncService } from './auth/sync-service.js';
 import { authClient, signOutUser, getCurrentSession } from './auth/auth-client.js';
 import { menuEvents, setupEventDelegation } from './menu/menu-events.js';
-import { 
-  initGnssModule, 
-  gnssConnection, 
-  gnssState
+import {
+  initGnssModule,
+  gnssConnection,
+  gnssState,
+  isBrowserLocationActive
 } from './gnss/index.js';
-import { 
-  requestLocationPermission, 
+import {
+  requestLocationPermission,
   isGeolocationSupported
 } from './map/user-location.js';
 
@@ -201,57 +202,58 @@ if (typeof window !== 'undefined') {
 function initMyLocationUI() {
   const myLocationBtn = document.getElementById('myLocationBtn');
   if (!myLocationBtn) return;
-  
+
   myLocationBtn.addEventListener('click', async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    // Check if geolocation is supported
+
     if (!isGeolocationSupported()) {
       if (window.showToast) {
         window.showToast(window.t?.('location.notSupported') || 'Location not supported on this device');
       }
       return;
     }
-    
-    // Add loading state
+
     myLocationBtn.classList.add('loading');
     myLocationBtn.disabled = true;
-    
+
     try {
-      // Request location permission and get current position
-      const result = await requestLocationPermission();
-      
-      if (result && result.error) {
-        // Handle specific error types
-        if (window.showToast) {
-          switch (result.error) {
-            case 'permission_denied':
-              window.showToast(window.t?.('location.permissionDenied') || 'Location permission denied. Please enable location in your browser/app settings.');
-              break;
-            case 'position_unavailable':
-              window.showToast(window.t?.('location.positionUnavailable') || 'Location unavailable. Please check GPS is enabled.');
-              break;
-            case 'timeout':
-              window.showToast(window.t?.('location.timeout') || 'Location request timed out. Please try again.');
-              break;
-            case 'not_supported':
-              window.showToast(window.t?.('location.notSupported') || 'Location not supported on this device');
-              break;
-            default:
-              window.showToast(window.t?.('location.error') || 'Could not get location');
-          }
-        }
-      } else if (result && result.lat !== undefined) {
-        // Successfully got position - center the map
-        if (window.centerOnGpsLocation) {
-          window.centerOnGpsLocation(result.lat, result.lon);
+      // If Live Measure is active, use the already-streaming gnssState position
+      if (isBrowserLocationActive()) {
+        const pos = gnssState.getPosition();
+        if (pos && pos.isValid && window.centerOnGpsLocation) {
+          window.centerOnGpsLocation(pos.lat, pos.lon);
         } else if (window.showToast) {
-          window.showToast(window.t?.('location.error') || 'Could not center on location');
+          window.showToast(window.t?.('liveMeasure.waiting') || 'Waiting for position...');
         }
       } else {
-        // Unknown error
-        if (window.showToast) {
+        // One-shot position request (Live Measure not active)
+        const result = await requestLocationPermission();
+
+        if (result && result.error) {
+          if (window.showToast) {
+            switch (result.error) {
+              case 'permission_denied':
+                window.showToast(window.t?.('location.permissionDenied') || 'Location permission denied. Please enable location in your browser/app settings.');
+                break;
+              case 'position_unavailable':
+                window.showToast(window.t?.('location.positionUnavailable') || 'Location unavailable. Please check GPS is enabled.');
+                break;
+              case 'timeout':
+                window.showToast(window.t?.('location.timeout') || 'Location request timed out. Please try again.');
+                break;
+              case 'not_supported':
+                window.showToast(window.t?.('location.notSupported') || 'Location not supported on this device');
+                break;
+              default:
+                window.showToast(window.t?.('location.error') || 'Could not get location');
+            }
+          }
+        } else if (result && result.lat !== undefined) {
+          if (window.centerOnGpsLocation) {
+            window.centerOnGpsLocation(result.lat, result.lon);
+          }
+        } else if (window.showToast) {
           window.showToast(window.t?.('location.error') || 'Could not get location');
         }
       }
@@ -261,13 +263,12 @@ function initMyLocationUI() {
         window.showToast(window.t?.('location.error') || 'Error getting location');
       }
     } finally {
-      // Remove loading state
       myLocationBtn.classList.remove('loading');
       myLocationBtn.disabled = false;
     }
   });
-  
-  // Expose GNSS connection for legacy code (still needed for other features)
+
+  // Expose GNSS connection for legacy code
   window.gnssConnection = gnssConnection;
   window.gnssState = gnssState;
 }
@@ -293,36 +294,6 @@ function initMenuSystem() {
   
   // Initialize mobile menu behavior
   initMobileMenuBehavior();
-  
-  // Register handler for userLocation action
-  menuEvents.on('userLocation', async ({ element: _element }) => {
-    // Check if geolocation is supported
-    if (!isGeolocationSupported()) {
-      if (window.showToast) {
-        window.showToast(window.t?.('location.notSupported') || 'Location not supported on this device');
-      }
-      return;
-    }
-    
-    // Toggle user location tracking
-    if (window.toggleUserLocationTracking) {
-      const enabled = await window.toggleUserLocationTracking();
-      
-      // Update button state to show active/inactive
-      const userLocationBtn = document.getElementById('userLocationBtn');
-      const mobileUserLocationBtn = document.getElementById('mobileUserLocationBtn');
-      
-      [userLocationBtn, mobileUserLocationBtn].forEach(btn => {
-        if (btn) {
-          if (enabled) {
-            btn.classList.add('active');
-          } else {
-            btn.classList.remove('active');
-          }
-        }
-      });
-    }
-  });
   
   // Expose menuEvents globally for legacy code access
   window.menuEvents = menuEvents;

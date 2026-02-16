@@ -75,9 +75,8 @@ export function drawGnssMarker(ctx, position, referencePoint, coordinateScale, v
   const markerColor = FIX_COLORS[fixQuality] || FIX_COLORS[0];
 
   // Draw accuracy circle if HDOP is available
-  if (position.hdop && position.hdop > 0) {
-    // HDOP of 1.0 ≈ 3m accuracy, scale accordingly
-    const accuracyMeters = position.hdop * 3;
+  const accuracyMeters = position.accuracy || (position.hdop ? position.hdop * 3 : 0);
+  if (accuracyMeters > 0) {
     const accuracyRadius = accuracyMeters * coordinateScale * viewScale;
 
     if (accuracyRadius > 5 && accuracyRadius < 500) {

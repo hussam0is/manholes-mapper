@@ -376,6 +376,7 @@ export const i18n = {
       enable: 'מדידה חיה',
       enabled: 'מדידה חיה הופעלה',
       disabled: 'מדידה חיה כובתה',
+      waiting: 'ממתין לאות GPS...',
     },
   },
   en: {
@@ -754,6 +755,7 @@ export const i18n = {
       enable: 'Live Measurement',
       enabled: 'Live measurement enabled',
       disabled: 'Live measurement disabled',
+      waiting: 'Waiting for GPS signal...',
     },
   },
 };

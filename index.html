@@ -217,6 +217,7 @@
                   <input type="checkbox" id="liveMeasureToggle" />
                   <span class="material-icons">gps_fixed</span>
                   <span class="menu-dropdown__label" data-i18n="liveMeasure.enable">מדידה חיה</span>
+                  <span id="locationStatus" class="menu-dropdown__status"></span>
                 </label>
               </div>
             </div>
@@ -252,11 +253,6 @@
                   </label>
                   <div id="refLayersList" class="ref-layers-list"></div>
                 </div>
-                <button id="userLocationBtn" class="menu-dropdown__item" role="menuitem" data-action="userLocation">
-                  <span class="material-icons">my_location</span>
-                  <span class="menu-dropdown__label" data-i18n="location.myLocation">המיקום שלי</span>
-                  <span id="locationStatus" class="menu-dropdown__status"></span>
-                </button>
               </div>
             </div>
           </div>
@@ -508,13 +504,22 @@
           </label>
           <div id="mobileRefLayersList" class="ref-layers-list"></div>
         </div>
-        <button id="mobileUserLocationBtn" class="mobile-menu__btn" data-action="userLocation">
-          <span class="material-icons">my_location</span>
-          <span class="mobile-menu__label" data-i18n="location.myLocation">המיקום שלי</span>
-          <span id="mobileLocationStatus" class="mobile-menu__status"></span>
-        </button>
       </div>
-      
+
+      <!-- GNSS / Live Measure group (mobile) -->
+      <div class="mobile-menu__group" data-group="gnss">
+        <div class="mobile-menu__group-header">
+          <span class="material-icons mobile-menu__group-icon">satellite_alt</span>
+          <span class="mobile-menu__group-label" data-i18n="menuGroup.gnss">מדידה חיה</span>
+        </div>
+        <label class="mobile-menu__toggle">
+          <input type="checkbox" id="mobileLiveMeasureToggle" />
+          <span class="material-icons">gps_fixed</span>
+          <span class="mobile-menu__label" data-i18n="liveMeasure.enable">מדידה חיה</span>
+          <span id="mobileLocationStatus" class="mobile-menu__status"></span>
+        </label>
+      </div>
+
       <!-- Workday group -->
       <div class="mobile-menu__group" data-group="workday">
         <div class="mobile-menu__group-header" id="menuGroupWorkday">

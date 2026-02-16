@@ -54,6 +54,14 @@ export {
   isPointCaptureDialogOpen 
 };
 
+// Browser location adapter (primary for TMM workflow)
+export {
+  startBrowserLocationAdapter,
+  stopBrowserLocationAdapter,
+  isBrowserLocationActive,
+  inferFixQuality
+} from './browser-location-adapter.js';
+
 // Adapters (for advanced usage)
 export { BluetoothAdapter } from './bluetooth-adapter.js';
 export { WifiAdapter } from './wifi-adapter.js';

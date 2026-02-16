@@ -65,12 +65,15 @@ import {
 } from '../utils/coordinates.js';
 
 // GNSS module imports
-import { 
-  drawGnssMarker, 
+import {
+  drawGnssMarker,
   gnssToCanvas,
   openPointCaptureDialog,
   gnssState,
-  gnssConnection
+  gnssConnection,
+  startBrowserLocationAdapter,
+  stopBrowserLocationAdapter,
+  isBrowserLocationActive
 } from '../gnss/index.js';
 import { 
   getMapReferencePoint,
@@ -88,14 +91,8 @@ import {
   wgs84ToItm,
   precacheTilesForMeasurementBounds
 } from '../map/govmap-layer.js';
-import { 
-  calculateCenterOnUser,
-  drawUserLocationMarker,
-  getCurrentPosition,
-  startWatchingLocation,
-  stopWatchingLocation,
-  isLocationEnabled,
-  toggleLocation
+import {
+  calculateCenterOnUser
 } from '../map/user-location.js';
 import {
   drawReferenceLayers,
@@ -304,6 +301,9 @@ const mobileStretchYValueDisplay = document.getElementById('mobileStretchYValueD
 // Stretch reset buttons
 const resetStretchBtn = document.getElementById('resetStretchBtn');
 const mobileResetStretchBtn = document.getElementById('mobileResetStretchBtn');
+// Live Measure toggle elements
+const liveMeasureToggle = document.getElementById('liveMeasureToggle');
+const mobileLiveMeasureToggle = document.getElementById('mobileLiveMeasureToggle');
 // Map layer toggle elements
 const mapLayerToggle = document.getElementById('mapLayerToggle');
 const mobileMapLayerToggle = document.getElementById('mobileMapLayerToggle');
@@ -479,9 +479,6 @@ const COORDINATE_SCALE_KEY = 'graphSketch.coordinateScale.v1';
 
 // Map layer state - initialized from localStorage via loadMapSettings() in govmap-layer.js
 let mapLayerEnabled = isMapLayerEnabled();
-
-// User location tracking state (browser GPS, not external GNSS)
-let userLocationEnabled = false;
 
 try {
   fallIconImage = new Image();
@@ -3234,38 +3231,20 @@ function draw() {
     drawEdgeLabels(edge);
   }
   
-  // Draw GNSS marker if Live Measure mode is enabled
-  if (liveMeasureEnabled && gnssState?.isLiveMeasureEnabled()) {
+  // Draw unified location marker if Live Measure is enabled
+  if (liveMeasureEnabled && gnssState) {
     const position = gnssState.getPosition();
     const referencePoint = getMapReferencePoint();
-    
+
     if (position && position.isValid && referencePoint) {
       drawGnssMarker(
-        ctx, 
-        position, 
-        referencePoint, 
-        coordinateScale, 
-        viewTranslate, 
-        viewScale,
-        { isStale: position.isStale, stretchX: viewStretchX, stretchY: viewStretchY }
-      );
-    }
-  }
-  
-  // Draw user location marker if enabled (browser GPS)
-  if (userLocationEnabled && isLocationEnabled()) {
-    const userPosition = getCurrentPosition();
-    const referencePoint = getMapReferencePoint();
-    
-    if (userPosition && referencePoint) {
-      drawUserLocationMarker(
         ctx,
-        userPosition,
+        position,
         referencePoint,
         coordinateScale,
         viewTranslate,
         viewScale,
-        { stretchX: viewStretchX, stretchY: viewStretchY }
+        { isStale: position.isStale, stretchX: viewStretchX, stretchY: viewStretchY }
       );
     }
   }
@@ -6931,6 +6910,27 @@ if (mobileMapTypeSelect) {
   });
 }
 
+// Live Measure toggle handler (desktop)
+if (liveMeasureToggle) {
+  liveMeasureToggle.addEventListener('change', (e) => {
+    setLiveMeasureMode(e.target.checked);
+  });
+}
+
+// Live Measure toggle handler (mobile)
+if (mobileLiveMeasureToggle) {
+  mobileLiveMeasureToggle.addEventListener('change', (e) => {
+    setLiveMeasureMode(e.target.checked);
+    closeMobileMenu();
+  });
+}
+
+// Subscribe to gnssState position updates for status and redraw
+gnssState.on('position', () => {
+  updateLocationStatus();
+  scheduleDraw();
+});
+
 // ============================================
 // Reference Layers UI Controls
 // ============================================
@@ -7704,20 +7704,74 @@ window.addEventListener('offline', () => {
 // ============================================
 
 /**
- * Enable or disable Live Measure mode
+ * Enable or disable Live Measure mode (unified location system).
+ * Starts/stops the browser geolocation adapter and feeds positions into gnssState.
  * @param {boolean} enabled
  */
 function setLiveMeasureMode(enabled) {
-  liveMeasureEnabled = enabled;
-  
-  // When enabling live measure, also enable coordinates display
-  if (enabled && !coordinatesEnabled) {
-    coordinatesEnabled = true;
-    saveCoordinatesEnabled(true);
-    syncCoordinatesToggleUI();
+  if (enabled) {
+    // Auto-enable coordinates display when Live Measure is turned on
+    if (!coordinatesEnabled) {
+      coordinatesEnabled = true;
+      saveCoordinatesEnabled(true);
+      syncCoordinatesToggleUI();
+    }
+
+    // Start browser geolocation → gnssState bridge
+    const started = startBrowserLocationAdapter();
+    if (!started) {
+      showToast(t('location.notSupported') || 'Location not supported');
+      liveMeasureEnabled = false;
+      gnssState.setLiveMeasureEnabled(false);
+      syncLiveMeasureToggleUI();
+      return;
+    }
+
+    liveMeasureEnabled = true;
+    gnssState.setLiveMeasureEnabled(true);
+  } else {
+    // Stop browser geolocation adapter
+    stopBrowserLocationAdapter();
+    liveMeasureEnabled = false;
+    gnssState.setLiveMeasureEnabled(false);
   }
-  
+
+  syncLiveMeasureToggleUI();
+  updateLocationStatus();
   scheduleDraw();
+}
+
+/**
+ * Sync Live Measure toggle UI state across desktop and mobile checkboxes
+ */
+function syncLiveMeasureToggleUI() {
+  if (liveMeasureToggle) {
+    liveMeasureToggle.checked = liveMeasureEnabled;
+  }
+  if (mobileLiveMeasureToggle) {
+    mobileLiveMeasureToggle.checked = liveMeasureEnabled;
+  }
+}
+
+/**
+ * Update location status display in menu toggles
+ */
+function updateLocationStatus() {
+  const statusEl = document.getElementById('locationStatus');
+  const mobileStatusEl = document.getElementById('mobileLocationStatus');
+
+  let text = '';
+  if (liveMeasureEnabled) {
+    const pos = gnssState.getPosition();
+    if (pos && pos.isValid) {
+      text = pos.fixLabel || 'Active';
+    } else {
+      text = t('liveMeasure.waiting') || 'Waiting...';
+    }
+  }
+
+  if (statusEl) statusEl.textContent = text;
+  if (mobileStatusEl) mobileStatusEl.textContent = text;
 }
 
 /**
@@ -7850,44 +7904,26 @@ function centerOnGpsLocation(lat, lon) {
 }
 
 /**
- * Toggle user location tracking (browser GPS)
- * @returns {Promise<boolean>} True if now enabled
+ * Toggle Live Measure mode (unified location tracking).
+ * Called from menu event delegation and exposed globally.
+ * @returns {boolean} True if now enabled
  */
-async function toggleUserLocationTracking() {
-  const wasEnabled = userLocationEnabled;
-  
-  if (wasEnabled) {
-    // Disable tracking
-    stopWatchingLocation();
-    userLocationEnabled = false;
-    scheduleDraw();
-    if (window.showToast) {
-      window.showToast(window.t?.('location.disabled') || 'Location tracking disabled');
+function toggleUserLocationTracking() {
+  const newState = !liveMeasureEnabled;
+  setLiveMeasureMode(newState);
+
+  if (newState && liveMeasureEnabled) {
+    showToast(t('liveMeasure.enabled') || 'Live measurement enabled');
+    // Center on position if available
+    const pos = gnssState.getPosition();
+    if (pos && pos.isValid) {
+      centerOnGpsLocation(pos.lat, pos.lon);
     }
-    return false;
-  } else {
-    // Enable tracking
-    const enabled = await toggleLocation(() => {
-      // Callback on position update - trigger redraw
-      scheduleDraw();
-    });
-    
-    if (enabled) {
-      userLocationEnabled = true;
-      scheduleDraw();
-      if (window.showToast) {
-        window.showToast(window.t?.('location.enabled') || 'Location tracking enabled');
-      }
-      
-      // Center on user location if we have a reference point
-      const position = getCurrentPosition();
-      if (position) {
-        centerOnGpsLocation(position.lat, position.lon);
-      }
-    }
-    
-    return enabled;
+  } else if (!newState) {
+    showToast(t('liveMeasure.disabled') || 'Live measurement disabled');
   }
+
+  return liveMeasureEnabled;
 }
 
 // Expose functions globally for GNSS module integration
