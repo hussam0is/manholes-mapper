@@ -5,6 +5,7 @@ todos:
   - id: todo-1769176049342-0dtaq8p7l
     content: add creation/modefication dates for projects
     status: pending
+isProject: false
 ---
 
 # Intelligent Input Flow System - Artist/Developer Vision
@@ -52,6 +53,8 @@ erDiagram
         jsonb snapshot_input_flow_config
     }
 ```
+
+
 
 ---
 
@@ -116,7 +119,7 @@ The `input_flow_config` JSON stored per project defines conditional rules:
 
 ### 1. Database Schema Changes
 
-**New `projects` table** in [`api/_lib/schema.sql`](api/_lib/schema.sql):
+**New `projects` table** in `[api/_lib/schema.sql](api/_lib/schema.sql)`:
 
 ```sql
 CREATE TABLE IF NOT EXISTS projects (
@@ -147,13 +150,13 @@ New routes in `api/projects/`:
 
 ### 3. Frontend Pages
 
-**New route: `#/projects`** - Project Management:
+**New route: `#/projects**` - Project Management:
 
 - List organization projects
 - Create/edit project name & description
 - Navigate to input flow configuration
 
-**New route: `#/projects/[id]/input-flow`** - Business Input Flow Configuration:
+**New route: `#/projects/[id]/input-flow**` - Business Input Flow Configuration:
 
 - Visual rule builder UI
 - Import/Export JSON buttons
@@ -162,7 +165,7 @@ New routes in `api/projects/`:
 
 ### 4. Smart Input Form Enhancement
 
-Modify [`src/legacy/main.js`](src/legacy/main.js) `renderDetails()` function to:
+Modify `[src/legacy/main.js](src/legacy/main.js)` `renderDetails()` function to:
 
 1. Load active project's input_flow_config (or sketch's snapshot)
 2. Evaluate rules on every field change
@@ -193,6 +196,8 @@ flowchart TD
     N --> O[Save Project]
     O --> D
 ```
+
+
 
 ---
 
@@ -229,25 +234,19 @@ flowchart TD
 The Business Input Flow configuration page will have:
 
 1. **Header Section**
-
-   - Project name (editable)
-   - Import/Export JSON buttons
-
+  - Project name (editable)
+  - Import/Export JSON buttons
 2. **Tabs**: Nodes | Edges
-
 3. **Rules List** (for each tab)
-
-   - Each rule displayed as a card
-   - Trigger: "When [field] [operator] [value]"
-   - Actions list with type badges
-   - Add/Edit/Delete rule buttons
-
+  - Each rule displayed as a card
+  - Trigger: "When [field] [operator] [value]"
+  - Actions list with type badges
+  - Add/Edit/Delete rule buttons
 4. **Rule Editor Modal**
-
-   - Field dropdown (from constants)
-   - Operator dropdown (equals, not_equals, empty, not_empty)
-   - Value input (dynamic based on field type)
-   - Actions builder (add multiple actions)
+  - Field dropdown (from constants)
+  - Operator dropdown (equals, not_equals, empty, not_empty)
+  - Value input (dynamic based on field type)
+  - Actions builder (add multiple actions)
 
 ---
 
@@ -273,3 +272,4 @@ These rules ship by default and can be modified per project:
 - Regular users see project list but cannot edit
 - Sketch stores snapshot of config to prevent retroactive changes
 - API validates
+
