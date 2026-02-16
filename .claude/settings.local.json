@@ -18,5 +18,10 @@
       "mcp__playwright",
       "mcp__postgres"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "playwright",
+    "postgres"
+  ],
+  "enableAllProjectMcpServers": true
 }
