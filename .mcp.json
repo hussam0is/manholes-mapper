@@ -18,6 +18,17 @@
         "${POSTGRES_URL}"
       ],
       "env": {}
+    },
+    "vercel": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@mistertk/vercel-mcp@latest"
+      ],
+      "env": {
+        "VERCEL_API_KEY": "${VERCEL_API_KEY}"
+      }
     }
   }
 }

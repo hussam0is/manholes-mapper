@@ -16,12 +16,28 @@
       "Bash(claude mcp add:*)",
       "Bash(curl:*)",
       "mcp__playwright",
-      "mcp__postgres"
+      "mcp__postgres",
+      "Bash(node -e:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npx vitest run --reporter=verbose)",
+      "Bash(npx vite build:*)",
+      "Bash(claude mcp list:*)",
+      "Bash(node scripts/test-db-connection.js:*)",
+      "Bash(update-vercel-env.sh:*)",
+      "Bash(__NEW_LINE_bfab5ffbdf724b7d__ chmod +x update-vercel-env.sh)",
+      "Bash(vercel env add:*)",
+      "Bash(vercel link:*)",
+      "Bash(npm search:*)",
+      "mcp__vercel",
+      "Bash(where:*)",
+      "Bash(cmd //c \"where claude\")",
+      "Bash(git reset:*)"
     ]
   },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "playwright",
-    "postgres"
-  ],
-  "enableAllProjectMcpServers": true
+    "postgres",
+    "vercel"
+  ]
 }
