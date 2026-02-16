@@ -80,6 +80,7 @@
     min-height: var(--menu-height-mobile);
     padding: 0.5rem 0.75rem;
     gap: 0.5rem;
+    z-index: 1050; /* Above modal overlays (1000) so menu button stays clickable */
   }
 }
 
@@ -1098,9 +1099,9 @@
   background: var(--mobile-menu-bg);
   box-shadow: -4px 0 16px rgba(0, 0, 0, 0.1);
   
-  z-index: 250;
+  z-index: 1060; /* Above header (1050 on mobile) and modal overlays (1000) */
   overflow: hidden;
-  
+
   transform: translateX(100%);
   transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
@@ -1114,6 +1115,10 @@
 
 .mobile-menu--open {
   display: flex;
+  transform: translateX(0);
+}
+
+[dir="rtl"] .mobile-menu--open {
   transform: translateX(0);
 }
 
@@ -1491,7 +1496,7 @@ p.mobile-menu__group-label {
   background: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(2px);
   
-  z-index: 240;
+  z-index: 1055; /* Above header (1050) but below mobile menu (1060) */
 }
 
 /* Body class when mobile menu is open */
