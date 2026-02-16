@@ -74,10 +74,10 @@ export const menuEvents = new MenuEventEmitter();
  * @param {HTMLElement} container - Container to attach listeners to
  */
 export function setupEventDelegation(container) {
-  // Click delegation
+  // Click delegation (skip <select> elements — they are handled by 'change')
   container.addEventListener('click', (e) => {
     const actionEl = e.target.closest('[data-action]');
-    if (actionEl) {
+    if (actionEl && actionEl.tagName !== 'SELECT') {
       e.preventDefault();
       e.stopPropagation();
       const action = actionEl.dataset.action;
