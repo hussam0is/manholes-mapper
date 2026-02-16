@@ -95,8 +95,8 @@ export function onSessionChange(callback) {
   // Check immediately
   checkSession();
   
-  // Set up polling (every 30 seconds)
-  const intervalId = setInterval(checkSession, 30000);
+  // Set up polling (every 5 minutes)
+  const intervalId = setInterval(checkSession, 5 * 60 * 1000);
   
   // Return unsubscribe function
   return () => {

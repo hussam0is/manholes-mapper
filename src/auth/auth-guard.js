@@ -201,11 +201,11 @@ export async function initAuthMonitor() {
   // Check for existing session
   await refreshSession();
   
-  // Set up periodic session refresh (every 5 minutes)
+  // Set up periodic session refresh (every 15 minutes)
   if (sessionRefreshInterval) {
     clearInterval(sessionRefreshInterval);
   }
-  sessionRefreshInterval = setInterval(refreshSession, 5 * 60 * 1000);
+  sessionRefreshInterval = setInterval(refreshSession, 15 * 60 * 1000);
 }
 
 // Initialize on module load

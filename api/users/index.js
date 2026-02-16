@@ -58,17 +58,22 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
+    // Parse pagination params
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 100, 1), 200);
+    const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+    const pagination = { limit, offset };
+
     // Get users based on role
     let users;
     if (isSuperAdmin) {
       // Super admin sees all users
-      users = await getAllUsers();
+      users = await getAllUsers(pagination);
     } else {
       // Org admin sees only users in their organization
       if (!currentUser.organization_id) {
-        return res.status(200).json({ users: [] });
+        return res.status(200).json({ users: [], pagination: { limit, offset, count: 0 } });
       }
-      users = await getUsersByOrganization(currentUser.organization_id);
+      users = await getUsersByOrganization(currentUser.organization_id, pagination);
     }
 
     // Transform response
@@ -84,7 +89,7 @@ export default async function handler(req, res) {
     }));
 
     console.debug(`[API /api/users] Returning ${transformed.length} users`);
-    return res.status(200).json({ users: transformed });
+    return res.status(200).json({ users: transformed, pagination: { limit, offset, count: transformed.length } });
 
   } catch (error) {
     console.error(`[API /api/users] Error:`, error);

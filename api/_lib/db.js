@@ -238,13 +238,29 @@ export async function ensureDb() {
 /**
  * Get all sketches for a user
  */
-export async function getSketchesByUser(userId) {
+export async function getSketchesByUser(userId, { limit = 50, offset = 0 } = {}) {
   const result = await sql`
-    SELECT id, name, creation_date, nodes, edges, admin_config, created_by, last_edited_by, 
+    SELECT id, name, creation_date, nodes, edges, admin_config, created_by, last_edited_by,
            project_id, snapshot_input_flow_config, created_at, updated_at
     FROM sketches
     WHERE user_id = ${userId}
     ORDER BY updated_at DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `;
+  return result.rows;
+}
+
+/**
+ * Get sketch metadata (without large JSONB) for a user
+ */
+export async function getSketchesMetaByUser(userId, { limit = 50, offset = 0 } = {}) {
+  const result = await sql`
+    SELECT id, name, creation_date, created_by, last_edited_by,
+           project_id, created_at, updated_at
+    FROM sketches
+    WHERE user_id = ${userId}
+    ORDER BY updated_at DESC
+    LIMIT ${limit} OFFSET ${offset}
   `;
   return result.rows;
 }
@@ -575,13 +591,14 @@ export async function getUserById(userId) {
 /**
  * Get all users (for super admin)
  */
-export async function getAllUsers() {
+export async function getAllUsers({ limit = 100, offset = 0 } = {}) {
   const result = await sql`
-    SELECT u.id, u.username, u.email, u.role, u.organization_id, 
+    SELECT u.id, u.username, u.email, u.role, u.organization_id,
            u.created_at, u.updated_at, o.name as organization_name
     FROM users u
     LEFT JOIN organizations o ON u.organization_id = o.id
     ORDER BY u.created_at DESC
+    LIMIT ${limit} OFFSET ${offset}
   `;
   return result.rows;
 }
@@ -589,7 +606,7 @@ export async function getAllUsers() {
 /**
  * Get users by organization (for org admin)
  */
-export async function getUsersByOrganization(organizationId) {
+export async function getUsersByOrganization(organizationId, { limit = 100, offset = 0 } = {}) {
   const result = await sql`
     SELECT u.id, u.username, u.email, u.role, u.organization_id,
            u.created_at, u.updated_at, o.name as organization_name
@@ -597,6 +614,7 @@ export async function getUsersByOrganization(organizationId) {
     LEFT JOIN organizations o ON u.organization_id = o.id
     WHERE u.organization_id = ${organizationId}
     ORDER BY u.created_at DESC
+    LIMIT ${limit} OFFSET ${offset}
   `;
   return result.rows;
 }
@@ -710,7 +728,7 @@ export async function deleteOrganization(orgId) {
 /**
  * Get all projects for an organization
  */
-export async function getProjectsByOrganization(organizationId) {
+export async function getProjectsByOrganization(organizationId, { limit = 100, offset = 0 } = {}) {
   const result = await sql`
     SELECT p.id, p.organization_id, p.name, p.description, p.input_flow_config,
            p.created_at, p.updated_at,
@@ -720,6 +738,7 @@ export async function getProjectsByOrganization(organizationId) {
     WHERE p.organization_id = ${organizationId}
     GROUP BY p.id, p.organization_id, p.name, p.description, p.input_flow_config, p.created_at, p.updated_at
     ORDER BY p.name
+    LIMIT ${limit} OFFSET ${offset}
   `;
   return result.rows;
 }
@@ -727,7 +746,7 @@ export async function getProjectsByOrganization(organizationId) {
 /**
  * Get all projects (for super admin)
  */
-export async function getAllProjects() {
+export async function getAllProjects({ limit = 100, offset = 0 } = {}) {
   const result = await sql`
     SELECT p.id, p.organization_id, p.name, p.description, p.input_flow_config,
            p.created_at, p.updated_at,
@@ -736,6 +755,7 @@ export async function getAllProjects() {
     LEFT JOIN sketches s ON p.id = s.project_id
     GROUP BY p.id, p.organization_id, p.name, p.description, p.input_flow_config, p.created_at, p.updated_at
     ORDER BY p.name
+    LIMIT ${limit} OFFSET ${offset}
   `;
   return result.rows;
 }
@@ -835,13 +855,29 @@ export async function duplicateProject(projectId, newName) {
 /**
  * Get sketches by project ID
  */
-export async function getSketchesByProject(projectId) {
+export async function getSketchesByProject(projectId, { limit = 50, offset = 0 } = {}) {
   const result = await sql`
     SELECT id, user_id, name, creation_date, nodes, edges, admin_config, created_by, last_edited_by,
            project_id, snapshot_input_flow_config, created_at, updated_at
     FROM sketches
     WHERE project_id = ${projectId}
     ORDER BY updated_at DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `;
+  return result.rows;
+}
+
+/**
+ * Get sketch metadata by project ID (without large JSONB)
+ */
+export async function getSketchesMetaByProject(projectId, { limit = 50, offset = 0 } = {}) {
+  const result = await sql`
+    SELECT id, user_id, name, creation_date, created_by, last_edited_by,
+           project_id, created_at, updated_at
+    FROM sketches
+    WHERE project_id = ${projectId}
+    ORDER BY updated_at DESC
+    LIMIT ${limit} OFFSET ${offset}
   `;
   return result.rows;
 }
@@ -850,15 +886,33 @@ export async function getSketchesByProject(projectId) {
  * Get all sketches (for super admin)
  * Returns all sketches from all users
  */
-export async function getAllSketches() {
+export async function getAllSketches({ limit = 50, offset = 0 } = {}) {
   const result = await sql`
-    SELECT s.id, s.user_id, s.name, s.creation_date, s.nodes, s.edges, s.admin_config, 
-           s.created_by, s.last_edited_by, s.project_id, s.snapshot_input_flow_config, 
+    SELECT s.id, s.user_id, s.name, s.creation_date, s.nodes, s.edges, s.admin_config,
+           s.created_by, s.last_edited_by, s.project_id, s.snapshot_input_flow_config,
            s.created_at, s.updated_at,
            u.username as owner_username, u.email as owner_email
     FROM sketches s
     LEFT JOIN users u ON s.user_id = u.id
     ORDER BY s.updated_at DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `;
+  return result.rows;
+}
+
+/**
+ * Get all sketch metadata (for super admin list view)
+ * Excludes large JSONB columns for performance
+ */
+export async function getAllSketchesMeta({ limit = 50, offset = 0 } = {}) {
+  const result = await sql`
+    SELECT s.id, s.user_id, s.name, s.creation_date, s.created_by, s.last_edited_by,
+           s.project_id, s.created_at, s.updated_at,
+           u.username as owner_username, u.email as owner_email
+    FROM sketches s
+    LEFT JOIN users u ON s.user_id = u.id
+    ORDER BY s.updated_at DESC
+    LIMIT ${limit} OFFSET ${offset}
   `;
   return result.rows;
 }
@@ -867,16 +921,35 @@ export async function getAllSketches() {
  * Get all sketches for an organization (for admin)
  * Returns all sketches from users in the organization
  */
-export async function getSketchesByOrganization(organizationId) {
+export async function getSketchesByOrganization(organizationId, { limit = 50, offset = 0 } = {}) {
   const result = await sql`
-    SELECT s.id, s.user_id, s.name, s.creation_date, s.nodes, s.edges, s.admin_config, 
-           s.created_by, s.last_edited_by, s.project_id, s.snapshot_input_flow_config, 
+    SELECT s.id, s.user_id, s.name, s.creation_date, s.nodes, s.edges, s.admin_config,
+           s.created_by, s.last_edited_by, s.project_id, s.snapshot_input_flow_config,
            s.created_at, s.updated_at,
            u.username as owner_username, u.email as owner_email
     FROM sketches s
     INNER JOIN users u ON s.user_id = u.id
     WHERE u.organization_id = ${organizationId}
     ORDER BY s.updated_at DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `;
+  return result.rows;
+}
+
+/**
+ * Get sketch metadata for an organization (admin list view)
+ * Excludes large JSONB columns for performance
+ */
+export async function getSketchesMetaByOrganization(organizationId, { limit = 50, offset = 0 } = {}) {
+  const result = await sql`
+    SELECT s.id, s.user_id, s.name, s.creation_date, s.created_by, s.last_edited_by,
+           s.project_id, s.created_at, s.updated_at,
+           u.username as owner_username, u.email as owner_email
+    FROM sketches s
+    INNER JOIN users u ON s.user_id = u.id
+    WHERE u.organization_id = ${organizationId}
+    ORDER BY s.updated_at DESC
+    LIMIT ${limit} OFFSET ${offset}
   `;
   return result.rows;
 }
@@ -1001,12 +1074,13 @@ export async function deleteFeature(targetType, targetId, featureKey) {
 /**
  * Get all layers for a project (metadata only, without geojson)
  */
-export async function getProjectLayersMeta(projectId) {
+export async function getProjectLayersMeta(projectId, { limit = 50, offset = 0 } = {}) {
   const result = await sql`
     SELECT id, project_id, name, layer_type, style, visible, display_order, created_at, updated_at
     FROM project_layers
     WHERE project_id = ${projectId}
     ORDER BY display_order, name
+    LIMIT ${limit} OFFSET ${offset}
   `;
   return result.rows;
 }
@@ -1026,12 +1100,13 @@ export async function getProjectLayer(layerId) {
 /**
  * Get full layer data (with geojson) for all visible layers of a project
  */
-export async function getProjectLayersFull(projectId) {
+export async function getProjectLayersFull(projectId, { limit = 50, offset = 0 } = {}) {
   const result = await sql`
     SELECT id, project_id, name, layer_type, geojson, style, visible, display_order, created_at, updated_at
     FROM project_layers
     WHERE project_id = ${projectId}
     ORDER BY display_order, name
+    LIMIT ${limit} OFFSET ${offset}
   `;
   return result.rows;
 }

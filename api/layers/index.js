@@ -127,9 +127,13 @@ async function handleCollection(req, res, request, currentUser, isSuperAdmin, is
     }
 
     const includeFull = req.query.full === 'true';
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 50, 1), 200);
+    const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+    const pagination = { limit, offset };
+
     const layers = includeFull
-      ? await getProjectLayersFull(projectId)
-      : await getProjectLayersMeta(projectId);
+      ? await getProjectLayersFull(projectId, pagination)
+      : await getProjectLayersMeta(projectId, pagination);
 
     const transformed = layers.map(l => ({
       id: l.id,
@@ -145,7 +149,7 @@ async function handleCollection(req, res, request, currentUser, isSuperAdmin, is
     }));
 
     console.debug(`[API /api/layers] Returning ${transformed.length} layers for project ${projectId}`);
-    return res.status(200).json({ layers: transformed });
+    return res.status(200).json({ layers: transformed, pagination: { limit, offset, count: transformed.length } });
   }
 
   if (req.method === 'POST') {

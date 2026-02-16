@@ -278,9 +278,6 @@ export async function syncFromCloud() {
           creationDate: s.creationDate,
           createdAt: s.createdAt,
           updatedAt: s.updatedAt,
-          nodes: s.nodes || [],
-          edges: s.edges || [],
-          adminConfig: s.adminConfig || {},
           projectId: s.projectId,
           // Include owner info for admin views
           ownerId: s.ownerId,
@@ -289,7 +286,13 @@ export async function syncFromCloud() {
           isOwner: s.isOwner,
           createdBy: s.createdBy,
           lastEditedBy: s.lastEditedBy,
-          cloudSynced: true
+          cloudSynced: true,
+          // Mark if this is metadata-only (full data fetched on open via GET /api/sketches/[id])
+          metadataOnly: !s.nodes,
+          // Include JSONB fields only if present (full response)
+          ...(s.nodes ? { nodes: s.nodes } : { nodes: [] }),
+          ...(s.edges ? { edges: s.edges } : { edges: [] }),
+          ...(s.adminConfig ? { adminConfig: s.adminConfig } : { adminConfig: {} }),
         }));
         window.localStorage.setItem('graphSketch.library', JSON.stringify(legacyLib));
         console.debug(`[Sync] Updated legacy localStorage with ${legacyLib.length} sketches`);

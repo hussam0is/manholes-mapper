@@ -2258,9 +2258,10 @@ async function loadProjectReferenceLayers(projectId) {
       renderRefLayerToggles();
       scheduleDraw();
       console.debug(`[RefLayers] Loaded ${cached.length} layers from cache for project ${projectId}`);
+      return; // Skip server fetch when cache is fresh (< 1 hour)
     }
-    
-    // Fetch from server (always, to get latest data)
+
+    // Cache miss or stale — fetch from server
     const response = await fetch(`/api/layers?projectId=${projectId}&full=true`);
     if (!response.ok) {
       console.warn('[RefLayers] Failed to fetch layers:', response.status);

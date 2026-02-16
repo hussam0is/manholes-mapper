@@ -9,14 +9,14 @@
  */
 
 import { verifyAuth, parseBody, sanitizeErrorMessage } from '../_lib/auth.js';
-import { 
-  ensureDb, 
+import {
+  ensureDb,
   getUserById,
   getProjectById,
   updateProject,
   deleteProject,
   duplicateProject,
-  getSketchesByProject
+  getSketchesMetaByProject
 } from '../_lib/db.js';
 import { applyRateLimit } from '../_lib/rate-limit.js';
 
@@ -84,7 +84,9 @@ export default async function handler(req, res) {
       };
 
       if (includeSketches) {
-        const sketches = await getSketchesByProject(projectId);
+        const sketchLimit = Math.min(Math.max(parseInt(req.query.sketchLimit) || 50, 1), 200);
+        const sketchOffset = Math.max(parseInt(req.query.sketchOffset) || 0, 0);
+        const sketches = await getSketchesMetaByProject(projectId, { limit: sketchLimit, offset: sketchOffset });
         response.sketches = sketches.map(s => ({
           id: s.id,
           name: s.name,
@@ -93,6 +95,7 @@ export default async function handler(req, res) {
           createdAt: s.created_at,
           updatedAt: s.updated_at,
         }));
+        response.sketchPagination = { limit: sketchLimit, offset: sketchOffset, count: sketches.length };
       }
 
       return res.status(200).json(response);
