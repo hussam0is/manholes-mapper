@@ -371,6 +371,7 @@ export const i18n = {
       timeout: 'בקשת מיקום נכשלה בזמן קצוב. אנא נסה שוב.',
       error: 'לא ניתן לקבל מיקום',
       enableCoordinatesFirst: 'יש להפעיל קואורדינטות תחילה',
+      myLocation: 'המיקום שלי',
     },
     liveMeasure: {
       enable: 'מדידה חיה',
@@ -750,6 +751,7 @@ export const i18n = {
       timeout: 'Location request timed out. Please try again.',
       error: 'Could not get location',
       enableCoordinatesFirst: 'Enable coordinates first',
+      myLocation: 'My Location',
     },
     liveMeasure: {
       enable: 'Live Measurement',

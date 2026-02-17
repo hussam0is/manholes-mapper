@@ -170,6 +170,19 @@ export function drawGnssMarker(ctx, position, referencePoint, coordinateScale, v
     ctx.fillText('STALE', screenX, screenY - 18);
   }
 
+  // Draw "My Location" label below the marker
+  const label = (typeof window !== 'undefined' && window.t) ? window.t('location.myLocation') : 'My Location';
+  ctx.font = 'bold 12px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  // White outline for readability over map tiles
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 3;
+  ctx.lineJoin = 'round';
+  ctx.strokeText(label, screenX, screenY + 16);
+  ctx.fillStyle = markerColor;
+  ctx.fillText(label, screenX, screenY + 16);
+
   ctx.restore();
 }
 
