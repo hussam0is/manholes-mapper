@@ -7950,10 +7950,11 @@ async function centerNewSketchOnUserLocation() {
 
     // Center the view on this position
     centerOnGpsLocation(lat, lon);
-    showToast(`Centered on ${lat.toFixed(4)}, ${lon.toFixed(4)}`);
+    console.warn('[Location] Centered new sketch on', lat.toFixed(6), lon.toFixed(6));
+    showToast(`Centered on ${lat.toFixed(4)}, ${lon.toFixed(4)}`, 10000);
   } catch (err) {
-    console.debug('[Location] Could not center new sketch on user location:', err.message);
-    showToast('Location: ' + err.message);
+    console.warn('[Location] Could not center new sketch:', err.message);
+    showToast('Location: ' + err.message, 10000);
   }
 }
 
