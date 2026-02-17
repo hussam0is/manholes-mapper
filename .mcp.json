@@ -29,6 +29,17 @@
       "env": {
         "VERCEL_API_KEY": "${VERCEL_API_KEY}"
       }
+    },
+    "phone-debug": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "service/cdp-mcp/src/index.js"
+      ],
+      "env": {
+        "CDP_HOST": "localhost",
+        "CDP_PORT": "9222"
+      }
     }
   }
 }

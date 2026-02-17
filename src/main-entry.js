@@ -48,6 +48,10 @@ if (typeof window !== 'undefined') {
   // Store auth client globally for legacy code access
   window.__authClient = authClient;
 
+  // Expose GNSS singletons for remote CDP debugging
+  window.__gnssState = gnssState;
+  window.__gnssConnection = gnssConnection;
+
   // AbortController to clean up document-level listeners when menu re-renders
   let userMenuAbortController = null;
 
