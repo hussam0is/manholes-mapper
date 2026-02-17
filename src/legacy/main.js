@@ -5358,7 +5358,7 @@ startBtn.addEventListener('click', () => {
   selectedEdge = null;
   startPanel.style.display = 'none';
   showToast(t('toasts.createdNew'));
-  // Center on GPS after showing creation toast (async, fire-and-forget)
+  // Center on user's GPS location after a short delay so the creation toast shows first
   setTimeout(() => centerNewSketchOnUserLocation(), 2000);
 });
 
@@ -7915,7 +7915,6 @@ function centerOnGpsLocation(lat, lon) {
  * Silently fails if location is unavailable.
  */
 async function centerNewSketchOnUserLocation() {
-  showToast('DEBUG: centerNewSketch called', 10000);
   try {
     let lat, lon;
 
@@ -7952,11 +7951,8 @@ async function centerNewSketchOnUserLocation() {
 
     // Center the view on this position
     centerOnGpsLocation(lat, lon);
-    console.warn('[Location] Centered new sketch on', lat.toFixed(6), lon.toFixed(6));
-    showToast(`Centered on ${lat.toFixed(4)}, ${lon.toFixed(4)}`, 10000);
   } catch (err) {
-    console.warn('[Location] Could not center new sketch:', err.message);
-    showToast('Location: ' + err.message, 10000);
+    console.debug('[Location] Could not center new sketch on user location:', err.message);
   }
 }
 
