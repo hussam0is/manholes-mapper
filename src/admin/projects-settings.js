@@ -86,22 +86,21 @@ export class ProjectsSettings {
         return;
       }
 
-      const response = await fetch('/api/projects', {
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+      // Fetch projects and admin status in parallel
+      const [projectsResponse] = await Promise.all([
+        fetch('/api/projects', {
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' }
+        }),
+        this._checkAdminStatus()
+      ]);
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch projects: ${response.status}`);
+      if (!projectsResponse.ok) {
+        throw new Error(`Failed to fetch projects: ${projectsResponse.status}`);
       }
 
-      const data = await response.json();
+      const data = await projectsResponse.json();
       this.projects = data.projects || [];
-
-      // Check if current user is admin
-      await this._checkAdminStatus();
     } catch (error) {
       console.error('[ProjectsSettings] Error fetching projects:', error);
       this.projects = [];

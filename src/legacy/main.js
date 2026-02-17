@@ -809,14 +809,7 @@ let projectsSettingsScreen = null;
 async function openProjectsScreen() {
   if (!projectsScreen || !projectsScreenContent) return;
 
-  // Create or reuse ProjectsSettings instance for screen
-  projectsSettingsScreen = new ProjectsSettings({
-    container: projectsScreenContent,
-    t,
-    showToast,
-  });
-  await projectsSettingsScreen.render();
-
+  // Show screen immediately so user sees loading spinner
   if (projectsScreenTitleEl) {
     const titleText = projectsScreenTitleEl.querySelector('.admin-title-text');
     if (titleText) titleText.textContent = t('projects.title');
@@ -824,6 +817,14 @@ async function openProjectsScreen() {
   if (mainEl) mainEl.style.display = 'none';
   projectsScreen.style.display = 'block';
   applyLangToStaticUI();
+
+  // Create or reuse ProjectsSettings instance for screen
+  projectsSettingsScreen = new ProjectsSettings({
+    container: projectsScreenContent,
+    t,
+    showToast,
+  });
+  await projectsSettingsScreen.render();
 }
 
 function closeProjectsScreen() {
