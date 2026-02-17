@@ -5347,7 +5347,6 @@ startBtn.addEventListener('click', () => {
   
   // Create new sketch with project info
   newSketch(dateVal, selectedProjectId, inputFlowConfig);
-  centerNewSketchOnUserLocation();
 
   // Reset mode and button states on new sketch
   currentMode = 'node';
@@ -5359,6 +5358,8 @@ startBtn.addEventListener('click', () => {
   selectedEdge = null;
   startPanel.style.display = 'none';
   showToast(t('toasts.createdNew'));
+  // Center on GPS after showing creation toast (async, fire-and-forget)
+  setTimeout(() => centerNewSketchOnUserLocation(), 2000);
 });
 
 // Cancel new sketch panel (only shown when sketch not empty)
@@ -7914,6 +7915,7 @@ function centerOnGpsLocation(lat, lon) {
  * Silently fails if location is unavailable.
  */
 async function centerNewSketchOnUserLocation() {
+  showToast('DEBUG: centerNewSketch called', 10000);
   try {
     let lat, lon;
 
