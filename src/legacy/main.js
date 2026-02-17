@@ -5346,7 +5346,8 @@ startBtn.addEventListener('click', () => {
   
   // Create new sketch with project info
   newSketch(dateVal, selectedProjectId, inputFlowConfig);
-  
+  centerNewSketchOnUserLocation();
+
   // Reset mode and button states on new sketch
   currentMode = 'node';
   if (nodeModeBtn) nodeModeBtn.classList.add('active');
@@ -7904,6 +7905,53 @@ function centerOnGpsLocation(lat, lon) {
     return true;
   }
   return false;
+}
+
+/**
+ * Center a new empty sketch on the user's mobile location.
+ * Uses the active GNSS position if available, otherwise does a one-shot geolocation request.
+ * Silently fails if location is unavailable.
+ */
+async function centerNewSketchOnUserLocation() {
+  try {
+    let lat, lon;
+
+    // If Live Measure is active, use the already-streaming GNSS position
+    if (isBrowserLocationActive()) {
+      const pos = gnssState.getPosition();
+      if (pos && pos.isValid) {
+        lat = pos.lat;
+        lon = pos.lon;
+      }
+    }
+
+    // Otherwise do a one-shot geolocation request
+    if (lat == null) {
+      if (!navigator.geolocation) return;
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 30000
+        });
+      });
+      lat = position.coords.latitude;
+      lon = position.coords.longitude;
+    }
+
+    // Convert to ITM and set reference point at canvas center
+    const itm = wgs84ToItm(lat, lon);
+    const rect = canvas.getBoundingClientRect();
+    setMapReferencePoint({
+      itm: { x: itm.x, y: itm.y },
+      canvas: { x: rect.width / 2, y: rect.height / 2 }
+    });
+
+    // Center the view on this position
+    centerOnGpsLocation(lat, lon);
+  } catch (err) {
+    console.debug('[Location] Could not center new sketch on user location:', err.message);
+  }
 }
 
 /**
