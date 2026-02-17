@@ -7887,11 +7887,14 @@ function centerOnGpsLocation(lat, lon) {
   const position = { lat, lon };
   const rect = canvas.getBoundingClientRect();
   const newTranslate = calculateCenterOnUser(
-    position, 
-    referencePoint, 
-    coordinateScale, 
-    rect.width, 
-    rect.height
+    position,
+    referencePoint,
+    coordinateScale,
+    rect.width,
+    rect.height,
+    viewScale,
+    viewStretchX,
+    viewStretchY
   );
   
   if (newTranslate) {

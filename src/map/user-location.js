@@ -270,7 +270,10 @@ export function drawUserLocationMarker(ctx, position, referencePoint, coordinate
   const screenY = (canvasY * stretchY) * viewScale + viewTranslate.y;
   
   ctx.save();
-  
+  // Reset context transform to draw in screen space — the caller's context may
+  // already have translate + scale applied.
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+
   // Draw accuracy circle
   const accuracyRadius = (position.accuracy || 10) * coordinateScale * viewScale;
   if (accuracyRadius > 5 && accuracyRadius < 500) {
@@ -328,27 +331,32 @@ export function drawUserLocationMarker(ctx, position, referencePoint, coordinate
  * @param {number} coordinateScale - Pixels per meter
  * @param {number} canvasWidth - Canvas width
  * @param {number} canvasHeight - Canvas height
+ * @param {number} viewScale - Current view zoom scale (default 1)
+ * @param {number} stretchX - Horizontal stretch factor (default 1)
+ * @param {number} stretchY - Vertical stretch factor (default 1)
  * @returns {object|null} New view translation {x, y} or null
  */
-export function calculateCenterOnUser(position, referencePoint, coordinateScale, canvasWidth, canvasHeight) {
+export function calculateCenterOnUser(position, referencePoint, coordinateScale, canvasWidth, canvasHeight, viewScale = 1, stretchX = 1, stretchY = 1) {
   if (!position || !referencePoint) {
     return null;
   }
-  
+
   // Convert position to ITM
   const posItm = wgs84ToItm(position.lat, position.lon);
-  
+
   // Convert to canvas world coordinates
   const dx = posItm.x - referencePoint.itm.x;
   const dy = posItm.y - referencePoint.itm.y;
-  
+
   const worldX = referencePoint.canvas.x + (dx * coordinateScale);
   const worldY = referencePoint.canvas.y - (dy * coordinateScale);
-  
-  // Calculate translation to center this point
+
+  // Calculate translation to center this point on screen.
+  // The draw pipeline is: screen = world * stretch * viewScale + viewTranslate
+  // So: viewTranslate = screenCenter - world * stretch * viewScale
   return {
-    x: canvasWidth / 2 - worldX,
-    y: canvasHeight / 2 - worldY
+    x: canvasWidth / 2 - worldX * stretchX * viewScale,
+    y: canvasHeight / 2 - worldY * stretchY * viewScale
   };
 }
 

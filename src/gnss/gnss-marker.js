@@ -56,8 +56,7 @@ export function drawGnssMarker(ctx, position, referencePoint, coordinateScale, v
   const worldX = referencePoint.canvas.x + (dx * coordinateScale);
   const worldY = referencePoint.canvas.y - (dy * coordinateScale); // Flip Y axis
 
-  // Apply view transform with stretch to get screen coordinates
-  // Stretch is applied to positions (worldX, worldY) to align with stretched coordinate system
+  // Compute screen coordinates from world coordinates
   const screenX = (worldX * stretchX) * viewScale + viewTranslate.x;
   const screenY = (worldY * stretchY) * viewScale + viewTranslate.y;
 
@@ -69,6 +68,10 @@ export function drawGnssMarker(ctx, position, referencePoint, coordinateScale, v
   }
 
   ctx.save();
+  // Reset context transform to draw in screen space — the caller's context may
+  // already have translate + scale applied, so we use an identity matrix and
+  // position everything using the screenX/screenY we computed above.
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
 
   // Get color based on fix quality
   const fixQuality = position.fixQuality || 0;
