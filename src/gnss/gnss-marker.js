@@ -69,9 +69,12 @@ export function drawGnssMarker(ctx, position, referencePoint, coordinateScale, v
 
   ctx.save();
   // Reset context transform to draw in screen space — the caller's context may
-  // already have translate + scale applied, so we use an identity matrix and
+  // already have translate + scale applied, so we use a DPR-only matrix and
   // position everything using the screenX/screenY we computed above.
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  // We must keep the DPR scale because the canvas backing store is sized at
+  // CSS dimensions × devicePixelRatio.
+  const dpr = window.devicePixelRatio || 1;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
   // Get color based on fix quality
   const fixQuality = position.fixQuality || 0;

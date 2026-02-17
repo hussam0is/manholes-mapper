@@ -271,8 +271,10 @@ export function drawUserLocationMarker(ctx, position, referencePoint, coordinate
   
   ctx.save();
   // Reset context transform to draw in screen space — the caller's context may
-  // already have translate + scale applied.
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  // already have translate + scale applied. Keep the DPR scale because the canvas
+  // backing store is sized at CSS dimensions × devicePixelRatio.
+  const dpr = window.devicePixelRatio || 1;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
   // Draw accuracy circle
   const accuracyRadius = (position.accuracy || 10) * coordinateScale * viewScale;
