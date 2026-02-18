@@ -1429,6 +1429,51 @@ canvas {
   bottom: 68px;
 }
 
+/* GPS Quick Capture FAB — bottom-left for left-thumb field access */
+.gps-quick-capture-fab {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 16;
+  background: #16a34a;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: transform 0.1s ease, opacity 0.2s ease;
+}
+
+.gps-quick-capture-fab:active {
+  transform: scale(0.9);
+}
+
+.gps-quick-capture-fab:disabled {
+  background: #9ca3af;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.gps-quick-capture-fab .material-icons {
+  font-size: 28px;
+}
+
+/* RTK-ready pulse animation */
+.gps-quick-capture-fab.rtk-ready {
+  animation: gps-fab-pulse 2s ease-in-out infinite;
+}
+
+@keyframes gps-fab-pulse {
+  0%, 100% { box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3); }
+  50% { box-shadow: 0 0 0 8px rgba(22, 163, 74, 0.3), 0 3px 8px rgba(0, 0, 0, 0.3); }
+}
+
 /* Incomplete edge tracker - shows count of dangling edges */
 .incomplete-tracker {
   position: absolute;
@@ -2300,7 +2345,8 @@ input.floating-keyboard-active {
   background: rgba(0, 0, 0, 0.5);
   display: none;
   justify-content: center;
-  align-items: center;
+  /* 'safe center' prevents top cutoff when panel overflows on short viewports */
+  align-items: safe center;
   z-index: 1000;
   backdrop-filter: blur(4px);
   overflow-y: auto;
@@ -4920,6 +4966,22 @@ select.invalid:focus {
     right: 8px;
   }
 
+  /* GPS Quick Capture FAB mobile sizing */
+  .gps-quick-capture-fab {
+    width: 48px;
+    height: 48px;
+    left: 8px;
+    bottom: 8px;
+  }
+
+  .gps-quick-capture-fab .material-icons {
+    font-size: 24px;
+  }
+
+  body.drawer-open .gps-quick-capture-fab {
+    bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 8px);
+  }
+
   /* Incomplete edge tracker mobile positioning */
   .incomplete-tracker {
     right: 8px;
@@ -6230,6 +6292,7 @@ select.invalid:focus {
 .home-panel-modern {
   width: min(420px, 100%);
   max-height: min(90vh, 750px);
+  max-height: min(90dvh, 750px);
   padding: 0 !important;
   display: flex;
   flex-direction: column;
@@ -6631,6 +6694,7 @@ select.invalid:focus {
   .home-panel-modern {
     width: calc(100vw - 1rem);
     max-height: calc(100vh - var(--header-h, 56px) - 2rem);
+    max-height: calc(100dvh - var(--header-h, 56px) - 2rem);
     border-radius: 12px !important;
   }
 
@@ -6679,6 +6743,71 @@ select.invalid:focus {
   .home-panel-new-btn {
     padding: 0.75rem;
     font-size: 0.95rem;
+  }
+}
+
+/* Short viewport — compact home panel so header/close button stays visible */
+@media (max-height: 500px) {
+  .home-panel-modern {
+    max-height: calc(100vh - 1rem);
+    max-height: calc(100dvh - 1rem);
+    border-radius: 10px !important;
+  }
+
+  .home-panel-header {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .home-panel-header-title .material-icons {
+    font-size: 1.2rem;
+  }
+
+  .home-panel-header-title h2 {
+    font-size: 0.9rem;
+  }
+
+  .home-panel-close {
+    width: 32px;
+    height: 32px;
+  }
+
+  .home-panel-close .material-icons {
+    font-size: 1.1rem;
+  }
+
+  .home-panel-sync-status {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.7rem;
+  }
+
+  .sketch-tabs {
+    padding: 0 0.75rem;
+  }
+
+  .sketch-tab {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .home-panel-content {
+    padding: 0.5rem;
+  }
+
+  .sketch-card {
+    padding: 0.625rem;
+  }
+
+  .sketch-list {
+    gap: 0.5rem;
+  }
+
+  .home-panel-footer {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .home-panel-new-btn {
+    padding: 0.5rem;
+    font-size: 0.875rem;
   }
 }
 
