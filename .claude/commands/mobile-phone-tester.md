@@ -12,7 +12,7 @@ You are a **mobile QA engineer** testing the Manholes Mapper PWA on a **physical
 | **GNSS Receiver** | Trimble R2 (connects via Bluetooth to phone) |
 | **Mock Location Provider** | Trimble Mobile Manager (TMM) — feeds RTK position as Android mock location |
 | **Browser** | Chrome 144+ on Android (CDP WebSocket broken — use ADB-only testing) |
-| **App URL (Production)** | `https://manholes-mapper.vercel.app` (deploys from `dev` branch) |
+| **App URL (Production)** | `https://manholes-mapper.vercel.app` (see Deploy-and-Test Workflow below) |
 | **App URL (Preview/Dev)** | `https://manholes-mapper-git-dev-hussam0is-projects.vercel.app` |
 | **App URL (Local full-stack)** | `http://localhost:3000` via `npm start` (Vercel dev) |
 | **App URL (Local frontend-only)** | `http://localhost:5173` via `npm run dev` (NO API routes) |
@@ -25,11 +25,31 @@ You are a **mobile QA engineer** testing the Manholes Mapper PWA on a **physical
 - When using local dev from phone, use `adb reverse tcp:PORT tcp:PORT` for USB access
 
 ### Deploy-and-Test Workflow
+
+**CRITICAL: Pushing to `dev` creates a PREVIEW deployment, NOT production.**
+The production URL (`manholes-mapper.vercel.app`) does NOT auto-update from `dev` pushes.
+
 After code changes:
 1. Commit and push to `dev` branch
-2. **Wait 2 minutes** for Vercel deployment to complete
-3. Navigate phone to the preview/production URL to test
-4. Take screenshot to verify the new code is running
+2. **Wait 2 minutes** for Vercel Preview deployment to complete
+3. **Promote to production** (required for phones using the production URL):
+   ```bash
+   # List deployments to find the latest Preview
+   npx vercel ls 2>&1 | head -10
+   # Promote it to production (auto-confirm with echo "y")
+   echo "y" | npx vercel promote <preview-deployment-url>
+   # Wait ~1 minute for production build
+   ```
+4. **Bump service worker version** if code in non-hashed files changed (e.g., `main.js`):
+   - Edit `public/service-worker.js`: increment `APP_VERSION` (e.g., `'v14'` → `'v15'`)
+   - Commit and push, then promote again
+   - Without this, phones serve stale-while-revalidate cached JS indefinitely
+5. Navigate phone to production URL, take screenshot to verify new code is running
+
+**Why the SW bump matters:** Vite fingerprints `/assets/*.js` files (cache-first, new hash = new file).
+But `main.js`, `styles.css`, and other root files are NOT fingerprinted. They use stale-while-revalidate,
+meaning the phone returns the cached version immediately and only updates the cache in the background.
+Bumping `APP_VERSION` forces the new SW to `skipWaiting()` and delete old caches on activate.
 
 ---
 
@@ -62,8 +82,8 @@ The app uses hash-based SPA routing (`window.handleRoute()`). No React Router.
 - **Static strings:** `data-i18n="key"` attributes in HTML
 
 ### PWA / Service Worker
-- **Service Worker:** `public/service-worker.js`, version `v12`
-- **Cache strategy:** Shell = cache-first, API = no cache, Navigation = network-first
+- **Service Worker:** `public/service-worker.js`, version `v14` (bump this to force cache refresh on phones)
+- **Cache strategy:** Shell = cache-first, API = skip (no cache), Navigation = network-first, `/assets/*` = cache-first, other same-origin GET = stale-while-revalidate
 - **Offline:** Canvas drawing works fully offline (localStorage/IndexedDB). API calls fail gracefully.
 - **Manifest:** `display: standalone`, `theme_color: #2563eb`, `start_url: .`
 - **Health check:** `/health/index.html` (survives offline — useful for connectivity testing)
@@ -451,7 +471,7 @@ window.__authClient         // Better Auth client instance
 window.authGuard            // Auth state: { isLoaded, isSignedIn, userId, user }
 window.t('key')             // i18n translator
 window.isRTL()              // RTL language check
-window.showToast('msg')     // Show toast notification
+window.showToast('msg', ms) // Show toast (default 1800ms; pass longer for debug, e.g. 10000)
 window.menuEvents           // Menu event bus
 window.handleRoute()        // Trigger route evaluation
 window.centerOnGpsLocation(lat, lon)  // Center map on GPS position
@@ -507,13 +527,19 @@ Key files: `src/map/projections.js`, `src/map/tile-manager.js`, `src/map/govmap-
 ### Test Workflow: Live Measure Toggle
 
 1. Open a sketch on the phone
-2. Open the mobile menu (hamburger icon, top-right)
-3. Find and toggle "Live Measure" checkbox in the GNSS section
-4. **Expected:** Chrome asks for location permission
-5. After granting permission:
+2. Open the mobile menu — hamburger position depends on language:
+   - **Hebrew (RTL):** hamburger is at **LEFT** side: bounds `[49,260][168,381]`, tap **(109, 320)**
+   - **English (LTR):** hamburger is at RIGHT side: bounds `[910,260][1029,381]`, tap **(970, 320)**
+   - **Always verify with uiautomator:** `grep -iE "mobileMenuBtn"`
+3. Scroll down in menu (swipe up inside menu area) to find "מדידה חיה" / "Live Measure" section
+4. Toggle the Live Measure checkbox (use uiautomator to find `mobileLiveMeasureToggle` bounds)
+5. **Expected:** Chrome asks for location permission (first time only)
+6. After granting permission:
    - GNSS marker should appear on canvas (color-coded by fix quality)
+   - "המיקום שלי" / "My Location" label appears below the marker
    - Status text should show accuracy and fix type
    - Coordinates display should auto-enable
+7. **The marker may be off-screen** — tap My Location button to center on it
 
 **Via ADB (when CDP unavailable):**
 ```bash
@@ -526,10 +552,10 @@ adb logcat -d | grep -iE "GnssEngine|isMock|accuracy" | tail -10
 
 ### Test: My Location Button
 
-1. Tap the crosshair icon (my_location) on the drawing toolbar
+1. Tap the crosshair icon (my_location) on the drawing toolbar — bounds `[782,470][916,578]`, tap **(849, 524)**
 2. **If Live Measure is active:** Should immediately center on current GNSS position
-3. **If Live Measure is off:** Should do a one-shot geolocation request then center
-4. **Verify:** Marker should be centered on screen at the GPS position
+3. **If Live Measure is off:** Should do a one-shot geolocation request then center (but NO marker drawn — marker only renders when Live Measure is on)
+4. **Verify:** Marker should be centered on screen at the GPS position with "המיקום שלי" label below it
 
 ### Test: Point Capture
 
@@ -616,6 +642,30 @@ The app shows toast messages for geolocation failures:
 - Clear Chrome site data: Settings > Site Settings > manholes-mapper > Clear & reset
 - **Permissions-Policy header:** `geolocation=(self)` — only same-origin can request
 
+### Issue: Chrome Native confirm() Dialogs Are Invisible to uiautomator
+**Symptoms:** A `confirm()` dialog appears (e.g., "השרטוט ריק... לשמור בכל זאת?") but uiautomator dump shows no dialog buttons.
+**Cause:** Chrome renders `alert()`/`confirm()`/`prompt()` dialogs inside its own compositor, not as native Android views.
+**Fix:**
+- The OK/Cancel buttons are rendered at Chrome's native dialog position
+- Take a screenshot, visually identify button positions, then tap
+- **Be very careful with coordinates** — tapping outside the dialog may land on Android system UI (e.g., opening the Phone dialer if you tap near the nav bar area)
+- The empty sketch save dialog appears when navigating away from an empty sketch; the OK button is approximately at native (615, 920) but verify each time
+
+### Issue: Incoming Phone Calls During Testing
+**Fix:** Dismiss with `adb shell input keyevent 6` (KEYCODE_ENDCALL). Do NOT use keyevent 4 (Back).
+
+### Issue: Phone Screen Turns Off During Wait
+**Fix:** Wake with `adb shell input keyevent 26` (power button toggle), then swipe to unlock: `adb shell input swipe 540 2000 540 1000 300`
+
+### Issue: Stale Code After Deployment (Service Worker Cache)
+**Symptoms:** New code changes don't appear on the phone even after promoting to production.
+**Cause:** Service worker stale-while-revalidate serves old cached JS for non-hashed files.
+**Fix:**
+1. Bump `APP_VERSION` in `public/service-worker.js` (e.g., `'v14'` → `'v15'`)
+2. Commit, push, wait for build, promote to production
+3. Reload the page on the phone — new SW installs and clears old caches
+4. Reload once more to get the fresh files from the new cache
+
 ### Issue: TMM Not Providing Mock Location
 **Check:** Look for `isMock=true` in logcat:
 ```bash
@@ -667,15 +717,31 @@ The screencap output is 1080x2280 native pixels. `adb shell input tap X Y` uses 
 | Keyboard top | ~810 | Autofill chips appear here |
 | Keyboard keys | 870–1450 | Full QWERTY keyboard |
 
-### App Canvas Coordinates (with sketch open)
-| Element | Typical Bounds | Center Tap |
-|---------|---------------|------------|
-| Hamburger menu (mobileMenuBtn) | [910,260][1029,381] | (970, 320) |
-| Map layer toggle | In hamburger menu | Verify with screenshot |
-| Location (crosshair) button | Right toolbar, near top | Verify with screenshot |
-| Drawing tool buttons | Right side, stacked vertically | Verify with screenshot |
-| "My Sketches" dialog X button | Top-right of blue header | ~(630, 320) |
-| "Open" button on sketch card | Blue button, left side of card | ~(175, 787) per card |
+### App Canvas Coordinates (with sketch open, VERIFIED via uiautomator 2026-02-17)
+
+**IMPORTANT: Hamburger position flips with RTL/LTR language.**
+
+| Element | Bounds (Hebrew RTL) | Center Tap | Notes |
+|---------|---------------------|------------|-------|
+| Hamburger menu (mobileMenuBtn) | **[49,260][168,381]** | **(109, 320)** | LEFT side in RTL; RIGHT `(970, 320)` in LTR |
+| My Location button (myLocationBtn) | [782,470][916,578] | (849, 524) | Crosshair icon, left of drawing tools |
+| Manhole node (nodeModeBtn) | [929,470][1036,578] | (983, 524) | |
+| Home node (homeNodeModeBtn) | [929,575][1036,683] | (983, 629) | |
+| Drainage node (drainageNodeModeBtn) | [929,680][1036,788] | (983, 734) | |
+| Edge/line (edgeModeBtn) | [929,785][1036,893] | (983, 839) | |
+| Re-center density (recenterDensityBtn) | [921,1838][1039,1956] | (980, 1897) | Bottom-right FAB |
+| Re-center sketch (recenterBtn) | [921,1995][1039,2064] | (980, 2030) | Bottom-right FAB |
+| Home panel close (homePanelCloseBtn) | [126,326][223,423] | (175, 375) | X button on blue header |
+
+**Home Panel (sketch list) coordinates:**
+| Element | Bounds | Center Tap | Notes |
+|---------|--------|------------|-------|
+| First "Open" (פתח) button | [168,1061][351,1158] | (260, 1110) | First sketch card |
+| Second "Open" (פתח) button | [168,1596][351,1691] | (260, 1644) | Second sketch card |
+| "New Sketch" (שרטוט חדש) button | Full-width blue button at bottom | ~(540, 1350) | Verify with screenshot |
+
+**WARNING: Tapping sketch name text opens a rename input field with keyboard!**
+Be precise when tapping "Open" — hit the blue button, not the text above it.
 
 ### Coordinate Discovery Workflow
 ```bash
@@ -710,7 +776,7 @@ adb shell "uiautomator dump /data/local/tmp/ui.xml && cat /data/local/tmp/ui.xml
 - [ ] Login works (use production URL, test both email entry and autofill chip)
 - [ ] Auth state persists across page reload (`#/` doesn't redirect to `#/login`)
 - [ ] Route guard works: unauthenticated → `#/login`, authenticated → `#/`
-- [ ] Mobile menu opens (hamburger icon at `(970, 320)`)
+- [ ] Mobile menu opens (hamburger at `(109, 320)` in RTL Hebrew, `(970, 320)` in LTR English)
 - [ ] All mobile menu buttons are clickable (not blocked by z-index or event issues)
 - [ ] Language switch works (Hebrew/English) — RTL layout flips correctly
 - [ ] Toast notifications appear and auto-dismiss
@@ -731,7 +797,8 @@ adb shell "uiautomator dump /data/local/tmp/ui.xml && cat /data/local/tmp/ui.xml
 - [ ] Live Measure toggle exists in mobile menu
 - [ ] Toggling Live Measure ON prompts for location permission
 - [ ] After granting permission, GNSS marker appears on canvas **at correct position**
-- [ ] Marker color reflects fix quality (green=RTK, blue=Float, amber=DGPS, red=No fix)
+- [ ] Marker color reflects fix quality (green=RTK, blue=Float, amber=GPS/DGPS, red=No fix)
+- [ ] "המיקום שלי" / "My Location" label appears below marker (color matches fix quality)
 - [ ] Accuracy circle draws around marker (correct radius, scales with zoom)
 - [ ] Status text updates with fix type and accuracy (`#mobileLocationStatus`)
 - [ ] Coordinates auto-enable when Live Measure turns on
@@ -779,8 +846,23 @@ Mobile buttons (admin, projects) use both `click` AND `touchend` listeners for r
 ### GNSS Stale Position Warning
 When the GNSS position is >3 seconds old, the marker draws "STALE" text. This helps identify when TMM has stopped providing updates.
 
-### Service Worker Update
-If a new service worker is detected, the app can send `{ type: 'SKIP_WAITING' }` to force immediate activation. The cache version `v12` is in `public/service-worker.js`.
+### Service Worker Update & Cache Invalidation
+If a new service worker is detected, the app can send `{ type: 'SKIP_WAITING' }` to force immediate activation. The cache version is tracked as `APP_VERSION` in `public/service-worker.js` (currently `v14`).
+
+**When to bump `APP_VERSION`:**
+- After changing any non-fingerprinted file (`main.js`, `styles.css`, `index.html`, `manifest.json`)
+- Vite-fingerprinted files under `/assets/` are cache-first with unique hashes, so they don't need SW bumps
+- Bumping version forces `skipWaiting()` + deletes all old caches (`graph-sketch-shell-*`, `graph-sketch-runtime-*`)
+
+**Caching strategies by file type:**
+| Pattern | Strategy | Notes |
+|---------|----------|-------|
+| Navigation (HTML) | Network-first | Falls back to cached shell |
+| `PRECACHE_ASSETS` (index.html, offline.html, etc.) | Cache-first | Pre-cached on install |
+| `/assets/*` (Vite-fingerprinted) | Cache-first | Cached on first access |
+| Google Fonts | Cache-first | Cached in runtime cache |
+| `/api/*` | Pass-through | No caching |
+| Other same-origin GET | Stale-while-revalidate | **This is why `main.js` needs SW bumps** |
 
 ### Capacitor Android Build
 The `android/` directory contains a Capacitor-wrapped APK build. Package: `com.geopoint.manholemapper`. Can be built with `npm run build:android`. The `android-bridge/` app bridges Bluetooth SPP NMEA → WebSocket for GNSS when not using TMM.
