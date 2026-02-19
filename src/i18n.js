@@ -274,6 +274,21 @@ export const i18n = {
       geojsonFile: 'קובץ GeoJSON',
       noLayers: 'אין שכבות ייחוס עבור פרויקט זה.',
       confirmDeleteLayer: 'האם למחוק שכבה זו?',
+      homepage: {
+        title: 'פרויקטים',
+        empty: 'אין שרטוטים בפרויקט זה',
+        openProject: 'פתח פרויקט',
+      },
+      canvas: {
+        sketches: 'שרטוטים',
+        switchedTo: 'עבר אל',
+        showAll: 'הצג הכל',
+        hideAll: 'הסתר הכל',
+        loading: 'טוען שרטוטים...',
+        noSketches: 'אין שרטוטים',
+        hide: 'הסתר',
+        show: 'הצג',
+      },
     },
     inputFlow: {
       title: 'הגדרות זרימת קלט',
@@ -404,23 +419,6 @@ export const i18n = {
       pointCreated: (type, id) => `נוצר ${type} ${id}`,
       newPointTitle: 'נקודת מדידה חדשה',
       newPointDesc: (name) => `נקודה "${name}" לא נמצאה. בחר סוג:`,
-    },
-    projects: {
-      homepage: {
-        title: 'פרויקטים',
-        empty: 'אין שרטוטים בפרויקט זה',
-        openProject: 'פתח פרויקט',
-      },
-      canvas: {
-        sketches: 'שרטוטים',
-        switchedTo: 'עבר אל',
-        showAll: 'הצג הכל',
-        hideAll: 'הסתר הכל',
-        loading: 'טוען שרטוטים...',
-        noSketches: 'אין שרטוטים',
-        hide: 'הסתר',
-        show: 'הצג',
-      },
     },
   },
   en: {
@@ -697,6 +695,21 @@ export const i18n = {
       geojsonFile: 'GeoJSON File',
       noLayers: 'No reference layers configured for this project.',
       confirmDeleteLayer: 'Delete this layer?',
+      homepage: {
+        title: 'Projects',
+        empty: 'No sketches in this project',
+        openProject: 'Open Project',
+      },
+      canvas: {
+        sketches: 'Sketches',
+        switchedTo: 'Switched to',
+        showAll: 'Show All',
+        hideAll: 'Hide All',
+        loading: 'Loading sketches...',
+        noSketches: 'No sketches',
+        hide: 'Hide',
+        show: 'Show',
+      },
     },
     inputFlow: {
       title: 'Input Flow Settings',
@@ -827,23 +840,6 @@ export const i18n = {
       pointCreated: (type, id) => `Created ${type} ${id}`,
       newPointTitle: 'New Survey Point',
       newPointDesc: (name) => `Point "${name}" not found. Choose node type:`,
-    },
-    projects: {
-      homepage: {
-        title: 'Projects',
-        empty: 'No sketches in this project',
-        openProject: 'Open Project',
-      },
-      canvas: {
-        sketches: 'Sketches',
-        switchedTo: 'Switched to',
-        showAll: 'Show All',
-        hideAll: 'Hide All',
-        loading: 'Loading sketches...',
-        noSketches: 'No sketches',
-        hide: 'Hide',
-        show: 'Show',
-      },
     },
   },
 };
