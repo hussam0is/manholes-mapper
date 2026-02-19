@@ -265,7 +265,7 @@ header h1 {
 .sketch-name-display {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #1e40af;
+  color: var(--color-primary-strong);
   padding: 5px 12px;
   background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(59, 130, 246, 0.08) 100%);
   border-radius: 20px;
@@ -316,7 +316,7 @@ header h1 {
   display: none;
   font-size: 0.7rem;
   font-weight: 600;
-  color: #1e40af;
+  color: var(--color-primary-strong);
   padding: 3px 8px;
   background: rgba(255, 255, 255, 0.95);
   border-radius: 12px;
@@ -726,7 +726,7 @@ header .btn-primary:hover {
   border-radius: var(--radius);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
   padding: 0;
-  z-index: 220;
+  /* z-index removed: controlled by menu.css (.mobile-menu z-index: 1060) */
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -1414,14 +1414,14 @@ canvas {
   bottom: 32px;
   z-index: 16;
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: row-reverse;
   align-items: center;
   gap: 0;
   transition: right 240ms cubic-bezier(.2, .8, .2, 1);
 }
 
 .canvas-fab-toolbar.open {
-  gap: 8px;
+  gap: 6px;
 }
 
 /* Main toggle button */
@@ -1472,18 +1472,18 @@ canvas {
 /* Actions container — collapsed by default */
 .canvas-fab-toolbar__actions {
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: row;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   pointer-events: none;
-  max-height: 0;
+  max-width: 0;
   overflow: hidden;
-  transition: max-height 0.3s cubic-bezier(.4, 0, .2, 1);
+  transition: max-width 0.3s cubic-bezier(.4, 0, .2, 1);
 }
 
 .canvas-fab-toolbar.open .canvas-fab-toolbar__actions {
   pointer-events: auto;
-  max-height: 300px;
+  max-width: 300px;
   overflow: visible;
 }
 
@@ -1501,7 +1501,7 @@ canvas {
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   opacity: 0;
-  transform: scale(0.4) translateY(8px);
+  transform: scale(0.4) translateX(8px);
   transition: opacity 0.2s cubic-bezier(.4, 0, .2, 1),
               transform 0.25s cubic-bezier(.4, 0, .2, 1),
               background 0.15s ease;
@@ -1518,11 +1518,11 @@ canvas {
 /* Staggered reveal */
 .canvas-fab-toolbar.open .canvas-fab-toolbar__item {
   opacity: 1;
-  transform: scale(1) translateY(0);
+  transform: scale(1) translateX(0);
 }
 
 .canvas-fab-toolbar.open .canvas-fab-toolbar__item:nth-child(1) {
-  transition-delay: 0.06s;
+  transition-delay: 0s;
 }
 
 .canvas-fab-toolbar.open .canvas-fab-toolbar__item:nth-child(2) {
@@ -1530,7 +1530,7 @@ canvas {
 }
 
 .canvas-fab-toolbar.open .canvas-fab-toolbar__item:nth-child(3) {
-  transition-delay: 0s;
+  transition-delay: 0.06s;
 }
 
 /* Collapse faster (no stagger) */
@@ -1669,7 +1669,7 @@ canvas {
   background: var(--color-surface);
   width: var(--drawer-w);
   box-sizing: border-box;
-  border-left: 1px solid var(--color-border);
+  border-inline-start: 1px solid var(--color-border);
   overflow-y: auto;
   box-shadow: var(--shadow);
   display: flex;
@@ -1839,7 +1839,7 @@ canvas {
   height: 32px;
   border-radius: 6px;
   border: 1px solid var(--color-border);
-  background: #fff;
+  background: var(--color-surface);
   color: var(--color-text);
   cursor: pointer;
 }
@@ -1936,13 +1936,13 @@ canvas {
 
 /* Light grey background for connected lines section */
 .details-section:has(.connected-lines-grid) {
-  background: #d8d8d8;
+  background: var(--color-surface-hover);
 }
 
 /* Import history section styles */
 .import-history-section {
-  background: #f0f9ff; /* light blue tint */
-  border-color: #0ea5e9;
+  background: var(--color-primary-bg); /* light blue tint */
+  border-color: var(--color-primary);
 }
 .import-history-list {
   display: flex;
@@ -5543,6 +5543,11 @@ select.invalid:focus {
     --color-error-border: #7f1d1d;
     --color-error-text: #fca5a5;
     --shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    --color-text-secondary: #94a3b8;
+    --color-surface-hover: #1e293b;
+    --color-border-strong: #475569;
+    --color-primary-light: #1e3a5f;
+    --color-primary-bg: #0f2744;
   }
 
   header {
@@ -5861,6 +5866,55 @@ select.invalid:focus {
 
   .soft-blue-header .search-input:focus {
     background: var(--color-surface);
+  }
+
+  /* Fix 3: .soft-blue-header dark mode — replace light-blue gradient with dark tones */
+  .soft-blue-header {
+    background: linear-gradient(135deg, var(--color-surface-alt) 0%, var(--color-surface) 100%);
+  }
+
+  /* Fix 4: project-card and projects-modal dark mode */
+  .project-card {
+    background: var(--color-surface);
+    border-color: var(--color-border-strong);
+  }
+
+  .project-card:hover {
+    border-color: var(--color-primary);
+  }
+
+  .project-card-actions .btn-sm {
+    background: var(--color-surface-alt);
+    border-color: var(--color-border-strong);
+    color: var(--color-text);
+  }
+
+  .project-card-actions .btn-sm:hover {
+    background: var(--color-surface-hover);
+  }
+
+  .projects-modal {
+    background: var(--color-surface);
+  }
+
+  .projects-modal-body .form-input {
+    background: var(--color-surface-alt);
+    border-color: var(--color-border-strong);
+    color: var(--color-text);
+  }
+
+  .input-flow-modal {
+    background: var(--color-surface);
+  }
+
+  /* Fix 5: floating keyboard header dark mode */
+  .floating-keyboard-header {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  }
+
+  /* Fix 6: hardcoded background colors in details sections */
+  .details-section:has(.connected-lines-grid) {
+    background: var(--color-surface-hover);
   }
 }
 
