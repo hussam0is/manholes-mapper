@@ -1416,8 +1416,12 @@ canvas {
   display: flex;
   flex-direction: column-reverse;
   align-items: center;
-  gap: 8px;
+  gap: 0;
   transition: right 240ms cubic-bezier(.2, .8, .2, 1);
+}
+
+.canvas-fab-toolbar.open {
+  gap: 8px;
 }
 
 /* Main toggle button */
@@ -1465,17 +1469,22 @@ canvas {
   transform: rotate(90deg);
 }
 
-/* Actions container */
+/* Actions container — collapsed by default */
 .canvas-fab-toolbar__actions {
   display: flex;
   flex-direction: column-reverse;
   align-items: center;
   gap: 8px;
   pointer-events: none;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s cubic-bezier(.4, 0, .2, 1);
 }
 
 .canvas-fab-toolbar.open .canvas-fab-toolbar__actions {
   pointer-events: auto;
+  max-height: 300px;
+  overflow: visible;
 }
 
 /* Individual action items */
