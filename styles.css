@@ -8763,7 +8763,7 @@ button:focus-visible,
 
 .sketch-side-panel-toggle {
   position: absolute;
-  top: 90px;
+  bottom: 88px;
   inset-inline-end: 12px;
   z-index: 19;
 }
@@ -8802,9 +8802,8 @@ button:focus-visible,
   }
 
   .sketch-side-panel-toggle {
-    top: auto;
-    bottom: 120px;
-    inset-inline-end: 12px;
+    bottom: 88px;
+    inset-inline-end: 8px;
   }
 }
 
