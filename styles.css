@@ -1262,7 +1262,7 @@ select.btn:focus-visible {
    =========================================== */
 .street-view-pegman {
   position: absolute;
-  bottom: 80px;
+  bottom: 88px;
   right: 12px;
   z-index: 150;
   display: flex;
@@ -1368,16 +1368,16 @@ select.btn:focus-visible {
 /* Mobile adjustments */
 @media (max-width: 600px) {
   .street-view-pegman {
-    bottom: 70px;
+    bottom: 88px;
     right: 8px;
   }
-  
+
   .street-view-pegman__icon {
     font-size: 30px;
   }
-  
+
   body.drawer-open .street-view-pegman {
-    bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 70px);
+    bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 88px);
   }
 }
 
@@ -2713,7 +2713,7 @@ input.floating-keyboard-active {
 }
 
 .project-card {
-  background: var(--color-background, #fff);
+  background: var(--color-surface);
   border: 1px solid var(--color-border, #e0e0e0);
   border-radius: 8px;
   padding: 1rem;
@@ -2778,7 +2778,7 @@ input.floating-keyboard-active {
   font-size: 0.75rem;
   border-radius: 4px;
   border: 1px solid var(--color-border, #e0e0e0);
-  background: var(--color-background, #fff);
+  background: var(--color-surface);
   color: var(--color-text, #333);
   cursor: pointer;
   transition: background-color 0.2s, border-color 0.2s;
@@ -2830,7 +2830,7 @@ input.floating-keyboard-active {
 }
 
 .projects-modal {
-  background: var(--color-background, #fff);
+  background: var(--color-surface);
   border-radius: 12px;
   max-width: 500px;
   width: 90%;
@@ -2899,7 +2899,7 @@ input.floating-keyboard-active {
   font-size: 0.875rem;
   border: 1px solid var(--color-border, #e0e0e0);
   border-radius: 6px;
-  background: var(--color-background, #fff);
+  background: var(--color-surface);
   color: var(--color-text, #333);
   transition: border-color 0.2s, box-shadow 0.2s;
   box-sizing: border-box;
@@ -3234,7 +3234,7 @@ input.floating-keyboard-active {
 }
 
 .input-flow-modal {
-  background: var(--color-background, #fff);
+  background: var(--color-surface);
   border-radius: 12px;
   width: 90%;
   max-width: 600px;
@@ -3308,7 +3308,7 @@ input.floating-keyboard-active {
   border: 1px solid var(--color-border, #e0e0e0);
   border-radius: 6px;
   font-size: 0.9rem;
-  background: var(--color-background, #fff);
+  background: var(--color-surface);
 }
 
 .form-group input:focus,
