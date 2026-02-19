@@ -23,8 +23,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="icon" type="image/png" href="./app_icon.png?v=3" />
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="./src/menu/menu.css" />
+  <!-- CSS is imported via JS in src/main-entry.js for Vite dev/build compatibility -->
   <title>Manhole Mapper (ממפה שוחות)</title>
   <!-- Styles moved to styles.css -->
 </head>
@@ -664,6 +663,13 @@
           </button>
         </div>
       </div>
+      <!-- GPS Quick Capture FAB (visible only when Live Measure is active) -->
+      <button id="gpsQuickCaptureBtn"
+              class="btn btn-icon gps-quick-capture-fab"
+              title="GPS Quick Capture"
+              style="display: none;">
+        <span class="material-icons">add_location_alt</span>
+      </button>
       <div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
       <!-- Edge type legend -->
       <div id="edgeLegend" class="edge-legend"></div>

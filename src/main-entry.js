@@ -1,4 +1,8 @@
 // ES module entry for the Graph Sketcher app
+// Import CSS via JS so Vite handles it correctly in both dev and build modes
+import '../styles.css';
+import './menu/menu.css';
+
 // Load small utilities first so legacy code can rely on them during migration.
 import './utils/toast.js';
 import './serviceWorker/register-sw.js';
