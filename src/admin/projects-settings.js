@@ -22,6 +22,7 @@ export class ProjectsSettings {
     this.t = t;
     this.showToast = showToast;
     this.projects = [];
+    this.orphanCount = 0;
     this.isLoading = false;
     this.isAdmin = false;
   }
@@ -101,6 +102,7 @@ export class ProjectsSettings {
 
       const data = await projectsResponse.json();
       this.projects = data.projects || [];
+      this.orphanCount = data.orphanCount || 0;
     } catch (error) {
       console.error('[ProjectsSettings] Error fetching projects:', error);
       this.projects = [];
@@ -150,9 +152,10 @@ export class ProjectsSettings {
 
     if (this.projects.length === 0) {
       listContainer.innerHTML = `
-        <div class="projects-empty">
-          <span class="material-icons">folder_off</span>
-          <span>${this.t('projects.noProjects')}</span>
+        <div class="projects-empty projects-empty--first-run">
+          <span class="material-icons projects-empty-icon">create_new_folder</span>
+          <span class="projects-empty-title">${this.t('projects.noProjects')}</span>
+          <span class="projects-empty-hint">${this.t('projects.firstProjectHint')}</span>
         </div>
       `;
     } else {
@@ -162,6 +165,46 @@ export class ProjectsSettings {
     }
 
     this.container.appendChild(listContainer);
+
+    // Orphan sketches banner (when projects exist and there are unassigned sketches)
+    if (this.isAdmin && this.orphanCount > 0 && this.projects.length > 0) {
+      const banner = document.createElement('div');
+      banner.className = 'projects-orphan-banner';
+      banner.innerHTML = `
+        <span class="material-icons">warning_amber</span>
+        <span class="projects-orphan-text">${this.t('projects.orphanedSketches', this.orphanCount)}</span>
+        <select id="orphanTargetProject" class="form-input form-input--inline">
+          ${this.projects.map(p => `<option value="${p.id}">${this._escapeHtml(p.name)}</option>`).join('')}
+        </select>
+        <button class="btn btn-primary btn-sm" id="assignOrphansBtn">
+          ${this.t('projects.assignOrphans')}
+        </button>
+      `;
+      this.container.appendChild(banner);
+
+      banner.querySelector('#assignOrphansBtn')?.addEventListener('click', async () => {
+        const projectId = banner.querySelector('#orphanTargetProject')?.value;
+        if (!projectId) return;
+        try {
+          const resp = await fetch('/api/sketches/assign-project', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ projectId })
+          });
+          if (!resp.ok) {
+            const err = await resp.json();
+            throw new Error(err.error || 'Failed to assign sketches');
+          }
+          const result = await resp.json();
+          this.showToast(`${result.assignedCount} ${this.t('projects.sketchCount')} ✓`, 'success');
+          await this.render();
+        } catch (error) {
+          console.error('[ProjectsSettings] Assign orphans error:', error);
+          this.showToast(error.message || 'Error assigning sketches', 'error');
+        }
+      });
+    }
 
     // Add Project button (only for admins)
     if (this.isAdmin) {

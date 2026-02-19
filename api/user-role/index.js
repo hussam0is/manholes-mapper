@@ -8,12 +8,16 @@
  */
 
 import { verifyAuth, sanitizeErrorMessage } from '../_lib/auth.js';
-import { 
-  ensureDb, 
-  getOrCreateUser, 
+import {
+  ensureDb,
+  sql,
+  getOrCreateUser,
   getUserById,
   getEffectiveFeatures,
-  DEFAULT_FEATURES 
+  DEFAULT_FEATURES,
+  createOrganization,
+  getAllOrganizations,
+  updateUser
 } from '../_lib/db.js';
 import { applyRateLimit } from '../_lib/rate-limit.js';
 
@@ -53,7 +57,26 @@ export default async function handler(req, res) {
     const email = authUser?.email || null;
 
     // Get or create user record in our app database
-    const user = await getOrCreateUser(userId, { username, email });
+    let user = await getOrCreateUser(userId, { username, email });
+
+    // Auto-bootstrap: if super_admin has no organization, create or assign one
+    if (user.role === 'super_admin' && !user.organization_id) {
+      const orgs = await getAllOrganizations();
+      let orgId;
+      if (orgs.length === 0) {
+        // Derive org name from email domain (e.g. admin@geopoint.me → "Geopoint")
+        const domain = (email || '').split('@')[1] || 'Default';
+        const orgName = domain.split('.')[0].charAt(0).toUpperCase() + domain.split('.')[0].slice(1);
+        const newOrg = await createOrganization(orgName);
+        orgId = newOrg.id;
+        console.debug(`[API /api/user-role] Auto-created organization "${orgName}" (${orgId}) for super_admin`);
+      } else {
+        orgId = orgs[0].id;
+        console.debug(`[API /api/user-role] Auto-assigned super_admin to existing org ${orgId}`);
+      }
+      await updateUser(userId, { organizationId: orgId });
+      user = await getUserById(userId);
+    }
 
     // Get effective features (combining org and user settings)
     const features = await getEffectiveFeatures(userId, user.organization_id);

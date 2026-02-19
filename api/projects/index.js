@@ -8,8 +8,9 @@
  */
 
 import { verifyAuth, parseBody, sanitizeErrorMessage } from '../_lib/auth.js';
-import { 
-  ensureDb, 
+import {
+  ensureDb,
+  sql,
   getUserById,
   getProjectsByOrganization,
   createProject,
@@ -91,7 +92,14 @@ export default async function handler(req, res) {
         updatedAt: p.updated_at,
       }));
 
-      return res.status(200).json({ projects: transformed });
+      // Count orphaned sketches (no project_id assigned)
+      let orphanCount = 0;
+      if (isAdmin) {
+        const orphanResult = await sql`SELECT COUNT(*) as count FROM sketches WHERE project_id IS NULL`;
+        orphanCount = parseInt(orphanResult.rows[0]?.count) || 0;
+      }
+
+      return res.status(200).json({ projects: transformed, orphanCount });
     }
 
     if (req.method === 'POST') {

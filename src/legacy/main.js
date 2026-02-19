@@ -113,6 +113,18 @@ import {
 import { menuEvents } from '../menu/menu-events.js';
 import { tsc3Connection } from '../survey/tsc3-connection-manager.js';
 import { initSurveyNodeTypeDialog, openSurveyNodeTypeDialog } from '../survey/survey-node-type-dialog.js';
+import {
+  loadProjectSketches,
+  getBackgroundSketches,
+  isProjectCanvasMode,
+  clearProjectCanvas,
+  findNodeInBackground,
+  findEdgeInBackground,
+  switchActiveSketch,
+  onProjectCanvasChange,
+} from '../project/project-canvas-state.js';
+import { drawBackgroundSketches } from '../project/project-canvas-renderer.js';
+import { initSketchSidePanel, showSketchSidePanel, hideSketchSidePanel } from '../project/sketch-side-panel.js';
 
 /**
  * Get the current username from authentication or return a default
@@ -1002,20 +1014,21 @@ function handleRoute() {
   const isProjects = (hash === '#/projects');
   const isLogin = (hash === '#/login');
   const isSignup = (hash === '#/signup');
-  
+  const projectMatch = hash.match(/^#\/project\/(.+)$/);
+
   // Get auth state if available
   const authState = window.authGuard?.getAuthState?.() || { isLoaded: false, isSignedIn: false };
-  
+
   console.debug('[App] handleRoute:', { hash, isLoaded: authState.isLoaded, isSignedIn: authState.isSignedIn });
-  
+
   // If auth is not yet loaded, show loading
   if (!authState.isLoaded) {
     showAuthLoading();
     return;
   }
-  
+
   hideAuthLoading();
-  
+
   // Handle login/signup routes
   if (isLogin || isSignup) {
     // If already signed in, redirect to home
@@ -1033,21 +1046,26 @@ function handleRoute() {
     }
     return;
   }
-  
+
   // For protected routes, check authentication
   if (!authState.isSignedIn) {
     location.hash = '#/login';
     return;
   }
-  
+
   // Hide login panel for authenticated routes
   hideLoginPanel();
   updateUserButtonVisibility(authState.isSignedIn);
-  
+
+  // Leave project-canvas mode when navigating away from #/project/:id
+  if (!projectMatch && isProjectCanvasMode()) {
+    clearProjectCanvas();
+    hideSketchSidePanel();
+  }
+
   // Handle admin route
   if (isAdmin) {
     try { document.body.classList.add('admin-screen'); } catch (_) { }
-    // Prefer separate screen over modal
     try { closeAdminModal(); } catch (_) { }
     try { openAdminScreen(); } catch (_) { }
     try { closeProjectsScreen(); } catch (_) { }
@@ -1057,10 +1075,19 @@ function handleRoute() {
     try { closeAdminModal(); } catch (_) { }
     try { closeAdminScreen(); } catch (_) { }
     try { openProjectsScreen(); } catch (_) { }
+  } else if (projectMatch) {
+    // Handle #/project/:id route — load project canvas
+    try { document.body.classList.remove('admin-screen'); } catch (_) { }
+    try { closeAdminScreen(); } catch (_) { }
+    try { closeProjectsScreen(); } catch (_) { }
+    hideHome();
+    loadProjectCanvas(projectMatch[1]);
   } else {
     try { document.body.classList.remove('admin-screen'); } catch (_) { }
     try { closeAdminScreen(); } catch (_) { }
     try { closeProjectsScreen(); } catch (_) { }
+    // Default route: show projects homepage if user has an org, else show sketch list
+    renderProjectsHome();
   }
 }
 
@@ -2636,8 +2663,158 @@ function renderHome() {
 // Expose renderHome to window so sync-service can trigger a re-render after fetching sketches
 window.renderHome = renderHome;
 
+// ── Project Canvas Mode: active sketch getter/setter ──────────────────────
+
+/**
+ * Snapshot the current active sketch state for project-canvas switching.
+ */
+window.__getActiveSketchData = function () {
+  return {
+    nodes: nodes.slice(),
+    edges: edges.slice(),
+    nextNodeId,
+    sketchId: currentSketchId,
+    sketchName: currentSketchName,
+    projectId: currentProjectId,
+  };
+};
+
+/**
+ * Load a sketch into the main globals (used by project-canvas-state).
+ */
+window.__setActiveSketchData = function (data) {
+  nodes = data.nodes || [];
+  edges = data.edges || [];
+  nextNodeId = data.nextNodeId || 1;
+  currentSketchId = data.sketchId || null;
+  currentSketchName = data.sketchName || null;
+  currentProjectId = data.projectId || null;
+  if (data.inputFlowConfig) currentInputFlowConfig = data.inputFlowConfig;
+  // Reset selection
+  selectedNode = null;
+  selectedEdge = null;
+  pendingEdgeTail = null;
+  pendingEdgePreview = null;
+  pendingEdgeStartPosition = null;
+  updateSketchNameDisplay();
+  renderDetails();
+  scheduleDraw();
+};
+
+window.__scheduleDraw = function () { scheduleDraw(); };
+
+// Expose project canvas module on window for draw()/pointerDown() integration
+window.__projectCanvas = {
+  isProjectCanvasMode,
+  getBackgroundSketches,
+  findNodeInBackground,
+  findEdgeInBackground,
+  switchActiveSketch,
+};
+
 function hideHome() {
   if (homePanel) hidePanelAnimated(homePanel);
+}
+
+// ── Projects Homepage & Project Canvas ────────────────────────────────────
+
+/**
+ * Render the projects homepage in the homePanel container.
+ * Shows organization projects as cards. Falls back to old sketch list
+ * if user has no org or fetch fails.
+ */
+async function renderProjectsHome() {
+  if (!homePanel || !sketchListEl) {
+    // Fallback: show old sketch list
+    renderHome();
+    return;
+  }
+
+  // Show the home panel with loading state
+  startPanel.style.display = 'none';
+  homePanel.classList.remove('panel-closing');
+  homePanel.style.display = 'flex';
+
+  // Update title
+  if (homeTitleEl) homeTitleEl.textContent = t('projects.homepage.title') || 'Projects';
+
+  sketchListEl.innerHTML = `
+    <div class="sketch-list-loading">
+      <span class="material-icons spin">sync</span>
+      <span>${t('projects.canvas.loading') || 'Loading projects...'}</span>
+    </div>`;
+
+  try {
+    const res = await fetch('/api/projects');
+    if (!res.ok) throw new Error('Failed to fetch projects');
+    const data = await res.json();
+    const projects = data.projects || [];
+
+    if (projects.length === 0) {
+      // No projects: fall back to old sketch list
+      renderHome();
+      return;
+    }
+
+    sketchListEl.innerHTML = '';
+
+    // Hide sketch tabs (projects homepage doesn't need them)
+    const sketchTabs = document.getElementById('sketchTabs');
+    if (sketchTabs) sketchTabs.style.display = 'none';
+
+    for (const project of projects) {
+      const card = document.createElement('div');
+      card.className = 'sketch-card project-card';
+      card.innerHTML = `
+        <div class="sketch-card-header">
+          <div class="sketch-card-icon">
+            <span class="material-icons">folder</span>
+          </div>
+          <div class="sketch-card-info">
+            <div class="sketch-card-title">${project.name || project.id}</div>
+            ${project.description ? `<div class="sketch-card-meta">${project.description}</div>` : ''}
+          </div>
+        </div>
+        <div class="sketch-card-actions">
+          <button class="sketch-action-btn sketch-action-primary" data-action="openProject" data-id="${project.id}">
+            <span class="material-icons">open_in_new</span>
+            <span>${t('projects.homepage.openProject') || 'Open Project'}</span>
+          </button>
+        </div>`;
+      card.addEventListener('click', () => {
+        location.hash = '#/project/' + project.id;
+      });
+      sketchListEl.appendChild(card);
+    }
+  } catch (err) {
+    console.warn('[App] Failed to load projects, falling back to sketch list:', err.message);
+    renderHome();
+  }
+}
+
+/**
+ * Enter project-canvas mode: load all sketches for a project onto the canvas.
+ */
+async function loadProjectCanvas(projectId) {
+  try {
+    hideHome();
+    showToast(t('projects.canvas.loading') || 'Loading project sketches...');
+
+    const sketches = await loadProjectSketches(projectId);
+
+    if (sketches.length === 0) {
+      showToast(t('projects.homepage.empty') || 'No sketches in this project', 'warning');
+      return;
+    }
+
+    showSketchSidePanel();
+    scheduleDraw();
+
+    showToast(`${sketches.length} ${t('projects.canvas.sketches') || 'sketches loaded'}`);
+  } catch (err) {
+    console.error('[App] Failed to load project canvas:', err);
+    showToast(err.message || 'Failed to load project', 'error');
+  }
 }
 
 async function handleChangeProject(sketchId) {
@@ -3097,6 +3274,16 @@ function draw() {
   const visMinY = -viewTranslate.y / viewScale - cullMargin;
   const visMaxX = (canvasLogicalW - viewTranslate.x) / viewScale + cullMargin;
   const visMaxY = (canvasLogicalH - viewTranslate.y) / viewScale + cullMargin;
+
+  // Draw background sketches in project-canvas mode (before active sketch)
+  if (window.__projectCanvas?.isProjectCanvasMode()) {
+    drawBackgroundSketches(ctx, window.__projectCanvas.getBackgroundSketches(), {
+      sizeScale,
+      viewStretchX,
+      viewStretchY,
+      visMinX, visMinY, visMaxX, visMaxY,
+    });
+  }
 
   // Draw edges first (positions will be stretched, shapes won't)
   for (let i = 0; i < edges.length; i++) {
@@ -4741,6 +4928,33 @@ function pointerDown(x, y) {
         scheduleDraw();
         return;
       }
+      // Project-canvas: check background sketches for nodes/edges before treating as empty space
+      if (window.__projectCanvas?.isProjectCanvasMode()) {
+        const bgNode = window.__projectCanvas.findNodeInBackground(world.x, world.y, sizeScale);
+        if (bgNode) {
+          window.__projectCanvas.switchActiveSketch(bgNode.sketchId);
+          const switched = findNodeAt(world.x, world.y);
+          if (switched) {
+            pendingEdgeTail = switched;
+            pendingEdgePreview = { x: world.x, y: world.y };
+            showToast(t('toasts.chooseTarget'));
+            scheduleDraw();
+            return;
+          }
+        }
+        const bgEdge = window.__projectCanvas.findEdgeInBackground(world.x, world.y);
+        if (bgEdge) {
+          window.__projectCanvas.switchActiveSketch(bgEdge.sketchId);
+          const switchedEdge = findEdgeAt(world.x, world.y);
+          if (switchedEdge) {
+            selectedEdge = switchedEdge;
+            selectedNode = null;
+            renderDetails();
+            scheduleDraw();
+            return;
+          }
+        }
+      }
       // Clicked empty space first - start inbound dangling edge
       pendingEdgeStartPosition = { x: world.x, y: world.y };
       pendingEdgePreview = { x: world.x, y: world.y };
@@ -4829,6 +5043,24 @@ function pointerDown(x, y) {
       return;
     }
   }
+  // Project-canvas auto-switch: if clicking empty space in active sketch, check background sketches
+  if (!node && window.__projectCanvas?.isProjectCanvasMode() &&
+      (currentMode === 'node' || currentMode === 'home' || currentMode === 'drainage')) {
+    const bgHit = window.__projectCanvas.findNodeInBackground(world.x, world.y, sizeScale);
+    if (bgHit) {
+      window.__projectCanvas.switchActiveSketch(bgHit.sketchId);
+      // Re-find in the now-active sketch
+      const switched = findNodeAt(world.x, world.y);
+      if (switched) {
+        selectedNode = switched;
+        selectedEdge = null;
+        renderDetails();
+        scheduleDraw();
+        return;
+      }
+    }
+  }
+
   // Contextual edit: in Node/Home/Drainage mode, allow selecting and dragging existing nodes when clicking on them
   if ((currentMode === 'node' || currentMode === 'home' || currentMode === 'drainage') && node) {
     // If clicking an already selected node, defer potential deselection until release
@@ -5317,7 +5549,15 @@ async function fetchProjects() {
 function renderProjectDropdown() {
   const projectSelect = document.getElementById('projectSelect');
   if (!projectSelect) return;
-  
+
+  // Hide the entire project field when no projects exist
+  const fieldContainer = projectSelect.closest('.field');
+  if (availableProjects.length === 0) {
+    if (fieldContainer) fieldContainer.style.display = 'none';
+    return;
+  }
+
+  if (fieldContainer) fieldContainer.style.display = '';
   projectSelect.innerHTML = `
     <option value="">${t('labels.selectProject')}</option>
     ${availableProjects.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
@@ -8184,6 +8424,9 @@ window.toggleUserLocationTracking = toggleUserLocationTracking;
 
 // Initialize dialog DOM
 initSurveyNodeTypeDialog();
+
+// Initialize sketch side panel for project-canvas mode
+initSketchSidePanel();
 
 // Wire tsc3Connection callbacks
 tsc3Connection._getNodes = () => nodes;

@@ -705,6 +705,22 @@
         <span class="material-icons" aria-hidden="true">link_off</span>
         <span id="incompleteEdgeCount">0</span>
       </div>
+      <!-- Sketch Side Panel (project-canvas mode) -->
+      <div id="sketchSidePanel" class="sketch-side-panel" style="display:none;">
+        <div class="sketch-side-panel__header">
+          <span class="material-icons">layers</span>
+          <span class="sketch-side-panel__title" data-i18n="projects.canvas.sketches">Sketches</span>
+          <span class="sketch-side-panel__count"></span>
+          <button class="sketch-side-panel__close" title="Close" aria-label="Close panel">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        <div class="sketch-side-panel__list"></div>
+      </div>
+      <!-- Sketch Side Panel Toggle (project-canvas mode) -->
+      <button id="sketchSidePanelToggle" class="btn btn-icon canvas-fab sketch-side-panel-toggle" title="Toggle sketches panel" style="display:none;">
+        <span class="material-icons">layers</span>
+      </button>
       <!-- Toggle button for floating keyboard (shown when numeric input is focused on mobile) -->
       <button id="toggleFloatingKeyboard" class="toggle-floating-keyboard" style="display:none;" aria-label="Toggle numeric keyboard">
         <span class="material-icons" aria-hidden="true">dialpad</span>
