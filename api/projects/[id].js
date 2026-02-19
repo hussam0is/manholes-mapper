@@ -16,7 +16,8 @@ import {
   updateProject,
   deleteProject,
   duplicateProject,
-  getSketchesMetaByProject
+  getSketchesMetaByProject,
+  getSketchesByProject
 } from '../_lib/db.js';
 import { applyRateLimit } from '../_lib/rate-limit.js';
 
@@ -68,9 +69,33 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'GET') {
-      // Check if sketches are requested
+      // Check if full sketches (with nodes/edges) are requested
+      const fullSketches = req.query.fullSketches === 'true';
+      // Check if sketch metadata is requested
       const includeSketches = req.query.includeSketches === 'true';
-      
+
+      // Shortcut: fullSketches returns just the sketches array (for project-canvas mode)
+      if (fullSketches) {
+        const limit = Math.min(Math.max(parseInt(req.query.limit) || 100, 1), 500);
+        const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+        const rows = await getSketchesByProject(projectId, { limit, offset });
+        const sketches = rows.map(s => ({
+          id: s.id,
+          name: s.name,
+          creationDate: s.creation_date,
+          nodes: s.nodes || [],
+          edges: s.edges || [],
+          adminConfig: s.admin_config || {},
+          projectId: s.project_id,
+          snapshotInputFlowConfig: s.snapshot_input_flow_config || {},
+          createdBy: s.created_by,
+          lastEditedBy: s.last_edited_by,
+          createdAt: s.created_at,
+          updatedAt: s.updated_at,
+        }));
+        return res.status(200).json({ sketches, pagination: { limit, offset, count: sketches.length } });
+      }
+
       const response = {
         project: {
           id: project.id,

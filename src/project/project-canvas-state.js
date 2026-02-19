@@ -35,7 +35,7 @@ const listeners = new Set();
  * Sets the first sketch as active.
  */
 export async function loadProjectSketches(projectId) {
-  const res = await fetch(`/api/projects/${projectId}/sketches`);
+  const res = await fetch(`/api/projects/${projectId}?fullSketches=true`);
   if (!res.ok) throw new Error(`Failed to load project sketches: ${res.status}`);
   const { sketches } = await res.json();
 
