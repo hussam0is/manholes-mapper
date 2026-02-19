@@ -3,56 +3,25 @@
  * Exports all GNSS-related functionality
  */
 
-import { 
-  gnssConnection, 
-  GNSSConnectionManager 
-} from './connection-manager.js';
-import { 
-  gnssState, 
-  GNSSStateManager, 
-  ConnectionState, 
-  ConnectionType 
-} from './gnss-state.js';
-
-export { 
-  gnssState, 
-  GNSSStateManager, 
-  ConnectionState, 
-  ConnectionType 
-}
-
-export { 
-  gnssConnection, 
-  GNSSConnectionManager 
-};
-
-// NMEA parsing
-export { 
-  NMEAParser, 
-  FIX_QUALITY_LABELS 
-} from './nmea-parser.js';
-
-// Marker rendering
-export { 
-  drawGnssMarker, 
-  drawGnssStatusBadge, 
-  gnssToCanvas,
-  FIX_COLORS 
-} from './gnss-marker.js';
-
-import { 
-  initPointCaptureDialog, 
-  openPointCaptureDialog, 
-  closeDialog as closePointCaptureDialog, 
-  isDialogOpen as isPointCaptureDialogOpen 
+import { gnssConnection, GNSSConnectionManager } from './connection-manager.js';
+import { gnssState, GNSSStateManager, ConnectionState, ConnectionType } from './gnss-state.js';
+import {
+  initPointCaptureDialog,
+  openPointCaptureDialog,
+  closeDialog as closePointCaptureDialog,
+  isDialogOpen as isPointCaptureDialogOpen
 } from './point-capture-dialog.js';
 
-export { 
-  initPointCaptureDialog, 
-  openPointCaptureDialog, 
-  closePointCaptureDialog, 
-  isPointCaptureDialogOpen 
-};
+export { gnssState, GNSSStateManager, ConnectionState, ConnectionType };
+export { gnssConnection, GNSSConnectionManager };
+
+// NMEA parsing
+export { NMEAParser, FIX_QUALITY_LABELS } from './nmea-parser.js';
+
+// Marker rendering
+export { drawGnssMarker, drawGnssStatusBadge, gnssToCanvas, FIX_COLORS } from './gnss-marker.js';
+
+export { initPointCaptureDialog, openPointCaptureDialog, closePointCaptureDialog, isPointCaptureDialogOpen };
 
 // Browser location adapter (primary for TMM workflow)
 export {

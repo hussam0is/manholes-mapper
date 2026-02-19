@@ -4,7 +4,6 @@
  */
 
 import { gnssState } from './gnss-state.js';
-import { gnssConnection } from './connection-manager.js';
 import { wgs84ToItm } from '../map/govmap-layer.js';
 
 // Dialog element references

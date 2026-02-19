@@ -80,7 +80,7 @@ export class TSC3WebSocketAdapter {
         }
       };
 
-      this.ws.onerror = (event) => {
+      this.ws.onerror = (_event) => {
         console.error('[TSC3] WebSocket error');
         if (this.onError) this.onError(new Error('WebSocket connection error'));
       };

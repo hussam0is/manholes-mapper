@@ -18,7 +18,7 @@ import {
   DEFAULT_FEATURES
 } from '../_lib/db.js';
 import { applyRateLimit } from '../_lib/rate-limit.js';
-import { validateFeaturesInput } from '../_lib/validators.js';
+import { validateFeaturesInput, validateUUID } from '../_lib/validators.js';
 
 export const config = { runtime: 'nodejs' };
 
@@ -45,6 +45,11 @@ export default async function handler(req, res) {
 
   if (!['user', 'organization'].includes(targetType)) {
     return res.status(400).json({ error: 'Target type must be "user" or "organization"' });
+  }
+
+  // Validate UUID format of targetId
+  if (!validateUUID(targetId)) {
+    return res.status(400).json({ error: 'Invalid target ID format' });
   }
 
   try {

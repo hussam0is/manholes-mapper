@@ -494,8 +494,8 @@ export class ProjectsSettings {
    * @param {Object} project - Project to configure
    */
   _navigateToInputFlow(project) {
-    // Store current content
-    const originalContent = this.container.innerHTML;
+    // Store current content (not restored — navigation replaces container fully)
+    const _originalContent = this.container.innerHTML;
     
     // Create input flow settings UI
     this.container.innerHTML = '';

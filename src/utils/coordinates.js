@@ -202,10 +202,10 @@ export function surveyToCanvas(surveyX, surveyY, bounds, canvasWidth, canvasHeig
   // This means a 100m distance in survey = 300 pixels on screen
   const pixelsPerMeter = options.pixelsPerMeter || 3;
   
-  // Calculate survey extent
-  const surveyWidth = Math.max(bounds.maxX - bounds.minX, 1);
-  const surveyHeight = Math.max(bounds.maxY - bounds.minY, 1);
-  
+  // Calculate survey extent (retained for documentation purposes)
+  const _surveyWidth = Math.max(bounds.maxX - bounds.minX, 1);
+  const _surveyHeight = Math.max(bounds.maxY - bounds.minY, 1);
+
   // Calculate center of survey coordinates
   const surveyCenterX = (bounds.minX + bounds.maxX) / 2;
   const surveyCenterY = (bounds.minY + bounds.maxY) / 2;

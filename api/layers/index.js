@@ -24,6 +24,7 @@ import {
   deleteProjectLayer
 } from '../_lib/db.js';
 import { applyRateLimit } from '../_lib/rate-limit.js';
+import { validateUUID } from '../_lib/validators.js';
 
 export const config = { runtime: 'nodejs' };
 
@@ -97,6 +98,10 @@ export default async function handler(req, res) {
 
     // ─── Routes with a layer ID: /api/layers/[id] ───
     if (layerId) {
+      // Validate UUID format before passing to handler
+      if (!validateUUID(layerId)) {
+        return res.status(400).json({ error: 'Invalid layer ID format' });
+      }
       return handleSingleLayer(req, res, request, layerId, currentUser, isSuperAdmin, isAdmin, userId);
     }
 
@@ -197,8 +202,8 @@ async function handleCollection(req, res, request, currentUser, isSuperAdmin, is
     });
   }
 
-  console.debug(`[API /api/layers/${layerId}] Method ${req.method} not allowed for single layer`);
-  return res.status(405).json({ error: `Method ${req.method} not allowed for single layer` });
+  console.debug(`[API /api/layers] Method ${req.method} not allowed`);
+  return res.status(405).json({ error: `Method ${req.method} not allowed` });
 }
 
 // ─── /api/layers/[id] (GET single, PUT update, DELETE) ───

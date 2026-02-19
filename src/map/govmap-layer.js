@@ -15,7 +15,6 @@ import {
   calculateZoomLevel,
   tileToLatLon
 } from './tile-manager.js';
-
 import {
   wgs84ToItm as projectWgs84ToItm,
   itmToWgs84 as projectItmToWgs84

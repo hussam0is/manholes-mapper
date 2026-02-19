@@ -92,10 +92,15 @@ export default async function handler(req, res) {
         updatedAt: p.updated_at,
       }));
 
-      // Count orphaned sketches (no project_id assigned)
+      // Count orphaned sketches (no project_id assigned) scoped to the user's organization
       let orphanCount = 0;
-      if (isAdmin) {
-        const orphanResult = await sql`SELECT COUNT(*) as count FROM sketches WHERE project_id IS NULL`;
+      if (isAdmin && currentUser.organization_id) {
+        const userOrgId = currentUser.organization_id;
+        const orphanResult = await sql`
+          SELECT COUNT(*) as count FROM sketches s
+          JOIN users u ON s.user_id = u.id
+          WHERE s.project_id IS NULL AND u.organization_id = ${userOrgId}
+        `;
         orphanCount = parseInt(orphanResult.rows[0]?.count) || 0;
       }
 

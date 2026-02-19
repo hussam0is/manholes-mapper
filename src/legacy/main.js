@@ -1546,6 +1546,7 @@ function applyLangToStaticUI() {
   }
   if (helpNoteEl) helpNoteEl.textContent = t('helpNote');
   document.documentElement.dir = isRTL(currentLang) ? 'rtl' : 'ltr';
+  document.documentElement.lang = currentLang;
   document.body.classList.toggle('rtl', isRTL(currentLang));
 
   // Update labels in the mobile overflow menu when language changes
@@ -2592,6 +2593,11 @@ function renderHome() {
       const showCreatedBy = createdByUser && createdByUser.length > 0;
       const showModifiedBy = modifiedByUser && modifiedByUser.length > 0;
       
+      const safeRecId = escapeHtml(rec.id);
+      const safeTitle = escapeHtml(title);
+      const safeCreatedByUser = escapeHtml(createdByUser);
+      const safeModifiedByUser = escapeHtml(modifiedByUser);
+      const safeOwnerDisplay = escapeHtml(ownerDisplay);
       item.innerHTML = `
         ${isCurrentSketch ? `<div class="sketch-card-active-badge">
           <span class="material-icons">check_circle</span>
@@ -2602,7 +2608,7 @@ function renderHome() {
             <span class="material-icons">description</span>
           </div>
           <div class="sketch-card-info">
-            <div class="sketch-card-title sketch-title" data-id="${rec.id}">${title}</div>
+            <div class="sketch-card-title sketch-title" data-id="${safeRecId}">${safeTitle}</div>
             <div class="sketch-card-meta">
               <span class="material-icons">schedule</span>
               ${t('listUpdated', new Date(rec.updatedAt || rec.createdAt).toLocaleString(currentLang === 'he' ? 'he-IL' : 'en-GB'))}
@@ -2610,16 +2616,16 @@ function renderHome() {
             <div class="sketch-card-user-info">
               ${showCreatedBy ? `<div class="sketch-card-meta sketch-card-creator">
                 <span class="material-icons" aria-hidden="true">person_add</span>
-                <span>${t('createdBy') || 'Created by'}: ${createdByUser}</span>
+                <span>${t('createdBy') || 'Created by'}: ${safeCreatedByUser}</span>
               </div>` : ''}
               ${showModifiedBy ? `<div class="sketch-card-meta sketch-card-modifier">
                 <span class="material-icons" aria-hidden="true">edit</span>
-                <span>${t('modifiedBy') || 'Modified by'}: ${modifiedByUser}</span>
+                <span>${t('modifiedBy') || 'Modified by'}: ${safeModifiedByUser}</span>
               </div>` : ''}
             </div>
             ${showOwnerInfo ? `<div class="sketch-card-meta sketch-card-owner">
               <span class="material-icons">person</span>
-              <span>${ownerDisplay}</span>
+              <span>${safeOwnerDisplay}</span>
             </div>` : ''}
           </div>
         </div>
@@ -2634,24 +2640,24 @@ function renderHome() {
           </div>
         </div>
         <div class="sketch-card-actions">
-          ${isCurrentSketch ? '' : `<button class="sketch-action-btn sketch-action-primary" data-action="open" data-id="${rec.id}">
+          ${isCurrentSketch ? '' : `<button class="sketch-action-btn sketch-action-primary" data-action="open" data-id="${safeRecId}">
             <span class="material-icons">open_in_new</span>
             <span>${t('listOpen')}</span>
           </button>`}
-          <button class="sketch-action-btn" data-action="changeProject" data-id="${rec.id}">
+          <button class="sketch-action-btn" data-action="changeProject" data-id="${safeRecId}">
             <span class="material-icons">folder</span>
             <span>${t('listChangeProject')}</span>
           </button>
-          <button class="sketch-action-btn" data-action="duplicate" data-id="${rec.id}">
+          <button class="sketch-action-btn" data-action="duplicate" data-id="${safeRecId}">
             <span class="material-icons">content_copy</span>
             <span>${t('listDuplicate')}</span>
           </button>
           ${!isCurrentSketch ? `
-          <button class="sketch-action-btn" data-action="importHistory" data-id="${rec.id}">
+          <button class="sketch-action-btn" data-action="importHistory" data-id="${safeRecId}">
             <span class="material-icons">history</span>
             <span>${t('listImportHistory')}</span>
           </button>` : ''}
-          <button class="sketch-action-btn sketch-action-danger" data-action="delete" data-id="${rec.id}" aria-label="${t('listDelete')}" title="${t('listDelete')}">
+          <button class="sketch-action-btn sketch-action-danger" data-action="delete" data-id="${safeRecId}" aria-label="${t('listDelete')}" title="${t('listDelete')}">
             <span class="material-icons" aria-hidden="true">delete_outline</span>
           </button>
         </div>`;
@@ -2765,18 +2771,21 @@ async function renderProjectsHome() {
     for (const project of projects) {
       const card = document.createElement('div');
       card.className = 'sketch-card project-card';
+      const safeProjectId = escapeHtml(project.id);
+      const safeProjectName = escapeHtml(project.name || project.id);
+      const safeProjectDescription = project.description ? escapeHtml(project.description) : '';
       card.innerHTML = `
         <div class="sketch-card-header">
           <div class="sketch-card-icon">
             <span class="material-icons">folder</span>
           </div>
           <div class="sketch-card-info">
-            <div class="sketch-card-title">${project.name || project.id}</div>
-            ${project.description ? `<div class="sketch-card-meta">${project.description}</div>` : ''}
+            <div class="sketch-card-title">${safeProjectName}</div>
+            ${safeProjectDescription ? `<div class="sketch-card-meta">${safeProjectDescription}</div>` : ''}
           </div>
         </div>
         <div class="sketch-card-actions">
-          <button class="sketch-action-btn sketch-action-primary" data-action="openProject" data-id="${project.id}">
+          <button class="sketch-action-btn sketch-action-primary" data-action="openProject" data-id="${safeProjectId}">
             <span class="material-icons">open_in_new</span>
             <span>${t('projects.homepage.openProject') || 'Open Project'}</span>
           </button>
@@ -2861,8 +2870,8 @@ async function handleChangeProject(sketchId) {
           <select id="projectSelect" class="form-input">
             <option value="">-- ${t('labels.selectProject')} --</option>
             ${projects.map(p => `
-              <option value="${p.id}" ${p.id === sketchProjectId ? 'selected' : ''}>
-                ${p.name}
+              <option value="${escapeHtml(p.id)}" ${p.id === sketchProjectId ? 'selected' : ''}>
+                ${escapeHtml(p.name)}
               </option>
             `).join('')}
           </select>
@@ -4120,11 +4129,11 @@ function renderDetails() {
       container.innerHTML = `
         <div class="field">
           <label for="idInput">${t('labels.nodeId')}</label>
-          <input id="idInput" type="text" value="${node.id}" dir="auto" />
+          <input id="idInput" type="text" value="${escapeHtml(node.id)}" dir="auto" />
         </div>
         <div class="field">
           <label for="noteInput">${t('labels.note')}</label>
-          <textarea id="noteInput" rows="3" placeholder="${t('labels.notePlaceholder')}" dir="auto">${node.note || ''}</textarea>
+          <textarea id="noteInput" rows="3" placeholder="${t('labels.notePlaceholder')}" dir="auto">${escapeHtml(node.note || '')}</textarea>
         </div>
         <div class="field">
           <label><input id="directConnectionToggle" type="checkbox" ${node.directConnection ? 'checked' : ''}/> ${dcText}</label>
@@ -4135,7 +4144,7 @@ function renderDetails() {
         <div class="details-section">
           <div class="field">
             <label for="idInput">${t('labels.nodeId')}</label>
-            <input id="idInput" type="text" value="${node.id}" dir="auto" />
+            <input id="idInput" type="text" value="${escapeHtml(node.id)}" dir="auto" />
           </div>
         </div>
         <div class="details-section">
@@ -4525,7 +4534,7 @@ function renderDetails() {
       <div class="details-section">
         <div class="details-grid two-col">
           <div class="field col-span-2">
-            <div>${edge.tail} ${isRTL(currentLang) ? '←' : '→'} ${edge.head}</div>
+            <div>${escapeHtml(edge.tail)} ${isRTL(currentLang) ? '←' : '→'} ${escapeHtml(edge.head)}</div>
           </div>
         </div>
       </div>
@@ -5560,7 +5569,7 @@ function renderProjectDropdown() {
   if (fieldContainer) fieldContainer.style.display = '';
   projectSelect.innerHTML = `
     <option value="">${t('labels.selectProject')}</option>
-    ${availableProjects.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
+    ${availableProjects.map(p => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join('')}
   `;
 }
 

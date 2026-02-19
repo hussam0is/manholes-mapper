@@ -487,10 +487,21 @@ export async function createSketch(userId, sketch) {
 
 /**
  * Update an existing sketch
+ *
+ * Fields present in `updates` (even if null) are written to the DB.
+ * Fields absent from `updates` (undefined) keep their current DB value.
+ * This allows explicitly setting project_id to NULL to un-assign a sketch from a project.
  */
 export async function updateSketch(sketchId, userId, updates) {
-  const { name, creationDate, nodes, edges, adminConfig, lastEditedBy, projectId, snapshotInputFlowConfig } = updates;
-  
+  const {
+    name, creationDate, nodes, edges, adminConfig,
+    lastEditedBy, snapshotInputFlowConfig
+  } = updates;
+
+  // Detect which optional nullable fields were explicitly provided
+  const projectIdProvided = 'projectId' in updates;
+  const projectId = updates.projectId ?? null;
+
   const result = await sql`
     UPDATE sketches
     SET
@@ -500,14 +511,14 @@ export async function updateSketch(sketchId, userId, updates) {
       edges = COALESCE(${edges != null ? JSON.stringify(edges) : null}::jsonb, edges),
       admin_config = COALESCE(${adminConfig != null ? JSON.stringify(adminConfig) : null}::jsonb, admin_config),
       last_edited_by = COALESCE(${lastEditedBy}, last_edited_by),
-      project_id = COALESCE(${projectId}, project_id),
+      project_id = CASE WHEN ${projectIdProvided}::boolean THEN ${projectId} ELSE project_id END,
       snapshot_input_flow_config = COALESCE(${snapshotInputFlowConfig != null ? JSON.stringify(snapshotInputFlowConfig) : null}::jsonb, snapshot_input_flow_config),
       updated_at = NOW()
     WHERE id = ${sketchId} AND user_id = ${userId}
     RETURNING id, name, creation_date, nodes, edges, admin_config, created_by, last_edited_by,
               project_id, snapshot_input_flow_config, created_at, updated_at
   `;
-  
+
   return result.rows[0] || null;
 }
 
@@ -794,21 +805,29 @@ export async function createProject(organizationId, project) {
 
 /**
  * Update a project
+ *
+ * Fields present in `updates` (even if null) are written to the DB.
+ * Fields absent from `updates` (undefined) keep their current DB value.
+ * This allows explicitly setting description to NULL to clear it.
  */
 export async function updateProject(projectId, updates) {
-  const { name, description, inputFlowConfig } = updates;
-  
+  const { name, inputFlowConfig } = updates;
+
+  // Detect which optional nullable fields were explicitly provided
+  const descriptionProvided = 'description' in updates;
+  const description = updates.description ?? null;
+
   const result = await sql`
     UPDATE projects
     SET
       name = COALESCE(${name}, name),
-      description = COALESCE(${description}, description),
+      description = CASE WHEN ${descriptionProvided}::boolean THEN ${description} ELSE description END,
       input_flow_config = COALESCE(${inputFlowConfig != null ? JSON.stringify(inputFlowConfig) : null}::jsonb, input_flow_config),
       updated_at = NOW()
     WHERE id = ${projectId}
     RETURNING id, organization_id, name, description, input_flow_config, created_at, updated_at
   `;
-  
+
   return result.rows[0] || null;
 }
 

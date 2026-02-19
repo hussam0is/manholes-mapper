@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="he" dir="rtl">
 
 <head>
   <meta charset="UTF-8" />
@@ -50,12 +50,12 @@
     <nav id="controls" class="menu-controls" role="navigation" aria-label="Main navigation">
       <!-- Primary actions group -->
       <div class="menu-group menu-group--primary">
-        <button id="newSketchBtn" class="menu-btn menu-btn--primary" title="" data-action="newSketch">
+        <button id="newSketchBtn" class="menu-btn menu-btn--primary" title="" aria-label="New sketch" data-action="newSketch">
           <span class="material-icons">note_add</span>
           <span class="menu-btn__label"></span>
         </button>
         <div class="menu-save-group">
-          <button id="saveBtn" class="menu-btn menu-btn--ghost" title="" data-action="save">
+          <button id="saveBtn" class="menu-btn menu-btn--ghost" title="" aria-label="Save sketch" data-action="save">
             <span class="material-icons">save</span>
             <span class="menu-btn__label"></span>
           </button>
@@ -70,17 +70,17 @@
       <div class="menu-group menu-group--search">
         <div class="menu-search">
           <span class="material-icons menu-search__icon">search</span>
-          <input id="searchNodeInput" type="text" placeholder="" title="" class="menu-search__input" />
+          <input id="searchNodeInput" type="text" placeholder="Search nodes" title="" aria-label="Search nodes" class="menu-search__input" />
         </div>
       </div>
 
       <!-- Size controls -->
       <div class="menu-group menu-group--size">
         <div class="menu-segmented">
-          <button id="sizeDecreaseBtn" class="menu-btn menu-btn--small menu-btn--icon-only" title="" data-action="sizeDecrease">
+          <button id="sizeDecreaseBtn" class="menu-btn menu-btn--small menu-btn--icon-only" title="" aria-label="Decrease size" data-action="sizeDecrease">
             <span class="material-icons">remove_circle_outline</span>
           </button>
-          <button id="sizeIncreaseBtn" class="menu-btn menu-btn--small menu-btn--icon-only" title="" data-action="sizeIncrease">
+          <button id="sizeIncreaseBtn" class="menu-btn menu-btn--small menu-btn--icon-only" title="" aria-label="Increase size" data-action="sizeIncrease">
             <span class="material-icons">add_circle_outline</span>
           </button>
         </div>
@@ -88,7 +88,7 @@
 
       <!-- Command menu (More dropdown) - Grouped with section headers -->
       <div class="menu-group menu-group--command">
-        <button id="exportMenuBtn" class="menu-btn menu-btn--ghost menu-btn--icon-only menu-btn--command" title="" aria-haspopup="menu" aria-expanded="false">
+        <button id="exportMenuBtn" class="menu-btn menu-btn--ghost menu-btn--icon-only menu-btn--command" title="" aria-label="Export options" aria-haspopup="menu" aria-expanded="false">
           <span class="material-icons">apps</span>
         </button>
         <div class="menu-dropdown menu-dropdown--grouped" id="exportDropdown" role="menu">
@@ -260,20 +260,20 @@
 
       <!-- Utility group -->
       <div class="menu-group menu-group--utility">
-        <select id="langSelect" class="menu-select" data-action="languageChange" title="">
+        <select id="langSelect" class="menu-select" data-action="languageChange" title="" aria-label="Select language">
           <option value="he">עברית</option>
           <option value="en">English</option>
         </select>
-        <button id="helpBtn" class="menu-btn menu-btn--ghost menu-btn--icon-only" title="" data-action="help">
+        <button id="helpBtn" class="menu-btn menu-btn--ghost menu-btn--icon-only" title="" aria-label="Help" data-action="help">
           <span class="material-icons">help_outline</span>
         </button>
-        <button id="adminBtn" class="menu-btn menu-btn--ghost menu-btn--icon-only" title="" data-action="admin">
+        <button id="adminBtn" class="menu-btn menu-btn--ghost menu-btn--icon-only" title="" aria-label="Admin settings" data-action="admin">
           <span class="material-icons">tune</span>
         </button>
-        <button id="projectsBtn" class="menu-btn menu-btn--ghost menu-btn--icon-only" title="" data-action="projects">
+        <button id="projectsBtn" class="menu-btn menu-btn--ghost menu-btn--icon-only" title="" aria-label="Projects" data-action="projects">
           <span class="material-icons">folder_open</span>
         </button>
-        <button id="homeBtn" class="menu-btn menu-btn--ghost" title="" data-action="home">
+        <button id="homeBtn" class="menu-btn menu-btn--ghost" title="" aria-label="Home" data-action="home">
           <span class="material-icons">home</span>
           <span class="menu-btn__label"></span>
         </button>
@@ -296,7 +296,7 @@
   </header>
 
   <!-- Login Panel (Authentication) -->
-  <div id="loginPanel" class="login-panel" style="display: none;">
+  <div id="loginPanel" class="login-panel" style="display: none;" role="dialog" aria-modal="true" aria-label="Authentication">
     <div class="login-panel-content">
       <div class="login-panel-header">
         <img src="./geopoint_logo.png" alt="Geopoint" class="login-logo" />
@@ -342,14 +342,14 @@
       <!-- Navigation group -->
       <div class="mobile-menu__group" data-group="nav">
         <div class="mobile-menu__group-header" id="menuGroupNav">
-          <span class="material-icons mobile-menu__group-icon">home</span>
+          <span class="material-icons mobile-menu__group-icon" aria-hidden="true">home</span>
           <span class="mobile-menu__group-label" data-i18n="menuGroupNav">ניווט</span>
         </div>
-        <button id="mobileHomeBtn" class="mobile-menu__btn" title="">
+        <button id="mobileHomeBtn" class="mobile-menu__btn" title="" aria-label="Home">
           <span class="material-icons">home</span>
           <span class="mobile-menu__label" data-i18n="home">בית</span>
         </button>
-        <button id="mobileNewSketchBtn" class="mobile-menu__btn" title="">
+        <button id="mobileNewSketchBtn" class="mobile-menu__btn" title="" aria-label="New sketch">
           <span class="material-icons">note_add</span>
           <span class="mobile-menu__label" data-i18n="newSketch">שרטוט חדש</span>
         </button>
@@ -358,34 +358,34 @@
       <!-- Search group -->
       <div class="mobile-menu__group" data-group="search">
         <div class="mobile-menu__group-header" id="menuGroupSearch">
-          <span class="material-icons mobile-menu__group-icon">search</span>
+          <span class="material-icons mobile-menu__group-icon" aria-hidden="true">search</span>
           <span class="mobile-menu__group-label" data-i18n="menuGroupSearch">חיפוש</span>
         </div>
         <div class="mobile-menu__search">
           <span class="material-icons">search</span>
-          <input id="mobileSearchNodeInput" type="text" placeholder="" title="" class="mobile-menu__search-input" />
+          <input id="mobileSearchNodeInput" type="text" placeholder="Search nodes" title="" aria-label="Search nodes" class="mobile-menu__search-input" />
         </div>
       </div>
       
       <!-- View controls group -->
       <div class="mobile-menu__group" data-group="view">
         <div class="mobile-menu__group-header" id="menuGroupView">
-          <span class="material-icons mobile-menu__group-icon">visibility</span>
+          <span class="material-icons mobile-menu__group-icon" aria-hidden="true">visibility</span>
           <span class="mobile-menu__group-label" data-i18n="menuGroupView">תצוגה</span>
         </div>
-        <button id="mobileZoomOutBtn" class="mobile-menu__btn" title="">
+        <button id="mobileZoomOutBtn" class="mobile-menu__btn" title="" aria-label="Zoom out">
           <span class="material-icons">zoom_out</span>
           <span class="mobile-menu__label" data-i18n="zoomOut">הקטן זום</span>
         </button>
-        <button id="mobileZoomInBtn" class="mobile-menu__btn" title="">
+        <button id="mobileZoomInBtn" class="mobile-menu__btn" title="" aria-label="Zoom in">
           <span class="material-icons">zoom_in</span>
           <span class="mobile-menu__label" data-i18n="zoomIn">הגדל זום</span>
         </button>
-        <button id="mobileSizeDecreaseBtn" class="mobile-menu__btn" title="">
+        <button id="mobileSizeDecreaseBtn" class="mobile-menu__btn" title="" aria-label="Decrease size">
           <span class="material-icons">remove_circle_outline</span>
           <span class="mobile-menu__label" data-i18n="sizeDecrease">הקטן גודל</span>
         </button>
-        <button id="mobileSizeIncreaseBtn" class="mobile-menu__btn" title="">
+        <button id="mobileSizeIncreaseBtn" class="mobile-menu__btn" title="" aria-label="Increase size">
           <span class="material-icons">add_circle_outline</span>
           <span class="mobile-menu__label" data-i18n="sizeIncrease">הגדל גודל</span>
         </button>
@@ -394,18 +394,18 @@
       <!-- Sketch group -->
       <div class="mobile-menu__group" data-group="sketch">
         <div class="mobile-menu__group-header" id="menuGroupSketch">
-          <span class="material-icons mobile-menu__group-icon">description</span>
+          <span class="material-icons mobile-menu__group-icon" aria-hidden="true">description</span>
           <span class="mobile-menu__group-label" data-i18n="menuGroup.sketch">שרטוט</span>
         </div>
-        <button id="mobileSaveBtn" class="mobile-menu__btn" title="">
+        <button id="mobileSaveBtn" class="mobile-menu__btn" title="" aria-label="Save sketch">
           <span class="material-icons">save</span>
           <span class="mobile-menu__label" data-i18n="save">שמירה</span>
         </button>
-        <button id="mobileExportSketchBtn" class="mobile-menu__btn" title="">
+        <button id="mobileExportSketchBtn" class="mobile-menu__btn" title="" aria-label="Export sketch">
           <span class="material-icons">download</span>
           <span class="mobile-menu__label" data-i18n="exportSketch">יצוא שרטוט</span>
         </button>
-        <button id="mobileImportSketchBtn" class="mobile-menu__btn" title="">
+        <button id="mobileImportSketchBtn" class="mobile-menu__btn" title="" aria-label="Import sketch">
           <span class="material-icons">upload</span>
           <span class="mobile-menu__label" data-i18n="importSketch">יבוא שרטוט</span>
         </button>
@@ -414,14 +414,14 @@
       <!-- CSV Export group -->
       <div class="mobile-menu__group" data-group="csv">
         <div class="mobile-menu__group-header" id="menuGroupCsv">
-          <span class="material-icons mobile-menu__group-icon">table_chart</span>
+          <span class="material-icons mobile-menu__group-icon" aria-hidden="true">table_chart</span>
           <span class="mobile-menu__group-label" data-i18n="menuGroup.csv">יצוא נתונים</span>
         </div>
-        <button id="mobileExportNodesBtn" class="mobile-menu__btn" title="">
+        <button id="mobileExportNodesBtn" class="mobile-menu__btn" title="" aria-label="Export nodes">
           <span class="material-icons">donut_large</span>
           <span class="mobile-menu__label" data-i18n="exportNodes">יצוא שוחות</span>
         </button>
-        <button id="mobileExportEdgesBtn" class="mobile-menu__btn" title="">
+        <button id="mobileExportEdgesBtn" class="mobile-menu__btn" title="" aria-label="Export edges">
           <span class="material-icons">call_split</span>
           <span class="mobile-menu__label" data-i18n="exportEdges">יצוא קווים</span>
         </button>
@@ -430,10 +430,10 @@
       <!-- Location group -->
       <div class="mobile-menu__group" data-group="location">
         <div class="mobile-menu__group-header" id="menuGroupLocation">
-          <span class="material-icons mobile-menu__group-icon">location_on</span>
+          <span class="material-icons mobile-menu__group-icon" aria-hidden="true">location_on</span>
           <span class="mobile-menu__group-label" data-i18n="menuGroup.location">מיקום וקואורדינטות</span>
         </div>
-        <button id="mobileImportCoordinatesBtn" class="mobile-menu__btn" title="">
+        <button id="mobileImportCoordinatesBtn" class="mobile-menu__btn" title="" aria-label="Import coordinates">
           <span class="material-icons">place</span>
           <span class="mobile-menu__label" data-i18n="coordinates.import">יבא קואורדינטות</span>
         </button>
@@ -469,7 +469,7 @@
             <button id="mobileStretchYIncreaseBtn" class="mobile-menu__scale-btn" title="הגדל">+</button>
           </div>
         </div>
-        <button id="mobileResetStretchBtn" class="mobile-menu__btn" title="">
+        <button id="mobileResetStretchBtn" class="mobile-menu__btn" title="" aria-label="Reset stretch">
           <span class="material-icons">refresh</span>
           <span class="mobile-menu__label" data-i18n="stretch.reset">אפס מתיחה</span>
         </button>
@@ -478,7 +478,7 @@
       <!-- Map Layer group -->
       <div class="mobile-menu__group" data-group="map">
         <div class="mobile-menu__group-header" id="menuGroupMap">
-          <span class="material-icons mobile-menu__group-icon">map</span>
+          <span class="material-icons mobile-menu__group-icon" aria-hidden="true">map</span>
           <span class="mobile-menu__group-label" data-i18n="menuGroup.map">שכבת מפה</span>
         </div>
         <label id="mobileToggleMapLayerLabel" class="mobile-menu__toggle">
@@ -508,7 +508,7 @@
       <!-- GNSS / Live Measure group (mobile) -->
       <div class="mobile-menu__group" data-group="gnss">
         <div class="mobile-menu__group-header">
-          <span class="material-icons mobile-menu__group-icon">satellite_alt</span>
+          <span class="material-icons mobile-menu__group-icon" aria-hidden="true">satellite_alt</span>
           <span class="mobile-menu__group-label" data-i18n="menuGroup.gnss">מדידה חיה</span>
         </div>
         <label class="mobile-menu__toggle">
@@ -522,18 +522,18 @@
       <!-- Survey Device group -->
       <div class="mobile-menu__group" data-group="survey">
         <div class="mobile-menu__group-header" id="menuGroupSurvey">
-          <span class="material-icons mobile-menu__group-icon">precision_manufacturing</span>
+          <span class="material-icons mobile-menu__group-icon" aria-hidden="true">precision_manufacturing</span>
           <span class="mobile-menu__group-label" data-i18n="menuGroup.survey">מכשיר מדידה</span>
         </div>
-        <button id="mobileConnectSurveyBluetoothBtn" class="mobile-menu__btn" data-action="connectSurveyBluetooth" title="">
+        <button id="mobileConnectSurveyBluetoothBtn" class="mobile-menu__btn" data-action="connectSurveyBluetooth" title="" aria-label="Connect via Bluetooth">
           <span class="material-icons">bluetooth</span>
           <span class="mobile-menu__label" data-i18n="survey.connectBluetooth">חבר Bluetooth</span>
         </button>
-        <button id="mobileConnectSurveyWebSocketBtn" class="mobile-menu__btn" data-action="connectSurveyWebSocket" title="">
+        <button id="mobileConnectSurveyWebSocketBtn" class="mobile-menu__btn" data-action="connectSurveyWebSocket" title="" aria-label="Connect via WebSocket">
           <span class="material-icons">wifi</span>
           <span class="mobile-menu__label" data-i18n="survey.connectWebSocket">חבר WebSocket</span>
         </button>
-        <button id="mobileDisconnectSurveyBtn" class="mobile-menu__btn" data-action="disconnectSurvey" title="">
+        <button id="mobileDisconnectSurveyBtn" class="mobile-menu__btn" data-action="disconnectSurvey" title="" aria-label="Disconnect survey device">
           <span class="material-icons">bluetooth_disabled</span>
           <span class="mobile-menu__label" data-i18n="survey.disconnect">נתק מכשיר</span>
         </button>
@@ -542,10 +542,10 @@
       <!-- Workday group -->
       <div class="mobile-menu__group" data-group="workday">
         <div class="mobile-menu__group-header" id="menuGroupWorkday">
-          <span class="material-icons mobile-menu__group-icon">schedule</span>
+          <span class="material-icons mobile-menu__group-icon" aria-hidden="true">schedule</span>
           <span class="mobile-menu__group-label" data-i18n="menuGroup.workday">יום עבודה</span>
         </div>
-        <button id="mobileFinishWorkdayBtn" class="mobile-menu__btn mobile-menu__btn--success" title="">
+        <button id="mobileFinishWorkdayBtn" class="mobile-menu__btn mobile-menu__btn--success" title="" aria-label="Finish workday">
           <span class="material-icons">done_all</span>
           <span class="mobile-menu__label" data-i18n="finishWorkday.button">סיים יום עבודה</span>
         </button>
@@ -554,7 +554,7 @@
       <!-- Settings group -->
       <div class="mobile-menu__group" data-group="settings">
         <div class="mobile-menu__group-header" id="menuGroupSettings">
-          <span class="material-icons mobile-menu__group-icon">settings</span>
+          <span class="material-icons mobile-menu__group-icon" aria-hidden="true">settings</span>
           <span class="mobile-menu__group-label" data-i18n="menuGroupSettings">הגדרות</span>
         </div>
         <label id="mobileAutosaveLabel" class="mobile-menu__toggle">
@@ -565,15 +565,15 @@
           <option value="he">עברית</option>
           <option value="en">English</option>
         </select>
-        <button id="mobileHelpBtn" class="mobile-menu__btn" title="">
+        <button id="mobileHelpBtn" class="mobile-menu__btn" title="" aria-label="Help">
           <span class="material-icons">help_outline</span>
           <span class="mobile-menu__label" data-i18n="help">עזרה</span>
         </button>
-        <button id="mobileAdminBtn" class="mobile-menu__btn" title="">
+        <button id="mobileAdminBtn" class="mobile-menu__btn" title="" aria-label="Admin settings">
           <span class="material-icons">tune</span>
           <span class="mobile-menu__label" data-i18n="admin.manage">ניהול</span>
         </button>
-        <button id="mobileProjectsBtn" class="mobile-menu__btn" title="">
+        <button id="mobileProjectsBtn" class="mobile-menu__btn" title="" aria-label="Projects">
           <span class="material-icons">folder_open</span>
           <span class="mobile-menu__label" data-i18n="projects.title">ניהול פרויקטים</span>
         </button>
@@ -642,7 +642,7 @@
       <div class="admin-header">
         <h2 id="adminScreenTitle">
           <span class="material-icons">settings</span>
-          <span class="admin-title-text">הגדרות מנהל מתקדמות</span>
+          <span class="admin-title-text" data-i18n="admin.title">הגדרות מנהל מתקדמות</span>
         </h2>
       </div>
       <div id="adminScreenContent" class="admin-content" role="region" aria-label="Admin settings"></div>
@@ -651,16 +651,16 @@
           <input id="adminScreenImportFile" type="file" accept="application/json,.json" class="visually-hidden" aria-label="Import admin settings file" />
           <button id="adminScreenImportBtn" class="btn btn-ghost" type="button">
             <span class="material-icons">upload_file</span>
-            <span class="label">יבא הגדרות</span>
+            <span class="label" data-i18n="admin.import">יבא הגדרות</span>
           </button>
           <button id="adminScreenExportBtn" class="btn btn-ghost" type="button">
             <span class="material-icons">download</span>
-            <span class="label">יצא הגדרות</span>
+            <span class="label" data-i18n="admin.export">יצא הגדרות</span>
           </button>
         </div>
         <div class="admin-action-buttons">
-          <button id="adminScreenCancelBtn" class="btn btn-ghost" type="button">ביטול</button>
-          <button id="adminScreenSaveBtn" class="btn btn-primary" type="button">שמור הגדרות</button>
+          <button id="adminScreenCancelBtn" class="btn btn-ghost" type="button" data-i18n="buttons.cancel">ביטול</button>
+          <button id="adminScreenSaveBtn" class="btn btn-primary" type="button" data-i18n="admin.saveSettings">שמור הגדרות</button>
         </div>
       </div>
     </div>
@@ -668,7 +668,7 @@
   <main id="main" role="main">
     <!-- Layout: left = canvas workspace; right = details sidebar -->
     <div id="canvasContainer">
-      <canvas id="graphCanvas"></canvas>
+      <canvas id="graphCanvas" role="img" aria-label="Sketch drawing canvas"></canvas>
       <div class="canvas-toolbar" role="toolbar" aria-label="Drawing tools">
         <div class="segmented" id="modeGroup" role="group" aria-label="Drawing modes">
           <button id="nodeModeBtn" class="btn" title="" aria-label="Manhole mode" aria-pressed="false"></button>
@@ -734,7 +734,7 @@
       </button>
       <div id="startPanel" style="display: none;">
         <div class="panel">
-          <h2 id="startTitle">התחלת שרטוט חדש</h2>
+          <h2 id="startTitle" data-i18n="startTitle">התחלת שרטוט חדש</h2>
           <div class="field">
             <label for="projectSelect" id="projectSelectLabel">פרויקט</label>
             <select id="projectSelect">
@@ -746,8 +746,8 @@
             <input type="date" id="dateInput" />
           </div>
           <div class="actions">
-            <button id="cancelBtn" class="btn btn-ghost">ביטול</button>
-            <button id="startBtn" class="btn btn-primary">התחל</button>
+            <button id="cancelBtn" class="btn btn-ghost" data-i18n="cancel">ביטול</button>
+            <button id="startBtn" class="btn btn-primary" data-i18n="start">התחל</button>
           </div>
         </div>
       </div>
@@ -757,7 +757,7 @@
           <div class="home-panel-header">
             <div class="home-panel-header-title">
               <span class="material-icons">folder_open</span>
-              <h2 id="homeTitle">השרטוטים שלי</h2>
+              <h2 id="homeTitle" data-i18n="homeTitle">השרטוטים שלי</h2>
             </div>
             <button id="homePanelCloseBtn" class="home-panel-close" title="סגור" aria-label="Close">
               <span class="material-icons">close</span>
@@ -787,14 +787,14 @@
           <div class="home-panel-footer">
             <button id="createFromHomeBtn" class="home-panel-new-btn">
               <span class="material-icons">add_circle</span>
-              <span>שרטוט חדש</span>
+              <span data-i18n="createFromHome">שרטוט חדש</span>
             </button>
           </div>
         </div>
       </div>
-      <div id="helpModal">
+      <div id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
         <div class="panel">
-          <h2 id="helpTitle">טיפים וקיצורי מקשים</h2>
+          <h2 id="helpTitle" data-i18n="helpTitle">טיפים וקיצורי מקשים</h2>
           <ul id="helpList">
             <li>N: מצב שוחה</li>
             <li>E: מצב קו</li>
@@ -805,8 +805,8 @@
             <li>Esc: ביטול פעולה או ניקוי בחירה</li>
             <li>Delete/Backspace: מחיקת פריט נבחר</li>
           </ul>
-          <p id="helpNote">במצב קו, בחר שוחת מקור ואז שוחת יעד.</p>
-          <button class="close-btn" id="closeHelpBtn">סגור</button>
+          <p id="helpNote" data-i18n="helpNote">במצב קו, בחר שוחת מקור ואז שוחת יעד.</p>
+          <button class="close-btn" id="closeHelpBtn" data-i18n="close">סגור</button>
         </div>
       </div>
       <div id="adminModal" class="admin-modal-wrapper" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="adminTitle">
@@ -814,7 +814,7 @@
           <div class="admin-header">
             <h2 id="adminTitle">
               <span class="material-icons">tune</span>
-              <span class="admin-title-text">הגדרות מנהל</span>
+              <span class="admin-title-text" data-i18n="admin.title">הגדרות מנהל</span>
             </h2>
           </div>
           <div id="adminContent" class="admin-content" role="region" aria-label="Admin settings"></div>
@@ -823,16 +823,16 @@
               <input id="adminImportFile" type="file" accept="application/json,.json" class="visually-hidden" aria-label="Import admin settings file" />
               <button id="adminImportBtn" class="btn btn-ghost" type="button">
                 <span class="material-icons">upload_file</span>
-                <span class="label">יבא הגדרות</span>
+                <span class="label" data-i18n="admin.import">יבא הגדרות</span>
               </button>
               <button id="adminExportBtn" class="btn btn-ghost" type="button">
                 <span class="material-icons">download</span>
-                <span class="label">יצא הגדרות</span>
+                <span class="label" data-i18n="admin.export">יצא הגדרות</span>
               </button>
             </div>
             <div class="admin-action-buttons">
-              <button id="adminCancelBtn" class="btn btn-ghost" type="button">ביטול</button>
-              <button id="adminSaveBtn" class="btn btn-primary" type="button">שמור הגדרות</button>
+              <button id="adminCancelBtn" class="btn btn-ghost" type="button" data-i18n="buttons.cancel">ביטול</button>
+              <button id="adminSaveBtn" class="btn btn-primary" type="button" data-i18n="admin.saveSettings">שמור הגדרות</button>
             </div>
           </div>
         </div>
@@ -843,7 +843,7 @@
           <div class="finish-workday-header">
             <h2 id="finishWorkdayTitle">
               <span class="material-icons">done_all</span>
-              <span class="finish-workday-title-text">סיום יום עבודה</span>
+              <span class="finish-workday-title-text" data-i18n="finishWorkday.title">סיום יום עבודה</span>
             </h2>
             <button id="finishWorkdayCloseBtn" class="icon-btn" title="סגור">
               <span class="material-icons">close</span>
@@ -851,16 +851,16 @@
           </div>
           <div id="finishWorkdayContent" class="finish-workday-content">
             <!-- Content will be dynamically populated -->
-            <p id="finishWorkdayDesc" class="finish-workday-desc">הקווים הבאים אינם מחוברים בשני הקצוות. בחר סוג נקודה לכל קצה חסר:</p>
+            <p id="finishWorkdayDesc" class="finish-workday-desc" data-i18n="labels.resolveDanglingDesc">הקווים הבאים אינם מחוברים בשני הקצוות. בחר סוג נקודה לכל קצה חסר:</p>
             <div id="danglingEdgesList" class="dangling-edges-list">
               <!-- Dangling edges will be listed here -->
             </div>
           </div>
           <div class="finish-workday-actions">
-            <button id="finishWorkdayCancelBtn" class="btn btn-ghost" type="button">ביטול</button>
+            <button id="finishWorkdayCancelBtn" class="btn btn-ghost" type="button" data-i18n="buttons.cancel">ביטול</button>
             <button id="finishWorkdayConfirmBtn" class="btn btn-primary" type="button">
               <span class="material-icons">check</span>
-              <span>אישור וסיום</span>
+              <span data-i18n="finishWorkday.confirm">אישור וסיום</span>
             </button>
           </div>
         </div>
@@ -871,13 +871,13 @@
         <div class="drag-handle-bar"></div>
       </div>
       <div class="sidebar-header">
-        <h2 id="sidebarTitle">פרטים</h2>
-        <button id="sidebarCloseBtn" class="icon-btn" title="">
+        <h2 id="sidebarTitle" data-i18n="sidebarTitle">פרטים</h2>
+        <button id="sidebarCloseBtn" class="icon-btn" title="" aria-label="Close sidebar">
           <span class="material-icons">close</span>
         </button>
       </div>
       <div id="detailsContainer">
-        <p id="detailsDefault">בחר שוחה או קו כדי לערוך.</p>
+        <p id="detailsDefault" data-i18n="detailsDefault">בחר שוחה או קו כדי לערוך.</p>
       </div>
     </div>
   </main>

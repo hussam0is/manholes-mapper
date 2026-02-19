@@ -32,7 +32,7 @@ export function onPermissionChange(callback) {
  */
 function notifyPermissionChange() {
   permissionListeners.forEach(cb => {
-    try { cb(userRoleCache); } catch (_) {}
+    try { cb(userRoleCache); } catch (_err) {}
   });
 }
 

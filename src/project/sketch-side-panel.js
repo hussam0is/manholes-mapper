@@ -20,7 +20,7 @@ import {
 
 let panelEl = null;
 let listEl = null;
-let unsub = null;
+let _unsub = null;
 
 /**
  * Initialize the side panel. Call once after DOM is ready.
@@ -48,7 +48,7 @@ export function initSketchSidePanel() {
   }
 
   // Subscribe to state changes
-  unsub = onProjectCanvasChange(() => render());
+  _unsub = onProjectCanvasChange(() => render());
 }
 
 /**

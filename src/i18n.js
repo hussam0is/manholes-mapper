@@ -77,6 +77,14 @@ export const i18n = {
     listChangeProject: 'שנה פרויקט',
     listCurrentSketch: 'פתוח כעת',
     noSketches: 'אין עדיין שרטוטים.',
+    noOrganizationSketches: 'אין שרטוטים בארגון',
+    createdBy: 'נוצר על ידי',
+    modifiedBy: 'נערך על ידי',
+    sketches: {
+      personal: 'שרטוטים שלי',
+      organization: 'שרטוטי הארגון',
+      lockedByOther: (user) => `השרטוט נערך על ידי ${user}. פותח במצב צפייה בלבד.`,
+    },
     // Authentication
     auth: {
       loginTitle: 'התחברות',
@@ -202,6 +210,7 @@ export const i18n = {
       resolveFirst: 'יש להשלים את כל הקווים הלא מחוברים לפני סיום יום העבודה.',
       success: 'יום העבודה הסתיים בהצלחה!',
       noChanges: 'אין שינויים לשמירה',
+      error: 'שגיאה בסיום יום העבודה',
     },
     admin: {
       manage: 'ניהול',
@@ -498,6 +507,14 @@ export const i18n = {
     listChangeProject: 'Change Project',
     listCurrentSketch: 'Currently Open',
     noSketches: 'No sketches yet.',
+    noOrganizationSketches: 'No organization sketches',
+    createdBy: 'Created by',
+    modifiedBy: 'Modified by',
+    sketches: {
+      personal: 'My Sketches',
+      organization: 'Organization Sketches',
+      lockedByOther: (user) => `Sketch is being edited by ${user}. Opening in view-only mode.`,
+    },
     // Authentication
     auth: {
       loginTitle: 'Sign In',
@@ -623,6 +640,7 @@ export const i18n = {
       resolveFirst: 'Please resolve all dangling edges before finishing the workday.',
       success: 'Workday finished successfully!',
       noChanges: 'No changes to save',
+      error: 'Error completing workday',
     },
     admin: {
       manage: 'Admin',

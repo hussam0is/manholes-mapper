@@ -20,6 +20,7 @@ import {
   getSketchesByProject
 } from '../_lib/db.js';
 import { applyRateLimit } from '../_lib/rate-limit.js';
+import { validateUUID } from '../_lib/validators.js';
 
 export const config = { runtime: 'nodejs' };
 
@@ -36,6 +37,11 @@ export default async function handler(req, res) {
   // Apply rate limiting
   if (applyRateLimit(req, res)) {
     return; // Rate limited, response already sent
+  }
+
+  // Validate UUID format
+  if (!validateUUID(projectId)) {
+    return res.status(400).json({ error: 'Invalid project ID format' });
   }
 
   try {

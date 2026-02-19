@@ -300,7 +300,7 @@ export function normalizeEntityForRules(entity) {
  * @param {string} entityType - 'nodes' or 'edges'
  * @returns {Object} - A new rule template
  */
-export function createEmptyRule(entityType) {
+export function createEmptyRule(_entityType) {
   return {
     id: `rule_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     name: '',

@@ -14,7 +14,7 @@ import {
   updateUser
 } from '../_lib/db.js';
 import { applyRateLimit } from '../_lib/rate-limit.js';
-import { VALID_ROLES } from '../_lib/validators.js';
+import { VALID_ROLES, validateUUID } from '../_lib/validators.js';
 
 export const config = { runtime: 'nodejs' };
 
@@ -31,6 +31,11 @@ export default async function handler(req, res) {
   // Apply rate limiting
   if (applyRateLimit(req, res)) {
     return; // Rate limited, response already sent
+  }
+
+  // Validate UUID format
+  if (!validateUUID(targetUserId)) {
+    return res.status(400).json({ error: 'Invalid user ID format' });
   }
 
   try {

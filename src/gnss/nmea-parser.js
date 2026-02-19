@@ -133,7 +133,7 @@ export class NMEAParser {
       satellites,
       hdop,
       altitude,
-      altUnit,
+      _altUnit,
       // geoidHeight, geoidUnit, ageDgps, dgpsStationId
     ] = parts;
 

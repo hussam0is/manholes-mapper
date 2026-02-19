@@ -9,13 +9,11 @@
  * - Queue changes when offline for later sync
  */
 
-import { getToken, getUserId, getAuthState } from './auth-guard.js';
+import { getToken, getAuthState } from './auth-guard.js';
 import {
-  openDb,
   saveSketch as saveSketchToIdb,
   getAllSketches as getAllSketchesFromIdb,
   deleteSketch as deleteSketchFromIdb,
-  saveCurrentSketch,
   enqueueSyncOperation,
   drainSyncQueue,
 } from '../db.js';
@@ -62,7 +60,7 @@ export function onSyncStateChange(callback) {
  */
 function notifySyncStateChange() {
   syncStateListeners.forEach(cb => {
-    try { cb({ ...syncState }); } catch (_) {}
+    try { cb({ ...syncState }); } catch (_err) {}
   });
 }
 
@@ -487,7 +485,7 @@ async function refreshCurrentLock() {
 /**
  * Start the lock refresh timer
  */
-function startLockRefreshTimer(sketchId) {
+function startLockRefreshTimer(_sketchId) {
   stopLockRefreshTimer();
   lockRefreshTimer = setInterval(refreshCurrentLock, LOCK_REFRESH_INTERVAL_MS);
 }
@@ -519,18 +517,18 @@ export function hasLockForSketch(sketchId) {
   return currentLock && currentLock.sketchId === sketchId;
 }
 
-// Release lock on page unload
+// Release lock on page unload using sendBeacon, which sends cookies automatically
+// for same-origin requests — no token is needed since the app uses cookie-based auth.
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', () => {
-    if (currentLock && currentLock.sketchId) {
-      // Use sendBeacon for reliable delivery during page unload
-      const token = window.__authToken; // Need to store token globally for this
-      if (token && navigator.sendBeacon) {
-        navigator.sendBeacon(
-          `/api/sketches/${currentLock.sketchId}`,
-          JSON.stringify({ action: 'unlock' })
-        );
-      }
+    if (currentLock && currentLock.sketchId && navigator.sendBeacon) {
+      // sendBeacon requires a Blob with an explicit content-type so the server-side
+      // JSON parser receives the correct MIME type (text/plain is the default).
+      const payload = new Blob(
+        [JSON.stringify({ action: 'unlock' })],
+        { type: 'application/json' }
+      );
+      navigator.sendBeacon(`/api/sketches/${currentLock.sketchId}`, payload);
     }
   });
 }
@@ -549,7 +547,7 @@ function loadAllowedEmptySketches() {
         arr.forEach(id => allowedEmptySketches.set(id, true));
       }
     }
-  } catch (_) {}
+  } catch (_err) {}
 }
 
 // Save allowed empty sketches to localStorage
@@ -557,7 +555,7 @@ function saveAllowedEmptySketches() {
   try {
     const arr = Array.from(allowedEmptySketches.keys());
     localStorage.setItem('graphSketch.allowedEmptySketches', JSON.stringify(arr));
-  } catch (_) {}
+  } catch (_err) {}
 }
 
 // Initialize on load
@@ -700,7 +698,7 @@ export async function syncSketchToCloud(sketch) {
       if (oldId && oldId !== cloudSketch.id) {
         try {
           await deleteSketchFromIdb(oldId);
-        } catch (_) {
+        } catch (_err) {
           // Ignore errors - old ID might not exist
         }
       }
@@ -1021,13 +1019,13 @@ async function cleanupDuplicateSketchesInternal() {
   // 2. Clean up IndexedDB
   try {
     const idbSketches = await getAllSketchesFromIdb();
-    const { deduplicated, removedCount, removedIds } = deduplicateSketches(idbSketches);
+    const { removedCount, removedIds } = deduplicateSketches(idbSketches);
     if (removedCount > 0) {
       // Delete the duplicate entries from IndexedDB
       for (const id of removedIds) {
         try {
           await deleteSketchFromIdb(id);
-        } catch (_) {
+        } catch (_err) {
           // Ignore individual delete errors
         }
       }
@@ -1079,6 +1077,11 @@ export async function cleanupDuplicateSketches() {
  * Sets up online/offline listeners
  */
 export function initSyncService() {
+  // Guard against timer accumulation when called more than once.
+  // Any running lock-refresh interval from a prior invocation is cleared here
+  // so we never end up with multiple concurrent refresh timers.
+  stopLockRefreshTimer();
+
   // Listen for online/offline events
   window.addEventListener('online', () => {
     updateSyncState({ isOnline: true });

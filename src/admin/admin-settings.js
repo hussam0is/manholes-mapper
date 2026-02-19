@@ -561,7 +561,7 @@ export class AdminSettings {
       const key = `${scope}:${optKey}`;
       seenCodes[key] = new Set();
 
-      tbody.querySelectorAll('tr').forEach((tr, rowIdx) => {
+      tbody.querySelectorAll('tr').forEach((tr, _rowIdx) => {
         const labelInput = tr.querySelector(`[data-opt-label="${scope}:${optKey}"]`);
         const codeInput = tr.querySelector(`[data-opt-code="${scope}:${optKey}"]`);
 

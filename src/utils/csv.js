@@ -62,7 +62,7 @@ function codeFor(scope, key, value, adminConfig) {
   return String(value);
 }
 
-function labelFor(scope, key, value, adminConfig) {
+function _labelFor(scope, key, value, adminConfig) {
   if (value == null || value === '') return '';
   const options = getOptionsFor(scope, key, adminConfig);
   const byCode = options.find(o => String(o.code) === String(value));
@@ -96,7 +96,7 @@ export function csvQuote(value) {
   return '"' + safe.replace(/"/g, '""') + '"';
 }
 
-export function exportNodesCsv(nodes, adminConfig, t) {
+export function exportNodesCsv(nodes, adminConfig, _t) {
   const include = adminConfig.nodes?.include || {};
   const headers = [];
   const rowFor = (n) => {
@@ -133,7 +133,7 @@ export function exportNodesCsv(nodes, adminConfig, t) {
   return lines.join('\n');
 }
 
-export function exportEdgesCsv(edges, adminConfig, t) {
+export function exportEdgesCsv(edges, adminConfig, _t) {
   const include = adminConfig.edges?.include || {};
   const headers = [];
   const rowFor = (e) => {

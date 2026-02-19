@@ -17,7 +17,7 @@ const TILE_SIZE = 256;
 const MAX_CACHE_BYTES = 500 * 1024 * 1024;
 
 // Estimated bytes per tile (decoded RGBA in memory: 256*256*4)
-const BYTES_PER_TILE = TILE_SIZE * TILE_SIZE * 4;
+const _BYTES_PER_TILE = TILE_SIZE * TILE_SIZE * 4;
 
 // Tile cache: Map<string, { image: HTMLImageElement, timestamp: number, bytes: number }>
 const tileCache = new Map();
@@ -30,7 +30,7 @@ const pendingLoads = new Map();
 
 // Web Mercator constants
 const EARTH_RADIUS = 6378137; // meters
-const MAX_LATITUDE = 85.051128779806604; // Web Mercator limit
+const _MAX_LATITUDE = 85.051128779806604; // Web Mercator limit
 
 // Resolution (meters per pixel) for each zoom level in Web Mercator
 // Formula: (2 * PI * EARTH_RADIUS) / (TILE_SIZE * 2^zoom)
@@ -121,7 +121,7 @@ export function storeTileInCache(x, y, z, type, image) {
  * @param {number} lat - Latitude in degrees
  * @returns {number} Y in meters
  */
-function latToMercatorY(lat) {
+function _latToMercatorY(lat) {
   const latRad = lat * Math.PI / 180;
   return EARTH_RADIUS * Math.log(Math.tan(Math.PI / 4 + latRad / 2));
 }
@@ -131,7 +131,7 @@ function latToMercatorY(lat) {
  * @param {number} lon - Longitude in degrees
  * @returns {number} X in meters
  */
-function lonToMercatorX(lon) {
+function _lonToMercatorX(lon) {
   return lon * Math.PI / 180 * EARTH_RADIUS;
 }
 
@@ -140,7 +140,7 @@ function lonToMercatorX(lon) {
  * @param {number} y - Y in meters
  * @returns {number} Latitude in degrees
  */
-function mercatorYToLat(y) {
+function _mercatorYToLat(y) {
   return (2 * Math.atan(Math.exp(y / EARTH_RADIUS)) - Math.PI / 2) * 180 / Math.PI;
 }
 
@@ -149,7 +149,7 @@ function mercatorYToLat(y) {
  * @param {number} x - X in meters
  * @returns {number} Longitude in degrees
  */
-function mercatorXToLon(x) {
+function _mercatorXToLon(x) {
   return x / EARTH_RADIUS * 180 / Math.PI;
 }
 

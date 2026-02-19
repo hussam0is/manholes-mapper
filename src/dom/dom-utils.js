@@ -10,7 +10,7 @@ export function commitIdInputIfFocused() {
       idEl.dispatchEvent(new Event('change', { bubbles: true }));
       if (typeof idEl.blur === 'function') idEl.blur();
     }
-  } catch (_) {}
+  } catch (_err) {}
 }
 
 
@@ -49,7 +49,7 @@ export function syncAppHeightVar() {
       setTimeout(setAppHeight, 100);
       setTimeout(setAppHeight, 300);
     });
-  } catch (_) {}
+  } catch (_err) {}
 }
 
 /**
@@ -90,6 +90,6 @@ export function syncHeaderHeightVar() {
     } else {
       window.addEventListener('resize', setVar);
     }
-  } catch (_) {}
+  } catch (_err) {}
 }
 

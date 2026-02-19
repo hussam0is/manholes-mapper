@@ -8,6 +8,7 @@ import './utils/toast.js';
 import './serviceWorker/register-sw.js';
 
 import { injectSpeedInsights } from '@vercel/speed-insights';
+
 import { i18n as I18N_DICT, createTranslator, isRTL as i18nIsRTL } from './i18n.js';
 import { syncHeaderHeightVar, syncAppHeightVar } from './dom/dom-utils.js';
 import * as CONSTS from './state/constants.js';
@@ -44,6 +45,11 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+// Expose escapeHtml globally so legacy monolith (main.js) can use it
+if (typeof window !== 'undefined') {
+  window.escapeHtml = escapeHtml;
 }
 
 // Initialize Better Auth

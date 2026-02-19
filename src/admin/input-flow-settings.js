@@ -641,7 +641,7 @@ export class InputFlowSettings {
     const container = modal.querySelector('#actionsContainer');
     if (!container) return actions;
     
-    container.querySelectorAll('.action-row').forEach((row, idx) => {
+    container.querySelectorAll('.action-row').forEach((row, _idx) => {
       const typeSelect = row.querySelector('.action-type');
       const type = typeSelect?.value;
       

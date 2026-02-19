@@ -512,7 +512,7 @@ function drawPolygon(ctx, rings, properties, style, refPoint, coordScale, stretc
 /**
  * Draw labels collected from features
  */
-function drawLabels(ctx, labels, style, viewScale, stretchX, stretchY) {
+function drawLabels(ctx, labels, style, viewScale, _stretchX, _stretchY) {
   if (labels.length === 0) return;
 
   const fontSize = (style.labelFontSize || 10) / viewScale;

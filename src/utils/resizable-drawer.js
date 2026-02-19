@@ -89,7 +89,7 @@ export function initResizableDrawer() {
       const height = sidebar.offsetHeight;
       localStorage.setItem('sidebarHeight', height.toString());
       updateDrawerHeightVariable(height);
-    } catch (e) {
+    } catch (_e) {
       // Ignore localStorage errors
     }
   }
@@ -117,7 +117,7 @@ export function initResizableDrawer() {
         updateDrawerHeightVariable(height);
       }
     }
-  } catch (e) {
+  } catch (_e) {
     // Ignore localStorage errors
   }
   
@@ -151,7 +151,7 @@ export function initResizableDrawer() {
                 updateDrawerHeightVariable(sidebar.offsetHeight);
               }, 50);
             }
-          } catch (e) {
+          } catch (_e) {
             // Ignore localStorage errors
             setTimeout(() => {
               updateDrawerHeightVariable(sidebar.offsetHeight);

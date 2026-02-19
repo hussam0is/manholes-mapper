@@ -377,7 +377,7 @@ export class FloatingKeyboard {
 }
 
 // Export a function to attach the keyboard to numeric inputs
-export function attachFloatingKeyboard(inputSelector = 'input[type="number"], input[inputmode="decimal"]') {
+export function attachFloatingKeyboard(_inputSelector = 'input[type="number"], input[inputmode="decimal"]') {
   // Only enable on mobile devices
   if (!FloatingKeyboard.isMobileDevice()) {
     return null;

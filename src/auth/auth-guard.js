@@ -5,7 +5,7 @@
  * Works with Better Auth session management.
  */
 
-import { authClient, getCurrentSession } from './auth-client.js';
+import { getCurrentSession } from './auth-client.js';
 
 // Auth state cache
 let authState = {
