@@ -16,7 +16,7 @@
 // the network was unavailable and there was no cached response, causing
 // offline pages to break.  Increasing the version here forces browsers
 // to pick up the updated logic.
-const APP_VERSION = 'v22';
+const APP_VERSION = 'v23';
 const PRECACHE = 'graph-sketch-shell-' + APP_VERSION;
 const RUNTIME = 'graph-sketch-runtime-' + APP_VERSION;
 
@@ -39,6 +39,7 @@ const PRECACHE_ASSETS = [
   OFFLINE_URL,
   withBase('manifest.json'),
   withBase('styles.css'),
+  withBase('fonts/material-icons.woff2'),
   withBase('app_icon.png'),
   withBase('health/index.html')
 ];
