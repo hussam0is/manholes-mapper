@@ -1407,6 +1407,148 @@ canvas {
   /* below header */
 }
 
+/* --- Canvas FAB Speed Dial Toolbar --- */
+.canvas-fab-toolbar {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 16;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 8px;
+  transition: right 240ms cubic-bezier(.2, .8, .2, 1);
+}
+
+/* Main toggle button */
+.canvas-fab-toolbar__toggle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-primary);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  transition: transform 0.3s cubic-bezier(.4, 0, .2, 1),
+              background 0.2s ease,
+              box-shadow 0.2s ease;
+  z-index: 2;
+}
+
+.canvas-fab-toolbar__toggle:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+.canvas-fab-toolbar__toggle:active {
+  transform: scale(0.92);
+}
+
+/* Rotate icon when open */
+.canvas-fab-toolbar.open .canvas-fab-toolbar__toggle {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.canvas-fab-toolbar.open .canvas-fab-toolbar__toggle .material-icons {
+  transition: transform 0.3s cubic-bezier(.4, 0, .2, 1);
+}
+
+.canvas-fab-toolbar__toggle .material-icons {
+  font-size: 24px;
+  transition: transform 0.3s cubic-bezier(.4, 0, .2, 1);
+}
+
+.canvas-fab-toolbar.open .canvas-fab-toolbar__toggle .material-icons {
+  transform: rotate(90deg);
+}
+
+/* Actions container */
+.canvas-fab-toolbar__actions {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.canvas-fab-toolbar.open .canvas-fab-toolbar__actions {
+  pointer-events: auto;
+}
+
+/* Individual action items */
+.canvas-fab-toolbar__item {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.65);
+  color: #f9fafb;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  transform: scale(0.4) translateY(8px);
+  transition: opacity 0.2s cubic-bezier(.4, 0, .2, 1),
+              transform 0.25s cubic-bezier(.4, 0, .2, 1),
+              background 0.15s ease;
+}
+
+.canvas-fab-toolbar__item:hover {
+  background: rgba(0, 0, 0, 0.85);
+}
+
+.canvas-fab-toolbar__item:active {
+  transform: scale(0.9) !important;
+}
+
+/* Staggered reveal */
+.canvas-fab-toolbar.open .canvas-fab-toolbar__item {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+.canvas-fab-toolbar.open .canvas-fab-toolbar__item:nth-child(1) {
+  transition-delay: 0.06s;
+}
+
+.canvas-fab-toolbar.open .canvas-fab-toolbar__item:nth-child(2) {
+  transition-delay: 0.03s;
+}
+
+.canvas-fab-toolbar.open .canvas-fab-toolbar__item:nth-child(3) {
+  transition-delay: 0s;
+}
+
+/* Collapse faster (no stagger) */
+.canvas-fab-toolbar:not(.open) .canvas-fab-toolbar__item {
+  transition-delay: 0s;
+}
+
+/* Incomplete tracker styling inside toolbar */
+.canvas-fab-toolbar .incomplete-tracker {
+  position: static;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(107, 114, 128, 0.85);
+  padding: 0;
+  font-size: 11px;
+  font-weight: 600;
+  flex-direction: column;
+  gap: 1px;
+  line-height: 1;
+}
+
+.canvas-fab-toolbar .incomplete-tracker .material-icons {
+  font-size: 16px;
+}
+
+/* Keep .canvas-fab for elements still using it (e.g. sketchSidePanelToggle) */
 .canvas-fab {
   position: absolute;
   right: 12px;
@@ -1423,10 +1565,6 @@ canvas {
   align-items: center;
   justify-content: center;
   box-shadow: var(--shadow);
-}
-
-#recenterDensityBtn {
-  bottom: 68px;
 }
 
 /* GPS Quick Capture FAB — bottom-left for left-thumb field access */
@@ -1626,13 +1764,9 @@ canvas {
     right: calc(12px + var(--drawer-w));
   }
 
-  /* Also offset the floating recenter button when the drawer is open */
+  /* Offset FAB toolbar and standalone elements when drawer is open */
+  body.drawer-open .canvas-fab-toolbar,
   body.drawer-open .canvas-fab {
-    right: calc(12px + var(--drawer-w));
-  }
-
-  /* Also offset the incomplete tracker when the drawer is open */
-  body.drawer-open .incomplete-tracker {
     right: calc(12px + var(--drawer-w));
   }
 
@@ -4980,6 +5114,7 @@ select.invalid:focus {
 
   /* Do not offset canvas controls horizontally when bottom sheet is open */
   body.drawer-open .canvas-toolbar,
+  body.drawer-open .canvas-fab-toolbar,
   body.drawer-open .canvas-fab {
     right: 12px;
   }
@@ -4989,12 +5124,21 @@ select.invalid:focus {
     bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 8px);
   }
 
-  /* Position recenter button - by default at keyboard button position (when keyboard button is hidden) */
+  /* Position FAB toolbar above drawer */
+  body.drawer-open .canvas-fab-toolbar {
+    bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 8px);
+  }
+
+  /* When keyboard button is visible, move FAB toolbar above it */
+  body.drawer-open.keyboard-button-visible .canvas-fab-toolbar {
+    bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 8px + 44px + 8px);
+  }
+
+  /* Keep .canvas-fab rules for standalone items (e.g. sketchSidePanelToggle) */
   body.drawer-open .canvas-fab {
     bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 8px);
   }
 
-  /* When keyboard button is visible, move recenter button above it */
   body.drawer-open.keyboard-button-visible .canvas-fab {
     bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 8px + 44px + 8px);
   }
@@ -5013,6 +5157,12 @@ select.invalid:focus {
   .canvas-toolbar {
     top: 8px;
     right: 8px;
+  }
+
+  .canvas-fab-toolbar {
+    right: 8px;
+    bottom: 8px;
+    transition: bottom 0.3s ease, right 240ms cubic-bezier(.2, .8, .2, 1);
   }
 
   .canvas-fab {
@@ -5041,20 +5191,9 @@ select.invalid:focus {
     bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 8px);
   }
 
-  /* Incomplete edge tracker mobile positioning */
-  .incomplete-tracker {
-    right: 8px;
-    bottom: 60px;
-    font-size: 12px;
-    padding: 5px 10px;
-  }
-
-  body:not(.drawer-open) .incomplete-tracker {
-    bottom: 60px;
-  }
-
-  body.drawer-open .incomplete-tracker {
-    bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 60px);
+  /* Incomplete edge tracker mobile sizing (inside toolbar, no positioning needed) */
+  .canvas-fab-toolbar .incomplete-tracker {
+    font-size: 10px;
   }
 
   /* Optimize edge legend for mobile */
@@ -8392,6 +8531,7 @@ button:focus-visible,
   .mobile-menu-backdrop,
   .drawer,
   .canvas-toolbar,
+  .canvas-fab-toolbar,
   .canvas-fab,
   .floating-keyboard,
   .toast,

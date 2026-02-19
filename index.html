@@ -693,17 +693,23 @@
       <div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
       <!-- Edge type legend -->
       <div id="edgeLegend" class="edge-legend"></div>
-      <!-- Recenter view button -->
-      <button id="recenterDensityBtn" class="btn btn-icon canvas-fab" title="Recenter by density" aria-label="Recenter by density">
-        <span class="material-icons" aria-hidden="true">grain</span>
-      </button>
-      <button id="recenterBtn" class="btn btn-icon canvas-fab" title="Recenter sketch" aria-label="Recenter sketch">
-        <span class="material-icons" aria-hidden="true">center_focus_strong</span>
-      </button>
-      <!-- Incomplete edge tracker (shows count of edges missing connection) -->
-      <div id="incompleteEdgeTracker" class="incomplete-tracker" style="display: none;" role="status" aria-live="polite" aria-label="Incomplete edges count">
-        <span class="material-icons" aria-hidden="true">link_off</span>
-        <span id="incompleteEdgeCount">0</span>
+      <!-- Canvas FAB Speed Dial Toolbar -->
+      <div id="canvasFabToolbar" class="canvas-fab-toolbar">
+        <div class="canvas-fab-toolbar__actions">
+          <div id="incompleteEdgeTracker" class="canvas-fab-toolbar__item incomplete-tracker" style="display: none;" role="status" aria-live="polite" aria-label="Incomplete edges count">
+            <span class="material-icons" aria-hidden="true">link_off</span>
+            <span id="incompleteEdgeCount">0</span>
+          </div>
+          <button id="recenterDensityBtn" class="btn btn-icon canvas-fab-toolbar__item" title="Recenter by density" aria-label="Recenter by density">
+            <span class="material-icons" aria-hidden="true">grain</span>
+          </button>
+          <button id="recenterBtn" class="btn btn-icon canvas-fab-toolbar__item" title="Recenter sketch" aria-label="Recenter sketch">
+            <span class="material-icons" aria-hidden="true">center_focus_strong</span>
+          </button>
+        </div>
+        <button id="canvasFabToggle" class="canvas-fab-toolbar__toggle" aria-label="Canvas tools" aria-expanded="false">
+          <span class="material-icons" aria-hidden="true">more_vert</span>
+        </button>
       </div>
       <!-- Sketch Side Panel (project-canvas mode) -->
       <div id="sketchSidePanel" class="sketch-side-panel" style="display:none;">
