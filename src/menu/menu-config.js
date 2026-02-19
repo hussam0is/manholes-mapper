@@ -125,6 +125,28 @@ export const menuConfig = {
         },
       ],
     },
+    {
+      id: 'survey',
+      labelKey: 'menuGroup.survey',
+      icon: 'precision_manufacturing',
+      items: [
+        {
+          id: 'connectSurveyBluetooth',
+          icon: 'bluetooth',
+          labelKey: 'survey.connectBluetooth',
+        },
+        {
+          id: 'connectSurveyWebSocket',
+          icon: 'wifi',
+          labelKey: 'survey.connectWebSocket',
+        },
+        {
+          id: 'disconnectSurvey',
+          icon: 'bluetooth_disabled',
+          labelKey: 'survey.disconnect',
+        },
+      ],
+    },
   ],
 
   // Legacy flat secondary array (for compatibility)
@@ -197,6 +219,25 @@ export const menuConfig = {
       labelKey: 'liveMeasure.enable',
       type: 'toggle',
       group: 'gnss',
+    },
+    { type: 'divider' },
+    {
+      id: 'connectSurveyBluetooth',
+      icon: 'bluetooth',
+      labelKey: 'survey.connectBluetooth',
+      group: 'survey',
+    },
+    {
+      id: 'connectSurveyWebSocket',
+      icon: 'wifi',
+      labelKey: 'survey.connectWebSocket',
+      group: 'survey',
+    },
+    {
+      id: 'disconnectSurvey',
+      icon: 'bluetooth_disabled',
+      labelKey: 'survey.disconnect',
+      group: 'survey',
     },
   ],
 
@@ -302,6 +343,12 @@ export const menuConfig = {
       labelKey: 'menuGroup.gnss',
       icon: 'satellite_alt',
       items: ['toggleLiveMeasure'],
+    },
+    {
+      id: 'survey',
+      labelKey: 'menuGroup.survey',
+      icon: 'precision_manufacturing',
+      items: ['connectSurveyBluetooth', 'connectSurveyWebSocket', 'disconnectSurvey'],
     },
     {
       id: 'workday',

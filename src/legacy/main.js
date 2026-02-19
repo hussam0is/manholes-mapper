@@ -111,6 +111,8 @@ import {
   updateStreetViewTranslations
 } from '../map/street-view.js';
 import { menuEvents } from '../menu/menu-events.js';
+import { tsc3Connection } from '../survey/tsc3-connection-manager.js';
+import { initSurveyNodeTypeDialog, openSurveyNodeTypeDialog } from '../survey/survey-node-type-dialog.js';
 
 /**
  * Get the current username from authentication or return a default
@@ -885,9 +887,39 @@ const authLoadingText = document.getElementById('authLoadingText');
 const userButtonContainer = document.getElementById('userButtonContainer');
 const mobileUserButtonContainer = document.getElementById('mobileUserButtonContainer');
 
+// Animated panel close helper — plays modalSlideOut then hides
+function hidePanelAnimated(el, callback) {
+  if (!el || el.style.display === 'none') { if (callback) callback(); return; }
+  // If reduced motion or animation not supported, skip animation
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reducedMotion) {
+    el.classList.remove('panel-closing');
+    el.style.display = 'none';
+    if (callback) callback();
+    return;
+  }
+  el.classList.add('panel-closing');
+  const onEnd = () => {
+    el.removeEventListener('animationend', onEnd);
+    el.classList.remove('panel-closing');
+    el.style.display = 'none';
+    if (callback) callback();
+  };
+  el.addEventListener('animationend', onEnd, { once: true });
+  // Safety timeout in case animationend never fires
+  setTimeout(() => {
+    if (el.classList.contains('panel-closing')) {
+      el.classList.remove('panel-closing');
+      el.style.display = 'none';
+      if (callback) callback();
+    }
+  }, 200);
+}
+
 // Show/hide login panel
 function showLoginPanel() {
   if (loginPanel) {
+    loginPanel.classList.remove('panel-closing');
     loginPanel.style.display = 'flex';
     document.body.classList.add('show-login');
   }
@@ -902,8 +934,9 @@ function showLoginPanel() {
 
 function hideLoginPanel() {
   if (loginPanel) {
-    loginPanel.style.display = 'none';
-    document.body.classList.remove('show-login');
+    hidePanelAnimated(loginPanel, () => {
+      document.body.classList.remove('show-login');
+    });
   }
 }
 
@@ -2402,7 +2435,13 @@ function formatTimeAgo(date) {
 
 // Subscribe to sync state changes
 if (window.syncService?.onSyncStateChange) {
-  window.syncService.onSyncStateChange(updateSyncStatusUI);
+  window.syncService.onSyncStateChange((state) => {
+    updateSyncStatusUI(state);
+    // Re-render sketch list when sync completes while home panel is visible
+    if (homePanel && homePanel.style.display === 'flex') {
+      renderHome();
+    }
+  });
 }
 
 // Track the current sketch tab (personal or organization)
@@ -2411,8 +2450,9 @@ let currentSketchTab = 'personal';
 function renderHome() {
   if (!homePanel || !sketchListEl) return;
   startPanel.style.display = 'none';
+  homePanel.classList.remove('panel-closing');
   homePanel.style.display = 'flex';
-  
+
   // Update sync status
   if (window.syncService?.getSyncState) {
     updateSyncStatusUI(window.syncService.getSyncState());
@@ -2473,6 +2513,20 @@ function renderHome() {
   });
   
   sketchListEl.innerHTML = '';
+
+  // Show loading spinner while syncing and list is empty
+  const syncState = window.syncService?.getSyncState?.();
+  if (syncState?.isSyncing && filteredLib.length === 0) {
+    const loading = document.createElement('div');
+    loading.className = 'sketch-list-loading';
+    loading.innerHTML = `
+      <span class="material-icons spin">sync</span>
+      <span>${t('auth.syncing')}</span>
+    `;
+    sketchListEl.appendChild(loading);
+    return;
+  }
+
   if (filteredLib.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'sketch-list-empty';
@@ -2583,7 +2637,7 @@ function renderHome() {
 window.renderHome = renderHome;
 
 function hideHome() {
-  if (homePanel) homePanel.style.display = 'none';
+  if (homePanel) hidePanelAnimated(homePanel);
 }
 
 async function handleChangeProject(sketchId) {
@@ -5816,17 +5870,18 @@ if (mobileSizeDecreaseBtn) {
 // Help modal controls
 if (helpBtn && helpModal) {
   helpBtn.addEventListener('click', () => {
+    helpModal.classList.remove('panel-closing');
     helpModal.style.display = 'flex';
   });
 }
 if (closeHelpBtn && helpModal) {
   closeHelpBtn.addEventListener('click', () => {
-    helpModal.style.display = 'none';
+    hidePanelAnimated(helpModal);
   });
 }
 if (helpModal) {
   helpModal.addEventListener('click', (e) => {
-    if (e.target === helpModal) helpModal.style.display = 'none';
+    if (e.target === helpModal) hidePanelAnimated(helpModal);
   });
 }
 
@@ -5992,6 +6047,7 @@ function showFinishWorkdayModal() {
   
   // Show modal with dangling edges
   if (finishWorkdayModal) {
+    finishWorkdayModal.classList.remove('panel-closing');
     finishWorkdayModal.style.display = 'flex';
     renderDanglingEdgesForm(danglingEdgesList);
   }
@@ -6048,7 +6104,7 @@ function renderDanglingEdgesForm(danglingEdgesList) {
  */
 function closeFinishWorkdayModal() {
   if (finishWorkdayModal) {
-    finishWorkdayModal.style.display = 'none';
+    hidePanelAnimated(finishWorkdayModal);
   }
 }
 
@@ -6931,8 +6987,29 @@ if (mobileLiveMeasureToggle) {
 // Subscribe to gnssState position updates for status and redraw
 gnssState.on('position', () => {
   updateLocationStatus();
+  updateGpsQuickCaptureBtn();
   scheduleDraw();
 });
+
+// GPS Quick Capture FAB wiring
+const gpsQuickCaptureBtn = document.getElementById('gpsQuickCaptureBtn');
+if (gpsQuickCaptureBtn) {
+  gpsQuickCaptureBtn.addEventListener('click', () => {
+    gpsQuickCapture();
+  });
+}
+
+/**
+ * Update GPS Quick Capture button enabled/disabled state and RTK pulse
+ */
+function updateGpsQuickCaptureBtn() {
+  if (!gpsQuickCaptureBtn) return;
+  const pos = gnssState.getPosition();
+  const hasValidFix = pos && pos.isValid;
+  gpsQuickCaptureBtn.disabled = !hasValidFix;
+  const isRtkFixed = hasValidFix && pos.fixQuality === 4;
+  gpsQuickCaptureBtn.classList.toggle('rtk-ready', isRtkFixed);
+}
 
 // ============================================
 // Reference Layers UI Controls
@@ -7181,7 +7258,7 @@ document.addEventListener('keydown', (e) => {
   // Escape: cancel pending edge or clear selection, or close help
   if (e.key === 'Escape') {
     if (helpModal && helpModal.style.display === 'flex') {
-      helpModal.style.display = 'none';
+      hidePanelAnimated(helpModal);
       e.preventDefault();
       return;
     }
@@ -7754,6 +7831,12 @@ function syncLiveMeasureToggleUI() {
   if (mobileLiveMeasureToggle) {
     mobileLiveMeasureToggle.checked = liveMeasureEnabled;
   }
+  // Show/hide GPS Quick Capture FAB
+  const fab = document.getElementById('gpsQuickCaptureBtn');
+  if (fab) {
+    fab.style.display = liveMeasureEnabled ? '' : 'none';
+    if (liveMeasureEnabled) updateGpsQuickCaptureBtn();
+  }
 }
 
 /**
@@ -7864,6 +7947,115 @@ function handleGnssPointCapture(captureData) {
   
   scheduleDraw();
   showToast(`נלכדה נקודה עבור שוחה ${targetNodeId}`);
+}
+
+/**
+ * Vibrate the phone based on GNSS fix quality
+ * @param {number} fixQuality - GNSS fix quality value
+ */
+function vibrateForFixQuality(fixQuality) {
+  if (!navigator.vibrate) return;
+  if (fixQuality === 4) {
+    // RTK Fixed — single buzz
+    navigator.vibrate(100);
+  } else if (fixQuality === 5) {
+    // RTK Float — two buzzes
+    navigator.vibrate([100, 80, 100]);
+  } else {
+    // GPS/DGPS — three buzzes
+    navigator.vibrate([100, 80, 100, 80, 100]);
+  }
+}
+
+/**
+ * GPS Quick Capture — create a node at the current GPS position with one tap.
+ * Node type follows the current drawing mode. Auto-chains an edge from the
+ * previously captured node.
+ */
+function gpsQuickCapture() {
+  // 1. Get current position
+  const position = gnssState.getPosition();
+  if (!position || !position.isValid) {
+    showToast(t('gpsCapture.noFix') || 'No GPS fix available');
+    return;
+  }
+
+  // 2. Get reference point for coordinate conversion
+  const referencePoint = getMapReferencePoint();
+  if (!referencePoint) {
+    showToast(t('location.enableCoordinatesFirst') || 'Enable coordinates first');
+    return;
+  }
+
+  // 3. Convert GPS → canvas world coords
+  const canvasPos = gnssToCanvas(position, referencePoint, coordinateScale);
+  if (!canvasPos) {
+    showToast(t('gpsCapture.conversionError') || 'Could not convert GPS position');
+    return;
+  }
+
+  // 4. Create node at the canvas position (gets auto-numbered ID, admin defaults)
+  const node = createNode(canvasPos.x, canvasPos.y);
+
+  // 5. Set nodeType based on current drawing mode
+  if (currentMode === 'home') {
+    node.nodeType = 'Home';
+  } else if (currentMode === 'drainage') {
+    node.nodeType = 'Drainage';
+  } else {
+    node.nodeType = 'Manhole';
+  }
+
+  // 6. Store survey coordinates
+  const itm = wgs84ToItm(position.lat, position.lon);
+  node.hasCoordinates = true;
+  node.surveyX = itm.x;
+  node.surveyY = itm.y;
+  node.surveyZ = position.alt || 0;
+  node.gnssFixQuality = position.fixQuality;
+  node.gnssHdop = position.hdop;
+  coordinatesMap.set(String(node.id), {
+    x: itm.x,
+    y: itm.y,
+    z: position.alt || 0
+  });
+  saveCoordinatesToStorage(coordinatesMap);
+
+  // 7. Auto-create edge from previously captured node (chain pattern)
+  const lastId = gnssState.lastCapturedNodeId;
+  if (lastId != null) {
+    const prevNode = nodes.find(n => String(n.id) === String(lastId));
+    if (prevNode) {
+      createEdge(String(lastId), String(node.id));
+    }
+  }
+
+  // 8. Update gnss state
+  gnssState.capturePoint(node.id, {
+    itm,
+    fixQuality: position.fixQuality,
+    hdop: position.hdop
+  });
+
+  // 9. Position node correctly if coordinate mode is on
+  applyCoordinatesIfEnabled();
+
+  // 10. Vibrate based on fix quality
+  vibrateForFixQuality(position.fixQuality);
+
+  // 11. Select node, show toast, save, redraw
+  selectedNode = node;
+  selectedEdge = null;
+  renderDetails();
+
+  const fixLabels = { 4: 'RTK Fixed', 5: 'RTK Float', 2: 'DGPS', 1: 'GPS' };
+  const fixLabel = fixLabels[position.fixQuality] || position.fixLabel || 'GPS';
+  showToast(t('gpsCapture.captured', node.nodeType, node.id, fixLabel)
+    || `Captured ${node.nodeType} #${node.id} (${fixLabel})`);
+
+  computeNodeTypes();
+  saveToStorage();
+  scheduleDraw();
 }
 
 /**
@@ -7985,3 +8177,119 @@ window.setLiveMeasureMode = setLiveMeasureMode;
 window.openGnssPointCaptureDialog = openGnssPointCaptureDialog;
 window.centerOnGpsLocation = centerOnGpsLocation;
 window.toggleUserLocationTracking = toggleUserLocationTracking;
+
+// ============================================
+// TSC3 Survey Device Integration
+// ============================================
+
+// Initialize dialog DOM
+initSurveyNodeTypeDialog();
+
+// Wire tsc3Connection callbacks
+tsc3Connection._getNodes = () => nodes;
+tsc3Connection._showToast = (msg) => showToast(msg);
+tsc3Connection._t = (path, ...args) => t(path, ...args);
+tsc3Connection._openTypeDialog = (pointName, coords, onChoose, onCancel, tFn) => {
+  openSurveyNodeTypeDialog(pointName, coords, onChoose, onCancel, tFn);
+};
+tsc3Connection._onPointUpdate = (pointName, coords, isNew, nodeType) => {
+  handleTSC3PointReceived(pointName, coords, isNew, nodeType);
+};
+
+/**
+ * Handle an incoming survey point from the TSC3 connection manager.
+ * @param {string} pointName - Point name/ID
+ * @param {{ easting: number, northing: number, elevation: number }} coords - ITM coordinates
+ * @param {boolean} isNew - Whether this is a new node (no existing match)
+ * @param {string} nodeType - 'Manhole', 'Home', or 'Drainage'
+ */
+function handleTSC3PointReceived(pointName, coords, isNew, nodeType) {
+  let node;
+
+  if (isNew) {
+    // Create a new node at a default canvas position
+    node = createNode(400, 300);
+    // Override the auto-generated ID with the survey point name
+    node.id = String(pointName);
+    node.nodeType = nodeType || 'Manhole';
+  } else {
+    node = nodes.find(n => String(n.id) === String(pointName));
+    if (!node) return;
+  }
+
+  // Store survey coordinates on the node
+  node.hasCoordinates = true;
+  node.surveyX = coords.easting;
+  node.surveyY = coords.northing;
+  node.surveyZ = coords.elevation;
+
+  // Update coordinatesMap
+  coordinatesMap.set(String(pointName), {
+    x: coords.easting,
+    y: coords.northing,
+    z: coords.elevation,
+  });
+  saveCoordinatesToStorage(coordinatesMap);
+
+  // Auto-enable coordinates if not already on
+  if (!coordinatesEnabled) {
+    coordinatesEnabled = true;
+    saveCoordinatesEnabled(coordinatesEnabled);
+  }
+
+  // Apply coordinates to reposition nodes on canvas
+  applyCoordinatesIfEnabled();
+
+  // Select the node and update UI
+  selectedNode = node;
+  selectedEdge = null;
+  renderDetails();
+  computeNodeTypes();
+  saveToStorage();
+  scheduleDraw();
+
+  // Show toast
+  if (isNew) {
+    const typeLabel = t(`mode${nodeType}`) || nodeType;
+    showToast(t('survey.pointCreated', typeLabel, pointName) || `Created ${nodeType} ${pointName}`);
+  } else {
+    showToast(t('survey.pointUpdated', pointName) || `Point ${pointName} updated`);
+  }
+}
+
+// TSC3 menu event handlers
+menuEvents.on('connectSurveyBluetooth', async () => {
+  const devices = await tsc3Connection.getPairedDevices();
+  const surveyDevices = devices.filter(d => d.isSurvey);
+
+  if (surveyDevices.length === 1) {
+    // Auto-connect to the only survey device
+    showToast(t('survey.connecting') || 'Connecting...');
+    await tsc3Connection.connectBluetooth(surveyDevices[0].address);
+  } else if (devices.length > 0) {
+    // Show a simple picker via prompt
+    const names = devices.map((d, i) => `${i + 1}. ${d.name}`).join('\n');
+    const choice = prompt(`${t('survey.connectBluetooth') || 'Select device'}:\n${names}`);
+    const idx = parseInt(choice, 10) - 1;
+    if (idx >= 0 && idx < devices.length) {
+      showToast(t('survey.connecting') || 'Connecting...');
+      await tsc3Connection.connectBluetooth(devices[idx].address);
+    }
+  } else {
+    showToast(t('survey.error') || 'No paired devices found');
+  }
+});
+
+menuEvents.on('connectSurveyWebSocket', () => {
+  const input = prompt('WebSocket host:port', 'localhost:8765');
+  if (!input) return;
+  const parts = input.split(':');
+  const host = parts[0] || 'localhost';
+  const port = parseInt(parts[1], 10) || 8765;
+  showToast(t('survey.connecting') || 'Connecting...');
+  tsc3Connection.connectWebSocket(host, port);
+});
+
+menuEvents.on('disconnectSurvey', async () => {
+  await tsc3Connection.disconnect();
+});
