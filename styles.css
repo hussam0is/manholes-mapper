@@ -2229,6 +2229,23 @@ input.floating-keyboard-active {
   }
 }
 
+@keyframes modalSlideOut {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+}
+
+/* Panel closing animation for all modal/panel wrappers */
+.panel-closing {
+  animation: modalSlideOut 0.15s ease-in forwards;
+  pointer-events: none;
+}
+
 /* Modal sizes */
 .modal-sm { width: 400px; }
 .modal-md { width: 500px; }
@@ -2482,6 +2499,10 @@ input.floating-keyboard-active {
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
 }
 
 .projects-error {
@@ -3270,17 +3291,6 @@ input:checked + .slider:before {
   flex-direction: column;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   animation: modalSlideIn 0.2s ease-out;
-}
-
-@keyframes modalSlideIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95) translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
 }
 
 .finish-workday-header {
@@ -5321,9 +5331,20 @@ select.invalid:focus {
   :root {
     --color-bg: #0b1220;
     --color-surface: #0f172a;
+    --color-surface-alt: #1e293b;
+    --color-surface-hover: #334155;
     --color-text: #e2e8f0;
+    --color-text-bright: #f1f5f9;
     --color-muted: #94a3b8;
     --color-border: #1f2937;
+    --color-border-dark: #334155;
+    --color-accent: #60a5fa;
+    --color-accent-strong: #3b82f6;
+    --color-header-start: #1e40af;
+    --color-header-end: #1e3a8a;
+    --color-error-bg: #450a0a;
+    --color-error-border: #7f1d1d;
+    --color-error-text: #fca5a5;
     --shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   }
 
@@ -5332,7 +5353,7 @@ select.invalid:focus {
   }
 
   .btn {
-    background: #0b1220;
+    background: var(--color-bg);
     color: var(--color-text);
     border-color: var(--color-border);
   }
@@ -5360,13 +5381,13 @@ select.invalid:focus {
 
   /* Dark mode for mobile menu */
   #mobileMenu {
-    background: #0f172a;
+    background: var(--color-surface);
     border-color: var(--color-border);
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05);
   }
 
   #mobileMenu .mobile-menu-header {
-    background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+    background: linear-gradient(135deg, var(--color-header-start) 0%, var(--color-header-end) 100%);
     border-bottom-color: rgba(255, 255, 255, 0.1);
   }
 
@@ -5384,46 +5405,46 @@ select.invalid:focus {
   }
 
   #mobileMenu .mobile-menu-content {
-    background: #0f172a;
+    background: var(--color-surface);
   }
 
   #mobileMenu .menu-group-label {
-    color: #94a3b8;
+    color: var(--color-muted);
   }
 
   #mobileMenu .menu-divider {
-    background: #334155;
+    background: var(--color-surface-hover);
   }
 
   #mobileMenu .btn {
     background: transparent;
-    color: #e2e8f0;
+    color: var(--color-text);
     border-color: transparent;
   }
 
   #mobileMenu .btn:hover {
-    background: #1e293b;
+    background: var(--color-surface-alt);
   }
 
   #mobileMenu .btn:active {
-    background: #334155;
+    background: var(--color-surface-hover);
   }
 
   #mobileMenu .btn .material-icons {
-    color: #60a5fa;
+    color: var(--color-accent);
   }
 
   #mobileMenu label {
-    color: #e2e8f0;
+    color: var(--color-text);
   }
 
   #mobileMenu label:hover {
-    background: #1e293b;
+    background: var(--color-surface-alt);
   }
 
   #mobileMenu select {
-    background: #1e293b;
-    color: #e2e8f0;
+    background: var(--color-surface-alt);
+    color: var(--color-text);
     border-color: var(--color-border);
   }
 
@@ -5434,13 +5455,13 @@ select.invalid:focus {
   input[type="text"],
   input[type="date"],
   textarea {
-    background: #0b1220;
+    background: var(--color-bg);
     border-color: var(--color-border);
     color: var(--color-text);
   }
 
   select.btn {
-    background: #0b1220;
+    background: var(--color-bg);
     color: var(--color-text);
     border-color: var(--color-border);
   }
@@ -5465,96 +5486,96 @@ select.invalid:focus {
 
   /* Dark mode for admin modal */
   .admin-container {
-    background: #0f172a;
+    background: var(--color-surface);
   }
 
   .admin-header {
-    background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+    background: linear-gradient(135deg, var(--color-header-start) 0%, var(--color-header-end) 100%);
   }
 
   .admin-tabs {
-    background: #1e293b;
+    background: var(--color-surface-alt);
     border-color: var(--color-border);
   }
 
   .admin-tabs .tab {
-    color: #94a3b8;
+    color: var(--color-muted);
   }
 
   .admin-tabs .tab:hover {
     background: rgba(59, 130, 246, 0.1);
-    color: #60a5fa;
+    color: var(--color-accent);
   }
 
   .admin-tabs .tab.active {
-    background: #0f172a;
-    color: #60a5fa;
-    border-bottom-color: #60a5fa;
+    background: var(--color-surface);
+    color: var(--color-accent);
+    border-bottom-color: var(--color-accent);
   }
 
   .admin-content {
-    background: #0f172a;
+    background: var(--color-surface);
   }
 
   .admin-section {
-    background: #1e293b;
+    background: var(--color-surface-alt);
     border-color: var(--color-border);
   }
 
   .admin-section-header {
-    background: #334155;
+    background: var(--color-surface-hover);
     border-color: var(--color-border);
   }
 
   .admin-section-title {
-    color: #f1f5f9;
+    color: var(--color-text-bright);
   }
 
   .admin-section-body {
-    background: #1e293b;
+    background: var(--color-surface-alt);
   }
 
   .admin-group {
-    background: #0f172a;
+    background: var(--color-surface);
     border-color: var(--color-border);
   }
 
   .admin-subtitle {
-    color: #e2e8f0;
+    color: var(--color-text);
   }
 
   .admin-desc {
-    color: #94a3b8;
+    color: var(--color-muted);
   }
 
   .admin-checkbox-item {
-    background: #1e293b;
+    background: var(--color-surface-alt);
     border-color: var(--color-border);
   }
 
   .admin-checkbox-item:hover {
-    background: #334155;
-    border-color: #60a5fa;
+    background: var(--color-surface-hover);
+    border-color: var(--color-accent);
   }
 
   .admin-checkbox-item label {
-    color: #e2e8f0;
+    color: var(--color-text);
   }
 
   .option-table {
-    background: #0f172a;
+    background: var(--color-surface);
   }
 
   .option-table thead {
-    background: #1e40af;
+    background: var(--color-header-start);
   }
 
   .option-table tbody tr {
-    background: #1e293b;
+    background: var(--color-surface-alt);
   }
 
   .option-table tbody tr:hover {
-    background: #334155;
+    background: var(--color-surface-hover);
   }
 
   .option-table td {
@@ -5563,7 +5584,7 @@ select.invalid:focus {
 
   .option-table .opt-label input[type="text"],
   .option-table .opt-code input[type="text"] {
-    background: #0b1220;
+    background: var(--color-bg);
     border-color: var(--color-border);
     color: var(--color-text);
   }
@@ -5571,22 +5592,22 @@ select.invalid:focus {
   .option-table .opt-label input[type="text"]:focus,
   .option-table .opt-code input[type="text"]:focus {
     border-color: var(--color-primary);
-    background: #0f172a;
+    background: var(--color-surface);
   }
 
   .custom-row {
-    background: #0f172a;
+    background: var(--color-surface);
     border-color: var(--color-border);
   }
 
   .custom-row:hover {
-    background: #1e293b;
+    background: var(--color-surface-alt);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   }
 
   .admin-section input[type="text"],
   .admin-section select {
-    background: #0b1220;
+    background: var(--color-bg);
     border-color: var(--color-border);
     color: var(--color-text);
   }
@@ -5594,7 +5615,7 @@ select.invalid:focus {
   .admin-section input[type="text"]:focus,
   .admin-section select:focus {
     border-color: var(--color-primary);
-    background: #0f172a;
+    background: var(--color-surface);
   }
 
   .admin-section .field label {
@@ -5607,23 +5628,23 @@ select.invalid:focus {
   }
 
   .admin-actions .btn-ghost {
-    background: #1e293b;
-    color: #94a3b8;
+    background: var(--color-surface-alt);
+    color: var(--color-muted);
     border-color: var(--color-border);
   }
 
   .admin-actions .btn-ghost:hover {
-    background: #334155;
-    color: #e2e8f0;
+    background: var(--color-surface-hover);
+    color: var(--color-text);
   }
 
   .admin-group-toggle-icon {
-    color: #60a5fa;
+    color: var(--color-accent);
   }
 
   /* Dark mode for details sections in sidebar */
   .details-section {
-    background: #0f172a;
+    background: var(--color-surface);
     border-color: var(--color-border);
   }
 
@@ -5634,15 +5655,15 @@ select.invalid:focus {
   }
 
   .soft-blue-header .segmented {
-    background: #0f172a;
+    background: var(--color-surface);
   }
 
   .soft-blue-header .segmented .btn:hover {
-    background: #1e293b;
+    background: var(--color-surface-alt);
   }
 
   .soft-blue-header .search-input:focus {
-    background: #0f172a;
+    background: var(--color-surface);
   }
 }
 
@@ -6176,42 +6197,42 @@ select.invalid:focus {
 /* Dark mode for modern admin */
 @media (prefers-color-scheme: dark) {
   .admin-modern-tabs {
-    background: #1e293b;
+    background: var(--color-surface-alt);
   }
 
   .admin-modern-tab {
-    color: #94a3b8;
+    color: var(--color-muted);
   }
 
   .admin-modern-tab:hover {
     background: rgba(96, 165, 250, 0.1);
-    color: #60a5fa;
+    color: var(--color-accent);
   }
 
   .admin-modern-tab.active {
-    background: #3b82f6;
+    background: var(--color-accent-strong);
     color: #fff;
   }
 
   .admin-menu-group {
-    background: #1e293b;
+    background: var(--color-surface-alt);
     border-color: var(--color-border);
   }
 
   .admin-menu-group-header {
-    background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+    background: linear-gradient(135deg, var(--color-surface-hover) 0%, var(--color-surface-alt) 100%);
   }
 
   .admin-menu-group-header:hover {
-    background: linear-gradient(135deg, #475569 0%, #334155 100%);
+    background: linear-gradient(135deg, #475569 0%, var(--color-surface-hover) 100%);
   }
 
   .admin-menu-group-title {
-    color: #f1f5f9;
+    color: var(--color-text-bright);
   }
 
   .admin-menu-group-title .material-icons {
-    color: #60a5fa;
+    color: var(--color-accent);
   }
 
   .admin-menu-group-content {
@@ -6219,15 +6240,15 @@ select.invalid:focus {
   }
 
   .admin-toggle-item {
-    background: #0f172a;
+    background: var(--color-surface);
   }
 
   .admin-toggle-item:hover {
-    background: #334155;
+    background: var(--color-surface-hover);
   }
 
   .admin-toggle-label {
-    color: #e2e8f0;
+    color: var(--color-text);
   }
 
   .admin-toggle-switch {
@@ -6236,52 +6257,52 @@ select.invalid:focus {
 
   .admin-field-input,
   .admin-field-select {
-    background: #0f172a;
+    background: var(--color-surface);
     border-color: var(--color-border);
-    color: #e2e8f0;
+    color: var(--color-text);
   }
 
   .admin-field-input:focus,
   .admin-field-select:focus {
-    background: #1e293b;
-    border-color: #60a5fa;
+    background: var(--color-surface-alt);
+    border-color: var(--color-accent);
   }
 
   .admin-option-card {
-    background: #0f172a;
+    background: var(--color-surface);
     border-color: var(--color-border);
   }
 
   .admin-option-card:hover {
-    border-color: #60a5fa;
+    border-color: var(--color-accent);
   }
 
   .admin-option-label-input,
   .admin-option-code-input {
-    background: #1e293b;
+    background: var(--color-surface-alt);
     border-color: var(--color-border);
-    color: #e2e8f0;
+    color: var(--color-text);
   }
 
   .admin-option-label-input:focus,
   .admin-option-code-input:focus {
-    border-color: #60a5fa;
-    background: #334155;
+    border-color: var(--color-accent);
+    background: var(--color-surface-hover);
   }
 
   .admin-option-delete-btn:hover {
-    background: #450a0a;
+    background: var(--color-error-bg);
     color: #f87171;
   }
 
   .admin-add-btn {
     border-color: #475569;
-    color: #60a5fa;
+    color: var(--color-accent);
   }
 
   .admin-add-btn:hover {
     background: rgba(96, 165, 250, 0.1);
-    border-color: #60a5fa;
+    border-color: var(--color-accent);
   }
 }
 
@@ -6416,6 +6437,23 @@ select.invalid:focus {
 .sketch-list-empty .material-icons {
   font-size: 3rem;
   opacity: 0.4;
+}
+
+/* Sketch list loading state */
+.sketch-list-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 3rem 1rem;
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.sketch-list-loading .material-icons {
+  font-size: 2rem;
+  color: var(--color-primary);
 }
 
 /* Sketch card */
@@ -6818,11 +6856,11 @@ select.invalid:focus {
   }
 
   .home-panel-header {
-    background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+    background: linear-gradient(135deg, var(--color-header-start) 0%, var(--color-header-end) 100%);
   }
 
   .home-panel-content {
-    background: #0f172a;
+    background: var(--color-surface);
   }
 
   .sketch-list-empty {
@@ -6830,12 +6868,12 @@ select.invalid:focus {
   }
 
   .sketch-card {
-    background: #1e293b;
+    background: var(--color-surface-alt);
     border-color: var(--color-border);
   }
 
   .sketch-card:hover {
-    border-color: #60a5fa;
+    border-color: var(--color-accent);
     box-shadow: 0 4px 12px rgba(96, 165, 250, 0.15);
   }
 
@@ -6854,56 +6892,56 @@ select.invalid:focus {
   }
 
   .sketch-card-icon {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    background: linear-gradient(135deg, var(--color-accent-strong) 0%, #2563eb 100%);
   }
 
   .sketch-card-title {
-    color: #f1f5f9;
+    color: var(--color-text-bright);
   }
 
   .sketch-card-title:hover {
-    color: #60a5fa;
+    color: var(--color-accent);
   }
 
   .sketch-card-meta {
-    color: #94a3b8;
+    color: var(--color-muted);
   }
 
   .sketch-card-owner {
-    background: #334155;
-    color: #60a5fa;
+    background: var(--color-surface-hover);
+    color: var(--color-accent);
   }
 
   .sketch-card-owner .material-icons {
-    color: #60a5fa;
+    color: var(--color-accent);
   }
 
   .sketch-card-stats {
-    border-color: #334155;
+    border-color: var(--color-border-dark);
   }
 
   .sketch-stat {
-    color: #94a3b8;
+    color: var(--color-muted);
   }
 
   .sketch-stat .material-icons {
-    color: #60a5fa;
+    color: var(--color-accent);
   }
 
   .sketch-action-btn {
-    background: #0f172a;
-    border-color: #334155;
-    color: #e2e8f0;
+    background: var(--color-surface);
+    border-color: var(--color-border-dark);
+    color: var(--color-text);
   }
 
   .sketch-action-btn:hover {
-    background: #334155;
+    background: var(--color-surface-hover);
     border-color: #475569;
   }
 
   .sketch-action-btn.sketch-action-primary {
-    background: #3b82f6;
-    border-color: #3b82f6;
+    background: var(--color-accent-strong);
+    border-color: var(--color-accent-strong);
   }
 
   .sketch-action-btn.sketch-action-primary:hover {
@@ -6912,14 +6950,14 @@ select.invalid:focus {
   }
 
   .sketch-action-btn.sketch-action-danger {
-    background: #450a0a;
+    background: var(--color-error-bg);
     border-color: #991b1b;
     /* Brighter red for better WCAG AA contrast in dark mode */
-    color: #fca5a5;
+    color: var(--color-error-text);
   }
 
   .sketch-action-btn.sketch-action-danger:hover {
-    background: #7f1d1d;
+    background: var(--color-error-border);
     border-color: #dc2626;
   }
 
@@ -6930,12 +6968,12 @@ select.invalid:focus {
   }
 
   .home-panel-footer {
-    background: #1e293b;
-    border-color: #334155;
+    background: var(--color-surface-alt);
+    border-color: var(--color-border-dark);
   }
 
   .home-panel-new-btn {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    background: linear-gradient(135deg, var(--color-accent-strong) 0%, #2563eb 100%);
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
   }
 
@@ -7015,16 +7053,6 @@ select.invalid:focus {
 .login-loading .material-icons {
   font-size: 2rem;
   color: var(--color-primary);
-}
-
-/* Spinning animation */
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.spin {
-  animation: spin 1s linear infinite;
 }
 
 /* Auth Loading Overlay */
@@ -7206,9 +7234,9 @@ select.invalid:focus {
 /* Dark mode sketch tabs */
 @media (prefers-color-scheme: dark) {
   .sketch-tabs {
-    background: #1e293b;
+    background: var(--color-surface-alt);
   }
-  
+
   .sketch-tab:hover {
     background: rgba(255, 255, 255, 0.05);
   }
@@ -7237,25 +7265,25 @@ html[dir="rtl"] .auth-form-wrapper {
 /* Dark mode login panel */
 @media (prefers-color-scheme: dark) {
   .login-panel {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+    background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-alt) 50%, var(--color-surface) 100%);
   }
 
   .login-panel-content {
-    background: #1e293b;
+    background: var(--color-surface-alt);
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
   }
 
   .login-panel-header {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    border-color: #334155;
+    background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-alt) 100%);
+    border-color: var(--color-border-dark);
   }
 
   .login-panel-header h1 {
-    color: #f1f5f9;
+    color: var(--color-text-bright);
   }
 
   .login-subtitle {
-    color: #94a3b8;
+    color: var(--color-muted);
   }
 
   .auth-loading-overlay {
@@ -7263,7 +7291,7 @@ html[dir="rtl"] .auth-form-wrapper {
   }
 
   .auth-loading-content {
-    background: #1e293b;
+    background: var(--color-surface-alt);
   }
 }
 
@@ -7495,23 +7523,23 @@ html[dir="rtl"] .auth-form-wrapper {
 @media (prefers-color-scheme: dark) {
   .auth-form-title,
   .auth-form-field label {
-    color: #f1f5f9;
+    color: var(--color-text-bright);
   }
 
   .auth-form-subtitle {
-    color: #94a3b8;
+    color: var(--color-muted);
   }
 
   .auth-form-error {
-    background: #450a0a;
-    border-color: #7f1d1d;
-    color: #fca5a5;
+    background: var(--color-error-bg);
+    border-color: var(--color-error-border);
+    color: var(--color-error-text);
   }
 
   .auth-form-field input {
-    background: #1e293b;
-    border-color: #334155;
-    color: #f1f5f9;
+    background: var(--color-surface-alt);
+    border-color: var(--color-border-dark);
+    color: var(--color-text-bright);
   }
 
   .auth-form-field input:focus {
@@ -7519,40 +7547,40 @@ html[dir="rtl"] .auth-form-wrapper {
   }
 
   .auth-form-field input:disabled {
-    background: #0f172a;
+    background: var(--color-surface);
   }
 
   .user-menu-dropdown {
-    background: #1e293b;
-    border-color: #334155;
+    background: var(--color-surface-alt);
+    border-color: var(--color-border-dark);
   }
 
   .user-menu-name {
-    color: #f1f5f9;
+    color: var(--color-text-bright);
   }
 
   .user-menu-email {
-    color: #94a3b8;
+    color: var(--color-muted);
   }
 
   .user-menu-divider {
-    border-color: #334155;
+    border-color: var(--color-border-dark);
   }
 
   .user-menu-item {
-    color: #f1f5f9;
+    color: var(--color-text-bright);
   }
 
   .user-menu-item:hover {
-    background: #334155;
+    background: var(--color-surface-hover);
   }
 
   .user-menu-signout {
-    color: #fca5a5;
+    color: var(--color-error-text);
   }
 
   .user-menu-signout:hover {
-    background: #450a0a;
+    background: var(--color-error-bg);
   }
 }
 
@@ -7899,40 +7927,40 @@ html[dir="rtl"] .user-menu-item {
 @media (prefers-color-scheme: dark) {
   .gnss-status-pill {
     background: rgba(30, 41, 59, 0.95);
-    border-color: #334155;
+    border-color: var(--color-border-dark);
   }
-  
+
   .gnss-status-main {
-    color: #f1f5f9;
+    color: var(--color-text-bright);
   }
-  
+
   .gnss-controls-panel {
     background: rgba(30, 41, 59, 0.95);
-    border-color: #334155;
+    border-color: var(--color-border-dark);
   }
-  
+
   .point-capture-content {
-    background: #1e293b;
+    background: var(--color-surface-alt);
   }
-  
+
   .point-capture-header {
-    background: #0f172a;
-    border-color: #334155;
+    background: var(--color-surface);
+    border-color: var(--color-border-dark);
   }
-  
+
   .point-capture-footer {
-    background: #0f172a;
-    border-color: #334155;
+    background: var(--color-surface);
+    border-color: var(--color-border-dark);
   }
-  
+
   .position-info {
-    background: #0f172a;
+    background: var(--color-surface);
   }
-  
+
   .capture-select {
-    background: #0f172a;
-    border-color: #334155;
-    color: #f1f5f9;
+    background: var(--color-surface);
+    border-color: var(--color-border-dark);
+    color: var(--color-text-bright);
   }
 }
 
@@ -8056,7 +8084,8 @@ button:focus-visible,
   .modal-container,
   .menu-dropdown,
   .mobile-menu,
-  .drawer {
+  .drawer,
+  .panel-closing {
     animation: none !important;
     transition: none !important;
   }
