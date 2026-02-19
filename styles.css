@@ -1411,7 +1411,7 @@ canvas {
 .canvas-fab-toolbar {
   position: absolute;
   right: 12px;
-  bottom: 12px;
+  bottom: 32px;
   z-index: 16;
   display: flex;
   flex-direction: column-reverse;
