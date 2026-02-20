@@ -669,17 +669,15 @@
     <div id="canvasContainer">
       <canvas id="graphCanvas" role="img" aria-label="Sketch drawing canvas"></canvas>
       <div class="canvas-toolbar" role="toolbar" aria-label="Drawing tools">
-        <div class="segmented" id="modeGroup" role="group" aria-label="Drawing modes">
+        <div class="segmented" id="modeGroup" role="group" aria-label="Drawing tools">
+          <button id="myLocationBtn" class="btn my-location-btn" title="My Location" aria-label="Show my location">
+            <span class="material-icons" aria-hidden="true">my_location</span>
+          </button>
+          <div class="canvas-toolbar-divider" role="separator" aria-hidden="true"></div>
           <button id="nodeModeBtn" class="btn" title="" aria-label="Manhole mode" aria-pressed="false" data-i18n-title="modeNode" data-i18n-aria-label="modeNode"></button>
           <button id="homeNodeModeBtn" class="btn" title="" aria-label="Home node mode" aria-pressed="false" data-i18n-title="modeHome" data-i18n-aria-label="modeHome"></button>
           <button id="drainageNodeModeBtn" class="btn" title="" aria-label="Drainage mode" aria-pressed="false" data-i18n-title="modeDrainage" data-i18n-aria-label="modeDrainage"></button>
           <button id="edgeModeBtn" class="btn" title="" aria-label="Edge/line mode" aria-pressed="false" data-i18n-title="modeEdge" data-i18n-aria-label="modeEdge"></button>
-        </div>
-        <!-- My Location Button -->
-        <div class="segmented" id="locationGroup" style="margin-top: 8px;">
-          <button id="myLocationBtn" class="btn my-location-btn" title="My Location" aria-label="Show my location">
-            <span class="material-icons" aria-hidden="true">my_location</span>
-          </button>
         </div>
       </div>
       <!-- GPS Quick Capture FAB (visible only when Live Measure is active) -->

@@ -1247,6 +1247,13 @@ select.btn:focus-visible {
   min-width: 44px;
 }
 
+.canvas-toolbar-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.2);
+  margin: 0 8px;
+  flex-shrink: 0;
+}
+
 .canvas-toolbar .segmented .btn {
   color: #f9fafb;
   border: none;

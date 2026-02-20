@@ -7034,11 +7034,27 @@ if (mobileLiveMeasureToggle) {
   });
 }
 
-// Subscribe to gnssState position updates for status and redraw
-gnssState.on('position', () => {
+// Subscribe to gnssState position updates for status and redraw.
+// Also auto-center on first GPS fix when Live Measure is enabled and the sketch has
+// no ITM-anchored coordinates yet (e.g. empty sketch or default Tel Aviv reference
+// point). Without this the marker renders off-screen because the default reference
+// point may be far from the user's actual location.
+let _liveMeasureFirstFixDone = false;
+gnssState.on('position', (pos) => {
   updateLocationStatus();
   updateGpsQuickCaptureBtn();
   scheduleDraw();
+
+  if (liveMeasureEnabled && !_liveMeasureFirstFixDone && pos && pos.isValid && coordinatesMap.size === 0) {
+    _liveMeasureFirstFixDone = true;
+    const itm = wgs84ToItm(pos.lat, pos.lon);
+    const rect = canvas.getBoundingClientRect();
+    setMapReferencePoint({
+      itm: { x: itm.x, y: itm.y },
+      canvas: { x: rect.width / 2, y: rect.height / 2 }
+    });
+    centerOnGpsLocation(pos.lat, pos.lon);
+  }
 });
 
 // GPS Quick Capture FAB wiring
@@ -7856,6 +7872,7 @@ function setLiveMeasureMode(enabled) {
     stopBrowserLocationAdapter();
     liveMeasureEnabled = false;
     gnssState.setLiveMeasureEnabled(false);
+    _liveMeasureFirstFixDone = false; // Allow auto-center on next enable
   }
 
   syncLiveMeasureToggleUI();
