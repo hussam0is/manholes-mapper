@@ -7,6 +7,7 @@
  * Requires admin role.
  */
 
+import { handleCors } from '../_lib/cors.js';
 import { verifyAuth, parseBody, sanitizeErrorMessage } from '../_lib/auth.js';
 import { 
   ensureDb, 
@@ -19,6 +20,8 @@ import { applyRateLimit } from '../_lib/rate-limit.js';
 export const config = { runtime: 'nodejs' };
 
 export default async function handler(req, res) {
+  if (handleCors(req, res)) return;
+
   // Polyfill for helper functions
   const request = req;
   if (!request.headers.get) {

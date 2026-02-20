@@ -1,4 +1,8 @@
 // ES module entry for the Graph Sketcher app
+
+// Capacitor API proxy must load before any fetch() calls (auth, sync, etc.)
+import './capacitor-api-proxy.js';
+
 // Import CSS via JS so Vite handles it correctly in both dev and build modes
 import '../styles.css';
 import './menu/menu.css';

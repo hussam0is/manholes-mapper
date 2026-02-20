@@ -6,10 +6,13 @@
  */
 
 import { createAuthClient } from "better-auth/client";
+import { getApiBaseUrl } from '../capacitor-api-proxy.js';
 
-// Create the auth client
+
+// Create the auth client.
+// In Capacitor native mode, route auth API calls to the production server.
 export const authClient = createAuthClient({
-  baseURL: typeof window !== 'undefined' ? window.location.origin : '',
+  baseURL: getApiBaseUrl() || (typeof window !== 'undefined' ? window.location.origin : ''),
 });
 
 // Export convenience methods

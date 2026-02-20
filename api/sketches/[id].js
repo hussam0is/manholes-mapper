@@ -9,6 +9,7 @@
  * Note: Uses standard Node.js (req, res) signature for better compatibility with vercel dev.
  */
 
+import { handleCors } from '../_lib/cors.js';
 import { verifyAuth, parseBody, sanitizeErrorMessage } from '../_lib/auth.js';
 import { 
   getSketchById, 
@@ -30,8 +31,10 @@ import { applyRateLimit } from '../_lib/rate-limit.js';
 export const config = { runtime: 'nodejs' };
 
 export default async function handler(req, res) {
+  if (handleCors(req, res)) return;
+
   // Polyfill for helper functions that expect Web API Request
-  const request = req; 
+  const request = req;
   if (!request.headers.get) {
     request.headers.get = (name) => req.headers[name.toLowerCase()];
   }
