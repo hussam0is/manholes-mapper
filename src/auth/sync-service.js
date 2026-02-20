@@ -37,6 +37,14 @@ const syncStateListeners = new Set();
 let saveDebounceTimer = null;
 const SAVE_DEBOUNCE_MS = 2000;
 
+// AbortController for online/offline event listeners registered in initSyncService.
+// Replaced on every re-call to prevent duplicate listener accumulation.
+let listenerAbortController = null;
+
+// Debounce timer for the online-event handler (guards against rapid LTE→WiFi flapping).
+let onlineDebounceTimer = null;
+const ONLINE_DEBOUNCE_MS = 2000;
+
 // API base URL - in development without vercel dev, API won't be available
 // In production or with vercel dev, API is same-origin
 const API_BASE = '';
@@ -1082,17 +1090,33 @@ export function initSyncService() {
   // so we never end up with multiple concurrent refresh timers.
   stopLockRefreshTimer();
 
-  // Listen for online/offline events
+  // Abort any listeners registered by a previous invocation so we never
+  // accumulate duplicate online/offline handlers across re-calls.
+  if (listenerAbortController) {
+    listenerAbortController.abort();
+  }
+  listenerAbortController = new AbortController();
+  const { signal } = listenerAbortController;
+
+  // Listen for online/offline events.
+  // The online handler is debounced to guard against rapid network flapping
+  // (e.g. LTE→WiFi handoff) that would otherwise fire processSyncQueue many
+  // times in quick succession.
   window.addEventListener('online', () => {
     updateSyncState({ isOnline: true });
-    console.debug('[Sync] Back online — processing sync queue');
-    processSyncQueue();
-  });
+    clearTimeout(onlineDebounceTimer);
+    onlineDebounceTimer = setTimeout(() => {
+      console.debug('[Sync] Back online — processing sync queue');
+      processSyncQueue();
+    }, ONLINE_DEBOUNCE_MS);
+  }, { signal });
 
   window.addEventListener('offline', () => {
+    // Cancel any pending debounced sync — we're offline again before it fired.
+    clearTimeout(onlineDebounceTimer);
     updateSyncState({ isOnline: false });
     console.debug('[Sync] Gone offline — changes will be queued');
-  });
+  }, { signal });
 
   // Initial sync on auth ready
   if (window.authGuard?.onAuthStateChange) {

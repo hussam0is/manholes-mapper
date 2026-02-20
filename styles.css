@@ -957,6 +957,15 @@ header .btn-primary:hover {
   .btn {
     min-height: var(--touch-target-min);
   }
+
+  .btn-sm {
+    min-height: var(--touch-target-min);
+  }
+
+  .btn-icon-sm {
+    min-width: var(--touch-target-min);
+    min-height: var(--touch-target-min);
+  }
 }
 
 /* Adjust size of material icons within buttons */
@@ -3765,6 +3774,13 @@ input:checked + .slider:before {
 .scale-btn:hover {
   background: var(--color-bg);
   border-color: var(--color-primary);
+}
+
+@media (max-width: 600px) {
+  .scale-btn {
+    min-width: var(--touch-target-min);
+    min-height: var(--touch-target-min);
+  }
 }
 
 .scale-btn:active {

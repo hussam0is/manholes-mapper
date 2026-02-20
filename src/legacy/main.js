@@ -480,6 +480,31 @@ let fallIconReady = false;
 // Fast node lookup map – rebuilt at the start of each draw() frame
 let nodeMap = new Map(); // Map<String(id), node>
 
+// --- Draw-loop performance caches ---
+
+// Issue 2: canvas bounding rect cache — avoids forced layout flush during drag frames.
+// Invalidated by resizeCanvas() and the window resize listener.
+let _cachedCanvasRect = null;
+function getCachedCanvasRect() {
+  if (!_cachedCanvasRect) {
+    _cachedCanvasRect = canvas.getBoundingClientRect();
+  }
+  return _cachedCanvasRect;
+}
+function invalidateCanvasRectCache() {
+  _cachedCanvasRect = null;
+}
+
+// Issue 3: edge label data cache — rebuilt only when edges change.
+// Avoids iterating all edges twice per frame for label-collision input data.
+// Invalidated via markEdgeLabelCacheDirty() whenever edges are mutated.
+let _edgeLabelDataCache = null; // null means dirty / needs rebuild
+let _edgeLabelCacheStretchX = NaN;
+let _edgeLabelCacheStretchY = NaN;
+let _edgeLabelCacheSizeScale = NaN;
+function markEdgeLabelCacheDirty() {
+  _edgeLabelDataCache = null;
+}
 // Coordinate system state
 let coordinatesMap = new Map(); // Map<nodeId, {x, y, z}>
 let coordinatesEnabled = false; // Whether to show coordinate indicators and use coordinate positions
@@ -1378,6 +1403,7 @@ function resizeCanvas() {
   }
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.scale(dpr, dpr);
+  invalidateCanvasRectCache(); // bounding rect changes on resize
   draw();
 }
 
@@ -1399,6 +1425,7 @@ function scheduleResizeCanvas() {
 }
 
 window.addEventListener('resize', scheduleResizeCanvas);
+window.addEventListener('scroll', invalidateCanvasRectCache, { passive: true }); // keep canvas rect cache fresh on page scroll
 
 // Also resize the canvas whenever its container changes size (e.g.,
 // details panel expands/collapses on mobile and alters flex heights)
@@ -1420,312 +1447,40 @@ if (window.ResizeObserver) {
 // use global t/isRTL injected from module entry
 
 function applyLangToStaticUI() {
-  if (appTitleEl) appTitleEl.textContent = t('appTitle');
-  // Helper to set a button's visible label if it has a `.label` or `.menu-btn__label` span
-  const setBtnLabel = (btn, text) => {
-    if (!btn) return;
-    const label = btn.querySelector && (btn.querySelector('.menu-btn__label') || btn.querySelector('.label'));
-    if (label) {
-      label.textContent = text;
-    } else if (!btn.classList || !btn.classList.contains('btn-icon')) {
-      // Fallback: only overwrite text if it's not an icon-only button
-      btn.textContent = text;
-    }
-  };
-
-  setBtnLabel(homeBtn, t('home'));
-  if (homeBtn) homeBtn.title = t('home');
-  setBtnLabel(newSketchBtn, t('newSketch'));
-  if (newSketchBtn) newSketchBtn.title = t('newSketch');
-  if (nodeModeBtn) {
-    nodeModeBtn.innerHTML = '<span class="material-icons" aria-hidden="true">radio_button_unchecked</span>';
-    nodeModeBtn.title = t('modeNode');
-    nodeModeBtn.setAttribute('aria-label', t('modeNode'));
-  }
-  if (homeNodeModeBtn) {
-    homeNodeModeBtn.innerHTML = '<span class="material-icons" aria-hidden="true">home</span>';
-    homeNodeModeBtn.title = t('modeHome');
-    homeNodeModeBtn.setAttribute('aria-label', t('modeHome'));
-  }
-  if (drainageNodeModeBtn) {
-    drainageNodeModeBtn.innerHTML = '<span class="material-icons" aria-hidden="true">water_drop</span>';
-    drainageNodeModeBtn.title = t('modeDrainage');
-    drainageNodeModeBtn.setAttribute('aria-label', t('modeDrainage'));
-  }
-  if (edgeModeBtn) {
-    edgeModeBtn.innerHTML = '<span class="material-icons" aria-hidden="true">timeline</span>';
-    edgeModeBtn.title = t('modeEdge');
-    edgeModeBtn.setAttribute('aria-label', t('modeEdge'));
-  }
-  if (zoomInBtn) { zoomInBtn.title = t('zoomIn'); }
-  if (zoomOutBtn) { zoomOutBtn.title = t('zoomOut'); }
-  if (sizeIncreaseBtn) { sizeIncreaseBtn.title = t('sizeIncrease'); }
-  if (sizeDecreaseBtn) { sizeDecreaseBtn.title = t('sizeDecrease'); }
-  if (exportSketchBtn) {
-    exportSketchBtn.title = t('exportSketch');
-    const lbl = exportSketchBtn.querySelector('.dropdown-label');
-    if (lbl) lbl.textContent = t('exportSketch');
-  }
-  if (importSketchBtn) {
-    importSketchBtn.title = t('importSketch');
-    const lbl = importSketchBtn.querySelector('.dropdown-label');
-    if (lbl) lbl.textContent = t('importSketch');
-  }
-  if (exportNodesBtn) {
-    exportNodesBtn.title = t('exportNodes');
-    const lbl = exportNodesBtn.querySelector('.dropdown-label');
-    if (lbl) lbl.textContent = t('exportNodes');
-  }
-  if (exportEdgesBtn) {
-    exportEdgesBtn.title = t('exportEdges');
-    const lbl = exportEdgesBtn.querySelector('.dropdown-label');
-    if (lbl) lbl.textContent = t('exportEdges');
-  }
-  if (exportMenuBtn) { exportMenuBtn.title = t('menu'); }
-  setBtnLabel(saveBtn, t('save'));
-  if (saveBtn) saveBtn.title = t('save');
-  if (autosaveToggle) {
-    const parent = autosaveToggle.closest('.menu-autosave') || autosaveToggle.parentElement;
-    const autosaveLabelEl = parent && (parent.querySelector('.menu-autosave__label') || parent.querySelector('.label'));
-    if (autosaveLabelEl) autosaveLabelEl.textContent = t('autosave');
-  }
-  if (helpBtn) { helpBtn.title = t('help'); setBtnLabel(helpBtn, t('help')); }
-  if (adminBtn) { adminBtn.title = t('admin.manage'); }
-  if (recenterBtn) {
-    recenterBtn.title = t('recenter');
-    recenterBtn.setAttribute('aria-label', t('recenter'));
-  }
-  if (recenterDensityBtn) {
-    recenterDensityBtn.title = t('recenterDensity');
-    recenterDensityBtn.setAttribute('aria-label', t('recenterDensity'));
-  }
-  // Update incomplete edge tracker tooltip
-  const incompleteTrackerEl = document.getElementById('incompleteEdgeTracker');
-  if (incompleteTrackerEl) {
-    incompleteTrackerEl.title = t('incompleteEdgeTracker');
-  }
-  if (sidebarCloseBtn) { sidebarCloseBtn.title = t('close'); }
-  if (langSelect) { langSelect.title = t('language'); }
-  if (mobileMenuBtn) { mobileMenuBtn.title = t('menu'); }
-  // Mobile menu header and group labels
-  if (mobileMenuTitle) { mobileMenuTitle.textContent = t('menu'); }
-  if (mobileMenuCloseBtn) { mobileMenuCloseBtn.title = t('close'); }
-  // Update mobile menu group labels (target the label span to preserve icons)
-  const updateGroupLabel = (groupEl, key) => {
-    if (!groupEl) return;
-    const labelSpan = groupEl.querySelector('.mobile-menu__group-label');
-    if (labelSpan) {
-      labelSpan.textContent = t(key);
-    }
-  };
-  updateGroupLabel(menuGroupNav, 'menuGroupNav');
-  updateGroupLabel(menuGroupSearch, 'menuGroupSearch');
-  updateGroupLabel(menuGroupView, 'menuGroupView');
-  updateGroupLabel(menuGroupSketch, 'menuGroup.sketch');
-  updateGroupLabel(menuGroupCsv, 'menuGroup.csv');
-  updateGroupLabel(menuGroupLocation, 'menuGroup.location');
-  updateGroupLabel(menuGroupWorkday, 'menuGroup.workday');
-  updateGroupLabel(menuGroupSettings, 'menuGroupSettings');
-  if (sidebarTitleEl) sidebarTitleEl.textContent = t('sidebarTitle');
-  if (detailsDefaultEl) detailsDefaultEl.textContent = t('detailsDefault');
-  if (startTitleEl) startTitleEl.textContent = t('startTitle');
-  if (creationDateLabelEl) creationDateLabelEl.textContent = t('creationDate');
-  if (homeTitleEl) homeTitleEl.textContent = t('homeTitle');
-  if (helpTitleEl) helpTitleEl.textContent = t('helpTitle');
-  if (startBtn) startBtn.textContent = t('start');
-  if (cancelBtn) cancelBtn.textContent = t('cancel');
-  if (closeHelpBtn) closeHelpBtn.textContent = t('close');
-  setBtnLabel(createFromHomeBtn, t('createFromHome'));
-  if (helpListEl) {
-    helpListEl.innerHTML = '';
-    t('helpLines').forEach((line) => {
-      const li = document.createElement('li');
-      li.textContent = line;
-      helpListEl.appendChild(li);
-    });
-  }
-  if (helpNoteEl) helpNoteEl.textContent = t('helpNote');
-  document.documentElement.dir = isRTL(currentLang) ? 'rtl' : 'ltr';
-  document.documentElement.lang = currentLang;
-  document.body.classList.toggle('rtl', isRTL(currentLang));
-
-  // Update labels in the mobile overflow menu when language changes
-  // Helper to update mobile button labels (supports both old .label and new .mobile-menu__label)
-  const updateMobileBtnLabel = (btn, key) => {
-    if (!btn) return;
-    const lbl = btn.querySelector('.mobile-menu__label') || btn.querySelector('.label');
-    if (lbl) lbl.textContent = t(key);
-    btn.title = t(key);
-  };
-  updateMobileBtnLabel(mobileHomeBtn, 'home');
-  updateMobileBtnLabel(mobileNewSketchBtn, 'newSketch');
-  updateMobileBtnLabel(mobileZoomInBtn, 'zoomIn');
-  updateMobileBtnLabel(mobileZoomOutBtn, 'zoomOut');
-  updateMobileBtnLabel(mobileSizeIncreaseBtn, 'sizeIncrease');
-  updateMobileBtnLabel(mobileSizeDecreaseBtn, 'sizeDecrease');
-  updateMobileBtnLabel(mobileExportSketchBtn, 'exportSketch');
-  updateMobileBtnLabel(mobileImportSketchBtn, 'importSketch');
-  updateMobileBtnLabel(mobileExportNodesBtn, 'exportNodes');
-  updateMobileBtnLabel(mobileExportEdgesBtn, 'exportEdges');
-  updateMobileBtnLabel(mobileSaveBtn, 'save');
-  updateMobileBtnLabel(mobileHelpBtn, 'help');
-  updateMobileBtnLabel(mobileAdminBtn, 'admin.manage');
-  updateMobileBtnLabel(mobileProjectsBtn, 'projects.title');
-  updateMobileBtnLabel(mobileFinishWorkdayBtn, 'finishWorkday.button');
-  updateMobileBtnLabel(mobileImportCoordinatesBtn, 'coordinates.import');
-  // Finish Workday desktop button
-  if (finishWorkdayBtn) {
-    const lbl = finishWorkdayBtn.querySelector('.dropdown-label');
-    if (lbl) lbl.textContent = t('finishWorkday.button');
-    finishWorkdayBtn.title = t('finishWorkday.button');
-  }
-  // Mobile autosave toggle label (supports both old .label and new .mobile-menu__label)
-  if (mobileAutosaveToggle) {
-    const parent = mobileAutosaveToggle.closest('.mobile-menu__toggle') || mobileAutosaveToggle.parentElement;
-    const lbl = parent && (parent.querySelector('.mobile-menu__label') || parent.querySelector('.label'));
-    if (lbl) lbl.textContent = t('autosave');
-  }
-  // Mobile coordinates toggle label
-  const mobileCoordinatesToggle = document.getElementById('mobileCoordinatesToggle');
-  if (mobileCoordinatesToggle) {
-    const parent = mobileCoordinatesToggle.closest('.mobile-menu__toggle');
-    const lbl = parent && parent.querySelector('.mobile-menu__label');
-    if (lbl) lbl.textContent = t('coordinates.enable');
-  }
-  // Mobile map layer toggle label
-  const mobileMapLayerToggle = document.getElementById('mobileToggleMapLayerBtn');
-  if (mobileMapLayerToggle) {
-    const lbl = mobileMapLayerToggle.querySelector('.mobile-menu__label');
-    if (lbl) lbl.textContent = t('mapLayer.enable');
-  }
-  // Mobile scale controls label
-  const mobileScaleControls = document.getElementById('mobileCoordinateScaleControls');
-  if (mobileScaleControls) {
-    const lbl = mobileScaleControls.querySelector('.mobile-menu__label');
-    if (lbl) lbl.textContent = t('coordinates.scale');
-  }
-
-  // Update desktop command menu labels (dropdown menu)
-  const commandDropdown = document.getElementById('commandDropdown');
-  if (commandDropdown) {
-    // Update aria-label
-    commandDropdown.setAttribute('aria-label', t('menu'));
-    
-    // Update the main header text
-    const headerSpans = commandDropdown.querySelectorAll('.menu-dropdown__header > span');
-    if (headerSpans.length > 1) {
-      headerSpans[1].textContent = t('menuGroup.actions');
-    }
-    
-    // Update group labels
-    const groupLabelMap = {
-      'sketch': 'menuGroup.sketch',
-      'csv': 'menuGroup.csv',
-      'workday': 'menuGroup.workday',
-      'location': 'menuGroup.location',
-      'gnss': 'menuGroup.gnss',
-    };
-    
-    Object.entries(groupLabelMap).forEach(([groupId, key]) => {
-      const group = commandDropdown.querySelector(`[data-group="${groupId}"]`);
-      if (group) {
-        const label = group.querySelector('.menu-dropdown__group-label');
-        if (label) label.textContent = t(key);
-      }
-    });
-    
-    // Update item labels within the dropdown
-    // Helper to update a dropdown item label (handles both buttons and toggles)
-    const updateDropdownItemLabel = (id, key) => {
-      const el = commandDropdown.querySelector(`#${id}`);
-      if (!el) return;
-      // For toggles (checkbox inside label), get parent label element
-      const container = el.closest('.menu-dropdown__item') || el;
-      const label = container.querySelector('.menu-dropdown__label');
-      if (label) label.textContent = t(key);
-    };
-    
-    // Button items
-    updateDropdownItemLabel('exportSketchBtn', 'exportSketch');
-    updateDropdownItemLabel('importSketchBtn', 'importSketch');
-    updateDropdownItemLabel('exportNodesBtn', 'exportNodes');
-    updateDropdownItemLabel('exportEdgesBtn', 'exportEdges');
-    updateDropdownItemLabel('finishWorkdayBtn', 'finishWorkday.button');
-    updateDropdownItemLabel('importCoordinatesBtn', 'coordinates.import');
-    
-    // Toggle items (checkbox inside label)
-    updateDropdownItemLabel('toggleCoordinatesToggle', 'coordinates.enable');
-    updateDropdownItemLabel('toggleMapLayerToggle', 'mapLayer.enable');
-    updateDropdownItemLabel('toggleLiveMeasureToggle', 'liveMeasure.enable');
-    
-    // Update coordinate scale label
-    const scaleControls = commandDropdown.querySelector('#coordinateScaleControls');
-    if (scaleControls) {
-      const label = scaleControls.querySelector('.menu-dropdown__label');
-      if (label) label.textContent = t('coordinates.scale') + ':';
-    }
-  }
-  
-  // Update command menu button title
-  const commandMenuBtn = document.getElementById('commandMenuBtn');
-  if (commandMenuBtn) {
-    commandMenuBtn.title = t('menu');
-    commandMenuBtn.setAttribute('aria-label', t('menu'));
-  }
-
-  // Update all elements with data-i18n (export dropdown .menu-dropdown__content, mobile menu, etc.)
+  // Sweep all elements with translation data-attributes
   document.querySelectorAll('[data-i18n]').forEach((el) => {
     const key = el.getAttribute('data-i18n');
     if (key) el.textContent = t(key);
   });
+  document.querySelectorAll('[data-i18n-title]').forEach((el) => {
+    el.title = t(el.dataset.i18nTitle);
+  });
+  document.querySelectorAll('[data-i18n-aria-label]').forEach((el) => {
+    el.setAttribute('aria-label', t(el.dataset.i18nAriaLabel));
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+    el.placeholder = t(el.dataset.i18nPlaceholder);
+  });
 
-  // Update edge legend alignment per language
-  renderEdgeLegend();
-  // Update labels for admin import/export buttons
-  if (adminImportBtn) {
-    const lbl = adminImportBtn.querySelector('.label');
-    if (lbl) lbl.textContent = t('admin.import');
-    adminImportBtn.title = t('admin.import');
+  // appTitle uses child spans for styled brand text — set textContent directly
+  if (appTitleEl) appTitleEl.textContent = t('appTitle');
+
+  // Canvas toolbar mode buttons: innerHTML must be reset each call to restore
+  // the Material Icon markup that applyLangToStaticUI itself previously wiped.
+  if (nodeModeBtn) {
+    nodeModeBtn.innerHTML = '<span class="material-icons" aria-hidden="true">radio_button_unchecked</span>';
   }
-  if (adminExportBtn) {
-    const lbl = adminExportBtn.querySelector('.label');
-    if (lbl) lbl.textContent = t('admin.export');
-    adminExportBtn.title = t('admin.export');
+  if (homeNodeModeBtn) {
+    homeNodeModeBtn.innerHTML = '<span class="material-icons" aria-hidden="true">home</span>';
   }
-  // Admin Screen import/export
-  if (typeof adminScreenImportBtn !== 'undefined' && adminScreenImportBtn) {
-    const lbl = adminScreenImportBtn.querySelector('.label');
-    if (lbl) lbl.textContent = t('admin.import');
-    adminScreenImportBtn.title = t('admin.import');
+  if (drainageNodeModeBtn) {
+    drainageNodeModeBtn.innerHTML = '<span class="material-icons" aria-hidden="true">water_drop</span>';
   }
-  if (typeof adminScreenExportBtn !== 'undefined' && adminScreenExportBtn) {
-    const lbl = adminScreenExportBtn.querySelector('.label');
-    if (lbl) lbl.textContent = t('admin.export');
-    adminScreenExportBtn.title = t('admin.export');
+  if (edgeModeBtn) {
+    edgeModeBtn.innerHTML = '<span class="material-icons" aria-hidden="true">timeline</span>';
   }
-  // Update admin action buttons (modal)
-  if (typeof adminCancelBtn !== 'undefined' && adminCancelBtn) {
-    adminCancelBtn.textContent = t('cancel');
-  }
-  if (typeof adminSaveBtn !== 'undefined' && adminSaveBtn) {
-    adminSaveBtn.textContent = t('admin.saveSettings');
-  }
-  // Update admin action buttons (screen)
-  if (typeof adminScreenCancelBtn !== 'undefined' && adminScreenCancelBtn) {
-    adminScreenCancelBtn.textContent = t('cancel');
-  }
-  if (typeof adminScreenSaveBtn !== 'undefined' && adminScreenSaveBtn) {
-    adminScreenSaveBtn.textContent = t('admin.saveSettings');
-  }
-  // Update search inputs
-  if (typeof searchNodeInput !== 'undefined' && searchNodeInput) {
-    searchNodeInput.placeholder = t('searchNode');
-    searchNodeInput.title = t('searchNodeTitle');
-  }
-  if (typeof mobileSearchNodeInput !== 'undefined' && mobileSearchNodeInput) {
-    mobileSearchNodeInput.placeholder = t('searchNode');
-    mobileSearchNodeInput.title = t('searchNodeTitle');
-  }
+
+  // Dynamic inputs not present in index.html (created at runtime by other modules)
   if (typeof searchAddressInput !== 'undefined' && searchAddressInput) {
     searchAddressInput.placeholder = t('searchAddress');
     searchAddressInput.title = t('searchAddressTitle');
@@ -1735,7 +1490,25 @@ function applyLangToStaticUI() {
     mobileSearchAddressInput.title = t('searchAddressTitle');
   }
 
-  // Update street view pegman labels
+  // Rebuild the help list — it is an array of translated strings, not a single key
+  if (helpListEl) {
+    helpListEl.innerHTML = '';
+    t('helpLines').forEach((line) => {
+      const li = document.createElement('li');
+      li.textContent = line;
+      helpListEl.appendChild(li);
+    });
+  }
+
+  // Apply document-level RTL/LTR direction and language tag
+  document.documentElement.dir = isRTL(currentLang) ? 'rtl' : 'ltr';
+  document.documentElement.lang = currentLang;
+  document.body.classList.toggle('rtl', isRTL(currentLang));
+
+  // Re-render edge legend (alignment depends on current language direction)
+  renderEdgeLegend();
+
+  // Update street view pegman labels (managed by an external module)
   updateStreetViewTranslations(t);
 }
 
@@ -1799,6 +1572,125 @@ function renameNodeIdInternal(oldId, newId) {
 
 
 /**
+ * Normalize legacy sketch data in-place so that both localStorage and library
+ * loaders produce identical, fully-populated node/edge objects.
+ *
+ * Node normalization:
+ *  - nodeType: case-insensitive aliases → canonical 'Manhole'|'Home'|'Covered'|'Drainage'
+ *  - Home/Drainage nodes: clear inapplicable fields, ensure directConnection default
+ *  - coverDiameter: undefined → NODE_COVER_DIAMETERS[0]; present → round(Number) or ''
+ *  - access, accuracyLevel, nodeEngineeringStatus, maintenanceStatus: coerce to Number
+ *  - id: coerce to String
+ *
+ * Edge normalization:
+ *  - material, fall_depth, fall_position, line_diameter, edge_type: set defaults
+ *  - maintenanceStatus, engineeringStatus: coerce to Number
+ *  - tail/head: String (preserving null for dangling edges)
+ *
+ * @param {Array} nodes - Node array (mutated in-place)
+ * @param {Array} edges - Edge array (mutated in-place)
+ */
+function normalizeLegacySketch(nodes, edges) {
+  nodes.forEach((node) => {
+    // --- Required scalar fields ---
+    if (node.material === undefined) node.material = NODE_MATERIALS[0];
+    if (node.type === undefined) node.type = NODE_TYPES[0];
+
+    // --- nodeType canonicalization ---
+    if (node.nodeType === undefined) node.nodeType = 'Manhole';
+    const nt = node.nodeType;
+    if (nt === 'בית' || nt === 'Home' || nt === 'B') {
+      node.nodeType = 'Home';
+    } else if (nt === 'שוחה מכוסה' || nt === 'Covered' || nt === 'C') {
+      node.nodeType = 'Covered';
+    } else if (nt === 'קולטן' || nt === 'Drainage' || nt === 'D') {
+      node.nodeType = 'Drainage';
+    } else {
+      node.nodeType = 'Manhole';
+    }
+
+    // --- Fields that are N/A for Home and Drainage nodes ---
+    if (node.nodeType === 'Home') {
+      node.material = NODE_MATERIALS[0];
+      node.coverDiameter = '';
+      node.access = '';
+      node.nodeEngineeringStatus = '';
+      node.maintenanceStatus = '';
+      if (node.directConnection === undefined) node.directConnection = false;
+    }
+    if (node.nodeType === 'Drainage') {
+      node.material = NODE_MATERIALS[0];
+      node.coverDiameter = '';
+      node.access = '';
+      node.nodeEngineeringStatus = '';
+      node.maintenanceStatus = '';
+    }
+
+    // --- coverDiameter ---
+    if (node.coverDiameter === undefined) {
+      node.coverDiameter = NODE_COVER_DIAMETERS[0];
+    } else if (node.coverDiameter !== '') {
+      const cdNum = Number(node.coverDiameter);
+      node.coverDiameter = Number.isFinite(cdNum) ? Math.round(cdNum) : '';
+    }
+
+    // --- Numeric coercions ---
+    if (node.access === undefined) node.access = 0;
+    if (typeof node.access !== 'number') {
+      const acc = Number(node.access);
+      node.access = Number.isFinite(acc) ? acc : 0;
+    }
+
+    if (node.accuracyLevel === undefined) node.accuracyLevel = 0;
+    if (typeof node.accuracyLevel !== 'number') {
+      const acl = Number(node.accuracyLevel);
+      node.accuracyLevel = Number.isFinite(acl) ? acl : 0;
+    }
+
+    if (node.nodeEngineeringStatus === undefined) node.nodeEngineeringStatus = 0;
+    if (typeof node.nodeEngineeringStatus !== 'number') {
+      const esn = Number(node.nodeEngineeringStatus);
+      node.nodeEngineeringStatus = Number.isFinite(esn) ? esn : 0;
+    }
+
+    if (node.maintenanceStatus === undefined) node.maintenanceStatus = 0;
+    if (typeof node.maintenanceStatus !== 'number') {
+      const ms = Number(node.maintenanceStatus);
+      node.maintenanceStatus = Number.isFinite(ms) ? ms : 0;
+    }
+
+    // --- id coercion ---
+    node.id = String(node.id);
+  });
+
+  edges.forEach((edge) => {
+    // --- Default scalar fields ---
+    if (edge.material === undefined) edge.material = EDGE_MATERIALS[0];
+    if (edge.fall_depth === undefined) edge.fall_depth = '';
+    if (edge.fall_position === undefined) edge.fall_position = '';
+    if (edge.line_diameter === undefined) edge.line_diameter = '';
+    if (edge.edge_type === undefined) edge.edge_type = EDGE_TYPES[0];
+
+    // --- Numeric coercions ---
+    if (edge.maintenanceStatus === undefined) edge.maintenanceStatus = 0;
+    if (typeof edge.maintenanceStatus !== 'number') {
+      const m = Number(edge.maintenanceStatus);
+      edge.maintenanceStatus = Number.isFinite(m) ? m : 0;
+    }
+
+    if (edge.engineeringStatus === undefined) edge.engineeringStatus = 0;
+    if (typeof edge.engineeringStatus !== 'number') {
+      const es = Number(edge.engineeringStatus);
+      edge.engineeringStatus = Number.isFinite(es) ? es : 0;
+    }
+
+    // --- id coercion (preserve null for dangling edges) ---
+    edge.tail = edge.tail != null ? String(edge.tail) : null;
+    edge.head = edge.head != null ? String(edge.head) : null;
+  });
+}
+
+/**
  * Load a previously saved sketch from localStorage if present.
  * Ensures required properties exist and normalizes id types, then
  * recomputes node types based on edge measurements.
@@ -1812,78 +1704,15 @@ function loadFromStorage() {
     if (!parsed || !parsed.nodes || !parsed.edges) return false;
     nodes = parsed.nodes;
     edges = parsed.edges;
+    markEdgeLabelCacheDirty(); // new sketch data loaded
     creationDate = parsed.creationDate || null;
     currentSketchId = parsed.sketchId || null;
     currentSketchName = parsed.sketchName || null;
     currentProjectId = parsed.projectId || null;
     currentInputFlowConfig = parsed.inputFlowConfig || DEFAULT_INPUT_FLOW_CONFIG;
     updateSketchNameDisplay();
-    // Ensure each node has required properties
-    nodes.forEach((node) => {
-      if (node.material === undefined) node.material = NODE_MATERIALS[0];
-      if (node.type === undefined) node.type = NODE_TYPES[0];
-      if (node.nodeType === undefined) node.nodeType = 'Manhole';
-      // Normalize legacy nodeType values to 'Manhole' | 'Home'
-      if (node.nodeType === 'בית' || node.nodeType === 'Home' || node.nodeType === 'B') node.nodeType = 'Home';
-      else node.nodeType = 'Manhole';
-      if (node.nodeType === 'Home') {
-        node.material = NODE_MATERIALS[0];
-        node.coverDiameter = '';
-        node.access = '';
-        node.nodeEngineeringStatus = '';
-        node.maintenanceStatus = '';
-      }
-      if (node.nodeType === 'Drainage') {
-        node.material = NODE_MATERIALS[0];
-        node.coverDiameter = '';
-        node.access = '';
-        node.nodeEngineeringStatus = '';
-        node.maintenanceStatus = '';
-      }
-      // Normalize cover diameter to integer or empty
-      if (node.coverDiameter === undefined) node.coverDiameter = '';
-      else {
-        const cdNum = Number(node.coverDiameter);
-        node.coverDiameter = Number.isFinite(cdNum) ? Math.round(cdNum) : '';
-      }
-      if (node.access === undefined) node.access = 0;
-      if (typeof node.access !== 'number') {
-        const acc = Number(node.access);
-        node.access = Number.isFinite(acc) ? acc : 0;
-      }
-      if (node.accuracyLevel === undefined) node.accuracyLevel = 0;
-      if (typeof node.accuracyLevel !== 'number') {
-        const acl = Number(node.accuracyLevel);
-        node.accuracyLevel = Number.isFinite(acl) ? acl : 0;
-      }
-      if (node.nodeEngineeringStatus === undefined) node.nodeEngineeringStatus = 0;
-      if (typeof node.nodeEngineeringStatus !== 'number') {
-        const esn = Number(node.nodeEngineeringStatus);
-        node.nodeEngineeringStatus = Number.isFinite(esn) ? esn : 0;
-      }
-      // convert numeric ids to strings for consistency
-      node.id = String(node.id);
-    });
-    // Ensure each edge has required properties
-    edges.forEach((edge) => {
-      if (edge.material === undefined) edge.material = EDGE_MATERIALS[0];
-      if (edge.fall_depth === undefined) edge.fall_depth = '';
-      if (edge.line_diameter === undefined) edge.line_diameter = '';
-      if (edge.edge_type === undefined) edge.edge_type = EDGE_TYPES[0];
-      if (edge.maintenanceStatus === undefined) edge.maintenanceStatus = 0;
-      if (typeof edge.maintenanceStatus !== 'number') {
-        const m = Number(edge.maintenanceStatus);
-        edge.maintenanceStatus = Number.isFinite(m) ? m : 0;
-      }
-      if (edge.engineeringStatus === undefined) edge.engineeringStatus = 0;
-      if (typeof edge.engineeringStatus !== 'number') {
-        const es = Number(edge.engineeringStatus);
-        edge.engineeringStatus = Number.isFinite(es) ? es : 0;
-      }
-      // convert ids to strings (preserve null for dangling edges)
-      edge.tail = edge.tail != null ? String(edge.tail) : null;
-      edge.head = edge.head != null ? String(edge.head) : null;
-    });
+    // Normalize nodes and edges to canonical shape (single source of truth)
+    normalizeLegacySketch(nodes, edges);
     // Recompute nextNodeId as (max numeric id among nodes) + 1
     let maxNumericId = 0;
     for (const n of nodes) {
@@ -1913,6 +1742,7 @@ function saveToStorage() {
   const username = getCurrentUsername();
   
   // Capture current state references (these are lightweight)
+  markEdgeLabelCacheDirty(); // edge/node data changed — invalidate label layout cache
   const currentNodes = nodes;
   const currentEdges = edges;
   const currentNextNodeId = nextNodeId;
@@ -2200,64 +2030,9 @@ async function loadFromLibrary(sketchId) {
   }
   nodes = rec.nodes || [];
   edges = rec.edges || [];
-  // Backward compatibility for nodes
-  nodes.forEach((node) => {
-    if (node.material === undefined) node.material = NODE_MATERIALS[0];
-    if (node.type === undefined) node.type = NODE_TYPES[0];
-    if (node.nodeType === undefined) node.nodeType = 'Manhole';
-    // Normalize legacy labels to new values
-    if (node.nodeType === 'בית' || node.nodeType === 'Home' || node.nodeType === 'B') node.nodeType = 'Home';
-    else if (node.nodeType === 'שוחה מכוסה' || node.nodeType === 'Covered' || node.nodeType === 'C') node.nodeType = 'Covered';
-    else if (node.nodeType === 'קולטן' || node.nodeType === 'Drainage' || node.nodeType === 'D') node.nodeType = 'Drainage';
-    else node.nodeType = 'Manhole';
-    if (node.nodeType === 'Home') {
-      node.material = NODE_MATERIALS[0];
-      node.coverDiameter = '';
-      node.access = '';
-      node.nodeEngineeringStatus = '';
-      node.maintenanceStatus = '';
-      if (node.directConnection === undefined) node.directConnection = false;
-    }
-    if (node.nodeType === 'Drainage') {
-      node.material = NODE_MATERIALS[0];
-      node.coverDiameter = '';
-      node.access = '';
-      node.nodeEngineeringStatus = '';
-      node.maintenanceStatus = '';
-    }
-    if (node.coverDiameter === undefined) node.coverDiameter = NODE_COVER_DIAMETERS[0];
-    if (node.maintenanceStatus === undefined) node.maintenanceStatus = 0;
-    if (typeof node.maintenanceStatus !== 'number') {
-      const parsed = Number(node.maintenanceStatus);
-      node.maintenanceStatus = Number.isFinite(parsed) ? parsed : 0;
-    }
-    if (node.access === undefined) node.access = 0;
-    if (typeof node.access !== 'number') {
-      const acc = Number(node.access);
-      node.access = Number.isFinite(acc) ? acc : 0;
-    }
-    node.id = String(node.id);
-  });
-  // Backward compatibility: ensure new fields exist
-  edges.forEach((edge) => {
-    if (edge.fall_depth === undefined) edge.fall_depth = '';
-    if (edge.fall_position === undefined) edge.fall_position = '';
-    if (edge.line_diameter === undefined) edge.line_diameter = '';
-    if (edge.edge_type === undefined) edge.edge_type = EDGE_TYPES[0];
-    if (edge.maintenanceStatus === undefined) edge.maintenanceStatus = 0;
-    if (typeof edge.maintenanceStatus !== 'number') {
-      const m = Number(edge.maintenanceStatus);
-      edge.maintenanceStatus = Number.isFinite(m) ? m : 0;
-    }
-    if (edge.engineeringStatus === undefined) edge.engineeringStatus = 0;
-    if (typeof edge.engineeringStatus !== 'number') {
-      const es = Number(edge.engineeringStatus);
-      edge.engineeringStatus = Number.isFinite(es) ? es : 0;
-    }
-    // Preserve null for dangling edges, convert valid ids to strings
-    edge.tail = edge.tail != null ? String(edge.tail) : null;
-    edge.head = edge.head != null ? String(edge.head) : null;
-  });
+  markEdgeLabelCacheDirty(); // sketch record loaded
+  // Normalize nodes and edges to canonical shape (single source of truth)
+  normalizeLegacySketch(nodes, edges);
   nextNodeId = rec.nextNodeId || 1;
   creationDate = rec.creationDate || rec.createdAt || null;
   currentSketchId = rec.id;
@@ -2976,6 +2751,7 @@ async function handleChangeProject(sketchId) {
 function newSketch(date, projectId = null, inputFlowConfig = null) {
   nodes = [];
   edges = [];
+  markEdgeLabelCacheDirty(); // sketch cleared
   nextNodeId = 1;
   selectedNode = null;
   selectedEdge = null;
@@ -3226,6 +3002,8 @@ function draw() {
   // Clear canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.save();
+  // Read devicePixelRatio once per frame (avoids 3 separate property reads per frame)
+  const dpr = window.devicePixelRatio || 1;
   
   // Draw map tiles as background layer (before grid and other elements)
   // Map layer stretches with coordinates (like the grid) to align with positions
@@ -3236,7 +3014,7 @@ function draw() {
     ctx.scale(viewScale * viewStretchX, viewScale * viewStretchY);
     // Use logical (CSS) dimensions for tile calculations since viewTranslate is in CSS pixels
     // canvas.width/height are in device pixels (CSS * devicePixelRatio)
-    const dpr = window.devicePixelRatio || 1;
+    // dpr already read at draw() top
     drawMapTiles(
       ctx, 
       canvas.width / dpr,  // Logical width
@@ -3261,7 +3039,7 @@ function draw() {
   // Draw GIS reference layers (sections, survey data, streets, addresses)
   // Drawn after grid but before edges/nodes so user data appears on top
   {
-    const dpr = window.devicePixelRatio || 1;
+    // dpr already read at draw() top
     drawReferenceLayers(
       ctx,
       coordinateScale,
@@ -3275,9 +3053,9 @@ function draw() {
   }
   
   // Compute visible world-coordinate bounds for culling (with generous margin)
-  const dprCull = window.devicePixelRatio || 1;
-  const canvasLogicalW = canvas.width / dprCull;
-  const canvasLogicalH = canvas.height / dprCull;
+  // dpr already read at draw() top; reused for logical canvas dimensions
+  const canvasLogicalW = canvas.width / dpr;
+  const canvasLogicalH = canvas.height / dpr;
   const cullMargin = 100 / viewScale; // extra margin in world coords
   const visMinX = -viewTranslate.x / viewScale - cullMargin;
   const visMinY = -viewTranslate.y / viewScale - cullMargin;
@@ -3387,54 +3165,68 @@ function draw() {
     nodeData.push({ x: sx, y: sy, radius: nodeRadius });
   }
 
-  // Collect edge label data for collision detection
-  const edgeLabelData = [];
-  edges.forEach((edge) => {
-    const tailNode = edge.tail != null ? nodeMap.get(String(edge.tail)) : undefined;
-    const headNode = edge.head != null ? nodeMap.get(String(edge.head)) : undefined;
-    if (!tailNode || !headNode) return;
+  // Collect edge label data for collision detection — cached, rebuilt only when edges change.
+  // The cache (_edgeLabelDataCache) is invalidated by markEdgeLabelCacheDirty(), which is
+  // called from saveToStorage() and whenever the edges array is replaced (load/new sketch).
+  // Also rebuilt when viewStretchX/Y or sizeScale change since positions depend on them.
+  if (
+    _edgeLabelDataCache === null ||
+    _edgeLabelCacheStretchX !== viewStretchX ||
+    _edgeLabelCacheStretchY !== viewStretchY ||
+    _edgeLabelCacheSizeScale !== sizeScale
+  ) {
+    _edgeLabelDataCache = [];
+    _edgeLabelCacheStretchX = viewStretchX;
+    _edgeLabelCacheStretchY = viewStretchY;
+    _edgeLabelCacheSizeScale = sizeScale;
+    edges.forEach((edge) => {
+      const tailNode = edge.tail != null ? nodeMap.get(String(edge.tail)) : undefined;
+      const headNode = edge.head != null ? nodeMap.get(String(edge.head)) : undefined;
+      if (!tailNode || !headNode) return;
 
-    // Apply stretch to positions for label placement
-    const x1 = tailNode.x * viewStretchX, y1 = tailNode.y * viewStretchY;
-    const x2 = headNode.x * viewStretchX, y2 = headNode.y * viewStretchY;
-    const dx = x2 - x1;
-    const dy = y2 - y1;
-    const length = Math.sqrt(dx * dx + dy * dy);
-    if (length <= 0) return;
+      // Apply stretch to positions for label placement
+      const x1 = tailNode.x * viewStretchX, y1 = tailNode.y * viewStretchY;
+      const x2 = headNode.x * viewStretchX, y2 = headNode.y * viewStretchY;
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const length = Math.sqrt(dx * dx + dy * dy);
+      if (length <= 0) return;
 
-    const normX = dx / length;
-    const normY = dy / length;
-    const offset = 6 * sizeScale;
-    const fontSize = Math.round(14 * sizeScale);
+      const normX = dx / length;
+      const normY = dy / length;
+      const offset = 6 * sizeScale;
+      const fontSize = Math.round(14 * sizeScale);
 
-    if (edge.tail_measurement) {
-      const ratio = 0.25;
-      const px = x1 + dx * ratio;
-      const py = y1 + dy * ratio;
-      const perpX = -normY * offset;
-      const perpY = normX * offset;
-      edgeLabelData.push({
-        text: String(edge.tail_measurement),
-        x: px + perpX,
-        y: py + perpY,
-        fontSize: fontSize
-      });
-    }
+      if (edge.tail_measurement) {
+        const ratio = 0.25;
+        const px = x1 + dx * ratio;
+        const py = y1 + dy * ratio;
+        const perpX = -normY * offset;
+        const perpY = normX * offset;
+        _edgeLabelDataCache.push({
+          text: String(edge.tail_measurement),
+          x: px + perpX,
+          y: py + perpY,
+          fontSize: fontSize
+        });
+      }
 
-    if (edge.head_measurement) {
-      const ratio = 0.75;
-      const px = x1 + dx * ratio;
-      const py = y1 + dy * ratio;
-      const perpX = -normY * offset;
-      const perpY = normX * offset;
-      edgeLabelData.push({
-        text: String(edge.head_measurement),
-        x: px + perpX,
-        y: py + perpY,
-        fontSize: fontSize
-      });
-    }
-  });
+      if (edge.head_measurement) {
+        const ratio = 0.75;
+        const px = x1 + dx * ratio;
+        const py = y1 + dy * ratio;
+        const perpX = -normY * offset;
+        const perpY = normX * offset;
+        _edgeLabelDataCache.push({
+          text: String(edge.head_measurement),
+          x: px + perpX,
+          y: py + perpY,
+          fontSize: fontSize
+        });
+      }
+    });
+  }
+  const edgeLabelData = _edgeLabelDataCache;
 
   // Process labels – use smart collision avoidance for small-to-medium graphs,
   // but fall back to simple positioning when there are many visible labels to
@@ -3572,7 +3364,7 @@ function ensureVirtualPadding() {
     if (sx > maxScreenX) maxScreenX = sx;
     if (sy > maxScreenY) maxScreenY = sy;
   }
-  const rect = canvas.getBoundingClientRect();
+  const rect = getCachedCanvasRect(); // cached — avoids layout flush
   let dx = 0;
   let dy = 0;
   // If content is too close to the left/top, push it to INNER margin
@@ -3592,7 +3384,7 @@ function ensureVirtualPadding() {
  * creating an infinite-canvas feel during drag operations.
  */
 function autoPanWhenDragging(screenX, screenY) {
-  const rect = canvas.getBoundingClientRect();
+  const rect = getCachedCanvasRect(); // cached — avoids layout flush during drag frames
   const EDGE = 80; // pixels from edge to start auto-pan
   const SPEED = 6; // slower speed to reduce oscillation
   let dx = 0;
@@ -8019,14 +7811,6 @@ window.addEventListener('unhandledrejection', (e) => {
   showToast('⚠️ ' + (e.reason && e.reason.message ? e.reason.message : 'Unexpected error'));
 });
 
-// Connectivity toasts are now handled in src/serviceWorker/register-sw.js.
-// Keep legacy listeners as no-ops to avoid duplicate toasts.
-window.addEventListener('online', () => {
-  /* handled in register-sw.js */
-});
-window.addEventListener('offline', () => {
-  /* handled in register-sw.js */
-});
 
 // ============================================
 // GNSS / Live Measure Mode Integration

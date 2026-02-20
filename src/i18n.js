@@ -355,7 +355,7 @@ export const i18n = {
       hasCoordinates: 'יש קואורדינטות',
       missingCoordinates: 'חסרות קואורדינטות',
       status: (matched, total) => `${matched}/${total} שוחות עם קואורדינטות`,
-      scale: 'קנה מידה',
+      scale: 'קנה מידה:',
       scaleChanged: (scale) => `קנה מידה: 1:${scale}`,
     },
     stretch: {
@@ -785,7 +785,7 @@ export const i18n = {
       hasCoordinates: 'Has coordinates',
       missingCoordinates: 'Missing coordinates',
       status: (matched, total) => `${matched}/${total} nodes with coordinates`,
-      scale: 'Scale',
+      scale: 'Scale:',
       scaleChanged: (scale) => `Scale: 1:${scale}`,
     },
     stretch: {
