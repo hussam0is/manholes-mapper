@@ -29,6 +29,7 @@
 
 // IndexedDB bridge moved to src/state/persistence.js and src/db.js
 import { restoreFromIndexedDbIfNeeded, idbSaveCurrentCompat, idbSaveRecordCompat, idbDeleteRecordCompat } from '../state/persistence.js';
+import { mountSignIn as _mountSignIn, mountSignUp as _mountSignUp } from '../auth/auth-provider.jsx';
 import { encodeUtf16LeWithBom } from '../utils/encoding.js';
 import { distanceToSegment } from '../utils/geometry.js';
 import { isNumericId, generateHomeInternalId } from '../graph/id-utils.js';
@@ -994,33 +995,15 @@ function hideAuthLoading() {
 // Mount SignIn component (Better Auth)
 function mountAuthSignIn() {
   if (!authContainer) return;
-  
-  // Dynamically import and mount the SignIn form
-  import('../auth/auth-provider.jsx').then(({ mountSignIn }) => {
-    authContainer.innerHTML = '';
-    mountSignIn(authContainer, {
-      signUpUrl: '#/signup',
-    });
-  }).catch(err => {
-    console.error('[Auth] Failed to load auth provider:', err.message);
-    authContainer.innerHTML = '<p>Failed to load sign in form</p>';
-  });
+  authContainer.innerHTML = '';
+  _mountSignIn(authContainer, { signUpUrl: '#/signup' });
 }
 
 // Mount SignUp component (Better Auth)
 function mountAuthSignUp() {
   if (!authContainer) return;
-  
-  // Dynamically import and mount the SignUp form
-  import('../auth/auth-provider.jsx').then(({ mountSignUp }) => {
-    authContainer.innerHTML = '';
-    mountSignUp(authContainer, {
-      signInUrl: '#/login',
-    });
-  }).catch(err => {
-    console.error('[Auth] Failed to load auth provider:', err.message);
-    authContainer.innerHTML = '<p>Failed to load sign up form</p>';
-  });
+  authContainer.innerHTML = '';
+  _mountSignUp(authContainer, { signInUrl: '#/login' });
 }
 
 // Update user button visibility (desktop and mobile)
