@@ -8,10 +8,11 @@ import { COLORS } from '../state/constants.js';
  */
 export function renderEdgeLegend(legendEl, edgeTypeColors) {
   if (!legendEl) return;
+  const t = window.t || ((k) => k);
   const items = [
-    { label: 'קו ראשי', color: edgeTypeColors['קו ראשי'] || '#2563eb' },
-    { label: 'קו סניקה', color: edgeTypeColors['קו סניקה'] || '#fb923c' },
-    { label: 'קו משני', color: edgeTypeColors['קו משני'] || '#0d9488' },
+    { label: t('labels.edgeTypePrimary'), color: edgeTypeColors['קו ראשי'] || '#2563eb' },
+    { label: t('labels.edgeTypeDrainage'), color: edgeTypeColors['קו סניקה'] || '#fb923c' },
+    { label: t('labels.edgeTypeSecondary'), color: edgeTypeColors['קו משני'] || '#0d9488' },
   ];
   legendEl.innerHTML = items
     .map((i) => `<span class="item"><span class="swatch" style="background:${i.color}"></span>${i.label}</span>`) 

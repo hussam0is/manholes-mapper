@@ -578,6 +578,8 @@ function initMobileMenuBehavior() {
   // Close on backdrop click
   if (backdrop) {
     backdrop.addEventListener('click', closeMobileMenu);
+    // Prevent touch events from reaching the canvas behind the backdrop
+    backdrop.addEventListener('touchmove', (e) => { e.preventDefault(); e.stopPropagation(); }, { passive: false });
   }
 
   // Close on escape key

@@ -2314,7 +2314,15 @@ function renderHome() {
       return rec.isOwner === false; // Organization sketches (not owned by current user)
     }
   });
-  
+
+  // Stable sort: newest updated first, then by ID as tiebreaker
+  filteredLib.sort((a, b) => {
+    const aTime = new Date(a.updatedAt || a.createdAt || 0).getTime();
+    const bTime = new Date(b.updatedAt || b.createdAt || 0).getTime();
+    if (bTime !== aTime) return bTime - aTime;
+    return (a.id || '').localeCompare(b.id || '');
+  });
+
   sketchListEl.innerHTML = '';
 
   // Show loading spinner while syncing and list is empty
@@ -2517,12 +2525,12 @@ async function renderProjectsHome() {
   homePanel.style.display = 'flex';
 
   // Update title
-  if (homeTitleEl) homeTitleEl.textContent = t('projects.homepage.title') || 'Projects';
+  if (homeTitleEl) homeTitleEl.textContent = t('projectsTitle');
 
   sketchListEl.innerHTML = `
     <div class="sketch-list-loading">
       <span class="material-icons spin">sync</span>
-      <span>${t('projects.canvas.loading') || 'Loading projects...'}</span>
+      <span>${t('projectsLoading')}</span>
     </div>`;
 
   try {
