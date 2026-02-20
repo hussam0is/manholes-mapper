@@ -17,10 +17,11 @@ import {
   getSketchesMetaByOrganization,
   createSketch,
   ensureDb,
+  sql,
   getProjectById,
   getOrCreateUser
 } from '../_lib/db.js';
-import { validateSketchInput } from '../_lib/validators.js';
+import { validateSketchInput, validateUUID } from '../_lib/validators.js';
 import { applyRateLimit } from '../_lib/rate-limit.js';
 
 export const config = { runtime: 'nodejs' };
@@ -120,7 +121,42 @@ export default async function handler(req, res) {
 
     if (req.method === 'POST') {
       const body = await parseBody(request);
-      
+
+      // Handle assign-orphans action
+      if (body.action === 'assign-orphans') {
+        const { projectId } = body;
+        if (!projectId || !validateUUID(projectId)) {
+          return res.status(400).json({ error: 'Valid projectId is required' });
+        }
+        const currentUser = await getOrCreateUser(userId, {
+          username: authUser?.name, email: authUser?.email,
+        });
+        const userRole = currentUser?.role || 'user';
+        const userOrgId = currentUser?.organization_id;
+        if (userRole !== 'admin' && userRole !== 'super_admin') {
+          return res.status(403).json({ error: 'Admin access required' });
+        }
+        if (!userOrgId) {
+          return res.status(400).json({ error: 'User has no organization' });
+        }
+        const project = await getProjectById(projectId);
+        if (!project || project.organization_id !== userOrgId) {
+          return res.status(404).json({ error: 'Project not found in your organization' });
+        }
+        const result = await sql`
+          UPDATE sketches s
+          SET project_id = ${projectId}
+          FROM users u
+          WHERE s.user_id = u.id
+            AND s.project_id IS NULL
+            AND u.organization_id = ${userOrgId}
+          RETURNING s.id
+        `;
+        const assignedCount = result.rows?.length || 0;
+        console.debug(`[API /api/sketches] Assigned ${assignedCount} orphaned sketches to project ${projectId}`);
+        return res.status(200).json({ assignedCount });
+      }
+
       // Validate input
       const validationErrors = validateSketchInput(body);
       if (validationErrors) {

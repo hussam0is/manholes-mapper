@@ -186,11 +186,11 @@ export class ProjectsSettings {
         const projectId = banner.querySelector('#orphanTargetProject')?.value;
         if (!projectId) return;
         try {
-          const resp = await fetch('/api/sketches/assign-project', {
+          const resp = await fetch('/api/sketches', {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ projectId })
+            body: JSON.stringify({ action: 'assign-orphans', projectId })
           });
           if (!resp.ok) {
             const err = await resp.json();
