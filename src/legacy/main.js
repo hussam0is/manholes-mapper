@@ -113,6 +113,7 @@ import {
 import { menuEvents } from '../menu/menu-events.js';
 import { tsc3Connection } from '../survey/tsc3-connection-manager.js';
 import { initSurveyNodeTypeDialog, openSurveyNodeTypeDialog } from '../survey/survey-node-type-dialog.js';
+import { openDevicePickerDialog } from '../survey/device-picker-dialog.js';
 import {
   loadProjectSketches,
   getBackgroundSketches,
@@ -8240,6 +8241,15 @@ tsc3Connection._onPointUpdate = (pointName, coords, isNew, nodeType) => {
   handleTSC3PointReceived(pointName, coords, isNew, nodeType);
 };
 
+// Wire persistent connection state badge — shows a green Bluetooth icon while
+// a TSC3 survey device is connected; hides automatically on disconnect.
+tsc3Connection.onConnectionChange = ({ connected, name }) => {
+  const badge = document.getElementById('surveyConnectionBadge');
+  if (!badge) return;
+  badge.style.display = connected ? 'flex' : 'none';
+  badge.title = connected && name ? name : '';
+};
+
 /**
  * Handle an incoming survey point from the TSC3 connection manager.
  * @param {string} pointName - Point name/ID
@@ -8251,8 +8261,9 @@ function handleTSC3PointReceived(pointName, coords, isNew, nodeType) {
   let node;
 
   if (isNew) {
-    // Create a new node at a default canvas position
-    node = createNode(400, 300);
+    // Create a new node at canvas center; applyCoordinatesIfEnabled() will immediately
+    // reposition it to the correct world coordinates once the survey data is applied below.
+    node = createNode(canvas.width / 2, canvas.height / 2);
     // Override the auto-generated ID with the survey point name
     node.id = String(pointName);
     node.nodeType = nodeType || 'Manhole';
@@ -8307,20 +8318,19 @@ menuEvents.on('connectSurveyBluetooth', async () => {
   const surveyDevices = devices.filter(d => d.isSurvey);
 
   if (surveyDevices.length === 1) {
-    // Auto-connect to the only survey device
+    // Auto-connect when exactly one survey device is available.
     showToast(t('survey.connecting') || 'Connecting...');
     await tsc3Connection.connectBluetooth(surveyDevices[0].address);
   } else if (devices.length > 0) {
-    // Show a simple picker via prompt
-    const names = devices.map((d, i) => `${i + 1}. ${d.name}`).join('\n');
-    const choice = prompt(`${t('survey.connectBluetooth') || 'Select device'}:\n${names}`);
-    const idx = parseInt(choice, 10) - 1;
-    if (idx >= 0 && idx < devices.length) {
+    // Show a touch-friendly modal picker — window.prompt() is broken on
+    // Android WebView / Capacitor.
+    const chosen = await openDevicePickerDialog(devices, t);
+    if (chosen) {
       showToast(t('survey.connecting') || 'Connecting...');
-      await tsc3Connection.connectBluetooth(devices[idx].address);
+      await tsc3Connection.connectBluetooth(chosen.address);
     }
   } else {
-    showToast(t('survey.error') || 'No paired devices found');
+    showToast(t('survey.noDevicesFound') || 'No devices found');
   }
 });
 

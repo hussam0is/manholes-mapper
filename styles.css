@@ -8860,3 +8860,33 @@ button:focus-visible,
     background: rgba(37, 99, 235, 0.2);
   }
 }
+
+/* ── Survey connection status badge ─────────────────────────────────── */
+/*
+ * Shown inside #canvasContainer (position: relative) when a TSC3 survey
+ * device is connected. Placed at the inline-start corner (visual right in
+ * RTL Hebrew, visual left in LTR) to avoid overlapping the canvas toolbar
+ * which occupies the physical-right / inline-end corner.
+ */
+.survey-connection-badge {
+  position: absolute;
+  top: 12px;
+  inset-inline-start: 12px;
+  z-index: 150;
+  display: flex;
+  align-items: center;
+  padding: 5px 9px;
+  border-radius: 16px;
+  background: var(--color-success);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  /* smooth fade-in / fade-out */
+  opacity: 1;
+  transition: opacity 0.25s ease;
+}
+
+.survey-connection-badge .material-icons {
+  font-size: 18px;
+  line-height: 1;
+}

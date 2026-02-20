@@ -131,6 +131,34 @@ describe('tsc3-parser', () => {
     it('should handle lines with fewer than 3 fields', () => {
       expect(parseSurveyLine('1,182456')).toBeNull();
     });
+
+    it('should return null when easting is outside ITM range', () => {
+      // Easting 99999 is below the 100,000 floor — typical Bluetooth noise value
+      expect(parseSurveyLine('MH1,99999,654321.123,45.67')).toBeNull();
+      // Easting 300001 is above the 300,000 ceiling
+      expect(parseSurveyLine('MH2,300001,654321.123,45.67')).toBeNull();
+    });
+
+    it('should return null when northing is outside ITM range', () => {
+      // Northing 399999 is below the 400,000 floor
+      expect(parseSurveyLine('MH3,182456.789,399999,45.67')).toBeNull();
+      // Northing 800001 is above the 800,000 ceiling
+      expect(parseSurveyLine('MH4,182456.789,800001,45.67')).toBeNull();
+    });
+
+    it('should accept coordinates exactly at ITM boundary values', () => {
+      // Lower easting boundary with valid northing
+      const low = parseSurveyLine('BL1,100000,400000,0');
+      expect(low).not.toBeNull();
+      expect(low!.easting).toBe(100000);
+      expect(low!.northing).toBe(400000);
+
+      // Upper easting boundary with valid northing
+      const high = parseSurveyLine('BH1,300000,800000,0');
+      expect(high).not.toBeNull();
+      expect(high!.easting).toBe(300000);
+      expect(high!.northing).toBe(800000);
+    });
   });
 
   describe('processDataChunk', () => {

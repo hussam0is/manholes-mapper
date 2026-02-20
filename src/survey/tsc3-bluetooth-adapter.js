@@ -1,7 +1,7 @@
 /**
  * TSC3 Bluetooth SPP Adapter
  * Connects to a Trimble TSC3 controller via Bluetooth Serial Port Profile.
- * Uses the same Capacitor plugin as the GNSS bluetooth adapter.
+ * Uses @e-is/capacitor-bluetooth-serial plugin for native Bluetooth access.
  */
 
 import { processDataChunk, createParserState } from './tsc3-parser.js';
@@ -39,7 +39,7 @@ export class TSC3BluetoothAdapter {
     this.parserState = createParserState();
     this.isConnected = false;
     this.connectedDevice = null;
-    this.dataSubscription = null;
+    this.listenerHandle = null;
 
     // Callbacks
     this.onPoint = null;
@@ -51,6 +51,27 @@ export class TSC3BluetoothAdapter {
   async init() {
     this.plugin = await getBluetoothPlugin();
     return this.plugin !== null;
+  }
+
+  /**
+   * Check and request Android 12+ Bluetooth runtime permissions (BLUETOOTH_CONNECT,
+   * BLUETOOTH_SCAN). On API < 31 or in web browsers the plugin won't expose these
+   * methods, so we fall through optimistically instead of blocking.
+   * @returns {Promise<boolean>} True if permissions are granted (or not applicable).
+   */
+  async ensurePermissions() {
+    if (!this.plugin) await this.init();
+    if (!this.plugin) return false;
+    try {
+      const status = await this.plugin.checkPermissions();
+      if (status.bluetooth === 'granted' || status.connect === 'granted') return true;
+      const result = await this.plugin.requestPermissions();
+      return result.bluetooth === 'granted' || result.connect === 'granted';
+    } catch (e) {
+      // Plugin version or platform doesn't support permission methods — continue optimistically
+      console.warn('[TSC3] Permission check not supported:', e.message);
+      return true;
+    }
   }
 
   async isAvailable() {
@@ -66,17 +87,24 @@ export class TSC3BluetoothAdapter {
   }
 
   /**
-   * Get paired devices, filtered for likely TSC3/survey controllers.
+   * Get paired/bonded devices, filtered for likely TSC3/survey controllers.
+   * Uses list() rather than scan() to avoid active discovery — faster and
+   * requires only BLUETOOTH_CONNECT permission (matches GNSS adapter pattern).
    * @returns {Promise<Array<{name: string, address: string, isSurvey: boolean}>>}
    */
   async getPairedDevices() {
     if (!this.plugin) await this.init();
     if (!this.plugin) return [];
+    const permitted = await this.ensurePermissions();
+    if (!permitted) {
+      console.warn('[TSC3] Bluetooth permissions denied — cannot list paired devices');
+      return [];
+    }
     try {
       const { devices } = await this.plugin.list();
       return devices.map(device => ({
         name: device.name || 'Unknown Device',
-        address: device.address,
+        address: device.address || device.id,
         isSurvey: /trimble|tsc|survey/i.test(device.name || ''),
       }));
     } catch (e) {
@@ -96,6 +124,13 @@ export class TSC3BluetoothAdapter {
       if (this.onError) this.onError(new Error('Bluetooth not available'));
       return false;
     }
+    const permitted = await this.ensurePermissions();
+    if (!permitted) {
+      const err = new Error('Bluetooth permissions denied');
+      console.warn('[TSC3]', err.message);
+      if (this.onError) this.onError(err);
+      return false;
+    }
 
     try {
       if (this.isConnected) await this.disconnect();
@@ -105,14 +140,17 @@ export class TSC3BluetoothAdapter {
       this.connectedDevice = address;
       this.parserState = createParserState();
 
-      this.dataSubscription = await this.plugin.registerDataListener(
-        (data) => this._handleData(data),
-        (error) => this._handleError(error)
-      );
+      // Start receiving data via notifications with newline delimiter
+      await this.plugin.startNotifications({ address, delimiter: '\n' });
+
+      // Listen for incoming data
+      this.listenerHandle = await this.plugin.addListener('onRead', (result) => {
+        this._handleData(result);
+      });
 
       if (this.onConnect) {
         const devices = await this.getPairedDevices();
-        const device = devices.find(d => d.address === address);
+        const device = devices.find(d => (d.address || d.id) === address);
         this.onConnect({ name: device?.name || 'Unknown', address });
       }
 
@@ -126,12 +164,18 @@ export class TSC3BluetoothAdapter {
 
   async disconnect() {
     if (!this.plugin || !this.isConnected) return;
+    const address = this.connectedDevice;
     try {
-      if (this.dataSubscription) {
-        await this.dataSubscription.remove();
-        this.dataSubscription = null;
+      if (address) {
+        await this.plugin.stopNotifications({ address });
       }
-      await this.plugin.disconnect();
+      if (this.listenerHandle) {
+        await this.listenerHandle.remove();
+        this.listenerHandle = null;
+      }
+      if (address) {
+        await this.plugin.disconnect({ address });
+      }
     } catch (e) {
       console.warn('[TSC3] Disconnect error:', e.message);
     }
@@ -147,12 +191,6 @@ export class TSC3BluetoothAdapter {
     for (const point of points) {
       if (this.onPoint) this.onPoint(point);
     }
-  }
-
-  _handleError(error) {
-    console.error('[TSC3] Bluetooth error:', error.message);
-    if (this.onError) this.onError(error);
-    this.disconnect();
   }
 
   getIsConnected() {

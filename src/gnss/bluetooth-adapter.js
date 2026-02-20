@@ -70,6 +70,27 @@ export class BluetoothAdapter {
   }
 
   /**
+   * Check and request Android 12+ Bluetooth runtime permissions (BLUETOOTH_CONNECT,
+   * BLUETOOTH_SCAN). On API < 31 or in web browsers the plugin won't expose these
+   * methods, so we fall through optimistically instead of blocking.
+   * @returns {Promise<boolean>} True if permissions are granted (or not applicable).
+   */
+  async ensurePermissions() {
+    if (!this.plugin) await this.init();
+    if (!this.plugin) return false;
+    try {
+      const status = await this.plugin.checkPermissions();
+      if (status.bluetooth === 'granted' || status.connect === 'granted') return true;
+      const result = await this.plugin.requestPermissions();
+      return result.bluetooth === 'granted' || result.connect === 'granted';
+    } catch (e) {
+      // Plugin version or platform doesn't support permission methods — continue optimistically
+      console.warn('[GNSS] Permission check not supported:', e.message);
+      return true;
+    }
+  }
+
+  /**
    * Check if Bluetooth is available and enabled
    * @returns {Promise<boolean>}
    */
@@ -122,6 +143,12 @@ export class BluetoothAdapter {
       return [];
     }
 
+    const permitted = await this.ensurePermissions();
+    if (!permitted) {
+      console.warn('[GNSS] Bluetooth permissions denied — cannot list paired devices');
+      return [];
+    }
+
     try {
       const { devices } = await this.plugin.list();
       // Filter for likely GNSS receivers (Trimble devices)
@@ -150,6 +177,16 @@ export class BluetoothAdapter {
     if (!this.plugin) {
       if (this.onError) {
         this.onError(new Error('Bluetooth not available'));
+      }
+      return false;
+    }
+
+    const permitted = await this.ensurePermissions();
+    if (!permitted) {
+      const err = new Error('Bluetooth permissions denied');
+      console.warn('[GNSS]', err.message);
+      if (this.onError) {
+        this.onError(err);
       }
       return false;
     }

@@ -433,6 +433,8 @@ export const i18n = {
       pointCreated: (type, id) => `נוצר ${type} ${id}`,
       newPointTitle: 'נקודת מדידה חדשה',
       newPointDesc: (name) => `נקודה "${name}" לא נמצאה. בחר סוג:`,
+      selectDevice: 'בחר מכשיר',
+      noDevicesFound: 'לא נמצאו מכשירים',
     },
   },
   en: {
@@ -868,6 +870,8 @@ export const i18n = {
       pointCreated: (type, id) => `Created ${type} ${id}`,
       newPointTitle: 'New Survey Point',
       newPointDesc: (name) => `Point "${name}" not found. Choose node type:`,
+      selectDevice: 'Select Device',
+      noDevicesFound: 'No devices found',
     },
   },
 };

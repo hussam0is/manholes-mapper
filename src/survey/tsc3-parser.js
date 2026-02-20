@@ -66,21 +66,28 @@ export function parseSurveyLine(line) {
 
   const format = detectFormat(num1, num2);
 
+  let easting, northing;
   if (format === 'NEN') {
-    return {
-      pointName: name,
-      easting: num1,
-      northing: num2,
-      elevation: isNaN(num3) ? 0 : num3,
-    };
+    easting = num1;
+    northing = num2;
   } else {
-    return {
-      pointName: name,
-      easting: num2,
-      northing: num1,
-      elevation: isNaN(num3) ? 0 : num3,
-    };
+    easting = num2;
+    northing = num1;
   }
+
+  // Validate ITM coordinate ranges — reject Bluetooth noise that produces nonsensical values.
+  // ITM easting: 100,000–300,000 | northing: 400,000–800,000 | elevation: -500–2,000
+  if (easting < 100000 || easting > 300000 ||
+      northing < 400000 || northing > 800000) {
+    return null;
+  }
+
+  return {
+    pointName: name,
+    easting,
+    northing,
+    elevation: isNaN(num3) ? 0 : num3,
+  };
 }
 
 /**
