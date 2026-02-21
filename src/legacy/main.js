@@ -2448,8 +2448,15 @@ function renderHome() {
   }
 }
 
-// Expose renderHome to window so sync-service can trigger a re-render after fetching sketches
-window.renderHome = renderHome;
+// Expose renderHome to window so sync-service can trigger a re-render after fetching sketches.
+// refreshHomePanel respects the current home mode (projects vs sketches).
+window.renderHome = function () {
+  if (homeMode === 'projects') {
+    renderProjectsHome();
+  } else {
+    renderHome();
+  }
+};
 
 // ── Project Canvas Mode: active sketch getter/setter ──────────────────────
 
