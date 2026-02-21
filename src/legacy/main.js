@@ -2230,18 +2230,27 @@ function formatTimeAgo(date) {
 if (window.syncService?.onSyncStateChange) {
   window.syncService.onSyncStateChange((state) => {
     updateSyncStatusUI(state);
-    // Re-render sketch list when sync completes while home panel is visible
+    // Re-render home panel when sync completes while it is visible
     if (homePanel && homePanel.style.display === 'flex') {
-      renderHome();
+      if (homeMode === 'projects') {
+        renderProjectsHome();
+      } else {
+        renderHome();
+      }
     }
   });
 }
 
 // Track the current sketch tab (personal or organization)
 let currentSketchTab = 'personal';
+// Track which home mode is active: 'projects' or 'sketches'
+let homeMode = 'projects';
 
 function renderHome() {
   if (!homePanel || !sketchListEl) return;
+  homeMode = 'sketches';
+  // Reset title to "My Sketches" (renderProjectsHome may have changed it)
+  if (homeTitleEl) homeTitleEl.textContent = t('homeTitle');
   startPanel.style.display = 'none';
   homePanel.classList.remove('panel-closing');
   homePanel.style.display = 'flex';
@@ -2508,6 +2517,8 @@ async function renderProjectsHome() {
     renderHome();
     return;
   }
+
+  homeMode = 'projects';
 
   // Show the home panel with loading state
   startPanel.style.display = 'none';
