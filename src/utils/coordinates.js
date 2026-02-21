@@ -641,3 +641,113 @@ export function loadCoordinatesEnabled() {
     return false;
   }
 }
+
+/**
+ * Extract ITM coordinates from a node's embedded properties.
+ * Checks surveyX/Y, itmEasting/itmNorthing, and lat/lon (converting via wgs84ToItm).
+ * @param {Object} node - Node object
+ * @param {Function} wgs84ToItm - Conversion function (lat, lon) => {x, y}
+ * @returns {{surveyX: number, surveyY: number}|null}
+ */
+export function extractNodeItmCoordinates(node, wgs84ToItm) {
+  // 1. surveyX / surveyY (already ITM)
+  if (node.surveyX != null && node.surveyY != null) {
+    const x = Number(node.surveyX);
+    const y = Number(node.surveyY);
+    if (Number.isFinite(x) && Number.isFinite(y)) return { surveyX: x, surveyY: y };
+  }
+  // 2. itmEasting / itmNorthing
+  if (node.itmEasting != null && node.itmNorthing != null) {
+    const x = Number(node.itmEasting);
+    const y = Number(node.itmNorthing);
+    if (Number.isFinite(x) && Number.isFinite(y)) return { surveyX: x, surveyY: y };
+  }
+  // 3. lat / lon → convert to ITM
+  if (node.lat != null && node.lon != null && typeof wgs84ToItm === 'function') {
+    const lat = Number(node.lat);
+    const lon = Number(node.lon);
+    if (Number.isFinite(lat) && Number.isFinite(lon) && lat !== 0 && lon !== 0) {
+      const itm = wgs84ToItm(lat, lon);
+      if (itm && Number.isFinite(itm.x) && Number.isFinite(itm.y)) {
+        return { surveyX: itm.x, surveyY: itm.y };
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Classify nodes in a sketch by whether they have embeddded geographic coordinates.
+ * @param {Array} nodes - Array of node objects
+ * @param {Function} wgs84ToItm - Conversion function (lat, lon) => {x, y}
+ * @returns {{withCoords: number, withoutCoords: number, total: number}}
+ */
+export function classifySketchCoordinates(nodes, wgs84ToItm) {
+  let withCoords = 0;
+  let withoutCoords = 0;
+  for (const node of nodes) {
+    if (extractNodeItmCoordinates(node, wgs84ToItm)) {
+      withCoords++;
+    } else {
+      withoutCoords++;
+    }
+  }
+  return { withCoords, withoutCoords, total: nodes.length };
+}
+
+/**
+ * Reposition nodes that have embedded geographic coordinates to correct canvas
+ * positions using ITM→canvas transform. Nodes without coordinates get `_hidden = true`.
+ *
+ * @param {Array} nodes - Array of node objects (mutated in place)
+ * @param {number} coordinateScale - Pixels per meter
+ * @param {number} canvasWidth - Logical canvas width
+ * @param {number} canvasHeight - Logical canvas height
+ * @param {Function} wgs84ToItm - Conversion function (lat, lon) => {x, y}
+ * @returns {{referencePoint: {itm: {x,y}, canvas: {x,y}}|null}} - The computed reference point
+ */
+export function repositionNodesFromEmbeddedCoordinates(nodes, coordinateScale, canvasWidth, canvasHeight, wgs84ToItm) {
+  // 1. Extract ITM coords for every node that has them
+  const coordinated = []; // [{node, surveyX, surveyY}]
+  for (const node of nodes) {
+    const itm = extractNodeItmCoordinates(node, wgs84ToItm);
+    if (itm) {
+      coordinated.push({ node, ...itm });
+    } else {
+      node._hidden = true;
+    }
+  }
+
+  if (coordinated.length === 0) return { referencePoint: null };
+
+  // 2. Calculate ITM bounds
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const { surveyX, surveyY } of coordinated) {
+    if (surveyX < minX) minX = surveyX;
+    if (surveyX > maxX) maxX = surveyX;
+    if (surveyY < minY) minY = surveyY;
+    if (surveyY > maxY) maxY = surveyY;
+  }
+  const bounds = { minX, maxX, minY, maxY };
+
+  // 3. Position each coordinated node via surveyToCanvas
+  for (const { node, surveyX, surveyY } of coordinated) {
+    const pos = surveyToCanvas(surveyX, surveyY, bounds, canvasWidth, canvasHeight, { pixelsPerMeter: coordinateScale });
+    node.x = pos.x;
+    node.y = pos.y;
+    node.surveyX = surveyX;
+    node.surveyY = surveyY;
+    node.hasCoordinates = true;
+    node._hidden = false;
+  }
+
+  // 4. Build a reference point from the first coordinated node
+  const first = coordinated[0];
+  const referencePoint = {
+    itm: { x: first.surveyX, y: first.surveyY },
+    canvas: { x: first.node.x, y: first.node.y }
+  };
+
+  console.debug(`[Coordinates] Repositioned ${coordinated.length} nodes from embedded coordinates, ${nodes.length - coordinated.length} hidden`);
+  return { referencePoint };
+}

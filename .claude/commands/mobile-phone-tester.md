@@ -41,7 +41,7 @@ After code changes:
    # Wait ~1 minute for production build
    ```
 4. **Bump service worker version** if code in non-hashed files changed (e.g., `main.js`):
-   - Edit `public/service-worker.js`: increment `APP_VERSION` (e.g., `'v14'` → `'v15'`)
+   - Edit `public/service-worker.js`: increment `APP_VERSION` (e.g., `'v26'` → `'v27'`)
    - Commit and push, then promote again
    - Without this, phones serve stale-while-revalidate cached JS indefinitely
 5. Navigate phone to production URL, take screenshot to verify new code is running
@@ -82,7 +82,7 @@ The app uses hash-based SPA routing (`window.handleRoute()`). No React Router.
 - **Static strings:** `data-i18n="key"` attributes in HTML
 
 ### PWA / Service Worker
-- **Service Worker:** `public/service-worker.js`, version `v14` (bump this to force cache refresh on phones)
+- **Service Worker:** `public/service-worker.js`, version `v26` (bump this to force cache refresh on phones)
 - **Cache strategy:** Shell = cache-first, API = skip (no cache), Navigation = network-first, `/assets/*` = cache-first, other same-origin GET = stale-while-revalidate
 - **Offline:** Canvas drawing works fully offline (localStorage/IndexedDB). API calls fail gracefully.
 - **Manifest:** `display: standalone`, `theme_color: #2563eb`, `start_url: .`
@@ -96,7 +96,7 @@ The app uses hash-based SPA routing (`window.handleRoute()`). No React Router.
 ### External Services
 - `server.arcgisonline.com` — map tiles (Esri Orthophoto/Street)
 - `tile.openstreetmap.org` — fallback tiles
-- `fonts.googleapis.com` — Material Icons + Inter font
+- `fonts.googleapis.com` — Inter font (Material Icons are self-hosted at `public/fonts/material-icons.woff2` due to CSP)
 - Neon PostgreSQL — backend database (via Vercel serverless)
 
 ---
@@ -414,6 +414,15 @@ When an email field gains focus, Chrome may show saved email chips above the key
 | `#mobileAdminBtn` | Admin settings | Settings |
 | `#mobileProjectsBtn` | Projects | Settings |
 
+**Survey Device group (TSC3):**
+| Selector | Element | Notes |
+|----------|---------|-------|
+| `[data-action="connectSurveyBluetooth"]` | Connect Bluetooth | Opens device picker dialog or auto-connects |
+| `[data-action="connectSurveyWebSocket"]` | Connect WebSocket | Prompts for host:port |
+| `#mobileDisconnectSurveyBtn` | Disconnect survey device | `data-action="disconnectSurvey"` |
+| `#surveyConnectionBadge` | Green BT badge (canvas overlay) | Shows while connected, hides on disconnect |
+| `#devicePickerDialog` | Device picker modal | Created dynamically by `device-picker-dialog.js` |
+
 **Overlay panels (initially `display: none`):**
 | ID | Panel | Trigger |
 |----|-------|---------|
@@ -567,7 +576,135 @@ adb logcat -d | grep -iE "GnssEngine|isMock|accuracy" | tail -10
 
 ---
 
+## Phase 3B: Survey Device (TSC3) Testing
+
+### Overview
+
+The TSC3 (Trimble Survey Controller 3) connection enables importing survey points directly from a Trimble controller via **Bluetooth SPP** (Serial Port Profile) or **WebSocket bridge**. Survey points are streamed as CSV lines, parsed, and matched to existing canvas nodes or placed as new nodes.
+
+### Architecture
+
+```
+TSC3 Controller → Bluetooth SPP → tsc3-bluetooth-adapter.js → tsc3-parser.js → tsc3-connection-manager.js → main.js
+                  (or WebSocket)   tsc3-websocket-adapter.js ↗
+```
+
+**Key files:**
+| File | Purpose |
+|------|---------|
+| `src/survey/tsc3-bluetooth-adapter.js` | Capacitor Bluetooth SPP adapter. Uses `list()` for paired devices. Requests runtime BT permissions on Android 12+. |
+| `src/survey/tsc3-websocket-adapter.js` | WebSocket bridge adapter. Auto-detects `wss://` on HTTPS. Reconnects with exponential backoff (5 attempts). |
+| `src/survey/tsc3-parser.js` | Streaming CSV parser. Auto-detects delimiter (comma/tab/space) and column order (NEN vs NNE). Validates ITM coordinate ranges (E: 100k–300k, N: 375k–800k). |
+| `src/survey/tsc3-connection-manager.js` | Singleton orchestrator. Matches incoming points to existing nodes, queues points while dialog is open. |
+| `src/survey/survey-node-type-dialog.js` | Modal for choosing node type (Manhole/Home/Drainage) when a new survey point arrives. |
+| `src/survey/device-picker-dialog.js` | Touch-friendly device picker dialog (replaces broken `window.prompt()`). |
+
+### Test: Connect Bluetooth (Capacitor only)
+
+**NOTE:** Bluetooth connection only works in the **Capacitor native app** (`com.geopoint.manholemapper`), NOT in Chrome browser. The `@e-is/capacitor-bluetooth-serial` plugin has no web implementation.
+
+1. Open a sketch on the phone (must be the Capacitor app, not Chrome)
+2. Open the mobile menu
+3. Scroll to "Survey Device" (מכשיר מדידה) group
+4. Tap **"Connect Bluetooth"** (חיבור Bluetooth)
+5. **Expected flow:**
+   - App requests Bluetooth runtime permissions (Android 12+ — BLUETOOTH_CONNECT, BLUETOOTH_SCAN)
+   - Fetches paired devices via `BluetoothSerial.list()` (bonded devices only, no scanning)
+   - If **1 survey device** found: auto-connects
+   - If **2+ devices** found: opens device picker dialog (touch-friendly modal with tappable device buttons)
+   - If **0 devices** found: shows toast "No paired devices found"
+6. On successful connect:
+   - Toast: "Connected to [device name]"
+   - Green Bluetooth badge (`#surveyConnectionBadge`) appears on canvas
+   - Survey data streams start being parsed and dispatched
+
+### Test: Connect WebSocket
+
+WebSocket works in **both Chrome and Capacitor** — useful for development and testing.
+
+1. Start a WebSocket bridge on a PC (e.g., `android-bridge/` Node.js app)
+2. Open the mobile menu → Survey Device → **"Connect WebSocket"**
+3. Enter host:port in the prompt (e.g., `192.168.1.100:8765`)
+4. **Expected:** Connects via `wss://` on HTTPS pages or `ws://` on HTTP. Shows connected toast + green badge.
+5. **Reconnect:** If connection drops, auto-reconnects up to 5 times with exponential backoff (1s, 2s, 4s, 8s, 16s)
+
+### Test: Incoming Survey Points
+
+When connected (via BT or WS):
+
+1. Send a CSV line from the TSC3: `1,178000.000,650000.000,100.000`
+2. **Expected:** Node-type dialog appears asking Manhole/Home/Drainage
+3. Choose a type → new node created on canvas at center of viewport
+4. Send another line with same point name: `1,178000.100,650000.100,100.100`
+5. **Expected:** Coordinates updated silently (no dialog, existing node matched by ID + `hasCoordinates` flag)
+6. Send a different point: `2,178001.000,650001.000,99.000`
+7. **Expected:** New dialog for point 2
+
+**Point queue test:** Send 3 rapid points while dialog is open. After closing dialog for point 1, the dialog should open for point 2, then point 3.
+
+**ID collision guard:** If a manually-created node already has ID "1" but `hasCoordinates === false`, the survey system creates a new node with prefixed ID `S-1` rather than overwriting.
+
+**Coordinate validation:** Points with easting/northing outside ITM range (E: 100k–300k, N: 375k–800k) are rejected by the parser.
+
+### Test: Disconnect
+
+1. Open mobile menu → Survey Device → **"Disconnect"** (נתק מכשיר)
+2. **Expected:** Toast "Survey device disconnected", green badge disappears
+3. Point queue is cleared
+
+### Test: Connection Badge
+
+- Badge element: `#surveyConnectionBadge` (canvas overlay, `position: fixed`)
+- While connected: green Bluetooth icon with pulse animation
+- After disconnect: hidden (`display: none`)
+- Badge should NOT interfere with canvas touch events (it's pointer-events-aware)
+
+---
+
 ## Phase 4: Debugging Common Issues
+
+### Issue: Playwright MCP Fails to Launch Chrome (Windows)
+**Symptoms:** `browserType.launchPersistentContext: Failed to launch the browser process` — Chrome exits immediately with "Opening in existing browser session."
+**Cause:** An existing Chrome process is running and the `--user-data-dir` profile is locked. Enterprise/managed Chrome instances on Windows resist `taskkill /F`, `wmic process delete`, and even `SingletonLock` removal.
+**Fix:** Do NOT waste time trying to kill Chrome. Fall back to **code-only analysis** (run tests, read code, review logic) or use **ADB-only phone testing**. Playwright desktop testing is not available on this machine when Chrome is running.
+**Alternative:** Use `browser_install` if Playwright supports a separate Chromium binary — but on this machine it still tries system Chrome.
+
+### Issue: Chrome Translate Bar Blocks Web Content
+**Symptoms:** After navigating to the app, Chrome shows a "Translate this page?" bar below the toolbar, shifting web content down by ~40px.
+**Fix:** Dismiss by tapping the X button on the translate bar. Approximate position: `adb shell input tap 75 213` (X icon on the left side of the bar). After dismissing, web content coordinates return to normal.
+
+### Issue: `am start VIEW` Opens New Tab Instead of Navigating
+**Symptoms:** Using `adb shell "am start -a android.intent.action.VIEW -d 'URL' com.android.chrome"` sometimes opens a new Chrome tab instead of navigating the existing tab.
+**Cause:** Chrome decides whether to reuse a tab based on the URL and current tab state. If the URL differs from the current tab, Chrome opens a new tab.
+**Fix:** Navigate to the same base URL each time (`https://manholes-mapper.vercel.app/`). If a new tab opens, use the back button or close the extra tab. For hash-based routing, change the hash via CDP evaluate or ADB JavaScript URL (if possible).
+
+### Issue: Screenshot Coordinate Mapping (Downscaled Images)
+**Problem:** Screenshots are downscaled via PIL `thumbnail((2000,2000))` for Claude Code image limits. This means the displayed image is smaller than native 1080x2280. Tapping at visual coordinates from the downscaled image will miss the target.
+**Formula:**
+```
+scale = native_width / displayed_width = 1080 / displayed_px_width
+native_x = displayed_x * scale
+native_y = displayed_y * scale
+```
+**Example:** If the screenshot renders at 710px wide: `scale = 1080/710 ≈ 1.52`. A button at displayed `(176, 693)` → native `(268, 1053)`.
+**Best practice:** Always use native coordinates from the **Screen Coordinate Reference** section or **uiautomator** instead of estimating from screenshots. Reserve screenshot coordinate mapping as a last resort.
+
+### Issue: Chrome Native confirm() Dialogs — Updated Coordinates
+**Symptoms:** `confirm()` dialogs rendered by Chrome are invisible to uiautomator prior to Chrome 132 but **are visible** on Chrome 144+.
+**Fix:** Use uiautomator to find the OK/Cancel buttons:
+```bash
+adb shell "uiautomator dump /data/local/tmp/ui.xml && cat /data/local/tmp/ui.xml" 2>&1 \
+  | tr '>' '\n' | grep -iE "OK|Cancel|button" | head -10
+```
+**Known positions (Chrome 144, Galaxy Note 10):**
+- OK button: bounds `[780,1345][1011,1471]`, center **(895, 1408)**
+- Cancel button: bounds `[548,1345][779,1471]`, center **(664, 1408)**
+These coordinates shift slightly depending on dialog text length — always verify with uiautomator.
+
+### Issue: Tapping Chrome Toolbar Instead of App Header
+**Symptoms:** Tapping at y ≈ 220 opens Chrome's 3-dot menu instead of the app's hamburger.
+**Cause:** Chrome toolbar occupies y=90–237. The app header starts at y ≈ 260.
+**Fix:** The app hamburger is at **(970, 320)** in LTR English / **(109, 320)** in RTL Hebrew. Never tap above y=260 when targeting web content — you'll hit Chrome UI instead.
 
 ### Issue: Chrome Tab Keeps Crashing (Renderer Dies)
 **Symptoms:** "Child process died (type=6)" in logcat
@@ -642,14 +779,11 @@ The app shows toast messages for geolocation failures:
 - Clear Chrome site data: Settings > Site Settings > manholes-mapper > Clear & reset
 - **Permissions-Policy header:** `geolocation=(self)` — only same-origin can request
 
-### Issue: Chrome Native confirm() Dialogs Are Invisible to uiautomator
-**Symptoms:** A `confirm()` dialog appears (e.g., "השרטוט ריק... לשמור בכל זאת?") but uiautomator dump shows no dialog buttons.
-**Cause:** Chrome renders `alert()`/`confirm()`/`prompt()` dialogs inside its own compositor, not as native Android views.
-**Fix:**
-- The OK/Cancel buttons are rendered at Chrome's native dialog position
-- Take a screenshot, visually identify button positions, then tap
-- **Be very careful with coordinates** — tapping outside the dialog may land on Android system UI (e.g., opening the Phone dialer if you tap near the nav bar area)
-- The empty sketch save dialog appears when navigating away from an empty sketch; the OK button is approximately at native (615, 920) but verify each time
+### Issue: Chrome Native confirm() Dialogs
+**Symptoms:** A `confirm()` dialog appears (e.g., "השרטוט ריק... לשמור בכל זאת?").
+**Cause:** Chrome renders `alert()`/`confirm()`/`prompt()` dialogs in its compositor.
+**Fix (Chrome 144+):** These dialogs ARE visible to uiautomator. Use `grep -iE "OK|Cancel|button"` to find bounds. See **"Chrome Native confirm() Dialogs — Updated Coordinates"** above for known positions.
+**Caution:** Tapping outside the dialog may land on Android system UI (e.g., opening the Phone dialer near the nav bar area).
 
 ### Issue: Incoming Phone Calls During Testing
 **Fix:** Dismiss with `adb shell input keyevent 6` (KEYCODE_ENDCALL). Do NOT use keyevent 4 (Back).
@@ -661,7 +795,7 @@ The app shows toast messages for geolocation failures:
 **Symptoms:** New code changes don't appear on the phone even after promoting to production.
 **Cause:** Service worker stale-while-revalidate serves old cached JS for non-hashed files.
 **Fix:**
-1. Bump `APP_VERSION` in `public/service-worker.js` (e.g., `'v14'` → `'v15'`)
+1. Bump `APP_VERSION` in `public/service-worker.js` (e.g., `'v26'` → `'v27'`)
 2. Commit, push, wait for build, promote to production
 3. Reload the page on the phone — new SW installs and clears old caches
 4. Reload once more to get the fresh files from the new cache
@@ -734,14 +868,26 @@ The screencap output is 1080x2280 native pixels. `adb shell input tap X Y` uses 
 | Home panel close (homePanelCloseBtn) | [126,326][223,423] | (175, 375) | X button on blue header |
 
 **Home Panel (sketch list) coordinates:**
-| Element | Bounds | Center Tap | Notes |
-|---------|--------|------------|-------|
-| First "Open" (פתח) button | [168,1061][351,1158] | (260, 1110) | First sketch card |
-| Second "Open" (פתח) button | [168,1596][351,1691] | (260, 1644) | Second sketch card |
+| Element | Bounds (Hebrew RTL) | Center Tap | Notes |
+|---------|---------------------|------------|-------|
+| First "Open" (פתח) button | [168,1061][351,1158] | (260, 1110) | First sketch card (RTL) |
+| Second "Open" (פתח) button | [168,1596][351,1691] | (260, 1644) | Second sketch card (RTL) |
 | "New Sketch" (שרטוט חדש) button | Full-width blue button at bottom | ~(540, 1350) | Verify with screenshot |
+
+**English (LTR) Home Panel:**
+| Element | Approximate Center | Notes |
+|---------|-------------------|-------|
+| First "Open" button | ~(268, 1053) | Verified Feb 2026 — position shifts in LTR |
+| Second "Open" button | ~(268, 1590) | Estimate based on card spacing |
 
 **WARNING: Tapping sketch name text opens a rename input field with keyboard!**
 Be precise when tapping "Open" — hit the blue button, not the text above it.
+
+**Chrome confirm() Dialog (e.g., "Save empty sketch?"):**
+| Element | Bounds | Center Tap | Notes |
+|---------|--------|------------|-------|
+| OK button | [780,1345][1011,1471] | (895, 1408) | Verified via uiautomator Chrome 144 |
+| Cancel button | [548,1345][779,1471] | (664, 1408) | Position varies with dialog text |
 
 ### Coordinate Discovery Workflow
 ```bash
@@ -807,6 +953,20 @@ adb shell "uiautomator dump /data/local/tmp/ui.xml && cat /data/local/tmp/ui.xml
 - [ ] Point capture dialog shows GNSS position when selecting a node
 - [ ] TMM mock location is detected (`isMock=true` in logcat, accuracy < 5m)
 
+### Survey Device (TSC3) (after survey changes)
+- [ ] Survey Device group visible in mobile menu (scroll down to "מכשיר מדידה" / "Survey Device")
+- [ ] "Connect Bluetooth" triggers permission request then device discovery (Capacitor only)
+- [ ] Device picker dialog shows paired devices as tappable buttons (not `prompt()`)
+- [ ] Auto-connects when only 1 survey device found
+- [ ] "Connect WebSocket" prompts for host:port and connects
+- [ ] Connection badge (green BT icon) appears on canvas after connect
+- [ ] Incoming survey points trigger node-type dialog for new points
+- [ ] Points matching existing node IDs (with `hasCoordinates`) update silently
+- [ ] Point queue works — rapid points queued while dialog is open
+- [ ] "Disconnect" removes badge and clears queue
+- [ ] New survey nodes placed at canvas center (not hardcoded 400,300)
+- [ ] ID collision guard: manual node with same ID not overwritten unless it has coordinates
+
 ### PWA & Offline
 - [ ] App works when added to home screen (`display: standalone`)
 - [ ] Service worker caches shell (loads offline after first visit)
@@ -847,7 +1007,7 @@ Mobile buttons (admin, projects) use both `click` AND `touchend` listeners for r
 When the GNSS position is >3 seconds old, the marker draws "STALE" text. This helps identify when TMM has stopped providing updates.
 
 ### Service Worker Update & Cache Invalidation
-If a new service worker is detected, the app can send `{ type: 'SKIP_WAITING' }` to force immediate activation. The cache version is tracked as `APP_VERSION` in `public/service-worker.js` (currently `v14`).
+If a new service worker is detected, the app can send `{ type: 'SKIP_WAITING' }` to force immediate activation. The cache version is tracked as `APP_VERSION` in `public/service-worker.js` (currently `v26`).
 
 **When to bump `APP_VERSION`:**
 - After changing any non-fingerprinted file (`main.js`, `styles.css`, `index.html`, `manifest.json`)
@@ -908,6 +1068,13 @@ The `android/` directory contains a Capacitor-wrapped APK build. Package: `com.g
 | `vercel.json` | Headers (Permissions-Policy: geolocation), rewrites, security |
 | `api/_lib/auth.js` | `verifyAuth(request)` — server-side auth verification |
 | `api/_lib/rate-limit.js` | API rate limiting |
+| **Survey (TSC3)** | |
+| `src/survey/tsc3-bluetooth-adapter.js` | Capacitor Bluetooth SPP adapter. `list()` for paired devices, runtime permission requests on Android 12+ |
+| `src/survey/tsc3-websocket-adapter.js` | WebSocket bridge adapter. Auto-detects `wss://` on HTTPS. Exponential backoff reconnect |
+| `src/survey/tsc3-parser.js` | Streaming CSV parser. Auto-detects delimiter + column order. ITM range validation |
+| `src/survey/tsc3-connection-manager.js` | Singleton orchestrator. Point matching, queuing, dialog coordination |
+| `src/survey/survey-node-type-dialog.js` | Node type selection dialog (Manhole/Home/Drainage) for new survey points |
+| `src/survey/device-picker-dialog.js` | Touch-friendly device picker dialog (replaces broken `window.prompt()`) |
 | **Phone Testing** | |
 | `service/cdp-mcp/src/tools/gnss.js` | MCP tools for remote GNSS inspection |
 | `service/cdp-mcp/src/cdp-client.js` | Chrome DevTools Protocol client |

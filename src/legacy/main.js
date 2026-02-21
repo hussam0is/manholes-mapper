@@ -54,15 +54,17 @@ import {
 } from '../utils/input-flow-engine.js';
 import { DEFAULT_INPUT_FLOW_CONFIG } from '../state/constants.js';
 import { 
-  importCoordinatesFromFile, 
-  applyCoordinatesToNodes, 
-  saveCoordinatesToStorage, 
+  importCoordinatesFromFile,
+  applyCoordinatesToNodes,
+  saveCoordinatesToStorage,
   loadCoordinatesFromStorage,
   saveCoordinatesEnabled,
   loadCoordinatesEnabled,
   calculateCoordinateBounds,
   surveyToCanvas,
-  approximateUncoordinatedNodePositions
+  approximateUncoordinatedNodePositions,
+  classifySketchCoordinates,
+  repositionNodesFromEmbeddedCoordinates
 } from '../utils/coordinates.js';
 
 // GNSS module imports
@@ -1708,6 +1710,8 @@ function loadFromStorage() {
     nextNodeId = maxNumericId + 1;
     // Recompute node types based on measurements
     computeNodeTypes();
+    // Auto-reposition nodes from embedded geographic coordinates
+    autoRepositionFromEmbeddedCoords();
     // Load reference layers for the project (if sketch belongs to one)
     loadProjectReferenceLayers(currentProjectId);
     return true;
@@ -2031,15 +2035,17 @@ async function loadFromLibrary(sketchId) {
   selectedNode = null;
   selectedEdge = null;
   computeNodeTypes();
+  // Auto-reposition nodes from embedded geographic coordinates
+  autoRepositionFromEmbeddedCoords();
   saveToStorage();
   draw();
   renderDetails();
   // Recenters view to the current sketch center, keeping the existing zoom level
   try { recenterView(); } catch (_) { }
-  
+
   // Load reference layers for the project (if sketch belongs to one)
   loadProjectReferenceLayers(currentProjectId);
-  
+
   return true;
 }
 
@@ -3070,6 +3076,8 @@ function draw() {
     // Quick cull for normal (non-dangling) edges
     const tn = edge.tail != null ? nodeMap.get(String(edge.tail)) : null;
     const hn = edge.head != null ? nodeMap.get(String(edge.head)) : null;
+    // Skip edges where either endpoint is hidden
+    if ((tn && tn._hidden) || (hn && hn._hidden)) continue;
     if (tn && hn) {
       const sx1 = tn.x * viewStretchX, sy1 = tn.y * viewStretchY;
       const sx2 = hn.x * viewStretchX, sy2 = hn.y * viewStretchY;
@@ -3142,6 +3150,8 @@ function draw() {
 
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
+    // Skip hidden nodes (no coordinates — not yet measured)
+    if (node._hidden) continue;
     // Viewport cull: skip nodes entirely outside the visible area
     const sx = node.x * viewStretchX;
     const sy = node.y * viewStretchY;
@@ -3641,6 +3651,7 @@ function drawEdgeLabels(edge) {
   const tailNode = edge.tail != null ? nodeMap.get(String(edge.tail)) : undefined;
   const headNode = edge.head != null ? nodeMap.get(String(edge.head)) : undefined;
   if (!tailNode || !headNode) return;
+  if (tailNode._hidden || headNode._hidden) return;
   // Apply stretch to positions for label placement
   const x1 = tailNode.x * viewStretchX, y1 = tailNode.y * viewStretchY;
   const x2 = headNode.x * viewStretchX, y2 = headNode.y * viewStretchY;
@@ -4586,6 +4597,7 @@ function findNodeAt(x, y) {
   // Look through nodes in reverse order (topmost first)
   for (let i = nodes.length - 1; i >= 0; i--) {
     const node = nodes[i];
+    if (node._hidden) continue;
 
     // Check for drainage nodes (rectangular hit detection)
     if (node.nodeType === 'Drainage' || node.nodeType === 'קולטן') {
@@ -4617,6 +4629,7 @@ function findNodeAtWithExpansion(x, y, extraRadius) {
   const extra = typeof extraRadius === 'number' ? extraRadius : 0;
   for (let i = nodes.length - 1; i >= 0; i--) {
     const node = nodes[i];
+    if (node._hidden) continue;
 
     // Check for drainage nodes (rectangular hit detection)
     if (node.nodeType === 'Drainage' || node.nodeType === 'קולטן') {
@@ -6671,6 +6684,128 @@ function updateMapReferencePoint() {
 }
 
 /**
+ * Auto-reposition nodes from embedded geographic coordinates on sketch load.
+ * Called from loadFromStorage() and loadFromLibrary() after normalization.
+ * - Nodes with coords: repositioned to correct canvas positions
+ * - Nodes without coords: marked _hidden = true (not drawn)
+ * - If zero nodes have coords but sketch is non-empty: prompt dialog
+ */
+function autoRepositionFromEmbeddedCoords() {
+  if (!nodes || nodes.length === 0) return;
+
+  const classification = classifySketchCoordinates(nodes, wgs84ToItm);
+  console.debug('[Coordinates] Sketch classification:', classification);
+
+  if (classification.withCoords > 0) {
+    // Get logical canvas dimensions
+    const dpr = window.devicePixelRatio || 1;
+    const logicalW = (canvas.width / dpr) || 800;
+    const logicalH = (canvas.height / dpr) || 600;
+
+    const { referencePoint } = repositionNodesFromEmbeddedCoordinates(
+      nodes, coordinateScale, logicalW, logicalH, wgs84ToItm
+    );
+
+    // Sync coordinatesMap from the newly positioned nodes
+    for (const node of nodes) {
+      if (node.hasCoordinates && node.surveyX != null && node.surveyY != null) {
+        coordinatesMap.set(String(node.id), {
+          x: node.surveyX,
+          y: node.surveyY,
+          z: node.surveyZ || 0
+        });
+      }
+    }
+    saveCoordinatesToStorage(coordinatesMap);
+
+    // Enable coordinates mode
+    if (!coordinatesEnabled) {
+      coordinatesEnabled = true;
+      saveCoordinatesEnabled(true);
+      syncCoordinatesToggleUI();
+    }
+
+    // Set the map reference point
+    if (referencePoint) {
+      setMapReferencePoint(referencePoint);
+      setStreetViewVisible(true);
+    }
+  } else if (classification.total > 0) {
+    // Non-empty sketch with zero coordinates → show prompt
+    showCoordinatesRequiredPrompt();
+  }
+  // Empty sketch → do nothing
+}
+
+/**
+ * Show a prompt dialog when a sketch has no geographic coordinates.
+ * Options: Import CSV, Open without coordinates, Cancel (return to library).
+ */
+function showCoordinatesRequiredPrompt() {
+  const overlay = document.createElement('div');
+  overlay.className = 'projects-modal-overlay';
+
+  const modal = document.createElement('div');
+  modal.className = 'projects-modal';
+
+  modal.innerHTML = `
+    <div class="projects-modal-header">
+      <h3>${t('coordinates.noCoordinatesTitle')}</h3>
+      <button class="btn-icon projects-modal-close">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+    <div class="projects-modal-body">
+      <p>${t('coordinates.noCoordinatesBody')}</p>
+    </div>
+    <div class="projects-modal-footer" style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-primary" data-action="import">
+        <span class="material-icons" style="font-size:18px;vertical-align:middle;margin-inline-end:4px;">upload_file</span>
+        ${t('coordinates.import')}
+      </button>
+      <button class="btn btn-secondary" data-action="open">
+        ${t('coordinates.openWithoutCoords')}
+      </button>
+      <button class="btn btn-secondary" data-action="cancel">
+        ${t('cancel')}
+      </button>
+    </div>
+  `;
+
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+
+  const closeModal = () => overlay.remove();
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeModal();
+  });
+
+  modal.querySelector('.projects-modal-close').addEventListener('click', closeModal);
+
+  modal.querySelector('[data-action="import"]').addEventListener('click', () => {
+    closeModal();
+    // Trigger the existing coordinate file picker
+    if (importCoordinatesFile) importCoordinatesFile.click();
+  });
+
+  modal.querySelector('[data-action="open"]').addEventListener('click', () => {
+    closeModal();
+    // Clear _hidden flags so all nodes become visible in freehand mode
+    for (const node of nodes) {
+      delete node._hidden;
+    }
+    scheduleDraw();
+  });
+
+  modal.querySelector('[data-action="cancel"]').addEventListener('click', () => {
+    closeModal();
+    // Return to the library / home panel
+    renderHome();
+  });
+}
+
+/**
  * Update scale display in UI
  */
 function updateScaleDisplay() {
@@ -7470,7 +7605,7 @@ function getSketchCenter() {
   if (!Array.isArray(nodes) || nodes.length === 0) return { x: 0, y: 0 };
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (const node of nodes) {
-    if (!node) continue;
+    if (!node || node._hidden) continue;
     if (typeof node.x !== 'number' || typeof node.y !== 'number') continue;
     if (node.x < minX) minX = node.x;
     if (node.y < minY) minY = node.y;
@@ -7952,13 +8087,14 @@ function handleGnssPointCapture(captureData) {
   const node = nodes.find(n => String(n.id) === String(targetNodeId));
   if (node) {
     node.hasCoordinates = true;
+    node._hidden = false;
     node.surveyX = captureData.itm.x;
     node.surveyY = captureData.itm.y;
     node.surveyZ = captureData.position.alt || 0;
     node.gnssFixQuality = captureData.position.fixQuality;
     node.gnssHdop = captureData.position.hdop;
   }
-  
+
   // Create edge if requested
   if (captureData.createEdge && captureData.edgeFromNode) {
     const newEdge = {
@@ -8051,6 +8187,7 @@ function gpsQuickCapture() {
   // 6. Store survey coordinates
   const itm = wgs84ToItm(position.lat, position.lon);
   node.hasCoordinates = true;
+  node._hidden = false;
   node.surveyX = itm.x;
   node.surveyY = itm.y;
   node.surveyZ = position.alt || 0;
@@ -8274,6 +8411,7 @@ function handleTSC3PointReceived(pointName, coords, isNew, nodeType) {
 
   // Store survey coordinates on the node
   node.hasCoordinates = true;
+  node._hidden = false;
   node.surveyX = coords.easting;
   node.surveyY = coords.northing;
   node.surveyZ = coords.elevation;

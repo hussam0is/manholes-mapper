@@ -362,6 +362,9 @@ export const i18n = {
       status: (matched, total) => `${matched}/${total} שוחות עם קואורדינטות`,
       scale: 'קנה מידה:',
       scaleChanged: (scale) => `קנה מידה: 1:${scale}`,
+      noCoordinatesTitle: 'לשרטוט זה אין קואורדינטות',
+      noCoordinatesBody: 'כדי להציג על המפה, יבא קואורדינטות מ-CSV או מדוד עם GNSS.',
+      openWithoutCoords: 'פתח ללא קואורדינטות',
     },
     stretch: {
       horizontal: 'מתיחה אופקית',
@@ -799,6 +802,9 @@ export const i18n = {
       status: (matched, total) => `${matched}/${total} nodes with coordinates`,
       scale: 'Scale:',
       scaleChanged: (scale) => `Scale: 1:${scale}`,
+      noCoordinatesTitle: 'This sketch has no coordinates',
+      noCoordinatesBody: 'To display on the map, import CSV coordinates or measure with GNSS.',
+      openWithoutCoords: 'Open without coordinates',
     },
     stretch: {
       horizontal: 'Horizontal Stretch',
