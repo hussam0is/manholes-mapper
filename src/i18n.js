@@ -290,11 +290,13 @@ export const i18n = {
       confirmDeleteLayer: 'האם למחוק שכבה זו?',
       homepage: {
         title: 'פרויקטים',
+        subtitle: 'בחר פרויקט לעבודה',
         empty: 'אין שרטוטים בפרויקט זה',
         openProject: 'פתח פרויקט',
       },
       canvas: {
         sketches: 'שרטוטים',
+        backToProjects: 'חזרה לפרויקטים',
         switchedTo: 'עבר אל',
         showAll: 'הצג הכל',
         hideAll: 'הסתר הכל',
@@ -730,11 +732,13 @@ export const i18n = {
       confirmDeleteLayer: 'Delete this layer?',
       homepage: {
         title: 'Projects',
+        subtitle: 'Select a project to work on',
         empty: 'No sketches in this project',
         openProject: 'Open Project',
       },
       canvas: {
         sketches: 'Sketches',
+        backToProjects: 'Back to Projects',
         switchedTo: 'Switched to',
         showAll: 'Show All',
         hideAll: 'Hide All',

@@ -2249,8 +2249,23 @@ let homeMode = 'projects';
 function renderHome() {
   if (!homePanel || !sketchListEl) return;
   homeMode = 'sketches';
-  // Reset title to "My Sketches" (renderProjectsHome may have changed it)
+
+  // Undo projects-mode overrides
+  homePanel.classList.remove('home-panel--projects');
+  // Reset title and icon
   if (homeTitleEl) homeTitleEl.textContent = t('homeTitle');
+  const headerIcon = homePanel.querySelector('.home-panel-header-title .material-icons');
+  if (headerIcon) headerIcon.textContent = 'folder_open';
+  // Hide subtitle
+  const subtitleEl = homePanel.querySelector('.home-panel-header-subtitle');
+  if (subtitleEl) subtitleEl.style.display = 'none';
+  // Restore close button
+  const closeBtn = document.getElementById('homePanelCloseBtn');
+  if (closeBtn) closeBtn.style.display = '';
+  // Restore footer
+  const footer = homePanel.querySelector('.home-panel-footer');
+  if (footer) footer.style.display = '';
+
   startPanel.style.display = 'none';
   homePanel.classList.remove('panel-closing');
   homePanel.style.display = 'flex';
@@ -2530,10 +2545,36 @@ async function renderProjectsHome() {
   // Show the home panel with loading state
   startPanel.style.display = 'none';
   homePanel.classList.remove('panel-closing');
+  homePanel.classList.add('home-panel--projects');
   homePanel.style.display = 'flex';
 
-  // Update title
+  // Update title and icon for projects landing page
   if (homeTitleEl) homeTitleEl.textContent = t('projectsTitle');
+  const headerIcon = homePanel.querySelector('.home-panel-header-title .material-icons');
+  if (headerIcon) headerIcon.textContent = 'dashboard';
+
+  // Add subtitle below title
+  let subtitleEl = homePanel.querySelector('.home-panel-header-subtitle');
+  if (!subtitleEl) {
+    subtitleEl = document.createElement('div');
+    subtitleEl.className = 'home-panel-header-subtitle';
+    const headerTitle = homePanel.querySelector('.home-panel-header-title');
+    if (headerTitle) headerTitle.after(subtitleEl);
+  }
+  subtitleEl.textContent = t('projects.homepage.subtitle');
+  subtitleEl.style.display = '';
+
+  // Hide close button (projects page is the landing page)
+  const closeBtn = document.getElementById('homePanelCloseBtn');
+  if (closeBtn) closeBtn.style.display = 'none';
+
+  // Hide footer (New Sketch button is irrelevant on projects page)
+  const footer = homePanel.querySelector('.home-panel-footer');
+  if (footer) footer.style.display = 'none';
+
+  // Hide sketch tabs
+  const sketchTabs = document.getElementById('sketchTabs');
+  if (sketchTabs) sketchTabs.style.display = 'none';
 
   sketchListEl.innerHTML = `
     <div class="sketch-list-loading">
@@ -2554,10 +2595,6 @@ async function renderProjectsHome() {
     }
 
     sketchListEl.innerHTML = '';
-
-    // Hide sketch tabs (projects homepage doesn't need them)
-    const sketchTabs = document.getElementById('sketchTabs');
-    if (sketchTabs) sketchTabs.style.display = 'none';
 
     for (const project of projects) {
       const card = document.createElement('div');
@@ -2604,6 +2641,7 @@ async function loadProjectCanvas(projectId) {
 
     if (sketches.length === 0) {
       showToast(t('projects.homepage.empty') || 'No sketches in this project', 'warning');
+      location.hash = '#/';
       return;
     }
 
@@ -5724,6 +5762,7 @@ if (createFromHomeBtn) {
 const homePanelCloseBtn = document.getElementById('homePanelCloseBtn');
 if (homePanelCloseBtn) {
   homePanelCloseBtn.addEventListener('click', () => {
+    if (homeMode === 'projects') return; // Projects page is the landing page
     hideHome();
   });
 }

@@ -7026,6 +7026,28 @@ select.invalid:focus {
   font-size: 1.25rem;
 }
 
+/* ── Projects homepage overrides ──────────────────────────────────────── */
+
+.home-panel--projects .home-panel-header {
+  padding-bottom: 1.25rem;
+}
+
+.home-panel-header-subtitle {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.8rem;
+  font-weight: 400;
+  margin-top: 0.25rem;
+  padding-inline-start: 2.125rem; /* align with title text (icon width + gap) */
+}
+
+.home-panel--projects .sketch-card.project-card {
+  padding: 1rem;
+}
+
+.home-panel--projects .sketch-card.project-card .sketch-card-icon .material-icons {
+  font-size: 2rem;
+}
+
 /* Mobile adjustments for home panel */
 @media (max-width: 480px) {
   .home-panel-modern {
@@ -8689,6 +8711,32 @@ button:focus-visible,
 
 .sketch-side-panel.open {
   transform: translateX(0);
+}
+
+.sketch-side-panel__back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  color: var(--color-accent, #2563eb);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.sketch-side-panel__back:hover {
+  background: var(--color-surface-alt, #f1f5f9);
+}
+
+.sketch-side-panel__back .material-icons {
+  font-size: 18px;
+}
+
+[dir="rtl"] .sketch-side-panel__back .material-icons {
+  transform: scaleX(-1);
 }
 
 .sketch-side-panel__header {
