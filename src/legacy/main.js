@@ -5867,6 +5867,8 @@ if (sketchListEl) {
       deleteFromLibrary(id);
       renderHome();
       showToast(t('toasts.deleted'));
+    } else if (action === 'openProject') {
+      location.hash = '#/project/' + id;
     } else if (action === 'importHistory') {
       const lib = getLibrary();
       const rec = lib.find((r) => r.id === id);
