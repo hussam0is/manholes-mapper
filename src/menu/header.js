@@ -62,7 +62,7 @@ export function createMobileMenu(t, currentLang = 'he') {
       // Find item config
       const allItems = [
         ...menuConfig.primary,
-        ...menuConfig.secondary.filter(i => i.id),
+        ...menuConfig.secondaryGroups.flatMap(g => g.items),
         ...menuConfig.sizeControls,
         ...menuConfig.utility,
         { id: 'searchNode', type: 'search' },

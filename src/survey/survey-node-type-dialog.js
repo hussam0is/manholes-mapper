@@ -92,6 +92,20 @@ export function initSurveyNodeTypeDialog() {
     .survey-type-btn .material-icons {
       font-size: 32px;
     }
+    .survey-type-autoconnect {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 16px;
+      font-size: 14px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .survey-type-autoconnect input {
+      width: 18px;
+      height: 18px;
+    }
     .survey-type-cancel {
       margin-top: 16px;
       padding: 8px 24px;
@@ -131,6 +145,10 @@ export function initSurveyNodeTypeDialog() {
           <span data-label="drainage"></span>
         </button>
       </div>
+      <label class="survey-type-autoconnect">
+        <input type="checkbox" id="surveyAutoConnectCheckbox" checked />
+        <span id="surveyAutoConnectLabel"></span>
+      </label>
       <button class="survey-type-cancel" id="surveyTypeCancel"></button>
     </div>
   `;
@@ -171,8 +189,9 @@ function _dismiss() {
  * @param {Function} onChoose - Called with the chosen type string ('Manhole'|'Home'|'Drainage')
  * @param {Function} onCancel - Called if the user dismisses the dialog
  * @param {Function} t - i18n translator function
+ * @param {{ autoConnect?: boolean }} [options] - Extra options
  */
-export function openSurveyNodeTypeDialog(pointName, coords, onChoose, onCancel, t) {
+export function openSurveyNodeTypeDialog(pointName, coords, onChoose, onCancel, t, options) {
   if (!dialogEl) initSurveyNodeTypeDialog();
 
   _onChoose = onChoose;
@@ -198,8 +217,23 @@ export function openSurveyNodeTypeDialog(pointName, coords, onChoose, onCancel, 
   dialogEl.querySelector('[data-label="home"]').textContent = homeLabel;
   dialogEl.querySelector('[data-label="drainage"]').textContent = drainageLabel;
 
+  // Auto-connect checkbox
+  const acCheckbox = document.getElementById('surveyAutoConnectCheckbox');
+  const acLabel = document.getElementById('surveyAutoConnectLabel');
+  if (acCheckbox) acCheckbox.checked = options?.autoConnect !== false;
+  if (acLabel) acLabel.textContent = t ? t('survey.connectToPrevious') : 'Connect to previous';
+
   dialogEl.classList.add('open');
   isOpen = true;
+}
+
+/**
+ * Get the current auto-connect checkbox state.
+ * @returns {boolean}
+ */
+export function getSurveyAutoConnect() {
+  const cb = document.getElementById('surveyAutoConnectCheckbox');
+  return cb ? cb.checked : true;
 }
 
 /**

@@ -27,6 +27,7 @@ export const i18n = {
     close: 'סגור',
     recenter: 'מרכז שרטוט',
     recenterDensity: 'מרכז לפי צפיפות',
+    zoomToFit: 'התאם לשרטוט',
     searchNode: 'חפש שוחה...',
     searchNodeTitle: 'חפש שוחה לפי מספר',
     searchAddress: 'כתובת / עיר / רחוב...',
@@ -35,7 +36,7 @@ export const i18n = {
     menu: 'תפריט',
     menuGroupNav: 'ניווט',
     menuGroupSearch: 'חיפוש',
-    menuGroupView: 'תצוגה',
+    menuGroupView: 'גודל אלמנטים',
     menuGroupData: 'נתונים',
     menuGroupSettings: 'הגדרות',
     menuGroup: {
@@ -440,6 +441,7 @@ export const i18n = {
       newPointDesc: (name) => `נקודה "${name}" לא נמצאה. בחר סוג:`,
       selectDevice: 'בחר מכשיר',
       noDevicesFound: 'לא נמצאו מכשירים',
+      connectToPrevious: 'חבר לנקודה הקודמת',
     },
   },
   en: {
@@ -469,6 +471,7 @@ export const i18n = {
     close: 'Close',
     recenter: 'Recenter sketch',
     recenterDensity: 'Recenter by density',
+    zoomToFit: 'Zoom to fit',
     floatingKeyboard: 'Floating Keyboard',
     searchNode: 'Search node...',
     searchNodeTitle: 'Search node by ID',
@@ -478,7 +481,7 @@ export const i18n = {
     menu: 'Menu',
     menuGroupNav: 'Navigation',
     menuGroupSearch: 'Search',
-    menuGroupView: 'View',
+    menuGroupView: 'Element Size',
     menuGroupData: 'Data',
     menuGroupSettings: 'Settings',
     menuGroup: {
@@ -882,6 +885,7 @@ export const i18n = {
       newPointDesc: (name) => `Point "${name}" not found. Choose node type:`,
       selectDevice: 'Select Device',
       noDevicesFound: 'No devices found',
+      connectToPrevious: 'Connect to previous',
     },
   },
 };

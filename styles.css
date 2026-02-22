@@ -8604,7 +8604,13 @@ button:focus-visible,
   .sidebar-header {
     padding: var(--space-3) var(--space-4);
   }
-  
+
+  /* Sidebar close button: ensure 44px touch target on mobile */
+  .sidebar-header .icon-btn {
+    min-width: var(--touch-target-min);
+    min-height: var(--touch-target-min);
+  }
+
   /* Ensure details fit in smaller drawer */
   #detailsContainer {
     max-height: calc(60vh - 100px);

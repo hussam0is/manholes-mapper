@@ -28,7 +28,7 @@
  */
 
 // IndexedDB bridge moved to src/state/persistence.js and src/db.js
-import { restoreFromIndexedDbIfNeeded, idbSaveCurrentCompat, idbSaveRecordCompat, idbDeleteRecordCompat } from '../state/persistence.js';
+import { restoreFromIndexedDbIfNeeded, idbSaveCurrentCompat, idbSaveRecordCompat, idbDeleteRecordCompat, STORAGE_KEYS } from '../state/persistence.js';
 import { mountSignIn as _mountSignIn, mountSignUp as _mountSignUp } from '../auth/auth-provider.jsx';
 import { encodeUtf16LeWithBom } from '../utils/encoding.js';
 import { distanceToSegment } from '../utils/geometry.js';
@@ -115,7 +115,7 @@ import {
 } from '../map/street-view.js';
 import { menuEvents } from '../menu/menu-events.js';
 import { tsc3Connection } from '../survey/tsc3-connection-manager.js';
-import { initSurveyNodeTypeDialog, openSurveyNodeTypeDialog } from '../survey/survey-node-type-dialog.js';
+import { initSurveyNodeTypeDialog, openSurveyNodeTypeDialog, getSurveyAutoConnect } from '../survey/survey-node-type-dialog.js';
 import { openDevicePickerDialog } from '../survey/device-picker-dialog.js';
 import {
   loadProjectSketches,
@@ -387,6 +387,9 @@ let currentProjectId = null; // id of the project this sketch belongs to
 let currentInputFlowConfig = DEFAULT_INPUT_FLOW_CONFIG; // input flow configuration for the current sketch
 let availableProjects = []; // list of projects available to the user (fetched from API)
 let autosaveEnabled = true;
+// TSC3 survey auto-connect state
+let lastSurveyNodeId = null;
+let surveyAutoConnect = true;
 
 // Update the sketch name display in the header (desktop and mobile)
 function updateSketchNameDisplay() {
@@ -416,7 +419,7 @@ let viewStretchY = 1.0;
 const MIN_STRETCH = 0.2;
 const MAX_STRETCH = 3.0;
 const STRETCH_STEP = 0.1;
-const VIEW_STRETCH_KEY = 'graphSketch.viewStretch.v1';
+const VIEW_STRETCH_KEY = STORAGE_KEYS.viewStretch;
 // Size scale state for nodes and fonts
 let sizeScale = 1.0;
 const MIN_SIZE_SCALE = 0.5;
@@ -513,12 +516,13 @@ function markEdgeLabelCacheDirty() {
 let coordinatesMap = new Map(); // Map<nodeId, {x, y, z}>
 let coordinatesEnabled = false; // Whether to show coordinate indicators and use coordinate positions
 let originalNodePositions = new Map(); // Store original positions before applying coordinates
+let geoNodePositions = new Map(); // Store geographic positions after coordinate repositioning
 let coordinateScale = 100; // Pixels per meter (100 = 1 pixel/cm)
 const SCALE_PRESETS = [5, 10, 25, 50, 75, 100, 150, 200, 300]; // Available scale options
 
 // Live Measure / GNSS mode state
 let liveMeasureEnabled = false;
-const COORDINATE_SCALE_KEY = 'graphSketch.coordinateScale.v1';
+const COORDINATE_SCALE_KEY = STORAGE_KEYS.coordinateScale;
 
 // Map layer state - initialized from localStorage via loadMapSettings() in govmap-layer.js
 let mapLayerEnabled = isMapLayerEnabled();
@@ -539,7 +543,7 @@ try {
  * - Default values for newly created entities
  * - Option lists for selectable fields, with mapping between labels (UI) and numeric codes (CSV)
  */
-const ADMIN_STORAGE_KEY = 'graphSketch.adminConfig.v1';
+const ADMIN_STORAGE_KEY = STORAGE_KEYS.adminConfig;
 const defaultAdminConfig = {
   nodes: {
     include: {
@@ -637,7 +641,7 @@ function saveAdminConfig() {
 
 // === Field History Tracking System ===
 // Tracks user field value selections to provide smart sorting in dropdowns
-const FIELD_HISTORY_KEY = 'graphSketch.fieldHistory';
+const FIELD_HISTORY_KEY = STORAGE_KEYS.fieldHistory;
 
 // Load field history from localStorage
 function loadFieldHistory() {
@@ -1684,7 +1688,7 @@ function normalizeLegacySketch(nodes, edges) {
  */
 function loadFromStorage() {
   try {
-    const data = localStorage.getItem('graphSketch');
+    const data = localStorage.getItem(STORAGE_KEYS.sketch);
     if (!data) return false;
     const parsed = JSON.parse(data);
     if (!parsed || !parsed.nodes || !parsed.edges) return false;
@@ -1758,8 +1762,8 @@ function saveToStorage() {
     
     // Single JSON.stringify call, reuse the string
     const payloadJson = JSON.stringify(payload);
-    localStorage.setItem('graphSketch', payloadJson);
-    
+    localStorage.setItem(STORAGE_KEYS.sketch, payloadJson);
+
     // Persist to IndexedDB for durability (fire-and-forget)
     idbSaveCurrentCompat(payload);
     
@@ -1823,7 +1827,7 @@ const debouncedSaveToStorage = (function () {
  * Remove the stored sketch from localStorage.
  */
 function clearStorage() {
-  localStorage.removeItem('graphSketch');
+  localStorage.removeItem(STORAGE_KEYS.sketch);
   // Remove from IndexedDB as well
   idbSaveCurrentCompat(null);
 }
@@ -1838,7 +1842,7 @@ function getLibrary() {
     return _libraryCache;
   }
   try {
-    const raw = localStorage.getItem('graphSketch.library');
+    const raw = localStorage.getItem(STORAGE_KEYS.library);
     if (!raw) {
       _libraryCache = [];
       _libraryCacheValid = true;
@@ -1876,7 +1880,7 @@ function setLibrary(list) {
       _libraryWritePending = false;
       // Use the cached version to ensure we write the latest state
       if (_libraryCache !== null) {
-        localStorage.setItem('graphSketch.library', JSON.stringify(_libraryCache));
+        localStorage.setItem(STORAGE_KEYS.library, JSON.stringify(_libraryCache));
       }
     };
     
@@ -1903,7 +1907,7 @@ let _allowedEmptySketchIds = null;
 function getAllowedEmptySketchIds() {
   if (_allowedEmptySketchIds === null) {
     try {
-      const raw = localStorage.getItem('graphSketch.allowedEmptySketches');
+      const raw = localStorage.getItem(STORAGE_KEYS.allowedEmpty);
       _allowedEmptySketchIds = raw ? new Set(JSON.parse(raw)) : new Set();
     } catch (_) {
       _allowedEmptySketchIds = new Set();
@@ -1917,7 +1921,7 @@ function setAllowedEmptySketchId(sketchId) {
   allowed.add(sketchId);
   _allowedEmptySketchIds = allowed;
   try {
-    localStorage.setItem('graphSketch.allowedEmptySketches', JSON.stringify(Array.from(allowed)));
+    localStorage.setItem(STORAGE_KEYS.allowedEmpty, JSON.stringify(Array.from(allowed)));
   } catch (_) {}
 }
 
@@ -2158,7 +2162,7 @@ function migrateSingleSketchToLibraryIfNeeded() {
   const lib = getLibrary();
   if (lib.length > 0) return; // already migrated or has sketches
   try {
-    const raw = localStorage.getItem('graphSketch');
+    const raw = localStorage.getItem(STORAGE_KEYS.sketch);
     if (!raw) return;
     const parsed = JSON.parse(raw);
     if (!parsed || !parsed.nodes || !parsed.edges) return;
@@ -2503,6 +2507,8 @@ window.__getActiveSketchData = function () {
     sketchId: currentSketchId,
     sketchName: currentSketchName,
     projectId: currentProjectId,
+    inputFlowConfig: currentInputFlowConfig,
+    creationDate,
   };
 };
 
@@ -2517,6 +2523,7 @@ window.__setActiveSketchData = function (data) {
   currentSketchName = data.sketchName || null;
   currentProjectId = data.projectId || null;
   if (data.inputFlowConfig) currentInputFlowConfig = data.inputFlowConfig;
+  if (data.creationDate) creationDate = data.creationDate;
   // Reset selection
   selectedNode = null;
   selectedEdge = null;
@@ -2531,6 +2538,7 @@ window.__setActiveSketchData = function (data) {
 };
 
 window.__scheduleDraw = function () { scheduleDraw(); };
+
 
 // Expose project canvas module on window for draw()/pointerDown() integration
 window.__projectCanvas = {
@@ -5929,12 +5937,12 @@ if (saveBtn) {
   });
 }
 if (autosaveToggle) {
-  const savedPref = localStorage.getItem('graphSketch.autosave');
+  const savedPref = localStorage.getItem(STORAGE_KEYS.autosave);
   if (savedPref !== null) autosaveEnabled = savedPref === 'true';
   autosaveToggle.checked = autosaveEnabled;
   autosaveToggle.addEventListener('change', () => {
     autosaveEnabled = !!autosaveToggle.checked;
-    localStorage.setItem('graphSketch.autosave', String(autosaveEnabled));
+    localStorage.setItem(STORAGE_KEYS.autosave, String(autosaveEnabled));
     showToast(autosaveEnabled ? t('toasts.autosaveOn') : t('toasts.autosaveOff'));
     if (autosaveEnabled) saveToLibrary();
   });
@@ -5942,7 +5950,7 @@ if (autosaveToggle) {
 
 // Load size scale preference
 try {
-  const savedSizeScale = localStorage.getItem('graphSketch.sizeScale');
+  const savedSizeScale = localStorage.getItem(STORAGE_KEYS.sizeScale);
   if (savedSizeScale !== null) {
     const parsed = parseFloat(savedSizeScale);
     if (!isNaN(parsed) && parsed >= MIN_SIZE_SCALE && parsed <= MAX_SIZE_SCALE) {
@@ -5958,7 +5966,7 @@ function increaseSizeScale() {
   const newScale = Math.min(sizeScale + SIZE_SCALE_STEP, MAX_SIZE_SCALE);
   if (newScale !== sizeScale) {
     sizeScale = newScale;
-    localStorage.setItem('graphSketch.sizeScale', String(sizeScale));
+    localStorage.setItem(STORAGE_KEYS.sizeScale, String(sizeScale));
     scheduleDraw();
     const pct = Math.round(sizeScale * 100);
     showToast(t('toasts.sizeChanged', pct));
@@ -5969,7 +5977,7 @@ function decreaseSizeScale() {
   const newScale = Math.max(sizeScale - SIZE_SCALE_STEP, MIN_SIZE_SCALE);
   if (newScale !== sizeScale) {
     sizeScale = newScale;
-    localStorage.setItem('graphSketch.sizeScale', String(sizeScale));
+    localStorage.setItem(STORAGE_KEYS.sizeScale, String(sizeScale));
     scheduleDraw();
     const pct = Math.round(sizeScale * 100);
     showToast(t('toasts.sizeChanged', pct));
@@ -6012,7 +6020,7 @@ menuEvents.on('languageChange', ({ value, element }) => {
   const newValue = value === 'en' ? 'en' : 'he';
   currentLang = newValue;
   try { window.currentLang = currentLang; } catch (_) { }
-  localStorage.setItem('graphSketch.lang', currentLang);
+  localStorage.setItem(STORAGE_KEYS.lang, currentLang);
   
   // Sync all language selects
   document.querySelectorAll('[data-action="languageChange"]').forEach(select => {
@@ -6575,14 +6583,10 @@ function restoreOriginalPositions() {
       node.x = original.x;
       node.y = original.y;
     }
-    // Remove coordinate markers but keep hasCoordinates for indicator display
-    delete node.surveyX;
-    delete node.surveyY;
-    delete node.surveyZ;
   });
-  
+
+  zoomToFit();
   saveToStorage();
-  scheduleDraw();
 }
 
 /**
@@ -6594,23 +6598,27 @@ function toggleCoordinates(enabled) {
   syncCoordinatesToggleUI();
 
   if (enabled) {
-    // Populate coordinatesMap from node surveyX/Y if it's empty
-    if (coordinatesMap.size === 0 && nodes && nodes.length > 0) {
-      for (const node of nodes) {
-        if (node.surveyX != null && node.surveyY != null) {
-          coordinatesMap.set(String(node.id), {
-            x: node.surveyX,
-            y: node.surveyY,
-            z: node.surveyZ || 0
-          });
-          node.hasCoordinates = true;
+    // If we have saved geographic positions from a previous reposition, use those
+    // to avoid canvas-dimension-dependent recalculation
+    if (geoNodePositions.size > 0) {
+      nodes.forEach(node => {
+        const geo = geoNodePositions.get(String(node.id));
+        if (geo) {
+          node.x = geo.x;
+          node.y = geo.y;
         }
-      }
-      if (coordinatesMap.size > 0) {
-        saveCoordinatesToStorage(coordinatesMap);
+      });
+      zoomToFit();
+      saveToStorage();
+    } else {
+      // First time: run full repositioning pipeline
+      const hasEmbeddedCoords = nodes && nodes.some(n => n.surveyX != null && n.surveyY != null);
+      if (hasEmbeddedCoords) {
+        autoRepositionFromEmbeddedCoords();
+      } else {
+        applyCoordinatesIfEnabled();
       }
     }
-    applyCoordinatesIfEnabled();
   } else {
     restoreOriginalPositions();
   }
@@ -6789,6 +6797,13 @@ function autoRepositionFromEmbeddedCoords() {
   console.debug('[Coordinates] Sketch classification:', classification);
 
   if (classification.withCoords > 0) {
+    // Save original node positions before repositioning
+    for (const node of nodes) {
+      if (!originalNodePositions.has(node.id)) {
+        originalNodePositions.set(node.id, { x: node.x, y: node.y });
+      }
+    }
+
     // Get logical canvas dimensions
     const dpr = window.devicePixelRatio || 1;
     const logicalW = (canvas.width / dpr) || 800;
@@ -6798,9 +6813,10 @@ function autoRepositionFromEmbeddedCoords() {
       nodes, coordinateScale, logicalW, logicalH, wgs84ToItm
     );
 
-    // Sync coordinatesMap from the newly positioned nodes
+    // Save geographic positions after repositioning and sync coordinatesMap
     for (const node of nodes) {
       if (node.hasCoordinates && node.surveyX != null && node.surveyY != null) {
+        geoNodePositions.set(String(node.id), { x: node.x, y: node.y });
         coordinatesMap.set(String(node.id), {
           x: node.surveyX,
           y: node.surveyY,
@@ -6822,6 +6838,9 @@ function autoRepositionFromEmbeddedCoords() {
       setMapReferencePoint(referencePoint);
       setStreetViewVisible(true);
     }
+
+    // Zoom to fit all repositioned nodes in view (deferred to allow canvas to render)
+    requestAnimationFrame(() => zoomToFit());
   } else if (classification.total > 0) {
     // Non-empty sketch with zero coordinates → show prompt
     showCoordinatesRequiredPrompt();
@@ -7724,6 +7743,38 @@ function recenterView() {
 }
 
 /**
+ * Zoom and pan so all visible nodes fit inside the canvas with padding.
+ * Falls back to recenterView() when there are fewer than 2 visible nodes.
+ */
+function zoomToFit() {
+  const visible = (nodes || []).filter(n => n && !n._hidden && typeof n.x === 'number' && typeof n.y === 'number');
+  if (visible.length < 2) { recenterView(); return; }
+
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const n of visible) {
+    if (n.x < minX) minX = n.x;
+    if (n.y < minY) minY = n.y;
+    if (n.x > maxX) maxX = n.x;
+    if (n.y > maxY) maxY = n.y;
+  }
+
+  const rangeX = (maxX - minX) || 1;
+  const rangeY = (maxY - minY) || 1;
+  const rect = canvas.getBoundingClientRect();
+  const padding = 0.85; // 15% margin
+  const scaleX = (rect.width * padding) / (rangeX * viewStretchX);
+  const scaleY = (rect.height * padding) / (rangeY * viewStretchY);
+  const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, Math.min(scaleX, scaleY)));
+
+  const cx = (minX + maxX) / 2;
+  const cy = (minY + maxY) / 2;
+  viewScale = newScale;
+  viewTranslate.x = rect.width / 2 - viewScale * viewStretchX * cx;
+  viewTranslate.y = rect.height / 2 - viewScale * viewStretchY * cy;
+  scheduleDraw();
+}
+
+/**
  * Compute the sketch density center in world coordinates.
  * Finds the area with the highest concentration of nodes.
  */
@@ -7803,6 +7854,14 @@ if (recenterBtn) {
 if (recenterDensityBtn) {
   recenterDensityBtn.addEventListener('click', () => {
     try { recenterDensityView(); } catch (_) { }
+  });
+}
+
+// Zoom-to-fit button handler
+const zoomToFitBtn = document.getElementById('zoomToFitBtn');
+if (zoomToFitBtn) {
+  zoomToFitBtn.addEventListener('click', () => {
+    try { zoomToFit(); } catch (_) { }
   });
 }
 
@@ -7973,7 +8032,7 @@ async function init() {
   dateInput.value = new Date().toISOString().substr(0, 10);
   migrateSingleSketchToLibraryIfNeeded();
   // Language init
-  const savedLang = localStorage.getItem('graphSketch.lang');
+  const savedLang = localStorage.getItem(STORAGE_KEYS.lang);
   if (savedLang === 'en' || savedLang === 'he') currentLang = savedLang; else currentLang = 'he';
   try { window.currentLang = currentLang; } catch (_) { }
   if (langSelect) langSelect.value = currentLang;
@@ -8442,8 +8501,12 @@ function toggleUserLocationTracking() {
   return liveMeasureEnabled;
 }
 
-// Expose functions globally for GNSS module integration
+// Expose functions globally for GNSS module integration and programmatic control
 window.scheduleDraw = scheduleDraw;
+window.setZoom = setZoom;
+window.zoomToFit = zoomToFit;
+window.recenterView = recenterView;
+window.getViewState = () => ({ viewScale, viewTranslate: { ...viewTranslate }, viewStretchX, viewStretchY });
 window.setLiveMeasureMode = setLiveMeasureMode;
 window.openGnssPointCaptureDialog = openGnssPointCaptureDialog;
 window.centerOnGpsLocation = centerOnGpsLocation;
@@ -8464,7 +8527,10 @@ tsc3Connection._getNodes = () => nodes;
 tsc3Connection._showToast = (msg) => showToast(msg);
 tsc3Connection._t = (path, ...args) => t(path, ...args);
 tsc3Connection._openTypeDialog = (pointName, coords, onChoose, onCancel, tFn) => {
-  openSurveyNodeTypeDialog(pointName, coords, onChoose, onCancel, tFn);
+  openSurveyNodeTypeDialog(pointName, coords, (type) => {
+    surveyAutoConnect = getSurveyAutoConnect();
+    onChoose(type);
+  }, onCancel, tFn, { autoConnect: surveyAutoConnect });
 };
 tsc3Connection._onPointUpdate = (pointName, coords, isNew, nodeType) => {
   handleTSC3PointReceived(pointName, coords, isNew, nodeType);
@@ -8525,6 +8591,12 @@ function handleTSC3PointReceived(pointName, coords, isNew, nodeType) {
   // Apply coordinates to reposition nodes on canvas
   applyCoordinatesIfEnabled();
 
+  // Auto-connect to previous survey node
+  if (isNew && surveyAutoConnect && lastSurveyNodeId) {
+    createEdge(lastSurveyNodeId, node.id);
+  }
+  if (isNew) lastSurveyNodeId = node.id;
+
   // Select the node and update UI
   selectedNode = node;
   selectedEdge = null;
@@ -8532,6 +8604,16 @@ function handleTSC3PointReceived(pointName, coords, isNew, nodeType) {
   computeNodeTypes();
   saveToStorage();
   scheduleDraw();
+
+  // Auto zoom/recenter after new survey points
+  if (isNew) {
+    const surveyNodes = nodes.filter(n => n.hasCoordinates);
+    if (surveyNodes.length >= 2) {
+      zoomToFit();
+    } else {
+      recenterView();
+    }
+  }
 
   // Show toast
   if (isNew) {
@@ -8565,8 +8647,10 @@ menuEvents.on('connectSurveyBluetooth', async () => {
 });
 
 menuEvents.on('connectSurveyWebSocket', () => {
-  const input = prompt('WebSocket host:port', 'localhost:8765');
+  const savedAddr = localStorage.getItem(STORAGE_KEYS.tsc3WsAddress) || 'localhost:8765';
+  const input = prompt('WebSocket host:port', savedAddr);
   if (!input) return;
+  localStorage.setItem(STORAGE_KEYS.tsc3WsAddress, input);
   const parts = input.split(':');
   const host = parts[0] || 'localhost';
   const port = parseInt(parts[1], 10) || 8765;
@@ -8576,4 +8660,20 @@ menuEvents.on('connectSurveyWebSocket', () => {
 
 menuEvents.on('disconnectSurvey', async () => {
   await tsc3Connection.disconnect();
+});
+
+// ── Emergency save on page unload ─────────────────────────────────────────
+window.addEventListener('beforeunload', () => {
+  try {
+    const payload = {
+      nodes, edges, nextNodeId, creationDate,
+      sketchId: currentSketchId,
+      sketchName: currentSketchName,
+      projectId: currentProjectId,
+      inputFlowConfig: currentInputFlowConfig,
+      lastEditedBy: getCurrentUsername(),
+      lastEditedAt: new Date().toISOString(),
+    };
+    localStorage.setItem(STORAGE_KEYS.sketch, JSON.stringify(payload));
+  } catch (_) {}
 });
