@@ -2524,6 +2524,8 @@ window.__setActiveSketchData = function (data) {
   pendingEdgePreview = null;
   pendingEdgeStartPosition = null;
   updateSketchNameDisplay();
+  computeNodeTypes();
+  autoRepositionFromEmbeddedCoords();
   renderDetails();
   scheduleDraw();
 };
