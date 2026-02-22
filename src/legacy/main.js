@@ -6781,10 +6781,61 @@ function autoRepositionFromEmbeddedCoords() {
       nodes, coordinateScale, logicalW, logicalH, wgs84ToItm
     );
 
+    // Reposition uncoordinated nodes relative to coordinated neighbors
+    const hiddenNodes = nodes.filter(n => n._hidden);
+    if (hiddenNodes.length > 0) {
+      const nodeMap = new Map();
+      for (const n of nodes) nodeMap.set(String(n.id), n);
+
+      for (const node of hiddenNodes) {
+        // Find a connected coordinated neighbor via edges
+        let placed = false;
+        for (const edge of edges) {
+          const tailId = String(edge.tail);
+          const headId = String(edge.head);
+          const nodeId = String(node.id);
+          let neighborId = null;
+          if (tailId === nodeId) neighborId = headId;
+          else if (headId === nodeId) neighborId = tailId;
+          if (!neighborId) continue;
+
+          const neighbor = nodeMap.get(neighborId);
+          if (!neighbor || neighbor._hidden) continue;
+
+          // Apply the same offset as in original positions
+          const origNode = originalNodePositions.get(node.id) || originalNodePositions.get(String(node.id));
+          const origNeighbor = originalNodePositions.get(neighbor.id) || originalNodePositions.get(String(neighbor.id));
+          if (origNode && origNeighbor) {
+            const dx = origNode.x - origNeighbor.x;
+            const dy = origNode.y - origNeighbor.y;
+            node.x = neighbor.x + dx;
+            node.y = neighbor.y + dy;
+          } else {
+            node.x = neighbor.x + 20;
+            node.y = neighbor.y + 20;
+          }
+          node._hidden = false;
+          placed = true;
+          break;
+        }
+        // Fallback: place near centroid of coordinated nodes
+        if (!placed) {
+          const coordNodes = nodes.filter(n => !n._hidden && n !== node);
+          if (coordNodes.length > 0) {
+            const cx = coordNodes.reduce((s, n) => s + n.x, 0) / coordNodes.length;
+            const cy = coordNodes.reduce((s, n) => s + n.y, 0) / coordNodes.length;
+            node.x = cx + (Math.random() - 0.5) * 40;
+            node.y = cy + (Math.random() - 0.5) * 40;
+          }
+          node._hidden = false;
+        }
+      }
+    }
+
     // Save geographic positions after repositioning and sync coordinatesMap
     for (const node of nodes) {
+      geoNodePositions.set(String(node.id), { x: node.x, y: node.y });
       if (node.hasCoordinates && node.surveyX != null && node.surveyY != null) {
-        geoNodePositions.set(String(node.id), { x: node.x, y: node.y });
         coordinatesMap.set(String(node.id), {
           x: node.surveyX,
           y: node.surveyY,
