@@ -211,6 +211,18 @@ export async function createSketchInCloud(sketch) {
 }
 
 /**
+ * Fetch a single sketch with full data (nodes, edges, adminConfig) from the cloud.
+ * Used for lazy-loading when only metadata was synced.
+ * @param {string} sketchId
+ * @returns {Promise<Object>} Full sketch data
+ */
+export async function fetchSketchFromCloud(sketchId) {
+  const response = await apiRequest(`/api/sketches/${sketchId}`, { method: 'GET' });
+  const data = await response.json();
+  return data.sketch;
+}
+
+/**
  * Update a sketch in the cloud
  * @param {string} sketchId - Sketch ID
  * @param {Object} updates - Sketch updates
@@ -1163,5 +1175,8 @@ if (typeof window !== 'undefined') {
     cleanupDuplicateSketches,
     allowEmptySave,
     isEmptySaveAllowed,
+    fetchSketchFromCloud,
+    acquireSketchLock,
+    releaseSketchLock,
   };
 }

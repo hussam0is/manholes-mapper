@@ -2016,17 +2016,34 @@ async function loadFromLibrary(sketchId) {
       window.__sketchReadOnly = false;
     }
   }
-  nodes = rec.nodes || [];
-  edges = rec.edges || [];
+  // Lazy-fetch full data from cloud if we only have metadata
+  let sketchData = rec;
+  if (rec.metadataOnly || (!rec.nodes?.length && !rec.edges?.length && rec.cloudSynced)) {
+    try {
+      if (showToast) showToast(t('sketches.loading') || 'Loading sketch data...', 'info');
+      const fullSketch = await window.syncService?.fetchSketchFromCloud(sketchId);
+      if (fullSketch && (fullSketch.nodes?.length || fullSketch.edges?.length)) {
+        sketchData = { ...rec, ...fullSketch, metadataOnly: false };
+        // Update localStorage cache with full data
+        const lib = getLibrary();
+        const idx = lib.findIndex(r => r.id === sketchId);
+        if (idx >= 0) { lib[idx] = sketchData; saveLibrary(lib); }
+      }
+    } catch (e) {
+      console.warn('[loadFromLibrary] Failed to fetch full sketch from cloud:', e.message);
+    }
+  }
+  nodes = sketchData.nodes || [];
+  edges = sketchData.edges || [];
   markEdgeLabelCacheDirty(); // sketch record loaded
   // Normalize nodes and edges to canonical shape (single source of truth)
   normalizeLegacySketch(nodes, edges);
-  nextNodeId = rec.nextNodeId || 1;
-  creationDate = rec.creationDate || rec.createdAt || null;
-  currentSketchId = rec.id;
-  currentSketchName = rec.name || null;
-  currentProjectId = rec.projectId || null;
-  currentInputFlowConfig = rec.inputFlowConfig || DEFAULT_INPUT_FLOW_CONFIG;
+  nextNodeId = sketchData.nextNodeId || 1;
+  creationDate = sketchData.creationDate || sketchData.createdAt || null;
+  currentSketchId = sketchData.id;
+  currentSketchName = sketchData.name || null;
+  currentProjectId = sketchData.projectId || null;
+  currentInputFlowConfig = sketchData.inputFlowConfig || DEFAULT_INPUT_FLOW_CONFIG;
   updateSketchNameDisplay();
   // Reset edge creation state
   pendingEdgeTail = null;
