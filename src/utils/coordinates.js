@@ -634,7 +634,7 @@ export function saveCoordinatesEnabled(enabled) {
 export function loadCoordinatesEnabled() {
   try {
     const raw = localStorage.getItem(COORDINATES_ENABLED_KEY);
-    if (!raw) return false;
+    if (!raw) return true;
     return JSON.parse(raw);
   } catch (e) {
     console.warn('[Coordinates] Failed to load coordinates enabled state', e.message);

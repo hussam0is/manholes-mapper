@@ -414,7 +414,7 @@ const MIN_SCALE = 0.001;
 const MAX_SCALE = 5.0;
 const SCALE_STEP = 1.1; // 10%
 // Canvas stretch state (separate X and Y scaling factors)
-let viewStretchX = 1.0;
+let viewStretchX = 0.6;
 let viewStretchY = 1.0;
 const MIN_STRETCH = 0.2;
 const MAX_STRETCH = 3.0;
@@ -514,10 +514,10 @@ function markEdgeLabelCacheDirty() {
 }
 // Coordinate system state
 let coordinatesMap = new Map(); // Map<nodeId, {x, y, z}>
-let coordinatesEnabled = false; // Whether to show coordinate indicators and use coordinate positions
+let coordinatesEnabled = true; // Whether to show coordinate indicators and use coordinate positions
 let originalNodePositions = new Map(); // Store original positions before applying coordinates
 let geoNodePositions = new Map(); // Store geographic positions after coordinate repositioning
-let coordinateScale = 100; // Pixels per meter (100 = 1 pixel/cm)
+let coordinateScale = 50; // Pixels per meter (50 = 1:50 default)
 const SCALE_PRESETS = [5, 10, 25, 50, 75, 100, 150, 200, 300]; // Available scale options
 
 // Live Measure / GNSS mode state
