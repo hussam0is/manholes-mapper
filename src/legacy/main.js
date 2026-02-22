@@ -1095,7 +1095,7 @@ function handleRoute() {
     try { document.body.classList.remove('admin-screen'); } catch (_) { }
     try { closeAdminScreen(); } catch (_) { }
     try { closeProjectsScreen(); } catch (_) { }
-    hideHome();
+    hideHome(true); // Immediate hide to prevent race with sync-service
     loadProjectCanvas(projectMatch[1]);
   } else {
     try { document.body.classList.remove('admin-screen'); } catch (_) { }
@@ -2251,8 +2251,8 @@ function formatTimeAgo(date) {
 if (window.syncService?.onSyncStateChange) {
   window.syncService.onSyncStateChange((state) => {
     updateSyncStatusUI(state);
-    // Re-render home panel when sync completes while it is visible
-    if (homePanel && homePanel.style.display === 'flex') {
+    // Re-render home panel when sync completes while it is visible (but not in project canvas mode)
+    if (homePanel && homePanel.style.display === 'flex' && !isProjectCanvasMode()) {
       if (homeMode === 'projects') {
         renderProjectsHome();
       } else {
@@ -2487,6 +2487,8 @@ function renderHome() {
 // Expose renderHome to window so sync-service can trigger a re-render after fetching sketches.
 // refreshHomePanel respects the current home mode (projects vs sketches).
 window.renderHome = function () {
+  // Don't re-render home when in project canvas mode (e.g. sync-service triggers after cloud fetch)
+  if (isProjectCanvasMode()) return;
   if (homeMode === 'projects') {
     renderProjectsHome();
   } else {
@@ -2549,8 +2551,14 @@ window.__projectCanvas = {
   switchActiveSketch,
 };
 
-function hideHome() {
-  if (homePanel) hidePanelAnimated(homePanel);
+function hideHome(immediate) {
+  if (!homePanel) return;
+  if (immediate) {
+    homePanel.classList.remove('panel-closing');
+    homePanel.style.display = 'none';
+  } else {
+    hidePanelAnimated(homePanel);
+  }
 }
 
 // ── Projects Homepage & Project Canvas ────────────────────────────────────
@@ -2661,7 +2669,7 @@ async function renderProjectsHome() {
  */
 async function loadProjectCanvas(projectId) {
   try {
-    hideHome();
+    hideHome(true); // Immediate hide to prevent sync-service race condition
     showToast(t('projects.canvas.loading') || 'Loading project sketches...');
 
     const sketches = await loadProjectSketches(projectId);
