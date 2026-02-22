@@ -8863,6 +8863,198 @@ button:focus-visible,
   font-size: 13px;
 }
 
+/* ── Sketch stats (km + issues) in each row ────────────────────────── */
+.sketch-side-panel__stats {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-inline-start: auto;
+  flex-shrink: 0;
+}
+
+.sketch-side-panel__km {
+  font-size: 11px;
+  color: var(--color-text-muted, #64748b);
+  white-space: nowrap;
+}
+
+.sketch-side-panel__issues-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--color-danger-light, #fee2e2);
+  color: var(--color-danger, #ef4444);
+  border: none;
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 22px;
+  transition: background 0.15s;
+}
+
+.sketch-side-panel__issues-btn:hover {
+  background: var(--color-danger, #ef4444);
+  color: #fff;
+}
+
+.sketch-side-panel__issues-btn .material-icons {
+  font-size: 14px;
+}
+
+.sketch-side-panel__no-issues {
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-success, #22c55e);
+}
+
+.sketch-side-panel__no-issues .material-icons {
+  font-size: 16px;
+}
+
+/* ── Totals footer ─────────────────────────────────────────────────── */
+.sketch-side-panel__totals {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  border-top: 1px solid var(--color-border, #e2e8f0);
+  font-size: 12px;
+  color: var(--color-text-secondary, #475569);
+  flex-shrink: 0;
+}
+
+.sketch-side-panel__totals-km {
+  font-weight: 500;
+}
+
+.sketch-side-panel__totals-issues {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+}
+
+.sketch-side-panel__totals-issues .material-icons {
+  font-size: 14px;
+}
+
+.sketch-side-panel__totals-issues--ok {
+  color: var(--color-success, #22c55e);
+}
+
+.sketch-side-panel__totals-issues--warn {
+  color: var(--color-danger, #ef4444);
+}
+
+/* ── Issues sub-panel ──────────────────────────────────────────────── */
+.sketch-side-panel__issues-back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-accent, #2563eb);
+  transition: background 0.15s;
+}
+
+.sketch-side-panel__issues-back:hover {
+  background: var(--color-surface-alt, #f1f5f9);
+}
+
+.sketch-side-panel__issues-back .material-icons {
+  font-size: 18px;
+}
+
+[dir="rtl"] .sketch-side-panel__issues-back .material-icons {
+  transform: scaleX(-1);
+}
+
+.sketch-side-panel__issues-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  font-size: 12px;
+  color: var(--color-text-secondary, #475569);
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+}
+
+.sketch-side-panel__issue-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-border-light, #f1f5f9);
+  font-size: 13px;
+}
+
+.sketch-side-panel__issue-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sketch-side-panel__issue-icon {
+  flex-shrink: 0;
+  color: var(--color-danger, #ef4444);
+}
+
+.sketch-side-panel__issue-icon .material-icons {
+  font-size: 18px;
+}
+
+.sketch-side-panel__issue-node {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sketch-side-panel__issue-type {
+  color: var(--color-text-muted, #64748b);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sketch-side-panel__issue-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.sketch-side-panel__issue-goto,
+.sketch-side-panel__issue-center {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--color-text-secondary, #475569);
+  transition: background 0.15s, color 0.15s;
+}
+
+.sketch-side-panel__issue-goto:hover,
+.sketch-side-panel__issue-center:hover {
+  background: var(--color-primary-bg, #eff6ff);
+  color: var(--color-primary, #2563eb);
+}
+
+.sketch-side-panel__issue-goto .material-icons,
+.sketch-side-panel__issue-center .material-icons {
+  font-size: 20px;
+}
+
 .sketch-side-panel-toggle {
   position: absolute;
   bottom: 88px;
@@ -8907,6 +9099,10 @@ button:focus-visible,
     bottom: 88px;
     inset-inline-end: 8px;
   }
+
+  .sketch-side-panel__km {
+    display: none;
+  }
 }
 
 /* ── Dark mode for side panel ────────────────────────────────────────── */
@@ -8919,6 +9115,27 @@ button:focus-visible,
 
   .sketch-side-panel__item.active {
     background: rgba(37, 99, 235, 0.2);
+  }
+
+  .sketch-side-panel__issues-btn {
+    background: rgba(239, 68, 68, 0.2);
+  }
+
+  .sketch-side-panel__totals {
+    border-color: var(--color-border, #334155);
+  }
+
+  .sketch-side-panel__issues-summary {
+    border-color: var(--color-border, #334155);
+  }
+
+  .sketch-side-panel__issue-row {
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .sketch-side-panel__issue-goto,
+  .sketch-side-panel__issue-center {
+    border-color: var(--color-border, #334155);
   }
 }
 

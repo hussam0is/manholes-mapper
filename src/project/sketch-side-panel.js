@@ -6,6 +6,8 @@
  * - Click sketch name to switch active sketch
  * - Active sketch highlighted
  * - Toggle button in canvas toolbar (layers icon)
+ * - Per-sketch statistics (km, issue count)
+ * - Issues sub-panel with navigation (go to issue, center between)
  */
 
 /** @type {(key: string, ...args: any[]) => string} */
@@ -18,9 +20,21 @@ import {
   onProjectCanvasChange,
 } from './project-canvas-state.js';
 
+import { computeSketchIssues, computeProjectTotals } from './sketch-issues.js';
+import { startIssueHighlight } from './issue-highlight.js';
+import { getLastEditPosition } from './last-edit-tracker.js';
+
 let panelEl = null;
 let listEl = null;
 let _unsub = null;
+
+/** Current view: 'list' or 'issues' */
+let _currentView = 'list';
+/** Sketch ID whose issues are being viewed */
+let _issuesSketchId = null;
+
+/** Cached per-sketch stats (recomputed on render) */
+let _sketchStats = new Map();
 
 /**
  * Initialize the side panel. Call once after DOM is ready.
@@ -48,7 +62,11 @@ export function initSketchSidePanel() {
   }
 
   // Subscribe to state changes
-  _unsub = onProjectCanvasChange(() => render());
+  _unsub = onProjectCanvasChange(() => {
+    _currentView = 'list';
+    _issuesSketchId = null;
+    render();
+  });
 }
 
 /**
@@ -58,6 +76,8 @@ export function showSketchSidePanel() {
   if (!panelEl) return;
   panelEl.style.display = '';
   panelEl.classList.add('open');
+  _currentView = 'list';
+  _issuesSketchId = null;
   const toggleBtn = document.getElementById('sketchSidePanelToggle');
   if (toggleBtn) toggleBtn.style.display = '';
   render();
@@ -70,17 +90,34 @@ export function hideSketchSidePanel() {
   if (!panelEl) return;
   panelEl.style.display = 'none';
   panelEl.classList.remove('open');
+  _currentView = 'list';
+  _issuesSketchId = null;
   const toggleBtn = document.getElementById('sketchSidePanelToggle');
   if (toggleBtn) toggleBtn.style.display = 'none';
 }
 
 /**
- * Render the sketch list inside the side panel.
+ * Main render dispatcher.
  */
 function render() {
+  if (_currentView === 'issues' && _issuesSketchId) {
+    renderIssuesView();
+  } else {
+    renderListView();
+  }
+}
+
+/**
+ * Render the sketch list with stats.
+ */
+function renderListView() {
   if (!listEl) return;
 
   const sketches = getAllSketches();
+
+  // Remove any existing totals footer before re-rendering
+  const existingTotals = panelEl?.querySelector('.sketch-side-panel__totals');
+  if (existingTotals) existingTotals.remove();
 
   if (sketches.length === 0) {
     listEl.innerHTML = `<div class="sketch-side-panel__empty">
@@ -94,6 +131,16 @@ function render() {
   const countEl = panelEl?.querySelector('.sketch-side-panel__count');
   if (countEl) countEl.textContent = `(${sketches.length})`;
 
+  // Compute stats for all sketches
+  _sketchStats.clear();
+  const allStats = [];
+  for (const sketch of sketches) {
+    const result = computeSketchIssues(sketch.nodes || [], sketch.edges || []);
+    _sketchStats.set(sketch.id, result);
+    allStats.push(result.stats);
+  }
+  const totals = computeProjectTotals(allStats);
+
   listEl.innerHTML = '';
 
   for (const sketch of sketches) {
@@ -103,6 +150,17 @@ function render() {
 
     const nodeCount = (sketch.nodes || []).length;
     const displayName = (sketch.name && sketch.name.trim()) || sketch.id.slice(-6);
+    const sketchData = _sketchStats.get(sketch.id);
+    const km = sketchData ? sketchData.stats.totalKm.toFixed(2) : '0.00';
+    const issues = sketchData ? sketchData.stats.issueCount : 0;
+
+    const issuesBadge = issues > 0
+      ? `<button class="sketch-side-panel__issues-btn" data-sketch-issues="${sketch.id}" title="${t('projects.canvas.workingStatus') || 'Working Status'}">
+           <span class="material-icons">warning</span>${issues}
+         </button>`
+      : `<span class="sketch-side-panel__no-issues" title="${t('projects.canvas.noIssues') || 'OK'}">
+           <span class="material-icons">check_circle</span>
+         </span>`;
 
     item.innerHTML = `
       <button class="sketch-side-panel__eye" title="${sketch.isVisible ? t('projects.canvas.hide') || 'Hide' : t('projects.canvas.show') || 'Show'}">
@@ -111,6 +169,10 @@ function render() {
       <div class="sketch-side-panel__info">
         <span class="sketch-side-panel__name">${displayName}</span>
         <span class="sketch-side-panel__badge">${nodeCount}</span>
+      </div>
+      <div class="sketch-side-panel__stats">
+        <span class="sketch-side-panel__km">${km} ${t('projects.canvas.totalKm') || 'km'}</span>
+        ${issuesBadge}
       </div>
       ${sketch.isActive ? '<span class="material-icons sketch-side-panel__active-icon">edit</span>' : ''}
     `;
@@ -122,6 +184,17 @@ function render() {
       setSketchVisibility(sketch.id, !sketch.isVisible);
     });
 
+    // Issues badge click → open issues sub-panel
+    const issuesBtn = item.querySelector('.sketch-side-panel__issues-btn');
+    if (issuesBtn) {
+      issuesBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        _issuesSketchId = sketch.id;
+        _currentView = 'issues';
+        render();
+      });
+    }
+
     // Click to switch active
     item.addEventListener('click', () => {
       if (!sketch.isActive) {
@@ -130,5 +203,175 @@ function render() {
     });
 
     listEl.appendChild(item);
+  }
+
+  // Add totals footer
+  const totalsEl = document.createElement('div');
+  totalsEl.className = 'sketch-side-panel__totals';
+  const issuesClass = totals.issueCount > 0 ? 'sketch-side-panel__totals-issues--warn' : 'sketch-side-panel__totals-issues--ok';
+  const issuesIcon = totals.issueCount > 0 ? 'warning' : 'check_circle';
+  totalsEl.innerHTML = `
+    <span class="sketch-side-panel__totals-km">${totals.totalKm.toFixed(2)} ${t('projects.canvas.totalKm') || 'km'}</span>
+    <span class="sketch-side-panel__totals-issues ${issuesClass}">
+      <span class="material-icons">${issuesIcon}</span>
+      ${totals.issueCount} ${t('projects.canvas.issues') || 'Issues'}
+    </span>
+  `;
+  // Insert after listEl (inside panelEl)
+  listEl.parentNode.insertBefore(totalsEl, listEl.nextSibling);
+}
+
+/**
+ * Render the issues sub-panel for a specific sketch.
+ */
+function renderIssuesView() {
+  if (!listEl || !_issuesSketchId) return;
+
+  const sketches = getAllSketches();
+  const sketch = sketches.find(s => s.id === _issuesSketchId);
+  if (!sketch) {
+    _currentView = 'list';
+    renderListView();
+    return;
+  }
+
+  // Remove totals footer in issues view
+  const existingTotals = panelEl?.querySelector('.sketch-side-panel__totals');
+  if (existingTotals) existingTotals.remove();
+
+  const displayName = (sketch.name && sketch.name.trim()) || sketch.id.slice(-6);
+  const { issues, stats } = computeSketchIssues(sketch.nodes || [], sketch.edges || []);
+
+  listEl.innerHTML = '';
+
+  // Back button
+  const backEl = document.createElement('div');
+  backEl.className = 'sketch-side-panel__issues-back';
+  backEl.innerHTML = `
+    <span class="material-icons">arrow_back</span>
+    <span>${displayName} — ${t('projects.canvas.workingStatus') || 'Working Status'}</span>
+  `;
+  backEl.addEventListener('click', () => {
+    _currentView = 'list';
+    _issuesSketchId = null;
+    render();
+  });
+  listEl.appendChild(backEl);
+
+  // Summary bar
+  const summaryEl = document.createElement('div');
+  summaryEl.className = 'sketch-side-panel__issues-summary';
+  summaryEl.innerHTML = `
+    <span>${stats.totalKm.toFixed(2)} ${t('projects.canvas.totalKm') || 'km'}</span>
+    <span>${stats.issueCount} ${t('projects.canvas.issues') || 'Issues'}</span>
+  `;
+  listEl.appendChild(summaryEl);
+
+  if (issues.length === 0) {
+    const emptyEl = document.createElement('div');
+    emptyEl.className = 'sketch-side-panel__empty';
+    emptyEl.innerHTML = `
+      <span class="material-icons" style="color: var(--color-success)">check_circle</span>
+      <span>${t('projects.canvas.noIssues') || 'OK'}</span>
+    `;
+    listEl.appendChild(emptyEl);
+    return;
+  }
+
+  // Issue rows
+  for (const issue of issues) {
+    const row = document.createElement('div');
+    row.className = 'sketch-side-panel__issue-row';
+
+    const icon = issue.type === 'missing_coords' ? 'location_off' : 'rule';
+    const typeText = issue.type === 'missing_coords'
+      ? (t('projects.canvas.missingCoords') || 'Missing coordinates')
+      : (t('projects.canvas.missingMeasurement') || 'Missing measurement');
+
+    row.innerHTML = `
+      <div class="sketch-side-panel__issue-info">
+        <span class="sketch-side-panel__issue-icon"><span class="material-icons">${icon}</span></span>
+        <span class="sketch-side-panel__issue-node">#${issue.nodeId}</span>
+        <span class="sketch-side-panel__issue-type">${typeText}</span>
+      </div>
+      <div class="sketch-side-panel__issue-actions">
+        <button class="sketch-side-panel__issue-goto" title="${t('projects.canvas.goToIssue') || 'Go to issue'}">
+          <span class="material-icons">my_location</span>
+        </button>
+        <button class="sketch-side-panel__issue-center" title="${t('projects.canvas.centerBetween') || 'Center between'}">
+          <span class="material-icons">swap_horiz</span>
+        </button>
+      </div>
+    `;
+
+    // Go to issue
+    const gotoBtn = row.querySelector('.sketch-side-panel__issue-goto');
+    gotoBtn.addEventListener('click', () => {
+      navigateToIssue(issue, sketch, 'goto');
+    });
+
+    // Center between
+    const centerBtn = row.querySelector('.sketch-side-panel__issue-center');
+    centerBtn.addEventListener('click', () => {
+      navigateToIssue(issue, sketch, 'center_between');
+    });
+
+    listEl.appendChild(row);
+  }
+}
+
+/**
+ * Navigate to an issue location on the canvas.
+ * @param {object} issue - The issue object with worldX, worldY
+ * @param {object} sketch - The sketch containing the issue
+ * @param {'goto'|'center_between'} mode
+ */
+function navigateToIssue(issue, sketch, mode) {
+  // Switch to the sketch if not active
+  const sketches = getAllSketches();
+  const current = sketches.find(s => s.isActive);
+  if (!current || current.id !== sketch.id) {
+    switchActiveSketch(sketch.id);
+  }
+
+  // Get canvas rect for computing viewTranslate
+  const canvas = document.getElementById('mainCanvas');
+  if (!canvas) return;
+  const rect = canvas.getBoundingClientRect();
+
+  if (mode === 'goto') {
+    // Zoom to the issue location
+    const targetScale = 3;
+    const stretchX = window.__getStretch?.()?.x || 0.6;
+    const stretchY = window.__getStretch?.()?.y || 1;
+    const tx = rect.width / 2 - targetScale * stretchX * issue.worldX;
+    const ty = rect.height / 2 - targetScale * stretchY * issue.worldY;
+    window.__setViewState?.(targetScale, tx, ty);
+    startIssueHighlight(issue.worldX, issue.worldY, 2000);
+    window.__scheduleDraw?.();
+  } else if (mode === 'center_between') {
+    const lastEdit = getLastEditPosition();
+    if (!lastEdit) {
+      // Fall back to goto if no last edit position
+      navigateToIssue(issue, sketch, 'goto');
+      return;
+    }
+    // Compute midpoint
+    const midX = (lastEdit.x + issue.worldX) / 2;
+    const midY = (lastEdit.y + issue.worldY) / 2;
+    // Compute zoom to fit both points
+    const stretchX = window.__getStretch?.()?.x || 0.6;
+    const stretchY = window.__getStretch?.()?.y || 1;
+    const dx = Math.abs(lastEdit.x - issue.worldX) * stretchX;
+    const dy = Math.abs(lastEdit.y - issue.worldY) * stretchY;
+    const padding = 0.6;
+    const scaleX = dx > 0 ? (rect.width * padding) / dx : 10;
+    const scaleY = dy > 0 ? (rect.height * padding) / dy : 10;
+    const targetScale = Math.min(scaleX, scaleY, 5);
+    const tx = rect.width / 2 - targetScale * stretchX * midX;
+    const ty = rect.height / 2 - targetScale * stretchY * midY;
+    window.__setViewState?.(targetScale, tx, ty);
+    startIssueHighlight(issue.worldX, issue.worldY, 2000);
+    window.__scheduleDraw?.();
   }
 }

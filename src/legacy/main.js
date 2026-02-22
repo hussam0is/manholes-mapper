@@ -114,6 +114,8 @@ import {
   setStreetViewVisible,
   updateStreetViewTranslations
 } from '../map/street-view.js';
+import { drawIssueHighlight } from '../project/issue-highlight.js';
+import '../project/last-edit-tracker.js';
 import { menuEvents } from '../menu/menu-events.js';
 import { tsc3Connection } from '../survey/tsc3-connection-manager.js';
 import { initSurveyNodeTypeDialog, openSurveyNodeTypeDialog, getSurveyAutoConnect } from '../survey/survey-node-type-dialog.js';
@@ -2501,6 +2503,16 @@ window.__setActiveSketchData = function (data) {
 
 window.__scheduleDraw = function () { scheduleDraw(); };
 
+window.__setViewState = function (scale, tx, ty) {
+  viewScale = scale;
+  viewTranslate.x = tx;
+  viewTranslate.y = ty;
+  scheduleDraw();
+};
+
+window.__getStretch = function () {
+  return { x: viewStretchX, y: viewStretchY };
+};
 
 // Expose project canvas module on window for draw()/pointerDown() integration
 window.__projectCanvas = {
@@ -3526,7 +3538,10 @@ function draw() {
       );
     }
   }
-  
+
+  // Draw issue highlight animation (pulsing ring at issue location)
+  drawIssueHighlight(ctx, viewScale, viewStretchX, viewStretchY, viewTranslate);
+
   ctx.restore();
   
   // Draw map attribution in screen space (after restore)
@@ -4059,6 +4074,16 @@ function scheduleDraw() {
  */
 function renderDetails() {
   detailsContainer.innerHTML = '';
+  // Track last edited position for "center between" navigation
+  if (selectedNode) {
+    window.__setLastEditPosition?.(selectedNode.x, selectedNode.y);
+  } else if (selectedEdge) {
+    const tailN = nodeMap.get(String(selectedEdge.tail));
+    const headN = nodeMap.get(String(selectedEdge.head));
+    if (tailN && headN) {
+      window.__setLastEditPosition?.((tailN.x + headN.x) / 2, (tailN.y + headN.y) / 2);
+    }
+  }
   if (selectedNode) {
     const node = selectedNode;
     const container = document.createElement('div');
