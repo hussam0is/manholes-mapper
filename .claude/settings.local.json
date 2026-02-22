@@ -46,6 +46,19 @@
     ]
   },
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Edit|Write|Read|Glob|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/session-watchdog.sh\" check",
+            "timeout": 30,
+            "statusMessage": "Checking session idle time..."
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write|Bash",
@@ -55,6 +68,17 @@
             "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/check-phone-errors.sh\"",
             "timeout": 5,
             "statusMessage": "Checking phone logs..."
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|Edit|Write|Read|Glob|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/session-watchdog.sh\" track",
+            "timeout": 3,
+            "statusMessage": "Tracking session activity..."
           }
         ]
       }

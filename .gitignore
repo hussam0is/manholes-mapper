@@ -44,3 +44,6 @@ manholes/
 
 .vercel
 .env*.local
+
+# Claude Code session watchdog state
+.claude/.watchdog/
