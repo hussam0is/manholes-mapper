@@ -64,7 +64,8 @@ import {
   surveyToCanvas,
   approximateUncoordinatedNodePositions,
   classifySketchCoordinates,
-  repositionNodesFromEmbeddedCoordinates
+  repositionNodesFromEmbeddedCoordinates,
+  extractNodeItmCoordinates
 } from '../utils/coordinates.js';
 
 // GNSS module imports
@@ -120,6 +121,7 @@ import { openDevicePickerDialog } from '../survey/device-picker-dialog.js';
 import {
   loadProjectSketches,
   getBackgroundSketches,
+  getAllSketches,
   isProjectCanvasMode,
   clearProjectCanvas,
   findNodeInBackground,
@@ -2623,6 +2625,184 @@ async function renderProjectsHome() {
 }
 
 /**
+ * Reposition nodes in ALL project sketches using shared global ITM bounds.
+ * This ensures every sketch's nodes are placed at their correct geographic
+ * positions relative to each other on the canvas.
+ */
+function repositionAllProjectSketchNodes(sketches) {
+  // 1. First pass: extract ITM coords from all nodes across all sketches
+  const allCoordinated = []; // [{node, surveyX, surveyY}]
+  for (const sketch of sketches) {
+    for (const node of (sketch.nodes || [])) {
+      const itm = extractNodeItmCoordinates(node, wgs84ToItm);
+      if (itm) {
+        allCoordinated.push({ node, ...itm });
+      }
+    }
+  }
+
+  if (allCoordinated.length === 0) return;
+
+  // 2. Compute global ITM bounds
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const { surveyX, surveyY } of allCoordinated) {
+    if (surveyX < minX) minX = surveyX;
+    if (surveyX > maxX) maxX = surveyX;
+    if (surveyY < minY) minY = surveyY;
+    if (surveyY > maxY) maxY = surveyY;
+  }
+  const globalBounds = { minX, maxX, minY, maxY };
+
+  // Canvas dimensions
+  const dpr = window.devicePixelRatio || 1;
+  const logicalW = (canvas.width / dpr) || 800;
+  const logicalH = (canvas.height / dpr) || 600;
+
+  console.debug(`[ProjectCanvas] Global ITM bounds: X[${minX.toFixed(1)}, ${maxX.toFixed(1)}] Y[${minY.toFixed(1)}, ${maxY.toFixed(1)}]`);
+  console.debug(`[ProjectCanvas] Repositioning ${sketches.length} sketches, ${allCoordinated.length} coordinated nodes`);
+
+  // 3. Reposition each sketch's nodes
+  let firstReferencePoint = null;
+  for (const sketch of sketches) {
+    const sketchNodes = sketch.nodes || [];
+    const sketchEdges = sketch.edges || [];
+
+    // Save original positions for uncoordinated node placement
+    const origPositions = new Map();
+    for (const node of sketchNodes) {
+      origPositions.set(String(node.id), { x: node.x, y: node.y });
+    }
+
+    // Reposition coordinated nodes
+    for (const node of sketchNodes) {
+      const itm = extractNodeItmCoordinates(node, wgs84ToItm);
+      if (itm) {
+        const pos = surveyToCanvas(itm.surveyX, itm.surveyY, globalBounds, logicalW, logicalH, { pixelsPerMeter: coordinateScale });
+        node.x = pos.x;
+        node.y = pos.y;
+        node.surveyX = itm.surveyX;
+        node.surveyY = itm.surveyY;
+        node.hasCoordinates = true;
+        node._hidden = false;
+
+        if (!firstReferencePoint) {
+          firstReferencePoint = {
+            itm: { x: itm.surveyX, y: itm.surveyY },
+            canvas: { x: pos.x, y: pos.y }
+          };
+        }
+      } else {
+        node._hidden = true;
+      }
+    }
+
+    // Handle uncoordinated nodes — place relative to coordinated neighbors
+    const hiddenNodes = sketchNodes.filter(n => n._hidden);
+    if (hiddenNodes.length > 0) {
+      const nodeMap = new Map();
+      for (const n of sketchNodes) nodeMap.set(String(n.id), n);
+
+      for (const node of hiddenNodes) {
+        let placed = false;
+        for (const edge of sketchEdges) {
+          const tailId = String(edge.tail);
+          const headId = String(edge.head);
+          const nodeId = String(node.id);
+          let neighborId = null;
+          if (tailId === nodeId) neighborId = headId;
+          else if (headId === nodeId) neighborId = tailId;
+          if (!neighborId) continue;
+
+          const neighbor = nodeMap.get(neighborId);
+          if (!neighbor || neighbor._hidden) continue;
+
+          const origNode = origPositions.get(String(node.id));
+          const origNeighbor = origPositions.get(String(neighbor.id));
+          if (origNode && origNeighbor) {
+            const dx = origNode.x - origNeighbor.x;
+            const dy = origNode.y - origNeighbor.y;
+            node.x = neighbor.x + dx;
+            node.y = neighbor.y + dy;
+          } else {
+            node.x = neighbor.x + 20;
+            node.y = neighbor.y + 20;
+          }
+          node._hidden = false;
+          placed = true;
+          break;
+        }
+        if (!placed) {
+          const coordNodes = sketchNodes.filter(n => !n._hidden && n !== node);
+          if (coordNodes.length > 0) {
+            const cx = coordNodes.reduce((s, n) => s + n.x, 0) / coordNodes.length;
+            const cy = coordNodes.reduce((s, n) => s + n.y, 0) / coordNodes.length;
+            node.x = cx + (Math.random() - 0.5) * 40;
+            node.y = cy + (Math.random() - 0.5) * 40;
+          }
+          node._hidden = false;
+        }
+      }
+    }
+  }
+
+  // 4. Update active sketch state (geoNodePositions, coordinatesMap, etc.)
+  for (const node of nodes) {
+    geoNodePositions.set(String(node.id), { x: node.x, y: node.y });
+    if (node.hasCoordinates && node.surveyX != null && node.surveyY != null) {
+      coordinatesMap.set(String(node.id), { x: node.surveyX, y: node.surveyY, z: node.surveyZ || 0 });
+    }
+  }
+  saveCoordinatesToStorage(coordinatesMap);
+
+  // Enable coordinates mode
+  if (!coordinatesEnabled) {
+    coordinatesEnabled = true;
+    saveCoordinatesEnabled(true);
+    syncCoordinatesToggleUI();
+  }
+
+  // Set the map reference point from the first coordinated node
+  if (firstReferencePoint) {
+    setMapReferencePoint(firstReferencePoint);
+    setStreetViewVisible(true);
+  }
+
+  // Zoom to fit ALL project nodes (not just active sketch)
+  requestAnimationFrame(() => {
+    const allNodes = [];
+    for (const sketch of sketches) {
+      for (const n of (sketch.nodes || [])) {
+        if (n && !n._hidden && typeof n.x === 'number' && typeof n.y === 'number') {
+          allNodes.push(n);
+        }
+      }
+    }
+    if (allNodes.length < 2) { zoomToFit(); return; }
+
+    let mnX = Infinity, mnY = Infinity, mxX = -Infinity, mxY = -Infinity;
+    for (const n of allNodes) {
+      if (n.x < mnX) mnX = n.x;
+      if (n.y < mnY) mnY = n.y;
+      if (n.x > mxX) mxX = n.x;
+      if (n.y > mxY) mxY = n.y;
+    }
+    const rangeX = (mxX - mnX) || 1;
+    const rangeY = (mxY - mnY) || 1;
+    const rect = canvas.getBoundingClientRect();
+    const padding = 0.85;
+    const scaleX = (rect.width * padding) / (rangeX * viewStretchX);
+    const scaleY = (rect.height * padding) / (rangeY * viewStretchY);
+    const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, Math.min(scaleX, scaleY)));
+    const cx = (mnX + mxX) / 2;
+    const cy = (mnY + mxY) / 2;
+    viewScale = newScale;
+    viewTranslate.x = rect.width / 2 - viewScale * viewStretchX * cx;
+    viewTranslate.y = rect.height / 2 - viewScale * viewStretchY * cy;
+    scheduleDraw();
+  });
+}
+
+/**
  * Enter project-canvas mode: load all sketches for a project onto the canvas.
  */
 async function loadProjectCanvas(projectId) {
@@ -2637,6 +2817,10 @@ async function loadProjectCanvas(projectId) {
       location.hash = '#/';
       return;
     }
+
+    // Reposition ALL sketch nodes using global ITM bounds so all sketches
+    // align correctly on the canvas relative to each other
+    repositionAllProjectSketchNodes(sketches);
 
     showSketchSidePanel();
     scheduleDraw();
@@ -6760,6 +6944,8 @@ function updateMapReferencePoint() {
  */
 function autoRepositionFromEmbeddedCoords() {
   if (!nodes || nodes.length === 0) return;
+  // In project-canvas mode, global repositioning handles all sketches
+  if (isProjectCanvasMode()) return;
 
   const classification = classifySketchCoordinates(nodes, wgs84ToItm);
   console.debug('[Coordinates] Sketch classification:', classification);
