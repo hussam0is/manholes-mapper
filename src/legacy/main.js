@@ -5190,8 +5190,8 @@ function pointerMove(x, y) {
     }
   }
   if (isDragging && selectedNode) {
-    // Don't allow dragging if node position is locked (has coordinates)
-    if (selectedNode.positionLocked) {
+    // Don't allow dragging if node has survey coordinates (position is locked)
+    if (selectedNode.surveyX != null && selectedNode.surveyY != null) {
       isDragging = false;
       return;
     }
