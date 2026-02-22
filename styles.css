@@ -1452,7 +1452,7 @@ canvas {
 .canvas-fab-toolbar {
   position: absolute;
   right: 12px;
-  bottom: 32px;
+  bottom: 64px;
   z-index: 16;
   display: flex;
   flex-direction: row-reverse;
@@ -5183,12 +5183,12 @@ select.invalid:focus {
 
   /* Position FAB toolbar above drawer */
   body.drawer-open .canvas-fab-toolbar {
-    bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 8px);
+    bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 8px + 44px + 8px);
   }
 
   /* When keyboard button is visible, move FAB toolbar above it */
   body.drawer-open.keyboard-button-visible .canvas-fab-toolbar {
-    bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 8px + 44px + 8px);
+    bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 8px + 44px + 8px + 44px + 8px);
   }
 
   /* Keep .canvas-fab rules for standalone items (e.g. sketchSidePanelToggle) */
@@ -5218,7 +5218,7 @@ select.invalid:focus {
 
   .canvas-fab-toolbar {
     right: 8px;
-    bottom: 8px;
+    bottom: 60px;
     transition: bottom 0.3s ease, right 240ms cubic-bezier(.2, .8, .2, 1);
   }
 
