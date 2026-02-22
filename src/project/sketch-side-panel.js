@@ -173,6 +173,9 @@ function renderListView() {
       <div class="sketch-side-panel__stats">
         <span class="sketch-side-panel__km">${km} ${t('projects.canvas.totalKm') || 'km'}</span>
         ${issuesBadge}
+        <button class="sketch-side-panel__recenter-btn" data-sketch-recenter="${sketch.id}" title="${t('projects.canvas.recenterToSketch') || 'Recenter to sketch'}">
+          <span class="material-icons">center_focus_strong</span>
+        </button>
       </div>
       ${sketch.isActive ? '<span class="material-icons sketch-side-panel__active-icon">edit</span>' : ''}
     `;
@@ -192,6 +195,15 @@ function renderListView() {
         _issuesSketchId = sketch.id;
         _currentView = 'issues';
         render();
+      });
+    }
+
+    // Recenter to sketch
+    const recenterBtn = item.querySelector('.sketch-side-panel__recenter-btn');
+    if (recenterBtn) {
+      recenterBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        recenterToSketch(sketch);
       });
     }
 
@@ -321,6 +333,64 @@ function renderIssuesView() {
 }
 
 /**
+ * Recenter the canvas view to fit all nodes of a sketch.
+ * @param {object} sketch - The sketch to recenter on
+ */
+function recenterToSketch(sketch) {
+  const nodes = sketch.nodes || [];
+  if (nodes.length === 0) return;
+
+  // Switch to this sketch if not active
+  const sketches = getAllSketches();
+  const current = sketches.find(s => s.isActive);
+  if (!current || current.id !== sketch.id) {
+    switchActiveSketch(sketch.id);
+  }
+
+  // Compute bounding box of all nodes in world coordinates
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const n of nodes) {
+    if (n.x < minX) minX = n.x;
+    if (n.y < minY) minY = n.y;
+    if (n.x > maxX) maxX = n.x;
+    if (n.y > maxY) maxY = n.y;
+  }
+
+  const canvas = document.getElementById('graphCanvas');
+  if (!canvas) return;
+  const rect = canvas.getBoundingClientRect();
+
+  const stretchX = window.__getStretch?.()?.x || 0.6;
+  const stretchY = window.__getStretch?.()?.y || 1;
+
+  const midX = (minX + maxX) / 2;
+  const midY = (minY + maxY) / 2;
+
+  // Single-node case: just center on it at a reasonable zoom
+  if (nodes.length === 1 || (maxX - minX < 1 && maxY - minY < 1)) {
+    const targetScale = 3;
+    const tx = rect.width / 2 - targetScale * stretchX * midX;
+    const ty = rect.height / 2 - targetScale * stretchY * midY;
+    window.__setViewState?.(targetScale, tx, ty);
+    window.__scheduleDraw?.();
+    return;
+  }
+
+  // Fit bounding box with padding
+  const dx = (maxX - minX) * stretchX;
+  const dy = (maxY - minY) * stretchY;
+  const padding = 0.7;
+  const scaleX = dx > 0 ? (rect.width * padding) / dx : 10;
+  const scaleY = dy > 0 ? (rect.height * padding) / dy : 10;
+  const targetScale = Math.min(scaleX, scaleY, 10);
+
+  const tx = rect.width / 2 - targetScale * stretchX * midX;
+  const ty = rect.height / 2 - targetScale * stretchY * midY;
+  window.__setViewState?.(targetScale, tx, ty);
+  window.__scheduleDraw?.();
+}
+
+/**
  * Navigate to an issue location on the canvas.
  * @param {object} issue - The issue object with worldX, worldY
  * @param {object} sketch - The sketch containing the issue
@@ -335,7 +405,7 @@ function navigateToIssue(issue, sketch, mode) {
   }
 
   // Get canvas rect for computing viewTranslate
-  const canvas = document.getElementById('mainCanvas');
+  const canvas = document.getElementById('graphCanvas');
   if (!canvas) return;
   const rect = canvas.getBoundingClientRect();
 
