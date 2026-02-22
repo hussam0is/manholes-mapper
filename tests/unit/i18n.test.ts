@@ -110,6 +110,40 @@ describe('i18n dictionary', () => {
   });
 });
 
+describe('projects homepage keys', () => {
+  it('should have matching keys in projects.homepage section', () => {
+    const heKeys = Object.keys(i18n.he.projects.homepage).sort();
+    const enKeys = Object.keys(i18n.en.projects.homepage).sort();
+    expect(heKeys).toEqual(enKeys);
+  });
+
+  it('should have matching keys in projects.canvas section', () => {
+    const heKeys = Object.keys(i18n.he.projects.canvas).sort();
+    const enKeys = Object.keys(i18n.en.projects.canvas).sort();
+    expect(heKeys).toEqual(enKeys);
+  });
+
+  it('should have non-empty Hebrew subtitle', () => {
+    expect(i18n.he.projects.homepage.subtitle).toBeTruthy();
+    expect(typeof i18n.he.projects.homepage.subtitle).toBe('string');
+  });
+
+  it('should have non-empty English subtitle', () => {
+    expect(i18n.en.projects.homepage.subtitle).toBeTruthy();
+    expect(typeof i18n.en.projects.homepage.subtitle).toBe('string');
+  });
+
+  it('should have non-empty Hebrew backToProjects', () => {
+    expect(i18n.he.projects.canvas.backToProjects).toBeTruthy();
+    expect(typeof i18n.he.projects.canvas.backToProjects).toBe('string');
+  });
+
+  it('should have non-empty English backToProjects', () => {
+    expect(i18n.en.projects.canvas.backToProjects).toBeTruthy();
+    expect(typeof i18n.en.projects.canvas.backToProjects).toBe('string');
+  });
+});
+
 describe('isRTL', () => {
   it('should return true for Hebrew', () => {
     expect(isRTL('he')).toBe(true);

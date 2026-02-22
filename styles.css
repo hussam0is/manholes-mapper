@@ -8903,6 +8903,28 @@ button:focus-visible,
   font-size: 16px;
 }
 
+.sketch-side-panel__recenter-btn {
+  display: inline-flex;
+  align-items: center;
+  background: var(--color-surface-alt, #f1f5f9);
+  color: var(--color-text-secondary, #475569);
+  border: none;
+  border-radius: 10px;
+  padding: 2px 5px;
+  cursor: pointer;
+  min-height: 22px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.sketch-side-panel__recenter-btn:hover {
+  background: var(--color-accent, #3b82f6);
+  color: #fff;
+}
+
+.sketch-side-panel__recenter-btn .material-icons {
+  font-size: 15px;
+}
+
 /* ── Totals footer ─────────────────────────────────────────────────── */
 .sketch-side-panel__totals {
   display: flex;

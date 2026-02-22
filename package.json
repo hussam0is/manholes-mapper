@@ -12,7 +12,8 @@
     "build:android": "npm run build && npx cap sync android",
     "open:android": "npx cap open android",
     "run:android": "npx cap run android",
-    "db:migrate": "node scripts/migrate-auth-tables.js"
+    "db:migrate": "node scripts/migrate-auth-tables.js",
+    "mock:tsc3": "node scripts/mock-tsc3/server.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.1",
@@ -32,7 +33,8 @@
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.2",
     "vite": "^7.1.3",
-    "vitest": "^4.0.17"
+    "vitest": "^4.0.17",
+    "ws": "^8.19.0"
   },
   "type": "module",
   "dependencies": {

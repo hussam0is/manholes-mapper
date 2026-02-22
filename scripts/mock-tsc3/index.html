@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mock TSC3 Controller</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  h1 { font-size: 1.4rem; margin-bottom: 4px; color: #fff; }
+  h2 { font-size: 1.1rem; margin-bottom: 12px; color: #8ab4f8; }
+
+  .header { text-align: center; margin-bottom: 24px; }
+  .header small { color: #888; }
+
+  .badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin: 8px 4px;
+  }
+  .badge-ok { background: #1b5e20; color: #a5d6a7; }
+  .badge-warn { background: #e65100; color: #ffcc80; }
+  .badge-info { background: #0d47a1; color: #90caf9; }
+
+  .card {
+    background: #16213e;
+    border: 1px solid #2a3a5c;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  label {
+    display: block;
+    font-size: 0.85rem;
+    color: #aaa;
+    margin-bottom: 4px;
+    margin-top: 10px;
+  }
+  label:first-child { margin-top: 0; }
+
+  input[type="text"], input[type="number"] {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #3a4a6c;
+    border-radius: 4px;
+    background: #0f1a30;
+    color: #e0e0e0;
+    font-size: 0.95rem;
+    font-family: 'Consolas', 'Monaco', monospace;
+  }
+  input:focus { outline: none; border-color: #8ab4f8; }
+
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .checkbox-row input { width: auto; }
+
+  button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: background 0.15s;
+  }
+
+  .btn-primary { background: #1976d2; color: #fff; }
+  .btn-primary:hover { background: #1565c0; }
+  .btn-secondary { background: #37474f; color: #cfd8dc; }
+  .btn-secondary:hover { background: #455a64; }
+  .btn-danger { background: #c62828; color: #fff; }
+  .btn-danger:hover { background: #b71c1c; }
+
+  .btn-row { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+
+  .log {
+    max-height: 300px;
+    overflow-y: auto;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    background: #0f1a30;
+    border: 1px solid #2a3a5c;
+    border-radius: 4px;
+    padding: 10px;
+    margin-top: 10px;
+  }
+  .log-entry { border-bottom: 1px solid #1a2a4c; padding: 4px 0; }
+  .log-entry:last-child { border-bottom: none; }
+  .log-time { color: #666; }
+  .log-name { color: #8ab4f8; font-weight: 600; }
+  .log-coords { color: #a5d6a7; }
+  .log-clients { color: #888; }
+
+  .empty { color: #555; font-style: italic; text-align: center; padding: 20px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Mock TSC3 Controller</h1>
+  <small>WebSocket survey point simulator</small>
+  <div id="statusBadges">
+    <span class="badge badge-info" id="badgeClients">Clients: --</span>
+    <span class="badge badge-info" id="badgeSent">Sent: --</span>
+  </div>
+</div>
+
+<!-- Send Point Form -->
+<div class="card">
+  <h2>Send Survey Point</h2>
+
+  <label for="pointName">Point Name</label>
+  <input type="text" id="pointName" value="MH1" placeholder="e.g. MH1, P5">
+
+  <div class="row">
+    <div>
+      <label for="easting">Easting (ITM)</label>
+      <input type="number" id="easting" value="179500.000" step="0.001" min="100000" max="300000">
+    </div>
+    <div>
+      <label for="northing">Northing (ITM)</label>
+      <input type="number" id="northing" value="665500.000" step="0.001" min="400000" max="800000">
+    </div>
+  </div>
+
+  <label for="elevation">Elevation (m)</label>
+  <input type="number" id="elevation" value="25.000" step="0.001">
+
+  <div class="checkbox-row">
+    <input type="checkbox" id="autoIncrement" checked>
+    <label for="autoIncrement" style="margin:0; display:inline; color:#e0e0e0;">
+      Auto-increment point name (MH1 → MH2 → MH3)
+    </label>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn-primary" onclick="sendPoint()">Send Point</button>
+    <button class="btn-secondary" onclick="sendTestPoint()">Quick Test Point</button>
+    <button class="btn-secondary" onclick="sendBatch3()">Send 3-Point Batch</button>
+  </div>
+</div>
+
+<!-- History -->
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h2 style="margin-bottom:0;">History</h2>
+    <button class="btn-danger" onclick="clearHistory()">Clear</button>
+  </div>
+  <div class="log" id="historyLog">
+    <div class="empty">No points sent yet</div>
+  </div>
+</div>
+
+<script>
+const API = '';
+
+// --- Status polling ---
+async function pollStatus() {
+  try {
+    const r = await fetch(`${API}/api/status`);
+    const d = await r.json();
+    document.getElementById('badgeClients').textContent = `Clients: ${d.connectedClients}`;
+    document.getElementById('badgeClients').className =
+      `badge ${d.connectedClients > 0 ? 'badge-ok' : 'badge-warn'}`;
+    document.getElementById('badgeSent').textContent = `Sent: ${d.sentPointsCount}`;
+  } catch { /* server not ready */ }
+}
+setInterval(pollStatus, 2000);
+pollStatus();
+
+// --- Auto-increment logic ---
+function incrementName(name) {
+  const match = name.match(/^(.*?)(\d+)$/);
+  if (match) {
+    const prefix = match[1];
+    const num = parseInt(match[2], 10) + 1;
+    return prefix + num;
+  }
+  return name + '2';
+}
+
+// --- Send point ---
+async function sendPoint() {
+  const nameEl = document.getElementById('pointName');
+  const point = {
+    pointName: nameEl.value.trim(),
+    easting: parseFloat(document.getElementById('easting').value),
+    northing: parseFloat(document.getElementById('northing').value),
+    elevation: parseFloat(document.getElementById('elevation').value),
+  };
+
+  try {
+    const r = await fetch(`${API}/api/send-point`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(point),
+    });
+    const d = await r.json();
+    if (d.ok) {
+      addLogEntry(d.entry);
+      if (document.getElementById('autoIncrement').checked) {
+        nameEl.value = incrementName(nameEl.value.trim());
+      }
+    } else {
+      alert('Error: ' + (d.details?.join(', ') || d.error));
+    }
+  } catch (e) {
+    alert('Request failed: ' + e.message);
+  }
+}
+
+// --- Quick test point ---
+async function sendTestPoint() {
+  const point = {
+    pointName: 'TEST1',
+    easting: 179550.123,
+    northing: 665550.456,
+    elevation: 30.500,
+  };
+  try {
+    const r = await fetch(`${API}/api/send-point`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(point),
+    });
+    const d = await r.json();
+    if (d.ok) addLogEntry(d.entry);
+  } catch (e) {
+    alert('Request failed: ' + e.message);
+  }
+}
+
+// --- Send 3-point batch ---
+async function sendBatch3() {
+  const points = [
+    { pointName: 'BATCH1', easting: 179400.000, northing: 665400.000, elevation: 20.0 },
+    { pointName: 'BATCH2', easting: 179450.000, northing: 665450.000, elevation: 21.5 },
+    { pointName: 'BATCH3', easting: 179500.000, northing: 665500.000, elevation: 23.0 },
+  ];
+  try {
+    const r = await fetch(`${API}/api/send-batch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(points),
+    });
+    const d = await r.json();
+    if (d.ok && d.entries) {
+      d.entries.forEach(e => addLogEntry(e));
+    }
+  } catch (e) {
+    alert('Request failed: ' + e.message);
+  }
+}
+
+// --- History ---
+function addLogEntry(entry) {
+  const log = document.getElementById('historyLog');
+  const empty = log.querySelector('.empty');
+  if (empty) empty.remove();
+
+  const time = new Date(entry.timestamp).toLocaleTimeString();
+  const div = document.createElement('div');
+  div.className = 'log-entry';
+  div.innerHTML =
+    `<span class="log-time">${time}</span> ` +
+    `<span class="log-name">${esc(entry.pointName)}</span> ` +
+    `<span class="log-coords">E:${entry.easting.toFixed(3)} N:${entry.northing.toFixed(3)} ` +
+    `El:${entry.elevation.toFixed(3)}</span> ` +
+    `<span class="log-clients">→ ${entry.clientsSent} client(s)</span>`;
+  log.prepend(div);
+}
+
+async function clearHistory() {
+  try {
+    await fetch(`${API}/api/clear-history`, { method: 'POST' });
+    document.getElementById('historyLog').innerHTML = '<div class="empty">No points sent yet</div>';
+  } catch { /* ignore */ }
+}
+
+async function loadHistory() {
+  try {
+    const r = await fetch(`${API}/api/history`);
+    const d = await r.json();
+    if (d.history?.length) {
+      d.history.forEach(e => addLogEntry(e));
+    }
+  } catch { /* server not ready */ }
+}
+loadHistory();
+
+// --- Utilities ---
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// --- Enter key sends ---
+document.querySelectorAll('input[type="text"], input[type="number"]').forEach(el => {
+  el.addEventListener('keydown', e => { if (e.key === 'Enter') sendPoint(); });
+});
+</script>
+
+</body>
+</html>

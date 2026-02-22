@@ -1,60 +1,150 @@
-<testsuites id="" name="" tests="27" failures="0" skipped="0" errors="0" time="38.922924">
-<testsuite name="auth.spec.ts" timestamp="2026-02-05T12:50:12.845Z" hostname="chromium" tests="10" failures="0" skipped="0" time="51.774" errors="0">
-<testcase name="Authentication › should show login panel when not authenticated" classname="auth.spec.ts" time="7.613">
+<testsuites id="" name="" tests="72" failures="0" skipped="0" errors="0" time="36.54807">
+<testsuite name="homepage.spec.ts" timestamp="2026-02-22T08:59:16.762Z" hostname="chromium" tests="36" failures="0" skipped="0" time="149.142" errors="0">
+<testcase name="Projects Homepage › should display home panel in projects mode on load" classname="homepage.spec.ts" time="3.162">
 </testcase>
-<testcase name="Authentication › should have login form elements" classname="auth.spec.ts" time="8.152">
+<testcase name="Projects Homepage › should show dashboard icon in projects mode" classname="homepage.spec.ts" time="4.283">
 </testcase>
-<testcase name="Authentication › should show app title correctly" classname="auth.spec.ts" time="4.8">
+<testcase name="Projects Homepage › should show subtitle text" classname="homepage.spec.ts" time="4.234">
 </testcase>
-<testcase name="Authentication › should display brand logo" classname="auth.spec.ts" time="4.861">
+<testcase name="Projects Homepage › should render project cards" classname="homepage.spec.ts" time="3.304">
 </testcase>
-<testcase name="Navigation › should have main navigation elements" classname="auth.spec.ts" time="6.203">
+<testcase name="Projects Homepage › should display project names in cards" classname="homepage.spec.ts" time="3.304">
 </testcase>
-<testcase name="Navigation › should have mobile menu button" classname="auth.spec.ts" time="3.979">
+<testcase name="Projects Homepage › should display project descriptions when present" classname="homepage.spec.ts" time="3.406">
 </testcase>
-<testcase name="Navigation › should toggle mobile menu on click" classname="auth.spec.ts" time="5.798">
+<testcase name="Projects Homepage › should have folder icon on each project card" classname="homepage.spec.ts" time="3.924">
 </testcase>
-<testcase name="Accessibility › should have proper ARIA labels" classname="auth.spec.ts" time="2.454">
+<testcase name="Projects Homepage › should have &quot;Open Project&quot; buttons" classname="homepage.spec.ts" time="4.473">
 </testcase>
-<testcase name="Accessibility › should have proper document structure" classname="auth.spec.ts" time="2.286">
+<testcase name="Projects Homepage › should hide close button in projects mode" classname="homepage.spec.ts" time="4.368">
 </testcase>
-<testcase name="Accessibility › should have proper form labels" classname="auth.spec.ts" time="5.628">
+<testcase name="Projects Homepage › should hide footer in projects mode" classname="homepage.spec.ts" time="4.459">
+</testcase>
+<testcase name="Projects Homepage › should hide sketch tabs in projects mode" classname="homepage.spec.ts" time="3.375">
+</testcase>
+<testcase name="Project Click → Canvas Navigation › clicking a project card navigates to #/project/:id" classname="homepage.spec.ts" time="2.991">
+</testcase>
+<testcase name="Project Click → Canvas Navigation › clicking a project triggers hideHome" classname="homepage.spec.ts" time="5.08">
+</testcase>
+<testcase name="Project Click → Canvas Navigation › clicking a project shows the sketch side panel" classname="homepage.spec.ts" time="4.818">
+</testcase>
+<testcase name="Project Click → Canvas Navigation › sketch side panel lists all project sketches" classname="homepage.spec.ts" time="4.547">
+</testcase>
+<testcase name="Project Click → Canvas Navigation › sketch side panel shows sketch names" classname="homepage.spec.ts" time="4.626">
+</testcase>
+<testcase name="Project Click → Canvas Navigation › first sketch is marked as active" classname="homepage.spec.ts" time="4.825">
+</testcase>
+<testcase name="Project Click → Canvas Navigation › side panel toggle button is visible" classname="homepage.spec.ts" time="5.492">
+</testcase>
+<testcase name="Project Click → Canvas Navigation › empty project redirects back to homepage" classname="homepage.spec.ts" time="5.386">
+</testcase>
+<testcase name="Sketch Side Panel Interactions › clicking a non-active sketch switches it to active" classname="homepage.spec.ts" time="5.599">
+</testcase>
+<testcase name="Sketch Side Panel Interactions › eye icon toggles sketch visibility" classname="homepage.spec.ts" time="4.962">
+</testcase>
+<testcase name="Sketch Side Panel Interactions › side panel shows node count badges" classname="homepage.spec.ts" time="4.408">
+</testcase>
+<testcase name="Sketch Side Panel Interactions › active sketch has edit icon" classname="homepage.spec.ts" time="4.556">
+</testcase>
+<testcase name="Sketch Side Panel Interactions › close button hides the side panel" classname="homepage.spec.ts" time="4.367">
+</testcase>
+<testcase name="Sketch Side Panel Interactions › toggle button re-opens the side panel" classname="homepage.spec.ts" time="4.678">
+</testcase>
+<testcase name="Back to Projects Navigation › back button exists in sketch side panel" classname="homepage.spec.ts" time="4.334">
+</testcase>
+<testcase name="Back to Projects Navigation › back button has arrow_back icon" classname="homepage.spec.ts" time="4.663">
+</testcase>
+<testcase name="Back to Projects Navigation › back button links to #/" classname="homepage.spec.ts" time="3.215">
+</testcase>
+<testcase name="Back to Projects Navigation › clicking back button returns to projects homepage" classname="homepage.spec.ts" time="5.096">
+</testcase>
+<testcase name="Back to Projects Navigation › back button hides sketch side panel" classname="homepage.spec.ts" time="5.003">
+</testcase>
+<testcase name="Back to Projects Navigation › full round-trip: homepage → project → back → homepage" classname="homepage.spec.ts" time="3.512">
+</testcase>
+<testcase name="Fallback: No Projects → Sketch List › falls back to sketches mode when no projects exist" classname="homepage.spec.ts" time="2.343">
+</testcase>
+<testcase name="Fallback: No Projects → Sketch List › shows folder_open icon in sketches mode" classname="homepage.spec.ts" time="3.176">
+</testcase>
+<testcase name="Fallback: No Projects → Sketch List › shows close button in sketches mode" classname="homepage.spec.ts" time="3.21">
+</testcase>
+<testcase name="Fallback: No Projects → Sketch List › shows footer in sketches mode" classname="homepage.spec.ts" time="3.06">
+</testcase>
+<testcase name="Fallback: API Error → Sketch List › falls back to sketches mode on API error" classname="homepage.spec.ts" time="2.903">
 </testcase>
 </testsuite>
-<testsuite name="sketch.spec.ts" timestamp="2026-02-05T12:50:12.845Z" hostname="chromium" tests="17" failures="0" skipped="0" time="78.123" errors="0">
-<testcase name="Sketch Canvas › should have canvas element" classname="sketch.spec.ts" time="5.457">
+<testsuite name="homepage.spec.ts" timestamp="2026-02-22T08:59:16.762Z" hostname="Mobile Chrome" tests="36" failures="0" skipped="0" time="151.459" errors="0">
+<testcase name="Projects Homepage › should display home panel in projects mode on load" classname="homepage.spec.ts" time="2.62">
 </testcase>
-<testcase name="Sketch Canvas › should have canvas container" classname="sketch.spec.ts" time="5.195">
+<testcase name="Projects Homepage › should show dashboard icon in projects mode" classname="homepage.spec.ts" time="2.89">
 </testcase>
-<testcase name="Sketch Canvas › should have mode selection buttons" classname="sketch.spec.ts" time="4.188">
+<testcase name="Projects Homepage › should show subtitle text" classname="homepage.spec.ts" time="3.078">
 </testcase>
-<testcase name="Sketch Canvas › should have toolbar with mode group" classname="sketch.spec.ts" time="5.687">
+<testcase name="Projects Homepage › should render project cards" classname="homepage.spec.ts" time="3.245">
 </testcase>
-<testcase name="Sketch Canvas › should have recenter button" classname="sketch.spec.ts" time="5.255">
+<testcase name="Projects Homepage › should display project names in cards" classname="homepage.spec.ts" time="3.78">
 </testcase>
-<testcase name="Sidebar › should have sidebar element" classname="sketch.spec.ts" time="4.914">
+<testcase name="Projects Homepage › should display project descriptions when present" classname="homepage.spec.ts" time="3.948">
 </testcase>
-<testcase name="Sidebar › should have details container" classname="sketch.spec.ts" time="4.797">
+<testcase name="Projects Homepage › should have folder icon on each project card" classname="homepage.spec.ts" time="5.531">
 </testcase>
-<testcase name="Sidebar › should have sidebar close button" classname="sketch.spec.ts" time="4.243">
+<testcase name="Projects Homepage › should have &quot;Open Project&quot; buttons" classname="homepage.spec.ts" time="5.004">
 </testcase>
-<testcase name="Dialogs and Modals › should have help modal (hidden by default)" classname="sketch.spec.ts" time="4.933">
+<testcase name="Projects Homepage › should hide close button in projects mode" classname="homepage.spec.ts" time="4.546">
 </testcase>
-<testcase name="Dialogs and Modals › should have admin modal (hidden by default)" classname="sketch.spec.ts" time="6.236">
+<testcase name="Projects Homepage › should hide footer in projects mode" classname="homepage.spec.ts" time="4.541">
 </testcase>
-<testcase name="Dialogs and Modals › should have start panel (attached to DOM)" classname="sketch.spec.ts" time="5.503">
+<testcase name="Projects Homepage › should hide sketch tabs in projects mode" classname="homepage.spec.ts" time="4.659">
 </testcase>
-<testcase name="Dialogs and Modals › should have home panel (hidden by default)" classname="sketch.spec.ts" time="4.416">
+<testcase name="Project Click → Canvas Navigation › clicking a project card navigates to #/project/:id" classname="homepage.spec.ts" time="4.938">
 </testcase>
-<testcase name="Toast Notifications › should have toast container" classname="sketch.spec.ts" time="2.298">
+<testcase name="Project Click → Canvas Navigation › clicking a project triggers hideHome" classname="homepage.spec.ts" time="4.819">
 </testcase>
-<testcase name="Responsive Design › should show mobile menu on small screens" classname="sketch.spec.ts" time="4.13">
+<testcase name="Project Click → Canvas Navigation › clicking a project shows the sketch side panel" classname="homepage.spec.ts" time="3.413">
 </testcase>
-<testcase name="Responsive Design › should show desktop controls on large screens" classname="sketch.spec.ts" time="5.163">
+<testcase name="Project Click → Canvas Navigation › sketch side panel lists all project sketches" classname="homepage.spec.ts" time="4.134">
 </testcase>
-<testcase name="Language Selection › should have language selector" classname="sketch.spec.ts" time="2.749">
+<testcase name="Project Click → Canvas Navigation › sketch side panel shows sketch names" classname="homepage.spec.ts" time="3.362">
 </testcase>
-<testcase name="Language Selection › mobile language selector should exist" classname="sketch.spec.ts" time="2.959">
+<testcase name="Project Click → Canvas Navigation › first sketch is marked as active" classname="homepage.spec.ts" time="5.853">
+</testcase>
+<testcase name="Project Click → Canvas Navigation › side panel toggle button is visible" classname="homepage.spec.ts" time="5.49">
+</testcase>
+<testcase name="Project Click → Canvas Navigation › empty project redirects back to homepage" classname="homepage.spec.ts" time="6.262">
+</testcase>
+<testcase name="Sketch Side Panel Interactions › clicking a non-active sketch switches it to active" classname="homepage.spec.ts" time="3.985">
+</testcase>
+<testcase name="Sketch Side Panel Interactions › eye icon toggles sketch visibility" classname="homepage.spec.ts" time="4.967">
+</testcase>
+<testcase name="Sketch Side Panel Interactions › side panel shows node count badges" classname="homepage.spec.ts" time="3.739">
+</testcase>
+<testcase name="Sketch Side Panel Interactions › active sketch has edit icon" classname="homepage.spec.ts" time="4.023">
+</testcase>
+<testcase name="Sketch Side Panel Interactions › close button hides the side panel" classname="homepage.spec.ts" time="4.81">
+</testcase>
+<testcase name="Sketch Side Panel Interactions › toggle button re-opens the side panel" classname="homepage.spec.ts" time="4.256">
+</testcase>
+<testcase name="Back to Projects Navigation › back button exists in sketch side panel" classname="homepage.spec.ts" time="3.556">
+</testcase>
+<testcase name="Back to Projects Navigation › back button has arrow_back icon" classname="homepage.spec.ts" time="3.842">
+</testcase>
+<testcase name="Back to Projects Navigation › back button links to #/" classname="homepage.spec.ts" time="3.69">
+</testcase>
+<testcase name="Back to Projects Navigation › clicking back button returns to projects homepage" classname="homepage.spec.ts" time="4.72">
+</testcase>
+<testcase name="Back to Projects Navigation › back button hides sketch side panel" classname="homepage.spec.ts" time="4.726">
+</testcase>
+<testcase name="Back to Projects Navigation › full round-trip: homepage → project → back → homepage" classname="homepage.spec.ts" time="4.357">
+</testcase>
+<testcase name="Fallback: No Projects → Sketch List › falls back to sketches mode when no projects exist" classname="homepage.spec.ts" time="3.96">
+</testcase>
+<testcase name="Fallback: No Projects → Sketch List › shows folder_open icon in sketches mode" classname="homepage.spec.ts" time="4.302">
+</testcase>
+<testcase name="Fallback: No Projects → Sketch List › shows close button in sketches mode" classname="homepage.spec.ts" time="3.796">
+</testcase>
+<testcase name="Fallback: No Projects → Sketch List › shows footer in sketches mode" classname="homepage.spec.ts" time="2.86">
+</testcase>
+<testcase name="Fallback: API Error → Sketch List › falls back to sketches mode on API error" classname="homepage.spec.ts" time="3.757">
 </testcase>
 </testsuite>
 </testsuites>
