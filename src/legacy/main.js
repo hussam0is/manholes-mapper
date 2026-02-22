@@ -6592,8 +6592,24 @@ function toggleCoordinates(enabled) {
   coordinatesEnabled = enabled;
   saveCoordinatesEnabled(enabled);
   syncCoordinatesToggleUI();
-  
+
   if (enabled) {
+    // Populate coordinatesMap from node surveyX/Y if it's empty
+    if (coordinatesMap.size === 0 && nodes && nodes.length > 0) {
+      for (const node of nodes) {
+        if (node.surveyX != null && node.surveyY != null) {
+          coordinatesMap.set(String(node.id), {
+            x: node.surveyX,
+            y: node.surveyY,
+            z: node.surveyZ || 0
+          });
+          node.hasCoordinates = true;
+        }
+      }
+      if (coordinatesMap.size > 0) {
+        saveCoordinatesToStorage(coordinatesMap);
+      }
+    }
     applyCoordinatesIfEnabled();
   } else {
     restoreOriginalPositions();
