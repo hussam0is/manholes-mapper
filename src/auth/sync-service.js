@@ -553,65 +553,6 @@ if (typeof window !== 'undefined') {
   });
 }
 
-// Track which sketches have been explicitly allowed to save as empty
-// Key: sketchId, Value: true if user allowed saving empty
-const allowedEmptySketches = new Map();
-
-// Load allowed empty sketches from localStorage on init
-function loadAllowedEmptySketches() {
-  try {
-    const raw = localStorage.getItem('graphSketch.allowedEmptySketches');
-    if (raw) {
-      const arr = JSON.parse(raw);
-      if (Array.isArray(arr)) {
-        arr.forEach(id => allowedEmptySketches.set(id, true));
-      }
-    }
-  } catch (_err) {}
-}
-
-// Save allowed empty sketches to localStorage
-function saveAllowedEmptySketches() {
-  try {
-    const arr = Array.from(allowedEmptySketches.keys());
-    localStorage.setItem('graphSketch.allowedEmptySketches', JSON.stringify(arr));
-  } catch (_err) {}
-}
-
-// Initialize on load
-if (typeof window !== 'undefined') {
-  loadAllowedEmptySketches();
-}
-
-/**
- * Check if a sketch is empty (no nodes and no edges)
- * @param {Object} sketch - Sketch to check
- * @returns {boolean}
- */
-function isSketchEmpty(sketch) {
-  const nodesEmpty = !sketch.nodes || sketch.nodes.length === 0;
-  const edgesEmpty = !sketch.edges || sketch.edges.length === 0;
-  return nodesEmpty && edgesEmpty;
-}
-
-/**
- * Mark a sketch as allowed to be saved empty
- * @param {string} sketchId - Sketch ID
- */
-export function allowEmptySave(sketchId) {
-  allowedEmptySketches.set(sketchId, true);
-  saveAllowedEmptySketches();
-}
-
-/**
- * Check if a sketch has been explicitly allowed to save as empty
- * @param {string} sketchId - Sketch ID
- * @returns {boolean}
- */
-export function isEmptySaveAllowed(sketchId) {
-  return allowedEmptySketches.has(sketchId);
-}
-
 /**
  * Sync a single sketch to the cloud
  * Called after local changes with debouncing
@@ -641,23 +582,12 @@ export async function syncSketchToCloud(sketch) {
     return;
   }
 
-  // Check if sketch is empty and hasn't been explicitly allowed to save
-  if (isSketchEmpty(sketch) && !isEmptySaveAllowed(sketch.id)) {
-    // Get translation function if available, otherwise use default message
-    const confirmMessage = (typeof window !== 'undefined' && window.t) ? window.t('confirms.saveEmptySketch') : 
-      'This sketch is empty (no nodes or edges). Save anyway?';
-    
-    // Show confirmation dialog
-    const userConfirmed = (typeof window !== 'undefined' && typeof confirm !== 'undefined') ? confirm(confirmMessage) : true;
-    
-    if (!userConfirmed) {
-      console.debug('[Sync] User declined to save empty sketch');
-      return;
-    }
-    
-    // User confirmed - mark this sketch as allowed to save empty
-    allowEmptySave(sketch.id);
-    console.debug('[Sync] User allowed saving empty sketch:', sketch.id);
+  // Never sync empty sketches
+  const nodesEmpty = !sketch.nodes || sketch.nodes.length === 0;
+  const edgesEmpty = !sketch.edges || sketch.edges.length === 0;
+  if (nodesEmpty && edgesEmpty) {
+    console.debug('[Sync] Skipping cloud sync for empty sketch:', sketch.id);
+    return;
   }
 
   if (isSyncInProgress) {
@@ -783,10 +713,18 @@ export async function syncSketchToCloud(sketch) {
  * @param {Object} sketch - Sketch to sync
  */
 export function debouncedSyncToCloud(sketch) {
+  // Never sync empty sketches to cloud
+  const nodes = sketch?.nodes || [];
+  const edges = sketch?.edges || [];
+  if (nodes.length === 0 && edges.length === 0) {
+    console.debug('[Sync] Skipping cloud sync for empty sketch:', sketch?.id);
+    return;
+  }
+
   if (saveDebounceTimer) {
     clearTimeout(saveDebounceTimer);
   }
-  
+
   saveDebounceTimer = setTimeout(() => {
     syncSketchToCloud(sketch);
   }, SAVE_DEBOUNCE_MS);
@@ -1173,8 +1111,6 @@ if (typeof window !== 'undefined') {
     resetApiAvailability,
     deduplicateSketches,
     cleanupDuplicateSketches,
-    allowEmptySave,
-    isEmptySaveAllowed,
     fetchSketchFromCloud,
     acquireSketchLock,
     releaseSketchLock,

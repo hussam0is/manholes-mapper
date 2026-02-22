@@ -154,7 +154,7 @@ export const i18n = {
       deleteSelectedEdge: 'למחוק את הקו שנבחר?',
       deleteEdge: 'למחוק קו זה?',
       finishWorkday: 'לסיים את יום העבודה? הקווים הלא מחוברים יידרשו השלמה.',
-      saveEmptySketch: 'השרטוט ריק (ללא שוחות או קווים). לשמור בכל זאת?',
+
     },
     alerts: {
       pickDate: 'נא לבחור תאריך לשירטוט החדש.',
@@ -598,7 +598,7 @@ export const i18n = {
       deleteSelectedEdge: 'Delete selected edge?',
       deleteEdge: 'Delete this edge?',
       finishWorkday: 'Finish workday? Dangling edges will require completion.',
-      saveEmptySketch: 'This sketch is empty (no nodes or edges). Save anyway?',
+
     },
     alerts: {
       pickDate: 'Please select a date for the new sketch.',

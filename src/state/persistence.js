@@ -14,7 +14,6 @@ export const STORAGE_KEYS = {
   fieldHistory: 'graphSketch.fieldHistory',
   coordinateScale: 'graphSketch.coordinateScale.v1',
   viewStretch: 'graphSketch.viewStretch.v1',
-  allowedEmpty: 'graphSketch.allowedEmptySketches',
   tsc3WsAddress: 'graphSketch.tsc3.wsAddress',
 };
 

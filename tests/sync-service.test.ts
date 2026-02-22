@@ -31,8 +31,6 @@ vi.mock('../src/auth/auth-guard.js', () => ({
 // Mock global fetch
 global.fetch = vi.fn();
 
-// Mock global confirm
-global.confirm = vi.fn(() => true);
 
 // Mock navigator.onLine
 const mockOnLine = (value: boolean) => {
@@ -48,7 +46,7 @@ describe('Sync Service Unit Tests', () => {
   const mockSketch = {
     id: 'sketch-123',
     name: 'Test Sketch',
-    nodes: [],
+    nodes: [{ id: 1, x: 100, y: 100 }],
     edges: [],
     cloudSynced: true
   };
@@ -108,7 +106,7 @@ describe('Sync Service Unit Tests', () => {
 
   describe('syncSketchToCloud', () => {
     it('should POST new sketch without UUID', async () => {
-      const newSketch = { name: 'New Local Sketch', nodes: [], edges: [] };
+      const newSketch = { name: 'New Local Sketch', nodes: [{ id: 1, x: 0, y: 0 }], edges: [] };
       const createdSketch = { id: 'new-uuid', ...newSketch };
       
       (global.fetch as any).mockResolvedValue({
@@ -130,7 +128,7 @@ describe('Sync Service Unit Tests', () => {
 
     it('should PUT existing sketch with UUID', async () => {
       const uuid = '12345678-1234-1234-1234-123456789012';
-      const existingSketch = { id: uuid, name: 'Existing Sketch' };
+      const existingSketch = { id: uuid, name: 'Existing Sketch', nodes: [{ id: 1, x: 0, y: 0 }], edges: [] };
       
       (global.fetch as any).mockResolvedValue({
         ok: true,
@@ -147,7 +145,7 @@ describe('Sync Service Unit Tests', () => {
 
     it('should queue update if offline', async () => {
       mockOnLine(false);
-      const sketch = { id: 's1', name: 'Offline Edit' };
+      const sketch = { id: 's1', name: 'Offline Edit', nodes: [{ id: 1, x: 0, y: 0 }], edges: [] };
       
       await syncSketchToCloud(sketch);
 
@@ -163,7 +161,7 @@ describe('Sync Service Unit Tests', () => {
     it('should debounce calls', async () => {
       vi.useFakeTimers();
       const uuid = '12345678-1234-1234-1234-123456789012';
-      const sketch = { id: uuid, name: 'Rapid Edit' };
+      const sketch = { id: uuid, name: 'Rapid Edit', nodes: [{ id: 1, x: 0, y: 0 }], edges: [] };
       
       (global.fetch as any).mockResolvedValue({
         ok: true,
@@ -232,7 +230,7 @@ describe('Sync Service Unit Tests', () => {
     });
 
     it('syncSketchToCloud should handle sketch created locally then synced', async () => {
-      const localOnlySketch = { name: 'Local Only', nodes: [] }; // No UUID ID
+      const localOnlySketch = { name: 'Local Only', nodes: [{ id: 1, x: 0, y: 0 }] }; // No UUID ID
       const cloudResponse = { id: 'new-uuid-from-cloud', name: 'Local Only' };
       
       (global.fetch as any).mockResolvedValue({

@@ -1730,9 +1730,14 @@ function loadFromStorage() {
  * Uses requestIdleCallback to defer heavy JSON serialization off the main thread.
  */
 function saveToStorage() {
+  // Skip saving completely empty sketches (no nodes, no edges)
+  if ((!nodes || nodes.length === 0) && (!edges || edges.length === 0)) {
+    return;
+  }
+
   const nowIso = new Date().toISOString();
   const username = getCurrentUsername();
-  
+
   // Capture current state references (these are lightweight)
   markEdgeLabelCacheDirty(); // edge/node data changed — invalidate label layout cache
   const currentNodes = nodes;
@@ -1901,64 +1906,17 @@ function generateSketchId() {
   return 'sk_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
-// Track which sketch IDs have been allowed to save as empty (persistent)
-let _allowedEmptySketchIds = null;
-
-function getAllowedEmptySketchIds() {
-  if (_allowedEmptySketchIds === null) {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEYS.allowedEmpty);
-      _allowedEmptySketchIds = raw ? new Set(JSON.parse(raw)) : new Set();
-    } catch (_) {
-      _allowedEmptySketchIds = new Set();
-    }
-  }
-  return _allowedEmptySketchIds;
-}
-
-function setAllowedEmptySketchId(sketchId) {
-  const allowed = getAllowedEmptySketchIds();
-  allowed.add(sketchId);
-  _allowedEmptySketchIds = allowed;
-  try {
-    localStorage.setItem(STORAGE_KEYS.allowedEmpty, JSON.stringify(Array.from(allowed)));
-  } catch (_) {}
-}
-
-function isEmptySaveAllowed(sketchId) {
-  return getAllowedEmptySketchIds().has(sketchId);
-}
-
-// Flag to prevent duplicate confirmation dialogs
-let _emptySketchConfirmPending = false;
-
 function saveToLibrary() {
   const lib = getLibrary();
   const nowIso = new Date().toISOString();
   const sketchId = currentSketchId || generateSketchId();
-  
-  // Check if sketch is empty (no nodes and no edges)
-  const isSketchEmpty = (!nodes || nodes.length === 0) && (!edges || edges.length === 0);
-  
-  // If empty and not previously allowed, ask user for confirmation
-  if (isSketchEmpty && !isEmptySaveAllowed(sketchId) && !_emptySketchConfirmPending) {
-    _emptySketchConfirmPending = true;
-    const confirmMessage = typeof t === 'function' ? t('confirms.saveEmptySketch') : 
-      'This sketch is empty (no nodes or edges). Save anyway?';
-    
-    const userConfirmed = confirm(confirmMessage);
-    _emptySketchConfirmPending = false;
-    
-    if (!userConfirmed) {
-      console.debug('[App] User declined to save empty sketch — save cancelled');
-      return;
-    }
-    
-    // User confirmed - mark this sketch as allowed to save empty
-    setAllowedEmptySketchId(sketchId);
-    console.debug('[App] User allowed saving empty sketch:', sketchId);
+
+  // Silently skip saving empty sketches (no nodes and no edges)
+  if ((!nodes || nodes.length === 0) && (!edges || edges.length === 0)) {
+    console.debug('[App] Skipping save of empty sketch:', sketchId);
+    return;
   }
-  
+
   const record = {
     id: sketchId,
     createdAt: creationDate || nowIso,
