@@ -247,19 +247,20 @@ export function calculateZoomLevel(pixelsPerMeter) {
   // Find the zoom level where resolution is closest to our scale
   // Resolution = meters per pixel, so we need 1/pixelsPerMeter
   const targetResolution = 1 / pixelsPerMeter;
-  
+
   let bestZoom = 17; // Default to a reasonable zoom
   let bestDiff = Infinity;
-  
-  // Limit to zoom 15-19 for performance and quality
-  for (let z = 15; z <= 19; z++) {
+
+  // Allow zoom 5-19 so zoomed-out views use coarser tiles instead of
+  // hitting tile-count limits and clipping the right side.
+  for (let z = 5; z <= 19; z++) {
     const diff = Math.abs(GOVMAP_RESOLUTIONS[z] - targetResolution);
     if (diff < bestDiff) {
       bestDiff = diff;
       bestZoom = z;
     }
   }
-  
+
   return bestZoom;
 }
 
@@ -284,8 +285,7 @@ export function calculateVisibleTiles(viewBounds, zoom) {
   const maxTileY = bottomRight.tileY + 1;
   
   // Limit total tiles to prevent overload
-  // Increased from 25 to 100 to support zoomed-out views
-  const maxTiles = 100; // 10x10 grid max
+  const maxTiles = 400; // 20x20 grid max — supports zoomed-out views
   let tileCount = 0;
   
   for (let x = minTileX; x <= maxTileX && tileCount < maxTiles; x++) {

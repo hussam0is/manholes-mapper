@@ -209,8 +209,8 @@ describe('Map Tile Visibility Tests', () => {
       const zoom = calculateZoomLevel(coordinateScale * viewScale);
       const tiles = calculateVisibleTiles(bounds, zoom);
       
-      // Should hit the 100 tile limit for such a large area
-      expect(tiles.length).toBeLessThanOrEqual(100);
+      // Should hit the 400 tile limit for such a large area
+      expect(tiles.length).toBeLessThanOrEqual(400);
       
       // But should still have tiles
       expect(tiles.length).toBeGreaterThan(0);

@@ -218,8 +218,11 @@ export async function drawMapTiles(ctx, canvasWidth, canvasHeight, viewTranslate
     return;
   }
   
-  // Calculate appropriate zoom level based on effective scale
-  const effectiveScale = coordinateScale * viewScale;
+  // Calculate appropriate zoom level based on effective scale.
+  // Account for stretch: use the minimum stretch axis so the zoom level
+  // matches the coarsest on-screen resolution, reducing tile count.
+  const minStretch = Math.min(stretchX, stretchY);
+  const effectiveScale = coordinateScale * viewScale * minStretch;
   const zoom = calculateZoomLevel(effectiveScale);
   
   // Get visible tiles
