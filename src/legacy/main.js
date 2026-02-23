@@ -8551,6 +8551,7 @@ function handleGnssPointCapture(captureData) {
     node.surveyZ = captureData.position.alt || 0;
     node.gnssFixQuality = captureData.position.fixQuality;
     node.gnssHdop = captureData.position.hdop;
+    node.measure_precision = captureData.position.accuracy || null;
   }
 
   // Create edge if requested
@@ -8651,6 +8652,7 @@ function gpsQuickCapture() {
   node.surveyZ = position.alt || 0;
   node.gnssFixQuality = position.fixQuality;
   node.gnssHdop = position.hdop;
+  node.measure_precision = position.accuracy || null;
   coordinatesMap.set(String(node.id), {
     x: itm.x,
     y: itm.y,
@@ -8880,6 +8882,7 @@ function handleTSC3PointReceived(pointName, coords, isNew, nodeType) {
   node.surveyX = coords.easting;
   node.surveyY = coords.northing;
   node.surveyZ = coords.elevation;
+  node.measure_precision = 0.02; // TSC3 RTK default precision (meters)
 
   // Update coordinatesMap
   coordinatesMap.set(String(pointName), {
