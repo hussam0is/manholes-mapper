@@ -4008,7 +4008,7 @@ function drawNode(node) {
 
   // Draw the node icon using the new icon system with coordinate options
   const coordinateOptions = {
-    showCoordinateStatus: coordinatesEnabled && coordinatesMap.size > 0,
+    showCoordinateStatus: coordinatesEnabled,
     coordinatesMap: coordinatesMap,
     isSelected: isSelected  // Pass selection state explicitly
   };
