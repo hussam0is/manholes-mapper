@@ -410,8 +410,8 @@ function navigateToIssue(issue, sketch, mode) {
   const rect = canvas.getBoundingClientRect();
 
   if (mode === 'goto') {
-    // Zoom to the issue location
-    const targetScale = 3;
+    // Zoom to the issue location (21% — overview level for project canvas)
+    const targetScale = 0.21;
     const stretchX = window.__getStretch?.()?.x || 0.6;
     const stretchY = window.__getStretch?.()?.y || 1;
     const tx = rect.width / 2 - targetScale * stretchX * issue.worldX;

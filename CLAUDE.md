@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Workflow
+
+After completing a change, **always commit and push** to the `dev` branch unless told otherwise. Use a concise commit message describing the change.
+
 ## Build & Dev Commands
 
 ```bash
@@ -107,7 +111,7 @@ CSS is imported via JS (`import '../styles.css'`) for Vite dev/build compatibili
 - **`src/survey/`** — TSC3 survey controller integration: device picker dialog, TSC3 Bluetooth/WebSocket adapters (Trimble TSC3 receivers), TSC3 NMEA parser, survey node-type dialog, connection manager
 - **`src/admin/`** — Admin panel (`admin-panel.js` ~26KB: Users/Orgs/Features tabs), admin settings (`admin-settings.js` ~25KB), input flow settings (`input-flow-settings.js` ~28KB: conditional field logic), project settings (`projects-settings.js` ~28KB)
 - **`src/features/`** — Canvas drawing primitives (`drawing-primitives.js`), graph rendering engine (`rendering.js`), node icons (`node-icons.js` ~13KB: manhole, drainage, house connection icons)
-- **`src/project/`** — Project canvas mode: `project-canvas-state.js` (multi-sketch Map, active/visibility tracking, sketch switching), `sketch-side-panel.js` (~14KB: collapsible list UI with per-sketch stats, issues sub-panel), `sketch-issues.js` (issue detection: missing coords, missing measurements, total km computation), `issue-highlight.js` (pulsing red ring animation), `last-edit-tracker.js` (tracks last edited position), `project-canvas-renderer.js` (background sketch rendering)
+- **`src/project/`** — Project canvas mode: `project-canvas-state.js` (multi-sketch Map, active/visibility tracking, sketch switching), `sketch-side-panel.js` (~14KB: collapsible list UI with per-sketch stats, issues sub-panel), `sketch-issues.js` (issue detection: missing coords, missing measurements, total km computation), `issue-highlight.js` (pulsing red ring animation), `last-edit-tracker.js` (tracks last edited position), `project-canvas-renderer.js` (background sketch rendering). **Issue navigation** in `sketch-side-panel.js` → `navigateToIssue()`: "my_location" button uses `goto` mode (`targetScale = 0.21`, 21% zoom — overview level), "swap_horiz" button uses `center_between` mode (dynamic zoom to fit issue + last edit position, capped at 5). Both call `window.__setViewState(scale, tx, ty)` and `startIssueHighlight()`. Zoom display: `viewScale * 100` → shown as percentage.
 - **`src/menu/`** — Responsive menu system: `menu-events.js` (EventEmitter singleton with delegation), `menu-config.js`, `command-menu.js` (command palette), `action-bar.js`, `header.js`
 - **`src/map/`** — `projections.js` (ITM/WGS84 via proj4, EPSG:2039), `govmap-layer.js` (~14KB: Israeli map tiles), `tile-manager.js` (~15KB: LRU cache), `reference-layers.js` (~18KB), `street-view.js`, `user-location.js` (geolocation permissions)
 - **`src/utils/`** — `coordinates.js` (~27KB: CSV parsing/import), `csv.js` (export with formula injection prevention), `sketch-io.js` (JSON import/export, schema v1.1), `floating-keyboard.js` (~14KB: draggable numeric keyboard), `input-flow-engine.js` (~13KB: conditional field evaluation), `resizable-drawer.js`, `backup-manager.js` (hourly/daily), `label-collision.js`, `geometry.js`, `toast.js`, `encoding.js`
