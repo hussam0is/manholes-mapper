@@ -2521,6 +2521,8 @@ function renderHome() {
 
 // Expose renderHome to window so sync-service can trigger a re-render after fetching sketches.
 // refreshHomePanel respects the current home mode (projects vs sketches).
+window.invalidateLibraryCache = invalidateLibraryCache;
+
 window.renderHome = function () {
   // Don't re-render home when in project canvas mode (e.g. sync-service triggers after cloud fetch)
   if (isProjectCanvasMode()) return;
