@@ -126,6 +126,10 @@ if (typeof window !== 'undefined') {
         if (signOutBtn) {
           signOutBtn.addEventListener('click', async () => {
             try {
+              // Clear local sketch data before signing out to prevent cross-account contamination
+              if (window.syncService?.clearLocalSketchData) {
+                await window.syncService.clearLocalSketchData();
+              }
               await signOutUser();
               await refreshSession();
               window.location.hash = '#/login';
@@ -152,7 +156,12 @@ if (typeof window !== 'undefined') {
   onAuthStateChange((state) => {
     console.debug('[Auth] State changed:', state.isSignedIn ? 'signed in' : 'signed out');
     renderUserMenu(state.user);
-    
+
+    // Invalidate library cache so stale data from a previous account is never shown
+    if (typeof window.invalidateLibraryCache === 'function') {
+      window.invalidateLibraryCache();
+    }
+
     // Force a route check when auth state changes
     if (window.handleRoute) {
       window.handleRoute();

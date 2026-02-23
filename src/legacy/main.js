@@ -2072,7 +2072,7 @@ async function loadFromLibrary(sketchId) {
         // Update localStorage cache with full data
         const lib = getLibrary();
         const idx = lib.findIndex(r => r.id === sketchId);
-        if (idx >= 0) { lib[idx] = sketchData; saveLibrary(lib); }
+        if (idx >= 0) { lib[idx] = sketchData; setLibrary(lib); }
       }
     } catch (e) {
       console.warn('[loadFromLibrary] Failed to fetch full sketch from cloud:', e.message);

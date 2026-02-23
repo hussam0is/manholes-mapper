@@ -1112,6 +1112,33 @@ export function initSyncService() {
 }
 
 /**
+ * Clear all locally cached sketch data.
+ * Called on logout to prevent cross-account data contamination.
+ */
+export async function clearLocalSketchData() {
+  console.debug('[Sync] Clearing all local sketch data (logout)');
+  try {
+    // Clear localStorage sketch data
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.removeItem('graphSketch.library');
+      window.localStorage.removeItem('graphSketch');
+    }
+    // Clear IndexedDB sketches
+    const idbSketches = await getAllSketchesFromIdb().catch(() => []);
+    for (const s of idbSketches) {
+      await deleteSketchFromIdb(s.id).catch(() => {});
+    }
+    // Invalidate the legacy library cache
+    if (typeof window !== 'undefined' && typeof window.invalidateLibraryCache === 'function') {
+      window.invalidateLibraryCache();
+    }
+    console.debug('[Sync] Local sketch data cleared');
+  } catch (err) {
+    console.warn('[Sync] Error clearing local data:', err.message);
+  }
+}
+
+/**
  * Get current sync state
  * @returns {Object}
  */
@@ -1135,5 +1162,6 @@ if (typeof window !== 'undefined') {
     fetchSketchFromCloud,
     acquireSketchLock,
     releaseSketchLock,
+    clearLocalSketchData,
   };
 }
