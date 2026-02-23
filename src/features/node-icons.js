@@ -375,10 +375,10 @@ export function drawNodeIcon(ctx, node, radius, colors, selectedNode, options = 
   
   // Draw coordinate status indicator if enabled
   if (showCoordinateStatus) {
-    // Check if node has coordinates
+    // Check if node actually has survey coordinates (not just the flag)
     let hasCoordinates = false;
-    if (node.hasCoordinates !== undefined) {
-      hasCoordinates = node.hasCoordinates;
+    if (node.surveyX != null && node.surveyY != null) {
+      hasCoordinates = true;
     } else if (coordinatesMap) {
       hasCoordinates = coordinatesMap.has(String(node.id));
     }
