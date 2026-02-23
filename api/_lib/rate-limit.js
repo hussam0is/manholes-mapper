@@ -64,7 +64,7 @@ function getClientIP(req) {
  * Check rate limit for a request
  * @param {Object} req - Request object
  * @param {number} maxRequests - Maximum requests allowed in the window
- * @returns {{ allowed: boolean, remaining: number, retryAfter?: number }}
+ * @returns {{ allowed: boolean, remaining: number, limit: number, retryAfter?: number }}
  */
 export function checkRateLimit(req, maxRequests = MAX_REQUESTS_DEFAULT) {
   cleanupExpiredEntries();

@@ -4,6 +4,18 @@
  * Tests the exported project-canvas state management functions
  * with mocked fetch and window globals.
  */
+
+// Augment Window with the app globals used by project-canvas-state
+declare global {
+  interface Window {
+    __setActiveSketchData: (data: unknown) => void;
+    __getActiveSketchData: () => unknown;
+    __scheduleDraw: () => void;
+    showToast: (msg: string) => void;
+    t: (key: string, ...args: unknown[]) => string;
+  }
+}
+
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   loadProjectSketches,

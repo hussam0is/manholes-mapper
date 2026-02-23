@@ -7,7 +7,7 @@
 import { test, expect, type Page } from '@playwright/test';
 
 // Skip CSS animations so hidePanelAnimated() completes instantly
-test.use({ reducedMotion: 'reduce' });
+test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
