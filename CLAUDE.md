@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Workflow
 
-After completing a change, **always commit and push** to the `dev` branch unless told otherwise. Use a concise commit message describing the change.
+**Every code change must be committed and pushed immediately.** After any file edit (new feature, bug fix, refactor, config change, etc.), always `git add`, `git commit`, and `git push` to the `dev` branch before moving on. Use a concise commit message describing the change. Do not batch multiple unrelated changes into one commit — commit after each logical change. Only skip committing if the user explicitly says otherwise.
 
 ## Build & Dev Commands
 
