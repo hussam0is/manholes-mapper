@@ -62,9 +62,11 @@ export function initSketchSidePanel() {
   }
 
   // Subscribe to state changes
-  _unsub = onProjectCanvasChange(() => {
-    _currentView = 'list';
-    _issuesSketchId = null;
+  _unsub = onProjectCanvasChange((changeType) => {
+    if (changeType !== 'data') {
+      _currentView = 'list';
+      _issuesSketchId = null;
+    }
     render();
   });
 }

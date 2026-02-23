@@ -130,6 +130,7 @@ import {
   findEdgeInBackground,
   switchActiveSketch,
   onProjectCanvasChange,
+  refreshActiveSketchData,
 } from '../project/project-canvas-state.js';
 import { drawBackgroundSketches } from '../project/project-canvas-renderer.js';
 import { initSketchSidePanel, showSketchSidePanel, hideSketchSidePanel } from '../project/sketch-side-panel.js';
@@ -1810,8 +1811,13 @@ function saveToStorage() {
       };
       window.syncService.debouncedSyncToCloud(sketchForSync);
     }
+
+    // Update side panel stats in project-canvas mode
+    if (isProjectCanvasMode()) {
+      refreshActiveSketchData();
+    }
   };
-  
+
   // Use requestIdleCallback if available, otherwise setTimeout(0)
   if (typeof requestIdleCallback === 'function') {
     requestIdleCallback(doSave, { timeout: 100 });

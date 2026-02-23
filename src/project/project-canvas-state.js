@@ -246,11 +246,27 @@ export function onProjectCanvasChange(fn) {
   return () => listeners.delete(fn);
 }
 
+/**
+ * Refresh the active sketch's data in the projectSketches Map from the
+ * live canvas state, then notify listeners with a 'data' change type.
+ * Called from saveToStorage() so the side panel stats stay up-to-date.
+ */
+export function refreshActiveSketchData() {
+  if (!activeSketchId) return;
+  const existing = projectSketches.get(activeSketchId);
+  if (!existing) return;
+  const snapshot = window.__getActiveSketchData?.();
+  if (!snapshot) return;
+  existing.nodes = snapshot.nodes;
+  existing.edges = snapshot.edges;
+  _notify('data');
+}
+
 // ── Private helpers ────────────────────────────────────────────────────────
 
-function _notify() {
+function _notify(changeType) {
   for (const fn of listeners) {
-    try { fn(); } catch (_) { /* ignore */ }
+    try { fn(changeType); } catch (_) { /* ignore */ }
   }
 }
 
