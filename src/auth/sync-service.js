@@ -643,6 +643,7 @@ export async function syncSketchToCloud(sketch) {
         edges: sketch.edges,
         adminConfig: sketch.adminConfig,
         lastEditedBy: sketch.lastEditedBy,
+        projectId: sketch.projectId,
       });
     } else {
       // Create new sketch in cloud
@@ -655,6 +656,7 @@ export async function syncSketchToCloud(sketch) {
         adminConfig: sketch.adminConfig,
         createdBy: sketch.createdBy,
         lastEditedBy: sketch.lastEditedBy,
+        projectId: sketch.projectId,
       });
       
       // Update local sketch with cloud ID
@@ -840,6 +842,7 @@ export async function processSyncQueue() {
               edges: op.data.edges,
               adminConfig: op.data.adminConfig,
               lastEditedBy: op.data.lastEditedBy,
+              projectId: op.data.projectId,
             });
           } else {
             const cloudSketch = await createSketchInCloud({
@@ -850,6 +853,7 @@ export async function processSyncQueue() {
               adminConfig: op.data.adminConfig,
               createdBy: op.data.createdBy,
               lastEditedBy: op.data.lastEditedBy,
+              projectId: op.data.projectId,
             });
             op.data.id = cloudSketch.id;
             op.data.cloudSynced = true;

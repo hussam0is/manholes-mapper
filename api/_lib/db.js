@@ -500,8 +500,8 @@ export async function updateSketch(sketchId, userId, updates) {
     lastEditedBy, snapshotInputFlowConfig
   } = updates;
 
-  // Detect which optional nullable fields were explicitly provided
-  const projectIdProvided = 'projectId' in updates;
+  // Only update project_id when explicitly provided (not undefined)
+  const projectIdProvided = updates.projectId !== undefined;
   const projectId = updates.projectId ?? null;
 
   const result = await sql`
