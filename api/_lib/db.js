@@ -256,7 +256,9 @@ export async function getSketchesByUser(userId, { limit = 50, offset = 0 } = {})
 export async function getSketchesMetaByUser(userId, { limit = 50, offset = 0 } = {}) {
   const result = await sql`
     SELECT id, name, creation_date, created_by, last_edited_by,
-           project_id, created_at, updated_at
+           project_id, created_at, updated_at,
+           COALESCE(jsonb_array_length(nodes), 0) AS node_count,
+           COALESCE(jsonb_array_length(edges), 0) AS edge_count
     FROM sketches
     WHERE user_id = ${userId}
     ORDER BY updated_at DESC
@@ -892,7 +894,9 @@ export async function getSketchesByProject(projectId, { limit = 50, offset = 0 }
 export async function getSketchesMetaByProject(projectId, { limit = 50, offset = 0 } = {}) {
   const result = await sql`
     SELECT id, user_id, name, creation_date, created_by, last_edited_by,
-           project_id, created_at, updated_at
+           project_id, created_at, updated_at,
+           COALESCE(jsonb_array_length(nodes), 0) AS node_count,
+           COALESCE(jsonb_array_length(edges), 0) AS edge_count
     FROM sketches
     WHERE project_id = ${projectId}
     ORDER BY updated_at DESC
@@ -927,7 +931,9 @@ export async function getAllSketchesMeta({ limit = 50, offset = 0 } = {}) {
   const result = await sql`
     SELECT s.id, s.user_id, s.name, s.creation_date, s.created_by, s.last_edited_by,
            s.project_id, s.created_at, s.updated_at,
-           u.username as owner_username, u.email as owner_email
+           u.username as owner_username, u.email as owner_email,
+           COALESCE(jsonb_array_length(s.nodes), 0) AS node_count,
+           COALESCE(jsonb_array_length(s.edges), 0) AS edge_count
     FROM sketches s
     LEFT JOIN users u ON s.user_id = u.id
     ORDER BY s.updated_at DESC
@@ -963,7 +969,9 @@ export async function getSketchesMetaByOrganization(organizationId, { limit = 50
   const result = await sql`
     SELECT s.id, s.user_id, s.name, s.creation_date, s.created_by, s.last_edited_by,
            s.project_id, s.created_at, s.updated_at,
-           u.username as owner_username, u.email as owner_email
+           u.username as owner_username, u.email as owner_email,
+           COALESCE(jsonb_array_length(s.nodes), 0) AS node_count,
+           COALESCE(jsonb_array_length(s.edges), 0) AS edge_count
     FROM sketches s
     INNER JOIN users u ON s.user_id = u.id
     WHERE u.organization_id = ${organizationId}

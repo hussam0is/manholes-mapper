@@ -290,28 +290,42 @@ export async function syncFromCloud() {
     // Compatibility: Update legacy localStorage library so the legacy UI sees the sketches
     if (typeof window !== 'undefined' && window.localStorage) {
       try {
-        const legacyLib = cloudSketches.map(s => ({
-          id: s.id,
-          name: s.name,
-          creationDate: s.creationDate,
-          createdAt: s.createdAt,
-          updatedAt: s.updatedAt,
-          projectId: s.projectId,
-          // Include owner info for admin views
-          ownerId: s.ownerId,
-          ownerUsername: s.ownerUsername,
-          ownerEmail: s.ownerEmail,
-          isOwner: s.isOwner,
-          createdBy: s.createdBy,
-          lastEditedBy: s.lastEditedBy,
-          cloudSynced: true,
-          // Mark if this is metadata-only (full data fetched on open via GET /api/sketches/[id])
-          metadataOnly: !s.nodes,
-          // Include JSONB fields only if present (full response)
-          ...(s.nodes ? { nodes: s.nodes } : { nodes: [] }),
-          ...(s.edges ? { edges: s.edges } : { edges: [] }),
-          ...(s.adminConfig ? { adminConfig: s.adminConfig } : { adminConfig: {} }),
-        }));
+        // Build updated library, preserving local full data when cloud returns metadata-only
+        const existingRaw = window.localStorage.getItem('graphSketch.library');
+        const existingLib = existingRaw ? JSON.parse(existingRaw) : [];
+        const existingMap = new Map(existingLib.filter(s => s.id).map(s => [s.id, s]));
+
+        const legacyLib = cloudSketches.map(s => {
+          const existing = existingMap.get(s.id);
+          const hasFullData = !!s.nodes;
+          // Preserve locally-stored full data if cloud response is metadata-only
+          const localHasData = existing && !existing.metadataOnly && Array.isArray(existing.nodes);
+          return {
+            id: s.id,
+            name: s.name,
+            creationDate: s.creationDate,
+            createdAt: s.createdAt,
+            updatedAt: s.updatedAt,
+            projectId: s.projectId,
+            // Include owner info for admin views
+            ownerId: s.ownerId,
+            ownerUsername: s.ownerUsername,
+            ownerEmail: s.ownerEmail,
+            isOwner: s.isOwner,
+            createdBy: s.createdBy,
+            lastEditedBy: s.lastEditedBy,
+            cloudSynced: true,
+            // Node/edge counts from API metadata (always accurate)
+            nodeCount: s.nodeCount ?? (hasFullData ? s.nodes.length : (existing?.nodeCount ?? 0)),
+            edgeCount: s.edgeCount ?? (hasFullData ? s.edges.length : (existing?.edgeCount ?? 0)),
+            // Mark if this is metadata-only (full data fetched on open via GET /api/sketches/[id])
+            metadataOnly: !hasFullData && !localHasData,
+            // Preserve local full data if cloud response is metadata-only
+            nodes: hasFullData ? s.nodes : (localHasData ? existing.nodes : []),
+            edges: hasFullData ? s.edges : (localHasData ? existing.edges : []),
+            adminConfig: hasFullData ? (s.adminConfig || {}) : (localHasData ? (existing.adminConfig || {}) : {}),
+          };
+        });
         window.localStorage.setItem('graphSketch.library', JSON.stringify(legacyLib));
         console.debug(`[Sync] Updated legacy localStorage with ${legacyLib.length} sketches`);
         

@@ -1933,6 +1933,8 @@ function syncProjectSketchesToLibrary() {
           ...lib[idx],
           nodes: sketchNodes,
           edges: sketchEdges,
+          nodeCount: sketchNodes.length,
+          edgeCount: sketchEdges.length,
           name: ps.name || lib[idx].name,
           adminConfig: ps.adminConfig || lib[idx].adminConfig || {},
           updatedAt: ps.updatedAt || lib[idx].updatedAt,
@@ -1950,6 +1952,8 @@ function syncProjectSketchesToLibrary() {
           projectId: ps.projectId,
           nodes: sketchNodes,
           edges: sketchEdges,
+          nodeCount: sketchNodes.length,
+          edgeCount: sketchEdges.length,
           adminConfig: ps.adminConfig || {},
           cloudSynced: true,
           metadataOnly: false,
@@ -1993,12 +1997,15 @@ function saveToLibrary() {
     updatedAt: nowIso,
     nodes,
     edges,
+    nodeCount: nodes.length,
+    edgeCount: edges.length,
     nextNodeId,
     creationDate: creationDate || nowIso,
     name: currentSketchName || null,
     projectId: currentProjectId || null,
     inputFlowConfig: currentInputFlowConfig || null,
     lastEditedBy: getCurrentUsername(),
+    metadataOnly: false,
   };
   const idx = lib.findIndex((s) => s.id === record.id);
   let finalRecord = record;
@@ -2426,8 +2433,8 @@ function renderHome() {
         }
       }
       const title = displayName || t('listTitle', rec.id.slice(-6), formattedDate);
-      const nodeCount = (rec.nodes || []).length;
-      const edgeCount = (rec.edges || []).length;
+      const nodeCount = rec.nodeCount ?? (rec.nodes || []).length;
+      const edgeCount = rec.edgeCount ?? (rec.edges || []).length;
       
       // Show owner info for admin users viewing other users' sketches
       const ownerDisplay = rec.ownerUsername || rec.createdBy || rec.ownerEmail || '';

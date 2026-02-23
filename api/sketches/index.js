@@ -107,6 +107,9 @@ export default async function handler(req, res) {
         ownerEmail: row.owner_email || null,
         // Flag to indicate if this sketch belongs to the current user
         isOwner: row.user_id === userId,
+        // Include node/edge counts from metadata queries (always available)
+        nodeCount: row.node_count != null ? Number(row.node_count) : (row.nodes ? row.nodes.length : 0),
+        edgeCount: row.edge_count != null ? Number(row.edge_count) : (row.edges ? row.edges.length : 0),
         // Only include large JSONB fields when full=true
         ...(includeFull ? {
           nodes: row.nodes || [],
