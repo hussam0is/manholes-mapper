@@ -1078,6 +1078,8 @@ function handleRoute() {
 
   // Leave project-canvas mode when navigating away from #/project/:id
   if (!projectMatch && isProjectCanvasMode()) {
+    // Sync project sketches back to localStorage so the home view is up to date
+    syncProjectSketchesToLibrary();
     clearProjectCanvas();
     hideSketchSidePanel();
   }
@@ -1904,6 +1906,70 @@ function setLibrary(list) {
 function invalidateLibraryCache() {
   _libraryCacheValid = false;
   _libraryCache = null;
+}
+
+/**
+ * Sync project canvas sketches back to the localStorage library.
+ * Called when leaving project-canvas mode so the home view shows
+ * up-to-date node/edge counts and metadata for all project sketches.
+ */
+function syncProjectSketchesToLibrary() {
+  try {
+    const projectSketchList = getAllSketches(); // from project-canvas-state
+    if (!projectSketchList || projectSketchList.length === 0) return;
+
+    const lib = getLibrary();
+    let changed = false;
+
+    for (const ps of projectSketchList) {
+      // The active sketch's live data is in the globals, not the Map
+      const sketchNodes = ps.isActive ? nodes : (ps.nodes || []);
+      const sketchEdges = ps.isActive ? edges : (ps.edges || []);
+
+      const idx = lib.findIndex(s => s.id === ps.id);
+      if (idx >= 0) {
+        // Update existing entry with fresh data from the project canvas
+        lib[idx] = {
+          ...lib[idx],
+          nodes: sketchNodes,
+          edges: sketchEdges,
+          name: ps.name || lib[idx].name,
+          adminConfig: ps.adminConfig || lib[idx].adminConfig || {},
+          updatedAt: ps.updatedAt || lib[idx].updatedAt,
+          metadataOnly: false,
+        };
+        changed = true;
+      } else {
+        // Sketch exists in project but not in library — add it
+        lib.unshift({
+          id: ps.id,
+          name: ps.name || null,
+          creationDate: ps.creationDate || ps.createdAt,
+          createdAt: ps.createdAt,
+          updatedAt: ps.updatedAt,
+          projectId: ps.projectId,
+          nodes: sketchNodes,
+          edges: sketchEdges,
+          adminConfig: ps.adminConfig || {},
+          cloudSynced: true,
+          metadataOnly: false,
+          ownerId: ps.ownerId,
+          ownerUsername: ps.ownerUsername,
+          ownerEmail: ps.ownerEmail,
+          isOwner: ps.isOwner,
+          createdBy: ps.createdBy,
+          lastEditedBy: ps.lastEditedBy,
+        });
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      setLibrary(lib);
+    }
+  } catch (err) {
+    console.warn('[App] Failed to sync project sketches to library:', err);
+  }
 }
 
 function generateSketchId() {
@@ -2829,6 +2895,10 @@ async function loadProjectCanvas(projectId) {
       location.hash = '#/';
       return;
     }
+
+    // Sync the freshly fetched project sketches into the localStorage library
+    // so the home view stays in sync with the project data
+    syncProjectSketchesToLibrary();
 
     // Reposition ALL sketch nodes using global ITM bounds so all sketches
     // align correctly on the canvas relative to each other
