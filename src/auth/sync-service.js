@@ -327,8 +327,12 @@ export async function syncFromCloud() {
           };
         });
         window.localStorage.setItem('graphSketch.library', JSON.stringify(legacyLib));
+        // Invalidate the in-memory library cache so getLibrary() reads the fresh data
+        if (typeof window.invalidateLibraryCache === 'function') {
+          window.invalidateLibraryCache();
+        }
         console.debug(`[Sync] Updated legacy localStorage with ${legacyLib.length} sketches`);
-        
+
         // Trigger a re-render of the home panel if the legacy function is available
         if (typeof window.renderHome === 'function') {
           window.renderHome();
@@ -977,6 +981,9 @@ async function cleanupDuplicateSketchesInternal() {
           const { deduplicated, removedCount, removedIds } = deduplicateSketches(lib);
           if (removedCount > 0) {
             window.localStorage.setItem('graphSketch.library', JSON.stringify(deduplicated));
+            if (typeof window.invalidateLibraryCache === 'function') {
+              window.invalidateLibraryCache();
+            }
             console.debug(`[Sync] Removed ${removedCount} duplicate(s) from localStorage:`, removedIds);
             totalRemoved += removedCount;
             allRemovedIds.push(...removedIds);
