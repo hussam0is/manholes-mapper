@@ -25,9 +25,42 @@ const __dirname = dirname(__filename);
 const WS_PORT = parseInt(process.env.WS_PORT || '8765', 10);
 const HTTP_PORT = parseInt(process.env.HTTP_PORT || '3001', 10);
 
+// --- Scenarios ---
+
+const SCENARIOS = {
+  basic: {
+    description: '3 nodes (2 manholes + 1 drain) — standard quick test',
+    points: [
+      { pointName: 'MH-001', easting: 178500.0, northing: 650200.0, elevation: 102.5 },
+      { pointName: 'MH-002', easting: 178520.0, northing: 650215.0, elevation: 101.8 },
+      { pointName: 'DRAIN-01', easting: 178535.0, northing: 650225.0, elevation: 100.3 },
+    ],
+  },
+  'chain-5': {
+    description: '5-node chain — longer pipeline test',
+    points: [
+      { pointName: 'S-001', easting: 178500.0, northing: 650200.0, elevation: 105.0 },
+      { pointName: 'S-002', easting: 178515.0, northing: 650210.0, elevation: 104.2 },
+      { pointName: 'S-003', easting: 178530.0, northing: 650220.0, elevation: 103.5 },
+      { pointName: 'S-004', easting: 178545.0, northing: 650230.0, elevation: 102.8 },
+      { pointName: 'S-005', easting: 178560.0, northing: 650240.0, elevation: 102.0 },
+    ],
+  },
+  'update-coords': {
+    description: 'Sends MH-001 twice with different coords — tests silent coordinate update',
+    points: [
+      { pointName: 'MH-001', easting: 178500.0, northing: 650200.0, elevation: 102.5 },
+      { pointName: 'MH-001', easting: 178501.5, northing: 650201.2, elevation: 102.8 },
+    ],
+  },
+};
+
 // --- State ---
 const history = [];
 let sentPointsCount = 0;
+
+/** Tracks the currently running scenario, or null if idle. */
+let runningScenario = null;
 
 // --- WebSocket Server ---
 const wss = new WebSocketServer({ port: WS_PORT });
@@ -140,6 +173,7 @@ const httpServer = createServer(async (req, res) => {
       historyLength: history.length,
       wsPort: WS_PORT,
       httpPort: HTTP_PORT,
+      runningScenario,
     });
   }
 
@@ -227,6 +261,80 @@ const httpServer = createServer(async (req, res) => {
     history.length = 0;
     sentPointsCount = 0;
     return jsonResponse(res, 200, { ok: true, cleared });
+  }
+
+  if (url.pathname === '/api/scenarios' && method === 'GET') {
+    const list = Object.entries(SCENARIOS).map(([name, s]) => ({
+      name,
+      description: s.description,
+      pointCount: s.points.length,
+    }));
+    return jsonResponse(res, 200, { scenarios: list });
+  }
+
+  if (url.pathname === '/api/run-scenario' && method === 'POST') {
+    try {
+      const body = JSON.parse(await readBody(req));
+      const scenarioName = body.scenario;
+      const delayMs = Number.isFinite(Number(body.delayMs)) ? Number(body.delayMs) : 1500;
+
+      if (!scenarioName || !SCENARIOS[scenarioName]) {
+        return jsonResponse(res, 400, {
+          error: 'Unknown scenario',
+          available: Object.keys(SCENARIOS),
+        });
+      }
+
+      const scenario = SCENARIOS[scenarioName];
+      const points = scenario.points;
+      const pointCount = points.length;
+      // Total delay: (N-1) gaps between points
+      const estimatedDurationMs = (pointCount - 1) * delayMs;
+
+      // Record that a scenario is now running
+      runningScenario = { name: scenarioName, startedAt: new Date().toISOString(), pointCount, delayMs };
+
+      // Fire-and-forget: send points sequentially with delayMs between each
+      (async () => {
+        for (let i = 0; i < points.length; i++) {
+          const point = points[i];
+          const csvLine = formatCsvLine(point);
+          const clientsSent = broadcast(csvLine);
+          sentPointsCount++;
+
+          const entry = {
+            id: history.length + 1,
+            timestamp: new Date().toISOString(),
+            pointName: point.pointName.trim(),
+            easting: Number(point.easting),
+            northing: Number(point.northing),
+            elevation: Number(point.elevation ?? 0),
+            csvLine,
+            clientsSent,
+            scenario: scenarioName,
+          };
+          history.push(entry);
+
+          console.log(`[scenario:${scenarioName}] Sent point ${i + 1}/${pointCount}: ${point.pointName} (${clientsSent} clients)`);
+
+          if (i < points.length - 1) {
+            await new Promise((resolve) => setTimeout(resolve, delayMs));
+          }
+        }
+        console.log(`[scenario:${scenarioName}] Done. ${pointCount} points sent.`);
+        runningScenario = null;
+      })();
+
+      return jsonResponse(res, 200, {
+        ok: true,
+        scenario: scenarioName,
+        pointCount,
+        delayMs,
+        estimatedDurationMs,
+      });
+    } catch (e) {
+      return jsonResponse(res, 400, { error: 'Invalid JSON', message: e.message });
+    }
   }
 
   // --- Web UI ---
