@@ -115,7 +115,18 @@ export function exportNodesCsv(nodes, adminConfig, _t) {
     if (include.accuracy_level) row.push(csvQuote(codeFor('nodes', 'accuracy_level', n.accuracyLevel, adminConfig)));
     // engineering_status removed from node export
     if (include.maintenance_status) row.push(csvQuote(codeFor('nodes', 'maintenance_status', n.maintenanceStatus, adminConfig)));
-    // Custom fields removed
+    if (include.survey_x) row.push(csvQuote(n.surveyX != null ? n.surveyX.toFixed(3) : ''));
+    if (include.survey_y) row.push(csvQuote(n.surveyY != null ? n.surveyY.toFixed(3) : ''));
+    if (include.terrain_level) row.push(csvQuote(n.surveyZ != null ? n.surveyZ.toFixed(3) : ''));
+    if (include.measure_precision) row.push(csvQuote(n.measure_precision != null ? n.measure_precision.toFixed(3) : ''));
+    if (include.fix_type) {
+      const fixLabel = n.gnssFixQuality === 4 ? 'RTK Fixed' :
+        n.gnssFixQuality === 5 ? 'RTK Float' :
+        n.gnssFixQuality === 6 ? 'Manual Float' :
+        n.gnssFixQuality === 2 ? 'DGPS' :
+        n.gnssFixQuality === 1 ? 'GPS' : '';
+      row.push(csvQuote(fixLabel));
+    }
     return row.join(',');
   };
   if (include.id) headers.push('ID');
@@ -125,9 +136,12 @@ export function exportNodesCsv(nodes, adminConfig, _t) {
   if (include.cover_diameter) headers.push('Cover diameter');
   if (include.access) headers.push('Access');
   if (include.accuracy_level) headers.push('Accuracy Level');
-  // engineering_status removed from node headers
   if (include.maintenance_status) headers.push('Maintenance status');
-  // Custom fields removed
+  if (include.survey_x) headers.push('Survey_X');
+  if (include.survey_y) headers.push('Survey_Y');
+  if (include.terrain_level) headers.push('TL');
+  if (include.measure_precision) headers.push('Precision');
+  if (include.fix_type) headers.push('Fix_Type');
   const lines = [headers.map(csvQuote).join(',')];
   for (const n of nodes) lines.push(rowFor(n));
   return lines.join('\n');

@@ -561,6 +561,11 @@ const defaultAdminConfig = {
       accuracy_level: true,
       engineering_status: false,
       maintenance_status: true,
+      survey_x: true,
+      survey_y: true,
+      terrain_level: true,
+      measure_precision: true,
+      fix_type: true,
     },
     defaults: {
       material: NODE_MATERIALS[0],
