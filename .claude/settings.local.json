@@ -1,0 +1,59 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run start:*)",
+      "Bash(npm run test:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run build:*)",
+      "Bash(\"/c/Program Files/nodejs/npm.cmd\" --version)",
+      "Bash(\"/c/Program Files \\(x86\\)/nodejs/npm.cmd\" --version)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(claude mcp add:*)",
+      "Bash(curl:*)",
+      "mcp__playwright",
+      "mcp__postgres",
+      "Bash(node -e:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npx vitest run --reporter=verbose)",
+      "Bash(npx vite build:*)",
+      "Bash(claude mcp list:*)",
+      "Bash(node scripts/test-db-connection.js:*)",
+      "Bash(update-vercel-env.sh:*)",
+      "Bash(__NEW_LINE_bfab5ffbdf724b7d__ chmod +x update-vercel-env.sh)",
+      "Bash(vercel env add:*)",
+      "Bash(vercel link:*)",
+      "Bash(npm search:*)",
+      "mcp__vercel",
+      "Bash(where:*)",
+      "Bash(cmd //c \"where claude\")",
+      "Bash(git reset:*)",
+      "Bash(npx @better-auth/cli migrate:*)",
+      "Bash(node scripts/migrate-auth-tables.js:*)",
+      "Bash(node --input-type=module -e \"\nimport { Pool } from ''@neondatabase/serverless'';\n\n// Sign up via API\nconst resp = await fetch\\(''https://manholes-mapper-git-dev-hussam0is-projects.vercel.app/api/auth/sign-up/email'', {\n  method: ''POST'',\n  headers: { ''Content-Type'': ''application/json'' },\n  body: JSON.stringify\\({ email: ''admin@geopoint.me'', password: ''Geopoint2026!'', name: ''Admin User'' }\\)\n}\\);\nconst data = await resp.json\\(\\);\nconsole.log\\(''Sign-up result:'', JSON.stringify\\(data, null, 2\\)\\);\n\n// Promote to super_admin in app users table\nconst pool = new Pool\\({ connectionString: ''postgresql://neondb_owner:npg_Y5Pbts4zrZBc@ep-polished-wave-aiccisto-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require'' }\\);\nconst userId = data.user?.id;\nif \\(userId\\) {\n  await pool.query\\(\"\"UPDATE users SET role = ''super_admin'' WHERE id = $1\"\", [userId]\\);\n  const { rows } = await pool.query\\(''SELECT id, email, role, username FROM users WHERE id = $1'', [userId]\\);\n  console.log\\(''App user promoted:'', rows[0]\\);\n}\nawait pool.end\\(\\);\n\")",
+      "Bash(node --input-type=module -e \"\nimport { Pool } from ''@neondatabase/serverless'';\n\n// Sign up via production API \\(same DB\\)\nconst resp = await fetch\\(''https://manholes-mapper.vercel.app/api/auth/sign-up/email'', {\n  method: ''POST'',\n  headers: { ''Content-Type'': ''application/json'' },\n  body: JSON.stringify\\({ email: ''admin@geopoint.me'', password: ''Geopoint2026!'', name: ''Admin User'' }\\)\n}\\);\nconst data = await resp.json\\(\\);\nconsole.log\\(''Sign-up result:'', JSON.stringify\\(data, null, 2\\)\\);\n\n// Promote to super_admin in app users table\nconst pool = new Pool\\({ connectionString: ''postgresql://neondb_owner:npg_Y5Pbts4zrZBc@ep-polished-wave-aiccisto-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require'' }\\);\nconst userId = data.user?.id;\nif \\(userId\\) {\n  await pool.query\\(\"\"UPDATE users SET role = ''super_admin'' WHERE id = $1\"\", [userId]\\);\n  const { rows } = await pool.query\\(''SELECT id, email, role, username FROM users WHERE id = $1'', [userId]\\);\n  console.log\\(''App user promoted:'', rows[0]\\);\n}\nawait pool.end\\(\\);\n\")",
+      "Bash(node --input-type=module -e \"\nimport { Pool } from ''@neondatabase/serverless'';\n\nconst resp = await fetch\\(''https://manholes-mapper.vercel.app/api/auth/sign-up/email'', {\n  method: ''POST'',\n  headers: {\n    ''Content-Type'': ''application/json'',\n    ''Origin'': ''https://manholes-mapper.vercel.app''\n  },\n  body: JSON.stringify\\({ email: ''admin@geopoint.me'', password: ''Geopoint2026!'', name: ''Admin User'' }\\)\n}\\);\nconst data = await resp.json\\(\\);\nconsole.log\\(''Sign-up result:'', JSON.stringify\\(data, null, 2\\)\\);\n\nconst pool = new Pool\\({ connectionString: ''postgresql://neondb_owner:npg_Y5Pbts4zrZBc@ep-polished-wave-aiccisto-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require'' }\\);\nconst userId = data.user?.id;\nif \\(userId\\) {\n  await pool.query\\(\"\"UPDATE users SET role = ''super_admin'' WHERE id = $1\"\", [userId]\\);\n  const { rows } = await pool.query\\(''SELECT id, email, role, username FROM users WHERE id = $1'', [userId]\\);\n  console.log\\(''App user promoted:'', rows[0]\\);\n}\nawait pool.end\\(\\);\n\")",
+      "Bash(node --input-type=module -e:*)",
+      "Bash(npx vitest run:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run test:run:*)",
+      "Bash(git status:*)",
+      "Bash(npm test:*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [],
+    "PostToolUse": []
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "playwright",
+    "postgres",
+    "vercel",
+    "clickup"
+  ]
+}

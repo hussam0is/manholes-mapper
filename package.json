@@ -13,7 +13,8 @@
     "open:android": "npx cap open android",
     "run:android": "npx cap run android",
     "db:migrate": "node scripts/migrate-auth-tables.js",
-    "mock:tsc3": "node scripts/mock-tsc3/server.mjs"
+    "mock:tsc3": "node scripts/mock-tsc3/server.mjs",
+    "god-mode": "node manholes-mapper-god-agent/daemon.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.1",
