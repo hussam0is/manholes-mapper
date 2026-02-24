@@ -716,6 +716,15 @@ GROUP BY p.id, p.name, o.name, p.description, p.created_at
 ORDER BY p.created_at DESC;
 ```
 
+### "Test TSC3 mock survey integration in browser"
+1. Start mock server: `node scripts/mock-tsc3/server.mjs` (WS:8765, HTTP:3001)
+2. Run Playwright browser setup (see §18)
+3. Connect WebSocket: Menu → Survey → Connect via WebSocket → `localhost:8765`
+4. Run scenario: `curl -X POST http://localhost:3001/api/run-scenario -H "Content-Type: application/json" -d '{"scenario":"basic","delayMs":2000}'`
+5. Handle dialogs: For each point, `browser_snapshot()` → `browser_click()` on node type
+6. Verify: `browser_evaluate(() => JSON.parse(localStorage.getItem('graphSketch')))` → check nodes/edges
+7. Screenshot: `browser_take_screenshot()` for visual proof
+
 ---
 
 ## 11. Delegation Patterns
@@ -860,6 +869,10 @@ Better Auth config: `lib/auth.js`
 | Orphan sketches | Sketches can exist with `user_id` pointing to deleted users — check before operations |
 | Lock expiry | 30-min TTL. `lock_expires_at < NOW()` means lock is stale and can be overridden. |
 | Sketch locking | `/api/sketches/[id]/lock` POST = acquire, DELETE = release, `refresh` POST = extend |
+| CSP blocks WebSocket on dev deployment | HTTPS pages block `ws://` connections. `vercel.json` has `ws: wss:` in connect-src but CDN may cache old headers | Use `page.route('**/*', route => { const resp = await route.fetch(); const headers = resp.headers(); delete headers['content-security-policy']; route.fulfill({ response: resp, headers }); })` to strip CSP |
+| homePanel intercepts canvas clicks | After login, `#homePanel` overlay blocks pointer events on canvas and menu | `browser_evaluate(() => document.getElementById('homePanel').style.display = 'none')` |
+| Sketch data in localStorage | Production build doesn't expose `window.nodes` / `window.edges` | Read from `localStorage.getItem('graphSketch')` — nodes/edges are in the JSON. Coordinates in `graphSketch.coordinates.v1` |
+| Playwright prompt dialogs | Survey WebSocket connect uses `window.prompt()` which shows as modal dialog | Use `browser_handle_dialog` with `accept: true, promptText: "localhost:8765"` |
 
 ---
 
@@ -1034,3 +1047,77 @@ npm run god-mode
 | `manholes-mapper-god-agent/memory-manager.mjs` | Read/write/append memory files |
 | `manholes-mapper-god-agent/long-term-mem.md` | Persistent project knowledge |
 | `manholes-mapper-god-agent/short-term-mem.md` | Session state + ClickUp status |
+
+---
+
+## 18. Playwright Browser Test Setup
+
+Reusable boilerplate for browser-based testing. Use this before any Playwright test workflow to avoid repeating setup steps.
+
+### Quick Setup Sequence (copy-paste ready)
+
+**Step 1: Navigate + Login**
+```
+browser_navigate('https://manholes-mapper-git-dev-hussam0is-projects.vercel.app/#/login')
+browser_snapshot()
+browser_fill_form({ ref for email field }, 'admin@geopoint.me')
+browser_fill_form({ ref for password field }, 'Geopoint2026!')
+browser_click({ ref for submit button })
+```
+
+**Step 2: Strip CSP Headers (required for WebSocket/ws:// on HTTPS deployments)**
+```js
+// browser_evaluate — strips CSP from all responses
+await page.route('**/*', async route => {
+  const resp = await route.fetch();
+  const headers = resp.headers();
+  delete headers['content-security-policy'];
+  route.fulfill({ response: resp, headers });
+});
+```
+This intercepts all network responses and removes the CSP header, allowing ws:// WebSocket connections from HTTPS pages.
+
+**Step 3: Mobile Viewport (optional)**
+```
+browser_resize({ width: 360, height: 800 })
+```
+
+**Step 4: Hide homePanel overlay**
+```js
+browser_evaluate(() => document.getElementById('homePanel').style.display = 'none')
+```
+
+**Step 5: Create New Sketch (optional)**
+```js
+browser_evaluate(() => window.menuEvents?.emit('action', 'newSketch'))
+```
+Then handle the dialog/panel that appears.
+
+### TSC3 WebSocket Connection via Menu
+After setup steps 1-4:
+1. `browser_click` on hamburger menu button (ref from snapshot)
+2. `browser_click` on "Connect via WebSocket" button (in Survey section)
+3. `browser_handle_dialog({ accept: true, promptText: 'localhost:8765' })`
+4. Verify: `curl -s http://localhost:3001/api/status` → `connectedClients: 1`
+
+### Verify Sketch Data
+```js
+// browser_evaluate
+() => {
+  const data = JSON.parse(localStorage.getItem('graphSketch') || '{}');
+  return {
+    nodes: (data.nodes || []).map(n => ({ id: n.id, type: n.type, itmE: n.itmEasting, itmN: n.itmNorthing })),
+    edges: (data.edges || []).map(e => ({ id: e.id, tail: e.tail, head: e.head }))
+  };
+}
+```
+
+### MCP Tool Pre-Loading
+Before starting any test workflow, load required MCP tools in one call:
+- Playwright: `ToolSearch("playwright browser click")` — loads click, resize, install
+- Dialog: `ToolSearch("playwright dialog")` — loads browser_handle_dialog
+- Evaluate: `ToolSearch("playwright evaluate")` — loads browser_evaluate
+- Screenshot: `ToolSearch("playwright screenshot")` — loads browser_take_screenshot
+
+Or use direct selection if you know the exact tool name:
+- `ToolSearch("select:mcp__playwright__browser_handle_dialog")`
