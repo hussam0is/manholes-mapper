@@ -50,7 +50,8 @@ export class TSC3WebSocketAdapter {
     this.parserState = createParserState();
 
     try {
-      const protocol = (typeof location !== 'undefined' && location.protocol === 'https:') ? 'wss' : 'ws';
+      const isLocalhost = host === 'localhost' || host === '127.0.0.1';
+      const protocol = isLocalhost ? 'ws' : (typeof location !== 'undefined' && location.protocol === 'https:') ? 'wss' : 'ws';
       const url = `${protocol}://${host}:${port}`;
       this.ws = new WebSocket(url);
 
