@@ -40,6 +40,17 @@
         "CDP_HOST": "localhost",
         "CDP_PORT": "9222"
       }
+    },
+    "clickup": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "clickup-mcp-server"
+      ],
+      "env": {
+        "CLICKUP_API_TOKEN": "${CLICKUP_API_TOKEN}"
+      }
     }
   }
 }
