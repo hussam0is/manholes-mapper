@@ -16,7 +16,7 @@ const config: CapacitorConfig = {
     // Bluetooth and TCP plugins will be configured here when installed
   },
   server: {
-    // Allow loading from localhost during development
+    url: 'https://manholes-mapper.vercel.app',
     cleartext: true,
     androidScheme: 'https',
   },
