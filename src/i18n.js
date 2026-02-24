@@ -154,6 +154,7 @@ export const i18n = {
       deleteSelectedEdge: 'למחוק את הקו שנבחר?',
       deleteEdge: 'למחוק קו זה?',
       finishWorkday: 'לסיים את יום העבודה? הקווים הלא מחוברים יידרשו השלמה.',
+      exitApp: 'לצאת מהאפליקציה?',
 
     },
     alerts: {
@@ -608,6 +609,7 @@ export const i18n = {
       deleteSelectedEdge: 'Delete selected edge?',
       deleteEdge: 'Delete this edge?',
       finishWorkday: 'Finish workday? Dangling edges will require completion.',
+      exitApp: 'Exit the app?',
 
     },
     alerts: {

@@ -115,7 +115,7 @@ import {
   updateStreetViewTranslations
 } from '../map/street-view.js';
 import { drawIssueHighlight } from '../project/issue-highlight.js';
-import '../project/last-edit-tracker.js';
+import { getLastEditPosition, setLastEditPosition } from '../project/last-edit-tracker.js';
 import { menuEvents } from '../menu/menu-events.js';
 import { tsc3Connection } from '../survey/tsc3-connection-manager.js';
 import { initSurveyNodeTypeDialog, openSurveyNodeTypeDialog, getSurveyAutoConnect } from '../survey/survey-node-type-dialog.js';
@@ -1719,6 +1719,10 @@ function loadFromStorage() {
       }
     }
     nextNodeId = maxNumericId + 1;
+    // Restore last edit position if available
+    if (parsed.lastEditX != null && parsed.lastEditY != null) {
+      setLastEditPosition(parsed.lastEditX, parsed.lastEditY);
+    }
     // Recompute node types based on measurements
     computeNodeTypes();
     // Auto-reposition nodes from embedded geographic coordinates
@@ -1759,6 +1763,7 @@ function saveToStorage() {
   
   // Schedule the heavy work to run when browser is idle
   const doSave = () => {
+    const lastEdit = getLastEditPosition();
     const payload = {
       nodes: currentNodes,
       edges: currentEdges,
@@ -1770,6 +1775,8 @@ function saveToStorage() {
       inputFlowConfig: savedInputFlowConfig,
       lastEditedBy: username,
       lastEditedAt: nowIso,
+      lastEditX: lastEdit?.x ?? null,
+      lastEditY: lastEdit?.y ?? null,
     };
     
     // Single JSON.stringify call, reuse the string
@@ -1997,6 +2004,7 @@ function saveToLibrary() {
     return;
   }
 
+  const lastEdit = getLastEditPosition();
   const record = {
     id: sketchId,
     createdAt: creationDate || nowIso,
@@ -2012,6 +2020,8 @@ function saveToLibrary() {
     inputFlowConfig: currentInputFlowConfig || null,
     lastEditedBy: getCurrentUsername(),
     metadataOnly: false,
+    lastEditX: lastEdit?.x ?? null,
+    lastEditY: lastEdit?.y ?? null,
   };
   const idx = lib.findIndex((s) => s.id === record.id);
   let finalRecord = record;
@@ -2099,11 +2109,25 @@ async function loadFromLibrary(sketchId) {
   computeNodeTypes();
   // Auto-reposition nodes from embedded geographic coordinates
   autoRepositionFromEmbeddedCoords();
+  // Restore last edit position from library record
+  if (sketchData.lastEditX != null && sketchData.lastEditY != null) {
+    setLastEditPosition(sketchData.lastEditX, sketchData.lastEditY);
+  }
   saveToStorage();
   draw();
   renderDetails();
-  // Recenters view to the current sketch center, keeping the existing zoom level
-  try { recenterView(); } catch (_) { }
+
+  // If a last edit position exists, center on it at 20% zoom; otherwise recenter on sketch center
+  const lastEdit = getLastEditPosition();
+  if (lastEdit) {
+    const targetScale = 0.2;
+    const rect = canvas.getBoundingClientRect();
+    const tx = rect.width / 2 - targetScale * viewStretchX * lastEdit.x;
+    const ty = rect.height / 2 - targetScale * viewStretchY * lastEdit.y;
+    window.__setViewState(targetScale, tx, ty);
+  } else {
+    try { recenterView(); } catch (_) { }
+  }
 
   // Load reference layers for the project (if sketch belongs to one)
   loadProjectReferenceLayers(currentProjectId);
@@ -8981,8 +9005,9 @@ menuEvents.on('disconnectSurvey', async () => {
 });
 
 // ── Emergency save on page unload ─────────────────────────────────────────
-window.addEventListener('beforeunload', () => {
+window.addEventListener('beforeunload', (e) => {
   try {
+    const lastEdit = getLastEditPosition();
     const payload = {
       nodes, edges, nextNodeId, creationDate,
       sketchId: currentSketchId,
@@ -8991,7 +9016,58 @@ window.addEventListener('beforeunload', () => {
       inputFlowConfig: currentInputFlowConfig,
       lastEditedBy: getCurrentUsername(),
       lastEditedAt: new Date().toISOString(),
+      lastEditX: lastEdit?.x ?? null,
+      lastEditY: lastEdit?.y ?? null,
     };
     localStorage.setItem(STORAGE_KEYS.sketch, JSON.stringify(payload));
   } catch (_) {}
+
+  // Confirm exit when there's an active sketch with data
+  if (nodes?.length > 0 || edges?.length > 0) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
 });
+
+// ── Android back-button exit guard ────────────────────────────────────────
+// Push a history entry so the Android back button triggers popstate instead
+// of immediately exiting the app/PWA. On popstate we prompt confirmation.
+(function initBackButtonGuard() {
+  // Push a guard state so "back" pops it rather than leaving the page
+  history.pushState({ _guard: true }, '');
+
+  window.addEventListener('popstate', (e) => {
+    // Always re-push the guard state so the barrier stays in place
+    history.pushState({ _guard: true }, '');
+
+    // If a modal/panel is open, close it instead of prompting exit
+    const homePanel = document.getElementById('homePanel');
+    if (homePanel && homePanel.style.display !== 'none') {
+      // Close the home panel
+      if (typeof hideHome === 'function') hideHome();
+      return;
+    }
+
+    // If mobile menu is open, close it
+    if (typeof window.closeMobileMenu === 'function' && document.body.classList.contains('mobile-menu-open')) {
+      window.closeMobileMenu();
+      return;
+    }
+
+    // If on a sub-route, navigate back to main canvas
+    const hash = location.hash || '#/';
+    if (hash !== '#/' && hash !== '#/login' && hash !== '#/signup') {
+      location.hash = '#/';
+      return;
+    }
+
+    // On the main canvas — ask user to confirm exit
+    if (nodes?.length > 0 || edges?.length > 0) {
+      const msg = typeof t === 'function' ? t('confirms.exitApp') : 'Exit the app?';
+      if (confirm(msg)) {
+        // Actually go back — remove guard and navigate back
+        history.back();
+      }
+    }
+  });
+})();
