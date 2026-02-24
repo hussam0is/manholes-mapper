@@ -67,4 +67,18 @@ It is read by Claude Code's `/manholes-mapper-god` skill for deep context.
 | < 15m | GPS | Amber |
 | >= 15m | No fix | Red |
 
+## Field Workflow (decided 2026-02-24)
+- **TSC3 + GNSS receiver**: Trimble Access does NOT support real-time Bluetooth/WiFi serial output for GNSS — "Data output" is total-station only
+- **Decided workflow**: Phone + GNSS receiver directly (no TSC3 middleman for coordinates)
+- **Connection method**: TMM (Trimble Mobile Manager) feeds GNSS RTK as Android mock location → browser geolocation → app's browser-location-adapter
+- **Point capture**: User taps "capture" button on phone → app records current GNSS position onto the node
+- **Node survey fields to display**: survey_x (ITM easting), survey_y (ITM northing), TL (elevation), measurement precision (accuracy), fix type (RTK Fixed / RTK Float / Manual Float)
+- **Capacitor app**: Now loads from production URL (no bundled assets) — `server.url` in capacitor.config.ts points to `https://manholes-mapper.vercel.app` (commit ee9bc0c)
+
 ## Learned Insights
+- **TSC3 WebSocket on HTTPS**: `tsc3-websocket-adapter.js` forces `ws://` for localhost/127.0.0.1. For non-localhost HTTPS, uses `wss://`. CDN may cache old CSP headers — use `page.route()` to strip CSP during Playwright tests.
+- **homePanel overlay**: After login, `#homePanel` blocks canvas and menu clicks. Hide via `document.getElementById('homePanel').style.display = 'none'`.
+- **Sketch localStorage key**: Production builds store data in `graphSketch` localStorage key (not `currentSketch`). `window.nodes`/`window.edges` globals are NOT exposed in prod builds.
+- **Mock TSC3 scenarios API**: `POST /api/run-scenario` sends predefined point sets with delays. Available scenarios: `basic` (3 pts), `chain-5` (5 pts), `update-coords` (2 pts). Check progress via `GET /api/status` → `runningScenario`.
+- **Playwright dialog handling**: `window.prompt()` (used by WebSocket connect) appears as modal dialog — handled via `browser_handle_dialog({ accept: true, promptText: 'localhost:8765' })`.
+- **Skill optimization**: God-mode §18 has reusable Playwright browser test setup boilerplate. Mock-tsc3-controller has full Browser Integration Test Playbook. User-tester has Phase 5 (survey device testing).

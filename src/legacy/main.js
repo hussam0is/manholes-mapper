@@ -4343,6 +4343,40 @@ function renderDetails() {
             </div>` : ''}
           </div>
         </div>
+        ${node.surveyX != null ? `
+        <div class="details-section">
+          <div class="details-section-title">${t('labels.surveyData')}</div>
+          <div class="details-grid two-col">
+            <div class="field">
+              <label>${t('labels.surveyX')}</label>
+              <div class="field-value-readonly">${node.surveyX != null ? node.surveyX.toFixed(3) : '—'}</div>
+            </div>
+            <div class="field">
+              <label>${t('labels.surveyY')}</label>
+              <div class="field-value-readonly">${node.surveyY != null ? node.surveyY.toFixed(3) : '—'}</div>
+            </div>
+            <div class="field">
+              <label>${t('labels.terrainLevel')}</label>
+              <div class="field-value-readonly">${node.surveyZ != null ? node.surveyZ.toFixed(3) : '—'}</div>
+            </div>
+            <div class="field">
+              <label>${t('labels.measurePrecision')}</label>
+              <div class="field-value-readonly">${node.measure_precision != null ? node.measure_precision.toFixed(3) + ' m' : '—'}</div>
+            </div>
+            <div class="field col-span-2">
+              <label>${t('labels.fixType')}</label>
+              <div class="field-value-readonly survey-fix-badge fix-${node.gnssFixQuality ?? 'none'}">${
+                node.gnssFixQuality === 4 ? t('labels.fixRtkFixed') :
+                node.gnssFixQuality === 5 ? t('labels.fixRtkFloat') :
+                node.gnssFixQuality === 2 ? t('labels.fixDgps') :
+                node.gnssFixQuality === 1 ? t('labels.fixGps') :
+                node.gnssFixQuality === 6 ? t('labels.fixManualFloat') :
+                t('labels.fixNone')
+              }</div>
+            </div>
+          </div>
+        </div>
+        ` : ''}
         <div class="details-section">
           <div class="field">
             <label for="noteInput">${t('labels.note')}</label>
