@@ -500,6 +500,11 @@
   width: var(--menu-btn-height-sm);
 }
 
+.menu-btn--active {
+  background: var(--color-accent);
+  color: #fff;
+}
+
 /* Compact mode for tablet and smaller desktops */
 @media (max-width: 1100px) {
   .menu-btn__label {

@@ -15,6 +15,7 @@ export const STORAGE_KEYS = {
   coordinateScale: 'graphSketch.coordinateScale.v1',
   viewStretch: 'graphSketch.viewStretch.v1',
   tsc3WsAddress: 'graphSketch.tsc3.wsAddress',
+  autoSize: 'graphSketch.autoSize',
 };
 
 export async function restoreFromIndexedDbIfNeeded() {

@@ -214,6 +214,7 @@ const recenterBtn = document.getElementById('recenterBtn');
 const recenterDensityBtn = document.getElementById('recenterDensityBtn');
 const sizeIncreaseBtn = document.getElementById('sizeIncreaseBtn');
 const sizeDecreaseBtn = document.getElementById('sizeDecreaseBtn');
+const autoSizeBtn = document.getElementById('autoSizeBtn');
 const appTitleEl = document.getElementById('appTitle');
 const sketchNameDisplayEl = document.getElementById('sketchNameDisplay');
 const sketchNameDisplayMobileEl = document.getElementById('sketchNameDisplayMobile');
@@ -280,6 +281,7 @@ const mobileZoomInBtn = document.getElementById('mobileZoomInBtn');
 const mobileZoomOutBtn = document.getElementById('mobileZoomOutBtn');
 const mobileSizeIncreaseBtn = document.getElementById('mobileSizeIncreaseBtn');
 const mobileSizeDecreaseBtn = document.getElementById('mobileSizeDecreaseBtn');
+const mobileAutoSizeBtn = document.getElementById('mobileAutoSizeBtn');
 const mobileExportNodesBtn = document.getElementById('mobileExportNodesBtn');
 const mobileExportEdgesBtn = document.getElementById('mobileExportEdgesBtn');
 const mobileExportSketchBtn = document.getElementById('mobileExportSketchBtn');
@@ -439,6 +441,8 @@ const STRETCH_STEP = 0.1;
 const VIEW_STRETCH_KEY = STORAGE_KEYS.viewStretch;
 // Size scale state for nodes and fonts
 let sizeScale = 0.9;
+let autoSizeEnabled = false; // When true, node/edge sizes stay constant on screen during zoom
+let sizeVS = 1; // Computed divisor: viewScale when autoSize is on, 1 when off
 const MIN_SIZE_SCALE = 0.5;
 const MAX_SIZE_SCALE = 10.0;
 const SIZE_SCALE_STEP = 0.2; // 20% increments
@@ -3555,6 +3559,9 @@ function connectDanglingEdge(edge, nodeId, type = 'outbound') {
  * Redraw the entire scene (edges first, then nodes).
  */
 function draw() {
+  // When autoSize is enabled, divide sizes by viewScale for constant screen-pixel size
+  sizeVS = autoSizeEnabled ? viewScale : 1;
+
   // Rebuild fast node lookup map once per frame
   nodeMap.clear();
   for (let i = 0; i < nodes.length; i++) {
@@ -3628,7 +3635,7 @@ function draw() {
   if (window.__projectCanvas?.isProjectCanvasMode()) {
     drawBackgroundSketches(ctx, window.__projectCanvas.getBackgroundSketches(), {
       sizeScale,
-      viewScale,
+      viewScale: sizeVS,
       viewStretchX,
       viewStretchY,
       visMinX, visMinY, visMaxX, visMaxY,
@@ -3675,15 +3682,15 @@ function draw() {
     ctx.save();
     ctx.strokeStyle = COLORS.edge.preview;
     ctx.fillStyle = COLORS.edge.preview;
-    ctx.setLineDash([6 / viewScale, 4 / viewScale]);
-    ctx.lineWidth = 2 / viewScale;
+    ctx.setLineDash([6 / sizeVS, 4 / sizeVS]);
+    ctx.lineWidth = 2 / sizeVS;
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
     ctx.stroke();
     // Arrow head
     const angle = Math.atan2(y2 - y1, x2 - x1);
-    const arrowLength = 10 / viewScale;
+    const arrowLength = 10 / sizeVS;
     ctx.beginPath();
     ctx.moveTo(x2, y2);
     ctx.lineTo(
@@ -3699,11 +3706,11 @@ function draw() {
 
     // Draw a small circle at the start position when creating inbound edge
     if (pendingEdgeStartPosition) {
-      const circleRadius = 5 * sizeScale / viewScale;
+      const circleRadius = 5 * sizeScale / sizeVS;
       ctx.beginPath();
       ctx.arc(x1, y1, circleRadius, 0, Math.PI * 2);
       ctx.strokeStyle = COLORS.edge.preview;
-      ctx.lineWidth = 1.5 / viewScale;
+      ctx.lineWidth = 1.5 / sizeVS;
       ctx.stroke();
     }
     ctx.restore();
@@ -3711,7 +3718,7 @@ function draw() {
   // Draw nodes on top and collect label data
   const labelData = [];
   const nodeData = [];
-  const nodeRadius = NODE_RADIUS * sizeScale / viewScale;
+  const nodeRadius = NODE_RADIUS * sizeScale / sizeVS;
 
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
@@ -3741,13 +3748,13 @@ function draw() {
     _edgeLabelCacheStretchX !== viewStretchX ||
     _edgeLabelCacheStretchY !== viewStretchY ||
     _edgeLabelCacheSizeScale !== sizeScale ||
-    _edgeLabelCacheViewScale !== viewScale
+    _edgeLabelCacheViewScale !== sizeVS
   ) {
     _edgeLabelDataCache = [];
     _edgeLabelCacheStretchX = viewStretchX;
     _edgeLabelCacheStretchY = viewStretchY;
     _edgeLabelCacheSizeScale = sizeScale;
-    _edgeLabelCacheViewScale = viewScale;
+    _edgeLabelCacheViewScale = sizeVS;
     edges.forEach((edge) => {
       const tailNode = edge.tail != null ? nodeMap.get(String(edge.tail)) : undefined;
       const headNode = edge.head != null ? nodeMap.get(String(edge.head)) : undefined;
@@ -3763,8 +3770,8 @@ function draw() {
 
       const normX = dx / length;
       const normY = dy / length;
-      const offset = 6 * sizeScale / viewScale;
-      const fontSize = Math.round(14 * sizeScale / viewScale);
+      const offset = 6 * sizeScale / sizeVS;
+      const fontSize = Math.round(14 * sizeScale / sizeVS);
 
       if (edge.tail_measurement) {
         const ratio = 0.25;
@@ -4029,14 +4036,14 @@ function drawEdge(edge) {
     edgeTypeColors: EDGE_TYPE_COLORS,
     highlightedHalfEdge,
     colors: COLORS,
-    viewScale,
+    viewScale: sizeVS,
   });
   if (!stretchedTail || !stretchedHead) return;
   if (edge.fall_depth !== '' && edge.fall_depth !== null && edge.fall_depth !== undefined) {
-    const iconDistanceFromHead = ((typeof NODE_RADIUS === 'number' ? NODE_RADIUS : 20) * sizeScale + 7 * sizeScale) / viewScale;
+    const iconDistanceFromHead = ((typeof NODE_RADIUS === 'number' ? NODE_RADIUS : 20) * sizeScale + 7 * sizeScale) / sizeVS;
     const iconX = stretchedHead.x - Math.cos(angle) * iconDistanceFromHead;
     const iconY = stretchedHead.y - Math.sin(angle) * iconDistanceFromHead;
-    const size = 16 * sizeScale / viewScale;
+    const size = 16 * sizeScale / sizeVS;
     if (fallIconImage && fallIconReady) {
       ctx.save();
       const bgRadius = size * 0.45;
@@ -4044,24 +4051,24 @@ function drawEdge(edge) {
       ctx.arc(iconX, iconY, bgRadius, 0, Math.PI * 2);
       ctx.fillStyle = COLORS.edge.fallIconBg;
       ctx.fill();
-      ctx.lineWidth = 2 / viewScale;
+      ctx.lineWidth = 2 / sizeVS;
       ctx.strokeStyle = COLORS.edge.fallIconStroke;
       ctx.stroke();
-      const innerSize = size - (6 * sizeScale / viewScale);
+      const innerSize = size - (6 * sizeScale / sizeVS);
       ctx.drawImage(fallIconImage, iconX - innerSize / 2, iconY - innerSize / 2, innerSize, innerSize);
       ctx.restore();
     } else {
-      const iconRadius = 6 / viewScale;
+      const iconRadius = 6 / sizeVS;
       ctx.save();
       ctx.beginPath();
       ctx.arc(iconX, iconY, iconRadius, 0, Math.PI * 2);
       ctx.fillStyle = COLORS.edge.fallIconFallback;
       ctx.fill();
-      ctx.lineWidth = 2 / viewScale;
+      ctx.lineWidth = 2 / sizeVS;
       ctx.strokeStyle = COLORS.edge.fallIconStroke;
       ctx.stroke();
       ctx.fillStyle = COLORS.edge.fallIconText;
-      ctx.font = `bold ${9 / viewScale}px Arial`;
+      ctx.font = `bold ${9 / sizeVS}px Arial`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('F', iconX, iconY);
@@ -4072,7 +4079,7 @@ function drawEdge(edge) {
   const x1 = stretchedTail.x, y1 = stretchedTail.y, x2 = stretchedHead.x, y2 = stretchedHead.y;
   const midX = (x1 + x2) / 2;
   const midY = (y1 + y2) / 2;
-  const midArrowLen = 8 / viewScale;
+  const midArrowLen = 8 / sizeVS;
   ctx.beginPath();
   ctx.moveTo(midX, midY);
   ctx.lineTo(
@@ -4098,7 +4105,7 @@ function drawDanglingEdgeLocal(edge, connectedNode, type = 'outbound') {
   if (!connectedNode) return;
   
   const isSelected = edge === selectedEdge;
-  const defaultOffset = 80 * sizeScale / viewScale;
+  const defaultOffset = 80 * sizeScale / sizeVS;
   
   // Apply stretch to positions
   const stretchedConnected = stretchedNode(connectedNode);
@@ -4137,7 +4144,7 @@ function drawDanglingEdgeLocal(edge, connectedNode, type = 'outbound') {
   const dx = endX - startX;
   const dy = endY - startY;
   const totalLength = Math.sqrt(dx * dx + dy * dy);
-  const dashLength = 30 * sizeScale / viewScale; // dashed portion at the open end
+  const dashLength = 30 * sizeScale / sizeVS; // dashed portion at the open end
   
   if (type === 'outbound') {
     // Outbound: solid from node, dashed at the end
@@ -4148,14 +4155,14 @@ function drawDanglingEdgeLocal(edge, connectedNode, type = 'outbound') {
     
     // Draw solid portion
     ctx.strokeStyle = solidColor;
-    ctx.lineWidth = 2 / viewScale;
+    ctx.lineWidth = 2 / sizeVS;
     ctx.beginPath();
     ctx.moveTo(startX, startY);
     ctx.lineTo(dashStartX, dashStartY);
     ctx.stroke();
 
     // Draw dashed portion
-    ctx.setLineDash([4 / viewScale, 4 / viewScale]);
+    ctx.setLineDash([4 / sizeVS, 4 / sizeVS]);
     ctx.strokeStyle = isSelected ? '#9ca3af' : '#d1d5db';
     ctx.beginPath();
     ctx.moveTo(dashStartX, dashStartY);
@@ -4169,9 +4176,9 @@ function drawDanglingEdgeLocal(edge, connectedNode, type = 'outbound') {
     const dashEndY = startY + dy * ratio;
 
     // Draw dashed portion (at start)
-    ctx.setLineDash([4 / viewScale, 4 / viewScale]);
+    ctx.setLineDash([4 / sizeVS, 4 / sizeVS]);
     ctx.strokeStyle = isSelected ? '#9ca3af' : '#d1d5db';
-    ctx.lineWidth = 2 / viewScale;
+    ctx.lineWidth = 2 / sizeVS;
     ctx.beginPath();
     ctx.moveTo(startX, startY);
     ctx.lineTo(dashEndX, dashEndY);
@@ -4192,7 +4199,7 @@ function drawDanglingEdgeLocal(edge, connectedNode, type = 'outbound') {
   const angle = Math.atan2(dy, dx);
   const midX = (startX + endX) / 2;
   const midY = (startY + endY) / 2;
-  const midArrowLen = 8 / viewScale;
+  const midArrowLen = 8 / sizeVS;
   ctx.beginPath();
   ctx.moveTo(midX, midY);
   ctx.lineTo(
@@ -4208,11 +4215,11 @@ function drawDanglingEdgeLocal(edge, connectedNode, type = 'outbound') {
   ctx.fill();
 
   // Draw a small open circle at the dangling end (unfilled, subtle indicator)
-  const circleRadius = 5 * sizeScale / viewScale;
+  const circleRadius = 5 * sizeScale / sizeVS;
   ctx.beginPath();
   ctx.arc(openEndX, openEndY, circleRadius, 0, Math.PI * 2);
   ctx.strokeStyle = solidColor;
-  ctx.lineWidth = 1.5 / viewScale;
+  ctx.lineWidth = 1.5 / sizeVS;
   ctx.stroke();
   
   ctx.restore();
@@ -4232,14 +4239,14 @@ function drawEdgeLabels(edge) {
   if (lengthPx <= 0) return;
   const normX = dx / lengthPx;
   const normY = dy / lengthPx;
-  const offset = 6 * sizeScale / viewScale;
+  const offset = 6 * sizeScale / sizeVS;
   ctx.save();
-  const fontSize = Math.round(14 * sizeScale / viewScale);
+  const fontSize = Math.round(14 * sizeScale / sizeVS);
   ctx.font = `${fontSize}px Arial`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'bottom';
   ctx.lineJoin = 'round';
-  ctx.lineWidth = 4 / viewScale;
+  ctx.lineWidth = 4 / sizeVS;
   ctx.strokeStyle = COLORS.edge.labelStroke;
   ctx.fillStyle = COLORS.edge.label;
   
@@ -4272,19 +4279,19 @@ function drawEdgeLabels(edge) {
       
       // Offset perpendicular to the edge (opposite side from measurements)
       // Use negative perpendicular to go to the other side
-      const lengthOffset = 16 * sizeScale / viewScale;
+      const lengthOffset = 16 * sizeScale / sizeVS;
       const perpX = normY * lengthOffset;  // Note: positive normY for opposite side
       const perpY = -normX * lengthOffset;
 
       // Draw with slightly smaller font and different style for length
-      const lengthFontSize = Math.round(12 * sizeScale / viewScale);
+      const lengthFontSize = Math.round(12 * sizeScale / sizeVS);
       ctx.font = `${lengthFontSize}px Arial`;
       ctx.textBaseline = 'middle';
       
       // Use a distinct color for length labels
       ctx.strokeStyle = COLORS.edge.labelStroke;
       ctx.fillStyle = '#0369a1'; // sky-700 for length labels
-      ctx.lineWidth = 3 / viewScale;
+      ctx.lineWidth = 3 / sizeVS;
 
       ctx.strokeText(lengthText, px + perpX, py + perpY);
       ctx.fillText(lengthText, px + perpX, py + perpY);
@@ -4293,7 +4300,7 @@ function drawEdgeLabels(edge) {
       ctx.font = `${fontSize}px Arial`;
       ctx.textBaseline = 'bottom';
       ctx.fillStyle = COLORS.edge.label;
-      ctx.lineWidth = 4 / viewScale;
+      ctx.lineWidth = 4 / sizeVS;
     }
   }
   
@@ -4321,7 +4328,7 @@ function drawEdgeLabels(edge) {
 }
 
 function drawNode(node) {
-  const radius = NODE_RADIUS * sizeScale / viewScale;
+  const radius = NODE_RADIUS * sizeScale / sizeVS;
 
   // Apply stretch to position for drawing (shapes stay the same, only position stretches)
   const stretchedN = stretchedNode(node);
@@ -4334,7 +4341,7 @@ function drawNode(node) {
     showCoordinateStatus: coordinatesEnabled,
     coordinatesMap: coordinatesMap,
     isSelected: isSelected,  // Pass selection state explicitly
-    viewScale: viewScale
+    viewScale: sizeVS
   };
   // Pass the same node for both if selected, so identity comparison works
   drawNodeIcon(ctx, stretchedN, radius, COLORS, isSelected ? stretchedN : null, coordinateOptions);
@@ -4345,7 +4352,7 @@ function drawNode(node) {
   }
 
   // Return label data for deferred rendering (smart positioning)
-  const fontSize = Math.round(16 * sizeScale / viewScale);
+  const fontSize = Math.round(16 * sizeScale / sizeVS);
   let labelText = String(node.id);
 
   // For Home nodes, only show numeric IDs as labels
@@ -4377,7 +4384,7 @@ function drawHouse(cx, cy, radius) {
  * Draw a small badge indicating a direct connection on top-right of the node.
  */
 function drawDirectConnectionBadge(cx, cy, radius) {
-  primitivesDrawDirectConnectionBadge(ctx, cx, cy, radius, viewScale);
+  primitivesDrawDirectConnectionBadge(ctx, cx, cy, radius, sizeVS);
 }
 
 /**
@@ -5342,9 +5349,10 @@ function assignHomeIdFromConnectedManhole(homeNode) {
  */
 function findNodeAt(x, y) {
   // Look through nodes in reverse order (topmost first)
-  // Sizes divided by viewScale to match constant-screen-size rendering
-  const nodeR = NODE_RADIUS * sizeScale / viewScale;
-  const pad = 2 / viewScale;
+  // Sizes divided by sizeVS to match constant-screen-size rendering when autoSize is on
+  const sv = autoSizeEnabled ? viewScale : 1;
+  const nodeR = NODE_RADIUS * sizeScale / sv;
+  const pad = 2 / sv;
   for (let i = nodes.length - 1; i >= 0; i--) {
     const node = nodes[i];
     if (node._hidden) continue;
@@ -5374,10 +5382,11 @@ function findNodeAt(x, y) {
  * Falls back to normal hit if extraRadius is falsy.
  */
 function findNodeAtWithExpansion(x, y, extraRadius) {
-  // Sizes divided by viewScale to match constant-screen-size rendering
-  const nodeR = NODE_RADIUS * sizeScale / viewScale;
-  const extra = typeof extraRadius === 'number' ? extraRadius / viewScale : 0;
-  const pad = 2 / viewScale;
+  // Sizes divided by sizeVS to match constant-screen-size rendering when autoSize is on
+  const sv = autoSizeEnabled ? viewScale : 1;
+  const nodeR = NODE_RADIUS * sizeScale / sv;
+  const extra = typeof extraRadius === 'number' ? extraRadius / sv : 0;
+  const pad = 2 / sv;
   for (let i = nodes.length - 1; i >= 0; i--) {
     const node = nodes[i];
     if (node._hidden) continue;
@@ -5411,7 +5420,8 @@ function findNodeAtWithExpansion(x, y, extraRadius) {
 function findEdgeAt(x, y, threshold) {
   let closest = null;
   const rawThreshold = (typeof threshold === 'number') ? threshold : 8;
-  let minDist = rawThreshold / viewScale; // scale threshold to match constant-size rendering
+  const sv = autoSizeEnabled ? viewScale : 1;
+  let minDist = rawThreshold / sv; // scale threshold to match constant-size rendering
   edges.forEach((edge) => {
     let tailX, tailY, headX, headY;
     
@@ -5486,7 +5496,7 @@ function pointerDown(x, y) {
       }
       // Project-canvas: check background sketches for nodes/edges before treating as empty space
       if (window.__projectCanvas?.isProjectCanvasMode()) {
-        const bgNode = window.__projectCanvas.findNodeInBackground(world.x, world.y, sizeScale, viewScale);
+        const bgNode = window.__projectCanvas.findNodeInBackground(world.x, world.y, sizeScale, autoSizeEnabled ? viewScale : 1);
         if (bgNode) {
           window.__projectCanvas.switchActiveSketch(bgNode.sketchId);
           const switched = findNodeAt(world.x, world.y);
@@ -5498,7 +5508,7 @@ function pointerDown(x, y) {
             return;
           }
         }
-        const bgEdge = window.__projectCanvas.findEdgeInBackground(world.x, world.y, viewScale);
+        const bgEdge = window.__projectCanvas.findEdgeInBackground(world.x, world.y, autoSizeEnabled ? viewScale : 1);
         if (bgEdge) {
           window.__projectCanvas.switchActiveSketch(bgEdge.sketchId);
           const switchedEdge = findEdgeAt(world.x, world.y);
@@ -5602,7 +5612,7 @@ function pointerDown(x, y) {
   // Project-canvas auto-switch: if clicking empty space in active sketch, check background sketches
   if (!node && window.__projectCanvas?.isProjectCanvasMode() &&
       (currentMode === 'node' || currentMode === 'home' || currentMode === 'drainage')) {
-    const bgHit = window.__projectCanvas.findNodeInBackground(world.x, world.y, sizeScale, viewScale);
+    const bgHit = window.__projectCanvas.findNodeInBackground(world.x, world.y, sizeScale, autoSizeEnabled ? viewScale : 1);
     if (bgHit) {
       window.__projectCanvas.switchActiveSketch(bgHit.sketchId);
       // Re-find in the now-active sketch
@@ -6698,6 +6708,43 @@ if (mobileSizeIncreaseBtn) {
 }
 if (mobileSizeDecreaseBtn) {
   mobileSizeDecreaseBtn.addEventListener('click', decreaseSizeScale);
+}
+
+// Auto size toggle — keeps nodes/edges at constant screen pixel size during zoom
+function updateAutoSizeBtnStyle() {
+  const activeClass = 'menu-btn--active';
+  if (autoSizeBtn) {
+    autoSizeBtn.classList.toggle(activeClass, autoSizeEnabled);
+  }
+  if (mobileAutoSizeBtn) {
+    mobileAutoSizeBtn.classList.toggle('active', autoSizeEnabled);
+  }
+}
+
+function toggleAutoSize() {
+  autoSizeEnabled = !autoSizeEnabled;
+  localStorage.setItem(STORAGE_KEYS.autoSize, String(autoSizeEnabled));
+  updateAutoSizeBtnStyle();
+  scheduleDraw();
+  showToast(autoSizeEnabled ? t('toasts.autoSizeOn') : t('toasts.autoSizeOff'));
+}
+
+// Load auto size preference
+try {
+  const savedAutoSize = localStorage.getItem(STORAGE_KEYS.autoSize);
+  if (savedAutoSize === 'true') {
+    autoSizeEnabled = true;
+  }
+} catch (e) {
+  console.warn('[App] Failed to load auto size preference:', e.message);
+}
+updateAutoSizeBtnStyle();
+
+if (autoSizeBtn) {
+  autoSizeBtn.addEventListener('click', toggleAutoSize);
+}
+if (mobileAutoSizeBtn) {
+  mobileAutoSizeBtn.addEventListener('click', toggleAutoSize);
 }
 
 // Help modal controls
