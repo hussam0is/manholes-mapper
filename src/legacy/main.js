@@ -7211,34 +7211,70 @@ async function handleCoordinatesImport(file) {
     const coordPointIds = Array.from(newCoordinates.keys());
     console.debug('[Coordinates] Coordinate point_ids (first 10):', coordPointIds.slice(0, 10));
     
-    // Merge into existing coordinatesMap (new values win; existing coords for
-    // nodes absent from this file are preserved from prior imports)
-    const prevSize = coordinatesMap.size;
-    for (const [id, val] of newCoordinates) {
-      coordinatesMap.set(id, val);
-    }
-    saveCoordinatesToStorage(coordinatesMap);
+    // Geographic compatibility check: if existing coordinatesMap has data,
+    // compare centroids. If new file is from a different project area (>1500m away),
+    // ask the user whether to replace or merge to avoid coordinate pollution.
+    const doImport = async (shouldMerge) => {
+      const prevSize = coordinatesMap.size;
+      if (shouldMerge && prevSize > 0) {
+        // Merge: new values win, existing coords for absent nodes preserved
+        for (const [id, val] of newCoordinates) {
+          coordinatesMap.set(id, val);
+        }
+      } else {
+        // Replace
+        coordinatesMap = newCoordinates;
+      }
+      saveCoordinatesToStorage(coordinatesMap);
 
-    // Show success message with match info
-    const matchCount = matchingIds.length;
-    const totalNodes = nodes.length;
-    const addedNew = coordinatesMap.size - prevSize;
-    const mergeNote = prevSize > 0 ? ` (+${addedNew} חדשים, סה"כ ${coordinatesMap.size})` : '';
-    showToast(`נטענו ${newCoordinates.size} קואורדינטות, ${matchCount}/${totalNodes} שוחות תואמות${mergeNote}`);
-    
-    // Automatically enable coordinates if not already enabled
-    if (!coordinatesEnabled) {
-      coordinatesEnabled = true;
-      saveCoordinatesEnabled(true);
-      syncCoordinatesToggleUI();
-      applyCoordinatesIfEnabled();
-    } else {
-      // Re-apply if already enabled
-      applyCoordinatesIfEnabled();
+      const matchCount = matchingIds.length;
+      const totalNodes = nodes.length;
+      const addedNew = coordinatesMap.size - prevSize;
+      const mergeNote = (shouldMerge && prevSize > 0) ? ` (+${addedNew} חדשים, סה"כ ${coordinatesMap.size})` : '';
+      showToast(`נטענו ${newCoordinates.size} קואורדינטות, ${matchCount}/${totalNodes} שוחות תואמות${mergeNote}`);
+
+      if (!coordinatesEnabled) {
+        coordinatesEnabled = true;
+        saveCoordinatesEnabled(true);
+        syncCoordinatesToggleUI();
+        applyCoordinatesIfEnabled();
+      } else {
+        applyCoordinatesIfEnabled();
+      }
+      scheduleDraw();
+    };
+
+    if (coordinatesMap.size > 0) {
+      // Compute centroid of existing map
+      let ex = 0, ey = 0;
+      for (const v of coordinatesMap.values()) { ex += v.x; ey += v.y; }
+      ex /= coordinatesMap.size; ey /= coordinatesMap.size;
+
+      // Compute centroid of new file
+      let nx = 0, ny = 0;
+      for (const v of newCoordinates.values()) { nx += v.x; ny += v.y; }
+      nx /= newCoordinates.size; ny /= newCoordinates.size;
+
+      const dist = Math.sqrt((nx - ex) ** 2 + (ny - ey) ** 2);
+      console.debug(`[Coordinates] Centroid distance between existing and new cords: ${dist.toFixed(0)}m`);
+
+      if (dist > 1500) {
+        // Different project area detected — ask user
+        const msg = `הקובץ החדש נמצא ${Math.round(dist)}מ' ממרכז המפה הקיים.\n` +
+          `ייתכן שהוא שייך לפרויקט אחר עם אותם מספרי שוחות.\n\n` +
+          `לחץ OK להחלפה מלאה (מומלץ)\nלחץ ביטול למיזוג`;
+        if (window.confirm(msg)) {
+          await doImport(false); // replace
+        } else {
+          await doImport(true);  // merge anyway (user's choice)
+        }
+        return;
+      }
     }
-    
-    scheduleDraw();
-    
+
+    // Same area or first import — merge safely
+    await doImport(coordinatesMap.size > 0);
+
   } catch (error) {
     console.error('[Coordinates] Failed to import coordinates:', error.message);
     showToast(t('coordinates.importError') || 'שגיאה בטעינת קואורדינטות');
