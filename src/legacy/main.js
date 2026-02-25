@@ -4275,7 +4275,7 @@ function drawEdgeLabels(edge) {
     // Calculate actual length in meters from survey coordinates or pixel distance
     let lengthMeters = null;
     
-    if (tailNode.surveyX !== undefined && headNode.surveyX !== undefined) {
+    if (tailNode.surveyX != null && headNode.surveyX != null) {
       // Both nodes have survey coordinates - calculate real distance
       const surveyDx = headNode.surveyX - tailNode.surveyX;
       const surveyDy = headNode.surveyY - tailNode.surveyY;
