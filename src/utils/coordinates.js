@@ -531,16 +531,22 @@ export function applyCoordinatesToNodes(nodes, coordinatesMap, canvasWidth = 800
       // Validate the computed coordinates
       if (!Number.isFinite(canvasCoords.x) || !Number.isFinite(canvasCoords.y)) {
         console.warn(`[Coordinates] Invalid canvas coordinates for node ${nodeId}:`, canvasCoords);
+        const hadManualCoordsInvalid = node.gnssFixQuality === 6 && node.surveyX != null && node.surveyY != null;
         return {
           ...node,
           hasCoordinates: true,
           surveyX: coords.x,
           surveyY: coords.y,
-          surveyZ: coords.z
+          surveyZ: coords.z,
+          gnssFixQuality: (node.gnssFixQuality === 4 || node.gnssFixQuality === 5) ? node.gnssFixQuality : 4,
+          manualX: hadManualCoordsInvalid ? node.surveyX : node.manualX,
+          manualY: hadManualCoordsInvalid ? node.surveyY : node.manualY,
           // Keep original x, y positions
         };
       }
       
+      // Preserve manual float coords before overwriting with survey data
+      const hadManualCoords = node.gnssFixQuality === 6 && node.surveyX != null && node.surveyY != null;
       return {
         ...node,
         x: canvasCoords.x,
@@ -548,7 +554,12 @@ export function applyCoordinatesToNodes(nodes, coordinatesMap, canvasWidth = 800
         surveyX: coords.x,
         surveyY: coords.y,
         surveyZ: coords.z,
-        hasCoordinates: true
+        hasCoordinates: true,
+        // Mark as Fixed (cords file = RTK Fixed survey data) unless already explicitly set
+        gnssFixQuality: (node.gnssFixQuality === 4 || node.gnssFixQuality === 5) ? node.gnssFixQuality : 4,
+        // Save manual-float coords before they get overwritten
+        manualX: hadManualCoords ? node.surveyX : node.manualX,
+        manualY: hadManualCoords ? node.surveyY : node.manualY,
       };
     } else {
       unmatchedCount++;

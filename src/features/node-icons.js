@@ -249,15 +249,18 @@ export function drawForLaterIcon(ctx, x, y, radius, colors, isSelected, fillColo
 
 /**
  * Draw a coordinate status indicator on a node
- * - Green square with white checkmark (✓) when coordinates are available
- * - Yellow circle with "!" when coordinates are missing
+ * - Green square with white checkmark (✓) when Fixed (gnssFixQuality === 4)
+ * - Yellow square with white checkmark (✓) when Device Float (gnssFixQuality === 5)
+ * - Yellow circle with "!" when no survey coordinates
  * @param {CanvasRenderingContext2D} ctx
  * @param {number} x - Node center x
  * @param {number} y - Node center y
  * @param {number} radius - Node radius
- * @param {boolean} hasCoordinates - Whether the node has coordinates
+ * @param {boolean} hasSurveyCoords - Whether the node has survey coordinates
+ * @param {number} viewScale
+ * @param {number} gnssFixQuality - 4=Fixed, 5=Device Float, 6=Manual Float
  */
-export function drawCoordinateStatusIndicator(ctx, x, y, radius, hasCoordinates, viewScale = 1) {
+export function drawCoordinateStatusIndicator(ctx, x, y, radius, hasSurveyCoords, viewScale = 1, gnssFixQuality) {
   ctx.save();
 
   // Position at top-left of node
@@ -267,12 +270,16 @@ export function drawCoordinateStatusIndicator(ctx, x, y, radius, hasCoordinates,
   const indicatorX = x + offsetX;
   const indicatorY = y + offsetY;
 
-  if (hasCoordinates) {
-    // Green square with white checkmark
-    ctx.fillStyle = '#16a34a'; // green-600
+  // Determine state: Fixed ✓ (green), Device Float ✓ (yellow), or no survey (yellow !)
+  const isFixed = hasSurveyCoords && gnssFixQuality === 4;
+  const isDeviceFloat = hasSurveyCoords && gnssFixQuality === 5;
+
+  if (isFixed || isDeviceFloat) {
+    // Square with white checkmark — green for Fixed, yellow for Device Float
+    ctx.fillStyle = isFixed ? '#16a34a' : '#eab308'; // green-600 / yellow-500
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1.5 / viewScale;
-    
+
     // Draw rounded square
     const halfSize = indicatorSize / 2;
     const cornerRadius = indicatorSize * 0.2;
@@ -286,31 +293,30 @@ export function drawCoordinateStatusIndicator(ctx, x, y, radius, hasCoordinates,
     );
     ctx.fill();
     ctx.stroke();
-    
+
     // Draw checkmark (✓)
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1.8 / viewScale;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.beginPath();
-    // Checkmark path
     const checkScale = indicatorSize * 0.25;
     ctx.moveTo(indicatorX - checkScale * 0.8, indicatorY);
     ctx.lineTo(indicatorX - checkScale * 0.1, indicatorY + checkScale * 0.6);
     ctx.lineTo(indicatorX + checkScale * 0.9, indicatorY - checkScale * 0.5);
     ctx.stroke();
   } else {
-    // Yellow circle with "!" sign
+    // Yellow circle with "!" sign — no survey coordinates
     ctx.fillStyle = '#eab308'; // yellow-500
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1.5 / viewScale;
-    
+
     // Draw circle
     ctx.beginPath();
     ctx.arc(indicatorX, indicatorY, indicatorSize / 2, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
-    
+
     // Draw "!" symbol
     ctx.fillStyle = '#000000';
     ctx.font = `bold ${indicatorSize * 0.7}px sans-serif`;
@@ -318,7 +324,7 @@ export function drawCoordinateStatusIndicator(ctx, x, y, radius, hasCoordinates,
     ctx.textBaseline = 'middle';
     ctx.fillText('!', indicatorX, indicatorY + 1);
   }
-  
+
   ctx.restore();
 }
 
@@ -375,14 +381,19 @@ export function drawNodeIcon(ctx, node, radius, colors, selectedNode, options = 
 
   // Draw coordinate status indicator if enabled
   if (showCoordinateStatus) {
-    // Check if node actually has survey coordinates (not just the flag)
-    let hasCoordinates = false;
-    if (node.surveyX != null && node.surveyY != null) {
-      hasCoordinates = true;
-    } else if (coordinatesMap) {
-      hasCoordinates = coordinatesMap.has(String(node.id));
-    }
-    drawCoordinateStatusIndicator(ctx, node.x, node.y, radius, hasCoordinates, viewScale);
+    const fixQuality = node.gnssFixQuality;
+    // Nodes in coordinatesMap come from the cords file (RTK Fixed survey).
+    // Treat them as Fixed (4) even if gnssFixQuality wasn't persisted yet.
+    const inCordsMap = coordinatesMap && coordinatesMap.has(String(node.id));
+    const effectiveFixQuality = (fixQuality === 4 || fixQuality === 5)
+      ? fixQuality
+      : inCordsMap ? 4 : fixQuality;
+
+    const hasSurveyCoords =
+      (node.surveyX != null && node.surveyY != null && (effectiveFixQuality === 4 || effectiveFixQuality === 5)) ||
+      (inCordsMap && (effectiveFixQuality === 4 || effectiveFixQuality === 5));
+
+    drawCoordinateStatusIndicator(ctx, node.x, node.y, radius, hasSurveyCoords, viewScale, effectiveFixQuality);
   }
 }
 

@@ -3239,6 +3239,9 @@ function createNode(x, y) {
     node.surveyZ = 0;
     node.measure_precision = null;
     node.hasCoordinates = true;
+    // Save manual float coords so they remain visible after survey coords are applied
+    node.manualX = node.surveyX;
+    node.manualY = node.surveyY;
   }
   // Apply custom default fields
   if (Array.isArray(adminConfig.nodes?.customFields)) {
@@ -4586,12 +4589,26 @@ function renderDetails() {
             </div>
             <div class="field col-span-2">
               <label>${t('labels.fixType')}</label>
-              <div class="field-value-readonly survey-fix-badge fix-${node.gnssFixQuality === 4 ? '4' : node.gnssFixQuality === 5 ? '5' : '6'}">${
-                node.gnssFixQuality === 4 ? t('labels.fixFixed') :
-                node.gnssFixQuality === 5 ? t('labels.fixDeviceFloat') :
-                t('labels.fixManualFloat')
-              }</div>
+              ${(() => {
+                // Treat coordinatesMap match as Fixed if gnssFixQuality not explicitly set
+                const inMap = coordinatesMap && coordinatesMap.has(String(node.id));
+                const fq = (node.gnssFixQuality === 4 || node.gnssFixQuality === 5)
+                  ? node.gnssFixQuality
+                  : (inMap ? 4 : 6);
+                const cls = fq === 4 ? '4' : fq === 5 ? '5' : '6';
+                const label = fq === 4 ? t('labels.fixFixed') : fq === 5 ? t('labels.fixDeviceFloat') : t('labels.fixManualFloat');
+                return `<div class="field-value-readonly survey-fix-badge fix-${cls}">${label}</div>`;
+              })()}
             </div>
+            ${node.manualX != null ? `
+            <div class="field">
+              <label>${t('labels.manualX')}</label>
+              <div class="field-value-readonly">${node.manualX.toFixed(3)}</div>
+            </div>
+            <div class="field">
+              <label>${t('labels.manualY')}</label>
+              <div class="field-value-readonly">${node.manualY != null ? node.manualY.toFixed(3) : '—'}</div>
+            </div>` : ''}
           </div>
         </div>
         <div class="details-section">
@@ -5704,9 +5721,14 @@ function pointerMove(x, y) {
     // Recompute ITM coordinates for manually positioned nodes
     const refDrag = getMapReferencePoint();
     if (refDrag && refDrag.itm && refDrag.canvas && coordinateScale > 0) {
-      selectedNode.surveyX = refDrag.itm.x + (selectedNode.x - refDrag.canvas.x) / coordinateScale;
-      selectedNode.surveyY = refDrag.itm.y - (selectedNode.y - refDrag.canvas.y) / coordinateScale;
-      selectedNode.gnssFixQuality = selectedNode.gnssFixQuality || 6; // Manual Float
+      const newSurveyX = refDrag.itm.x + (selectedNode.x - refDrag.canvas.x) / coordinateScale;
+      const newSurveyY = refDrag.itm.y - (selectedNode.y - refDrag.canvas.y) / coordinateScale;
+      selectedNode.surveyX = newSurveyX;
+      selectedNode.surveyY = newSurveyY;
+      // Dragging sets Manual Float — also update manual coords
+      selectedNode.manualX = newSurveyX;
+      selectedNode.manualY = newSurveyY;
+      selectedNode.gnssFixQuality = 6; // Manual Float
       selectedNode.hasCoordinates = true;
     }
     updateNodeTimestamp(selectedNode);
@@ -9399,13 +9421,20 @@ function handleTSC3PointReceived(pointName, coords, isNew, nodeType) {
     if (!node) return;
   }
 
-  // Store survey coordinates on the node
+  // Preserve manual float coords before overwriting with TSC3 survey data
+  if (node.gnssFixQuality === 6 && node.surveyX != null && node.surveyY != null) {
+    node.manualX = node.surveyX;
+    node.manualY = node.surveyY;
+  }
+
+  // Store survey coordinates on the node (TSC3 = RTK Fixed)
   node.hasCoordinates = true;
   node._hidden = false;
   node.surveyX = coords.easting;
   node.surveyY = coords.northing;
   node.surveyZ = coords.elevation;
   node.measure_precision = 0.02; // TSC3 RTK default precision (meters)
+  node.gnssFixQuality = 4; // TSC3 delivers RTK Fixed coordinates
 
   // Update coordinatesMap
   coordinatesMap.set(String(pointName), {
