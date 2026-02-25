@@ -7211,14 +7211,20 @@ async function handleCoordinatesImport(file) {
     const coordPointIds = Array.from(newCoordinates.keys());
     console.debug('[Coordinates] Coordinate point_ids (first 10):', coordPointIds.slice(0, 10));
     
-    // Store coordinates
-    coordinatesMap = newCoordinates;
+    // Merge into existing coordinatesMap (new values win; existing coords for
+    // nodes absent from this file are preserved from prior imports)
+    const prevSize = coordinatesMap.size;
+    for (const [id, val] of newCoordinates) {
+      coordinatesMap.set(id, val);
+    }
     saveCoordinatesToStorage(coordinatesMap);
-    
+
     // Show success message with match info
     const matchCount = matchingIds.length;
     const totalNodes = nodes.length;
-    showToast(`נטענו ${newCoordinates.size} קואורדינטות, ${matchCount}/${totalNodes} שוחות תואמות`);
+    const addedNew = coordinatesMap.size - prevSize;
+    const mergeNote = prevSize > 0 ? ` (+${addedNew} חדשים, סה"כ ${coordinatesMap.size})` : '';
+    showToast(`נטענו ${newCoordinates.size} קואורדינטות, ${matchCount}/${totalNodes} שוחות תואמות${mergeNote}`);
     
     // Automatically enable coordinates if not already enabled
     if (!coordinatesEnabled) {
@@ -7967,7 +7973,17 @@ function initCoordinates() {
   // Mark nodes with coordinate status
   if (coordinatesMap.size > 0) {
     nodes.forEach(node => {
-      node.hasCoordinates = coordinatesMap.has(String(node.id));
+      const inMap = coordinatesMap.has(String(node.id));
+      if (inMap) {
+        node.hasCoordinates = true;
+        // Backfill gnssFixQuality for nodes from cords file that predate this field
+        if (node.gnssFixQuality !== 4 && node.gnssFixQuality !== 5) {
+          node.gnssFixQuality = 4;
+        }
+      } else {
+        // Keep hasCoordinates if node has embedded survey coords from a prior import
+        node.hasCoordinates = node.surveyX != null && node.surveyY != null;
+      }
     });
   }
   

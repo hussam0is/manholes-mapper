@@ -563,9 +563,12 @@ export function applyCoordinatesToNodes(nodes, coordinatesMap, canvasWidth = 800
       };
     } else {
       unmatchedCount++;
+      // Node not in this coordinatesMap, but may have surveyX/Y from a prior import.
+      // Keep hasCoordinates true if embedded coords exist so the node stays positioned.
+      const alreadyHasCoords = node.surveyX != null && node.surveyY != null;
       return {
         ...node,
-        hasCoordinates: false
+        hasCoordinates: alreadyHasCoords,
       };
     }
   });
