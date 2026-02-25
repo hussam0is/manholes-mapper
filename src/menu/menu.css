@@ -217,6 +217,72 @@
 }
 
 /* ============================================
+   Header Sync Indicator
+   ============================================ */
+.header-sync-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  transition: background 0.2s ease, opacity 0.3s ease;
+  cursor: default;
+  opacity: 0.7;
+}
+
+.header-sync-indicator__icon {
+  font-size: 1.125rem;
+  color: var(--color-muted, #64748b);
+  transition: color 0.2s ease;
+}
+
+/* Syncing state */
+.header-sync-indicator--syncing .header-sync-indicator__icon {
+  color: #3b82f6;
+  animation: spin 1s linear infinite;
+}
+
+/* Synced state */
+.header-sync-indicator--synced .header-sync-indicator__icon {
+  color: #22c55e;
+}
+
+/* Offline state */
+.header-sync-indicator--offline .header-sync-indicator__icon {
+  color: var(--color-muted, #94a3b8);
+}
+
+/* Error state */
+.header-sync-indicator--error .header-sync-indicator__icon {
+  color: #ef4444;
+}
+
+/* Auto-fade synced indicator after a few seconds */
+.header-sync-indicator--synced {
+  animation: fadeToSubtle 3s ease forwards;
+}
+
+@keyframes fadeToSubtle {
+  0% { opacity: 0.9; }
+  60% { opacity: 0.9; }
+  100% { opacity: 0.5; }
+}
+
+/* Mobile: slightly smaller */
+@media (max-width: 600px) {
+  .header-sync-indicator {
+    width: 24px;
+    height: 24px;
+  }
+
+  .header-sync-indicator__icon {
+    font-size: 1rem;
+  }
+}
+
+/* ============================================
    Menu Controls Container
    ============================================ */
 .menu-controls {

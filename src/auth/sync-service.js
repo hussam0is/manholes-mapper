@@ -333,10 +333,10 @@ export async function syncFromCloud() {
         }
         console.debug(`[Sync] Updated legacy localStorage with ${legacyLib.length} sketches`);
 
-        // Trigger a re-render of the home panel if the legacy function is available
-        if (typeof window.renderHome === 'function') {
-          window.renderHome();
-        }
+        // NOTE: We do NOT call window.renderHome() here — that would force-open the
+        // home panel even when the user is on the canvas.  The onSyncStateChange
+        // listener in main.js already re-renders the panel *only* if it is already
+        // visible.
       } catch (err) {
         console.warn('[Sync] Failed to update legacy localStorage:', err);
       }

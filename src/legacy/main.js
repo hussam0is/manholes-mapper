@@ -2264,22 +2264,65 @@ const syncStatusBar = document.getElementById('syncStatusBar');
 const syncStatusText = document.getElementById('syncStatusText');
 const syncStatusIcon = syncStatusBar?.querySelector('.sync-icon');
 
-// Update sync status UI
+// Header sync indicator (always-visible, compact icon in the top bar)
+const headerSyncEl = document.getElementById('headerSyncIndicator');
+const headerSyncIcon = headerSyncEl?.querySelector('.header-sync-indicator__icon');
+
+// Update sync status UI — both the home-panel bar AND the header indicator
 function updateSyncStatusUI(state) {
-  if (!syncStatusBar) return;
-  
   const authState = window.authGuard?.getAuthState?.() || {};
-  if (!authState.isSignedIn) {
+  const signedIn = authState.isSignedIn;
+
+  // ── Header indicator (always visible when signed in) ──
+  if (headerSyncEl) {
+    if (!signedIn) {
+      headerSyncEl.style.display = 'none';
+    } else {
+      headerSyncEl.style.display = '';
+      // Reset classes
+      headerSyncEl.classList.remove(
+        'header-sync-indicator--syncing',
+        'header-sync-indicator--synced',
+        'header-sync-indicator--offline',
+        'header-sync-indicator--error',
+      );
+
+      if (!state.isOnline) {
+        headerSyncEl.classList.add('header-sync-indicator--offline');
+        if (headerSyncIcon) headerSyncIcon.textContent = 'cloud_off';
+        headerSyncEl.title = t('auth.offline');
+      } else if (state.isSyncing) {
+        headerSyncEl.classList.add('header-sync-indicator--syncing');
+        if (headerSyncIcon) headerSyncIcon.textContent = 'sync';
+        headerSyncEl.title = t('auth.syncing');
+      } else if (state.error) {
+        headerSyncEl.classList.add('header-sync-indicator--error');
+        if (headerSyncIcon) headerSyncIcon.textContent = 'cloud_off';
+        headerSyncEl.title = t('auth.syncError');
+      } else {
+        headerSyncEl.classList.add('header-sync-indicator--synced');
+        if (headerSyncIcon) headerSyncIcon.textContent = 'cloud_done';
+        headerSyncEl.title = state.lastSyncTime
+          ? t('auth.lastSynced', formatTimeAgo(state.lastSyncTime))
+          : t('auth.synced');
+      }
+    }
+  }
+
+  // ── Home-panel status bar (only visible when home panel is open) ──
+  if (!syncStatusBar) return;
+
+  if (!signedIn) {
     syncStatusBar.style.display = 'none';
     return;
   }
-  
+
   syncStatusBar.style.display = 'flex';
-  
+
   // Remove all state classes
   syncStatusBar.classList.remove('syncing', 'offline', 'error');
   if (syncStatusIcon) syncStatusIcon.classList.remove('spin');
-  
+
   if (!state.isOnline) {
     syncStatusBar.classList.add('offline');
     if (syncStatusIcon) syncStatusIcon.textContent = 'cloud_off';
