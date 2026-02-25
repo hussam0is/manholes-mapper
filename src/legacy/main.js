@@ -441,7 +441,7 @@ const STRETCH_STEP = 0.1;
 const VIEW_STRETCH_KEY = STORAGE_KEYS.viewStretch;
 // Size scale state for nodes and fonts
 let sizeScale = 0.9;
-let autoSizeEnabled = false; // When true, node/edge sizes stay constant on screen during zoom
+let autoSizeEnabled = true; // When true, node/edge sizes stay constant on screen during zoom
 let sizeVS = 1; // Computed divisor: viewScale when autoSize is on, 1 when off
 const MIN_SIZE_SCALE = 0.5;
 const MAX_SIZE_SCALE = 10.0;
@@ -6732,8 +6732,8 @@ function toggleAutoSize() {
 // Load auto size preference
 try {
   const savedAutoSize = localStorage.getItem(STORAGE_KEYS.autoSize);
-  if (savedAutoSize === 'true') {
-    autoSizeEnabled = true;
+  if (savedAutoSize === 'false') {
+    autoSizeEnabled = false;
   }
 } catch (e) {
   console.warn('[App] Failed to load auto size preference:', e.message);

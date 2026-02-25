@@ -756,7 +756,8 @@ Examples: "Test if a regular user can access another user's sketch"
 ```
 
 ### → `manholes-clickup` skill
-Use when: managing ClickUp tasks — creating, updating, listing, or syncing tasks with git history. This skill knows the ClickUp MCP tools, list IDs, statuses, and naming conventions.
+Use when: ALWAYS
+managing ClickUp tasks — creating, updating, listing, or syncing tasks with git history. This skill knows the ClickUp MCP tools, list IDs, statuses, and naming conventions.
 ```
 Examples: "Create a ClickUp task for this bug fix"
           "Update the task status to success in dev"
@@ -1121,3 +1122,60 @@ Before starting any test workflow, load required MCP tools in one call:
 
 Or use direct selection if you know the exact tool name:
 - `ToolSearch("select:mcp__playwright__browser_handle_dialog")`
+
+---
+
+## 19. Time Awareness (Time MCP)
+
+The `time` MCP server gives God Mode real-time awareness. **Always load tools first** with `ToolSearch("+time")` before calling.
+
+### Available Tools
+
+| Tool | Purpose |
+|------|---------|
+| `mcp__time__get_current_time` | Get current date/time in any IANA timezone |
+| `mcp__time__countdown` | Time remaining until / elapsed since a target datetime |
+| `mcp__time__stopwatch` | Start/stop/check named stopwatches for tracking durations |
+| `mcp__time__convert_timezone` | Convert a datetime between two timezones |
+| `mcp__time__time_difference` | Calculate duration between two datetimes |
+
+### Project Timezone
+- **Israel local**: `Asia/Jerusalem` (IST UTC+2 / IDT UTC+3)
+- Database timestamps are **UTC** (`TIMESTAMPTZ`) — convert with `convert_timezone` when displaying to user
+
+### Common Usage Patterns
+
+**Check current time (always use Israel timezone):**
+```
+mcp__time__get_current_time({ timezone: "Asia/Jerusalem" })
+```
+
+**Track deployment duration:**
+```
+mcp__time__stopwatch({ action: "start", name: "deploy" })
+# ... do deployment ...
+mcp__time__stopwatch({ action: "check", name: "deploy" })
+mcp__time__stopwatch({ action: "stop", name: "deploy" })
+```
+
+**Check if a sketch lock is expired (convert DB UTC to local):**
+```
+mcp__time__convert_timezone({ time_str: "2026-02-25 14:30:00", from_tz: "UTC", to_tz: "Asia/Jerusalem" })
+```
+
+**Countdown to a deadline or session expiry:**
+```
+mcp__time__countdown({ target: "2026-02-25 17:00:00", timezone: "Asia/Jerusalem", label: "End of workday" })
+```
+
+**Calculate how long a task took:**
+```
+mcp__time__time_difference({ start: "2026-02-25 09:00:00", end: "2026-02-25 11:30:00", timezone: "Asia/Jerusalem" })
+```
+
+### When to Use Time Tools
+- **Start of session**: Call `get_current_time` to orient yourself temporally
+- **Before/after deployments**: Use stopwatch to measure deploy time
+- **Investigating locks/sessions**: Convert UTC DB timestamps to local time
+- **ClickUp task timing**: Calculate how long tasks have been in progress
+- **Workday context**: Know if it's morning/afternoon/evening in Israel to adjust communication tone
