@@ -1684,6 +1684,23 @@ function normalizeLegacySketch(nodes, edges) {
 
     // --- id coercion ---
     node.id = String(node.id);
+
+    // --- gnssFixQuality migration ---
+    // Existing nodes with survey coords but no gnssFixQuality default to Fixed (4)
+    // since all historical survey data came from RTK Fixed measurements.
+    // Nodes with gnssFixQuality === 6 (Manual Float) that have surveyX/surveyY
+    // should move those coords to manual_x/manual_y.
+    if (node.gnssFixQuality === undefined && node.surveyX != null && node.surveyY != null) {
+      node.gnssFixQuality = 4; // Assume Fixed from historical cords data
+    }
+    if (node.gnssFixQuality === 6 && node.surveyX != null && node.surveyY != null) {
+      if (node.manual_x == null) node.manual_x = node.surveyX;
+      if (node.manual_y == null) node.manual_y = node.surveyY;
+      node.surveyX = null;
+      node.surveyY = null;
+      node.surveyZ = null;
+      node.measure_precision = null;
+    }
   });
 
   edges.forEach((edge) => {
@@ -3231,17 +3248,12 @@ function createNode(x, y) {
     createdBy: getCurrentUsername(),
     gnssFixQuality: 6, // Manual Float — user placed on canvas
   };
-  // Compute ITM coordinates from canvas position if reference point exists
+  // Compute manual ITM coordinates from canvas position (not survey-grade)
   const ref = getMapReferencePoint();
   if (ref && ref.itm && ref.canvas && coordinateScale > 0) {
-    node.surveyX = ref.itm.x + (x - ref.canvas.x) / coordinateScale;
-    node.surveyY = ref.itm.y - (y - ref.canvas.y) / coordinateScale;
-    node.surveyZ = 0;
-    node.measure_precision = null;
-    node.hasCoordinates = true;
-    // Save manual float coords so they remain visible after survey coords are applied
-    node.manualX = node.surveyX;
-    node.manualY = node.surveyY;
+    node.manual_x = ref.itm.x + (x - ref.canvas.x) / coordinateScale;
+    node.manual_y = ref.itm.y - (y - ref.canvas.y) / coordinateScale;
+    // surveyX/surveyY are NOT set — those are reserved for GNSS/TSC3 survey captures
   }
   // Apply custom default fields
   if (Array.isArray(adminConfig.nodes?.customFields)) {
@@ -4600,14 +4612,14 @@ function renderDetails() {
                 return `<div class="field-value-readonly survey-fix-badge fix-${cls}">${label}</div>`;
               })()}
             </div>
-            ${node.manualX != null ? `
+            ${node.manual_x != null || node.manual_y != null ? `
             <div class="field">
               <label>${t('labels.manualX')}</label>
-              <div class="field-value-readonly">${node.manualX.toFixed(3)}</div>
+              <div class="field-value-readonly">${node.manual_x != null ? node.manual_x.toFixed(3) : '—'}</div>
             </div>
             <div class="field">
               <label>${t('labels.manualY')}</label>
-              <div class="field-value-readonly">${node.manualY != null ? node.manualY.toFixed(3) : '—'}</div>
+              <div class="field-value-readonly">${node.manual_y != null ? node.manual_y.toFixed(3) : '—'}</div>
             </div>` : ''}
           </div>
         </div>
@@ -5718,18 +5730,12 @@ function pointerMove(x, y) {
     }
     selectedNode.x = world.x - dragOffset.x;
     selectedNode.y = world.y - dragOffset.y;
-    // Recompute ITM coordinates for manually positioned nodes
+    // Recompute manual ITM coordinates from canvas position (not survey-grade)
     const refDrag = getMapReferencePoint();
     if (refDrag && refDrag.itm && refDrag.canvas && coordinateScale > 0) {
-      const newSurveyX = refDrag.itm.x + (selectedNode.x - refDrag.canvas.x) / coordinateScale;
-      const newSurveyY = refDrag.itm.y - (selectedNode.y - refDrag.canvas.y) / coordinateScale;
-      selectedNode.surveyX = newSurveyX;
-      selectedNode.surveyY = newSurveyY;
-      // Dragging sets Manual Float — also update manual coords
-      selectedNode.manualX = newSurveyX;
-      selectedNode.manualY = newSurveyY;
-      selectedNode.gnssFixQuality = 6; // Manual Float
-      selectedNode.hasCoordinates = true;
+      selectedNode.manual_x = refDrag.itm.x + (selectedNode.x - refDrag.canvas.x) / coordinateScale;
+      selectedNode.manual_y = refDrag.itm.y - (selectedNode.y - refDrag.canvas.y) / coordinateScale;
+      // surveyX/surveyY are not touched — those are locked once set by GNSS/TSC3
     }
     updateNodeTimestamp(selectedNode);
     saveToStorage();
@@ -9423,8 +9429,8 @@ function handleTSC3PointReceived(pointName, coords, isNew, nodeType) {
 
   // Preserve manual float coords before overwriting with TSC3 survey data
   if (node.gnssFixQuality === 6 && node.surveyX != null && node.surveyY != null) {
-    node.manualX = node.surveyX;
-    node.manualY = node.surveyY;
+    node.manual_x = node.surveyX;
+    node.manual_y = node.surveyY;
   }
 
   // Store survey coordinates on the node (TSC3 = RTK Fixed)

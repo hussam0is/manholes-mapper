@@ -125,6 +125,8 @@ export function exportNodesCsv(nodes, adminConfig, _t) {
         'Manual Float';
       row.push(csvQuote(fixLabel));
     }
+    if (include.manual_x) row.push(csvQuote(n.manual_x != null ? n.manual_x.toFixed(3) : ''));
+    if (include.manual_y) row.push(csvQuote(n.manual_y != null ? n.manual_y.toFixed(3) : ''));
     return row.join(',');
   };
   if (include.id) headers.push('ID');
@@ -140,6 +142,8 @@ export function exportNodesCsv(nodes, adminConfig, _t) {
   if (include.terrain_level) headers.push('TL');
   if (include.measure_precision) headers.push('Precision');
   if (include.fix_type) headers.push('Fix_Type');
+  if (include.manual_x) headers.push('Manual_X');
+  if (include.manual_y) headers.push('Manual_Y');
   const lines = [headers.map(csvQuote).join(',')];
   for (const n of nodes) lines.push(rowFor(n));
   return lines.join('\n');

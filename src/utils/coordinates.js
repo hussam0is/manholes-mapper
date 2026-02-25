@@ -539,8 +539,8 @@ export function applyCoordinatesToNodes(nodes, coordinatesMap, canvasWidth = 800
           surveyY: coords.y,
           surveyZ: coords.z,
           gnssFixQuality: (node.gnssFixQuality === 4 || node.gnssFixQuality === 5) ? node.gnssFixQuality : 4,
-          manualX: hadManualCoordsInvalid ? node.surveyX : node.manualX,
-          manualY: hadManualCoordsInvalid ? node.surveyY : node.manualY,
+          manual_x: hadManualCoordsInvalid ? node.surveyX : node.manual_x,
+          manual_y: hadManualCoordsInvalid ? node.surveyY : node.manual_y,
           // Keep original x, y positions
         };
       }
@@ -558,8 +558,8 @@ export function applyCoordinatesToNodes(nodes, coordinatesMap, canvasWidth = 800
         // Mark as Fixed (cords file = RTK Fixed survey data) unless already explicitly set
         gnssFixQuality: (node.gnssFixQuality === 4 || node.gnssFixQuality === 5) ? node.gnssFixQuality : 4,
         // Save manual-float coords before they get overwritten
-        manualX: hadManualCoords ? node.surveyX : node.manualX,
-        manualY: hadManualCoords ? node.surveyY : node.manualY,
+        manual_x: hadManualCoords ? node.surveyX : node.manual_x,
+        manual_y: hadManualCoords ? node.surveyY : node.manual_y,
       };
     } else {
       unmatchedCount++;
