@@ -189,7 +189,7 @@ for (const sketch of sketches) {
     n.surveyY = null;
     n.surveyZ = null;
     n.hasCoordinates = false;
-    n.gnssFixQuality = null;
+    n.gnssFixQuality = 6; // manual float — estimated position, not surveyed
     repositioned++;
   }
 
