@@ -2429,6 +2429,150 @@ canvas {
   border-color: #ffe0b2;
 }
 
+/* ── Node Tab Wizard ─────────────────────────────────────── */
+.wizard-accuracy-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #E8F5E9;
+  color: #2E7D32;
+  border: 1px solid #A5D6A7;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 8px 0 4px;
+  width: fit-content;
+}
+
+.wizard-indicator-row {
+  margin: 6px 0;
+}
+
+.node-tab-wizard {
+  margin: 8px 0;
+}
+
+.wizard-tabs-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.wizard-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 2px solid var(--tab-color, #ddd);
+  background: var(--tab-bg, #f5f5f5);
+  color: var(--tab-color, #888);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.wizard-tab .material-icons {
+  font-size: 22px;
+}
+
+.wizard-tab--active {
+  background: var(--tab-color) !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.wizard-tab--filled:not(.wizard-tab--active) {
+  opacity: 0.85;
+}
+
+.wizard-check {
+  position: absolute;
+  bottom: -5px;
+  right: -5px;
+  font-size: 14px !important;
+  color: var(--tab-color);
+  background: white;
+  border-radius: 50%;
+  line-height: 1;
+}
+
+.wizard-tab:hover:not(.wizard-tab--active) {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.wizard-field-area {
+  background: #fafafa;
+  border-radius: 10px;
+  padding: 10px;
+  border: 1px solid #eee;
+}
+
+.wizard-field-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.wizard-field-header .material-icons {
+  font-size: 18px;
+}
+
+.wizard-field-input {
+  width: 100%;
+  border: 1.5px solid #ddd;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+  background: white;
+  box-sizing: border-box;
+}
+
+select.wizard-field-input {
+  cursor: pointer;
+}
+
+textarea.wizard-field-input {
+  resize: vertical;
+  min-height: 72px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .wizard-accuracy-badge {
+    background: #1B5E20;
+    color: #A5D6A7;
+    border-color: #388E3C;
+  }
+
+  .wizard-field-area {
+    background: #1e1e1e;
+    border-color: #333;
+  }
+
+  .wizard-field-input {
+    background: #2d2d2d;
+    border-color: #444;
+    color: #e0e0e0;
+  }
+
+  .wizard-check {
+    background: #1e1e1e;
+  }
+
+  .wizard-tab:not(.wizard-tab--active) {
+    background: #2a2a2a !important;
+  }
+}
+
 /* Compact width for cover diameter input */
 #coverDiameterInput {
   width: 8rem;

@@ -4419,6 +4419,107 @@ function scheduleDraw() {
   });
 }
 
+// ── Node Tab Wizard helpers ──────────────────────────────────
+let __wizardActiveTab = null; // persists across renderDetails re-renders
+
+const WIZARD_TAB_DEFS = {
+  accuracy_level:     { icon: 'gps_fixed', color: '#1565C0', bg: '#E3F2FD', labelKey: 'labels.accuracyLevel' },
+  maintenance_status: { icon: 'build',     color: '#E65100', bg: '#FFF3E0', labelKey: 'labels.maintenanceStatus' },
+  material:           { icon: 'layers',    color: '#6A1B9A', bg: '#F3E5F5', labelKey: 'labels.coverMaterial' },
+  cover_diameter:     { icon: 'circle',    color: '#2E7D32', bg: '#E8F5E9', labelKey: 'labels.coverDiameter' },
+  access:             { icon: 'stairs',    color: '#C62828', bg: '#FFEBEE', labelKey: 'labels.access' },
+  note:               { icon: 'notes',     color: '#37474F', bg: '#ECEFF1', labelKey: 'labels.note' },
+};
+
+// Maintenance codes that block access to manhole internals
+const WIZARD_CLOSED_MAINT = new Set([3, 4, 5, 13]);
+// Maintenance codes where there's no cover (skip material/diameter)
+const WIZARD_NO_COVER_MAINT = new Set([10]);
+
+function wizardIsRTKFixed(node) {
+  const inMap = typeof coordinatesMap !== 'undefined' && coordinatesMap && coordinatesMap.has(String(node.id));
+  return node.gnssFixQuality === 4 ||
+    (inMap && node.gnssFixQuality !== 5 && node.gnssFixQuality !== 6) ||
+    (node.measure_precision != null && node.measure_precision <= 0.05);
+}
+
+function wizardGetVisibleTabs(node) {
+  const tabs = [];
+  const autoFixed = wizardIsRTKFixed(node);
+  if (!autoFixed) tabs.push('accuracy_level');
+  tabs.push('maintenance_status');
+  const maint = Number(node.maintenanceStatus);
+  if (maint === 0) return tabs; // not set yet, stop here
+  if (WIZARD_CLOSED_MAINT.has(maint)) { tabs.push('note'); return tabs; }
+  if (WIZARD_NO_COVER_MAINT.has(maint)) { tabs.push('access'); tabs.push('note'); return tabs; }
+  tabs.push('material'); tabs.push('cover_diameter'); tabs.push('access'); tabs.push('note');
+  return tabs;
+}
+
+function wizardIsFieldFilled(node, key) {
+  switch (key) {
+    case 'accuracy_level':     return Number(node.accuracyLevel) !== 0 || wizardIsRTKFixed(node);
+    case 'maintenance_status': return Number(node.maintenanceStatus) !== 0;
+    case 'material':           { const m = node.material; return m && m !== 'לא ידוע' && m !== ''; }
+    case 'cover_diameter':     return node.coverDiameter !== '' && node.coverDiameter != null && node.coverDiameter !== 'לא ידוע';
+    case 'access':             return Number(node.access) !== 0;
+    case 'note':               return !!(node.note && node.note.trim());
+    default:                   return false;
+  }
+}
+
+function buildWizardTabsHTML(node, activeKey, visibleTabs) {
+  return visibleTabs.map(key => {
+    const def = WIZARD_TAB_DEFS[key];
+    const filled = wizardIsFieldFilled(node, key);
+    const isActive = key === activeKey;
+    let cls = 'wizard-tab';
+    if (isActive) cls += ' wizard-tab--active';
+    if (filled) cls += ' wizard-tab--filled';
+    const label = t(def.labelKey);
+    return `<button class="${cls}" data-wizard-tab="${key}" title="${label}"
+              style="--tab-color:${def.color};--tab-bg:${def.bg}">
+      <span class="material-icons">${def.icon}</span>
+      ${filled && !isActive ? '<span class="wizard-check material-icons">check_circle</span>' : ''}
+    </button>`;
+  }).join('');
+}
+
+function buildWizardFieldHTML(node, activeKey, ruleResults, opts) {
+  const def = WIZARD_TAB_DEFS[activeKey];
+  const label = t(def.labelKey);
+  let inputHtml = '';
+  switch (activeKey) {
+    case 'accuracy_level':
+      inputHtml = `<select id="accuracyLevelSelect" class="wizard-field-input">${opts.accuracyLevelOptions}</select>`;
+      break;
+    case 'maintenance_status':
+      inputHtml = `<select id="nodeMaintenanceStatusSelect" class="wizard-field-input">${opts.maintenanceStatusOptions}</select>`;
+      break;
+    case 'material':
+      inputHtml = `<select id="materialSelect" class="wizard-field-input">${opts.materialOptions}</select>`;
+      break;
+    case 'cover_diameter':
+      inputHtml = `<select id="coverDiameterSelect" class="wizard-field-input">
+        ${NODE_COVER_DIAMETERS.map(d => `<option value="${d}" ${String(node.coverDiameter) === d ? 'selected' : ''}>${d}</option>`).join('')}
+      </select>`;
+      break;
+    case 'access':
+      inputHtml = `<select id="accessSelect" class="wizard-field-input">${opts.accessOptions}</select>`;
+      break;
+    case 'note':
+      inputHtml = `<textarea id="noteInput" rows="3" class="wizard-field-input" placeholder="${t('labels.notePlaceholder')}" dir="auto">${escapeHtml(node.note || '')}</textarea>`;
+      break;
+  }
+  return `
+    <div class="wizard-field-header" style="color:${def.color}">
+      <span class="material-icons">${def.icon}</span>
+      <span class="wizard-field-label">${label}</span>
+    </div>
+    ${inputHtml}
+  `;
+}
+
 /**
  * Render the right-hand details panel based on the current selection.
  * Supports editing node id, note, material and edge type/material/measurements.
@@ -4544,6 +4645,19 @@ function renderDetails() {
         </div>
       `;
     } else {
+      // Compute visible wizard tabs and resolve active tab
+      const visibleTabs = wizardGetVisibleTabs(node);
+      if (!__wizardActiveTab || !visibleTabs.includes(__wizardActiveTab)) {
+        __wizardActiveTab = visibleTabs[0];
+      }
+      const activeWizardTab = __wizardActiveTab;
+
+      // Auto-fill accuracy for RTK Fixed nodes
+      if (wizardIsRTKFixed(node) && node.accuracyLevel !== 0) {
+        node.accuracyLevel = 0;
+        saveToStorage();
+      }
+
       container.innerHTML = `
         <div class="details-section">
           <div class="field">
@@ -4552,37 +4666,21 @@ function renderDetails() {
           </div>
         </div>
         <div class="details-section">
-          <div class="details-section-title">${t('labels.indicator')}</div>
-          <div class="details-grid two-col">
-            <div class="field">
-              <div class="chip ${node.type === 'type2' ? 'chip-warn' : 'chip-ok'}">${node.type === 'type2' ? t('labels.indicatorMissing') : t('labels.indicatorOk')}</div>
+          ${wizardIsRTKFixed(node) ? `
+          <div class="wizard-accuracy-badge">
+            <span class="material-icons" style="font-size:16px;vertical-align:middle;color:#2E7D32">gps_fixed</span>
+            <span>${t('labels.accuracyBadge')}</span>
+          </div>` : ''}
+          <div class="wizard-indicator-row">
+            <div class="chip ${node.type === 'type2' ? 'chip-warn' : 'chip-ok'}">${node.type === 'type2' ? t('labels.indicatorMissing') : t('labels.indicatorOk')}</div>
+          </div>
+          <div class="node-tab-wizard" id="nodeTabWizard">
+            <div class="wizard-tabs-row" id="wizardTabsRow">
+              ${buildWizardTabsHTML(node, activeWizardTab, visibleTabs)}
             </div>
-            <div class="field"></div>
-            ${adminConfig.nodes.include.accuracy_level ? `
-            <div class="field${isAutoFilled('accuracy_level') ? ' field-auto-filled' : ''}" data-flow-field="accuracy_level">
-              <label for="accuracyLevelSelect">${t('labels.accuracyLevel')}${ruleResults.required.has('accuracy_level') ? ' *' : ''}</label>
-              <select id="accuracyLevelSelect" ${isAutoFilled('accuracy_level') ? 'disabled' : ''}>${accuracyLevelOptions}</select>
-            </div>` : ''}
-            ${adminConfig.nodes.include.maintenance_status && !ruleResults.disabled.has('maintenance_status') ? `
-            <div class="field${isAutoFilled('maintenance_status') ? ' field-auto-filled' : ''}" data-flow-field="maintenance_status">
-              <label for="nodeMaintenanceStatusSelect">${t('labels.maintenanceStatus')}${ruleResults.required.has('maintenance_status') ? ' *' : ''}</label>
-              <select id="nodeMaintenanceStatusSelect" ${isAutoFilled('maintenance_status') ? 'disabled' : ''}>${maintenanceStatusOptions}</select>
-            </div>` : ''}
-            ${adminConfig.nodes.include.cover_diameter && !ruleResults.disabled.has('cover_diameter') ? `
-            <div class="field${isAutoFilled('cover_diameter') ? ' field-auto-filled' : ''}" data-flow-field="cover_diameter">
-              <label for="coverDiameterInput">${t('labels.coverDiameter')}${ruleResults.required.has('cover_diameter') ? ' *' : ''}</label>
-              <input id="coverDiameterInput" type="number" step="1" min="0" value="${node.coverDiameter !== '' ? node.coverDiameter : ''}" placeholder="${t('labels.optional')}" ${isAutoFilled('cover_diameter') ? 'disabled' : ''} />
-            </div>` : ''}
-            ${!ruleResults.disabled.has('material') ? `
-            <div class="field${isAutoFilled('material') ? ' field-auto-filled' : ''}" data-flow-field="material">
-              <label for="materialSelect">${t('labels.coverMaterial')}${ruleResults.required.has('material') ? ' *' : ''}</label>
-              <select id="materialSelect" ${isAutoFilled('material') ? 'disabled' : ''}>${materialOptions}</select>
-            </div>` : ''}
-            ${adminConfig.nodes.include.access && !ruleResults.disabled.has('access') ? `
-            <div class="field${isAutoFilled('access') ? ' field-auto-filled' : ''}" data-flow-field="access">
-              <label for="accessSelect">${t('labels.access')}${ruleResults.required.has('access') ? ' *' : ''}</label>
-              <select id="accessSelect" ${isAutoFilled('access') ? 'disabled' : ''}>${accessOptions}</select>
-            </div>` : ''}
+            <div class="wizard-field-area" id="wizardFieldArea">
+              ${buildWizardFieldHTML(node, activeWizardTab, ruleResults, { materialOptions, accessOptions, accuracyLevelOptions, maintenanceStatusOptions })}
+            </div>
           </div>
         </div>
         <div class="details-section">
@@ -4626,12 +4724,6 @@ function renderDetails() {
               <label>${t('labels.manualY')}</label>
               <div class="field-value-readonly">${node.manual_y != null ? node.manual_y.toFixed(3) : '—'}</div>
             </div>` : ''}
-          </div>
-        </div>
-        <div class="details-section">
-          <div class="field">
-            <label for="noteInput">${t('labels.note')}</label>
-            <textarea id="noteInput" rows="3" placeholder="${t('labels.notePlaceholder')}" dir="auto">${node.note || ''}</textarea>
           </div>
         </div>
       `;
@@ -4919,13 +5011,15 @@ function renderDetails() {
         if (typeof idInput.blur === 'function') idInput.blur();
       }
     });
-    // Note input listener
+    // Note input listener (Home nodes have a standalone #noteInput; manhole nodes use wizard)
     const noteInput = container.querySelector('#noteInput');
-    noteInput.addEventListener('input', (e) => {
-      node.note = e.target.value;
-      updateNodeTimestamp(node);
-      debouncedSaveToStorage();
-    });
+    if (noteInput) {
+      noteInput.addEventListener('input', (e) => {
+        node.note = e.target.value;
+        updateNodeTimestamp(node);
+        debouncedSaveToStorage();
+      });
+    }
     // Direct connection toggle (Home only)
     const directToggle = container.querySelector('#directConnectionToggle');
     if (directToggle) {
@@ -4938,7 +5032,65 @@ function renderDetails() {
         renderDetails();
       });
     }
-    // Material selection listener (manhole only)
+
+    // ── Wizard tab click — switch active tab ──────────────────
+    const wizardTabsRow = container.querySelector('#wizardTabsRow');
+    if (wizardTabsRow) {
+      wizardTabsRow.addEventListener('click', (e) => {
+        const tabBtn = e.target.closest('[data-wizard-tab]');
+        if (!tabBtn) return;
+        __wizardActiveTab = tabBtn.dataset.wizardTab;
+        renderDetails();
+      });
+    }
+
+    // ── Wizard field changes ───────────────────────────────────
+
+    // accuracy_level
+    const accuracyLevelSelect = container.querySelector('#accuracyLevelSelect');
+    if (accuracyLevelSelect) {
+      accuracyLevelSelect.addEventListener('change', (e) => {
+        const num = Number(e.target.value);
+        node.accuracyLevel = Number.isFinite(num) ? num : 0;
+        updateNodeTimestamp(node);
+        trackFieldUsage('nodes', 'accuracy_level', node.accuracyLevel);
+        const norm = normalizeEntityForRules(node);
+        const res = evaluateRules(currentInputFlowConfig, 'nodes', norm);
+        const updatedNode = applyActions(node, res, adminConfig.nodes?.defaults || {});
+        Object.assign(node, updatedNode);
+        saveToStorage();
+        scheduleDraw();
+        // Advance to next visible tab
+        const vt = wizardGetVisibleTabs(node);
+        const idx = vt.indexOf('accuracy_level');
+        __wizardActiveTab = vt[idx + 1] || vt[0];
+        renderDetails();
+      });
+    }
+
+    // maintenance_status
+    const nodeMaintenanceStatusSelect = container.querySelector('#nodeMaintenanceStatusSelect');
+    if (nodeMaintenanceStatusSelect) {
+      nodeMaintenanceStatusSelect.addEventListener('change', (e) => {
+        const num = Number(e.target.value);
+        node.maintenanceStatus = Number.isFinite(num) ? num : 0;
+        updateNodeTimestamp(node);
+        trackFieldUsage('nodes', 'maintenance_status', node.maintenanceStatus);
+        const norm = normalizeEntityForRules(node);
+        const res = evaluateRules(currentInputFlowConfig, 'nodes', norm);
+        const updatedNode = applyActions(node, res, adminConfig.nodes?.defaults || {});
+        Object.assign(node, updatedNode);
+        saveToStorage();
+        scheduleDraw();
+        // Advance to next visible tab after maintenance_status
+        const vt = wizardGetVisibleTabs(node);
+        const idx = vt.indexOf('maintenance_status');
+        __wizardActiveTab = vt[idx + 1] || 'maintenance_status';
+        renderDetails();
+      });
+    }
+
+    // material (manhole wizard)
     const materialSelect = container.querySelector('#materialSelect');
     if (materialSelect) {
       materialSelect.addEventListener('change', (e) => {
@@ -4949,22 +5101,23 @@ function renderDetails() {
         scheduleDraw();
       });
     }
-    // Cover diameter selection listener
-    const coverDiameterInput = container.querySelector('#coverDiameterInput');
-    if (coverDiameterInput) {
-      coverDiameterInput.addEventListener('input', (e) => {
+
+    // cover_diameter (now a select in wizard)
+    const coverDiameterSelect = container.querySelector('#coverDiameterSelect');
+    if (coverDiameterSelect) {
+      coverDiameterSelect.addEventListener('change', (e) => {
         const val = e.target.value;
-        const n = Number(val);
-        node.coverDiameter = val === '' || !Number.isFinite(n) ? '' : Math.round(n);
+        node.coverDiameter = val === 'לא ידוע' ? '' : val;
         updateNodeTimestamp(node);
         if (node.coverDiameter !== '') {
           trackFieldUsage('nodes', 'cover_diameter', node.coverDiameter);
         }
-        debouncedSaveToStorage();
+        saveToStorage();
         scheduleDraw();
       });
     }
-    // Access selection listener
+
+    // access
     const accessSelect = container.querySelector('#accessSelect');
     if (accessSelect) {
       accessSelect.addEventListener('change', (e) => {
@@ -4974,59 +5127,6 @@ function renderDetails() {
         trackFieldUsage('nodes', 'access', node.access);
         saveToStorage();
         scheduleDraw();
-      });
-    }
-    // Accuracy level selection listener
-    const accuracyLevelSelect = container.querySelector('#accuracyLevelSelect');
-    if (accuracyLevelSelect) {
-      accuracyLevelSelect.addEventListener('change', (e) => {
-        const num = Number(e.target.value);
-        node.accuracyLevel = Number.isFinite(num) ? num : 0;
-        updateNodeTimestamp(node);
-        trackFieldUsage('nodes', 'accuracy_level', node.accuracyLevel);
-        
-        // Apply input flow rules based on the new accuracy level
-        const normalizedNode = normalizeEntityForRules(node);
-        const newRuleResults = evaluateRules(currentInputFlowConfig, 'nodes', normalizedNode);
-        const defaults = {
-          material: adminConfig.nodes?.defaults?.material || 'לא ידוע'
-        };
-        const updatedNode = applyActions(node, newRuleResults, defaults);
-        
-        // Apply the changes to the node
-        Object.assign(node, updatedNode);
-        
-        saveToStorage();
-        scheduleDraw();
-        // Re-render to show updated values and field visibility
-        renderDetails();
-      });
-    }
-
-    // Node maintenance status selection listener
-    const nodeMaintenanceStatusSelect = container.querySelector('#nodeMaintenanceStatusSelect');
-    if (nodeMaintenanceStatusSelect) {
-      nodeMaintenanceStatusSelect.addEventListener('change', (e) => {
-        const num = Number(e.target.value);
-        node.maintenanceStatus = Number.isFinite(num) ? num : 0;
-        updateNodeTimestamp(node);
-        trackFieldUsage('nodes', 'maintenance_status', node.maintenanceStatus);
-        
-        // Apply input flow rules based on the new maintenance status
-        const normalizedNode = normalizeEntityForRules(node);
-        const newRuleResults = evaluateRules(currentInputFlowConfig, 'nodes', normalizedNode);
-        const defaults = {
-          material: adminConfig.nodes?.defaults?.material || 'לא ידוע'
-        };
-        const updatedNode = applyActions(node, newRuleResults, defaults);
-        
-        // Apply the changes to the node
-        Object.assign(node, updatedNode);
-        
-        saveToStorage();
-        scheduleDraw();
-        // Re-render to show updated values and field visibility
-        renderDetails();
       });
     }
 
@@ -5671,8 +5771,9 @@ function pointerDown(x, y) {
       selectedNode = node;
       selectedEdge = null;
       pendingDeselect = false;
+      __wizardActiveTab = null; // reset wizard tab for new selection
     }
-    
+
     dragOffset.x = world.x - node.x;
     dragOffset.y = world.y - node.y;
     isDragging = true;
@@ -5996,6 +6097,7 @@ canvas.addEventListener('touchstart', (e) => {
             selectedNode = nodeAt;
             selectedEdge = null;
             pendingDeselect = false;
+            __wizardActiveTab = null; // reset wizard tab for new selection
           }
           // Begin drag/select without risking accidental creation via pointerDown
           dragOffset.x = world.x - nodeAt.x;
@@ -9185,11 +9287,12 @@ function handleGnssPointCapture(captureData) {
   // Re-apply coordinates to update node positions (keep current view — don't recenter)
   applyCoordinatesIfEnabled({ recenter: false });
 
-  // Select the node
+  // Select the node (reset wizard so RTK badge and updated tabs are shown)
+  __wizardActiveTab = null;
   selectedNode = node;
   selectedEdge = null;
   renderDetails();
-  
+
   scheduleDraw();
   showToast(`נלכדה נקודה עבור שוחה ${targetNodeId}`);
 }
@@ -9290,7 +9393,8 @@ function gpsQuickCapture() {
   // 10. Vibrate based on fix quality
   vibrateForFixQuality(position.fixQuality);
 
-  // 11. Select node, show toast, save, redraw
+  // 11. Select node, show toast, save, redraw (reset wizard so RTK badge shows)
+  __wizardActiveTab = null;
   selectedNode = node;
   selectedEdge = null;
   renderDetails();
