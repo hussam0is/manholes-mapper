@@ -144,9 +144,16 @@ export const i18n = {
       backupCreated: 'גיבוי נוצר',
       danglingEdgeCreated: 'נוצר קו פתוח - הוסף שוחה/בית להשלמה',
       danglingEdgeConnected: 'הקו חובר לשוחה החדשה',
+      undoNodeCreate: 'השוחה הוסרה',
+      undoEdgeCreate: 'הקו הוסר',
+      undoNodeMove: 'השוחה הוחזרה למקום',
+      undoEmpty: 'אין פעולה לביטול',
     },
     incompleteEdgeTracker: 'חסר בית/שוחה',
     renamed: 'שם עודכן',
+    undo: {
+      title: 'ביטול פעולה אחרונה',
+    },
     confirms: {
       newClears: 'התחלת שרטוט חדש תמחק את השרטוט הנוכחי. להמשיך?',
       deleteSketch: 'למחוק שרטוט זה?',
@@ -155,7 +162,8 @@ export const i18n = {
       deleteEdge: 'למחוק קו זה?',
       finishWorkday: 'לסיים את יום העבודה? הקווים הלא מחוברים יידרשו השלמה.',
       exitApp: 'לצאת מהאפליקציה?',
-
+      undoNodeWithData: 'לשוחה זו יש מדידה מדויקת (Fixed/Device Float). לבטל בכל זאת?',
+      undoEdgeWithData: 'לקו זה יש מדידות (כניסה/יציאה). לבטל בכל זאת?',
     },
     alerts: {
       pickDate: 'נא לבחור תאריך לשירטוט החדש.',
@@ -616,9 +624,16 @@ export const i18n = {
       backupCreated: 'Backup created',
       danglingEdgeCreated: 'Open edge created - add manhole/home to complete',
       danglingEdgeConnected: 'Edge connected to new node',
+      undoNodeCreate: 'Node removed',
+      undoEdgeCreate: 'Edge removed',
+      undoNodeMove: 'Node moved back',
+      undoEmpty: 'Nothing to undo',
     },
     incompleteEdgeTracker: 'Missing home/manhole',
     renamed: 'Renamed',
+    undo: {
+      title: 'Undo last action',
+    },
     confirms: {
       newClears: 'Starting a new sketch will clear the current one. Continue?',
       deleteSketch: 'Delete this sketch?',
@@ -627,7 +642,8 @@ export const i18n = {
       deleteEdge: 'Delete this edge?',
       finishWorkday: 'Finish workday? Dangling edges will require completion.',
       exitApp: 'Exit the app?',
-
+      undoNodeWithData: 'This node has a precise measurement (Fixed/Device Float). Undo anyway?',
+      undoEdgeWithData: 'This edge has measurements (in/out). Undo anyway?',
     },
     alerts: {
       pickDate: 'Please select a date for the new sketch.',

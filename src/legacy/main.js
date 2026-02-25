@@ -182,6 +182,7 @@ const nodeModeBtn = document.getElementById('nodeModeBtn');
 const homeNodeModeBtn = document.getElementById('homeNodeModeBtn');
 const drainageNodeModeBtn = document.getElementById('drainageNodeModeBtn');
 const edgeModeBtn = document.getElementById('edgeModeBtn');
+const undoBtn = document.getElementById('undoBtn');
 // Separate export buttons for nodes and edges
 const exportNodesBtn = document.getElementById('exportNodesBtn');
 const exportEdgesBtn = document.getElementById('exportEdgesBtn');
@@ -387,6 +388,10 @@ let selectedNode = null;
 let selectedEdge = null;
 let isDragging = false;
 let dragOffset = { x: 0, y: 0 };
+// Undo action history
+const UNDO_STACK_MAX = 50;
+const undoStack = [];
+let dragStartNodeState = null; // { id, x, y, surveyX, surveyY } captured at drag start
 // Current interaction mode: 'node' to create nodes, 'edge' to create edges
 let currentMode = 'node';
 let pendingEdgeTail = null;
@@ -1489,6 +1494,9 @@ function applyLangToStaticUI() {
   if (edgeModeBtn) {
     edgeModeBtn.innerHTML = '<span class="material-icons" aria-hidden="true">timeline</span>';
   }
+  if (undoBtn) {
+    undoBtn.innerHTML = '<span class="material-icons" aria-hidden="true">undo</span>';
+  }
 
   // Dynamic inputs not present in index.html (created at runtime by other modules)
   if (typeof searchAddressInput !== 'undefined' && searchAddressInput) {
@@ -1715,6 +1723,7 @@ function loadFromStorage() {
     if (!parsed || !parsed.nodes || !parsed.edges) return false;
     nodes = parsed.nodes;
     edges = parsed.edges;
+    clearUndoStack();
     markEdgeLabelCacheDirty(); // new sketch data loaded
     creationDate = parsed.creationDate || null;
     currentSketchId = parsed.sketchId || null;
@@ -2104,6 +2113,7 @@ async function loadFromLibrary(sketchId) {
   }
   nodes = sketchData.nodes || [];
   edges = sketchData.edges || [];
+  clearUndoStack();
   markEdgeLabelCacheDirty(); // sketch record loaded
   // Normalize nodes and edges to canonical shape (single source of truth)
   normalizeLegacySketch(nodes, edges);
@@ -2648,6 +2658,7 @@ window.__getActiveSketchData = function () {
 window.__setActiveSketchData = function (data) {
   nodes = data.nodes || [];
   edges = data.edges || [];
+  clearUndoStack();
   nextNodeId = data.nextNodeId || 1;
   currentSketchId = data.sketchId || null;
   currentSketchName = data.sketchName || null;
@@ -3164,6 +3175,7 @@ async function handleChangeProject(sketchId) {
 function newSketch(date, projectId = null, inputFlowConfig = null) {
   nodes = [];
   edges = [];
+  clearUndoStack();
   markEdgeLabelCacheDirty(); // sketch cleared
   nextNodeId = 1;
   selectedNode = null;
@@ -3241,6 +3253,7 @@ function createNode(x, y) {
   }
   
   computeNodeTypes();
+  pushUndo({ type: 'nodeCreate', nodeId: node.id });
   saveToStorage();
   return node;
 }
@@ -3299,6 +3312,7 @@ function createEdge(tailId, headId, options = {}) {
   }
   edges.push(edge);
   computeNodeTypes();
+  pushUndo({ type: 'edgeCreate', edgeId: edge.id });
   saveToStorage();
   return edge;
 }
@@ -3331,6 +3345,131 @@ function createInboundDanglingEdge(startX, startY, headId) {
  */
 function findIncompleteEdges() {
   return edges.filter(edge => edge.isDangling || edge.head === null || edge.tail === null);
+}
+
+// ── Undo Action System ──────────────────────────────────────────────────────
+
+/**
+ * Push an undo action onto the stack.
+ * @param {{ type: string, [key: string]: any }} action
+ */
+function pushUndo(action) {
+  undoStack.push(action);
+  if (undoStack.length > UNDO_STACK_MAX) undoStack.shift();
+  updateUndoButton();
+}
+
+/** Clear the undo stack (on sketch load/new/switch). */
+function clearUndoStack() {
+  undoStack.length = 0;
+  updateUndoButton();
+}
+
+/** Enable/disable the undo button based on stack state. */
+function updateUndoButton() {
+  if (undoBtn) {
+    undoBtn.disabled = undoStack.length === 0 || !!window.__sketchReadOnly;
+  }
+}
+
+/** Check if a node has valuable GNSS data (Fixed or Device Float). */
+function nodeHasValuableData(node) {
+  return node && (node.gnssFixQuality === 4 || node.gnssFixQuality === 5);
+}
+
+/** Check if an edge has measurement data (in/out). */
+function edgeHasValuableData(edge) {
+  return edge && (
+    (edge.tail_measurement && String(edge.tail_measurement).trim() !== '') ||
+    (edge.head_measurement && String(edge.head_measurement).trim() !== '')
+  );
+}
+
+/**
+ * Perform the undo of the last action on the stack.
+ * Shows confirmation dialog if the item contains valuable data.
+ */
+function performUndo() {
+  if (undoStack.length === 0) {
+    showToast(t('toasts.undoEmpty'));
+    return;
+  }
+  const action = undoStack[undoStack.length - 1];
+
+  if (action.type === 'nodeCreate') {
+    const node = nodes.find(n => String(n.id) === String(action.nodeId));
+    if (!node) { undoStack.pop(); updateUndoButton(); return; }
+    // Check connected edges for valuable data too
+    const connectedEdges = edges.filter(e =>
+      String(e.tail) === String(action.nodeId) || String(e.head) === String(action.nodeId)
+    );
+    const hasValuable = nodeHasValuableData(node) ||
+      connectedEdges.some(e => edgeHasValuableData(e));
+    if (hasValuable) {
+      if (!confirm(t('confirms.undoNodeWithData'))) return;
+    }
+    // Remove node and connected edges
+    const removedEdgeIds = new Set(connectedEdges.map(e => e.id));
+    nodes = nodes.filter(n => n !== node);
+    edges = edges.filter(e => !removedEdgeIds.has(e.id));
+    // Clean stale edge undo entries from the stack
+    undoStack.pop();
+    for (let i = undoStack.length - 1; i >= 0; i--) {
+      if (undoStack[i].type === 'edgeCreate' && removedEdgeIds.has(undoStack[i].edgeId)) {
+        undoStack.splice(i, 1);
+      }
+    }
+    if (selectedNode && String(selectedNode.id) === String(action.nodeId)) {
+      selectedNode = null;
+      selectedEdge = null;
+      renderDetails();
+    }
+    computeNodeTypes();
+    updateIncompleteEdgeTracker();
+    saveToStorage();
+    scheduleDraw();
+    showToast(t('toasts.undoNodeCreate'));
+
+  } else if (action.type === 'edgeCreate') {
+    const edge = edges.find(e => e.id === action.edgeId);
+    if (!edge) { undoStack.pop(); updateUndoButton(); return; }
+    if (edgeHasValuableData(edge)) {
+      if (!confirm(t('confirms.undoEdgeWithData'))) return;
+    }
+    edges = edges.filter(e => e !== edge);
+    undoStack.pop();
+    if (selectedEdge && selectedEdge.id === action.edgeId) {
+      selectedEdge = null;
+      selectedNode = null;
+      renderDetails();
+    }
+    computeNodeTypes();
+    updateIncompleteEdgeTracker();
+    saveToStorage();
+    scheduleDraw();
+    showToast(t('toasts.undoEdgeCreate'));
+
+  } else if (action.type === 'nodeMove') {
+    const node = nodes.find(n => String(n.id) === String(action.nodeId));
+    if (!node) { undoStack.pop(); updateUndoButton(); return; }
+    // Check if the node NOW has valuable data at its current position
+    if (nodeHasValuableData(node)) {
+      if (!confirm(t('confirms.undoNodeWithData'))) return;
+    }
+    node.x = action.oldX;
+    node.y = action.oldY;
+    if (action.oldSurveyX !== undefined) node.surveyX = action.oldSurveyX;
+    if (action.oldSurveyY !== undefined) node.surveyY = action.oldSurveyY;
+    undoStack.pop();
+    updateNodeTimestamp(node);
+    saveToStorage();
+    scheduleDraw();
+    showToast(t('toasts.undoNodeMove'));
+  } else {
+    // Unknown action type — just remove it
+    undoStack.pop();
+  }
+  updateUndoButton();
 }
 
 /**
@@ -5357,6 +5496,8 @@ function pointerDown(x, y) {
     dragOffset.x = world.x - node.x;
     dragOffset.y = world.y - node.y;
     isDragging = true;
+    // Capture pre-drag position for undo
+    dragStartNodeState = { id: node.id, oldX: node.x, oldY: node.y, oldSurveyX: node.surveyX, oldSurveyY: node.surveyY };
     // Defer opening details until release if no drag movement occurred
     pendingDetailsForSelectedNode = true;
     selectedNodeDownScreen = { x, y };
@@ -5440,6 +5581,22 @@ function pointerMove(x, y) {
  * Handle pointer up/cancel to end dragging.
  */
 function pointerUp() {
+  // Record undo for node move if position actually changed
+  if (dragStartNodeState && selectedNode && String(selectedNode.id) === String(dragStartNodeState.id)) {
+    const dx = selectedNode.x - dragStartNodeState.oldX;
+    const dy = selectedNode.y - dragStartNodeState.oldY;
+    if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+      pushUndo({
+        type: 'nodeMove',
+        nodeId: dragStartNodeState.id,
+        oldX: dragStartNodeState.oldX,
+        oldY: dragStartNodeState.oldY,
+        oldSurveyX: dragStartNodeState.oldSurveyX,
+        oldSurveyY: dragStartNodeState.oldSurveyY,
+      });
+    }
+  }
+  dragStartNodeState = null;
   isDragging = false;
   // If a node was grabbed but not moved significantly, perform toggle/details logic
   if (pendingDetailsForSelectedNode && selectedNode) {
@@ -5665,6 +5822,8 @@ canvas.addEventListener('touchstart', (e) => {
           dragOffset.x = world.x - nodeAt.x;
           dragOffset.y = world.y - nodeAt.y;
           isDragging = true;
+          // Capture pre-drag position for undo
+          dragStartNodeState = { id: nodeAt.id, oldX: nodeAt.x, oldY: nodeAt.y, oldSurveyX: nodeAt.surveyX, oldSurveyY: nodeAt.surveyY };
           touchAddPending = false;
           touchAddPoint = null;
           // Defer opening details until release if no drag movement occurred
@@ -6021,6 +6180,12 @@ if (edgeModeBtn) {
     selectedEdge = null;
     renderDetails();
     showToast(t('toasts.edgeMode'));
+  });
+}
+// Undo button
+if (undoBtn) {
+  undoBtn.addEventListener('click', () => {
+    performUndo();
   });
 }
 // Zoom buttons
@@ -7989,6 +8154,13 @@ document.addEventListener('keydown', (e) => {
   const target = e.target;
   const tag = target && target.tagName ? target.tagName.toLowerCase() : '';
   const isTyping = tag === 'input' || tag === 'textarea';
+
+  // Ctrl+Z / Cmd+Z — undo last action
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+    e.preventDefault();
+    performUndo();
+    return;
+  }
 
   // Mode toggles
   if (!isTyping && (e.key === 'n' || e.key === 'N')) {

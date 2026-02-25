@@ -1269,6 +1269,16 @@ select.btn:focus-visible {
   color: #fff;
 }
 
+/* Undo button */
+.canvas-toolbar .undo-btn {
+  transition: opacity 0.2s ease;
+}
+
+.canvas-toolbar .undo-btn:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
 /* My Location button */
 .my-location-btn {
   transition: all 0.2s ease;
