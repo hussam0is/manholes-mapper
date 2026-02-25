@@ -1,21 +1,22 @@
 /**
  * Reposition displaced nodes in all DB sketches.
  *
- * "Displaced" = a node that was created without survey coordinates,
- * so its canvas x/y was inherited from another sketch that happened to
- * share the same node ID (all sketches use sequential IDs starting at 1).
+ * "Displaced" = a node not in the sketch's own-date cords file, whose canvas
+ * x/y was inherited from another sketch sharing the same sequential node ID.
  *
  * Strategy:
- * - "Anchor" nodes  = nodes appearing in the sketch's OWN-DATE cords file
- *                     (cords_<sketch-date>.csv) → trustworthy x/y
- * - "Displaced" nodes = all other nodes → wrong x/y, clear surveyX/Y and reposition
+ * - "Anchor" nodes = nodes in sketch's OWN-DATE cords file → trustworthy x/y
+ * - "Displaced" nodes = all others → wrong x/y, need repositioning
  *
- * Repositioning:
- * - BFS outward from all anchor nodes through the edge graph
- * - Each displaced node is placed at PLACEMENT_RADIUS canvas units from its BFS parent
- * - Chains of consecutive displaced nodes cascade: each 7m from the previous
- * - Multiple displaced siblings of the same parent fan out at 45° increments
- * - After placement, surveyX/Y for displaced nodes is null (yellow ! in issues panel)
+ * For each displaced node:
+ *   1. BFS from that node through ALL edges to find its NEAREST anchor
+ *      (shortest graph-hop distance). This ensures every displaced node is
+ *      placed at exactly 7m from a real survey point, never cascading.
+ *   2. Place at PLACEMENT_RADIUS from that anchor. Multiple displaced nodes
+ *      sharing the same nearest anchor fan out at equal angular increments.
+ *   3. If no anchor is reachable at all, place near sketch centroid.
+ *
+ * After placement: surveyX/Y = null (shows as missing-coords yellow ! in issues).
  */
 
 import { config } from 'dotenv';
@@ -30,8 +31,8 @@ const dataDir = 'C:/Users/murjan.a/Desktop/App Data';
 const ITM_E_MIN = 230000, ITM_E_MAX = 270000;
 const PLACEMENT_RADIUS_M = 7;
 
-// ── Load all cords files ──────────────────────────────────────────────────────
-const cordsByDate = new Map(); // date → Set<nodeId>
+// ── Load own-date cords (Set of nodeIds per date) ────────────────────────────
+const cordsByDate = new Map();
 for (const file of readdirSync(dataDir).filter(f => f.startsWith('cords_') && f.endsWith('.csv')).sort()) {
   const date = file.replace('cords_', '').replace('.csv', '');
   const ids = new Set();
@@ -48,29 +49,22 @@ for (const file of readdirSync(dataDir).filter(f => f.startsWith('cords_') && f.
 }
 console.log(`Loaded cords for ${cordsByDate.size} dates\n`);
 
-// ── Derive ITM→canvas transform from a set of anchor nodes ───────────────────
-// Returns { m_x, c_x, m_y, c_y } such that:
-//   canvas_x = m_x * surveyX + c_x
-//   canvas_y = m_y * surveyY + c_y
-function deriveTransform(anchors) {
+// ── Derive canvas-units-per-meter from anchor nodes (linear regression) ──────
+function canvasUnitsPerMeter(anchors) {
   const n = anchors.length;
   if (n < 2) return null;
   const meanSX = anchors.reduce((s, a) => s + a.surveyX, 0) / n;
   const meanX  = anchors.reduce((s, a) => s + a.x, 0) / n;
   const meanSY = anchors.reduce((s, a) => s + a.surveyY, 0) / n;
   const meanY  = anchors.reduce((s, a) => s + a.y, 0) / n;
-
-  const varSX = anchors.reduce((s, a) => s + (a.surveyX - meanSX) ** 2, 0);
-  const covSX = anchors.reduce((s, a) => s + (a.surveyX - meanSX) * (a.x - meanX), 0);
-  const varSY = anchors.reduce((s, a) => s + (a.surveyY - meanSY) ** 2, 0);
-  const covSY = anchors.reduce((s, a) => s + (a.surveyY - meanSY) * (a.y - meanY), 0);
-
+  const varSX  = anchors.reduce((s, a) => s + (a.surveyX - meanSX) ** 2, 0);
+  const covSX  = anchors.reduce((s, a) => s + (a.surveyX - meanSX) * (a.x - meanX), 0);
+  const varSY  = anchors.reduce((s, a) => s + (a.surveyY - meanSY) ** 2, 0);
+  const covSY  = anchors.reduce((s, a) => s + (a.surveyY - meanSY) * (a.y - meanY), 0);
   if (varSX === 0 || varSY === 0) return null;
-  const m_x = covSX / varSX;
-  const c_x = meanX - m_x * meanSX;
-  const m_y = covSY / varSY;
-  const c_y = meanY - m_y * meanSY;
-  return { m_x, c_x, m_y, c_y };
+  const mX = Math.abs(covSX / varSX); // canvas units per meter (x)
+  const mY = Math.abs(covSY / varSY); // canvas units per meter (y)
+  return (mX + mY) / 2;
 }
 
 // ── Process each sketch ───────────────────────────────────────────────────────
@@ -83,125 +77,114 @@ for (const sketch of sketches) {
   const nodes = sketch.nodes;
   const edges = sketch.edges || [];
 
-  // Extract date from sketch name  e.g. "me_rakat 2026-02-16" → "2026-02-16"
   const dateMatch = sketch.name?.match(/(\d{4}-\d{2}-\d{2})/);
-  const sketchDate = dateMatch?.[1];
-  const ownCords = sketchDate ? cordsByDate.get(sketchDate) : null;
+  const ownCords = dateMatch ? cordsByDate.get(dateMatch[1]) : null;
+  if (!ownCords) { console.log(`⚠ ${sketch.name}: no own-date cords — skipping`); continue; }
 
-  if (!ownCords) {
-    console.log(`⚠ ${sketch.name}: no own-date cords file found — skipping`);
-    continue;
-  }
+  const nodeMap = new Map(nodes.map(n => [String(n.id), n]));
+  const anchorIds    = new Set(nodes.filter(n => ownCords.has(String(n.id)) && n.surveyX != null).map(n => String(n.id)));
+  const displacedIds = new Set(nodes.filter(n => !ownCords.has(String(n.id))).map(n => String(n.id)));
 
-  // Separate anchor vs displaced nodes
-  const nodeMap = new Map();
-  for (const n of nodes) nodeMap.set(String(n.id), n);
+  if (displacedIds.size === 0) { console.log(`✓ ${sketch.name}: no displaced nodes`); continue; }
 
-  const anchorNodes   = nodes.filter(n => ownCords.has(String(n.id)) && n.surveyX != null && n.x != null);
-  const displacedIds  = new Set(nodes.filter(n => !ownCords.has(String(n.id))).map(n => String(n.id)));
+  const anchorNodes = [...anchorIds].map(id => nodeMap.get(id));
+  if (anchorNodes.length < 2) { console.log(`⚠ ${sketch.name}: not enough anchors — skipping`); continue; }
 
-  if (displacedIds.size === 0) {
-    console.log(`✓ ${sketch.name}: no displaced nodes`);
-    continue;
-  }
+  const cuPerM = canvasUnitsPerMeter(anchorNodes);
+  if (!cuPerM) { console.log(`⚠ ${sketch.name}: cannot derive scale — skipping`); continue; }
+  const canvasRadius = PLACEMENT_RADIUS_M * cuPerM;
 
-  if (anchorNodes.length < 2) {
-    console.log(`⚠ ${sketch.name}: not enough anchors (${anchorNodes.length}) to derive transform — skipping`);
-    continue;
-  }
-
-  // Derive scale for 7m placement
-  const tf = deriveTransform(anchorNodes);
-  if (!tf) {
-    console.log(`⚠ ${sketch.name}: could not derive transform — skipping`);
-    continue;
-  }
-  // meters per canvas unit (use average of x and y scales)
-  const metersPerCU = 2 / (Math.abs(tf.m_x) + Math.abs(tf.m_y));
-  const canvasRadius = PLACEMENT_RADIUS_M / metersPerCU;
-
-  console.log(`→ ${sketch.name}: ${anchorNodes.length} anchors, ${displacedIds.size} displaced nodes, canvasRadius=${canvasRadius.toFixed(1)} cu (${metersPerCU.toFixed(4)} m/cu)`);
-
-  // Build adjacency list
-  const adj = new Map();
-  for (const n of nodes) adj.set(String(n.id), new Set());
+  // Build adjacency list (all nodes, not just anchors)
+  const adj = new Map(nodes.map(n => [String(n.id), new Set()]));
   for (const e of edges) {
     if (e.tail != null && e.head != null) {
-      const t = String(e.tail), h = String(e.head);
-      adj.get(t)?.add(h);
-      adj.get(h)?.add(t);
+      adj.get(String(e.tail))?.add(String(e.head));
+      adj.get(String(e.head))?.add(String(e.tail));
     }
   }
 
-  // BFS from all anchor nodes outward through displaced nodes
-  // Track placed positions for displaced nodes
-  const placed = new Map(); // displacedId → {x, y}
-  const visited = new Set();
+  // For each displaced node: BFS to find nearest anchor (hop count)
+  // nearestAnchor[displacedId] = anchorId of nearest anchor
+  const nearestAnchor = new Map();
 
-  // Seed BFS with all anchor nodes (they have correct positions)
-  const queue = [];
-  for (const n of anchorNodes) {
-    visited.add(String(n.id));
-    queue.push({ id: String(n.id), x: n.x, y: n.y });
-  }
-
-  let qi = 0;
-  while (qi < queue.length) {
-    const { id: parentId, x: parentX, y: parentY } = queue[qi++];
-    const neighbors = [...(adj.get(parentId) || [])];
-
-    // Fan displaced neighbors around parent
-    const displacedNeighbors = neighbors.filter(nid => displacedIds.has(nid) && !visited.has(nid));
-
-    for (let i = 0; i < displacedNeighbors.length; i++) {
-      const nid = displacedNeighbors[i];
-      visited.add(nid);
-
-      // Base angle: point away from sketch centroid
-      // Use a spread of 45° per sibling to avoid overlap
-      const baseAngle = Math.PI / 4; // 45° default direction (NE in canvas)
-      const angle = baseAngle + i * (Math.PI / 4);
-
-      const newX = parentX + canvasRadius * Math.cos(angle);
-      const newY = parentY + canvasRadius * Math.sin(angle);
-
-      placed.set(nid, { x: newX, y: newY });
-      queue.push({ id: nid, x: newX, y: newY });
-    }
-
-    // Non-displaced unvisited neighbors: add to BFS with their own position (for traversal)
-    for (const nid of neighbors) {
-      if (!visited.has(nid) && !displacedIds.has(nid)) {
-        const n = nodeMap.get(nid);
-        if (n && n.x != null) {
-          visited.add(nid);
-          queue.push({ id: nid, x: n.x, y: n.y });
-        }
+  for (const displacedId of displacedIds) {
+    // BFS from this displaced node outward until we hit an anchor
+    const visited = new Set([displacedId]);
+    const queue = [displacedId];
+    let found = null;
+    outer: while (queue.length > 0) {
+      const cur = queue.shift();
+      for (const nb of (adj.get(cur) || [])) {
+        if (visited.has(nb)) continue;
+        visited.add(nb);
+        if (anchorIds.has(nb)) { found = nb; break outer; }
+        queue.push(nb);
       }
     }
+    nearestAnchor.set(displacedId, found); // null if no anchor reachable
   }
 
-  // Report any displaced nodes not reached by BFS (isolated, no edge connection to any anchor)
-  const unreached = [...displacedIds].filter(id => !placed.has(id));
-  if (unreached.length > 0) {
-    console.log(`  ⚠ ${unreached.length} displaced nodes not connected to any anchor (will be placed near sketch center)`);
-    // Place them near the sketch centroid
-    const cx = anchorNodes.reduce((s, n) => s + n.x, 0) / anchorNodes.length;
-    const cy = anchorNodes.reduce((s, n) => s + n.y, 0) / anchorNodes.length;
-    unreached.forEach((id, i) => {
-      const angle = i * (Math.PI / 4);
-      placed.set(id, { x: cx + canvasRadius * Math.cos(angle), y: cy + canvasRadius * Math.sin(angle) });
-    });
+  // Group displaced nodes by their nearest anchor, assign fan angles
+  // anchorGroups: anchorId → [displacedId, ...]
+  const anchorGroups = new Map();
+  const noAnchorNodes = [];
+  for (const [dispId, ancId] of nearestAnchor) {
+    if (ancId) {
+      if (!anchorGroups.has(ancId)) anchorGroups.set(ancId, []);
+      anchorGroups.get(ancId).push(dispId);
+    } else {
+      noAnchorNodes.push(dispId);
+    }
   }
 
-  // Apply placements
+  // Compute placement positions
+  const placements = new Map(); // displacedId → {x, y}
+
+  for (const [ancId, group] of anchorGroups) {
+    const anchor = nodeMap.get(ancId);
+    const count = group.length;
+    // Fan evenly around the anchor, starting from 45° (NE)
+    const startAngle = Math.PI / 4;
+    const step = count === 1 ? 0 : (2 * Math.PI) / Math.min(count, 8);
+    for (let i = 0; i < count; i++) {
+      const angle = startAngle + i * step;
+      placements.set(group[i], {
+        x: anchor.x + canvasRadius * Math.cos(angle),
+        y: anchor.y + canvasRadius * Math.sin(angle),
+      });
+    }
+  }
+
+  // Nodes with no reachable anchor: find physically nearest anchor (Euclidean)
+  // and place at 7m from it. Since displaced x/y are from another sketch we
+  // cannot use them — instead use the anchor with the median canvas position
+  // (most central anchor) to avoid stacking on a single busy anchor.
+  if (noAnchorNodes.length > 0) {
+    console.log(`  ⚠ ${noAnchorNodes.length} displaced nodes unreachable from any anchor → placed near nearest anchor`);
+
+    // Sort anchors by x to pick median (most central)
+    const sortedAnchors = [...anchorNodes].sort((a, b) => a.x - b.x);
+    const medianAnchor = sortedAnchors[Math.floor(sortedAnchors.length / 2)];
+
+    for (let i = 0; i < noAnchorNodes.length; i++) {
+      // Count how many displaced nodes are already being placed near this anchor
+      const existingCount = anchorGroups.get(String(medianAnchor.id))?.length ?? 0;
+      const slot = existingCount + i;
+      const angle = (Math.PI / 4) + slot * (Math.PI / 4);
+      placements.set(noAnchorNodes[i], {
+        x: medianAnchor.x + canvasRadius * Math.cos(angle),
+        y: medianAnchor.y + canvasRadius * Math.sin(angle),
+      });
+    }
+  }
+
+  // Apply
   let repositioned = 0;
   for (const n of nodes) {
-    const p = placed.get(String(n.id));
+    const p = placements.get(String(n.id));
     if (!p) continue;
     n.x = p.x;
     n.y = p.y;
-    // Clear survey coordinates — these nodes have no real GPS fix
     n.surveyX = null;
     n.surveyY = null;
     n.surveyZ = null;
@@ -210,27 +193,24 @@ for (const sketch of sketches) {
     repositioned++;
   }
 
-  console.log(`  Repositioned: ${repositioned}. Saving...`);
+  console.log(`→ ${sketch.name}: ${anchorNodes.length} anchors, ${displacedIds.size} displaced, canvasRadius=${canvasRadius.toFixed(1)} cu. Repositioned: ${repositioned}`);
   await sql`UPDATE sketches SET nodes = ${JSON.stringify(nodes)}::jsonb, updated_at = NOW() WHERE id = ${sketch.id}`;
   console.log(`  ✓ Saved`);
   totalRepositioned += repositioned;
 }
 
-console.log(`\n=== DONE: ${totalRepositioned} nodes repositioned across ${sketches.length} sketches ===`);
+console.log(`\n=== DONE: ${totalRepositioned} nodes repositioned ===`);
 
-// ── Verification ──────────────────────────────────────────────────────────────
+// Verify
 console.log('\n=== Post-fix coverage ===');
 const final = await sql`
-  SELECT
-    name,
+  SELECT name,
     COUNT(*) FILTER (WHERE (n->>'surveyX') IS NOT NULL) AS with_coords,
-    COUNT(*) FILTER (WHERE (n->>'surveyX') IS NULL) AS without_coords,
+    COUNT(*) FILTER (WHERE (n->>'surveyX') IS NULL)     AS without_coords,
     COUNT(*) AS total
   FROM sketches, jsonb_array_elements(nodes) n
   GROUP BY name ORDER BY name`;
-
 for (const r of final) {
   const pct = Math.round((r.with_coords / r.total) * 100);
-  const flag = r.without_coords > 0 ? ' ⚠' : ' ✓';
-  console.log(`  ${(r.name || '(unnamed)').padEnd(30)} ${r.with_coords}/${r.total} (${pct}%) coords${flag}`);
+  console.log(`  ${(r.name || '(unnamed)').padEnd(30)} ${r.with_coords}/${r.total} (${pct}%)`);
 }
