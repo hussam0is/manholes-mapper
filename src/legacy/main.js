@@ -908,12 +908,14 @@ function closeProjectsScreen() {
 
 function navigateToProjects() {
   try { closeMobileMenu(); } catch (_) { }
+  markInternalNavigation();
   try { location.hash = '#/projects'; } catch (_) { }
   try { handleRoute(); } catch (_) { }
 }
 
 function navigateToAdmin() {
   try { closeMobileMenu(); } catch (_) { }
+  markInternalNavigation();
   try { location.hash = '#/admin'; } catch (_) { }
   try { handleRoute(); } catch (_) { }
 }
@@ -1383,18 +1385,21 @@ if (adminScreenSaveBtn) adminScreenSaveBtn.addEventListener('click', () => {
   const newConfig = adminSettingsScreen.collectConfig();
   Object.assign(adminConfig, newConfig);
   saveAdminConfig();
+  markInternalNavigation();
   closeAdminScreen();
   try { location.hash = '#/'; } catch (_) { }
   renderDetails();
   showToast(t('admin.saved'));
 });
 if (adminScreenCancelBtn) adminScreenCancelBtn.addEventListener('click', () => {
+  markInternalNavigation();
   closeAdminScreen();
   try { location.hash = '#/'; } catch (_) { }
 });
 
 // Projects screen close button handler
 if (projectsScreenCloseBtn) projectsScreenCloseBtn.addEventListener('click', () => {
+  markInternalNavigation();
   closeProjectsScreen();
   try { location.hash = '#/'; } catch (_) { }
 });
@@ -9600,12 +9605,22 @@ window.addEventListener('beforeunload', (e) => {
     localStorage.setItem(STORAGE_KEYS.sketch, JSON.stringify(payload));
   } catch (_) {}
 
-  // Confirm exit when there's an active sketch with data
-  if (nodes?.length > 0 || edges?.length > 0) {
+  // Confirm exit when there's an active sketch with data.
+  // Skip during intentional in-app navigation (see markInternalNavigation).
+  if (!_internalNavigation && (nodes?.length > 0 || edges?.length > 0)) {
     e.preventDefault();
     e.returnValue = '';
   }
 });
+
+// ── Internal-navigation flag ───────────────────────────────────────────────
+// On Android/Capacitor WebView, location.hash changes can fire popstate before
+// the hash updates. This flag suppresses the exit-guard during those transitions.
+let _internalNavigation = false;
+function markInternalNavigation() {
+  _internalNavigation = true;
+  setTimeout(() => { _internalNavigation = false; }, 100);
+}
 
 // ── Android back-button exit guard ────────────────────────────────────────
 // Push a history entry so the Android back button triggers popstate instead
@@ -9615,6 +9630,9 @@ window.addEventListener('beforeunload', (e) => {
   history.pushState({ _guard: true }, '');
 
   window.addEventListener('popstate', (e) => {
+    // Ignore popstate triggered by intentional in-app navigation (e.g. navigateToProjects)
+    if (_internalNavigation) return;
+
     // Always re-push the guard state so the barrier stays in place
     history.pushState({ _guard: true }, '');
 
