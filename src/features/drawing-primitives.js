@@ -46,8 +46,8 @@ export function drawHouse(ctx, cx, cy, radius) {
  * @param {number} cy
  * @param {number} radius
  */
-export function drawDirectConnectionBadge(ctx, cx, cy, radius) {
-  const badgeR = Math.max(6, Math.floor(radius * 0.35));
+export function drawDirectConnectionBadge(ctx, cx, cy, radius, viewScale = 1) {
+  const badgeR = Math.max(6 / viewScale, Math.floor(radius * 0.35));
   const bx = cx + radius * 0.55;
   const by = cy - radius * 0.55;
   ctx.save();
@@ -58,7 +58,7 @@ export function drawDirectConnectionBadge(ctx, cx, cy, radius) {
   ctx.fill();
   // Chain-link glyph: two small overlapping arcs
   ctx.strokeStyle = COLORS.node.badgeIcon;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2 / viewScale;
   const r = badgeR * 0.45;
   ctx.beginPath();
   ctx.arc(bx - r * 0.5, by, r, Math.PI * 0.25, Math.PI * 1.25);

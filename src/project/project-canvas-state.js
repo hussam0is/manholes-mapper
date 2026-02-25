@@ -192,8 +192,10 @@ export function clearProjectCanvas() {
  * Find a node in any visible background sketch near (worldX, worldY).
  * Returns { sketchId, node } or null.
  */
-export function findNodeInBackground(worldX, worldY, sizeScaleVal) {
-  const radius = NODE_RADIUS * (sizeScaleVal || 1);
+export function findNodeInBackground(worldX, worldY, sizeScaleVal, viewScaleVal) {
+  const vs = viewScaleVal || 1;
+  const radius = NODE_RADIUS * (sizeScaleVal || 1) / vs;
+  const pad = 2 / vs;
   for (const [id, sketch] of projectSketches) {
     if (id === activeSketchId) continue;
     if (hiddenSketches.has(id)) continue;
@@ -202,7 +204,7 @@ export function findNodeInBackground(worldX, worldY, sizeScaleVal) {
       const n = nodes[i];
       const dx = worldX - n.x;
       const dy = worldY - n.y;
-      if (Math.sqrt(dx * dx + dy * dy) <= radius + 2) {
+      if (Math.sqrt(dx * dx + dy * dy) <= radius + pad) {
         return { sketchId: id, node: n };
       }
     }
@@ -214,8 +216,8 @@ export function findNodeInBackground(worldX, worldY, sizeScaleVal) {
  * Find an edge in any visible background sketch near (worldX, worldY).
  * Returns { sketchId, edge } or null.
  */
-export function findEdgeInBackground(worldX, worldY) {
-  const threshold = 8;
+export function findEdgeInBackground(worldX, worldY, viewScaleVal) {
+  const threshold = 8 / (viewScaleVal || 1);
   for (const [id, sketch] of projectSketches) {
     if (id === activeSketchId) continue;
     if (hiddenSketches.has(id)) continue;

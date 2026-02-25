@@ -515,6 +515,7 @@ let _edgeLabelDataCache = null; // null means dirty / needs rebuild
 let _edgeLabelCacheStretchX = NaN;
 let _edgeLabelCacheStretchY = NaN;
 let _edgeLabelCacheSizeScale = NaN;
+let _edgeLabelCacheViewScale = NaN;
 function markEdgeLabelCacheDirty() {
   _edgeLabelDataCache = null;
 }
@@ -3477,6 +3478,7 @@ function draw() {
   if (window.__projectCanvas?.isProjectCanvasMode()) {
     drawBackgroundSketches(ctx, window.__projectCanvas.getBackgroundSketches(), {
       sizeScale,
+      viewScale,
       viewStretchX,
       viewStretchY,
       visMinX, visMinY, visMaxX, visMaxY,
@@ -3523,15 +3525,15 @@ function draw() {
     ctx.save();
     ctx.strokeStyle = COLORS.edge.preview;
     ctx.fillStyle = COLORS.edge.preview;
-    ctx.setLineDash([6, 4]);
-    ctx.lineWidth = 2;
+    ctx.setLineDash([6 / viewScale, 4 / viewScale]);
+    ctx.lineWidth = 2 / viewScale;
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
     ctx.stroke();
     // Arrow head
     const angle = Math.atan2(y2 - y1, x2 - x1);
-    const arrowLength = 10;
+    const arrowLength = 10 / viewScale;
     ctx.beginPath();
     ctx.moveTo(x2, y2);
     ctx.lineTo(
@@ -3544,14 +3546,14 @@ function draw() {
     );
     ctx.closePath();
     ctx.fill();
-    
+
     // Draw a small circle at the start position when creating inbound edge
     if (pendingEdgeStartPosition) {
-      const circleRadius = 5 * sizeScale;
+      const circleRadius = 5 * sizeScale / viewScale;
       ctx.beginPath();
       ctx.arc(x1, y1, circleRadius, 0, Math.PI * 2);
       ctx.strokeStyle = COLORS.edge.preview;
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 1.5 / viewScale;
       ctx.stroke();
     }
     ctx.restore();
@@ -3559,7 +3561,7 @@ function draw() {
   // Draw nodes on top and collect label data
   const labelData = [];
   const nodeData = [];
-  const nodeRadius = NODE_RADIUS * sizeScale;
+  const nodeRadius = NODE_RADIUS * sizeScale / viewScale;
 
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
@@ -3588,12 +3590,14 @@ function draw() {
     _edgeLabelDataCache === null ||
     _edgeLabelCacheStretchX !== viewStretchX ||
     _edgeLabelCacheStretchY !== viewStretchY ||
-    _edgeLabelCacheSizeScale !== sizeScale
+    _edgeLabelCacheSizeScale !== sizeScale ||
+    _edgeLabelCacheViewScale !== viewScale
   ) {
     _edgeLabelDataCache = [];
     _edgeLabelCacheStretchX = viewStretchX;
     _edgeLabelCacheStretchY = viewStretchY;
     _edgeLabelCacheSizeScale = sizeScale;
+    _edgeLabelCacheViewScale = viewScale;
     edges.forEach((edge) => {
       const tailNode = edge.tail != null ? nodeMap.get(String(edge.tail)) : undefined;
       const headNode = edge.head != null ? nodeMap.get(String(edge.head)) : undefined;
@@ -3609,8 +3613,8 @@ function draw() {
 
       const normX = dx / length;
       const normY = dy / length;
-      const offset = 6 * sizeScale;
-      const fontSize = Math.round(14 * sizeScale);
+      const offset = 6 * sizeScale / viewScale;
+      const fontSize = Math.round(14 * sizeScale / viewScale);
 
       if (edge.tail_measurement) {
         const ratio = 0.25;
@@ -3875,13 +3879,14 @@ function drawEdge(edge) {
     edgeTypeColors: EDGE_TYPE_COLORS,
     highlightedHalfEdge,
     colors: COLORS,
+    viewScale,
   });
   if (!stretchedTail || !stretchedHead) return;
   if (edge.fall_depth !== '' && edge.fall_depth !== null && edge.fall_depth !== undefined) {
-    const iconDistanceFromHead = ((typeof NODE_RADIUS === 'number' ? NODE_RADIUS : 20) * sizeScale) + (7 * sizeScale);
+    const iconDistanceFromHead = ((typeof NODE_RADIUS === 'number' ? NODE_RADIUS : 20) * sizeScale + 7 * sizeScale) / viewScale;
     const iconX = stretchedHead.x - Math.cos(angle) * iconDistanceFromHead;
     const iconY = stretchedHead.y - Math.sin(angle) * iconDistanceFromHead;
-    const size = 16 * sizeScale;
+    const size = 16 * sizeScale / viewScale;
     if (fallIconImage && fallIconReady) {
       ctx.save();
       const bgRadius = size * 0.45;
@@ -3889,24 +3894,24 @@ function drawEdge(edge) {
       ctx.arc(iconX, iconY, bgRadius, 0, Math.PI * 2);
       ctx.fillStyle = COLORS.edge.fallIconBg;
       ctx.fill();
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2 / viewScale;
       ctx.strokeStyle = COLORS.edge.fallIconStroke;
       ctx.stroke();
-      const innerSize = size - (6 * sizeScale);
+      const innerSize = size - (6 * sizeScale / viewScale);
       ctx.drawImage(fallIconImage, iconX - innerSize / 2, iconY - innerSize / 2, innerSize, innerSize);
       ctx.restore();
     } else {
-      const iconRadius = 6;
+      const iconRadius = 6 / viewScale;
       ctx.save();
       ctx.beginPath();
       ctx.arc(iconX, iconY, iconRadius, 0, Math.PI * 2);
       ctx.fillStyle = COLORS.edge.fallIconFallback;
       ctx.fill();
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2 / viewScale;
       ctx.strokeStyle = COLORS.edge.fallIconStroke;
       ctx.stroke();
       ctx.fillStyle = COLORS.edge.fallIconText;
-      ctx.font = 'bold 9px Arial';
+      ctx.font = `bold ${9 / viewScale}px Arial`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('F', iconX, iconY);
@@ -3917,7 +3922,7 @@ function drawEdge(edge) {
   const x1 = stretchedTail.x, y1 = stretchedTail.y, x2 = stretchedHead.x, y2 = stretchedHead.y;
   const midX = (x1 + x2) / 2;
   const midY = (y1 + y2) / 2;
-  const midArrowLen = 8;
+  const midArrowLen = 8 / viewScale;
   ctx.beginPath();
   ctx.moveTo(midX, midY);
   ctx.lineTo(
@@ -3943,7 +3948,7 @@ function drawDanglingEdgeLocal(edge, connectedNode, type = 'outbound') {
   if (!connectedNode) return;
   
   const isSelected = edge === selectedEdge;
-  const defaultOffset = 80 * sizeScale;
+  const defaultOffset = 80 * sizeScale / viewScale;
   
   // Apply stretch to positions
   const stretchedConnected = stretchedNode(connectedNode);
@@ -3982,7 +3987,7 @@ function drawDanglingEdgeLocal(edge, connectedNode, type = 'outbound') {
   const dx = endX - startX;
   const dy = endY - startY;
   const totalLength = Math.sqrt(dx * dx + dy * dy);
-  const dashLength = 30 * sizeScale; // 30px of dashed line at the open end
+  const dashLength = 30 * sizeScale / viewScale; // dashed portion at the open end
   
   if (type === 'outbound') {
     // Outbound: solid from node, dashed at the end
@@ -3993,14 +3998,14 @@ function drawDanglingEdgeLocal(edge, connectedNode, type = 'outbound') {
     
     // Draw solid portion
     ctx.strokeStyle = solidColor;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2 / viewScale;
     ctx.beginPath();
     ctx.moveTo(startX, startY);
     ctx.lineTo(dashStartX, dashStartY);
     ctx.stroke();
-    
+
     // Draw dashed portion
-    ctx.setLineDash([4, 4]);
+    ctx.setLineDash([4 / viewScale, 4 / viewScale]);
     ctx.strokeStyle = isSelected ? '#9ca3af' : '#d1d5db';
     ctx.beginPath();
     ctx.moveTo(dashStartX, dashStartY);
@@ -4012,16 +4017,16 @@ function drawDanglingEdgeLocal(edge, connectedNode, type = 'outbound') {
     const ratio = totalLength > 0 ? dashEndLength / totalLength : 0;
     const dashEndX = startX + dx * ratio;
     const dashEndY = startY + dy * ratio;
-    
+
     // Draw dashed portion (at start)
-    ctx.setLineDash([4, 4]);
+    ctx.setLineDash([4 / viewScale, 4 / viewScale]);
     ctx.strokeStyle = isSelected ? '#9ca3af' : '#d1d5db';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2 / viewScale;
     ctx.beginPath();
     ctx.moveTo(startX, startY);
     ctx.lineTo(dashEndX, dashEndY);
     ctx.stroke();
-    
+
     // Draw solid portion (to node)
     ctx.setLineDash([]);
     ctx.strokeStyle = solidColor;
@@ -4030,14 +4035,14 @@ function drawDanglingEdgeLocal(edge, connectedNode, type = 'outbound') {
     ctx.lineTo(endX, endY);
     ctx.stroke();
   }
-  
+
   ctx.setLineDash([]);
-  
+
   // Draw the mid-arrow (black triangle at the middle) like regular edges
   const angle = Math.atan2(dy, dx);
   const midX = (startX + endX) / 2;
   const midY = (startY + endY) / 2;
-  const midArrowLen = 8;
+  const midArrowLen = 8 / viewScale;
   ctx.beginPath();
   ctx.moveTo(midX, midY);
   ctx.lineTo(
@@ -4051,13 +4056,13 @@ function drawDanglingEdgeLocal(edge, connectedNode, type = 'outbound') {
   ctx.closePath();
   ctx.fillStyle = (COLORS.edge.label || '#000');
   ctx.fill();
-  
+
   // Draw a small open circle at the dangling end (unfilled, subtle indicator)
-  const circleRadius = 5 * sizeScale;
+  const circleRadius = 5 * sizeScale / viewScale;
   ctx.beginPath();
   ctx.arc(openEndX, openEndY, circleRadius, 0, Math.PI * 2);
   ctx.strokeStyle = solidColor;
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = 1.5 / viewScale;
   ctx.stroke();
   
   ctx.restore();
@@ -4077,14 +4082,14 @@ function drawEdgeLabels(edge) {
   if (lengthPx <= 0) return;
   const normX = dx / lengthPx;
   const normY = dy / lengthPx;
-  const offset = 6 * sizeScale;
+  const offset = 6 * sizeScale / viewScale;
   ctx.save();
-  const fontSize = Math.round(14 * sizeScale);
+  const fontSize = Math.round(14 * sizeScale / viewScale);
   ctx.font = `${fontSize}px Arial`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'bottom';
   ctx.lineJoin = 'round';
-  ctx.lineWidth = 4;
+  ctx.lineWidth = 4 / viewScale;
   ctx.strokeStyle = COLORS.edge.labelStroke;
   ctx.fillStyle = COLORS.edge.label;
   
@@ -4117,28 +4122,28 @@ function drawEdgeLabels(edge) {
       
       // Offset perpendicular to the edge (opposite side from measurements)
       // Use negative perpendicular to go to the other side
-      const lengthOffset = 16 * sizeScale;
+      const lengthOffset = 16 * sizeScale / viewScale;
       const perpX = normY * lengthOffset;  // Note: positive normY for opposite side
       const perpY = -normX * lengthOffset;
-      
+
       // Draw with slightly smaller font and different style for length
-      const lengthFontSize = Math.round(12 * sizeScale);
+      const lengthFontSize = Math.round(12 * sizeScale / viewScale);
       ctx.font = `${lengthFontSize}px Arial`;
       ctx.textBaseline = 'middle';
       
       // Use a distinct color for length labels
       ctx.strokeStyle = COLORS.edge.labelStroke;
       ctx.fillStyle = '#0369a1'; // sky-700 for length labels
-      ctx.lineWidth = 3;
-      
+      ctx.lineWidth = 3 / viewScale;
+
       ctx.strokeText(lengthText, px + perpX, py + perpY);
       ctx.fillText(lengthText, px + perpX, py + perpY);
-      
+
       // Reset font for other labels
       ctx.font = `${fontSize}px Arial`;
       ctx.textBaseline = 'bottom';
       ctx.fillStyle = COLORS.edge.label;
-      ctx.lineWidth = 4;
+      ctx.lineWidth = 4 / viewScale;
     }
   }
   
@@ -4166,11 +4171,11 @@ function drawEdgeLabels(edge) {
 }
 
 function drawNode(node) {
-  const radius = NODE_RADIUS * sizeScale;
+  const radius = NODE_RADIUS * sizeScale / viewScale;
 
   // Apply stretch to position for drawing (shapes stay the same, only position stretches)
   const stretchedN = stretchedNode(node);
-  
+
   // Check if this node is selected (compare by ID since we're using stretched copies)
   const isSelected = selectedNode && String(selectedNode.id) === String(node.id);
 
@@ -4178,7 +4183,8 @@ function drawNode(node) {
   const coordinateOptions = {
     showCoordinateStatus: coordinatesEnabled,
     coordinatesMap: coordinatesMap,
-    isSelected: isSelected  // Pass selection state explicitly
+    isSelected: isSelected,  // Pass selection state explicitly
+    viewScale: viewScale
   };
   // Pass the same node for both if selected, so identity comparison works
   drawNodeIcon(ctx, stretchedN, radius, COLORS, isSelected ? stretchedN : null, coordinateOptions);
@@ -4189,7 +4195,7 @@ function drawNode(node) {
   }
 
   // Return label data for deferred rendering (smart positioning)
-  const fontSize = Math.round(16 * sizeScale);
+  const fontSize = Math.round(16 * sizeScale / viewScale);
   let labelText = String(node.id);
 
   // For Home nodes, only show numeric IDs as labels
@@ -4221,7 +4227,7 @@ function drawHouse(cx, cy, radius) {
  * Draw a small badge indicating a direct connection on top-right of the node.
  */
 function drawDirectConnectionBadge(cx, cy, radius) {
-  primitivesDrawDirectConnectionBadge(ctx, cx, cy, radius);
+  primitivesDrawDirectConnectionBadge(ctx, cx, cy, radius, viewScale);
 }
 
 /**
@@ -5050,16 +5056,17 @@ function assignHomeIdFromConnectedManhole(homeNode) {
  */
 function findNodeAt(x, y) {
   // Look through nodes in reverse order (topmost first)
+  // Sizes divided by viewScale to match constant-screen-size rendering
+  const nodeR = NODE_RADIUS * sizeScale / viewScale;
+  const pad = 2 / viewScale;
   for (let i = nodes.length - 1; i >= 0; i--) {
     const node = nodes[i];
     if (node._hidden) continue;
 
     // Check for drainage nodes (rectangular hit detection)
     if (node.nodeType === 'Drainage' || node.nodeType === 'קולטן') {
-      const rectWidth = NODE_RADIUS * sizeScale * 1.8;
-      const rectHeight = NODE_RADIUS * sizeScale * 1.3;
-      const halfWidth = rectWidth / 2 + 2;
-      const halfHeight = rectHeight / 2 + 2;
+      const halfWidth = nodeR * 1.8 / 2 + pad;
+      const halfHeight = nodeR * 1.3 / 2 + pad;
 
       if (Math.abs(x - node.x) <= halfWidth && Math.abs(y - node.y) <= halfHeight) {
         return node;
@@ -5068,7 +5075,7 @@ function findNodeAt(x, y) {
       // Circular hit detection for other nodes
       const dx = x - node.x;
       const dy = y - node.y;
-      if (Math.sqrt(dx * dx + dy * dy) <= (NODE_RADIUS * sizeScale) + 2) {
+      if (Math.sqrt(dx * dx + dy * dy) <= nodeR + pad) {
         return node;
       }
     }
@@ -5081,17 +5088,18 @@ function findNodeAt(x, y) {
  * Falls back to normal hit if extraRadius is falsy.
  */
 function findNodeAtWithExpansion(x, y, extraRadius) {
-  const extra = typeof extraRadius === 'number' ? extraRadius : 0;
+  // Sizes divided by viewScale to match constant-screen-size rendering
+  const nodeR = NODE_RADIUS * sizeScale / viewScale;
+  const extra = typeof extraRadius === 'number' ? extraRadius / viewScale : 0;
+  const pad = 2 / viewScale;
   for (let i = nodes.length - 1; i >= 0; i--) {
     const node = nodes[i];
     if (node._hidden) continue;
 
     // Check for drainage nodes (rectangular hit detection)
     if (node.nodeType === 'Drainage' || node.nodeType === 'קולטן') {
-      const rectWidth = NODE_RADIUS * sizeScale * 1.8;
-      const rectHeight = NODE_RADIUS * sizeScale * 1.3;
-      const halfWidth = rectWidth / 2 + 2 + extra;
-      const halfHeight = rectHeight / 2 + 2 + extra;
+      const halfWidth = nodeR * 1.8 / 2 + pad + extra;
+      const halfHeight = nodeR * 1.3 / 2 + pad + extra;
 
       if (Math.abs(x - node.x) <= halfWidth && Math.abs(y - node.y) <= halfHeight) {
         return node;
@@ -5100,7 +5108,7 @@ function findNodeAtWithExpansion(x, y, extraRadius) {
       // Circular hit detection for other nodes
       const dx = x - node.x;
       const dy = y - node.y;
-      if (Math.sqrt(dx * dx + dy * dy) <= (NODE_RADIUS * sizeScale) + 2 + extra) {
+      if (Math.sqrt(dx * dx + dy * dy) <= nodeR + pad + extra) {
         return node;
       }
     }
@@ -5116,7 +5124,8 @@ function findNodeAtWithExpansion(x, y, extraRadius) {
  */
 function findEdgeAt(x, y, threshold) {
   let closest = null;
-  let minDist = (typeof threshold === 'number') ? threshold : 8; // threshold in pixels
+  const rawThreshold = (typeof threshold === 'number') ? threshold : 8;
+  let minDist = rawThreshold / viewScale; // scale threshold to match constant-size rendering
   edges.forEach((edge) => {
     let tailX, tailY, headX, headY;
     
@@ -5191,7 +5200,7 @@ function pointerDown(x, y) {
       }
       // Project-canvas: check background sketches for nodes/edges before treating as empty space
       if (window.__projectCanvas?.isProjectCanvasMode()) {
-        const bgNode = window.__projectCanvas.findNodeInBackground(world.x, world.y, sizeScale);
+        const bgNode = window.__projectCanvas.findNodeInBackground(world.x, world.y, sizeScale, viewScale);
         if (bgNode) {
           window.__projectCanvas.switchActiveSketch(bgNode.sketchId);
           const switched = findNodeAt(world.x, world.y);
@@ -5203,7 +5212,7 @@ function pointerDown(x, y) {
             return;
           }
         }
-        const bgEdge = window.__projectCanvas.findEdgeInBackground(world.x, world.y);
+        const bgEdge = window.__projectCanvas.findEdgeInBackground(world.x, world.y, viewScale);
         if (bgEdge) {
           window.__projectCanvas.switchActiveSketch(bgEdge.sketchId);
           const switchedEdge = findEdgeAt(world.x, world.y);
@@ -5307,7 +5316,7 @@ function pointerDown(x, y) {
   // Project-canvas auto-switch: if clicking empty space in active sketch, check background sketches
   if (!node && window.__projectCanvas?.isProjectCanvasMode() &&
       (currentMode === 'node' || currentMode === 'home' || currentMode === 'drainage')) {
-    const bgHit = window.__projectCanvas.findNodeInBackground(world.x, world.y, sizeScale);
+    const bgHit = window.__projectCanvas.findNodeInBackground(world.x, world.y, sizeScale, viewScale);
     if (bgHit) {
       window.__projectCanvas.switchActiveSketch(bgHit.sketchId);
       // Re-find in the now-active sketch

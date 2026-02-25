@@ -65,50 +65,50 @@ export function drawInfiniteGrid(ctx, viewTranslate, viewScale, canvas, viewStre
  */
 export function drawDanglingEdge(ctx, edge, tailNode, options) {
   if (!tailNode) return;
-  
-  const { colors, selectedEdge, danglingEndpoint } = options;
+
+  const { colors, selectedEdge, danglingEndpoint, viewScale = 1 } = options;
   const isSelected = edge === selectedEdge;
-  
+
   // Default dangling endpoint position (offset from tail)
   const endX = danglingEndpoint?.x ?? (tailNode.x + 80);
   const endY = danglingEndpoint?.y ?? (tailNode.y - 40);
-  
+
   ctx.save();
-  
+
   // Use a purple/violet color for dangling edges to make them stand out
-  const danglingColor = isSelected 
+  const danglingColor = isSelected
     ? (colors?.edge?.selected || '#a855f7')
     : '#a855f7'; // purple-500
-  
+
   ctx.strokeStyle = danglingColor;
-  ctx.lineWidth = 2;
-  ctx.setLineDash([6, 4]); // Dashed line for dangling edges
-  
+  ctx.lineWidth = 2 / viewScale;
+  ctx.setLineDash([6 / viewScale, 4 / viewScale]); // Dashed line for dangling edges
+
   // Draw the line from tail to floating endpoint
   ctx.beginPath();
   ctx.moveTo(tailNode.x, tailNode.y);
   ctx.lineTo(endX, endY);
   ctx.stroke();
-  
+
   ctx.setLineDash([]);
-  
+
   // Draw a question mark circle at the dangling end
-  const circleRadius = 12;
+  const circleRadius = 12 / viewScale;
   ctx.beginPath();
   ctx.arc(endX, endY, circleRadius, 0, Math.PI * 2);
   ctx.fillStyle = isSelected ? '#c084fc' : '#e9d5ff'; // purple-400 / purple-200
   ctx.fill();
   ctx.strokeStyle = danglingColor;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2 / viewScale;
   ctx.stroke();
-  
+
   // Draw question mark inside
   ctx.fillStyle = '#6b21a8'; // purple-800
-  ctx.font = 'bold 14px sans-serif';
+  ctx.font = `bold ${14 / viewScale}px sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('?', endX, endY + 1);
-  
+  ctx.fillText('?', endX, endY + 1 / viewScale);
+
   ctx.restore();
 }
 
@@ -118,20 +118,20 @@ export function drawDanglingEdge(ctx, edge, tailNode, options) {
  */
 export function drawEdge(ctx, edge, tailNode, headNode, options) {
   if (!tailNode || !headNode) return;
-  const { color, selectedColor, edgeTypeColors, highlightedHalfEdge, colors } = options;
+  const { color, selectedColor, edgeTypeColors, highlightedHalfEdge, colors, viewScale = 1 } = options;
   const x1 = tailNode.x, y1 = tailNode.y, x2 = headNode.x, y2 = headNode.y;
   ctx.save();
   const resolvedColor = color || (edge === options.selectedEdge
     ? (selectedColor || (colors?.edge?.selected || '#7c3aed'))
     : (edgeTypeColors?.[edge.edge_type] || '#555'));
   ctx.strokeStyle = resolvedColor;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2 / viewScale;
   ctx.beginPath();
   ctx.moveTo(x1, y1);
   ctx.lineTo(x2, y2);
   ctx.stroke();
   const angle = Math.atan2(y2 - y1, x2 - x1);
-  const arrowLength = 10;
+  const arrowLength = 10 / viewScale;
   ctx.beginPath();
   ctx.moveTo(x2, y2);
   ctx.lineTo(
@@ -156,7 +156,7 @@ export function drawEdge(ctx, edge, tailNode, headNode, options) {
     const ey = y1 + dy * ratioEnd;
     ctx.save();
     ctx.strokeStyle = (colors?.edge?.selected || '#7c3aed');
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 5 / viewScale;
     ctx.beginPath();
     ctx.moveTo(sx, sy);
     ctx.lineTo(ex, ey);
@@ -170,7 +170,7 @@ export function drawEdge(ctx, edge, tailNode, headNode, options) {
  * Draw a node circle and label. Color selection is passed via options.
  */
 export function drawNode(ctx, node, options) {
-  const { radius, colors, selectedNode } = options;
+  const { radius, colors, selectedNode, viewScale = 1 } = options;
   ctx.save();
   let fillColor;
   if (node === selectedNode) {
@@ -199,7 +199,7 @@ export function drawNode(ctx, node, options) {
     ctx.fillStyle = fillColor;
     ctx.fill();
     ctx.strokeStyle = colors.node.stroke;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2 / viewScale;
     ctx.stroke();
   } else {
     // Draw other nodes as circles
@@ -208,7 +208,7 @@ export function drawNode(ctx, node, options) {
     ctx.fillStyle = fillColor;
     ctx.fill();
     ctx.strokeStyle = colors.node.stroke;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2 / viewScale;
     ctx.stroke();
   }
   ctx.restore();

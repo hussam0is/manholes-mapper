@@ -17,6 +17,7 @@ const BG_ALPHA = 0.35;
  * @param {Array<object>} sketches - array of sketch data objects
  * @param {object} opts
  * @param {number} opts.sizeScale
+ * @param {number} opts.viewScale
  * @param {number} opts.viewStretchX
  * @param {number} opts.viewStretchY
  * @param {number} opts.visMinX - culling bounds
@@ -29,6 +30,7 @@ export function drawBackgroundSketches(ctx, sketches, opts) {
 
   const {
     sizeScale = 1,
+    viewScale = 1,
     viewStretchX = 1,
     viewStretchY = 1,
     visMinX = -Infinity,
@@ -37,7 +39,7 @@ export function drawBackgroundSketches(ctx, sketches, opts) {
     visMaxY = Infinity,
   } = opts;
 
-  const nodeRadius = NODE_RADIUS * sizeScale;
+  const nodeRadius = NODE_RADIUS * sizeScale / viewScale;
 
   ctx.save();
   ctx.globalAlpha = BG_ALPHA;
@@ -91,14 +93,14 @@ export function drawBackgroundSketches(ctx, sketches, opts) {
 
       ctx.beginPath();
       ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = 2 * sizeScale;
+      ctx.lineWidth = 2 / viewScale;
       ctx.moveTo(x1, y1);
       ctx.lineTo(x2, y2);
       ctx.stroke();
 
       // Arrow head
       const angle = Math.atan2(y2 - y1, x2 - x1);
-      const arrowLen = 8 * sizeScale;
+      const arrowLen = 8 / viewScale;
       ctx.beginPath();
       ctx.fillStyle = strokeColor;
       ctx.moveTo(x2, y2);
@@ -126,14 +128,14 @@ export function drawBackgroundSketches(ctx, sketches, opts) {
         const h = nodeRadius * 1.3;
         ctx.fillStyle = COLORS.node.fillDrainageComplete || '#0ea5e9';
         ctx.strokeStyle = COLORS.node.stroke;
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 1.5 / viewScale;
         ctx.fillRect(sx - w / 2, sy - h / 2, w, h);
         ctx.strokeRect(sx - w / 2, sy - h / 2, w, h);
       } else if (isHome) {
         // Draw home as simple triangle-topped house shape
         ctx.fillStyle = COLORS.node.houseBody || '#d7ccc8';
         ctx.strokeStyle = COLORS.node.stroke;
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 1.5 / viewScale;
         const r = nodeRadius * 0.9;
         ctx.beginPath();
         ctx.moveTo(sx - r, sy + r * 0.5);
@@ -151,13 +153,13 @@ export function drawBackgroundSketches(ctx, sketches, opts) {
         ctx.fillStyle = COLORS.node.fillDefault;
         ctx.fill();
         ctx.strokeStyle = COLORS.node.stroke;
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 1.5 / viewScale;
         ctx.stroke();
       }
 
       // Draw node ID label (small, no collision avoidance)
       if (node.id != null) {
-        const fontSize = Math.round(11 * sizeScale);
+        const fontSize = Math.round(11 * sizeScale / viewScale);
         ctx.fillStyle = COLORS.node.label;
         ctx.font = `${fontSize}px Arial`;
         ctx.textAlign = 'center';

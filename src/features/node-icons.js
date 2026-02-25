@@ -13,29 +13,29 @@
  * @param {boolean} isSelected - Whether the node is selected
  * @param {string} fillColor - Fill color for the node
  */
-export function drawManholeIcon(ctx, x, y, radius, colors, isSelected, fillColor) {
+export function drawManholeIcon(ctx, x, y, radius, colors, isSelected, fillColor, viewScale = 1) {
   ctx.save();
-  
+
   // Draw outer circle
   ctx.beginPath();
   ctx.arc(x, y, radius, 0, Math.PI * 2);
   ctx.fillStyle = fillColor;
   ctx.fill();
   ctx.strokeStyle = colors.node.stroke;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2 / viewScale;
   ctx.stroke();
-  
+
   // Draw inner detail - smaller circle
   const innerRadius = radius * 0.6;
   ctx.beginPath();
   ctx.arc(x, y, innerRadius, 0, Math.PI * 2);
   ctx.strokeStyle = isSelected ? '#ffffff' : 'rgba(0, 0, 0, 0.2)';
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = 1.5 / viewScale;
   ctx.stroke();
-  
+
   // Draw crosshatch pattern inside
   ctx.strokeStyle = isSelected ? '#ffffff' : 'rgba(0, 0, 0, 0.15)';
-  ctx.lineWidth = 1;
+  ctx.lineWidth = 1 / viewScale;
   
   // Horizontal line
   ctx.beginPath();
@@ -62,19 +62,19 @@ export function drawManholeIcon(ctx, x, y, radius, colors, isSelected, fillColor
  * @param {boolean} isSelected - Whether the node is selected
  * @param {string} fillColor - Fill color for the node
  */
-export function drawDrainageIcon(ctx, x, y, radius, colors, isSelected, fillColor) {
+export function drawDrainageIcon(ctx, x, y, radius, colors, isSelected, fillColor, viewScale = 1) {
   ctx.save();
-  
+
   const rectWidth = radius * 1.8;
   const rectHeight = radius * 1.3;
-  
+
   // Draw rectangle
   ctx.beginPath();
   ctx.rect(x - rectWidth / 2, y - rectHeight / 2, rectWidth, rectHeight);
   ctx.fillStyle = fillColor;
   ctx.fill();
   ctx.strokeStyle = colors.node.stroke;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2 / viewScale;
   ctx.stroke();
   
   // Draw water droplet inside
@@ -112,26 +112,26 @@ export function drawDrainageIcon(ctx, x, y, radius, colors, isSelected, fillColo
  * @param {boolean} isSelected - Whether the node is selected
  * @param {string} fillColor - Fill color for the node
  */
-export function drawCoveredIcon(ctx, x, y, radius, colors, isSelected, fillColor) {
+export function drawCoveredIcon(ctx, x, y, radius, colors, isSelected, fillColor, viewScale = 1) {
   ctx.save();
-  
+
   // Draw outer circle
   ctx.beginPath();
   ctx.arc(x, y, radius, 0, Math.PI * 2);
   ctx.fillStyle = fillColor;
   ctx.fill();
   ctx.strokeStyle = colors.node.stroke;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2 / viewScale;
   ctx.stroke();
-  
+
   // Clip to circle for stripes
   ctx.beginPath();
-  ctx.arc(x, y, radius - 2, 0, Math.PI * 2);
+  ctx.arc(x, y, radius - 2 / viewScale, 0, Math.PI * 2);
   ctx.clip();
-  
+
   // Draw diagonal stripes
   ctx.strokeStyle = isSelected ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.3)';
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2 / viewScale;
   
   const stripeCount = 6;
   const spacing = (radius * 2) / stripeCount;
@@ -157,30 +157,30 @@ export function drawCoveredIcon(ctx, x, y, radius, colors, isSelected, fillColor
  * @param {boolean} isSelected - Whether the node is selected
  * @param {string} fillColor - Fill color for the node
  */
-export function drawHomeIcon(ctx, x, y, radius, colors, isSelected, fillColor) {
+export function drawHomeIcon(ctx, x, y, radius, colors, isSelected, fillColor, viewScale = 1) {
   ctx.save();
-  
+
   // First draw the circle background
   ctx.beginPath();
   ctx.arc(x, y, radius, 0, Math.PI * 2);
   ctx.fillStyle = fillColor;
   ctx.fill();
   ctx.strokeStyle = colors.node.stroke;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2 / viewScale;
   ctx.stroke();
-  
+
   // Now draw the house icon inside
   const houseSize = radius * 0.7;
   const houseWidth = houseSize * 1.2;
   const houseHeight = houseSize;
   const roofHeight = houseSize * 0.5;
-  
+
   const baseY = y + houseHeight * 0.3;
   const roofTopY = baseY - houseHeight - roofHeight * 0.3;
-  
+
   ctx.fillStyle = isSelected ? '#ffffff' : 'rgba(0, 0, 0, 0.6)';
   ctx.strokeStyle = isSelected ? '#ffffff' : 'rgba(0, 0, 0, 0.6)';
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = 1.5 / viewScale;
   
   // Draw roof (triangle)
   ctx.beginPath();
@@ -223,17 +223,17 @@ export function drawHomeIcon(ctx, x, y, radius, colors, isSelected, fillColor) {
  * @param {boolean} isSelected - Whether the node is selected
  * @param {string} fillColor - Fill color for the node
  */
-export function drawForLaterIcon(ctx, x, y, radius, colors, isSelected, fillColor) {
+export function drawForLaterIcon(ctx, x, y, radius, colors, isSelected, fillColor, viewScale = 1) {
   ctx.save();
-  
+
   // Draw outer dashed circle
   ctx.beginPath();
   ctx.arc(x, y, radius, 0, Math.PI * 2);
   ctx.fillStyle = fillColor;
   ctx.fill();
   ctx.strokeStyle = colors.node.forLaterStroke || colors.node.stroke;
-  ctx.lineWidth = 2;
-  ctx.setLineDash([4, 3]);
+  ctx.lineWidth = 2 / viewScale;
+  ctx.setLineDash([4 / viewScale, 3 / viewScale]);
   ctx.stroke();
   ctx.setLineDash([]);
   
@@ -257,21 +257,21 @@ export function drawForLaterIcon(ctx, x, y, radius, colors, isSelected, fillColo
  * @param {number} radius - Node radius
  * @param {boolean} hasCoordinates - Whether the node has coordinates
  */
-export function drawCoordinateStatusIndicator(ctx, x, y, radius, hasCoordinates) {
+export function drawCoordinateStatusIndicator(ctx, x, y, radius, hasCoordinates, viewScale = 1) {
   ctx.save();
-  
+
   // Position at top-left of node
   const indicatorSize = radius * 0.45;
   const offsetX = -radius * 0.85;
   const offsetY = -radius * 0.85;
   const indicatorX = x + offsetX;
   const indicatorY = y + offsetY;
-  
+
   if (hasCoordinates) {
     // Green square with white checkmark
     ctx.fillStyle = '#16a34a'; // green-600
     ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1.5 / viewScale;
     
     // Draw rounded square
     const halfSize = indicatorSize / 2;
@@ -289,7 +289,7 @@ export function drawCoordinateStatusIndicator(ctx, x, y, radius, hasCoordinates)
     
     // Draw checkmark (✓)
     ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1.8;
+    ctx.lineWidth = 1.8 / viewScale;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.beginPath();
@@ -303,7 +303,7 @@ export function drawCoordinateStatusIndicator(ctx, x, y, radius, hasCoordinates)
     // Yellow circle with "!" sign
     ctx.fillStyle = '#eab308'; // yellow-500
     ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1.5 / viewScale;
     
     // Draw circle
     ctx.beginPath();
@@ -335,8 +335,8 @@ export function drawCoordinateStatusIndicator(ctx, x, y, radius, hasCoordinates)
  */
 export function drawNodeIcon(ctx, node, radius, colors, selectedNode, options = {}) {
   const isSelected = node === selectedNode;
-  const { showCoordinateStatus = false, coordinatesMap = null } = options;
-  
+  const { showCoordinateStatus = false, coordinatesMap = null, viewScale = 1 } = options;
+
   // Determine fill color based on node state
   let fillColor;
   if (isSelected) {
@@ -361,18 +361,18 @@ export function drawNodeIcon(ctx, node, radius, colors, selectedNode, options = 
   
   // Dispatch to appropriate icon drawer
   if (node.nodeType === 'ForLater' || node.nodeType === 'למדידה מאוחרת') {
-    drawForLaterIcon(ctx, node.x, node.y, radius, colors, isSelected, fillColor);
+    drawForLaterIcon(ctx, node.x, node.y, radius, colors, isSelected, fillColor, viewScale);
   } else if (node.nodeType === 'Home') {
-    drawHomeIcon(ctx, node.x, node.y, radius, colors, isSelected, fillColor);
+    drawHomeIcon(ctx, node.x, node.y, radius, colors, isSelected, fillColor, viewScale);
   } else if (node.nodeType === 'Drainage' || node.nodeType === 'קולטן') {
-    drawDrainageIcon(ctx, node.x, node.y, radius, colors, isSelected, fillColor);
+    drawDrainageIcon(ctx, node.x, node.y, radius, colors, isSelected, fillColor, viewScale);
   } else if (node.nodeType === 'Covered' || node.nodeType === 'שוחה מכוסה') {
-    drawCoveredIcon(ctx, node.x, node.y, radius, colors, isSelected, fillColor);
+    drawCoveredIcon(ctx, node.x, node.y, radius, colors, isSelected, fillColor, viewScale);
   } else {
     // Default manhole icon
-    drawManholeIcon(ctx, node.x, node.y, radius, colors, isSelected, fillColor);
+    drawManholeIcon(ctx, node.x, node.y, radius, colors, isSelected, fillColor, viewScale);
   }
-  
+
   // Draw coordinate status indicator if enabled
   if (showCoordinateStatus) {
     // Check if node actually has survey coordinates (not just the flag)
@@ -382,7 +382,7 @@ export function drawNodeIcon(ctx, node, radius, colors, selectedNode, options = 
     } else if (coordinatesMap) {
       hasCoordinates = coordinatesMap.has(String(node.id));
     }
-    drawCoordinateStatusIndicator(ctx, node.x, node.y, radius, hasCoordinates);
+    drawCoordinateStatusIndicator(ctx, node.x, node.y, radius, hasCoordinates, viewScale);
   }
 }
 
