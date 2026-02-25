@@ -9119,9 +9119,9 @@ function handleGnssPointCapture(captureData) {
     hdop: captureData.position.hdop
   });
   
-  // Re-apply coordinates to update node positions
-  applyCoordinatesIfEnabled();
-  
+  // Re-apply coordinates to update node positions (keep current view — don't recenter)
+  applyCoordinatesIfEnabled({ recenter: false });
+
   // Select the node
   selectedNode = node;
   selectedEdge = null;
@@ -9221,8 +9221,8 @@ function gpsQuickCapture() {
     hdop: position.hdop
   });
 
-  // 9. Position node correctly if coordinate mode is on
-  applyCoordinatesIfEnabled();
+  // 9. Position node correctly if coordinate mode is on (keep current view — don't recenter)
+  applyCoordinatesIfEnabled({ recenter: false });
 
   // 10. Vibrate based on fix quality
   vibrateForFixQuality(position.fixQuality);
