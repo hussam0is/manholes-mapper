@@ -79,11 +79,20 @@ for (const sketch of sketches) {
 
   const dateMatch = sketch.name?.match(/(\d{4}-\d{2}-\d{2})/);
   const ownCords = dateMatch ? cordsByDate.get(dateMatch[1]) : null;
-  if (!ownCords) { console.log(`⚠ ${sketch.name}: no own-date cords — skipping`); continue; }
 
   const nodeMap = new Map(nodes.map(n => [String(n.id), n]));
-  const anchorIds    = new Set(nodes.filter(n => ownCords.has(String(n.id)) && n.surveyX != null).map(n => String(n.id)));
-  const displacedIds = new Set(nodes.filter(n => !ownCords.has(String(n.id))).map(n => String(n.id)));
+
+  let anchorIds, displacedIds;
+  if (ownCords) {
+    // Primary: nodes in own-date cords file with surveyX are anchors
+    anchorIds    = new Set(nodes.filter(n => ownCords.has(String(n.id)) && n.surveyX != null).map(n => String(n.id)));
+    displacedIds = new Set(nodes.filter(n => !ownCords.has(String(n.id))).map(n => String(n.id)));
+  } else {
+    // Fallback: no own-date cords file — use surveyX presence as anchor criterion
+    console.log(`  (no own-date cords for ${sketch.name} — using surveyX presence as anchors)`);
+    anchorIds    = new Set(nodes.filter(n => n.surveyX != null).map(n => String(n.id)));
+    displacedIds = new Set(nodes.filter(n => n.surveyX == null).map(n => String(n.id)));
+  }
 
   if (displacedIds.size === 0) { console.log(`✓ ${sketch.name}: no displaced nodes`); continue; }
 
