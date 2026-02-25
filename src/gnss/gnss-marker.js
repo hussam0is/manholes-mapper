@@ -214,21 +214,131 @@ export function drawGnssMarker(ctx, position, referencePoint, coordinateScale, v
     ctx.fillText('STALE', screenX, screenY - 18);
   }
 
-  // --- 7. Precision label below the marker ---
-  const fixLabels = { 0: 'No Fix', 1: 'GPS', 2: 'DGPS', 4: 'RTK Fixed', 5: 'RTK Float' };
-  const label = fixLabels[fixQuality] || 'GPS';
-  ctx.font = `bold 11px Inter, Arial, sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  // White outline for readability over map tiles
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 3;
-  ctx.lineJoin = 'round';
-  ctx.strokeText(label, screenX, screenY + 16);
-  ctx.fillStyle = markerColor;
-  ctx.fillText(label, screenX, screenY + 16);
+  // --- 7. Live precision info card below the marker ---
+  drawPrecisionCard(ctx, screenX, screenY + 18, position, posItm, markerColor, fixQuality, ease);
 
   ctx.restore();
+}
+
+/**
+ * Draw a compact precision info card below the marker.
+ * Shows fix type, accuracy, HDOP, altitude, and ITM coordinates — all live-updated.
+ */
+function drawPrecisionCard(ctx, cx, topY, position, posItm, markerColor, fixQuality, ease) {
+  const font = 'Inter, Arial, sans-serif';
+  const isRTL = document.documentElement.dir === 'rtl';
+
+  // Build info lines
+  const fixLabels = { 0: 'No Fix', 1: 'GPS', 2: 'DGPS', 4: 'RTK Fixed', 5: 'RTK Float' };
+  const fixLabel = fixLabels[fixQuality] || 'GPS';
+
+  const accVal = position.accuracy;
+  const accText = accVal != null
+    ? (accVal < 1 ? `±${accVal.toFixed(3)}m` : `±${accVal.toFixed(1)}m`)
+    : '';
+
+  const hdopVal = position.hdop;
+  const hdopText = hdopVal != null ? `HDOP ${hdopVal.toFixed(1)}` : '';
+
+  const altText = position.alt != null ? `H ${position.alt.toFixed(1)}m` : '';
+
+  // ITM coordinates (easting / northing)
+  const itmE = posItm ? posItm.x.toFixed(2) : '';
+  const itmN = posItm ? posItm.y.toFixed(2) : '';
+
+  // Layout constants
+  const padding = 6;
+  const lineH = 15;
+  const smallFont = `10px ${font}`;
+  const boldFont = `bold 11px ${font}`;
+  const cardAlpha = Math.round(ease * 240); // Fade in with entrance
+  if (cardAlpha < 10) return;
+
+  // Measure widths to size the card
+  ctx.font = boldFont;
+  const line1 = fixLabel + (accText ? `  ${accText}` : '');
+  const w1 = ctx.measureText(line1).width;
+
+  ctx.font = smallFont;
+  const line2Parts = [hdopText, altText].filter(Boolean);
+  const line2 = line2Parts.join('   ');
+  const w2 = ctx.measureText(line2).width;
+
+  const line3 = itmE && itmN ? `E ${itmE}  N ${itmN}` : '';
+  const w3 = line3 ? ctx.measureText(line3).width : 0;
+
+  const lineCount = 1 + (line2 ? 1 : 0) + (line3 ? 1 : 0);
+  const cardW = Math.max(w1, w2, w3) + padding * 2;
+  const cardH = lineCount * lineH + padding * 2;
+  const cardX = cx - cardW / 2;
+  const cardY = topY + 2;
+  const radius = 6;
+
+  // Card background (semi-transparent white, fades in)
+  const bgAlpha = (cardAlpha / 255).toFixed(2);
+  ctx.fillStyle = `rgba(255, 255, 255, ${(0.92 * bgAlpha).toFixed(2)})`;
+  ctx.strokeStyle = `${markerColor}40`;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cardX + radius, cardY);
+  ctx.lineTo(cardX + cardW - radius, cardY);
+  ctx.quadraticCurveTo(cardX + cardW, cardY, cardX + cardW, cardY + radius);
+  ctx.lineTo(cardX + cardW, cardY + cardH - radius);
+  ctx.quadraticCurveTo(cardX + cardW, cardY + cardH, cardX + cardW - radius, cardY + cardH);
+  ctx.lineTo(cardX + radius, cardY + cardH);
+  ctx.quadraticCurveTo(cardX, cardY + cardH, cardX, cardY + cardH - radius);
+  ctx.lineTo(cardX, cardY + radius);
+  ctx.quadraticCurveTo(cardX, cardY, cardX + radius, cardY);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Small colored accent bar at top
+  ctx.fillStyle = markerColor;
+  ctx.beginPath();
+  ctx.moveTo(cardX + radius, cardY);
+  ctx.lineTo(cardX + cardW - radius, cardY);
+  ctx.quadraticCurveTo(cardX + cardW, cardY, cardX + cardW, cardY + radius);
+  ctx.lineTo(cardX + cardW, cardY + 2.5);
+  ctx.lineTo(cardX, cardY + 2.5);
+  ctx.lineTo(cardX, cardY + radius);
+  ctx.quadraticCurveTo(cardX, cardY, cardX + radius, cardY);
+  ctx.closePath();
+  ctx.fill();
+
+  // Text rendering
+  let ty = cardY + padding + 3; // below accent bar
+  const textX = isRTL ? cardX + cardW - padding : cardX + padding;
+  ctx.textAlign = isRTL ? 'right' : 'left';
+  ctx.textBaseline = 'top';
+
+  // Line 1: Fix type + accuracy (bold, colored)
+  ctx.font = boldFont;
+  ctx.fillStyle = markerColor;
+  ctx.fillText(fixLabel, textX, ty);
+  if (accText) {
+    const fixW = ctx.measureText(fixLabel + '  ').width;
+    ctx.font = `bold 11px ${font}`;
+    ctx.fillStyle = '#374151'; // gray-700
+    const accX = isRTL ? textX - fixW : textX + fixW;
+    ctx.fillText(accText, accX, ty);
+  }
+  ty += lineH;
+
+  // Line 2: HDOP + altitude (small, gray)
+  if (line2) {
+    ctx.font = smallFont;
+    ctx.fillStyle = '#6b7280'; // gray-500
+    ctx.fillText(line2, textX, ty);
+    ty += lineH;
+  }
+
+  // Line 3: ITM coordinates (small, gray)
+  if (line3) {
+    ctx.font = smallFont;
+    ctx.fillStyle = '#6b7280';
+    ctx.fillText(line3, textX, ty);
+  }
 }
 
 /**
