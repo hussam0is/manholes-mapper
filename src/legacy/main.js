@@ -77,7 +77,8 @@ import {
   gnssConnection,
   startBrowserLocationAdapter,
   stopBrowserLocationAdapter,
-  isBrowserLocationActive
+  isBrowserLocationActive,
+  FIX_COLORS
 } from '../gnss/index.js';
 import { 
   getMapReferencePoint,
@@ -7686,15 +7687,24 @@ if (gpsQuickCaptureBtn) {
 }
 
 /**
- * Update GPS Quick Capture button enabled/disabled state and RTK pulse
+ * Update Take Measure button: dynamic color based on fix quality, pulse animation
  */
 function updateGpsQuickCaptureBtn() {
   if (!gpsQuickCaptureBtn) return;
   const pos = gnssState.getPosition();
   const hasValidFix = pos && pos.isValid;
   gpsQuickCaptureBtn.disabled = !hasValidFix;
-  const isRtkFixed = hasValidFix && pos.fixQuality === 4;
-  gpsQuickCaptureBtn.classList.toggle('rtk-ready', isRtkFixed);
+
+  if (hasValidFix) {
+    const color = FIX_COLORS[pos.fixQuality] || FIX_COLORS[0];
+    gpsQuickCaptureBtn.style.setProperty('--fix-color', color);
+    gpsQuickCaptureBtn.classList.add('has-fix');
+    // Pulse for high-quality fixes (RTK Fixed/Float, DGPS)
+    gpsQuickCaptureBtn.classList.toggle('precision-pulse', pos.fixQuality >= 2);
+  } else {
+    gpsQuickCaptureBtn.classList.remove('has-fix', 'precision-pulse');
+    gpsQuickCaptureBtn.style.removeProperty('--fix-color');
+  }
 }
 
 // ============================================

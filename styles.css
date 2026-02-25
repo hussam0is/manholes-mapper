@@ -1272,6 +1272,7 @@ select.btn:focus-visible {
 /* My Location button */
 .my-location-btn {
   transition: all 0.2s ease;
+  position: relative;
 }
 
 .my-location-btn:hover {
@@ -1287,12 +1288,25 @@ select.btn:focus-visible {
   animation: location-pulse 1s ease-in-out infinite;
 }
 
+/* Active tracking state — colored ring around the button */
+.my-location-btn.tracking {
+  box-shadow: inset 0 0 0 2px var(--fix-color, #3b82f6);
+}
+
+.my-location-btn.tracking.has-fix .material-icons {
+  color: var(--fix-color, #3b82f6);
+}
+
+.my-location-btn.tracking.no-fix .material-icons {
+  animation: location-pulse 1.5s ease-in-out infinite;
+}
+
 @keyframes location-pulse {
-  0%, 100% { 
+  0%, 100% {
     opacity: 1;
     transform: scale(1);
   }
-  50% { 
+  50% {
     opacity: 0.5;
     transform: scale(0.9);
   }
@@ -1607,49 +1621,68 @@ canvas {
   box-shadow: var(--shadow);
 }
 
-/* GPS Quick Capture FAB — bottom-left for left-thumb field access */
-.gps-quick-capture-fab {
+/* Take Measure FAB — pill-shaped, dynamically colored by GNSS precision */
+.take-measure-fab {
   position: absolute;
   left: 12px;
   bottom: 12px;
   z-index: 16;
-  background: #16a34a;
+  background: var(--fix-color, #9ca3af);
   color: #fff;
   border: none;
-  border-radius: 50%;
-  width: 56px;
-  height: 56px;
-  padding: 0;
+  border-radius: 28px;
+  height: 48px;
+  padding: 0 16px 0 12px;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+  gap: 6px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
   cursor: pointer;
-  transition: transform 0.1s ease, opacity 0.2s ease;
+  transition: background 0.4s ease, transform 0.1s ease, box-shadow 0.4s ease;
+  font-family: Inter, Arial, sans-serif;
 }
 
-.gps-quick-capture-fab:active {
-  transform: scale(0.9);
+.take-measure-fab:active {
+  transform: scale(0.95);
 }
 
-.gps-quick-capture-fab:disabled {
+.take-measure-fab:disabled {
   background: #9ca3af;
   pointer-events: none;
   opacity: 0.6;
 }
 
-.gps-quick-capture-fab .material-icons {
-  font-size: 28px;
+.take-measure-fab .material-icons {
+  font-size: 24px;
 }
 
-/* RTK-ready pulse animation */
-.gps-quick-capture-fab.rtk-ready {
-  animation: gps-fab-pulse 2s ease-in-out infinite;
+.take-measure-fab__label {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
 }
 
-@keyframes gps-fab-pulse {
-  0%, 100% { box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3); }
-  50% { box-shadow: 0 0 0 8px rgba(22, 163, 74, 0.3), 0 3px 8px rgba(0, 0, 0, 0.3); }
+/* Precision pulse — expanding ring glow that matches fix color */
+.take-measure-fab.precision-pulse {
+  overflow: visible;
+}
+
+.take-measure-fab.precision-pulse::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 32px;
+  background: var(--fix-color, #22c55e);
+  opacity: 0;
+  z-index: -1;
+  animation: take-measure-ring 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes take-measure-ring {
+  0%, 100% { opacity: 0; transform: scale(1); }
+  50% { opacity: 0.25; transform: scale(1.08); }
 }
 
 /* Incomplete edge tracker - shows count of dangling edges */
@@ -5263,19 +5296,23 @@ select.invalid:focus {
     right: 8px;
   }
 
-  /* GPS Quick Capture FAB mobile sizing */
-  .gps-quick-capture-fab {
-    width: 48px;
-    height: 48px;
+  /* Take Measure FAB mobile sizing */
+  .take-measure-fab {
+    height: 44px;
+    padding: 0 14px 0 10px;
     left: 8px;
     bottom: 8px;
   }
 
-  .gps-quick-capture-fab .material-icons {
-    font-size: 24px;
+  .take-measure-fab .material-icons {
+    font-size: 22px;
   }
 
-  body.drawer-open .gps-quick-capture-fab {
+  .take-measure-fab__label {
+    font-size: 13px;
+  }
+
+  body.drawer-open .take-measure-fab {
     bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 8px);
   }
 

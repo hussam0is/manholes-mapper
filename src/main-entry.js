@@ -27,7 +27,9 @@ import {
   initGnssModule,
   gnssConnection,
   gnssState,
-  isBrowserLocationActive
+  isBrowserLocationActive,
+  FIX_COLORS,
+  resetMarkerEntrance
 } from './gnss/index.js';
 import {
   requestLocationPermission,
@@ -226,7 +228,9 @@ if (typeof window !== 'undefined') {
 
 /**
  * Initialize My Location button UI
- * Centers the map on the user's GPS location when clicked
+ * Activates location tracking (Live Measure) and centers on user's position.
+ * First click: enables tracking + shows marker + shows Take Measure button.
+ * Subsequent clicks: re-centers on current position.
  */
 function initMyLocationUI() {
   const myLocationBtn = document.getElementById('myLocationBtn');
@@ -237,69 +241,91 @@ function initMyLocationUI() {
     e.stopPropagation();
 
     if (!isGeolocationSupported()) {
-      if (window.showToast) {
-        window.showToast(window.t?.('location.notSupported') || 'Location not supported on this device');
+      window.showToast?.(window.t?.('location.notSupported') || 'Location not supported on this device');
+      return;
+    }
+
+    // If already tracking, just re-center
+    if (isBrowserLocationActive()) {
+      const pos = gnssState.getPosition();
+      if (pos && pos.isValid && window.centerOnGpsLocation) {
+        window.centerOnGpsLocation(pos.lat, pos.lon);
+      } else {
+        window.showToast?.(window.t?.('liveMeasure.waiting') || 'Waiting for position...');
       }
       return;
     }
 
+    // Enable Live Measure (starts browser location adapter, shows marker + Take Measure FAB)
     myLocationBtn.classList.add('loading');
-    myLocationBtn.disabled = true;
+    resetMarkerEntrance();
+
+    if (window.setLiveMeasureMode) {
+      window.setLiveMeasureMode(true);
+    }
+
+    // Brief wait for first fix, then center
+    const waitForFix = () => new Promise((resolve) => {
+      const pos = gnssState.getPosition();
+      if (pos && pos.isValid) { resolve(pos); return; }
+      let attempts = 0;
+      const handler = (p) => {
+        if (p && p.isValid) {
+          gnssState.off('position', handler);
+          resolve(p);
+        } else if (++attempts > 50) { // ~5s timeout
+          gnssState.off('position', handler);
+          resolve(null);
+        }
+      };
+      gnssState.on('position', handler);
+    });
 
     try {
-      // If Live Measure is active, use the already-streaming gnssState position
-      if (isBrowserLocationActive()) {
-        const pos = gnssState.getPosition();
-        if (pos && pos.isValid && window.centerOnGpsLocation) {
-          window.centerOnGpsLocation(pos.lat, pos.lon);
-        } else if (window.showToast) {
-          window.showToast(window.t?.('liveMeasure.waiting') || 'Waiting for position...');
-        }
+      const pos = await waitForFix();
+      if (pos && window.centerOnGpsLocation) {
+        window.centerOnGpsLocation(pos.lat, pos.lon);
       } else {
-        // One-shot position request (Live Measure not active)
-        const result = await requestLocationPermission();
-
-        if (result && result.error) {
-          if (window.showToast) {
-            switch (result.error) {
-              case 'permission_denied':
-                window.showToast(window.t?.('location.permissionDenied') || 'Location permission denied. Please enable location in your browser/app settings.');
-                break;
-              case 'position_unavailable':
-                window.showToast(window.t?.('location.positionUnavailable') || 'Location unavailable. Please check GPS is enabled.');
-                break;
-              case 'timeout':
-                window.showToast(window.t?.('location.timeout') || 'Location request timed out. Please try again.');
-                break;
-              case 'not_supported':
-                window.showToast(window.t?.('location.notSupported') || 'Location not supported on this device');
-                break;
-              default:
-                window.showToast(window.t?.('location.error') || 'Could not get location');
-            }
-          }
-        } else if (result && result.lat !== undefined) {
-          if (window.centerOnGpsLocation) {
-            window.centerOnGpsLocation(result.lat, result.lon);
-          }
-        } else if (window.showToast) {
-          window.showToast(window.t?.('location.error') || 'Could not get location');
-        }
-      }
-    } catch (error) {
-      console.error('[Location] Error getting location:', error.message);
-      if (window.showToast) {
-        window.showToast(window.t?.('location.error') || 'Error getting location');
+        window.showToast?.(window.t?.('liveMeasure.waiting') || 'Waiting for GPS signal...');
       }
     } finally {
       myLocationBtn.classList.remove('loading');
-      myLocationBtn.disabled = false;
     }
   });
+
+  // Update button appearance when GNSS state changes
+  gnssState.on('position', () => updateMyLocationBtnState(myLocationBtn));
+  gnssState.on('connection', () => updateMyLocationBtnState(myLocationBtn));
 
   // Expose GNSS connection for legacy code
   window.gnssConnection = gnssConnection;
   window.gnssState = gnssState;
+}
+
+/**
+ * Update My Location button visual state based on GNSS fix quality.
+ * Shows colored ring around button matching the current precision.
+ */
+function updateMyLocationBtnState(btn) {
+  if (!btn) return;
+  const active = isBrowserLocationActive();
+  btn.classList.toggle('tracking', active);
+
+  if (active) {
+    const pos = gnssState.getPosition();
+    if (pos && pos.isValid) {
+      const color = FIX_COLORS[pos.fixQuality] || FIX_COLORS[0];
+      btn.style.setProperty('--fix-color', color);
+      btn.classList.add('has-fix');
+      btn.classList.remove('no-fix');
+    } else {
+      btn.classList.remove('has-fix');
+      btn.classList.add('no-fix');
+    }
+  } else {
+    btn.classList.remove('has-fix', 'no-fix', 'tracking');
+    btn.style.removeProperty('--fix-color');
+  }
 }
 
 /**

@@ -443,6 +443,7 @@ export const i18n = {
     },
     gpsCapture: {
       button: 'לכידה מהירה',
+      takeMeasure: 'מדידה',
       noFix: 'אין מיקום GPS תקין',
       conversionError: 'לא ניתן להמיר מיקום GPS',
       captured: (type, id, fix) => `נלכד ${type} #${id} (${fix})`,
@@ -908,6 +909,7 @@ export const i18n = {
     },
     gpsCapture: {
       button: 'Quick Capture',
+      takeMeasure: 'Measure',
       noFix: 'No GPS fix available',
       conversionError: 'Could not convert GPS position',
       captured: (type, id, fix) => `Captured ${type} #${id} (${fix})`,

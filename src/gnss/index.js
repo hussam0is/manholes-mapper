@@ -19,7 +19,7 @@ export { gnssConnection, GNSSConnectionManager };
 export { NMEAParser, FIX_QUALITY_LABELS } from './nmea-parser.js';
 
 // Marker rendering
-export { drawGnssMarker, drawGnssStatusBadge, gnssToCanvas, FIX_COLORS } from './gnss-marker.js';
+export { drawGnssMarker, drawGnssStatusBadge, gnssToCanvas, FIX_COLORS, resetMarkerEntrance } from './gnss-marker.js';
 
 export { initPointCaptureDialog, openPointCaptureDialog, closePointCaptureDialog, isPointCaptureDialogOpen };
 
