@@ -9451,9 +9451,6 @@ button:focus-visible,
     inset-inline-end: 8px;
   }
 
-  .sketch-side-panel__km {
-    display: none;
-  }
 }
 
 /* ── Dark mode for side panel ────────────────────────────────────────── */
