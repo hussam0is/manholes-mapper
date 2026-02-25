@@ -4596,7 +4596,7 @@ function renderDetails() {
       `;
     }
 
-    // Build per-connected-edge inputs: measurement (incoming/outgoing) | material, then diameter
+    // Build per-connected-edge inputs: all measurement details
     try {
       const connectedEdges = edges.filter((e) => String(e.tail) === String(node.id) || String(e.head) === String(node.id));
       if (connectedEdges.length > 0) {
@@ -4611,35 +4611,114 @@ function renderDetails() {
           const idx = diameterOptions.findIndex((d) => String(d.code) === String(code));
           return idx >= 0 ? (idx + 1) : 0;
         };
+        // Edge type options
+        const ceEdgeTypeOptions = (adminConfig.edges?.options?.edge_type ?? EDGE_TYPE_OPTIONS)
+          .filter(o => (o.enabled !== false));
+        const ceSortedEdgeTypeOptions = getSortedOptions('edges', 'edge_type', ceEdgeTypeOptions);
+        // Engineering status options
+        const ceEngineeringOptions = (adminConfig.edges?.options?.engineering_status ?? EDGE_ENGINEERING_STATUS);
+        const ceSortedEngineeringOptions = getSortedOptions('edges', 'engineering_status', ceEngineeringOptions);
+        // Fall position options
+        const ceFallPositionOptions = (adminConfig.edges?.options?.fall_position || [{code:0,label:'פנימי'},{code:1,label:'חיצוני'}])
+          .filter(o => (o.enabled !== false));
+        const ceSortedFallPositionOptions = getSortedOptions('edges', 'fall_position', ceFallPositionOptions);
+
         const connectedLinesText = (typeof isRTL === 'function' && isRTL(currentLang)) ? 'קווים מחוברים' : 'Connected lines';
-        let html = `<div class=\"details-section\"><div class=\"details-section-title\">${connectedLinesText}</div><div class=\"details-grid two-col connected-lines-grid\">`;
-        connectedEdges.forEach((e) => {
+        let html = `<div class="details-section"><div class="details-section-title">${connectedLinesText}</div>`;
+        connectedEdges.forEach((e, ceIdx) => {
           const isTail = String(e.tail) === String(node.id);
+          const otherNodeId = isTail ? e.head : e.tail;
           const measureLabel = isTail ? t('labels.tailMeasure') : t('labels.headMeasure');
           const inputId = `edgeMeasure_${e.id}_${isTail ? 'tail' : 'head'}`;
           const matId = `edgeMaterial_${e.id}`;
           const diamSelectId = `edgeDiameterSelect_${e.id}`;
+          const edgeTypeId = `edgeType_${e.id}`;
+          const engStatusId = `edgeEngStatus_${e.id}`;
+          const fallDepthId = `edgeFallDepth_${e.id}`;
+          const fallPosId = `edgeFallPosition_${e.id}`;
           const materialOptions = edgeMaterialOptionLabels.map((m) => `<option value="${m}" ${e.material === m ? 'selected' : ''}>${m}</option>`).join('');
           const currentDiameterIndex = diameterIndexFromCode(e.line_diameter);
+          const edgeTypeOptionsHtml = ceSortedEdgeTypeOptions.map(opt => {
+            const et = opt.label || opt;
+            return `<option value="${et}" ${e.edge_type === et ? 'selected' : ''}>${et}</option>`;
+          }).join('');
+          const engStatusOptionsHtml = ceSortedEngineeringOptions.map(({code, label}) =>
+            `<option value="${code}" ${Number(e.engineeringStatus)===Number(code)?'selected':''}>${label}</option>`
+          ).join('');
+          const fallPosOptionsHtml = ceSortedFallPositionOptions.map(({code, label}) =>
+            `<option value="${String(code)}" ${Number(e.fall_position)===Number(code)?'selected':''}>${label}</option>`
+          ).join('');
+          if (ceIdx > 0) html += `<hr class="connected-edge-divider" />`;
+          html += `<div class="connected-edge-header">${isRTL(currentLang) ? '←' : '→'} ${escapeHtml(String(otherNodeId))}</div>`;
+          html += `<div class="details-grid two-col connected-lines-grid">`;
+          // Row 1: measurement + edge type
           html += `
             <div class="field">
               <label for="${inputId}">${measureLabel}</label>
               <input id="${inputId}" type="text" inputmode="decimal" pattern="[0-9]*\\.?[0-9]*" value="${isTail ? (e.tail_measurement || '') : (e.head_measurement || '')}" placeholder="${t('labels.optional')}" dir="auto" />
-            </div>
+            </div>`;
+          if (adminConfig.edges.include.edge_type) {
+            html += `
+            <div class="field">
+              <label for="${edgeTypeId}">${t('labels.edgeType')}</label>
+              <select id="${edgeTypeId}">${edgeTypeOptionsHtml}</select>
+            </div>`;
+          } else {
+            html += `<div class="field"></div>`;
+          }
+          // Row 2: material + diameter
+          html += `
             <div class="field">
               <label for="${matId}">${t('labels.edgeMaterial')}</label>
               <select id="${matId}">${materialOptions}</select>
-            </div>
-            <div class="field col-span-2">
+            </div>`;
+          if (adminConfig.edges.include.line_diameter) {
+            html += `
+            <div class="field">
               <label for="${diamSelectId}">${t('labels.lineDiameter')}</label>
               <select id="${diamSelectId}">
                 <option value="" ${e.line_diameter === '' ? 'selected' : ''}>${t('labels.optional')}</option>
                 ${diameterOptions.map((d) => `<option value="${String(d.code)}" ${String(e.line_diameter) === String(d.code) ? 'selected' : ''}>${String(d.label)}</option>`).join('')}
               </select>
-            </div>
-          `;
+            </div>`;
+          } else {
+            html += `<div class="field"></div>`;
+          }
+          // Row 3: fall depth + fall position
+          if (adminConfig.edges.include.fall_depth || adminConfig.edges.include.fall_position) {
+            if (adminConfig.edges.include.fall_depth) {
+              html += `
+            <div class="field">
+              <label for="${fallDepthId}">${t('labels.fallDepth')}</label>
+              <input id="${fallDepthId}" type="text" inputmode="decimal" pattern="[0-9]*\\.?[0-9]*" value="${e.fall_depth || ''}" placeholder="${t('labels.optional')}" dir="auto" />
+            </div>`;
+            } else {
+              html += `<div class="field"></div>`;
+            }
+            if (adminConfig.edges.include.fall_position) {
+              html += `
+            <div class="field">
+              <label for="${fallPosId}">${t('labels.fallPosition')}</label>
+              <select id="${fallPosId}">
+                <option value="" ${e.fall_position===''?'selected':''}>${t('labels.optional')}</option>
+                ${fallPosOptionsHtml}
+              </select>
+            </div>`;
+            } else {
+              html += `<div class="field"></div>`;
+            }
+          }
+          // Row 4: engineering status
+          if (adminConfig.edges.include.engineering_status) {
+            html += `
+            <div class="field col-span-2">
+              <label for="${engStatusId}">${t('labels.engineeringStatus')}</label>
+              <select id="${engStatusId}">${engStatusOptionsHtml}</select>
+            </div>`;
+          }
+          html += `</div>`;
         });
-        html += '</div></div>';
+        html += '</div>';
         const nodeEdgesWrapper = document.createElement('div');
         nodeEdgesWrapper.innerHTML = html;
         container.appendChild(nodeEdgesWrapper);
@@ -4650,13 +4729,22 @@ function renderDetails() {
           const inputId = `edgeMeasure_${e.id}_${isTail ? 'tail' : 'head'}`;
           const matId = `edgeMaterial_${e.id}`;
           const diamSelectId = `edgeDiameterSelect_${e.id}`;
+          const edgeTypeId = `edgeType_${e.id}`;
+          const engStatusId = `edgeEngStatus_${e.id}`;
+          const fallDepthId = `edgeFallDepth_${e.id}`;
+          const fallPosId = `edgeFallPosition_${e.id}`;
           const measureInput = container.querySelector(`#${CSS.escape(inputId)}`);
           const materialSelect = container.querySelector(`#${CSS.escape(matId)}`);
           const diameterSelect = container.querySelector(`#${CSS.escape(diamSelectId)}`);
+          const edgeTypeSelect = container.querySelector(`#${CSS.escape(edgeTypeId)}`);
+          const engStatusSelect = container.querySelector(`#${CSS.escape(engStatusId)}`);
+          const fallDepthInput = container.querySelector(`#${CSS.escape(fallDepthId)}`);
+          const fallPosSelect = container.querySelector(`#${CSS.escape(fallPosId)}`);
+
+          const setHighlight = () => { highlightedHalfEdge = { edgeId: e.id, half: isTail ? 'tail' : 'head' }; scheduleDraw(); };
+          const clearHighlight = () => { highlightedHalfEdge = null; scheduleDraw(); };
 
           if (measureInput) {
-            const setHighlight = () => { highlightedHalfEdge = { edgeId: e.id, half: isTail ? 'tail' : 'head' }; scheduleDraw(); };
-            const clearHighlight = () => { highlightedHalfEdge = null; scheduleDraw(); };
             measureInput.addEventListener('focus', setHighlight);
             measureInput.addEventListener('input', setHighlight);
             measureInput.addEventListener('blur', clearHighlight);
@@ -4671,28 +4759,76 @@ function renderDetails() {
             });
           }
           if (materialSelect) {
-            const setHighlight = () => { highlightedHalfEdge = { edgeId: e.id, half: isTail ? 'tail' : 'head' }; scheduleDraw(); };
-            const clearHighlight = () => { highlightedHalfEdge = null; scheduleDraw(); };
             materialSelect.addEventListener('focus', setHighlight);
             materialSelect.addEventListener('change', (ev) => {
               setHighlight();
               e.material = ev.target.value;
+              trackFieldUsage('edges', 'material', ev.target.value);
               saveToStorage();
               scheduleDraw();
             });
             materialSelect.addEventListener('blur', clearHighlight);
           }
           if (diameterSelect) {
-            const setHighlight = () => { highlightedHalfEdge = { edgeId: e.id, half: isTail ? 'tail' : 'head' }; scheduleDraw(); };
-            const clearHighlight = () => { highlightedHalfEdge = null; scheduleDraw(); };
             diameterSelect.addEventListener('focus', setHighlight);
             diameterSelect.addEventListener('change', (ev) => {
               setHighlight();
               e.line_diameter = String(ev.target.value || '');
+              if (e.line_diameter !== '') trackFieldUsage('edges', 'line_diameter', e.line_diameter);
               saveToStorage();
               scheduleDraw();
             });
             diameterSelect.addEventListener('blur', clearHighlight);
+          }
+          if (edgeTypeSelect) {
+            edgeTypeSelect.addEventListener('focus', setHighlight);
+            edgeTypeSelect.addEventListener('change', (ev) => {
+              setHighlight();
+              e.edge_type = ev.target.value;
+              trackFieldUsage('edges', 'edge_type', ev.target.value);
+              saveToStorage();
+              scheduleDraw();
+            });
+            edgeTypeSelect.addEventListener('blur', clearHighlight);
+          }
+          if (engStatusSelect) {
+            engStatusSelect.addEventListener('focus', setHighlight);
+            engStatusSelect.addEventListener('change', (ev) => {
+              setHighlight();
+              const num = Number(ev.target.value);
+              e.engineeringStatus = Number.isFinite(num) ? num : 0;
+              trackFieldUsage('edges', 'engineering_status', e.engineeringStatus);
+              saveToStorage();
+              scheduleDraw();
+            });
+            engStatusSelect.addEventListener('blur', clearHighlight);
+          }
+          if (fallDepthInput) {
+            fallDepthInput.addEventListener('focus', setHighlight);
+            fallDepthInput.addEventListener('blur', clearHighlight);
+            fallDepthInput.addEventListener('input', (ev) => {
+              setHighlight();
+              const val = String(ev.target.value || '').replace(/[^0-9.]/g, '').replace(/\.(?=.*\.)/g, '');
+              if (val !== ev.target.value) ev.target.value = val;
+              if (val === '') { e.fall_depth = ''; }
+              else {
+                const num = Number(val);
+                e.fall_depth = Number.isFinite(num) ? num : val;
+              }
+              debouncedSaveToStorage();
+            });
+          }
+          if (fallPosSelect) {
+            fallPosSelect.addEventListener('focus', setHighlight);
+            fallPosSelect.addEventListener('change', (ev) => {
+              setHighlight();
+              const raw = ev.target.value;
+              const num = Number(raw);
+              e.fall_position = raw === '' || !Number.isFinite(num) ? '' : num;
+              if (e.fall_position !== '') trackFieldUsage('edges', 'fall_position', e.fall_position);
+              saveToStorage();
+            });
+            fallPosSelect.addEventListener('blur', clearHighlight);
           }
         });
       }

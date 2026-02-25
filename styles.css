@@ -2244,17 +2244,19 @@ canvas {
   position: relative;
 }
 
-/* One separator between line details: after each group's full-width row */
-.connected-lines-grid>.field.col-span-2 {
-  border-bottom: 2px solid #0f172a;
-  padding-bottom: 0.5rem;
-  margin-bottom: 0.5rem;
+/* Divider between connected edges */
+.connected-edge-divider {
+  border: none;
+  border-top: 2px solid var(--color-border, #0f172a);
+  margin: 0.5rem 0;
 }
 
-.connected-lines-grid>.field.col-span-2:last-child {
-  border-bottom: 0;
-  padding-bottom: 0;
-  margin-bottom: 0;
+/* Header showing target node ID for each connected edge */
+.connected-edge-header {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-secondary, #64748b);
+  padding: 0.25rem 0;
 }
 
 /* Light grey background for connected lines section */
