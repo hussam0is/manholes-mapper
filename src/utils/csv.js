@@ -120,11 +120,9 @@ export function exportNodesCsv(nodes, adminConfig, _t) {
     if (include.terrain_level) row.push(csvQuote(n.surveyZ != null ? n.surveyZ.toFixed(3) : ''));
     if (include.measure_precision) row.push(csvQuote(n.measure_precision != null ? n.measure_precision.toFixed(3) : ''));
     if (include.fix_type) {
-      const fixLabel = n.gnssFixQuality === 4 ? 'RTK Fixed' :
-        n.gnssFixQuality === 5 ? 'RTK Float' :
-        n.gnssFixQuality === 6 ? 'Manual Float' :
-        n.gnssFixQuality === 2 ? 'DGPS' :
-        n.gnssFixQuality === 1 ? 'GPS' : '';
+      const fixLabel = n.gnssFixQuality === 4 ? 'Fixed' :
+        n.gnssFixQuality === 5 ? 'Device Float' :
+        'Manual Float';
       row.push(csvQuote(fixLabel));
     }
     return row.join(',');

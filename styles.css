@@ -2037,7 +2037,7 @@ canvas {
   text-align: start;
 }
 
-/* Fix quality badges */
+/* Fix quality badges — 3 precision levels */
 .survey-fix-badge {
   display: inline-block;
   padding: 3px 10px;
@@ -2045,40 +2045,26 @@ canvas {
   font-size: 0.85rem;
   font-weight: 600;
 }
+/* Fixed (RTK Fixed from GNSS receiver) — green */
 .survey-fix-badge.fix-4 {
   background: #dcfce7;
   color: #166534;
 }
+/* Device Float (RTK Float from GNSS receiver) — blue */
 .survey-fix-badge.fix-5 {
   background: #dbeafe;
   color: #1e40af;
 }
+/* Manual Float (user positioned on map) — amber */
 .survey-fix-badge.fix-6 {
-  background: #e0e7ff;
-  color: #3730a3;
-}
-.survey-fix-badge.fix-2 {
   background: #fef3c7;
   color: #92400e;
-}
-.survey-fix-badge.fix-1 {
-  background: #fef3c7;
-  color: #92400e;
-}
-.survey-fix-badge.fix-0,
-.survey-fix-badge.fix-none {
-  background: #fee2e2;
-  color: #991b1b;
 }
 
 @media (prefers-color-scheme: dark) {
   .survey-fix-badge.fix-4 { background: #166534; color: #dcfce7; }
   .survey-fix-badge.fix-5 { background: #1e40af; color: #dbeafe; }
-  .survey-fix-badge.fix-6 { background: #3730a3; color: #e0e7ff; }
-  .survey-fix-badge.fix-2 { background: #92400e; color: #fef3c7; }
-  .survey-fix-badge.fix-1 { background: #92400e; color: #fef3c7; }
-  .survey-fix-badge.fix-0,
-  .survey-fix-badge.fix-none { background: #991b1b; color: #fee2e2; }
+  .survey-fix-badge.fix-6 { background: #92400e; color: #fef3c7; }
 }
 
 .details-actions {

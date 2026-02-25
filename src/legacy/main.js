@@ -3157,7 +3157,17 @@ function createNode(x, y) {
     maintenanceStatus: (adminConfig.nodes?.defaults?.maintenance_status ?? 0),
     createdAt: new Date().toISOString(),
     createdBy: getCurrentUsername(),
+    gnssFixQuality: 6, // Manual Float — user placed on canvas
   };
+  // Compute ITM coordinates from canvas position if reference point exists
+  const ref = getMapReferencePoint();
+  if (ref && ref.itm && ref.canvas && coordinateScale > 0) {
+    node.surveyX = ref.itm.x + (x - ref.canvas.x) / coordinateScale;
+    node.surveyY = ref.itm.y - (y - ref.canvas.y) / coordinateScale;
+    node.surveyZ = 0;
+    node.measure_precision = null;
+    node.hasCoordinates = true;
+  }
   // Apply custom default fields
   if (Array.isArray(adminConfig.nodes?.customFields)) {
     adminConfig.nodes.customFields.forEach((f) => {
@@ -4348,7 +4358,6 @@ function renderDetails() {
             </div>` : ''}
           </div>
         </div>
-        ${node.surveyX != null ? `
         <div class="details-section">
           <div class="details-section-title">${t('labels.surveyData')}</div>
           <div class="details-grid two-col">
@@ -4370,18 +4379,14 @@ function renderDetails() {
             </div>
             <div class="field col-span-2">
               <label>${t('labels.fixType')}</label>
-              <div class="field-value-readonly survey-fix-badge fix-${node.gnssFixQuality ?? 'none'}">${
-                node.gnssFixQuality === 4 ? t('labels.fixRtkFixed') :
-                node.gnssFixQuality === 5 ? t('labels.fixRtkFloat') :
-                node.gnssFixQuality === 2 ? t('labels.fixDgps') :
-                node.gnssFixQuality === 1 ? t('labels.fixGps') :
-                node.gnssFixQuality === 6 ? t('labels.fixManualFloat') :
-                t('labels.fixNone')
+              <div class="field-value-readonly survey-fix-badge fix-${node.gnssFixQuality === 4 ? '4' : node.gnssFixQuality === 5 ? '5' : '6'}">${
+                node.gnssFixQuality === 4 ? t('labels.fixFixed') :
+                node.gnssFixQuality === 5 ? t('labels.fixDeviceFloat') :
+                t('labels.fixManualFloat')
               }</div>
             </div>
           </div>
         </div>
-        ` : ''}
         <div class="details-section">
           <div class="field">
             <label for="noteInput">${t('labels.note')}</label>
@@ -5345,6 +5350,14 @@ function pointerMove(x, y) {
     }
     selectedNode.x = world.x - dragOffset.x;
     selectedNode.y = world.y - dragOffset.y;
+    // Recompute ITM coordinates for manually positioned nodes
+    const refDrag = getMapReferencePoint();
+    if (refDrag && refDrag.itm && refDrag.canvas && coordinateScale > 0) {
+      selectedNode.surveyX = refDrag.itm.x + (selectedNode.x - refDrag.canvas.x) / coordinateScale;
+      selectedNode.surveyY = refDrag.itm.y - (selectedNode.y - refDrag.canvas.y) / coordinateScale;
+      selectedNode.gnssFixQuality = selectedNode.gnssFixQuality || 6; // Manual Float
+      selectedNode.hasCoordinates = true;
+    }
     updateNodeTimestamp(selectedNode);
     saveToStorage();
     scheduleDraw();
