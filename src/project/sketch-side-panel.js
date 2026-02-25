@@ -297,15 +297,25 @@ function renderIssuesView() {
     const row = document.createElement('div');
     row.className = 'sketch-side-panel__issue-row';
 
-    const icon = issue.type === 'missing_coords' ? 'location_off' : 'rule';
-    const typeText = issue.type === 'missing_coords'
-      ? (t('projects.canvas.missingCoords') || 'Missing coordinates')
-      : (t('projects.canvas.missingMeasurement') || 'Missing measurement');
+    let icon, typeText, nodeLabel;
+    if (issue.type === 'missing_coords') {
+      icon = 'location_off';
+      typeText = t('projects.canvas.missingCoords') || 'Missing coordinates';
+      nodeLabel = `#${issue.nodeId}`;
+    } else if (issue.type === 'long_edge') {
+      icon = 'straighten';
+      typeText = `${issue.lengthM}m`;
+      nodeLabel = `#${issue.tailId}→#${issue.headId}`;
+    } else {
+      icon = 'rule';
+      typeText = t('projects.canvas.missingMeasurement') || 'Missing measurement';
+      nodeLabel = `#${issue.nodeId}`;
+    }
 
     row.innerHTML = `
       <div class="sketch-side-panel__issue-info">
         <span class="sketch-side-panel__issue-icon"><span class="material-icons">${icon}</span></span>
-        <span class="sketch-side-panel__issue-node">#${issue.nodeId}</span>
+        <span class="sketch-side-panel__issue-node">${nodeLabel}</span>
         <span class="sketch-side-panel__issue-type">${typeText}</span>
       </div>
       <div class="sketch-side-panel__issue-actions">

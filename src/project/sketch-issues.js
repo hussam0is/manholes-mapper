@@ -9,9 +9,14 @@
  */
 
 /**
- * @typedef {{ type: 'missing_coords' | 'missing_measurement', nodeId: string|number, edgeId?: string|number, side?: 'tail'|'head', worldX: number, worldY: number }} Issue
+ * @typedef {{ type: 'missing_coords' | 'missing_measurement' | 'long_edge', nodeId?: string|number, edgeId?: string|number, side?: 'tail'|'head', worldX: number, worldY: number, lengthM?: number }} Issue
  * @typedef {{ totalKm: number, issueCount: number }} SketchStats
  */
+
+const LONG_EDGE_THRESHOLD_M = 60;
+
+// accuracyLevel codes: 0 = Engineering, 1 = Schematic
+const SCHEMATIC_ACCURACY = 1;
 
 /**
  * Compute issues and statistics for a single sketch.
@@ -27,9 +32,13 @@ export function computeSketchIssues(nodes, edges) {
 
   const issues = [];
 
-  // 1. Missing coordinates
+  // 1. Missing coordinates — skip schematic nodes and home connections
   for (const node of nodes) {
     if (node.surveyX == null || node.surveyY == null) {
+      // Schematic nodes intentionally lack precise coords
+      if (node.accuracyLevel === SCHEMATIC_ACCURACY) continue;
+      // Home connections don't require RTK coords
+      if (node.nodeType === 'Home') continue;
       issues.push({
         type: 'missing_coords',
         nodeId: node.id,
@@ -73,12 +82,39 @@ export function computeSketchIssues(nodes, edges) {
     }
   }
 
-  // Sort issues by nodeId (numeric)
+  // 3. Long edges — edges whose real-world length exceeds threshold
+  for (const edge of edges) {
+    const tailNode = edge.tail != null ? nodeMap.get(String(edge.tail)) : null;
+    const headNode = edge.head != null ? nodeMap.get(String(edge.head)) : null;
+    if (!tailNode || !headNode) continue;
+    if (tailNode.surveyX == null || headNode.surveyX == null) continue;
+
+    const dx = headNode.surveyX - tailNode.surveyX;
+    const dy = headNode.surveyY - tailNode.surveyY;
+    const lengthM = Math.sqrt(dx * dx + dy * dy);
+
+    if (lengthM > LONG_EDGE_THRESHOLD_M) {
+      issues.push({
+        type: 'long_edge',
+        edgeId: edge.id,
+        tailId: tailNode.id,
+        headId: headNode.id,
+        worldX: (tailNode.x + headNode.x) / 2,
+        worldY: (tailNode.y + headNode.y) / 2,
+        lengthM: Math.round(lengthM),
+      });
+    }
+  }
+
+  // Sort: missing_coords first, then missing_measurement, then long_edge; within each by id
+  const typeOrder = { missing_coords: 0, missing_measurement: 1, long_edge: 2 };
   issues.sort((a, b) => {
-    const na = parseInt(a.nodeId, 10);
-    const nb = parseInt(b.nodeId, 10);
+    const tDiff = (typeOrder[a.type] ?? 9) - (typeOrder[b.type] ?? 9);
+    if (tDiff !== 0) return tDiff;
+    const na = parseInt(a.nodeId ?? a.tailId, 10);
+    const nb = parseInt(b.nodeId ?? b.tailId, 10);
     if (!isNaN(na) && !isNaN(nb)) return na - nb;
-    return String(a.nodeId).localeCompare(String(b.nodeId));
+    return 0;
   });
 
   // Compute total km from edges where both endpoints have survey coordinates
