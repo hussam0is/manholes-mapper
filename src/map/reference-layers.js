@@ -25,6 +25,12 @@ let refLayersEnabled = true;
 /** @type {Map<string, boolean>} Per-layer visibility overrides */
 const layerVisibility = new Map();
 
+/** @type {Map<string, boolean>} Per-section (feature-level) visibility within sections layer */
+const sectionVisibility = new Map();
+
+/** Virtual section representing data outside all defined section polygons */
+export const OUTSIDE_SECTIONS = { id: 'outside_sections_data', number: -1 };
+
 // Default styles per layer type
 const DEFAULT_STYLES = {
   sections: {
@@ -154,6 +160,96 @@ export function clearReferenceLayers() {
   layerVisibility.clear();
 }
 
+// ============================================
+// Per-Section (Feature-Level) Visibility
+// ============================================
+
+/**
+ * Get the list of individual sections from the sections reference layer.
+ * Returns each section feature as a toggleable entry, plus the virtual
+ * "outside_sections_data" entry (number -1).
+ * @returns {Array<{id: string, name: string, number: number|null, visible: boolean}>}
+ */
+export function getSectionFeatures() {
+  const sectionsLayer = layers.find(l => l.layerType === 'sections');
+  if (!sectionsLayer || !sectionsLayer.geojson || !sectionsLayer.geojson.features) {
+    return [{ id: OUTSIDE_SECTIONS.id, name: OUTSIDE_SECTIONS.id, number: OUTSIDE_SECTIONS.number, visible: sectionVisibility.get(OUTSIDE_SECTIONS.id) !== false }];
+  }
+
+  const seen = new Set();
+  const sections = [];
+  for (const f of sectionsLayer.geojson.features) {
+    const name = f.properties && f.properties.name;
+    if (!name || seen.has(name)) continue;
+    seen.add(name);
+    sections.push({
+      id: name,
+      name,
+      number: f.properties.SECTION_NUM ?? f.properties.number ?? null,
+      visible: sectionVisibility.get(name) !== false
+    });
+  }
+
+  // Add virtual outside-sections entry
+  sections.push({
+    id: OUTSIDE_SECTIONS.id,
+    name: OUTSIDE_SECTIONS.id,
+    number: OUTSIDE_SECTIONS.number,
+    visible: sectionVisibility.get(OUTSIDE_SECTIONS.id) !== false
+  });
+
+  return sections;
+}
+
+/**
+ * Check if a specific section (feature) is visible
+ * @param {string} sectionId - Section name or OUTSIDE_SECTIONS.id
+ * @returns {boolean}
+ */
+export function isSectionVisible(sectionId) {
+  return sectionVisibility.get(sectionId) !== false;
+}
+
+/**
+ * Set visibility for a specific section (feature)
+ * @param {string} sectionId
+ * @param {boolean} visible
+ */
+export function setSectionVisibility(sectionId, visible) {
+  sectionVisibility.set(sectionId, visible);
+}
+
+/**
+ * Save section visibility settings to localStorage
+ */
+export function saveSectionSettings() {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    const settings = Object.fromEntries(sectionVisibility);
+    localStorage.setItem('graphSketch.sectionVisibility.v1', JSON.stringify(settings));
+  } catch (e) {
+    console.warn('[Map] Failed to save section settings', e.message);
+  }
+}
+
+/**
+ * Load section visibility settings from localStorage
+ */
+export function loadSectionSettings() {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    const raw = localStorage.getItem('graphSketch.sectionVisibility.v1');
+    if (raw) {
+      const settings = JSON.parse(raw);
+      Object.entries(settings).forEach(([id, vis]) => {
+        sectionVisibility.set(id, vis);
+      });
+    }
+  } catch (e) {
+    console.warn('[Map] Failed to load section settings', e.message);
+  }
+}
+
 /**
  * Save reference layer visibility settings to localStorage
  */
@@ -256,9 +352,15 @@ export function drawReferenceLayers(ctx, coordinateScale, viewScale, stretchX, s
 function drawLayerFeatures(ctx, layer, style, refPoint, coordScale, stretchX, stretchY, viewScale, visMinX, visMinY, visMaxX, visMaxY) {
   const features = layer.geojson.features;
   const labelsToDraw = [];
+  const isSectionsLayer = layer.layerType === 'sections';
 
   for (const feature of features) {
     if (!feature.geometry) continue;
+
+    // Per-section visibility: skip hidden individual sections
+    if (isSectionsLayer && feature.properties && feature.properties.name) {
+      if (!isSectionVisible(feature.properties.name)) continue;
+    }
 
     const geomType = feature.geometry.type;
     const coords = feature.geometry.coordinates;
@@ -559,3 +661,4 @@ function drawLabels(ctx, labels, style, viewScale, _stretchX, _stretchY) {
 
 // Initialize settings on module load
 loadRefLayerSettings();
+loadSectionSettings();

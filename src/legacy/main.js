@@ -108,13 +108,19 @@ import {
   isRefLayersEnabled,
   saveRefLayerSettings,
   loadRefLayerSettings,
-  clearReferenceLayers
+  clearReferenceLayers,
+  loadSectionSettings
 } from '../map/reference-layers.js';
 import {
   initStreetView,
   setStreetViewVisible,
   updateStreetViewTranslations
 } from '../map/street-view.js';
+import {
+  initLayersConfig,
+  updateLayersPanel,
+  updateLayersConfigTranslations
+} from '../map/layers-config.js';
 import { drawIssueHighlight } from '../project/issue-highlight.js';
 import { getLastEditPosition, setLastEditPosition } from '../project/last-edit-tracker.js';
 import { menuEvents } from '../menu/menu-events.js';
@@ -1514,6 +1520,7 @@ function applyLangToStaticUI() {
 
   // Update street view pegman labels (managed by an external module)
   updateStreetViewTranslations(t);
+  updateLayersConfigTranslations(t);
 }
 
 // CSV helpers moved to src/utils/csv.js
@@ -2172,7 +2179,9 @@ async function loadProjectReferenceLayers(projectId) {
     if (cached) {
       setReferenceLayers(cached);
       loadRefLayerSettings();
+      loadSectionSettings();
       renderRefLayerToggles();
+      updateLayersPanel();
       scheduleDraw();
       console.debug(`[RefLayers] Loaded ${cached.length} layers from cache for project ${projectId}`);
       return; // Skip server fetch when cache is fresh (< 1 hour)
@@ -2190,9 +2199,11 @@ async function loadProjectReferenceLayers(projectId) {
     
     setReferenceLayers(layers);
     loadRefLayerSettings();
+    loadSectionSettings();
     renderRefLayerToggles();
+    updateLayersPanel();
     scheduleDraw();
-    
+
     // Cache in localStorage
     try {
       localStorage.setItem(cacheKey, JSON.stringify({
@@ -7609,6 +7620,15 @@ function initCoordinates() {
   });
   // Show pegman only when a reference point is available
   setStreetViewVisible(!!getMapReferencePoint());
+
+  // Initialize Layers Config button + panel (below Street View pegman)
+  initLayersConfig({
+    canvasContainer: canvas.parentElement,
+    scheduleDraw,
+    t,
+    toggleMapLayer,
+    syncMapLayerToggleUI,
+  });
 }
 
 // Import coordinates button handler (desktop)
@@ -7857,6 +7877,8 @@ if (mobileRefLayersToggle) {
 
 // Expose render function for use after layers are loaded
 window.renderRefLayerToggles = renderRefLayerToggles;
+// Also expose layers panel refresh
+window.updateLayersPanel = updateLayersPanel;
 
 // Scale control handlers (desktop)
 if (scaleDecreaseBtn) {

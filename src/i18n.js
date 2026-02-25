@@ -426,6 +426,12 @@ export const i18n = {
       streets: 'רחובות',
       addresses: 'כתובות',
     },
+    layersConfig: {
+      title: 'שכבות',
+      baseMap: 'מפת רקע',
+      sections: 'מנות',
+      outsideSections: 'מחוץ למנות',
+    },
     location: {
       notSupported: 'מיקום אינו נתמך במכשיר זה',
       permissionDenied: 'הרשאת מיקום נדחתה. אנא אפשר מיקום בהגדרות הדפדפן/האפליקציה.',
@@ -891,6 +897,12 @@ export const i18n = {
       surveyPipes: 'Survey Pipes',
       streets: 'Streets',
       addresses: 'Addresses',
+    },
+    layersConfig: {
+      title: 'Layers',
+      baseMap: 'Base Map',
+      sections: 'Sections',
+      outsideSections: 'Outside Sections',
     },
     location: {
       notSupported: 'Location not supported on this device',
