@@ -1706,6 +1706,24 @@ function normalizeLegacySketch(nodes, edges) {
       node.surveyZ = null;
       node.measure_precision = null;
     }
+    // Sub-RTK quality (GPS/DGPS/etc.) nodes should not lock their position.
+    // Demote surveyX/Y to manual coords and clear the survey fields.
+    if (
+      node.gnssFixQuality != null &&
+      node.gnssFixQuality !== 4 &&
+      node.gnssFixQuality !== 5 &&
+      node.gnssFixQuality !== 6 &&
+      node.surveyX != null &&
+      node.surveyY != null
+    ) {
+      if (node.manual_x == null) node.manual_x = node.surveyX;
+      if (node.manual_y == null) node.manual_y = node.surveyY;
+      node.surveyX = null;
+      node.surveyY = null;
+      node.surveyZ = null;
+      node.measure_precision = null;
+      node.gnssFixQuality = 6;
+    }
   });
 
   edges.forEach((edge) => {
@@ -5829,8 +5847,13 @@ function pointerMove(x, y) {
     }
   }
   if (isDragging && selectedNode) {
-    // Don't allow dragging if node has survey coordinates (position is locked)
-    if (selectedNode.surveyX != null && selectedNode.surveyY != null) {
+    // Lock nodes that have RTK-quality survey coordinates (green ✓ = Fixed, yellow ✓ = Float).
+    // Yellow ! nodes (quality 6 / no surveyX) remain draggable.
+    if (
+      selectedNode.surveyX != null &&
+      selectedNode.surveyY != null &&
+      (selectedNode.gnssFixQuality === 4 || selectedNode.gnssFixQuality === 5)
+    ) {
       isDragging = false;
       return;
     }
