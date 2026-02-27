@@ -550,6 +550,25 @@ export const i18n = {
       noDevicesFound: 'לא נמצאו מכשירים',
       connectToPrevious: 'חבר לנקודה הקודמת',
     },
+    threeD: {
+      title: 'תצוגת תלת-ממד',
+      noNodes: 'אין שוחות להצגה',
+      loadError: 'שגיאה בטעינת תצוגת תלת-ממד',
+      close: 'סגור תצוגת תלת-ממד',
+      loading: 'טוען תצוגת תלת-ממד...',
+      legend: {
+        title: 'מקרא',
+        mainLine: 'קו ראשי',
+        drainageLine: 'קו סניקה',
+        secondaryLine: 'קו משני',
+        estimated: 'משוער (ללא מדידה)',
+      },
+      controls: {
+        rotate: 'סובב: גרור בעכבר',
+        zoom: 'זום: גלגלת',
+        pan: 'הזז: גרור עם מקש ימני',
+      },
+    },
   },
   en: {
     appTitle: 'Manhole Mapper',
@@ -1100,6 +1119,25 @@ export const i18n = {
       selectDevice: 'Select Device',
       noDevicesFound: 'No devices found',
       connectToPrevious: 'Connect to previous',
+    },
+    threeD: {
+      title: '3D View',
+      noNodes: 'No nodes to display',
+      loadError: 'Failed to load 3D view',
+      close: 'Close 3D view',
+      loading: 'Loading 3D view...',
+      legend: {
+        title: 'Legend',
+        mainLine: 'Main Line',
+        drainageLine: 'Drainage Line',
+        secondaryLine: 'Secondary Line',
+        estimated: 'Estimated (no measurement)',
+      },
+      controls: {
+        rotate: 'Rotate: drag mouse',
+        zoom: 'Zoom: scroll wheel',
+        pan: 'Pan: right-click drag',
+      },
     },
   },
 };

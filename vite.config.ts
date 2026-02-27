@@ -21,6 +21,9 @@ export default defineConfig({
         },
         manualChunks: (id) => {
           if (id.includes('node_modules')) {
+            if (id.includes('three')) {
+              return 'three-vendor';
+            }
             if (id.includes('better-auth')) {
               return 'auth';
             }

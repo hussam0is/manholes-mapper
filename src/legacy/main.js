@@ -1157,9 +1157,13 @@ if (window.authGuard?.onAuthStateChange) {
 
 // Re-evaluate admin button visibility when permissions are loaded (async after auth)
 if (window.permissionsService?.onPermissionChange) {
-  window.permissionsService.onPermissionChange(() => {
+  window.permissionsService.onPermissionChange((roleData) => {
     const authState = window.authGuard?.getAuthState?.() || {};
     updateUserButtonVisibility(!!authState.isSignedIn);
+    // Show 3D View button for admin/super_admin only
+    if (threeDViewBtn) {
+      threeDViewBtn.style.display = roleData?.isAdmin ? '' : 'none';
+    }
   });
 }
 
@@ -2715,6 +2719,10 @@ window.__getActiveSketchData = function () {
     creationDate,
   };
 };
+
+// Expose reference point and coordinate scale for 3D view module
+window.__getMapReferencePoint = getMapReferencePoint;
+window.__getCoordinateScale = () => coordinateScale;
 
 /**
  * Load a sketch into the main globals (used by project-canvas-state).
@@ -6602,6 +6610,25 @@ if (edgeModeBtn) {
 if (undoBtn) {
   undoBtn.addEventListener('click', () => {
     performUndo();
+  });
+}
+// 3D View button (admin/super_admin only)
+if (threeDViewBtn) {
+  threeDViewBtn.addEventListener('click', async () => {
+    if (nodes.length === 0) {
+      showToast(t('threeD.noNodes'));
+      return;
+    }
+    try {
+      threeDViewBtn.disabled = true;
+      const { open3DView } = await import('../three-d/three-d-view.js');
+      await open3DView();
+    } catch (err) {
+      console.error('[3D View] Failed to load:', err);
+      showToast(t('threeD.loadError'));
+    } finally {
+      threeDViewBtn.disabled = false;
+    }
   });
 }
 // Zoom buttons

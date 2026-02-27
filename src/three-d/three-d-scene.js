@@ -1,0 +1,344 @@
+/**
+ * 3D View — Scene builder.
+ * Constructs a Three.js scene from sketch data: manholes as cylindrical shafts,
+ * pipes as tubes, a translucent ground plane, lights, and camera.
+ */
+
+import { createMaterials, EDGE_TYPE_COLORS } from './three-d-materials.js';
+
+// ── Default values for missing data ─────────────────────────────────────────
+const DEFAULT_DEPTH = 2.0;            // manhole shaft depth (m) when no edges have measurements
+const DEFAULT_PIPE_DEPTH = 1.5;       // pipe invert depth (m) when measurement is missing
+const DEFAULT_PIPE_DIAMETER_MM = 200; // pipe diameter (mm) when not specified
+const DEFAULT_COVER_DIAMETER_CM = 55; // manhole cover diameter (cm) when not specified
+const SHAFT_WALL_THICKNESS = 0.08;    // manhole wall thickness (m)
+const COVER_HEIGHT = 0.06;            // manhole cover disc thickness (m)
+const MANHOLE_SEGMENTS = 24;          // cylinder resolution
+const PIPE_RADIAL_SEGMENTS = 12;      // tube cross-section resolution
+const PIPE_TUBULAR_SEGMENTS = 16;     // tube length resolution
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+function parseNum(val, fallback) {
+  if (val == null || val === '') return fallback;
+  const n = parseFloat(val);
+  return isNaN(n) || n <= 0 ? fallback : n;
+}
+
+/**
+ * Get 3D horizontal position for a node.
+ * Prefers surveyX/Y (ITM meters), falls back to manual_x/y, then canvas→ITM.
+ */
+function getNodeXZ(node, ref, coordScale) {
+  let itmX, itmY;
+  if (node.surveyX != null && node.surveyY != null) {
+    itmX = node.surveyX;
+    itmY = node.surveyY;
+  } else if (node.manual_x != null && node.manual_y != null) {
+    itmX = node.manual_x;
+    itmY = node.manual_y;
+  } else if (ref) {
+    itmX = ref.itm.x + (node.x - ref.canvas.x) / coordScale;
+    itmY = ref.itm.y - (node.y - ref.canvas.y) / coordScale;
+  } else {
+    // No reference point — use canvas coords as meters (rough approximation)
+    itmX = node.x / coordScale;
+    itmY = node.y / coordScale;
+  }
+  return { itmX, itmY };
+}
+
+/**
+ * Compute the max pipe depth at a node from all connected edges.
+ * Returns { depth, isEstimated }.
+ */
+function getNodeDepth(nodeId, edges) {
+  let maxDepth = 0;
+  let hasAnyMeasurement = false;
+
+  for (const edge of edges) {
+    if (String(edge.tail) === nodeId) {
+      const d = parseNum(edge.tail_measurement, 0);
+      if (d > 0) { maxDepth = Math.max(maxDepth, d); hasAnyMeasurement = true; }
+    }
+    if (String(edge.head) === nodeId) {
+      const d = parseNum(edge.head_measurement, 0);
+      if (d > 0) { maxDepth = Math.max(maxDepth, d); hasAnyMeasurement = true; }
+    }
+  }
+
+  if (!hasAnyMeasurement) {
+    return { depth: DEFAULT_DEPTH, isEstimated: true };
+  }
+  // Add 0.3m clearance below the deepest pipe
+  return { depth: maxDepth + 0.3, isEstimated: false };
+}
+
+// ── Main builder ────────────────────────────────────────────────────────────
+
+/**
+ * Build the 3D scene from sketch data.
+ *
+ * @param {typeof import('three')} THREE
+ * @param {{ nodes: Array, edges: Array, ref: object|null, coordScale: number }} data
+ * @param {Function} CSS2DObject - CSS2DObject constructor from three/addons
+ * @returns {{ scene: THREE.Scene, camera: THREE.PerspectiveCamera, materials: object, boundingBox: { min: THREE.Vector3, max: THREE.Vector3 }, center: THREE.Vector3 }}
+ */
+export function buildScene(THREE, data, CSS2DObject) {
+  const { nodes, edges, ref, coordScale } = data;
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x1a1a2e);
+  scene.fog = new THREE.FogExp2(0x1a1a2e, 0.003);
+
+  const materials = createMaterials(THREE);
+
+  // ── Build node map and compute 3D positions ───────────────────────────────
+  const nodeMap = new Map();
+  const positions3D = new Map(); // nodeId → { x, y (ground elevation), z, depth, isEstimated }
+
+  // First pass: collect ITM coords + elevations
+  const itmCoords = [];
+  const elevations = [];
+  for (const node of nodes) {
+    nodeMap.set(String(node.id), node);
+    const { itmX, itmY } = getNodeXZ(node, ref, coordScale);
+    itmCoords.push({ id: String(node.id), itmX, itmY });
+    if (node.surveyZ != null && !isNaN(parseFloat(node.surveyZ))) {
+      elevations.push(parseFloat(node.surveyZ));
+    }
+  }
+
+  // Compute centroid for centering
+  const centroidX = itmCoords.reduce((s, c) => s + c.itmX, 0) / itmCoords.length;
+  const centroidY = itmCoords.reduce((s, c) => s + c.itmY, 0) / itmCoords.length;
+  const avgElevation = elevations.length > 0
+    ? elevations.reduce((s, e) => s + e, 0) / elevations.length
+    : 0;
+
+  // Second pass: build 3D positions
+  for (const { id, itmX, itmY } of itmCoords) {
+    const node = nodeMap.get(id);
+    const groundZ = node.surveyZ != null ? parseFloat(node.surveyZ) : avgElevation;
+    const isElevationEstimated = node.surveyZ == null;
+    const { depth, isEstimated: isDepthEstimated } = getNodeDepth(id, edges);
+
+    positions3D.set(id, {
+      x: itmX - centroidX,
+      y: groundZ - avgElevation,   // relative to avg ground
+      z: -(itmY - centroidY),      // flip Y → Z (north = -Z)
+      groundZ,
+      depth,
+      isEstimated: isElevationEstimated || isDepthEstimated,
+    });
+  }
+
+  // ── Lights ────────────────────────────────────────────────────────────────
+  const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+  scene.add(ambient);
+
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  dirLight.position.set(50, 80, 30);
+  scene.add(dirLight);
+
+  const hemiLight = new THREE.HemisphereLight(0x87ceeb, 0x8b7355, 0.3);
+  scene.add(hemiLight);
+
+  // ── Ground plane ──────────────────────────────────────────────────────────
+  const bbox = computeBounds(positions3D);
+  const groundSize = Math.max(bbox.sizeX, bbox.sizeZ, 20) * 2;
+  const groundGeo = new THREE.PlaneGeometry(groundSize, groundSize);
+  groundGeo.rotateX(-Math.PI / 2); // lay flat
+  const groundMesh = new THREE.Mesh(groundGeo, materials.ground);
+  groundMesh.position.set(0, 0, 0);
+  groundMesh.renderOrder = -1;
+  scene.add(groundMesh);
+
+  // Grid helper on the ground
+  const gridHelper = new THREE.GridHelper(groundSize, Math.min(Math.floor(groundSize / 2), 40), 0x444444, 0x333333);
+  gridHelper.position.y = -0.01;
+  gridHelper.material.opacity = 0.3;
+  gridHelper.material.transparent = true;
+  scene.add(gridHelper);
+
+  // ── Manholes ──────────────────────────────────────────────────────────────
+  const manholeGroup = new THREE.Group();
+  manholeGroup.name = 'manholes';
+
+  for (const node of nodes) {
+    const id = String(node.id);
+    const pos = positions3D.get(id);
+    if (!pos) continue;
+
+    const coverDiameterM = parseNum(node.coverDiameter, DEFAULT_COVER_DIAMETER_CM) / 100;
+    const outerRadius = coverDiameterM / 2;
+    const innerRadius = outerRadius - SHAFT_WALL_THICKNESS;
+    const depth = pos.depth;
+    const isEstimated = pos.isEstimated;
+
+    // Shaft (outer cylinder wall)
+    const shaftGeo = new THREE.CylinderGeometry(
+      outerRadius, outerRadius, depth, MANHOLE_SEGMENTS, 1, true
+    );
+    const wallMat = isEstimated ? materials.estimated(materials.manholeWall) : materials.manholeWall;
+    const shaft = new THREE.Mesh(shaftGeo, wallMat);
+    shaft.position.set(pos.x, pos.y - depth / 2, pos.z);
+    manholeGroup.add(shaft);
+
+    // Inner wall
+    if (innerRadius > 0.02) {
+      const innerGeo = new THREE.CylinderGeometry(
+        innerRadius, innerRadius, depth, MANHOLE_SEGMENTS, 1, true
+      );
+      const innerMat = isEstimated ? materials.estimated(materials.manholeWallInner) : materials.manholeWallInner;
+      const inner = new THREE.Mesh(innerGeo, innerMat);
+      inner.position.set(pos.x, pos.y - depth / 2, pos.z);
+      manholeGroup.add(inner);
+    }
+
+    // Bottom disc (floor of manhole)
+    const bottomGeo = new THREE.CircleGeometry(innerRadius > 0.02 ? innerRadius : outerRadius, MANHOLE_SEGMENTS);
+    bottomGeo.rotateX(-Math.PI / 2);
+    const bottom = new THREE.Mesh(bottomGeo, materials.manholeWall);
+    bottom.position.set(pos.x, pos.y - depth, pos.z);
+    manholeGroup.add(bottom);
+
+    // Cover disc at ground level
+    const coverGeo = new THREE.CylinderGeometry(
+      outerRadius + 0.03, outerRadius + 0.03, COVER_HEIGHT, MANHOLE_SEGMENTS
+    );
+    const coverMat = materials.manholeCover(node.nodeType || 'Manhole');
+    const cover = new THREE.Mesh(coverGeo, isEstimated ? materials.estimated(coverMat) : coverMat);
+    cover.position.set(pos.x, pos.y + COVER_HEIGHT / 2, pos.z);
+    manholeGroup.add(cover);
+
+    // Cover ring (metallic rim)
+    const rimGeo = new THREE.TorusGeometry(outerRadius + 0.03, 0.015, 8, MANHOLE_SEGMENTS);
+    rimGeo.rotateX(Math.PI / 2);
+    const rimMat = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.6, roughness: 0.4 });
+    const rim = new THREE.Mesh(rimGeo, rimMat);
+    rim.position.set(pos.x, pos.y + COVER_HEIGHT, pos.z);
+    manholeGroup.add(rim);
+
+    // Label (CSS2D)
+    if (CSS2DObject) {
+      const labelDiv = document.createElement('div');
+      labelDiv.className = 'three-d-label';
+      labelDiv.textContent = node.id;
+      const label = new CSS2DObject(labelDiv);
+      label.position.set(pos.x, pos.y + 0.5, pos.z);
+      manholeGroup.add(label);
+    }
+  }
+
+  scene.add(manholeGroup);
+
+  // ── Pipes ─────────────────────────────────────────────────────────────────
+  const pipeGroup = new THREE.Group();
+  pipeGroup.name = 'pipes';
+
+  for (const edge of edges) {
+    if (edge.isDangling) continue;
+    const tailId = String(edge.tail);
+    const headId = String(edge.head);
+    if (!tailId || !headId) continue;
+
+    const tailPos = positions3D.get(tailId);
+    const headPos = positions3D.get(headId);
+    if (!tailPos || !headPos) continue;
+
+    const tailDepth = parseNum(edge.tail_measurement, DEFAULT_PIPE_DEPTH);
+    const headDepth = parseNum(edge.head_measurement, DEFAULT_PIPE_DEPTH);
+    const diameterM = parseNum(edge.line_diameter, DEFAULT_PIPE_DIAMETER_MM) / 1000;
+    const pipeRadius = Math.max(diameterM / 2, 0.025); // minimum visual radius
+
+    const isEstimated =
+      !edge.tail_measurement && !edge.head_measurement;
+
+    // Pipe start and end positions (at invert level)
+    const start = new THREE.Vector3(
+      tailPos.x,
+      tailPos.y - tailDepth,
+      tailPos.z
+    );
+    const end = new THREE.Vector3(
+      headPos.x,
+      headPos.y - headDepth,
+      headPos.z
+    );
+
+    // Use TubeGeometry along a line curve
+    const curve = new THREE.LineCurve3(start, end);
+    const tubeGeo = new THREE.TubeGeometry(
+      curve, PIPE_TUBULAR_SEGMENTS, pipeRadius, PIPE_RADIAL_SEGMENTS, false
+    );
+
+    const pipeMat = materials.pipe(edge.edge_type || 'קו ראשי');
+    const finalMat = isEstimated ? materials.estimated(pipeMat) : pipeMat;
+    const pipeMesh = new THREE.Mesh(tubeGeo, finalMat);
+    pipeGroup.add(pipeMesh);
+
+    // Pipe end caps (flat circles)
+    const capGeo = new THREE.CircleGeometry(pipeRadius, PIPE_RADIAL_SEGMENTS);
+    const capMat = finalMat;
+
+    const startCap = new THREE.Mesh(capGeo.clone(), capMat);
+    startCap.position.copy(start);
+    startCap.lookAt(end);
+    pipeGroup.add(startCap);
+
+    const endCap = new THREE.Mesh(capGeo.clone(), capMat);
+    endCap.position.copy(end);
+    endCap.lookAt(start);
+    pipeGroup.add(endCap);
+  }
+
+  scene.add(pipeGroup);
+
+  // ── Camera ────────────────────────────────────────────────────────────────
+  const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 2000);
+
+  // Position camera to see the full network from an elevated angle
+  const diagonal = Math.sqrt(bbox.sizeX ** 2 + bbox.sizeZ ** 2) || 20;
+  const cameraDistance = Math.max(diagonal * 0.8, 15);
+  camera.position.set(
+    bbox.centerX + cameraDistance * 0.5,
+    cameraDistance * 0.6,
+    bbox.centerZ + cameraDistance * 0.5
+  );
+  camera.lookAt(bbox.centerX, -2, bbox.centerZ);
+
+  return {
+    scene,
+    camera,
+    materials,
+    center: new THREE.Vector3(bbox.centerX, 0, bbox.centerZ),
+    boundingBox: {
+      min: new THREE.Vector3(bbox.minX, -10, bbox.minZ),
+      max: new THREE.Vector3(bbox.maxX, 5, bbox.maxZ),
+    },
+  };
+}
+
+// ── Bounding box ────────────────────────────────────────────────────────────
+
+function computeBounds(positions3D) {
+  let minX = Infinity, maxX = -Infinity;
+  let minZ = Infinity, maxZ = -Infinity;
+
+  for (const pos of positions3D.values()) {
+    minX = Math.min(minX, pos.x);
+    maxX = Math.max(maxX, pos.x);
+    minZ = Math.min(minZ, pos.z);
+    maxZ = Math.max(maxZ, pos.z);
+  }
+
+  if (!isFinite(minX)) { minX = -10; maxX = 10; minZ = -10; maxZ = 10; }
+
+  return {
+    minX, maxX, minZ, maxZ,
+    sizeX: maxX - minX,
+    sizeZ: maxZ - minZ,
+    centerX: (minX + maxX) / 2,
+    centerZ: (minZ + maxZ) / 2,
+  };
+}
