@@ -3875,19 +3875,22 @@ function draw() {
     ctx.restore();
   }
 
-  // Draw edge measurement labels after node labels to ensure they're on top
-  for (let i = 0; i < edges.length; i++) {
-    const edge = edges[i];
-    // Quick viewport cull for edge labels (same as edge drawing)
-    const tn = edge.tail != null ? nodeMap.get(String(edge.tail)) : null;
-    const hn = edge.head != null ? nodeMap.get(String(edge.head)) : null;
-    if (tn && hn) {
-      const sx1 = tn.x * viewStretchX, sy1 = tn.y * viewStretchY;
-      const sx2 = hn.x * viewStretchX, sy2 = hn.y * viewStretchY;
-      if (Math.max(sx1, sx2) < visMinX || Math.min(sx1, sx2) > visMaxX ||
-          Math.max(sy1, sy2) < visMinY || Math.min(sy1, sy2) > visMaxY) continue;
+  // Draw edge measurement labels after node labels to ensure they're on top.
+  // Skip when zoomed out too far — labels overlap and become unreadable.
+  if (viewScale >= 0.3) {
+    for (let i = 0; i < edges.length; i++) {
+      const edge = edges[i];
+      // Quick viewport cull for edge labels (same as edge drawing)
+      const tn = edge.tail != null ? nodeMap.get(String(edge.tail)) : null;
+      const hn = edge.head != null ? nodeMap.get(String(edge.head)) : null;
+      if (tn && hn) {
+        const sx1 = tn.x * viewStretchX, sy1 = tn.y * viewStretchY;
+        const sx2 = hn.x * viewStretchX, sy2 = hn.y * viewStretchY;
+        if (Math.max(sx1, sx2) < visMinX || Math.min(sx1, sx2) > visMaxX ||
+            Math.max(sy1, sy2) < visMinY || Math.min(sy1, sy2) > visMaxY) continue;
+      }
+      drawEdgeLabels(edge);
     }
-    drawEdgeLabels(edge);
   }
   
   // Draw unified location marker if Live Measure is enabled
