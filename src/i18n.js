@@ -268,6 +268,7 @@ export const i18n = {
     finishWorkday: {
       title: 'סיום יום עבודה',
       button: 'סיים יום עבודה',
+      subtitle: 'יצוא כל השרטוטים של היום',
       confirm: 'אישור וסיום',
       resolveFirst: 'יש להשלים את כל הקווים הלא מחוברים לפני סיום יום העבודה.',
       success: 'יום העבודה הסתיים בהצלחה!',
@@ -839,6 +840,7 @@ export const i18n = {
     finishWorkday: {
       title: 'Finish Workday',
       button: 'Finish Workday',
+      subtitle: 'Export all of today\'s sketches',
       confirm: 'Confirm & Finish',
       resolveFirst: 'Please resolve all dangling edges before finishing the workday.',
       success: 'Workday finished successfully!',
