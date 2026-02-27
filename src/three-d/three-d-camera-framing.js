@@ -128,26 +128,47 @@ function frameEdge(edge, positions3D) {
   };
 }
 
-// ── No selection — overview ──────────────────────────────────────────────────
+// ── No selection — overview (fit-to-bounds using FOV) ────────────────────────
 
 function frameOverview(center, boundingBox) {
-  let diagonal = 20;
+  let sizeX = 20, sizeZ = 20;
   if (boundingBox) {
-    const sx = boundingBox.max.x - boundingBox.min.x;
-    const sz = boundingBox.max.z - boundingBox.min.z;
-    diagonal = Math.sqrt(sx * sx + sz * sz) || 20;
+    sizeX = Math.max(boundingBox.max.x - boundingBox.min.x, 5);
+    sizeZ = Math.max(boundingBox.max.z - boundingBox.min.z, 5);
   }
-  const dist = Math.max(diagonal * 0.8, 15);
+
+  // Use the camera FOV to compute the proper distance to fit the bounding box.
+  // PerspectiveCamera uses 60deg FOV (matching three-d-scene.js).
+  const fovRad = (60 * Math.PI) / 180;
+  const aspect = typeof window !== 'undefined' ? window.innerWidth / window.innerHeight : 16 / 9;
+
+  // For perspective camera: dist = (size/2) / tan(fov/2)
+  // Compute for both axes accounting for aspect ratio
+  const halfFovV = fovRad / 2;
+  const halfFovH = Math.atan(Math.tan(halfFovV) * aspect);
+
+  const distForWidth = (sizeX / 2) / Math.tan(halfFovH);
+  const distForDepth = (sizeZ / 2) / Math.tan(halfFovV);
+  const requiredDist = Math.max(distForWidth, distForDepth);
+
+  // Add 20% padding, enforce minimum distance
+  const dist = Math.max(requiredDist * 1.2, 10);
+
+  // Place camera at 45deg elevation for a nice isometric overview
+  const elevAngle = Math.PI / 4;
+  const azimAngle = Math.PI / 4;
+  const horizontalDist = dist * Math.cos(elevAngle);
+  const height = dist * Math.sin(elevAngle);
 
   return {
     position: {
-      x: center.x + dist * 0.5,
-      y: dist * 0.6,
-      z: center.z + dist * 0.5,
+      x: center.x + horizontalDist * Math.cos(azimAngle),
+      y: height,
+      z: center.z + horizontalDist * Math.sin(azimAngle),
     },
     lookAt: {
       x: center.x,
-      y: -2,
+      y: -1, // slightly below ground to see underground content
       z: center.z,
     },
   };

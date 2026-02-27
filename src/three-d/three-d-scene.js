@@ -461,15 +461,26 @@ export function buildScene(THREE, data, CSS2DObject, issues = []) {
   // ── Camera ────────────────────────────────────────────────────────────────
   const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 2000);
 
-  // Position camera to see the full network from an elevated angle
-  const diagonal = Math.sqrt(bbox.sizeX ** 2 + bbox.sizeZ ** 2) || 20;
-  const cameraDistance = Math.max(diagonal * 0.8, 15);
+  // Initial camera position (will be overridden by three-d-view.js framing).
+  // Use FOV-based fit-to-bounds for a reasonable default.
+  const sizeX = Math.max(bbox.sizeX, 5);
+  const sizeZ = Math.max(bbox.sizeZ, 5);
+  const fovRad = (60 * Math.PI) / 180;
+  const aspect = typeof window !== 'undefined' ? window.innerWidth / window.innerHeight : 16 / 9;
+  const halfFovV = fovRad / 2;
+  const halfFovH = Math.atan(Math.tan(halfFovV) * aspect);
+  const distForWidth = (sizeX / 2) / Math.tan(halfFovH);
+  const distForDepth = (sizeZ / 2) / Math.tan(halfFovV);
+  const camDist = Math.max(Math.max(distForWidth, distForDepth) * 1.2, 10);
+  const elevAngle = Math.PI / 4;
+  const horizontalDist = camDist * Math.cos(elevAngle);
+  const camHeight = camDist * Math.sin(elevAngle);
   camera.position.set(
-    bbox.centerX + cameraDistance * 0.5,
-    cameraDistance * 0.6,
-    bbox.centerZ + cameraDistance * 0.5
+    bbox.centerX + horizontalDist * Math.cos(Math.PI / 4),
+    camHeight,
+    bbox.centerZ + horizontalDist * Math.sin(Math.PI / 4)
   );
-  camera.lookAt(bbox.centerX, -2, bbox.centerZ);
+  camera.lookAt(bbox.centerX, -1, bbox.centerZ);
 
   return {
     scene,
