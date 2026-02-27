@@ -1234,10 +1234,13 @@ select.btn:focus-visible {
 /* Improve contrast for mode buttons over canvas */
 /* Buttons that overlay the canvas use a dark translucent background for contrast */
 .canvas-toolbar .segmented {
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.85);
   border-color: rgba(255, 255, 255, 0.25);
   box-shadow: var(--shadow);
   border-radius: 8px;
+  /* Prevent canvas content from showing through the toolbar */
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 .canvas-toolbar .segmented#modeGroup {
