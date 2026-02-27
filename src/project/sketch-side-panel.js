@@ -123,8 +123,9 @@ function renderListView() {
 
   if (sketches.length === 0) {
     listEl.innerHTML = `<div class="sketch-side-panel__empty">
-      <span class="material-icons">inbox</span>
+      <span class="material-icons" style="font-size:36px;opacity:0.5">inbox</span>
       <span>${t('projects.canvas.noSketches') || 'No sketches'}</span>
+      <span class="sketch-side-panel__empty-hint">${t('projects.canvas.noSketchesHint') || 'Create a sketch and assign it to this project.'}</span>
     </div>`;
     return;
   }
