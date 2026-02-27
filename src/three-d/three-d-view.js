@@ -15,6 +15,7 @@ import { FPSControls } from './three-d-fps-controls.js';
 import { VirtualJoystick } from './three-d-joystick.js';
 import { computeSketchIssues } from '../project/sketch-issues.js';
 import { setup3DIssueInteraction } from './three-d-issues.js';
+import { setMiniatureMode, isMiniatureMode, resetMiniatureState } from './three-d-miniature.js';
 
 let isOpen = false;
 
@@ -65,6 +66,10 @@ export async function open3DView(opts = {}) {
             <span class="material-icons">add</span>
           </button>
         </div>
+        <button class="three-d-overlay__miniature-toggle" aria-label="${esc(t('threeD.miniature'))}">
+          <span class="material-icons">zoom_out_map</span>
+          <span class="three-d-overlay__miniature-label">${esc(t('threeD.miniature'))}</span>
+        </button>
         <button class="three-d-overlay__mode-toggle" aria-label="${esc(t('threeD.modeToggle'))}">
           <span class="material-icons">${currentMode === 'fps' ? '3d_rotation' : 'directions_walk'}</span>
           <span class="three-d-overlay__mode-label">${esc(currentMode === 'fps' ? t('threeD.modeOrbit') : t('threeD.modeFPS'))}</span>
@@ -152,6 +157,8 @@ export async function open3DView(opts = {}) {
     if (resizeObserver) resizeObserver.disconnect();
 
     if (issueInteraction) issueInteraction.dispose();
+
+    resetMiniatureState();
 
     // Dispose scene
     if (sceneResult) {
@@ -361,6 +368,17 @@ export async function open3DView(opts = {}) {
 
   // Apply initial mode
   setMode(currentMode);
+
+  // ── Miniature toggle ────────────────────────────────────────────────
+  const miniToggleBtn = overlay.querySelector('.three-d-overlay__miniature-toggle');
+  miniToggleBtn.addEventListener('click', () => {
+    const next = !isMiniatureMode();
+    setMiniatureMode(THREE, sceneResult.meshRefs, next);
+    const icon = miniToggleBtn.querySelector('.material-icons');
+    const label = miniToggleBtn.querySelector('.three-d-overlay__miniature-label');
+    icon.textContent = next ? 'zoom_in_map' : 'zoom_out_map';
+    label.textContent = esc(next ? t('threeD.realScale') : t('threeD.miniature'));
+  });
 
   // ── Issue interaction (raycasting + fix popups) ──────────────────────
   issueInteraction = setup3DIssueInteraction(THREE, {

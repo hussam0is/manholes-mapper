@@ -10215,6 +10215,29 @@ button:focus-visible,
   white-space: nowrap;
 }
 
+/* 3D Miniature Toggle */
+.three-d-overlay__miniature-toggle {
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #e2e8f0;
+  cursor: pointer;
+  border-radius: var(--radius);
+  padding: 0 10px;
+  font-size: 0.75rem;
+  transition: background 0.15s;
+}
+.three-d-overlay__miniature-toggle:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+.three-d-overlay__miniature-label {
+  white-space: nowrap;
+}
+
 /* 3D speed control */
 .three-d-overlay__speed-control {
   display: flex;
@@ -10384,6 +10407,9 @@ button:focus-visible,
     padding: var(--space-2) var(--space-3);
   }
   .three-d-overlay__mode-label {
+    display: none;
+  }
+  .three-d-overlay__miniature-label {
     display: none;
   }
 }

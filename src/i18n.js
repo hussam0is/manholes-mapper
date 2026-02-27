@@ -613,6 +613,8 @@ export const i18n = {
         panelTitle: 'בעיות',
         navigateTo: 'נווט לבעיה',
       },
+      miniature: 'מיניאטורה',
+      realScale: 'גודל אמיתי',
     },
     fixes: {
       title: 'הצעות תיקון',
@@ -1236,6 +1238,8 @@ export const i18n = {
         panelTitle: 'Issues',
         navigateTo: 'Navigate to issue',
       },
+      miniature: 'Miniature',
+      realScale: 'Real Scale',
     },
     fixes: {
       title: 'Fix Suggestions',

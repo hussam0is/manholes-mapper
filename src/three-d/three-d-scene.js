@@ -115,14 +115,17 @@ function buildHouseModel(THREE, group, pos, nodeId, isEstimated, materials, CSS2
   group.add(roof);
 
   // CSS2D Label above the roof
+  let label = null;
   if (CSS2DObject) {
     const labelDiv = document.createElement('div');
     labelDiv.className = 'three-d-label';
     labelDiv.textContent = nodeId;
-    const label = new CSS2DObject(labelDiv);
+    label = new CSS2DObject(labelDiv);
     label.position.set(pos.x, pos.y + WALL_H + ROOF_H + 0.4, pos.z);
     group.add(label);
   }
+
+  return { body, roof, label };
 }
 
 // ── Main builder ────────────────────────────────────────────────────────────
@@ -211,6 +214,12 @@ export function buildScene(THREE, data, CSS2DObject, issues = []) {
   gridHelper.material.transparent = true;
   scene.add(gridHelper);
 
+  // ── Mesh references for miniature toggle ─────────────────────────────────
+  const meshRefs = {
+    nodeMeshes: new Map(),  // nodeId → { type: 'manhole'|'house', meshes... }
+    pipeMeshes: new Map(),  // edgeId → { tube, startCap, endCap }
+  };
+
   // ── Manholes ──────────────────────────────────────────────────────────────
   const manholeGroup = new THREE.Group();
   manholeGroup.name = 'manholes';
@@ -222,7 +231,14 @@ export function buildScene(THREE, data, CSS2DObject, issues = []) {
 
     if (node.nodeType === 'Home') {
       // ── House model ──
-      buildHouseModel(THREE, manholeGroup, pos, id, pos.isEstimated, materials, CSS2DObject);
+      const houseRefs = buildHouseModel(THREE, manholeGroup, pos, id, pos.isEstimated, materials, CSS2DObject);
+      meshRefs.nodeMeshes.set(id, {
+        type: 'house',
+        body: houseRefs.body,
+        roof: houseRefs.roof,
+        label: houseRefs.label,
+        nodeType: node.nodeType,
+      });
     } else {
       // ── Manhole cylinder ──
       const coverDiameterM = parseNum(node.coverDiameter, DEFAULT_COVER_DIAMETER_CM) / 100;
@@ -240,13 +256,14 @@ export function buildScene(THREE, data, CSS2DObject, issues = []) {
       shaft.position.set(pos.x, pos.y - depth / 2, pos.z);
       manholeGroup.add(shaft);
 
-      // Inner wall
+      // Inner wall (may not exist if innerRadius <= 0.02)
+      let inner = null;
       if (innerRadius > 0.02) {
         const innerGeo = new THREE.CylinderGeometry(
           innerRadius, innerRadius, depth, MANHOLE_SEGMENTS, 1, true
         );
         const innerMat = isEstimated ? materials.estimated(materials.manholeWallInner) : materials.manholeWallInner;
-        const inner = new THREE.Mesh(innerGeo, innerMat);
+        inner = new THREE.Mesh(innerGeo, innerMat);
         inner.position.set(pos.x, pos.y - depth / 2, pos.z);
         manholeGroup.add(inner);
       }
@@ -277,14 +294,20 @@ export function buildScene(THREE, data, CSS2DObject, issues = []) {
       manholeGroup.add(rim);
 
       // Label (CSS2D)
+      let label = null;
       if (CSS2DObject) {
         const labelDiv = document.createElement('div');
         labelDiv.className = 'three-d-label';
         labelDiv.textContent = node.id;
-        const label = new CSS2DObject(labelDiv);
+        label = new CSS2DObject(labelDiv);
         label.position.set(pos.x, pos.y + 0.5, pos.z);
         manholeGroup.add(label);
       }
+
+      meshRefs.nodeMeshes.set(id, {
+        type: 'manhole',
+        cover, shaft, inner, rim, bottom, label,
+      });
     }
   }
 
@@ -349,6 +372,8 @@ export function buildScene(THREE, data, CSS2DObject, issues = []) {
     endCap.position.copy(end);
     endCap.lookAt(start);
     pipeGroup.add(endCap);
+
+    meshRefs.pipeMeshes.set(String(edge.id), { tube: pipeMesh, startCap, endCap });
   }
 
   scene.add(pipeGroup);
@@ -432,6 +457,7 @@ export function buildScene(THREE, data, CSS2DObject, issues = []) {
     positions3D,
     nodeMap,
     issueGroup,
+    meshRefs,
   };
 }
 
