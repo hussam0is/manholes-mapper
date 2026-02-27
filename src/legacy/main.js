@@ -1049,6 +1049,15 @@ function updateUserButtonVisibility(isSignedIn) {
   if (mobileUserButtonContainer) {
     mobileUserButtonContainer.style.display = isSignedIn ? 'flex' : 'none';
   }
+
+  // Hide admin/project menu items from non-admin users
+  const userRole = window.permissionsService?.getUserRole?.();
+  const isAdminRole = userRole?.isAdmin === true;
+  const adminDisplay = isSignedIn && isAdminRole ? '' : 'none';
+  if (adminBtn) adminBtn.style.display = adminDisplay;
+  if (mobileAdminBtn) mobileAdminBtn.style.display = adminDisplay;
+  if (projectsBtn) projectsBtn.style.display = adminDisplay;
+  if (mobileProjectsBtn) mobileProjectsBtn.style.display = adminDisplay;
 }
 
 // Simple hash routing for admin screen and login
@@ -1142,6 +1151,14 @@ if (window.authGuard?.onAuthStateChange) {
   window.authGuard.onAuthStateChange((state) => {
     handleRoute();
     updateUserButtonVisibility(state.isSignedIn);
+  });
+}
+
+// Re-evaluate admin button visibility when permissions are loaded (async after auth)
+if (window.permissionsService?.onPermissionChange) {
+  window.permissionsService.onPermissionChange(() => {
+    const authState = window.authGuard?.getAuthState?.() || {};
+    updateUserButtonVisibility(!!authState.isSignedIn);
   });
 }
 
