@@ -10096,6 +10096,85 @@ button:focus-visible,
   font-size: 14px;
 }
 
+/* ── 3D Fix Suggestion Popup ── */
+.three-d-fix-popup {
+  position: absolute;
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 10px;
+  padding: 10px;
+  color: #e2e8f0;
+  font-size: 0.8rem;
+  z-index: 10;
+  min-width: 180px;
+  max-width: 260px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+.three-d-fix-popup__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  font-weight: 600;
+}
+.three-d-fix-popup__header .material-icons:first-child {
+  color: #ef4444;
+  font-size: 18px;
+}
+.three-d-fix-popup__close {
+  margin-inline-start: auto;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+}
+.three-d-fix-popup__close:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+.three-d-fix-popup__close .material-icons {
+  font-size: 16px;
+}
+.three-d-fix-popup__issue-label {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  margin: 6px 0 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.three-d-fix-popup__btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  margin-bottom: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  color: #e2e8f0;
+  cursor: pointer;
+  font-size: 0.75rem;
+  text-align: start;
+  transition: background 0.15s;
+  min-height: 40px;
+}
+.three-d-fix-popup__btn:hover,
+.three-d-fix-popup__btn:active {
+  background: rgba(255, 255, 255, 0.16);
+}
+.three-d-fix-popup__btn .material-icons {
+  font-size: 16px;
+  color: #eab308;
+}
+
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
@@ -10131,6 +10210,48 @@ button:focus-visible,
 
 .three-d-overlay__mode-label {
   white-space: nowrap;
+}
+
+/* 3D speed control */
+.three-d-overlay__speed-control {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius);
+  padding: 2px;
+}
+
+.three-d-overlay__speed-btn {
+  min-width: 36px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  border-radius: var(--radius);
+  transition: background 0.15s;
+}
+
+.three-d-overlay__speed-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.three-d-overlay__speed-btn .material-icons {
+  font-size: 18px;
+}
+
+.three-d-overlay__speed-badge {
+  min-width: 32px;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
 }
 
 /* 3D virtual joystick canvas */

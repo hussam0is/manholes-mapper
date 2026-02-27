@@ -8,18 +8,22 @@
  * camera.rotation via plain trig. Expects Euler order 'YXZ'.
  */
 
-const FLY_SPEED = 5;     // m/s normal
-const SPRINT_SPEED = 15;  // m/s sprint (Shift)
+const BASE_SPEED = 5;     // m/s at 1× multiplier
+const SPRINT_FACTOR = 3;  // sprint = base × this
 const LOOK_SENSITIVITY = 0.003;
 const TOUCH_LOOK_SENSITIVITY = 0.004;
 const PITCH_LIMIT = (85 * Math.PI) / 180; // ±85°
 const JOYSTICK_THRESHOLD = 8; // px deadzone
 
+// Speed multiplier presets (scroll wheel steps through these)
+const SPEED_STEPS = [0.25, 0.5, 1, 2, 4, 8, 16];
+const DEFAULT_SPEED_INDEX = 2; // 1×
+
 export class FPSControls {
   /**
    * @param {object} camera - Three.js camera (only .position and .rotation used)
    * @param {HTMLElement} domElement - The canvas or container for events
-   * @param {{ onJoystickStart?: Function, onJoystickMove?: Function, onJoystickEnd?: Function }} [callbacks]
+   * @param {{ onJoystickStart?: Function, onJoystickMove?: Function, onJoystickEnd?: Function, onSpeedChange?: Function }} [callbacks]
    */
   constructor(camera, domElement, callbacks = {}) {
     this._camera = camera;
@@ -27,6 +31,10 @@ export class FPSControls {
     this._cb = callbacks;
     this._enabled = false;
     this._disposed = false;
+
+    // Speed multiplier
+    this._speedIndex = DEFAULT_SPEED_INDEX;
+    this._speedMultiplier = SPEED_STEPS[DEFAULT_SPEED_INDEX];
 
     // Movement state (−1..1)
     this._moveForward = 0;
@@ -56,6 +64,22 @@ export class FPSControls {
     this._onTouchMove = this._handleTouchMove.bind(this);
     this._onTouchEnd = this._handleTouchEnd.bind(this);
     this._onPointerLockChange = this._handlePointerLockChange.bind(this);
+    this._onWheel = this._handleWheel.bind(this);
+  }
+
+  /** Current speed multiplier (read-only). */
+  get speedMultiplier() { return this._speedMultiplier; }
+
+  /** Set speed multiplier to a specific value in SPEED_STEPS. */
+  setSpeedIndex(idx) {
+    this._speedIndex = Math.max(0, Math.min(SPEED_STEPS.length - 1, idx));
+    this._speedMultiplier = SPEED_STEPS[this._speedIndex];
+    this._cb.onSpeedChange?.(this._speedMultiplier);
+  }
+
+  /** Step speed up/down by one notch. */
+  stepSpeed(delta) {
+    this.setSpeedIndex(this._speedIndex + delta);
   }
 
   /** Extract initial yaw/pitch from the camera's current rotation. */
@@ -83,6 +107,9 @@ export class FPSControls {
     this._dom.addEventListener('touchmove', this._onTouchMove, { passive: false });
     this._dom.addEventListener('touchend', this._onTouchEnd);
     this._dom.addEventListener('touchcancel', this._onTouchEnd);
+
+    // Scroll wheel → speed control
+    this._dom.addEventListener('wheel', this._onWheel, { passive: false });
   }
 
   disable() {
@@ -99,6 +126,7 @@ export class FPSControls {
     this._dom.removeEventListener('touchmove', this._onTouchMove);
     this._dom.removeEventListener('touchend', this._onTouchEnd);
     this._dom.removeEventListener('touchcancel', this._onTouchEnd);
+    this._dom.removeEventListener('wheel', this._onWheel);
 
     // Exit pointer lock
     if (document.pointerLockElement === this._dom) {
@@ -131,7 +159,7 @@ export class FPSControls {
     if (this._keys['KeyE']) up = Math.min(up + 1, 1);
 
     const sprint = this._sprint || this._keys['ShiftLeft'] || this._keys['ShiftRight'];
-    const speed = sprint ? SPRINT_SPEED : FLY_SPEED;
+    const speed = BASE_SPEED * this._speedMultiplier * (sprint ? SPRINT_FACTOR : 1);
 
     // Spectator free-cam: forward vector follows camera pitch (fly toward where you look)
     const sinY = Math.sin(this._yaw);
@@ -190,6 +218,13 @@ export class FPSControls {
 
   _handlePointerLockChange() {
     // No action needed — movement continues regardless
+  }
+
+  _handleWheel(e) {
+    if (!this._enabled) return;
+    e.preventDefault();
+    // Scroll up = faster, scroll down = slower
+    this.stepSpeed(e.deltaY < 0 ? 1 : -1);
   }
 
   // ── Touch handlers (PUBG spectator-style) ─────────────────────────────────

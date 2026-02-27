@@ -14,6 +14,7 @@ import { computeInitialCamera } from './three-d-camera-framing.js';
 import { FPSControls } from './three-d-fps-controls.js';
 import { VirtualJoystick } from './three-d-joystick.js';
 import { computeSketchIssues } from '../project/sketch-issues.js';
+import { setup3DIssueInteraction } from './three-d-issues.js';
 
 let isOpen = false;
 
@@ -110,6 +111,9 @@ export async function open3DView(opts = {}) {
   const modeToggleBtn = overlay.querySelector('.three-d-overlay__mode-toggle');
   const controlsHint = overlay.querySelector('.three-d-overlay__controls-hint');
   const crosshair = overlay.querySelector('.three-d-overlay__crosshair');
+  const speedControl = overlay.querySelector('.three-d-overlay__speed-control');
+  const speedBadge = overlay.querySelector('.three-d-overlay__speed-badge');
+  const speedBtns = overlay.querySelectorAll('.three-d-overlay__speed-btn');
 
   // ── Landscape orientation lock ────────────────────────────────────────
   let orientationLocked = false;
@@ -127,6 +131,7 @@ export async function open3DView(opts = {}) {
   let joystick = null;
   let sceneResult = null;
   let resizeObserver = null;
+  let issueInteraction = null;
 
   function cleanup() {
     isOpen = false;
@@ -136,6 +141,8 @@ export async function open3DView(opts = {}) {
     if (fpsControls) fpsControls.dispose();
     if (joystick) joystick.dispose();
     if (resizeObserver) resizeObserver.disconnect();
+
+    if (issueInteraction) issueInteraction.dispose();
 
     // Dispose scene
     if (sceneResult) {
@@ -258,10 +265,24 @@ export async function open3DView(opts = {}) {
   // ── FPS controls + Joystick ───────────────────────────────────────────
   joystick = new VirtualJoystick(container);
 
+  function updateSpeedBadge(mult) {
+    if (!speedBadge) return;
+    speedBadge.textContent = (mult >= 1 ? Math.round(mult) : mult) + '×';
+  }
+
   fpsControls = new FPSControls(camera, renderer.domElement, {
     onJoystickStart(x, y) { joystick.show(x, y); },
     onJoystickMove(dx, dy, max) { joystick.move(dx, dy, max); },
     onJoystickEnd() { joystick.hide(); },
+    onSpeedChange(mult) { updateSpeedBadge(mult); },
+  });
+
+  // Speed +/- buttons (mobile)
+  speedBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const dir = parseInt(btn.dataset.dir, 10);
+      fpsControls.stepSpeed(dir);
+    });
   });
 
   // ── Mode switching ────────────────────────────────────────────────────
@@ -275,6 +296,8 @@ export async function open3DView(opts = {}) {
       fpsControls.initFromCamera();
       fpsControls.enable();
       crosshair.style.display = 'flex';
+      speedControl.style.display = 'flex';
+      updateSpeedBadge(fpsControls.speedMultiplier);
       // Button shows "switch to orbit"
       modeIcon.textContent = '3d_rotation';
       modeLabel.textContent = esc(t('threeD.modeOrbit'));
@@ -282,6 +305,7 @@ export async function open3DView(opts = {}) {
     } else {
       fpsControls.disable();
       joystick.hide();
+      speedControl.style.display = 'none';
       // Sync orbit target to where camera is looking
       const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
       orbitControls.target.copy(camera.position).add(dir.multiplyScalar(5));
@@ -310,7 +334,8 @@ export async function open3DView(opts = {}) {
         `${esc(t('threeD.controls.fpsMove'))}<br>` +
         `${esc(t('threeD.controls.fpsLook'))}<br>` +
         `${esc(t('threeD.controls.fpsSprint'))}<br>` +
-        `${esc(t('threeD.controls.fpsUpDown'))}`;
+        `${esc(t('threeD.controls.fpsUpDown'))}<br>` +
+        `${esc(t('threeD.controls.fpsSpeed'))}`;
     } else {
       controlsHint.innerHTML =
         `${esc(t('threeD.controls.rotate'))}<br>` +
@@ -327,6 +352,21 @@ export async function open3DView(opts = {}) {
 
   // Apply initial mode
   setMode(currentMode);
+
+  // ── Issue interaction (raycasting + fix popups) ──────────────────────
+  issueInteraction = setup3DIssueInteraction(THREE, {
+    camera,
+    scene,
+    renderer,
+    container,
+    nodes: data.nodes,
+    edges: data.edges,
+    issues,
+    onFixApplied() {
+      window.__saveToStorage?.();
+      window.__scheduleDraw?.();
+    },
+  });
 
   // ── Resize handling ───────────────────────────────────────────────────
   function onResize() {

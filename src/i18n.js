@@ -603,6 +603,11 @@ export const i18n = {
         fpsLook: 'הסתכל: עכבר / גרור ימין',
         fpsSprint: 'מהירות: Shift',
         fpsUpDown: 'עלה/רד: Space / Ctrl',
+        fpsSpeed: 'מהירות: גלגלת / +−',
+      },
+      speed: {
+        slower: 'האט',
+        faster: 'מהר יותר',
       },
     },
     fixes: {
@@ -1217,6 +1222,11 @@ export const i18n = {
         fpsLook: 'Look: mouse / right drag',
         fpsSprint: 'Speed: Shift',
         fpsUpDown: 'Up/Down: Space / Ctrl',
+        fpsSpeed: 'Speed: scroll wheel / +−',
+      },
+      speed: {
+        slower: 'Slower',
+        faster: 'Faster',
       },
     },
     fixes: {
