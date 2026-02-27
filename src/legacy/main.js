@@ -5484,16 +5484,38 @@ function renderDetails() {
 }
 
 // Close button for drawer
-if (sidebarCloseBtn) {
-  sidebarCloseBtn.addEventListener('click', () => {
-    if (sidebarEl && sidebarEl.classList) sidebarEl.classList.remove('open');
-    if (document && document.body && document.body.classList) document.body.classList.remove('drawer-open');
-    selectedNode = null;
-    selectedEdge = null;
-    renderDetails();
-    scheduleDraw();
-  });
+function closeSidebarPanel() {
+  if (sidebarEl && sidebarEl.classList) sidebarEl.classList.remove('open');
+  if (document && document.body && document.body.classList) document.body.classList.remove('drawer-open');
+  selectedNode = null;
+  selectedEdge = null;
+  renderDetails();
+  scheduleDraw();
 }
+
+if (sidebarCloseBtn) {
+  sidebarCloseBtn.addEventListener('click', closeSidebarPanel);
+  // Explicit touchend handler — on some Android WebViews the click event
+  // fires unreliably on small touch targets, so we handle touchend directly.
+  sidebarCloseBtn.addEventListener('touchend', (e) => {
+    e.preventDefault();  // prevent ghost click
+    e.stopPropagation();
+    closeSidebarPanel();
+  }, { passive: false });
+}
+
+// Backdrop tap: tapping canvas while sidebar is open closes the panel,
+// but ONLY when no drawing mode is actively placing nodes/edges.
+canvas.addEventListener('touchstart', (e) => {
+  if (sidebarEl && sidebarEl.classList.contains('open')) {
+    // Only close on backdrop tap when in select/pan mode (not placing nodes/edges)
+    const isDrawing = (currentMode === 'node' || currentMode === 'home' || currentMode === 'drainage' || currentMode === 'edge');
+    if (!isDrawing) {
+      closeSidebarPanel();
+      // Don't prevent default — allow the touch to also pan the canvas
+    }
+  }
+}, { passive: true });
 
 /**
  * If the provided Home node is connected to a Manhole, assign an id derived from the manhole id.
