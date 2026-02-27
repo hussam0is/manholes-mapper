@@ -48,3 +48,6 @@ manholes/
 # Claude Code local config and session state
 .claude/
 scripts/session-watchdog.sh
+
+# App design reference screenshots (local only)
+current_app_design/

@@ -5,9 +5,9 @@
 - **Chat Messages**: 0
 
 ## ClickUp Status
-- **Last Poll**: 2026-02-25T22:09:33.906Z
-- **Poll Count**: 25
-- **Total Tasks**: 39
+- **Last Poll**: 2026-02-27T17:32:33.781Z
+- **Poll Count**: 47
+- **Total Tasks**: 41
 - **Open Tasks**: 0
 - **In Progress**: 0
 - **Need Help**: 1
@@ -23,6 +23,7 @@ _None_
 
 ## Notes
 - [2026-02-24 10:28] **TSC3 Mock Test PASSED** — Tested mock TSC3 WebSocket integration on dev deployment via Playwright. Fixed 2 issues: ws:// protocol for localhost (`55e3cb1`), CSP connect-src for WebSocket (`525f389`). All 7 test cases passed. ClickUp task `86ewq6fgc` → success in dev.
+- [2026-02-27] **Optimistic locking implemented** — Server-version guard on sketch PUT prevents silent overwrites when DB is patched directly while field worker has sketch open. `clientUpdatedAt` in PUT body, 409 on mismatch, auto-retry with server's fresh `updated_at`. Commit `ef46e7b`. ClickUp `86ewrftnv` → success in dev. **Protocol**: all direct DB `UPDATE sketches SET ...` must include `updated_at = NOW()`.
 
 ## Chat Log
 - [2026-02-24 10:11:39] **user**: hi

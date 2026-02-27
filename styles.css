@@ -1227,6 +1227,8 @@ select.btn:focus-visible {
   right: 12px;
   z-index: 150;
   /* keep under header */
+  padding-inline-end: max(4px, env(safe-area-inset-right));
+  margin-inline-end: max(4px, env(safe-area-inset-right));
 }
 
 /* Improve contrast for mode buttons over canvas */
