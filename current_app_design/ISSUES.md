@@ -7,7 +7,7 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 ## Last Processed
 - **Batch 1**: Screenshots 01–20 (processed 2026-02-27)
 - **Batch 2**: Screenshots 21–40 (processed 2026-02-27)
-- **Batch 3**: Screenshots 41–59 (pending)
+- **Batch 3**: Screenshots 41–59 (processed 2026-02-27)
 
 ---
 
@@ -16,10 +16,10 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 | Severity | Total | Fixed | Open |
 |----------|-------|-------|------|
 | CRITICAL | 1 | 0 | 1 (not app bug) |
-| HIGH | 9 | 3 | 6 |
-| MEDIUM | 16 | 0 | 16 |
-| LOW | 10 | 0 | 10 |
-| **TOTAL** | **36** | **3** | **33** |
+| HIGH | 12 | 3 | 9 |
+| MEDIUM | 25 | 0 | 25 |
+| LOW | 18 | 0 | 18 |
+| **TOTAL** | **56** | **3** | **53** |
 
 ---
 
@@ -374,6 +374,190 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 
 ---
 
+## Batch 3 Issues (Screenshots 41–59)
+
+### Issue #37 — Picker Dialog Shows Corrupted/Overlapping Icons at First Item
+- **Severity**: MEDIUM
+- **Type**: bug
+- **Screenshot**: 42_node_edit_form_full_fields.png, 49_canvas_panel_closed_ready_for_measure.png
+- **Problem**: Maintenance status and line diameter pickers show garbled/overlapping icon artifacts at the top-left of the first list item — appears to be app favicon bleeding through from behind the modal overlay. Gives broken, unprofessional appearance.
+- **Fix**: Ensure picker modal overlay has `background: white` from `top: 0` and sufficient `z-index`. Check picker rendering in `src/legacy/main.js` where maintenance status and diameter option lists are built.
+- **Status**: OPEN
+- **Commit**: —
+
+### Issue #38 — Delete Node Button Visible Without Scrolling to Content
+- **Severity**: MEDIUM
+- **Type**: ux
+- **Screenshot**: 41_node_panel_very_top_nodeid_fields.png, 43_maintenance_picker_dismissed.png
+- **Problem**: The "Delete Node" full-width red button is visible at panel bottom even at default height before the user has scrolled to see all fields. Destructive action is always visible while useful fields require scrolling.
+- **Fix**: Ensure Delete button is inside the scrollable area at the very end of content — not sticky/pinned at bottom. Alternatively hide behind "More actions" overflow menu.
+- **Status**: OPEN
+- **Commit**: —
+
+### Issue #39 — Connected Lines Section Lacks Clear Visual Separation from Node Fields
+- **Severity**: MEDIUM
+- **Type**: ux/design
+- **Screenshot**: 45_node_panel_more_fields_scroll2.png, 48_edge_panel_scroll_more_fields.png
+- **Problem**: The "Connected lines" section within the node panel shows full edge editing fields inline. Visual hierarchy does not make clear the user has scrolled from node fields into edge fields. Section title easily missed.
+- **Fix**: Use a distinct background color for connected-edge sections. Add a thick divider with clear header (e.g., "Connected Edge: Node 281 → 280"). Consider collapsible/expandable sections per connected edge.
+- **Status**: OPEN
+- **Commit**: —
+
+### Issue #40 — Connected Edge Fields Create "Delete Node" Label Confusion
+- **Severity**: HIGH
+- **Type**: bug
+- **Screenshot**: 46_edge_mode_activated.png, 47_after_edge_mode_tap.png, 48_edge_panel_scroll_more_fields.png
+- **Problem**: When edge fields from "Connected lines" fill the viewport, the "Delete Node" button at panel bottom looks mismatched — looks like an edge panel with the wrong delete label. Causes confusion about what will be deleted.
+- **Fix**: Add contextual mini-header when user scrolls into Connected Lines ("Editing connected edge"). Connected-edge fields should each have their own inline delete-edge action rather than relying on the main panel button.
+- **Status**: OPEN
+- **Commit**: —
+
+### Issue #41 — Panel Does NOT Close on Android Back Button
+- **Severity**: HIGH
+- **Type**: bug
+- **Screenshot**: 54_after_back_key.png, 55_app_reopened.png
+- **Problem**: Pressing Android Back button exits the entire app instead of closing the open details panel. The `popstate` handler does NOT check if `#sidebar` is visible before showing the exit prompt.
+- **Fix**: In `src/legacy/main.js` around the `popstate` handler (~line 9766), add check before exit prompt: if `#sidebar` is visible, close it and return. Insert before the home panel check.
+- **Status**: OPEN
+- **Commit**: —
+
+### Issue #42 — Panel Persists After App Background/Foreground Cycle
+- **Severity**: LOW
+- **Type**: ux
+- **Screenshot**: 55_app_reopened.png, 56_panel_close_attempt.png
+- **Problem**: After app is backgrounded and reopened, the details panel remains open at exact same scroll position. User expects to see the canvas map on resume, not a stale form.
+- **Fix**: On `visibilitychange` (document becomes visible), optionally close the details panel to return user to canvas view.
+- **Status**: OPEN
+- **Commit**: —
+
+### Issue #43 — Panel Drag Handle Too Tiny (4px Tall)
+- **Severity**: MEDIUM
+- **Type**: ux/accessibility
+- **Screenshot**: 41_node_panel_very_top_nodeid_fields.png, 56_panel_close_attempt.png
+- **Problem**: Drawer drag handle is ~30px wide × 4px tall — impossible to target with gloves or in bright sunlight. Screenshots 56-57 show user struggling with multiple failed close attempts.
+- **Fix**: Make drag handle at least 36px × 8px with a 44dp touch target. Add swipe-down gesture on entire panel header. Widen to pill-shaped indicator. Update `src/utils/resizable-drawer.js` to register touch events on entire header row.
+- **Status**: OPEN
+- **Commit**: —
+
+### Issue #44 — Panel Close (X) Button Does Not Close Panel Reliably on Touch
+- **Severity**: HIGH
+- **Type**: bug
+- **Screenshot**: 56_panel_close_attempt.png, 57_panel_close_y1250.png
+- **Problem**: Field worker spent 60+ seconds trying to close the details panel (screenshots 56-57, timestamps 19:02-19:03). X button appears unresponsive on touch. This is a critical field usability failure.
+- **Fix**: Verify close button in `src/legacy/main.js` (`animatedPanelClose` ~line 964) registers `touchend` alongside `click`. Add tap-on-backdrop: tapping canvas above panel should close it.
+- **Status**: OPEN
+- **Commit**: —
+
+### Issue #45 — Menu Scroll Bug Regression (Fix from #4 Not Fully Effective)
+- **Severity**: MEDIUM
+- **Type**: bug (regression)
+- **Screenshot**: 58_menu_top_section.png
+- **Problem**: Screenshot 58 (timestamp 19:03) still shows menu opening with Survey Device section visible instead of Home/New Sketch. Commits e33ce41 + 77ee19f fixed this in Playwright but the regression appears on the physical phone. The `scrollTop = 0` may be applied before the menu element is fully rendered/visible.
+- **Fix**: Ensure scroll reset fires AFTER menu transitions to visible. Use `requestAnimationFrame` or `transitionend` listener to delay reset until menu is actually rendered on screen.
+- **Status**: OPEN
+- **Commit**: —
+
+### Issue #46 — Line Diameter Picker Shows Raw Numbers Without "mm" Units
+- **Severity**: MEDIUM
+- **Type**: ux/i18n
+- **Screenshot**: 49_canvas_panel_closed_ready_for_measure.png
+- **Problem**: Diameter picker shows "100, 150, 160, 200..." with no unit. "100" could mean 100cm to an unfamiliar worker. Field context requires clarity: 100mm pipe vs 100cm pipe.
+- **Fix**: Append "mm" to each diameter option label in `src/state/constants.js` `EDGE_DIAMETER_OPTIONS`. Or add subtitle "Line diameter (mm)" to picker header.
+- **Status**: OPEN
+- **Commit**: —
+
+### Issue #47 — Mixed Language: Labels English, Values Hebrew in Same Panel
+- **Severity**: LOW
+- **Type**: i18n
+- **Screenshot**: 41_node_panel_very_top_nodeid_fields.png, 43_maintenance_picker_dismissed.png
+- **Problem**: Field labels show in English ("Accuracy: Engineering", "Maintenance status") while dropdown values are in Hebrew ("בית נעול", "בטון"). Jarring mixed-direction layout. Option catalogs in `src/state/constants.js` use hardcoded Hebrew strings that don't respect current language.
+- **Fix**: Update `NODE_MAINTENANCE_OPTIONS`, `EDGE_MATERIAL_OPTIONS`, etc. in constants.js to use i18n keys for both he and en labels, respecting current language setting.
+- **Status**: OPEN
+- **Commit**: —
+
+### Issue #48 — "TL" Label Is Cryptic Abbreviation — Should Be "Terrain Level"
+- **Severity**: LOW
+- **Type**: ux
+- **Screenshot**: 44_node_panel_more_fields_scroll1.png
+- **Problem**: "TL: -109.763" is unexplained to field workers not familiar with survey terminology. "TL" = Terrain Level (elevation) but abbreviation is not self-evident.
+- **Fix**: In `src/i18n.js`, update `terrainLevel` from "TL" to "גובה שטח" (he) / "Terrain Level" or "Elevation" (en).
+- **Status**: OPEN
+- **Commit**: —
+
+### Issue #49 — "Precision" Field Shows Em Dash Without Tooltip Explanation
+- **Severity**: LOW
+- **Type**: ux
+- **Screenshot**: 44_node_panel_more_fields_scroll1.png
+- **Problem**: "Precision: —" for nodes where precision wasn't captured gives no actionable info. User doesn't know WHY it's missing.
+- **Fix**: Show "Not recorded" with tooltip "Precision was not captured during this measurement." Add i18n key `notRecorded: 'לא נמדד'` (he) / `'Not recorded'` (en).
+- **Status**: OPEN
+- **Commit**: —
+
+### Issue #50 — Admin Save Button Partially Hidden Below Viewport
+- **Severity**: MEDIUM
+- **Type**: ux
+- **Screenshot**: 59_admin_panel_opened.png
+- **Problem**: Admin Settings action bar ("Cancel" + "Save Settings") is cut off at viewport bottom by system navigation bar. Users may miss or struggle to tap "Save Settings".
+- **Fix**: Add `padding-bottom: env(safe-area-inset-bottom, 20px)` to admin settings container. Or make action bar `position: sticky; bottom: 0` with opaque background.
+- **Status**: OPEN
+- **Commit**: —
+
+### Issue #51 — Canvas Fully Obscured When Panel Open — Selected Node Not Highlighted
+- **Severity**: MEDIUM
+- **Type**: ux
+- **Screenshot**: 41_node_panel_very_top_nodeid_fields.png, 45_node_panel_more_fields_scroll2.png
+- **Problem**: Open panel occupies ~50% viewport. Remaining canvas is too small to identify the selected node. No visual highlight on the selected element while panel is open. Field workers cannot verify they're editing the right node.
+- **Fix**: (1) Auto-center canvas on selected node when panel opens. (2) Persistent pulsing highlight on selected node/edge while panel is open. (3) Panel starts at 30% height (compact), user drags up for more fields.
+- **Status**: OPEN
+- **Commit**: —
+
+### Issue #52 — Node Panel Wizard Tab Icons Have No Labels or Aria-Labels
+- **Severity**: LOW
+- **Type**: accessibility
+- **Screenshot**: 41_node_panel_very_top_nodeid_fields.png, 53_canvas_clean_after_swipe_dismiss.png
+- **Problem**: Row of icon tabs (wrench, layers, circle, hatched square, hamburger) below warning badge have no text labels and no tooltips. New workers cannot tell which tab holds which field category.
+- **Fix**: Add `aria-label` to each tab button. Add visible abbreviated text labels below icons ("Maint.", "Mat.", "Cover", "Access", "More"). Update tab rendering in `src/legacy/main.js`.
+- **Status**: OPEN
+- **Commit**: —
+
+### Issue #53 — "Missing measurement" Badge Is Not Actionable
+- **Severity**: MEDIUM
+- **Type**: ux
+- **Screenshot**: 41_node_panel_very_top_nodeid_fields.png, 43_maintenance_picker_dismissed.png
+- **Problem**: Red "Missing measurement" badge shows which node has an issue but not WHICH measurement is missing. User must scroll through 15+ fields across multiple tabs to find the empty field.
+- **Fix**: Make badge tappable — on tap, scroll to first empty required field and highlight it. Display missing field name: "Missing measurement: Outgoing line (Edge 281-280)". Add click listener in `src/legacy/main.js`.
+- **Status**: OPEN
+- **Commit**: —
+
+### Issue #54 — Mixed LTR/RTL Content in Form Fields (Label vs Value Direction)
+- **Severity**: LOW
+- **Type**: i18n
+- **Screenshot**: 41_node_panel_very_top_nodeid_fields.png, 45_node_panel_more_fields_scroll2.png
+- **Problem**: English labels (left-aligned) mixed with Hebrew values (right-aligned) in same form. Jarring visual direction conflict within single rows.
+- **Fix**: Option values in constants.js must respect current language. When app is English, all dropdown options display in English. When Hebrew, all in Hebrew. Full i18n pass on constants.js option arrays.
+- **Status**: OPEN
+- **Commit**: —
+
+### Issue #55 — FAB Button Hidden Behind Open Panel
+- **Severity**: LOW
+- **Type**: ux
+- **Screenshot**: All panel-open screenshots (41-57)
+- **Problem**: Blue FAB at bottom-right disappears behind the details panel when open. FAB actions (center map, quick capture) become inaccessible while editing a node.
+- **Fix**: `#fabBtn { bottom: calc(var(--drawer-height, 0px) + 16px); }` — floats FAB above the panel using the existing CSS variable set by `src/utils/resizable-drawer.js`.
+- **Status**: OPEN
+- **Commit**: —
+
+### Issue #56 — Panel Has Unstable Intermediate Drag States (No Snap Behavior)
+- **Severity**: LOW
+- **Type**: ux
+- **Screenshot**: 57_panel_close_y1250.png
+- **Problem**: Panel can be left in awkward partially-open state (screenshot 57 shows compressed canvas). No snap-to-open or snap-to-closed threshold behavior.
+- **Fix**: In `src/utils/resizable-drawer.js` `stopResize()`, add snap behavior: if dragged below 30% of default height → snap to closed; otherwise snap to default open height.
+- **Status**: OPEN
+- **Commit**: —
+
+---
+
 ## Iteration Reports
 
 ### Iteration 1 Report (2026-02-27)
@@ -382,6 +566,12 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Issues Found**: 17 (1 critical, 6 high, 6 medium, 4 low)
 - **Issues Fixed**: 3 (Issues #2, #3, #4)
 - **Status**: Fix agent ran. Commits: e33ce41, 01c960d. Test agent spawned.
+
+### Iteration 2 Report (2026-02-27)
+- **Batch**: Screenshots 21–40 (audit) + fixes applied
+- **Issues Fixed**: 5 (Issues #34, #23, #27, #33, #19)
+- **Commits**: a0862cb, a6a24c7, 061b431, 48a2990, a525ac9, a42ba75 (SW v42)
+- **Status**: Fixes pushed. Playwright test pending.
 
 ---
 
@@ -392,3 +582,4 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 | 2026-02-27 | Initial audit | 20 screenshots analyzed, 17 issues found |
 | 2026-02-27 | Iteration 1 fixes | Issues #2, #3, #4 fixed. Commits: e33ce41, 01c960d |
 | 2026-02-27 | Batch 2 audit | 19 new issues found (#18-#36) from screenshots 21-40 |
+| 2026-02-27 | Batch 3 audit | 20 new issues found (#37-#56) from screenshots 41-59 |

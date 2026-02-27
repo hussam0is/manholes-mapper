@@ -9778,6 +9778,17 @@ function markInternalNavigation() {
     // Always re-push the guard state so the barrier stays in place
     history.pushState({ _guard: true }, '');
 
+    // If the details/sidebar drawer is open, close it first
+    if (sidebarEl && sidebarEl.classList.contains('open')) {
+      sidebarEl.classList.remove('open');
+      if (document.body && document.body.classList) document.body.classList.remove('drawer-open');
+      selectedNode = null;
+      selectedEdge = null;
+      renderDetails();
+      scheduleDraw();
+      return;
+    }
+
     // If a modal/panel is open, close it instead of prompting exit
     const homePanel = document.getElementById('homePanel');
     if (homePanel && homePanel.style.display !== 'none') {
