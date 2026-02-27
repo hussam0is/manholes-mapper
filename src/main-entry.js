@@ -546,15 +546,25 @@ function initMobileMenuBehavior() {
     menuBtn.setAttribute('aria-expanded', 'true');
     document.body.classList.add('mobile-menu-open');
 
-    // Reset scroll to top using double-rAF to ensure the browser has
-    // fully rendered the element after display:flex + CSS transition start.
-    // Single rAF is insufficient on some Android WebViews.
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        const scrollContainer = mobileMenu.querySelector('.mobile-menu-content');
-        if (scrollContainer) scrollContainer.scrollTop = 0;
-      });
-    });
+    // Reset scroll to top after the CSS slide-in animation finishes (200ms).
+    // Double-rAF alone was insufficient on some Android WebViews because the
+    // animation hadn't completed yet, leaving scroll position stale.
+    const scrollContainer = mobileMenu.querySelector('.mobile-menu-content');
+    if (scrollContainer) {
+      // Immediate reset (works in most browsers)
+      scrollContainer.scrollTop = 0;
+      // Also reset after animation completes for Android WebView reliability
+      let scrollReset = false;
+      const resetScroll = () => {
+        if (!scrollReset) {
+          scrollReset = true;
+          scrollContainer.scrollTop = 0;
+        }
+      };
+      mobileMenu.addEventListener('animationend', resetScroll, { once: true });
+      // Fallback timeout in case animationend doesn't fire (e.g., reduced motion)
+      setTimeout(resetScroll, 250);
+    }
 
     // Focus close button for accessibility
     if (closeBtn) {
