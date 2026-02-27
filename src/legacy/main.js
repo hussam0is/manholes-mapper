@@ -5473,6 +5473,14 @@ function renderDetails() {
       if (shouldOpen) document.body.classList.add('drawer-open');
       else document.body.classList.remove('drawer-open');
     }
+    // Eagerly set --drawer-height so FAB and other controls reposition immediately
+    // (the MutationObserver in resizable-drawer fires with a 50ms delay)
+    if (shouldOpen && sidebarEl) {
+      requestAnimationFrame(() => {
+        const h = sidebarEl.offsetHeight;
+        if (h > 0) document.documentElement.style.setProperty('--drawer-height', `${h}px`);
+      });
+    }
   } catch (_) { }
   // In mobile layout, the sidebar height affects the canvasContainer height.
   // Ensure the canvas backing store matches the new display size.

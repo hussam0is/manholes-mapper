@@ -1723,7 +1723,8 @@ canvas {
   flex-direction: row-reverse;
   align-items: center;
   gap: 0;
-  transition: right 240ms cubic-bezier(.2, .8, .2, 1);
+  transition: right 240ms cubic-bezier(.2, .8, .2, 1),
+              bottom 0.3s ease;
 }
 
 .canvas-fab-toolbar.open {
