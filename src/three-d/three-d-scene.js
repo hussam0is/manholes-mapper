@@ -374,16 +374,17 @@ export function buildScene(THREE, data, CSS2DObject, issues = []) {
     pipeGroup.add(endCap);
 
     // Direction arrow (cone) at pipe midpoint pointing tail→head
-    const arrowRadius = Math.max(pipeRadius * 2.5, 0.06);
-    const arrowLength = Math.max(arrowRadius * 2.5, 0.15);
+    const arrowRadius = Math.max(pipeRadius * 4, 0.15);
+    const arrowLength = Math.max(arrowRadius * 3, 0.5);
     const arrowGeo = new THREE.ConeGeometry(arrowRadius, arrowLength, 8);
-    // ConeGeometry points up (+Y), we need to rotate it to align with pipe direction
-    arrowGeo.rotateX(Math.PI / 2); // now points along +Z
+    // ConeGeometry tip is at +Y. Rotate so tip is at -Z, because lookAt()
+    // orients -Z toward target — this makes the tip point toward the head.
+    arrowGeo.rotateX(-Math.PI / 2);
     const arrowMat = new THREE.MeshStandardMaterial({
       color: finalMat.color ? finalMat.color.clone() : new THREE.Color(0xffffff),
-      emissive: finalMat.color ? finalMat.color.clone().multiplyScalar(0.3) : new THREE.Color(0x333333),
-      metalness: 0.4,
-      roughness: 0.5,
+      emissive: finalMat.color ? finalMat.color.clone().multiplyScalar(0.4) : new THREE.Color(0x444444),
+      metalness: 0.3,
+      roughness: 0.4,
     });
     const arrow = new THREE.Mesh(arrowGeo, arrowMat);
     // Position at midpoint of pipe
