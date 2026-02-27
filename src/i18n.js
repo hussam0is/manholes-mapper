@@ -609,6 +609,10 @@ export const i18n = {
         slower: 'האט',
         faster: 'מהר יותר',
       },
+      issues: {
+        panelTitle: 'בעיות',
+        navigateTo: 'נווט לבעיה',
+      },
     },
     fixes: {
       title: 'הצעות תיקון',
@@ -1227,6 +1231,10 @@ export const i18n = {
       speed: {
         slower: 'Slower',
         faster: 'Faster',
+      },
+      issues: {
+        panelTitle: 'Issues',
+        navigateTo: 'Navigate to issue',
       },
     },
     fixes: {

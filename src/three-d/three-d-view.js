@@ -101,6 +101,15 @@ export async function open3DView(opts = {}) {
       </div>
     </div>
     <div class="three-d-overlay__controls-hint"></div>
+    <div class="three-d-overlay__issues-panel collapsed">
+      <button class="three-d-overlay__issues-toggle">
+        <span class="material-icons">warning</span>
+        <span class="three-d-overlay__issues-count">0</span>
+        <span class="three-d-overlay__issues-label">${esc(t('threeD.issues.panelTitle'))}</span>
+        <span class="material-icons three-d-overlay__issues-chevron">expand_more</span>
+      </button>
+      <div class="three-d-overlay__issues-list"></div>
+    </div>
   `;
 
   document.body.appendChild(overlay);
@@ -367,6 +376,86 @@ export async function open3DView(opts = {}) {
       window.__scheduleDraw?.();
     },
   });
+
+  // ── Issues panel ──────────────────────────────────────────────────────
+  const issuesPanel = overlay.querySelector('.three-d-overlay__issues-panel');
+  const issuesToggle = overlay.querySelector('.three-d-overlay__issues-toggle');
+  const issuesList = overlay.querySelector('.three-d-overlay__issues-list');
+  const issuesCountEl = overlay.querySelector('.three-d-overlay__issues-count');
+  const issuesChevron = overlay.querySelector('.three-d-overlay__issues-chevron');
+
+  if (issues.length === 0) {
+    issuesPanel.style.display = 'none';
+  } else {
+    issuesCountEl.textContent = issues.length;
+
+    issuesToggle.addEventListener('click', () => {
+      const isCollapsed = issuesPanel.classList.toggle('collapsed');
+      issuesChevron.textContent = isCollapsed ? 'expand_more' : 'expand_less';
+    });
+
+    // Populate issue rows
+    for (const issue of issues) {
+      const row = document.createElement('div');
+      row.className = 'three-d-overlay__issue-row';
+
+      let icon, label;
+      if (issue.type === 'missing_coords') {
+        icon = 'location_off';
+        label = `#${issue.nodeId} — ${esc(t('projects.canvas.missingCoords'))}`;
+      } else if (issue.type === 'missing_measurement') {
+        icon = 'rule';
+        label = `#${issue.nodeId} — ${esc(t('projects.canvas.missingMeasurement'))}`;
+      } else if (issue.type === 'long_edge') {
+        icon = 'straighten';
+        label = `#${issue.tailId}→#${issue.headId} — ${esc(t('projects.canvas.longPipe'))} (${issue.lengthM}m)`;
+      } else if (issue.type === 'not_last_manhole') {
+        icon = 'last_page';
+        label = `#${issue.nodeId} — ${esc(t('projects.canvas.notLastManhole'))}`;
+      } else if (issue.type === 'negative_gradient') {
+        icon = 'trending_down';
+        label = `#${issue.tailId}→#${issue.headId} — ${esc(t('projects.canvas.negativeGradient'))} (${issue.gradient}m)`;
+      } else {
+        icon = 'error';
+        label = issue.type;
+      }
+
+      row.innerHTML = `
+        <span class="material-icons">${icon}</span>
+        <span class="three-d-overlay__issue-text">${label}</span>
+      `;
+
+      // Click to navigate camera to issue
+      row.addEventListener('click', () => {
+        let targetPos;
+        if (issue.nodeId != null) {
+          targetPos = positions3D.get(String(issue.nodeId));
+        } else if (issue.tailId != null && issue.headId != null) {
+          const tp = positions3D.get(String(issue.tailId));
+          const hp = positions3D.get(String(issue.headId));
+          if (tp && hp) {
+            targetPos = {
+              x: (tp.x + hp.x) / 2,
+              y: (tp.y + hp.y) / 2,
+              z: (tp.z + hp.z) / 2,
+              depth: Math.max(tp.depth || 2, hp.depth || 2),
+            };
+          }
+        }
+        if (!targetPos) return;
+
+        const offset = Math.max(targetPos.depth || 2, 4);
+        camera.position.set(targetPos.x + offset, (targetPos.y || 0) + offset * 0.5, targetPos.z + offset);
+        camera.lookAt(targetPos.x, (targetPos.y || 0) - (targetPos.depth || 1), targetPos.z);
+        if (orbitControls) {
+          orbitControls.target.set(targetPos.x, (targetPos.y || 0) - (targetPos.depth || 1) / 2, targetPos.z);
+          orbitControls.update();
+        }
+      });
+
+      issuesList.appendChild(row);
+    }
+  }
 
   // ── Resize handling ───────────────────────────────────────────────────
   function onResize() {

@@ -10277,6 +10277,96 @@ button:focus-visible,
   text-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
 }
 
+/* ── 3D Issues Panel ── */
+.three-d-overlay__issues-panel {
+  position: absolute;
+  top: 60px;
+  inset-inline-end: 12px;
+  background: rgba(15, 23, 42, 0.82);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: #e2e8f0;
+  z-index: 1;
+  min-width: 200px;
+  max-width: 280px;
+  max-height: 55vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: max-height 0.25s ease;
+}
+.three-d-overlay__issues-panel.collapsed {
+  max-height: 44px;
+}
+.three-d-overlay__issues-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: #e2e8f0;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  width: 100%;
+  text-align: start;
+}
+.three-d-overlay__issues-toggle .material-icons:first-child {
+  color: #ef4444;
+  font-size: 18px;
+}
+.three-d-overlay__issues-count {
+  background: rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  min-width: 20px;
+  text-align: center;
+}
+.three-d-overlay__issues-label {
+  flex: 1;
+}
+.three-d-overlay__issues-chevron {
+  font-size: 20px !important;
+  color: #94a3b8;
+  transition: transform 0.2s;
+}
+.three-d-overlay__issues-panel:not(.collapsed) .three-d-overlay__issues-chevron {
+  transform: rotate(180deg);
+}
+.three-d-overlay__issues-list {
+  overflow-y: auto;
+  padding: 0 8px 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.three-d-overlay__issue-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  cursor: pointer;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  transition: background 0.15s;
+}
+.three-d-overlay__issue-row:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+.three-d-overlay__issue-row .material-icons {
+  font-size: 16px;
+  color: #ef4444;
+  flex-shrink: 0;
+}
+.three-d-overlay__issue-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (max-width: 600px) {
   .three-d-overlay__legend {
     bottom: 8px;
