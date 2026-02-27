@@ -142,7 +142,7 @@ export function buildScene(THREE, data, CSS2DObject, issues = []) {
   const { nodes, edges, ref, coordScale } = data;
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x1a1a2e);
-  scene.fog = new THREE.FogExp2(0x1a1a2e, 0.003);
+  // Fog density is set after bounding box is computed (see below)
 
   const materials = createMaterials(THREE);
 
@@ -187,18 +187,23 @@ export function buildScene(THREE, data, CSS2DObject, issues = []) {
   }
 
   // ── Lights ────────────────────────────────────────────────────────────────
-  const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+  const ambient = new THREE.AmbientLight(0xffffff, 0.8);
   scene.add(ambient);
 
-  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
   dirLight.position.set(50, 80, 30);
   scene.add(dirLight);
 
-  const hemiLight = new THREE.HemisphereLight(0x87ceeb, 0x8b7355, 0.3);
+  const hemiLight = new THREE.HemisphereLight(0x87ceeb, 0x8b7355, 0.4);
   scene.add(hemiLight);
 
   // ── Ground plane ──────────────────────────────────────────────────────────
   const bbox = computeBounds(positions3D);
+
+  // Adaptive fog — scale density inversely with network size so overview stays visible
+  const diagonal = Math.sqrt(bbox.sizeX ** 2 + bbox.sizeZ ** 2) || 20;
+  const fogDensity = Math.min(0.003, 1.5 / Math.max(diagonal, 20));
+  scene.fog = new THREE.FogExp2(0x1a1a2e, fogDensity);
   const groundSize = Math.max(bbox.sizeX, bbox.sizeZ, 20) * 2;
   const groundGeo = new THREE.PlaneGeometry(groundSize, groundSize);
   groundGeo.rotateX(-Math.PI / 2); // lay flat
@@ -208,9 +213,9 @@ export function buildScene(THREE, data, CSS2DObject, issues = []) {
   scene.add(groundMesh);
 
   // Grid helper on the ground
-  const gridHelper = new THREE.GridHelper(groundSize, Math.min(Math.floor(groundSize / 2), 40), 0x444444, 0x333333);
+  const gridHelper = new THREE.GridHelper(groundSize, Math.min(Math.floor(groundSize / 2), 40), 0x555555, 0x3a3a3a);
   gridHelper.position.y = -0.01;
-  gridHelper.material.opacity = 0.3;
+  gridHelper.material.opacity = 0.4;
   gridHelper.material.transparent = true;
   scene.add(gridHelper);
 

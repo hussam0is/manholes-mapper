@@ -24,7 +24,7 @@ export function createMaterials(THREE) {
   const ground = new THREE.MeshStandardMaterial({
     color: 0x8b7355,
     transparent: true,
-    opacity: 0.25,
+    opacity: 0.35,
     side: THREE.DoubleSide,
     depthWrite: false,
   });
