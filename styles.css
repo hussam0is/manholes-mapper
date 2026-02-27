@@ -10293,6 +10293,47 @@ button:focus-visible,
   font-variant-numeric: tabular-nums;
 }
 
+/* 3D orbit controls (floating zoom/recenter buttons) */
+.three-d-overlay__orbit-controls {
+  position: absolute;
+  inset-inline-end: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 3;
+}
+
+.three-d-overlay__orbit-btn {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fff;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: background 0.15s, transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.three-d-overlay__orbit-btn:hover {
+  background: rgba(37, 99, 235, 0.5);
+}
+
+.three-d-overlay__orbit-btn:active {
+  transform: scale(0.92);
+  background: rgba(37, 99, 235, 0.7);
+}
+
+.three-d-overlay__orbit-btn .material-icons {
+  font-size: 24px;
+}
+
 /* 3D virtual joystick canvas */
 .three-d-joystick {
   position: absolute;

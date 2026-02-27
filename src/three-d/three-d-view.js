@@ -85,6 +85,17 @@ export async function open3DView(opts = {}) {
         <span>${esc(t('threeD.loading'))}</span>
       </div>
       <div class="three-d-overlay__crosshair" style="display:${currentMode === 'fps' ? 'flex' : 'none'}">+</div>
+      <div class="three-d-overlay__orbit-controls" style="display:${currentMode === 'orbit' ? 'flex' : 'none'}">
+        <button class="three-d-overlay__orbit-btn" data-action="zoom-in" aria-label="${esc(t('threeD.controls.zoom'))} +">
+          <span class="material-icons">add</span>
+        </button>
+        <button class="three-d-overlay__orbit-btn" data-action="zoom-out" aria-label="${esc(t('threeD.controls.zoom'))} -">
+          <span class="material-icons">remove</span>
+        </button>
+        <button class="three-d-overlay__orbit-btn" data-action="recenter" aria-label="${esc(t('threeD.controls.recenter'))}">
+          <span class="material-icons">center_focus_strong</span>
+        </button>
+      </div>
     </div>
     <div class="three-d-overlay__legend">
       <h4>${esc(t('threeD.legend.title'))}</h4>
@@ -128,6 +139,8 @@ export async function open3DView(opts = {}) {
   const speedControl = overlay.querySelector('.three-d-overlay__speed-control');
   const speedBadge = overlay.querySelector('.three-d-overlay__speed-badge');
   const speedBtns = overlay.querySelectorAll('.three-d-overlay__speed-btn');
+  const orbitControlsEl = overlay.querySelector('.three-d-overlay__orbit-controls');
+  const orbitBtns = overlay.querySelectorAll('.three-d-overlay__orbit-btn');
 
   // ── Landscape orientation lock ────────────────────────────────────────
   let orientationLocked = false;
@@ -298,6 +311,29 @@ export async function open3DView(opts = {}) {
     });
   });
 
+  // Orbit control buttons (zoom in/out, recenter)
+  const initialFraming = { ...framing };
+  orbitBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const action = btn.dataset.action;
+      if (action === 'zoom-in') {
+        const dir = new THREE.Vector3().subVectors(camera.position, orbitControls.target);
+        dir.multiplyScalar(0.7); // move 30% closer
+        camera.position.copy(orbitControls.target).add(dir);
+        orbitControls.update();
+      } else if (action === 'zoom-out') {
+        const dir = new THREE.Vector3().subVectors(camera.position, orbitControls.target);
+        dir.multiplyScalar(1.4); // move 40% further
+        camera.position.copy(orbitControls.target).add(dir);
+        orbitControls.update();
+      } else if (action === 'recenter') {
+        camera.position.set(initialFraming.position.x, initialFraming.position.y, initialFraming.position.z);
+        orbitControls.target.set(initialFraming.lookAt.x, initialFraming.lookAt.y, initialFraming.lookAt.z);
+        orbitControls.update();
+      }
+    });
+  });
+
   // ── Mode switching ────────────────────────────────────────────────────
   function setMode(mode) {
     currentMode = mode;
@@ -310,6 +346,7 @@ export async function open3DView(opts = {}) {
       fpsControls.enable();
       crosshair.style.display = 'flex';
       speedControl.style.display = 'flex';
+      orbitControlsEl.style.display = 'none';
       updateSpeedBadge(fpsControls.speedMultiplier);
       // Button shows "switch to orbit"
       modeIcon.textContent = '3d_rotation';
@@ -319,6 +356,7 @@ export async function open3DView(opts = {}) {
       fpsControls.disable();
       joystick.hide();
       speedControl.style.display = 'none';
+      orbitControlsEl.style.display = 'flex';
       // Sync orbit target to where camera is looking
       const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
       orbitControls.target.copy(camera.position).add(dir.multiplyScalar(5));

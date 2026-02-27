@@ -604,6 +604,7 @@ export const i18n = {
         fpsSprint: 'מהירות: Shift',
         fpsUpDown: 'עלה/רד: Space / Ctrl',
         fpsSpeed: 'מהירות: גלגלת / +−',
+        recenter: 'מרכז מחדש',
       },
       speed: {
         slower: 'האט',
@@ -1229,6 +1230,7 @@ export const i18n = {
         fpsSprint: 'Speed: Shift',
         fpsUpDown: 'Up/Down: Space / Ctrl',
         fpsSpeed: 'Speed: scroll wheel / +−',
+        recenter: 'Recenter',
       },
       speed: {
         slower: 'Slower',
