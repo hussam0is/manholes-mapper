@@ -314,6 +314,10 @@ function renderIssuesView() {
       icon = 'straighten';
       typeText = `${t('projects.canvas.longPipe') || 'Long pipe'} (${issue.lengthM}m)`;
       nodeLabel = `#${issue.tailId}→#${issue.headId}`;
+    } else if (issue.type === 'not_last_manhole') {
+      icon = 'last_page';
+      typeText = t('projects.canvas.notLastManhole') || 'Not last manhole';
+      nodeLabel = `#${issue.nodeId}`;
     } else {
       icon = 'rule';
       typeText = t('projects.canvas.missingMeasurement') || 'Missing measurement';

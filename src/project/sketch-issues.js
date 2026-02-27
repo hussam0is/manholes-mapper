@@ -6,10 +6,12 @@
  * 2. Missing measurement on תקין node — node with maintenanceStatus === 1
  *    where a connected edge is missing tail_measurement (node is tail)
  *    or head_measurement (node is head)
+ * 3. Long edge — edge whose ITM length exceeds 70m
+ * 4. Not last manhole — manhole with only inbound edges (head) and no outbound (tail)
  */
 
 /**
- * @typedef {{ type: 'missing_coords' | 'missing_measurement' | 'long_edge', nodeId?: string|number, edgeId?: string|number, side?: 'tail'|'head', worldX: number, worldY: number, lengthM?: number }} Issue
+ * @typedef {{ type: 'missing_coords' | 'missing_measurement' | 'long_edge' | 'not_last_manhole', nodeId?: string|number, edgeId?: string|number, side?: 'tail'|'head', worldX: number, worldY: number, lengthM?: number }} Issue
  * @typedef {{ totalKm: number, issueCount: number }} SketchStats
  */
 
@@ -106,8 +108,30 @@ export function computeSketchIssues(nodes, edges) {
     }
   }
 
-  // Sort: missing_coords first, then missing_measurement, then long_edge; within each by id
-  const typeOrder = { missing_coords: 0, missing_measurement: 1, long_edge: 2 };
+  // 4. Not last manhole — nodes with only inbound edges (head) and no outbound (tail)
+  //    Excludes Home connections (naturally terminal)
+  const tailSet = new Set();
+  const headSet = new Set();
+  for (const edge of edges) {
+    if (edge.tail != null) tailSet.add(String(edge.tail));
+    if (edge.head != null) headSet.add(String(edge.head));
+  }
+  for (const node of nodes) {
+    if (node.nodeType === 'Home') continue;
+    const id = String(node.id);
+    // Must have at least one inbound edge and zero outbound edges
+    if (headSet.has(id) && !tailSet.has(id)) {
+      issues.push({
+        type: 'not_last_manhole',
+        nodeId: node.id,
+        worldX: node.x || 0,
+        worldY: node.y || 0,
+      });
+    }
+  }
+
+  // Sort: missing_coords first, then missing_measurement, then long_edge, then not_last_manhole; within each by id
+  const typeOrder = { missing_coords: 0, missing_measurement: 1, long_edge: 2, not_last_manhole: 3 };
   issues.sort((a, b) => {
     const tDiff = (typeOrder[a.type] ?? 9) - (typeOrder[b.type] ?? 9);
     if (tDiff !== 0) return tDiff;
