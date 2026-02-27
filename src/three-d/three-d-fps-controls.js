@@ -1,17 +1,18 @@
 /**
- * 3D View — First-person controls.
- * PUBG-style mobile: left joystick (move) + right area (look).
- * Desktop: WASD + pointer lock mouse look.
+ * 3D View — Free-cam (spectator) controls.
+ * PUBG spectator-style: fly freely through the scene, no gravity.
+ * Mobile: left joystick (move XZ) + right area (look).
+ * Desktop: WASD (move XZ) + Space/Ctrl (up/down) + pointer lock mouse look.
  *
  * No Three.js dependency — manipulates camera.position.{x,y,z} and
  * camera.rotation via plain trig. Expects Euler order 'YXZ'.
  */
 
-const WALK_SPEED = 2;    // m/s
-const SPRINT_SPEED = 4;  // m/s
+const FLY_SPEED = 5;     // m/s normal
+const SPRINT_SPEED = 15;  // m/s sprint (Shift)
 const LOOK_SENSITIVITY = 0.003;
 const TOUCH_LOOK_SENSITIVITY = 0.004;
-const PITCH_LIMIT = (80 * Math.PI) / 180; // ±80°
+const PITCH_LIMIT = (85 * Math.PI) / 180; // ±85°
 const JOYSTICK_THRESHOLD = 8; // px deadzone
 
 export class FPSControls {
@@ -30,6 +31,7 @@ export class FPSControls {
     // Movement state (−1..1)
     this._moveForward = 0;
     this._moveRight = 0;
+    this._moveUp = 0;   // vertical (Space/Ctrl)
     this._sprint = false;
 
     // Look state (radians)
@@ -115,30 +117,41 @@ export class FPSControls {
   update(dt) {
     if (!this._enabled) return;
 
-    // Compute movement from keys (desktop)
+    // Compute movement from keys (desktop) — merge with touch joystick
     let fwd = this._moveForward;
     let right = this._moveRight;
+    let up = this._moveUp;
 
     if (this._keys['KeyW'] || this._keys['ArrowUp']) fwd = Math.min(fwd + 1, 1);
     if (this._keys['KeyS'] || this._keys['ArrowDown']) fwd = Math.max(fwd - 1, -1);
     if (this._keys['KeyA'] || this._keys['ArrowLeft']) right = Math.max(right - 1, -1);
     if (this._keys['KeyD'] || this._keys['ArrowRight']) right = Math.min(right + 1, 1);
+    if (this._keys['Space']) up = Math.min(up + 1, 1);
+    if (this._keys['ControlLeft'] || this._keys['ControlRight'] || this._keys['KeyQ']) up = Math.max(up - 1, -1);
+    if (this._keys['KeyE']) up = Math.min(up + 1, 1);
 
     const sprint = this._sprint || this._keys['ShiftLeft'] || this._keys['ShiftRight'];
-    const speed = sprint ? SPRINT_SPEED : WALK_SPEED;
+    const speed = sprint ? SPRINT_SPEED : FLY_SPEED;
 
-    // Camera-relative forward and right vectors in XZ plane
+    // Spectator free-cam: forward vector follows camera pitch (fly toward where you look)
     const sinY = Math.sin(this._yaw);
     const cosY = Math.cos(this._yaw);
-    const forwardX = -sinY;
-    const forwardZ = -cosY;
+    const sinP = Math.sin(this._pitch);
+    const cosP = Math.cos(this._pitch);
+
+    // Full 3D forward direction (includes pitch)
+    const fwdX = -sinY * cosP;
+    const fwdY = sinP;
+    const fwdZ = -cosY * cosP;
+
+    // Right is always horizontal
     const rightX = cosY;
     const rightZ = -sinY;
 
     const pos = this._camera.position;
-    pos.x += (forwardX * fwd + rightX * right) * speed * dt;
-    pos.z += (forwardZ * fwd + rightZ * right) * speed * dt;
-    // Y stays at eye height (set externally or keep current)
+    pos.x += (fwdX * fwd + rightX * right) * speed * dt;
+    pos.y += (fwdY * fwd + up) * speed * dt;
+    pos.z += (fwdZ * fwd + rightZ * right) * speed * dt;
 
     // Apply rotation
     this._camera.rotation.set(this._pitch, this._yaw, 0, 'YXZ');
@@ -150,6 +163,8 @@ export class FPSControls {
     if (!this._enabled) return;
     // Don't intercept Escape (handled by overlay)
     if (e.code === 'Escape') return;
+    // Prevent Space from scrolling
+    if (e.code === 'Space') e.preventDefault();
     this._keys[e.code] = true;
   }
 
@@ -177,12 +192,12 @@ export class FPSControls {
     // No action needed — movement continues regardless
   }
 
-  // ── Touch handlers (PUBG-style) ──────────────────────────────────────────
+  // ── Touch handlers (PUBG spectator-style) ─────────────────────────────────
 
   _handleTouchStart(e) {
     if (!this._enabled) return;
     const w = this._dom.clientWidth;
-    const joystickZone = w * 0.25; // left 25% = joystick
+    const joystickZone = w * 0.35; // left 35% = joystick
 
     for (const touch of e.changedTouches) {
       const x = touch.clientX;
@@ -259,6 +274,7 @@ export class FPSControls {
   _resetMovement() {
     this._moveForward = 0;
     this._moveRight = 0;
+    this._moveUp = 0;
     this._sprint = false;
     this._keys = {};
     this._joystickTouchId = null;

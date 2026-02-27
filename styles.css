@@ -10096,7 +10096,10 @@ button:focus-visible,
     padding: var(--space-2);
   }
   .three-d-overlay__controls-hint {
-    display: none;
+    font-size: 0.6rem;
+    bottom: 8px;
+    inset-inline-end: 8px;
+    padding: var(--space-1) var(--space-2);
   }
   .three-d-overlay__mode-label {
     display: none;

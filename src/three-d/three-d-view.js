@@ -5,7 +5,7 @@
  *
  * Supports two camera modes:
  *   - Orbit: rotate/zoom/pan (default when no selection)
- *   - FPS:   first-person walk with WASD/joystick (default when selection exists)
+ *   - Free cam: PUBG spectator-style fly-through with WASD/joystick (default when selection exists)
  */
 
 import { buildScene } from './three-d-scene.js';
@@ -15,8 +15,6 @@ import { FPSControls } from './three-d-fps-controls.js';
 import { VirtualJoystick } from './three-d-joystick.js';
 
 let isOpen = false;
-
-const EYE_HEIGHT = 1.6; // metres
 
 /**
  * Open the 3D view for the current active sketch.
@@ -290,17 +288,18 @@ export async function open3DView(opts = {}) {
     setMode(currentMode === 'fps' ? 'orbit' : 'fps');
   });
 
-  // ── Controls hint ─────────────────────────────────────────────────────
+  // ── Controls hint (always visible, fades to reduced opacity) ────────
   function updateControlsHint(mode) {
     if (!controlsHint) return;
     controlsHint.style.opacity = '1';
+    controlsHint.style.display = 'block';
 
     if (mode === 'fps') {
       controlsHint.innerHTML =
         `${esc(t('threeD.controls.fpsMove'))}<br>` +
         `${esc(t('threeD.controls.fpsLook'))}<br>` +
         `${esc(t('threeD.controls.fpsSprint'))}<br>` +
-        `${esc(t('threeD.controls.fpsClick'))}`;
+        `${esc(t('threeD.controls.fpsUpDown'))}`;
     } else {
       controlsHint.innerHTML =
         `${esc(t('threeD.controls.rotate'))}<br>` +
@@ -308,12 +307,11 @@ export async function open3DView(opts = {}) {
         `${esc(t('threeD.controls.pan'))}`;
     }
 
-    // Fade out after 5s
+    // Fade to reduced opacity after 4s — stays visible
     clearTimeout(controlsHint._fadeTimer);
-    clearTimeout(controlsHint._removeTimer);
     controlsHint._fadeTimer = setTimeout(() => {
-      controlsHint.style.opacity = '0';
-    }, 5000);
+      controlsHint.style.opacity = '0.5';
+    }, 4000);
   }
 
   // Apply initial mode
