@@ -304,12 +304,17 @@ export class HeaderComponent {
 
     const openMenu = () => {
       this.isMobileMenuOpen = true;
+
+      // Reset scroll to top so Home/New Sketch buttons are always visible
+      const scrollContainer = mobileMenu.querySelector('.mobile-menu-content');
+      if (scrollContainer) scrollContainer.scrollTop = 0;
+
       mobileMenu.classList.add('mobile-menu--open');
       mobileMenu.style.display = 'flex';
       backdrop.style.display = 'block';
       menuBtn.setAttribute('aria-expanded', 'true');
       document.body.classList.add('mobile-menu-open');
-      
+
       // Focus trap
       const firstFocusable = mobileMenu.querySelector('button, input, select');
       if (firstFocusable) firstFocusable.focus();
