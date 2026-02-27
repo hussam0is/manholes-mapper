@@ -260,10 +260,37 @@ export default async function handler(req, res) {
         lastEditedBy: body.lastEditedBy,
         projectId: body.projectId,
         snapshotInputFlowConfig: snapshotInputFlowConfig,
+        clientUpdatedAt: body.clientUpdatedAt || null,
       });
-      
+
       if (!updated) {
         return res.status(404).json({ error: 'Sketch not found' });
+      }
+
+      // Optimistic-lock conflict: another process updated the sketch since the client
+      // last fetched it (e.g. a direct DB coordinate fix). Return 409 with current data
+      // so the client can refresh its local updatedAt and retry.
+      if (updated.conflict) {
+        const current = updated.current;
+        const currentTransformed = {
+          id: current.id,
+          name: current.name,
+          creationDate: current.creation_date,
+          createdBy: current.created_by,
+          lastEditedBy: current.last_edited_by,
+          createdAt: current.created_at,
+          updatedAt: current.updated_at,
+          nodes: current.nodes || [],
+          edges: current.edges || [],
+          adminConfig: current.admin_config || {},
+          projectId: current.project_id,
+          snapshotInputFlowConfig: current.snapshot_input_flow_config || {},
+        };
+        console.warn(`[API /api/sketches/${sketchId}] Version conflict: client had ${body.clientUpdatedAt}, DB has ${current.updated_at}`);
+        return res.status(409).json({
+          error: 'Sketch was updated by another process. Retry with the current version.',
+          currentSketch: currentTransformed,
+        });
       }
       
       const transformed = {

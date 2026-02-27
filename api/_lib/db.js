@@ -493,11 +493,21 @@ export async function createSketch(userId, sketch) {
  * Fields present in `updates` (even if null) are written to the DB.
  * Fields absent from `updates` (undefined) keep their current DB value.
  * This allows explicitly setting project_id to NULL to un-assign a sketch from a project.
+ *
+ * Optimistic locking: if `clientUpdatedAt` is provided, the update only succeeds
+ * when the DB's `updated_at` matches. If there is a mismatch, returns
+ * `{ conflict: true, current: <current row> }` instead of the updated row.
+ * If `clientUpdatedAt` is omitted (null/undefined), no version check is applied
+ * (backward-compatible behaviour).
+ *
+ * IMPORTANT for direct DB scripts: always include `updated_at = NOW()` in any
+ * manual UPDATE so the version guard detects the change.
  */
 export async function updateSketch(sketchId, userId, updates) {
   const {
     name, creationDate, nodes, edges, adminConfig,
-    lastEditedBy, snapshotInputFlowConfig
+    lastEditedBy, snapshotInputFlowConfig,
+    clientUpdatedAt = null,
   } = updates;
 
   // Only update project_id when explicitly provided (not undefined)
@@ -517,9 +527,23 @@ export async function updateSketch(sketchId, userId, updates) {
       snapshot_input_flow_config = COALESCE(${snapshotInputFlowConfig != null ? JSON.stringify(snapshotInputFlowConfig) : null}::jsonb, snapshot_input_flow_config),
       updated_at = NOW()
     WHERE id = ${sketchId} AND user_id = ${userId}
+      AND (${clientUpdatedAt}::timestamptz IS NULL OR updated_at = ${clientUpdatedAt}::timestamptz)
     RETURNING id, name, creation_date, nodes, edges, admin_config, created_by, last_edited_by,
               project_id, snapshot_input_flow_config, created_at, updated_at
   `;
+
+  if (result.rows.length === 0 && clientUpdatedAt !== null) {
+    // No rows updated with version check — determine if conflict or not-found
+    const current = await sql`
+      SELECT id, name, creation_date, nodes, edges, admin_config, created_by, last_edited_by,
+             project_id, snapshot_input_flow_config, created_at, updated_at
+      FROM sketches
+      WHERE id = ${sketchId} AND user_id = ${userId}
+    `;
+    if (current.rows.length > 0) {
+      return { conflict: true, current: current.rows[0] };
+    }
+  }
 
   return result.rows[0] || null;
 }
