@@ -6,12 +6,12 @@ You are a **senior product designer and full-stack engineer** running a continuo
 
 ## What This Skill Does
 
-0. **RESEARCH & CAPTURE** — Browse the live app, walk through a user workflow, capture screenshots + record a 1-min video into `app_state_YYYY-MM-DD/`. Send video to Gemini for analysis. Present top 3 improvement areas + manual option for user to choose.
+0. **RESEARCH & CAPTURE** — Spawn `general-purpose` agent (Task tool) to browse the live app, capture screenshots + 1-min video into `app_state_YYYY-MM-DD/`. Send video to Gemini CLI for analysis. Present top 3 improvement areas + manual option for user to choose.
 1. **AUDIT** — Read the captured screenshots + Gemini video report, identify all design/UX/UI/performance issues
 2. **TRACK** — Update `app_state_YYYY-MM-DD/ISSUES.md` with prioritized findings
-3. **FIX** — Spawn a `codesmith-engineer` agent to implement top-priority fixes
-4. **TEST** — After commit+push, spawn a `manholes-mapper-user-tester` agent (Playwright)
-5. **PHONE TEST** — Spawn `mobile-phone-tester` to validate on the physical Samsung Galaxy Note 10
+3. **FIX** — Spawn `codesmith-engineer` agent (Task tool) with full app architecture context to implement fixes
+4. **TEST** — Spawn `general-purpose` agent (Task tool) with design verification criteria (Playwright)
+5. **PHONE TEST** — Invoke `mobile-phone-tester` skill (Skill tool) with design-specific phone criteria
 6. **LOOP** — Return to step 0 with a different workflow or after fixes are deployed
 
 ---
@@ -55,23 +55,65 @@ https://manholes-mapper-git-dev-hussam0is-projects.vercel.app
 ```
 Or production if the user specifies: `https://manholes-mapper.vercel.app`
 
-### Step 0.3 — Spawn a `manholes-mapper-user-tester` agent to research the app
+### Step 0.3 — Spawn a `general-purpose` agent to research the app
+
+Use the **Task tool** with `subagent_type: "general-purpose"`. Do NOT use the Skill tool — the research agent needs a custom design-focused prompt, not the default QA skill.
 
 Spawn the agent with this prompt:
 
 ```
-Research the Manholes Mapper app at [URL]. Your goal is to identify the current visual
-state of these user workflows by navigating through each one, taking Playwright
-screenshots, AND recording a video walkthrough. Save ALL screenshots and the video
-to [app_state_YYYY-MM-DD/] with numbered filenames.
+You are a **design researcher** capturing the current visual state of the Manholes Mapper app.
+Your ONLY job is to navigate every screen, take screenshots, and record a video. You are NOT
+doing QA testing, security testing, or functional testing — just visual documentation.
 
-Login credentials: admin@geopoint.me / Geopoint2026!
+App URL: [URL]
+Login: admin@geopoint.me / Geopoint2026!
+Output folder: [ABSOLUTE_PATH_TO_app_state_YYYY-MM-DD]/
+
+## APP CONTEXT (read this before navigating)
+
+Manholes Mapper is a Hebrew-first (RTL) PWA for field workers who draw manhole/pipe networks
+on an HTML5 Canvas. Key things to know:
+
+**Routing (hash-based SPA):**
+- `#/` or `#/login` → Login page (React auth form mounted in #authContainer)
+- After login → Home panel (#homePanel) overlays the canvas with sketch list + project cards
+- Close home panel → Canvas mode (main drawing surface with toolbar on right side)
+- `#/projects` → Projects page (admin only)
+- `#/admin` → Admin panel (tabs: Users, Organizations, Features)
+- `#/project/:id` → Project canvas mode (multi-sketch view with side panel)
+
+**UI Structure:**
+- **Header** (#appHeader): brand logo left, sketch name center, hamburger menu right (in RTL: hamburger LEFT at ~109px, in LTR: RIGHT at ~970px)
+- **Canvas** (#graphCanvas): Full-screen HTML5 Canvas, nodes=circles with icons, edges=lines with length labels
+- **Right toolbar** (#modeGroup): Node mode (#nodeModeBtn), Edge mode (#edgeModeBtn), My Location (#myLocationBtn), zoom +/- buttons
+- **FAB** (#fab): Bottom-right floating action button with speed dial (undo, layers, etc.)
+- **Bottom drawer**: Appears when selecting a node/edge — shows details panel with fields, survey data, delete button
+- **Mobile menu** (#mobileMenu): Slides from right (LTR) or left (RTL), has Live Measure toggle, language switch, survey device section
+- **Home panel** (#homePanel): Full-screen overlay with gradient header, sketch cards, "New Sketch"/"New Sketch in Project" buttons
+- **Admin panel** (#adminModal): Tabbed interface — Users/Orgs/Features tabs with `.admin-modern-tabs`
+- **Layers panel**: Floating card with toggle list for map layers (GovMap, ArcGIS, reference layers)
+
+**Design system:**
+- CSS custom properties: `--color-primary: #2563eb`, `--color-success: #22c55e`, `--color-danger: #ef4444`, `--color-accent: #a855f7`, `--color-bg: #f8fafc`, `--color-surface: #ffffff`, `--color-text: #0f172a`
+- Dark mode: `@media (prefers-color-scheme: dark)` — `--color-bg: #0b1220`, `--color-surface: #0f172a`, `--color-text: #e2e8f0`
+- Icons: Material Icons (self-hosted woff2), used everywhere via `<span class="material-icons">`
+- Touch targets: minimum 44px on mobile (`.btn-icon-sm`, `.scale-btn`)
+- RTL: uses `margin-inline-*` / `padding-inline-*`, `dir="rtl"` on `<html>`
+
+**What to OBSERVE while navigating (note in workflow_log.md):**
+- Are transitions smooth or janky?
+- Do loading states exist or does the UI just freeze?
+- Are touch targets large enough on mobile?
+- Does RTL layout look correct (no clipped text, proper alignment)?
+- Are colors consistent with the design tokens above?
+- Is text readable (contrast, size)?
+- Do empty states have helpful messaging?
 
 ## VIDEO RECORDING (CRITICAL)
 
 You MUST record a video of the entire workflow walkthrough. The video captures
-everything Playwright sees — transitions, animations, loading states, jank — that
-screenshots miss.
+transitions, animations, loading states, and jank that screenshots miss.
 
 **How to record:** Use `browser_run_code` to launch a NEW browser context with video
 recording enabled, then perform ALL workflow navigation inside that context:
@@ -98,62 +140,65 @@ async (page) => {
 ```
 
 **Video rules:**
-- Keep the total recording under **60 seconds** (1 minute max). Prioritize breadth over depth — hit every major screen, don't linger.
+- Keep total recording under **60 seconds** (1 minute max). Breadth over depth — hit every major screen, don't linger.
 - Use `await videoPage.waitForTimeout(1500)` between major transitions so viewers can see each state.
 - Move briskly: login → home → open sketch → draw node → draw edge → select node → menu → projects → admin → mobile resize → done.
 - After recording, rename the video file to `walkthrough.webm` inside the output folder.
 
-## SCREENSHOTS (same as before)
+## SCREENSHOTS
 
-Walk through ALL of these workflows and screenshot every distinct screen/state:
+Walk through ALL of these workflows and screenshot every distinct screen/state.
+Use `browser_take_screenshot` with descriptive filenames saved to the output folder.
 
 **Workflow A — First-time Login & Home**
-1. Load the app (pre-login state) → screenshot
-2. Login form → screenshot
-3. After login — home/projects page → screenshot
-4. Hamburger menu open → screenshot
+1. Load the app (pre-login state) → screenshot (look at: login panel styling, brand, gradient header)
+2. Login form → screenshot (look at: input fields, button style, error state if any)
+3. After login — home panel with sketch list → screenshot (look at: sketch cards, empty state, CTA buttons)
+4. Hamburger menu open → screenshot (look at: menu item spacing, section headers, scroll behavior)
 
 **Workflow B — Sketch Drawing (core workflow)**
-1. Open/create a sketch → screenshot the empty canvas
-2. Add a node (Node mode) → screenshot
-3. Add an edge (Edge mode) → screenshot
-4. Select a node → screenshot the node panel/drawer
-5. Select an edge → screenshot the edge panel/drawer
-6. Zoom in/out → screenshot at different zoom levels
-7. Canvas with map layer visible → screenshot
+1. Close home panel → canvas view → screenshot (look at: toolbar buttons, FAB, clean canvas state)
+2. Click Node mode → tap canvas to add node → screenshot (look at: node icon, selection ring)
+3. Click Edge mode → connect two nodes → screenshot (look at: edge line, length label)
+4. Select a node → screenshot the bottom drawer/panel (look at: field layout, touch targets, delete button)
+5. Select an edge → screenshot the edge panel (look at: similar to node panel)
+6. Zoom in/out → screenshot at different zoom levels (look at: label readability, icon scaling)
+7. Toggle map layer on → screenshot (look at: tile rendering, layer controls)
 
 **Workflow C — Project Management**
-1. Navigate to #/projects → screenshot
-2. Open a project → screenshot project canvas
-3. Sketch side panel open → screenshot
-4. Sketch issues sub-panel → screenshot
+1. Navigate to `#/projects` → screenshot (look at: project cards, layout, empty states)
+2. Open a project → screenshot project canvas (look at: multi-sketch rendering, side panel toggle)
+3. Open sketch side panel → screenshot (look at: sketch list, issue badges, nav buttons, panel width)
+4. Open issues sub-panel → screenshot (look at: issue rows, severity indicators)
 
 **Workflow D — Admin Panel**
-1. Navigate to #/admin → screenshot
-2. Users tab → screenshot
-3. Organizations tab → screenshot
-4. Features tab → screenshot
+1. Navigate to `#/admin` → screenshot (look at: tab bar style, active tab indicator)
+2. Users tab → screenshot (look at: user list layout, role badges, action buttons)
+3. Organizations tab → screenshot (look at: org cards, member counts)
+4. Features tab → screenshot (look at: feature toggles, descriptions)
 
 **Workflow E — Mobile Viewport**
-1. Resize to 360x740 (mobile)
-2. Repeat key screens: home, canvas, menu, node panel, admin
-3. Screenshot each
+1. Resize browser to 360x740
+2. Re-take key screens: home panel, canvas + toolbar, hamburger menu, node panel, admin
+3. Screenshot each (look at: does everything FIT? Are touch targets ≥44px? Is text truncated?)
 
 **Workflow F — Settings & Misc**
-1. Language toggle (Hebrew ↔ English) → screenshot both
-2. Dark mode if available → screenshot
-3. Layer controls → screenshot
+1. Toggle language Hebrew→English → screenshot both (look at: RTL→LTR flip, text alignment)
+2. Toggle dark mode (use browser `prefers-color-scheme` emulation) → screenshot (look at: contrast, readability)
+3. Open layer controls → screenshot (look at: toggle list, floating card positioning)
 4. Any error states or empty states you encounter → screenshot
 
-For each screenshot use this naming pattern:
-  NN_workflowLetter_description.png
-  Examples: 01_A_pre_login.png, 02_A_login_form.png, 15_B_node_panel.png
+**Naming convention:** `NN_workflowLetter_description.png`
+Examples: `01_A_pre_login.png`, `02_A_login_form.png`, `15_B_node_panel.png`
 
-After all screenshots + video, write a file [app_state_YYYY-MM-DD/workflow_log.md] listing:
-- Every screenshot taken with a one-line description
+## OUTPUT
+
+After all screenshots + video, write `[OUTPUT_FOLDER]/workflow_log.md` with:
+- Every screenshot taken with a one-line description + what you observed
 - The video file path and approximate duration
-- Any issues you noticed while navigating (broken links, slow loads, errors, console warnings)
-- The overall state of each workflow (smooth, broken, rough edges)
+- Issues noticed while navigating (broken links, slow loads, console errors/warnings)
+- The overall state of each workflow: smooth / needs work / broken
+- Design observations: anything that felt off, inconsistent, or hard to use
 ```
 
 ### Step 0.4 — Send video to Gemini for analysis
@@ -163,33 +208,47 @@ Once the research agent finishes and the video is saved, spawn a **background ag
 **Run this command via Bash** (headless, non-interactive):
 
 ```bash
-gemini -p "You are a senior product designer and UX expert. Watch this 1-minute video walkthrough of the Manholes Mapper web app (a PWA for field surveying — users draw manhole/pipe networks on an HTML5 Canvas).
+gemini -p "You are a senior product designer and UX expert. Watch this 1-minute video walkthrough of the Manholes Mapper web app.
 
-Analyze the video and produce a structured report with:
+## App Context
+Manholes Mapper is a Hebrew-first (RTL) PWA for field workers who draw manhole/pipe networks on an HTML5 Canvas with optional RTK GNSS positioning. The app uses:
+- Design tokens: primary=#2563eb (blue), success=#22c55e (green), danger=#ef4444 (red), accent=#a855f7 (purple), bg=#f8fafc, surface=#ffffff, text=#0f172a
+- Dark mode via prefers-color-scheme with tokens: bg=#0b1220, surface=#0f172a, text=#e2e8f0
+- Material Icons (self-hosted), 44px minimum touch targets on mobile
+- RTL layout (Hebrew default), hash-based SPA routing
+
+## Key UI Sections (what you'll see in the video)
+- Login panel: gradient header, React auth form
+- Home panel: sketch cards, project cards, 'New Sketch' CTA
+- Canvas: full-screen drawing surface with right-side toolbar (Node/Edge/Location/Zoom buttons)
+- FAB: bottom-right floating action button (undo, layers)
+- Bottom drawer: appears on node/edge selection with detail fields
+- Mobile menu: slides from side, has Live Measure toggle, language switch
+- Admin panel: tabbed (Users/Orgs/Features)
+- Projects page: project cards with sketch side panel
+
+## Analyze the video and produce a structured report:
 
 ## Visual Issues
-- List every visual/design problem you spot (color, contrast, alignment, spacing, font, icons)
+- Color inconsistency with design tokens, poor contrast, misalignment, font size issues, icon quality
 
 ## UX Issues
-- List every usability problem (confusing flows, missing affordances, poor feedback, unclear states)
+- Confusing flows, missing affordances, poor feedback, unclear loading/error states
 
 ## Mobile Issues
-- Touch targets too small, elements overlapping, toolbar reachability
+- Touch targets <44px, elements overlapping, toolbar reachability, content obscured
 
 ## RTL/i18n Issues
-- Any Hebrew text rendering problems, mixed LTR/RTL layout issues
+- Hebrew text rendering problems, mixed LTR/RTL, clipped text in RTL
 
 ## Animation & Performance
 - Jank, slow transitions, missing loading indicators, laggy interactions
 
 ## Top 5 Improvements (Prioritized)
-1. [Most impactful fix] — why and how
+1. [Most impactful fix] — why, where (reference timestamp e.g. 0:15), and how to fix
 2. ...
-3. ...
-4. ...
-5. ...
 
-Be specific: reference timestamps (e.g. 0:15), screen areas (e.g. top-right toolbar), and element types (e.g. the blue FAB button). Output as markdown." \
+Be SPECIFIC: reference timestamps, screen areas (e.g. top-right toolbar), and element types (e.g. the blue FAB button). Output as markdown." \
   --yolo \
   -o text \
   -- "[ABSOLUTE_PATH_TO_app_state_YYYY-MM-DD]/walkthrough.webm" \
@@ -336,10 +395,57 @@ Mark fixed issues:
 
 ## Phase 3: Spawn Fix Agent
 
-After collecting issues, spawn a `codesmith-engineer` agent with a detailed prompt:
+After collecting issues, spawn a `codesmith-engineer` agent via the **Task tool** (`subagent_type: "codesmith-engineer"`).
+
+Include this full context in the prompt:
 
 ```
 Task: Fix the following prioritized UI/UX issues in the Manholes Mapper app.
+
+## APP ARCHITECTURE (read before making changes)
+
+Manholes Mapper is a vanilla JS + HTML5 Canvas PWA. Key things to know:
+
+**File map (what controls what):**
+| File | What It Controls |
+|------|-----------------|
+| `styles.css` (~9000 lines) | ALL CSS: design tokens, layout, panels, buttons, dark mode, RTL, responsive |
+| `index.html` | DOM structure, element IDs, class names |
+| `src/legacy/main.js` (~8300 lines) | Monolithic core: canvas rendering, event handlers, ALL panel logic, menu. EXCLUDED from ESLint. Be careful editing — changes cascade. |
+| `src/main-entry.js` (~634 lines) | App init: auth, i18n, GNSS, mobile menu open/close, floating keyboard, drawer |
+| `src/i18n.js` (~37KB) | Full translation dictionary. BOTH `he` and `en` keys must always be in sync. |
+| `public/service-worker.js` | APP_VERSION constant — BUMP when styles.css or index.html changes |
+| `src/admin/admin-panel.js` (~26KB) | Admin panel: Users/Orgs/Features tabs |
+| `src/project/sketch-side-panel.js` (~14KB) | Sketch side panel with per-sketch stats, issues sub-panel |
+| `src/features/rendering.js` | Graph rendering engine (nodes, edges, labels) |
+| `src/features/node-icons.js` (~13KB) | Manhole, drainage, house connection SVG icons |
+| `src/canvas-fab-toolbar.js` | FAB speed dial component |
+
+**Design tokens (CSS custom properties in :root):**
+Light mode: `--color-primary: #2563eb`, `--color-primary-hover: #1d4ed8`, `--color-primary-light: #dbeafe`, `--color-success: #22c55e`, `--color-danger: #ef4444`, `--color-accent: #a855f7`, `--color-bg: #f8fafc`, `--color-surface: #ffffff`, `--color-text: #0f172a`, `--color-text-secondary: #475569`, `--color-border: #e5e7eb`
+Dark mode (inside `@media (prefers-color-scheme: dark) { :root { ... } }`): `--color-bg: #0b1220`, `--color-surface: #0f172a`, `--color-surface-alt: #1e293b`, `--color-text: #e2e8f0`, `--color-accent: #60a5fa`, `--color-border: #1f2937`
+
+ALWAYS use these tokens — never hardcode hex values. If you need a new shade, create a token.
+
+**RTL rules:**
+- `<html lang="he" dir="rtl">` is the default
+- Use `margin-inline-start/end`, `padding-inline-start/end` — NEVER `margin-left/right`
+- Use `inset-inline-start/end` — NEVER `left/right` for positioning
+- Test that your changes work in both RTL (Hebrew) and LTR (English)
+
+**Touch targets:**
+- ALL interactive elements must be ≥44px on mobile
+- Existing classes: `.btn-icon-sm` (44px), `.scale-btn` (44px), `.btn-sm` (44px)
+
+**Icons:**
+- Material Icons, self-hosted at `public/fonts/material-icons.woff2`
+- Usage: `<span class="material-icons">icon_name</span>`
+
+**i18n:**
+- `src/i18n.js` has `he` and `en` objects. Access via `window.t('dotted.key')` or `data-i18n="key"` attribute.
+- EVERY key added to `he` must also be added to `en` and vice versa.
+
+## ISSUES TO FIX
 
 CRITICAL:
 1. [Description of issue + affected file + exact fix]
@@ -347,14 +453,16 @@ CRITICAL:
 HIGH:
 2. [Description of issue + affected file + exact fix]
 
-Rules:
-- Read each affected file before editing
+## RULES
+- Read each affected file BEFORE editing — understand context
 - Follow existing code patterns (vanilla JS, CSS custom properties, RTL-safe)
 - Commit after EACH logical fix with message: "fix: [description]"
 - Push to dev branch after all fixes
-- Do NOT change unrelated code
+- Do NOT change unrelated code — minimal, focused fixes only
 - Bump APP_VERSION in public/service-worker.js if styles.css or index.html changes
-- Both Hebrew (he) and English (en) must be updated for any i18n key changes
+- Both he and en must be updated for any i18n key changes
+- Test dark mode: if you change any color, check it works in both light and dark
+- Test RTL: if you change any spacing/layout, ensure it works in both directions
 ```
 
 **Batch size**: Pick top 3-5 issues per iteration (don't overload the fix agent).
@@ -363,35 +471,122 @@ Rules:
 
 ## Phase 4: Spawn Test Agent
 
-After the fix agent pushes to `dev`, spawn `manholes-mapper-user-tester`:
+After the fix agent pushes to `dev`, wait ~2 minutes for Vercel to deploy, then spawn a `general-purpose` agent via the **Task tool** (`subagent_type: "general-purpose"`).
 
 ```
-Test that the following fixes are working on the dev preview URL:
-https://manholes-mapper-git-dev-hussam0is-projects.vercel.app
+You are a **design verification tester** for the Manholes Mapper app. Your job is to verify
+that specific UI/UX fixes are visually correct across different states. This is NOT functional
+QA — you're checking that things LOOK right.
 
-Issues fixed (describe each):
-1. [Issue title + what to verify]
+App URL: https://manholes-mapper-git-dev-hussam0is-projects.vercel.app
+Login: admin@geopoint.me / Geopoint2026!
+
+## DESIGN VERIFICATION CRITERIA
+
+When checking each fix, verify:
+
+**Colors & Tokens:**
+- Primary blue = #2563eb, Success green = #22c55e, Danger red = #ef4444
+- Background = #f8fafc (light) / #0b1220 (dark), Surface = #ffffff (light) / #0f172a (dark)
+- Text = #0f172a (light) / #e2e8f0 (dark)
+- No hardcoded colors that don't match the design system
+
+**Layout & Spacing:**
+- RTL: Hebrew text right-aligned, margins/padding use inline directions correctly
+- LTR: Switch to English (via hamburger menu → language toggle) and verify layout flips properly
+- Mobile: resize to 360x740 and verify nothing overflows, truncates, or overlaps
+
+**Touch Targets:**
+- All buttons/interactive elements ≥ 44px on mobile
+- Verify with browser dev tools if needed: `getComputedStyle(el).height`
+
+**Dark Mode:**
+- Use Playwright to emulate `prefers-color-scheme: dark`:
+  `await page.emulateMedia({ colorScheme: 'dark' })`
+- Take screenshots and verify contrast, readability, no white-on-white or black-on-black
+
+**States:**
+- Hover states exist and look intentional
+- Empty states have helpful messaging
+- Loading states exist where data is fetched
+- Error states are styled (red accent, not broken layout)
+
+## FIXES TO VERIFY
+
+[List each fix with what to check]:
+1. [Issue title] — Navigate to [screen], verify [visual criteria], screenshot before/after
 2. ...
 
-Use Playwright browser automation. Login with admin@geopoint.me / Geopoint2026!
-Take screenshots and report pass/fail for each fix.
-```
+## HOW TO TEST
 
-Wait ~2 minutes for Vercel to deploy before testing.
+For each fix:
+1. Navigate to the relevant screen
+2. Take a BEFORE-context screenshot (or use the Phase 0 screenshots as baseline)
+3. Verify the fix is visually present
+4. Test in Hebrew (RTL) AND English (LTR)
+5. Test at mobile viewport (360x740) AND desktop (1280x720)
+6. Test in dark mode
+7. Take AFTER screenshot
+8. Report: PASS (looks correct) or FAIL (describe what's wrong)
+
+Save screenshots to [app_state_YYYY-MM-DD/] with prefix: `verify_NN_description.png`
+```
 
 ---
 
 ## Phase 5: Spawn Phone Test Agent
 
-After Playwright tests pass, spawn `mobile-phone-tester`:
+After Playwright tests pass, invoke the **`mobile-phone-tester` skill** via the Skill tool. This agent already has full phone-debug MCP access, ADB coordinates, and device-specific knowledge.
+
+Pass this design-focused prompt as the skill argument:
 
 ```
-Verify the following UI fixes on the physical phone (Samsung Galaxy Note 10):
-1. [Fix description + how to verify]
+You are verifying DESIGN FIXES on the physical phone. This is a visual check, not
+functional QA. For each fix below, take ADB screenshots and evaluate the visual result.
+
+## DESIGN CRITERIA FOR PHONE VERIFICATION
+
+**Touch targets:** On the Galaxy Note 10 (420 dpi), 44dp = ~65px in native coordinates.
+Use ADB to verify interactive elements are large enough:
+- Toolbar buttons in #modeGroup should be ≥65px tap area
+- FAB button should be ≥65px
+- Menu items should have ≥65px row height
+- Bottom drawer action buttons should be ≥65px
+
+**Readability:**
+- Text should be legible without squinting — minimum 14sp body text
+- Edge length labels on canvas should be readable at default zoom
+- Panel headers should be clearly distinguished from body text
+
+**RTL (Hebrew default):**
+- Hamburger menu should be on the LEFT (RTL)
+- Menu slides from LEFT
+- Text right-aligned in panels
+- No clipped or overflow text
+
+**Dark mode:**
+- If the phone uses dark mode, verify contrast and readability
+- GNSS marker colors should be visible against dark canvas
+
+**Layout:**
+- Nothing should be hidden behind the Android nav bar (bottom)
+- Chrome toolbar (top) should not overlap app header
+- Canvas toolbar buttons should all be visible and reachable
+- Bottom drawer should not extend past the visible area
+
+## FIXES TO VERIFY
+
+1. [Fix description] — Navigate to [screen], tap [element], verify [visual criteria]
 2. ...
 
-Take ADB screenshots before and after each interaction.
-Save new screenshots to app_state_YYYY-MM-DD/ with descriptive names (prefix: phone_NN_).
+## WORKFLOW
+
+For each fix:
+1. Take BEFORE screenshot (ADB): `adb exec-out screencap -p > phone_NN_before.png`
+2. Navigate to the relevant screen (use ADB taps or cdp_evaluate)
+3. Take AFTER screenshot
+4. Evaluate: PASS or FAIL with description
+5. Save screenshots to [app_state_YYYY-MM-DD/] with prefix: `phone_NN_description.png`
 ```
 
 ---
