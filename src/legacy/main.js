@@ -5564,6 +5564,14 @@ if (sidebarCloseBtn) {
   }, { passive: false });
 }
 
+// Close panel when app comes back from background (Android multitasking)
+// so user returns to the canvas view, not a stale form
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && sidebarEl && sidebarEl.classList.contains('open')) {
+    closeSidebarPanel();
+  }
+});
+
 // Backdrop tap: tapping canvas while sidebar is open closes the panel,
 // but ONLY when no drawing mode is actively placing nodes/edges.
 canvas.addEventListener('touchstart', (e) => {
