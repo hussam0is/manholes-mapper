@@ -156,8 +156,15 @@ function renderListView() {
     const km = sketchData ? sketchData.stats.totalKm.toFixed(2) : '0.00';
     const issues = sketchData ? sketchData.stats.issueCount : 0;
 
+    // Color-code badge by severity: >100 red, 50-100 orange, <50 yellow
+    const severityClass = issues > 100
+      ? 'sketch-side-panel__issues-btn--high'
+      : issues > 50
+        ? 'sketch-side-panel__issues-btn--medium'
+        : 'sketch-side-panel__issues-btn--low';
+
     const issuesBadge = issues > 0
-      ? `<button class="sketch-side-panel__issues-btn" data-sketch-issues="${sketch.id}" title="${t('projects.canvas.workingStatus') || 'Working Status'}">
+      ? `<button class="sketch-side-panel__issues-btn ${severityClass}" data-sketch-issues="${sketch.id}" title="${t('projects.canvas.workingStatus') || 'Working Status'}">
            <span class="material-icons">warning</span>${issues}
          </button>`
       : `<span class="sketch-side-panel__no-issues" title="${t('projects.canvas.noIssues') || 'OK'}">
