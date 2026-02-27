@@ -4660,10 +4660,7 @@ function renderDetails() {
 
     // Node type options: A (default), B (house), C (grey)
     if (node.nodeType === 'Home') {
-      const dcLblRaw = (typeof t === 'function') ? t('labels.directConnection') : '';
-      const dcText = (dcLblRaw && dcLblRaw !== 'labels.directConnection')
-        ? dcLblRaw
-        : (typeof isRTL === 'function' && isRTL(currentLang) ? 'חיבור ישיר' : 'Direct connection');
+      const dcText = t('labels.directConnection');
       container.innerHTML = `
         <div class="field">
           <label for="idInput">${t('labels.nodeId')}</label>
@@ -4789,7 +4786,7 @@ function renderDetails() {
           .filter(o => (o.enabled !== false));
         const ceSortedFallPositionOptions = getSortedOptions('edges', 'fall_position', ceFallPositionOptions);
 
-        const connectedLinesText = (typeof isRTL === 'function' && isRTL(currentLang)) ? 'קווים מחוברים' : 'Connected lines';
+        const connectedLinesText = t('labels.connectedLines');
         let html = `<div class="details-section"><div class="details-section-title">${connectedLinesText}</div>`;
         connectedEdges.forEach((e, ceIdx) => {
           const isTail = String(e.tail) === String(node.id);

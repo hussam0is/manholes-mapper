@@ -237,6 +237,8 @@ export const i18n = {
       fixDeviceFloat: 'Device Float',
       fixManualFloat: 'Manual Float',
       noSurveyData: 'אין נתוני מדידה',
+      connectedLines: 'קווים מחוברים',
+      directConnection: 'חיבור ישיר',
     },
     finishWorkday: {
       title: 'סיום יום עבודה',
@@ -728,6 +730,8 @@ export const i18n = {
       fixDeviceFloat: 'Device Float',
       fixManualFloat: 'Manual Float',
       noSurveyData: 'No survey data',
+      connectedLines: 'Connected Lines',
+      directConnection: 'Direct connection',
     },
     finishWorkday: {
       title: 'Finish Workday',
