@@ -382,9 +382,6 @@ export function buildScene(THREE, data, CSS2DObject, issues = []) {
     const arrowRadius = Math.max(pipeRadius * 4, 0.15);
     const arrowLength = Math.max(arrowRadius * 3, 0.5);
     const arrowGeo = new THREE.ConeGeometry(arrowRadius, arrowLength, 8);
-    // ConeGeometry tip is at +Y. Rotate so tip is at -Z, because lookAt()
-    // orients -Z toward target — this makes the tip point toward the head.
-    arrowGeo.rotateX(-Math.PI / 2);
     const arrowMat = new THREE.MeshStandardMaterial({
       color: finalMat.color ? finalMat.color.clone() : new THREE.Color(0xffffff),
       emissive: finalMat.color ? finalMat.color.clone().multiplyScalar(0.4) : new THREE.Color(0x444444),
@@ -398,10 +395,9 @@ export function buildScene(THREE, data, CSS2DObject, issues = []) {
       (start.y + end.y) / 2,
       (start.z + end.z) / 2
     );
-    // Orient cone to point from tail→head
+    // ConeGeometry tip is at +Y. Rotate mesh so +Y aligns with tail→head direction.
     const dir = new THREE.Vector3().subVectors(end, start).normalize();
-    const target = arrow.position.clone().add(dir);
-    arrow.lookAt(target);
+    arrow.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
     pipeGroup.add(arrow);
 
     meshRefs.pipeMeshes.set(String(edge.id), { tube: pipeMesh, startCap, endCap, arrow });
