@@ -605,6 +605,14 @@ export const i18n = {
         fpsUpDown: 'עלה/רד: Space / Ctrl',
       },
     },
+    fixes: {
+      title: 'הצעות תיקון',
+      convertToHome: 'המר לבית',
+      setLockedHouse: 'סמן כבית נעול',
+      addMeasurement: 'הוסף מדידה',
+      swapMeasurements: 'החלף מדידות כיוון',
+      applied: 'תיקון יושם',
+    },
   },
   en: {
     appTitle: 'Manhole Mapper',
@@ -1210,6 +1218,14 @@ export const i18n = {
         fpsSprint: 'Speed: Shift',
         fpsUpDown: 'Up/Down: Space / Ctrl',
       },
+    },
+    fixes: {
+      title: 'Fix Suggestions',
+      convertToHome: 'Convert to Home',
+      setLockedHouse: 'Mark as Locked House',
+      addMeasurement: 'Add Measurement',
+      swapMeasurements: 'Swap Measurements',
+      applied: 'Fix applied',
     },
   },
 };

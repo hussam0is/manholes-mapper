@@ -36,6 +36,8 @@ import {
   requestLocationPermission,
   isGeolocationSupported
 } from './map/user-location.js';
+import { getFixSuggestions } from './project/fix-suggestions.js';
+import { computeSketchIssues } from './project/sketch-issues.js';
 
 // Initialize Vercel Speed Insights only when deployed on Vercel (production)
 // The /_vercel/speed-insights/script.js endpoint only exists on Vercel's platform
@@ -203,6 +205,9 @@ if (typeof window !== 'undefined') {
   if (!window.CONSTS) {
     window.CONSTS = CONSTS;
   }
+  // Expose fix-suggestions engine for legacy/canvas code
+  window.__getFixSuggestions = getFixSuggestions;
+  window.__computeSketchIssues = computeSketchIssues;
 }
 
 // This preserves current behavior by importing the legacy script as a side-effect.
