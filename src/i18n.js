@@ -134,6 +134,11 @@ export const i18n = {
       signUpFailed: 'ההרשמה נכשלה. נסה שוב.',
       unexpectedError: 'אירעה שגיאה לא צפויה.',
     },
+    errors: {
+      sessionExpired: 'פג תוקף ההתחברות — יש להתחבר מחדש',
+      rateLimited: 'יותר מדי בקשות — נסה שוב בעוד דקה',
+      serverError: 'שגיאת שרת — נסה שוב מאוחר יותר',
+    },
     toasts: {
       nodeMode: 'מצב שוחה',
       edgeMode: 'מצב קו',
@@ -705,6 +710,11 @@ export const i18n = {
       signInFailed: 'Sign in failed. Please check your credentials.',
       signUpFailed: 'Sign up failed. Please try again.',
       unexpectedError: 'An unexpected error occurred.',
+    },
+    errors: {
+      sessionExpired: 'Session expired — please sign in again',
+      rateLimited: 'Too many requests — try again in a minute',
+      serverError: 'Server error — please try again later',
     },
     toasts: {
       nodeMode: 'Node mode',

@@ -2390,7 +2390,17 @@ function updateSyncStatusUI(state) {
       } else if (state.error) {
         headerSyncEl.classList.add('header-sync-indicator--error');
         if (headerSyncIcon) headerSyncIcon.textContent = 'cloud_off';
-        headerSyncEl.title = t('auth.syncError');
+        // Show descriptive error message based on HTTP status code
+        const code = state.errorStatusCode;
+        if (code === 401) {
+          headerSyncEl.title = t('errors.sessionExpired');
+        } else if (code === 429) {
+          headerSyncEl.title = t('errors.rateLimited');
+        } else if (code >= 500) {
+          headerSyncEl.title = t('errors.serverError');
+        } else {
+          headerSyncEl.title = t('auth.syncError');
+        }
       } else {
         headerSyncEl.classList.add('header-sync-indicator--synced');
         if (headerSyncIcon) headerSyncIcon.textContent = 'cloud_done';
@@ -2429,7 +2439,19 @@ function updateSyncStatusUI(state) {
   } else if (state.error) {
     syncStatusBar.classList.add('error');
     if (syncStatusIcon) syncStatusIcon.textContent = 'cloud_off';
-    if (syncStatusText) syncStatusText.textContent = t('auth.syncError');
+    // Show descriptive error message based on HTTP status code
+    if (syncStatusText) {
+      const code = state.errorStatusCode;
+      if (code === 401) {
+        syncStatusText.textContent = t('errors.sessionExpired');
+      } else if (code === 429) {
+        syncStatusText.textContent = t('errors.rateLimited');
+      } else if (code >= 500) {
+        syncStatusText.textContent = t('errors.serverError');
+      } else {
+        syncStatusText.textContent = t('auth.syncError');
+      }
+    }
   } else {
     if (syncStatusIcon) syncStatusIcon.textContent = 'cloud_done';
     if (state.lastSyncTime) {

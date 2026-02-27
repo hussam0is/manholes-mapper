@@ -154,12 +154,16 @@ async function apiRequest(endpoint, options = {}) {
         console.error('[Sync] Validation errors:', errorData.details);
       }
 
+      // Build a descriptive error with status code for the UI to provide
+      // user-friendly messages (session expired, rate limited, server error)
+      const err = new Error(errorMessage);
+      err.statusCode = response.status;
+
       if (response.status === 401) {
         console.error('[Sync] Authentication failed (401). Check server auth configuration.');
-        throw new Error(`Authentication failed (401). Please check your server configuration.`);
       }
 
-      throw new Error(errorMessage);
+      throw err;
     }
 
     // API is working, ensure flag is set
@@ -414,6 +418,7 @@ export async function syncFromCloud() {
     updateSyncState({
       isSyncing: false,
       error: error.message,
+      errorStatusCode: error.statusCode || null,
     });
     throw error;
   } finally {
@@ -757,6 +762,7 @@ export async function syncSketchToCloud(sketch) {
     updateSyncState({
       isSyncing: false,
       error: error.message,
+      errorStatusCode: error.statusCode || null,
     });
     
     // Queue for later retry
