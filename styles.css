@@ -9979,3 +9979,468 @@ button:focus-visible,
     display: none;
   }
 }
+
+/* ===========================================
+   Landscape Mobile — Horizontal Phone Layout
+   ===========================================
+   Targets phones held horizontally: wide viewport with very limited height.
+   Key constraint: only ~360px of height available, so every vertical pixel matters.
+   Uses max-height + orientation to avoid affecting tablets and desktops.
+*/
+
+/* --- Landscape: Compact Header --- */
+@media (max-height: 450px) and (orientation: landscape) {
+  :root {
+    --header-h: 36px;
+    --header-h-mobile: 36px;
+  }
+
+  header {
+    padding: 0.25rem 0.75rem;
+  }
+
+  #brandLogo {
+    height: 22px;
+  }
+
+  #appTitle {
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  #appTitle::after {
+    height: 2px;
+    bottom: -2px;
+  }
+
+  .sketch-name-display-mobile {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.5rem;
+  }
+
+  /* Compact hamburger & header buttons */
+  #mobileMenuBtn {
+    padding: 0.2rem;
+  }
+
+  #mobileMenuBtn .material-icons {
+    font-size: 1.2rem;
+  }
+
+  .menu-brand {
+    gap: 0.375rem;
+  }
+
+  /* Header controls (zoom, home, help) — smaller in landscape */
+  .menu-btn--small,
+  .menu-btn--icon-only {
+    min-height: 28px;
+    min-width: 28px;
+    padding: 0.15rem;
+  }
+
+  .menu-btn--small .material-icons,
+  .menu-btn--icon-only .material-icons {
+    font-size: 1rem;
+  }
+}
+
+/* --- Landscape: Login Page --- */
+@media (max-height: 450px) and (orientation: landscape) {
+  .login-panel {
+    padding: 0.5rem;
+    overflow-y: auto;
+  }
+
+  .login-panel-content {
+    max-width: 560px;
+    max-height: 100%;
+    display: flex;
+    flex-direction: row;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .login-panel-header {
+    padding: 1rem;
+    writing-mode: horizontal-tb;
+    min-width: 160px;
+    max-width: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-bottom: none;
+  }
+
+  .login-panel-header h1 {
+    font-size: 1.2rem;
+  }
+
+  .login-panel-header p {
+    font-size: 0.75rem;
+  }
+
+  .auth-form-wrapper {
+    padding: 0.75rem 1.25rem;
+    min-height: unset;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .auth-form-container {
+    padding: 0.75rem 1.25rem;
+  }
+
+  .auth-form {
+    gap: 0.5rem;
+  }
+
+  .auth-form-title {
+    font-size: 1.1rem;
+    margin-bottom: 0;
+  }
+
+  .auth-form-subtitle {
+    font-size: 0.75rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .auth-form-field {
+    gap: 0.2rem;
+  }
+
+  .auth-form-field label {
+    font-size: 0.75rem;
+  }
+
+  .auth-form-field input {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .auth-form-submit {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+    min-height: 36px;
+  }
+
+  .auth-form-footer {
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+  }
+}
+
+/* --- Landscape: Canvas Toolbar — Switch to Horizontal --- */
+@media (max-height: 450px) and (orientation: landscape) {
+  .canvas-toolbar {
+    top: 8px;
+    right: 50%;
+    transform: translateX(50%);
+  }
+
+  .canvas-toolbar .segmented#modeGroup {
+    flex-direction: row;
+  }
+
+  .canvas-toolbar-divider {
+    height: auto;
+    width: 1px;
+    margin: 8px 0;
+  }
+
+  .canvas-toolbar .segmented#modeGroup .btn {
+    min-width: 36px;
+    height: 36px;
+    padding: 0.3rem;
+  }
+
+  .canvas-toolbar .segmented#modeGroup .btn .material-icons {
+    font-size: 1rem;
+  }
+
+  /* Edge legend — inline and compact */
+  .edge-legend {
+    top: 4px;
+    left: 4px;
+    font-size: 10px;
+    padding: 3px 8px;
+    gap: 6px;
+    opacity: 0.8;
+  }
+
+  /* FAB toolbar — position at bottom center in landscape */
+  .canvas-fab-toolbar {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 8px;
+  }
+
+  .canvas-fab-toolbar__toggle {
+    width: 40px;
+    height: 40px;
+  }
+
+  .canvas-fab-toolbar__item {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* Take Measure FAB */
+  .take-measure-fab {
+    bottom: 4px;
+    left: 4px;
+    height: 36px;
+    padding: 0 10px 0 8px;
+    font-size: 12px;
+  }
+
+  .take-measure-fab .material-icons {
+    font-size: 18px;
+  }
+
+  .take-measure-fab__label {
+    font-size: 11px;
+  }
+}
+
+/* --- Landscape: Bottom Drawer — Side Panel Instead --- */
+@media (max-height: 450px) and (max-width: 900px) and (orientation: landscape) {
+  .drawer {
+    /* Convert bottom sheet to side panel in landscape */
+    position: fixed;
+    top: var(--header-h, 36px);
+    bottom: 0;
+    right: 0;
+    left: auto;
+    width: min(320px, 45vw);
+    height: calc(100dvh - var(--header-h, 36px));
+    height: calc(var(--app-height, 100dvh) - var(--header-h, 36px));
+    max-height: none;
+    transform: translate3d(100%, 0, 0);
+    transition: transform 260ms cubic-bezier(.2, .8, .2, 1);
+    border-top: none;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-inline-start: 1px solid var(--color-border);
+    z-index: 40;
+  }
+
+  .drawer.open {
+    transform: translate3d(0, 0, 0);
+  }
+
+  /* Reset drawer height to auto (no longer bottom-sheet) */
+  .drawer.resizing {
+    transition: none;
+  }
+
+  /* Reposition canvas controls when side drawer is open */
+  body.drawer-open .canvas-toolbar {
+    right: calc(min(320px, 45vw) + 12px);
+    transform: none;
+  }
+
+  body.drawer-open .canvas-fab-toolbar {
+    right: calc(min(320px, 45vw) + 12px);
+    left: auto;
+    transform: none;
+    bottom: 8px;
+  }
+
+  body.drawer-open .canvas-fab {
+    right: calc(min(320px, 45vw) + 8px);
+    bottom: 8px;
+  }
+
+  body.drawer-open .toggle-floating-keyboard {
+    right: calc(min(320px, 45vw) + 12px);
+    bottom: 8px;
+  }
+
+  body.drawer-open .take-measure-fab {
+    bottom: 4px;
+  }
+
+  /* Hide drawer drag handle in landscape (side panel doesn't need it) */
+  .drawer-handle {
+    display: none;
+  }
+}
+
+/* --- Landscape: Home Panel — Full-Width Compact --- */
+@media (max-height: 450px) and (orientation: landscape) {
+  .home-panel-modern {
+    width: min(600px, 90vw);
+    max-height: calc(100dvh - 8px);
+    border-radius: 10px !important;
+  }
+
+  .home-panel-header {
+    padding: 0.4rem 0.75rem;
+  }
+
+  .home-panel-header-title .material-icons {
+    font-size: 1.1rem;
+  }
+
+  .home-panel-header-title h2 {
+    font-size: 0.85rem;
+  }
+
+  .home-panel-close {
+    width: 28px;
+    height: 28px;
+  }
+
+  .home-panel-close .material-icons {
+    font-size: 1rem;
+  }
+
+  .home-panel-sync-status {
+    padding: 0.15rem 0.75rem;
+    font-size: 0.65rem;
+  }
+
+  .home-panel-content {
+    padding: 0.375rem;
+  }
+
+  .sketch-card {
+    padding: 0.5rem;
+  }
+
+  .sketch-list {
+    gap: 0.375rem;
+  }
+
+  .sketch-card-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .sketch-card-icon .material-icons {
+    font-size: 1rem;
+  }
+
+  .sketch-card-body h3 {
+    font-size: 0.85rem;
+  }
+
+  .sketch-card-meta {
+    font-size: 0.7rem;
+  }
+
+  .sketch-action-btn {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .sketch-tabs {
+    padding: 0 0.5rem;
+  }
+
+  .sketch-tab {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .home-panel-footer {
+    padding: 0.375rem 0.75rem;
+  }
+
+  .home-panel-new-btn {
+    padding: 0.4rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* --- Landscape: Mobile Menu --- */
+@media (max-height: 450px) and (orientation: landscape) {
+  #mobileMenu {
+    top: var(--header-h, 36px);
+    width: min(280px, 50vw);
+  }
+
+  .mobile-menu-header {
+    padding: 0.375rem 0.75rem;
+  }
+
+  .mobile-menu-content {
+    padding: 0.375rem;
+  }
+
+  .menu-group-label {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  #mobileMenu .btn {
+    padding: 0.375rem 0.5rem;
+    font-size: 0.8rem;
+    min-height: 36px;
+  }
+
+  #mobileMenu .btn .material-icons {
+    font-size: 1.1rem;
+  }
+
+  /* Menu backdrop */
+  .mobile-menu-backdrop {
+    top: var(--header-h, 36px);
+  }
+}
+
+/* --- Landscape: Admin Panel --- */
+@media (max-height: 450px) and (orientation: landscape) {
+  .admin-modern-modal {
+    max-height: calc(100dvh - 8px);
+    width: min(90vw, 800px);
+  }
+
+  .admin-modern-header {
+    padding: 0.375rem 0.75rem;
+  }
+
+  .admin-modern-tabs {
+    gap: 0;
+  }
+
+  .admin-modern-tab {
+    padding: 0.3rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .admin-modern-content {
+    padding: 0.5rem;
+    max-height: calc(100dvh - 120px);
+    overflow-y: auto;
+  }
+}
+
+/* --- Landscape: Layer Controls --- */
+@media (max-height: 450px) and (orientation: landscape) {
+  .layer-controls-card {
+    max-height: calc(100dvh - var(--header-h, 36px) - 60px);
+    overflow-y: auto;
+  }
+}
+
+/* --- Landscape: Toast Position --- */
+@media (max-height: 450px) and (orientation: landscape) {
+  .toast {
+    bottom: 8px;
+    top: auto;
+    font-size: 0.8rem;
+    padding: 0.375rem 0.75rem;
+  }
+}
+
+/* --- Landscape: Floating Keyboard --- */
+@media (max-height: 450px) and (orientation: landscape) {
+  .floating-keyboard {
+    max-height: calc(100dvh - var(--header-h, 36px) - 16px);
+    transform: scale(0.85);
+    transform-origin: bottom right;
+  }
+}
