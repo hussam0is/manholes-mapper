@@ -304,7 +304,7 @@ function renderIssuesView() {
       nodeLabel = `#${issue.nodeId}`;
     } else if (issue.type === 'long_edge') {
       icon = 'straighten';
-      typeText = `${issue.lengthM}m`;
+      typeText = `${t('projects.canvas.longPipe') || 'Long pipe'} (${issue.lengthM}m)`;
       nodeLabel = `#${issue.tailId}→#${issue.headId}`;
     } else {
       icon = 'rule';

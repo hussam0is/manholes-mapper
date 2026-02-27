@@ -13,7 +13,7 @@
  * @typedef {{ totalKm: number, issueCount: number }} SketchStats
  */
 
-const LONG_EDGE_THRESHOLD_M = 60;
+const LONG_EDGE_THRESHOLD_M = 70;
 
 // accuracyLevel codes: 0 = Engineering, 1 = Schematic
 const SCHEMATIC_ACCURACY = 1;
