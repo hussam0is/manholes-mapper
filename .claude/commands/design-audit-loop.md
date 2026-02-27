@@ -4,6 +4,39 @@ You are a **senior product designer and full-stack engineer** running a continuo
 
 ---
 
+## CRITICAL: Browser Access Protocol
+
+**Playwright MCP is a SINGLETON** — there is only ONE shared browser instance. Multiple agents CANNOT use it simultaneously.
+
+### Rules:
+1. **ONLY ONE agent may use Playwright MCP at a time.** Never spawn parallel agents that both need the browser.
+2. **NEVER kill Chrome processes** (`taskkill`, `pkill chrome`, etc.) — this destroys other agents' browser sessions and creates cascading failures.
+3. **NEVER retry browser_navigate in a loop** — if Playwright MCP fails to launch, do NOT repeatedly kill Chrome and retry. Instead, fall back to writing a standalone Playwright script (see below).
+4. **Sequential browser phases** — Phase 0 (research) must fully complete and return before Phase 4 (test) starts. Never overlap.
+5. **Close the browser when done** — Each agent that uses Playwright MCP should call `browser_close` when finished, before returning.
+
+### Fallback: Standalone Playwright Script
+
+If Playwright MCP fails (browser locked, Chrome conflict), the agent MUST switch to writing a standalone Node.js script that uses Playwright's library API. This launches its OWN isolated Chromium — no conflict with MCP or system Chrome:
+
+```javascript
+// scripts/capture-screenshots.mjs
+import { chromium } from 'playwright';
+const browser = await chromium.launch(); // Own isolated Chromium
+const context = await browser.newContext({ viewport: { width: 740, height: 360 } });
+const page = await context.newPage();
+await page.goto('http://localhost:5173');
+await page.screenshot({ path: 'app_state_YYYY-MM-DD/01_screenshot.png' });
+// ... more screenshots ...
+await browser.close();
+```
+
+Run with: `node scripts/capture-screenshots.mjs`
+
+This is the PREFERRED approach when the user's system Chrome is running or when Playwright MCP cannot acquire the browser.
+
+---
+
 ## What This Skill Does
 
 0. **RESEARCH & CAPTURE** — Spawn `general-purpose` agent (Task tool) to browse the live app, capture screenshots + 1-min video into `app_state_YYYY-MM-DD/`. Send video to Gemini CLI for analysis. Present top 3 improvement areas + manual option for user to choose.
@@ -13,6 +46,8 @@ You are a **senior product designer and full-stack engineer** running a continuo
 4. **TEST** — Spawn `general-purpose` agent (Task tool) with design verification criteria (Playwright)
 5. **PHONE TEST** — Invoke `mobile-phone-tester` skill (Skill tool) with design-specific phone criteria
 6. **LOOP** — Return to step 0 with a different workflow or after fixes are deployed
+
+**Agent sequencing**: Phases 0, 3, 4, 5 each spawn agents — they MUST run sequentially, never in parallel. Wait for each agent to fully complete before spawning the next.
 
 ---
 
@@ -59,12 +94,34 @@ Or production if the user specifies: `https://manholes-mapper.vercel.app`
 
 Use the **Task tool** with `subagent_type: "general-purpose"`. Do NOT use the Skill tool — the research agent needs a custom design-focused prompt, not the default QA skill.
 
+**IMPORTANT**: This agent will use Playwright MCP for browser access. Do NOT spawn any other browser-using agents until this one completes and returns.
+
 Spawn the agent with this prompt:
 
 ```
 You are a **design researcher** capturing the current visual state of the Manholes Mapper app.
 Your ONLY job is to navigate every screen, take screenshots, and record a video. You are NOT
 doing QA testing, security testing, or functional testing — just visual documentation.
+
+## CRITICAL: Browser Rules
+- Use Playwright MCP tools (browser_navigate, browser_snapshot, browser_take_screenshot, etc.)
+- NEVER run `taskkill`, `pkill`, or kill Chrome/Chromium processes — this destroys shared browser state
+- If browser_navigate fails, try ONCE more. If it fails again, switch to the FALLBACK approach below.
+- When finished with ALL screenshots, call browser_close to release the browser for other agents.
+
+### FALLBACK: If Playwright MCP fails
+Write a standalone Playwright script and run it with `node`:
+```javascript
+// Save as scripts/capture-screenshots.mjs
+import { chromium } from 'playwright';
+const browser = await chromium.launch();
+const ctx = await browser.newContext({ viewport: { width: W, height: H } });
+const page = await ctx.newPage();
+// ... navigate, screenshot, etc.
+await browser.close();
+```
+Run: `node scripts/capture-screenshots.mjs`
+This uses Playwright's own Chromium — no conflict with MCP or system Chrome.
 
 App URL: [URL]
 Login: admin@geopoint.me / Geopoint2026!
@@ -190,6 +247,11 @@ Use `browser_take_screenshot` with descriptive filenames saved to the output fol
 
 **Naming convention:** `NN_workflowLetter_description.png`
 Examples: `01_A_pre_login.png`, `02_A_login_form.png`, `15_B_node_panel.png`
+
+## CLEANUP (MANDATORY)
+
+After taking all screenshots and recording video, you MUST call `browser_close` to release the
+Playwright MCP browser. Other agents need it after you. Failure to close causes browser lock conflicts.
 
 ## OUTPUT
 
@@ -473,10 +535,22 @@ HIGH:
 
 After the fix agent pushes to `dev`, wait ~2 minutes for Vercel to deploy, then spawn a `general-purpose` agent via the **Task tool** (`subagent_type: "general-purpose"`).
 
+**IMPORTANT**: The Phase 0 research agent MUST have fully completed and returned before spawning this agent. Both use Playwright MCP which is a singleton — concurrent access causes browser conflicts.
+
 ```
 You are a **design verification tester** for the Manholes Mapper app. Your job is to verify
 that specific UI/UX fixes are visually correct across different states. This is NOT functional
 QA — you're checking that things LOOK right.
+
+## CRITICAL: Browser Rules
+- Use Playwright MCP tools (browser_navigate, browser_snapshot, browser_take_screenshot, etc.)
+- NEVER run `taskkill`, `pkill`, or kill Chrome/Chromium processes — this destroys shared browser state
+- If browser_navigate fails, try ONCE more. If it fails again, write a standalone Playwright script and run with `node` (see fallback below).
+- When finished, call browser_close to release the browser.
+
+### FALLBACK: If Playwright MCP fails
+Write a standalone script: `import { chromium } from 'playwright'; const browser = await chromium.launch(); ...`
+Run with `node scripts/verify-screenshots.mjs`. This uses its own Chromium, no conflict.
 
 App URL: https://manholes-mapper-git-dev-hussam0is-projects.vercel.app
 Login: admin@geopoint.me / Geopoint2026!
@@ -530,6 +604,8 @@ For each fix:
 8. Report: PASS (looks correct) or FAIL (describe what's wrong)
 
 Save screenshots to [app_state_YYYY-MM-DD/] with prefix: `verify_NN_description.png`
+
+IMPORTANT: When finished with ALL verification screenshots, call `browser_close` to release the browser.
 ```
 
 ---

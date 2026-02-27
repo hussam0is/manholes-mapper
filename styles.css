@@ -2408,6 +2408,13 @@ canvas {
   .survey-fix-badge.fix-6 { background: #92400e; color: #fef3c7; }
 }
 
+.survey-empty-message {
+  color: var(--color-text-muted, #6b7280);
+  font-size: 0.85rem;
+  font-style: italic;
+  padding: 0.5rem 0;
+}
+
 .details-actions {
   position: sticky;
   bottom: 0;

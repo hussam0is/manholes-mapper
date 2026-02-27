@@ -4763,49 +4763,40 @@ function renderDetails() {
             </div>
           </div>
         </div>
-        <div class="details-section">
-          <div class="details-section-title">${t('labels.surveyData')}</div>
-          <div class="details-grid two-col">
-            <div class="field">
-              <label>${t('labels.surveyX')}</label>
-              <div class="field-value-readonly">${node.surveyX != null ? node.surveyX.toFixed(3) : '—'}</div>
-            </div>
-            <div class="field">
-              <label>${t('labels.surveyY')}</label>
-              <div class="field-value-readonly">${node.surveyY != null ? node.surveyY.toFixed(3) : '—'}</div>
-            </div>
-            <div class="field">
-              <label>${t('labels.terrainLevel')}</label>
-              <div class="field-value-readonly">${node.surveyZ != null ? node.surveyZ.toFixed(3) : '—'}</div>
-            </div>
-            <div class="field">
-              <label>${t('labels.measurePrecision')}</label>
-              <div class="field-value-readonly">${node.measure_precision != null ? node.measure_precision.toFixed(3) + ' m' : '—'}</div>
-            </div>
-            <div class="field col-span-2">
-              <label>${t('labels.fixType')}</label>
-              ${(() => {
-                // Treat coordinatesMap match as Fixed if gnssFixQuality not explicitly set
-                const inMap = coordinatesMap && coordinatesMap.has(String(node.id));
-                const fq = (node.gnssFixQuality === 4 || node.gnssFixQuality === 5)
-                  ? node.gnssFixQuality
-                  : (inMap ? 4 : 6);
-                const cls = fq === 4 ? '4' : fq === 5 ? '5' : '6';
-                const label = fq === 4 ? t('labels.fixFixed') : fq === 5 ? t('labels.fixDeviceFloat') : t('labels.fixManualFloat');
-                return `<div class="field-value-readonly survey-fix-badge fix-${cls}">${label}</div>`;
-              })()}
-            </div>
-            ${node.manual_x != null || node.manual_y != null ? `
-            <div class="field">
-              <label>${t('labels.manualX')}</label>
-              <div class="field-value-readonly">${node.manual_x != null ? node.manual_x.toFixed(3) : '—'}</div>
-            </div>
-            <div class="field">
-              <label>${t('labels.manualY')}</label>
-              <div class="field-value-readonly">${node.manual_y != null ? node.manual_y.toFixed(3) : '—'}</div>
-            </div>` : ''}
-          </div>
-        </div>
+        ${(() => {
+          const hasSurvey = node.surveyX != null || node.surveyY != null || node.surveyZ != null || node.measure_precision != null;
+          if (!hasSurvey && node.manual_x == null && node.manual_y == null) {
+            // No survey data at all — show a single compact message
+            return `<div class="details-section">
+              <div class="details-section-title">${t('labels.surveyData')}</div>
+              <div class="survey-empty-message">${t('labels.noSurveyData')}</div>
+            </div>`;
+          }
+          // Has some survey data — show only fields that have values
+          let fields = '';
+          if (node.surveyX != null) fields += `<div class="field"><label>${t('labels.surveyX')}</label><div class="field-value-readonly">${node.surveyX.toFixed(3)}</div></div>`;
+          if (node.surveyY != null) fields += `<div class="field"><label>${t('labels.surveyY')}</label><div class="field-value-readonly">${node.surveyY.toFixed(3)}</div></div>`;
+          if (node.surveyZ != null) fields += `<div class="field"><label>${t('labels.terrainLevel')}</label><div class="field-value-readonly">${node.surveyZ.toFixed(3)}</div></div>`;
+          fields += `<div class="field"><label>${t('labels.measurePrecision')}</label><div class="field-value-readonly">${node.measure_precision != null ? node.measure_precision.toFixed(3) + ' m' : t('labels.notRecorded')}</div></div>`;
+          // Fix type badge — only show when node has survey coordinates
+          if (node.surveyX != null || node.surveyY != null) {
+            const inMap = coordinatesMap && coordinatesMap.has(String(node.id));
+            const fq = (node.gnssFixQuality === 4 || node.gnssFixQuality === 5)
+              ? node.gnssFixQuality
+              : (inMap ? 4 : 6);
+            const cls = fq === 4 ? '4' : fq === 5 ? '5' : '6';
+            const fixLabel = fq === 4 ? t('labels.fixFixed') : fq === 5 ? t('labels.fixDeviceFloat') : t('labels.fixManualFloat');
+            fields += `<div class="field col-span-2"><label>${t('labels.fixType')}</label><div class="field-value-readonly survey-fix-badge fix-${cls}">${fixLabel}</div></div>`;
+          }
+          if (node.manual_x != null || node.manual_y != null) {
+            if (node.manual_x != null) fields += `<div class="field"><label>${t('labels.manualX')}</label><div class="field-value-readonly">${node.manual_x.toFixed(3)}</div></div>`;
+            if (node.manual_y != null) fields += `<div class="field"><label>${t('labels.manualY')}</label><div class="field-value-readonly">${node.manual_y.toFixed(3)}</div></div>`;
+          }
+          return `<div class="details-section">
+            <div class="details-section-title">${t('labels.surveyData')}</div>
+            <div class="details-grid two-col">${fields}</div>
+          </div>`;
+        })()}
       `;
     }
 
