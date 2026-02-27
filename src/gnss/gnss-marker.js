@@ -261,21 +261,28 @@ function drawPrecisionCard(ctx, cx, topY, position, posItm, markerColor, fixQual
   const padding = 6;
   const lineH = 15;
   const smallFont = `10px ${font}`;
+  // Fix label uses a larger bold font for visual hierarchy
+  const fixLabelFont = `bold 13px ${font}`;
   const boldFont = `bold 11px ${font}`;
   const cardAlpha = Math.round(ease * 240); // Fade in with entrance
   if (cardAlpha < 10) return;
 
+  // For "No Fix" (quality 0), collapse detail lines — they are meaningless
+  const isNoFix = fixQuality === 0;
+
   // Measure widths to size the card
+  ctx.font = fixLabelFont;
+  const fixLabelW = ctx.measureText(fixLabel).width;
   ctx.font = boldFont;
-  const line1 = fixLabel + (accText ? `  ${accText}` : '');
-  const w1 = ctx.measureText(line1).width;
+  const accW = accText ? ctx.measureText('  ' + accText).width : 0;
+  const w1 = fixLabelW + accW;
 
   ctx.font = smallFont;
-  const line2Parts = [hdopText, altText].filter(Boolean);
+  const line2Parts = isNoFix ? [] : [hdopText, altText].filter(Boolean);
   const line2 = line2Parts.join('   ');
   const w2 = ctx.measureText(line2).width;
 
-  const line3 = itmE && itmN ? `E ${itmE}  N ${itmN}` : '';
+  const line3 = (!isNoFix && itmE && itmN) ? `E ${itmE}  N ${itmN}` : '';
   const w3 = line3 ? ctx.measureText(line3).width : 0;
 
   const lineCount = 1 + (line2 ? 1 : 0) + (line3 ? 1 : 0);
@@ -323,13 +330,13 @@ function drawPrecisionCard(ctx, cx, topY, position, posItm, markerColor, fixQual
   ctx.textAlign = isRTL ? 'right' : 'left';
   ctx.textBaseline = 'top';
 
-  // Line 1: Fix type + accuracy (bold, colored)
-  ctx.font = boldFont;
+  // Line 1: Fix type (larger bold) + accuracy (smaller bold)
+  ctx.font = fixLabelFont;
   ctx.fillStyle = markerColor;
   ctx.fillText(fixLabel, textX, ty);
   if (accText) {
     const fixW = ctx.measureText(fixLabel + '  ').width;
-    ctx.font = `bold 11px ${font}`;
+    ctx.font = boldFont;
     ctx.fillStyle = '#374151'; // gray-700
     const accX = isRTL ? textX - fixW : textX + fixW;
     ctx.fillText(accText, accX, ty);
