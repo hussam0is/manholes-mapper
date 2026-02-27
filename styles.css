@@ -10031,6 +10031,61 @@ button:focus-visible,
   to { transform: rotate(360deg); }
 }
 
+/* 3D header actions row */
+.three-d-overlay__header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* 3D mode toggle button */
+.three-d-overlay__mode-toggle {
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  cursor: pointer;
+  border-radius: var(--radius);
+  padding: 0 var(--space-2);
+  font-size: 0.75rem;
+  transition: background 0.15s;
+}
+
+.three-d-overlay__mode-toggle:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.three-d-overlay__mode-label {
+  white-space: nowrap;
+}
+
+/* 3D virtual joystick canvas */
+.three-d-joystick {
+  position: absolute;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* 3D FPS crosshair */
+.three-d-overlay__crosshair {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 1;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 24px;
+  font-weight: 300;
+  font-family: monospace;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
+}
+
 @media (max-width: 600px) {
   .three-d-overlay__legend {
     bottom: 8px;
@@ -10040,6 +10095,27 @@ button:focus-visible,
   }
   .three-d-overlay__controls-hint {
     display: none;
+  }
+  .three-d-overlay__mode-label {
+    display: none;
+  }
+}
+
+/* Landscape adjustments for 3D overlay */
+@media (orientation: landscape) and (max-height: 500px) {
+  .three-d-overlay__header {
+    padding: var(--space-1) var(--space-3);
+  }
+  .three-d-overlay__legend {
+    bottom: 8px;
+    inset-inline-start: 8px;
+    font-size: 0.6rem;
+    padding: var(--space-1) var(--space-2);
+    max-width: 150px;
+  }
+  .three-d-overlay__legend h4 {
+    margin-bottom: var(--space-1);
+    font-size: 0.7rem;
   }
 }
 

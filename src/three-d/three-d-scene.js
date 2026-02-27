@@ -316,6 +316,8 @@ export function buildScene(THREE, data, CSS2DObject) {
       min: new THREE.Vector3(bbox.minX, -10, bbox.minZ),
       max: new THREE.Vector3(bbox.maxX, 5, bbox.maxZ),
     },
+    positions3D,
+    nodeMap,
   };
 }
 

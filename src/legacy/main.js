@@ -2751,6 +2751,13 @@ window.__getActiveSketchData = function () {
 window.__getMapReferencePoint = getMapReferencePoint;
 window.__getCoordinateScale = () => coordinateScale;
 
+/** Expose current selection for context-aware 3D view. */
+window.__getSelection = function () {
+  if (selectedNode) return { type: 'node', node: { ...selectedNode } };
+  if (selectedEdge) return { type: 'edge', edge: { ...selectedEdge } };
+  return null;
+};
+
 /**
  * Load a sketch into the main globals (used by project-canvas-state).
  */
@@ -6860,7 +6867,8 @@ if (threeDViewBtn) {
     try {
       threeDViewBtn.disabled = true;
       const { open3DView } = await import('../three-d/three-d-view.js');
-      await open3DView();
+      const selection = window.__getSelection?.() ?? null;
+      await open3DView({ selection });
     } catch (err) {
       console.error('[3D View] Failed to load:', err);
       showToast(t('threeD.loadError'));

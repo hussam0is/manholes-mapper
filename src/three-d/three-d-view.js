@@ -2,22 +2,35 @@
  * 3D View — Main orchestrator.
  * Lazy-loads Three.js, creates a fullscreen overlay, renders the sketch
  * as a 3D underground visualization, and handles cleanup on close.
+ *
+ * Supports two camera modes:
+ *   - Orbit: rotate/zoom/pan (default when no selection)
+ *   - FPS:   first-person walk with WASD/joystick (default when selection exists)
  */
 
 import { buildScene } from './three-d-scene.js';
 import { EDGE_TYPE_COLORS } from './three-d-materials.js';
+import { computeInitialCamera } from './three-d-camera-framing.js';
+import { FPSControls } from './three-d-fps-controls.js';
+import { VirtualJoystick } from './three-d-joystick.js';
 
 let isOpen = false;
+
+const EYE_HEIGHT = 1.6; // metres
 
 /**
  * Open the 3D view for the current active sketch.
  * Lazy-loads Three.js on first call.
+ *
+ * @param {{ selection?: object|null }} [opts]
  */
-export async function open3DView() {
+export async function open3DView(opts = {}) {
   if (isOpen) return;
   isOpen = true;
 
+  const selection = opts.selection ?? null;
   const t = window.t || ((k) => k);
+  const esc = (s) => window.escapeHtml?.(s) || s;
 
   // ── Extract sketch data ─────────────────────────────────────────────────
   const sketchData = window.__getActiveSketchData?.();
@@ -30,6 +43,9 @@ export async function open3DView() {
   const ref = window.__getMapReferencePoint?.() ?? null;
   const coordScale = window.__getCoordinateScale?.() ?? 50;
 
+  // Start in FPS mode when a selection exists
+  let currentMode = selection ? 'fps' : 'orbit';
+
   // ── Create overlay DOM ──────────────────────────────────────────────────
   const overlay = document.createElement('div');
   overlay.className = 'three-d-overlay';
@@ -37,42 +53,45 @@ export async function open3DView() {
     <div class="three-d-overlay__header">
       <div class="three-d-overlay__title">
         <span class="material-icons" aria-hidden="true">view_in_ar</span>
-        <span>${window.escapeHtml?.(t('threeD.title')) || '3D View'}</span>
+        <span>${esc(t('threeD.title'))}</span>
       </div>
-      <button class="three-d-overlay__close" aria-label="${window.escapeHtml?.(t('threeD.close')) || 'Close'}">
-        <span class="material-icons">close</span>
-      </button>
+      <div class="three-d-overlay__header-actions">
+        <button class="three-d-overlay__mode-toggle" aria-label="${esc(t('threeD.modeToggle'))}">
+          <span class="material-icons">${currentMode === 'fps' ? '3d_rotation' : 'directions_walk'}</span>
+          <span class="three-d-overlay__mode-label">${esc(currentMode === 'fps' ? t('threeD.modeOrbit') : t('threeD.modeFPS'))}</span>
+        </button>
+        <button class="three-d-overlay__close" aria-label="${esc(t('threeD.close'))}">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
     </div>
     <div class="three-d-overlay__canvas-container">
       <div class="three-d-overlay__loading">
         <span class="material-icons" style="animation: spin 1s linear infinite">hourglass_top</span>
-        <span>${window.escapeHtml?.(t('threeD.loading')) || 'Loading 3D view...'}</span>
+        <span>${esc(t('threeD.loading'))}</span>
       </div>
+      <div class="three-d-overlay__crosshair" style="display:${currentMode === 'fps' ? 'flex' : 'none'}">+</div>
     </div>
     <div class="three-d-overlay__legend">
-      <h4>${window.escapeHtml?.(t('threeD.legend.title')) || 'Legend'}</h4>
+      <h4>${esc(t('threeD.legend.title'))}</h4>
       <div class="three-d-overlay__legend-item">
         <span class="three-d-overlay__legend-swatch" style="background:#2563eb"></span>
-        <span>${window.escapeHtml?.(t('threeD.legend.mainLine')) || 'Main Line'}</span>
+        <span>${esc(t('threeD.legend.mainLine'))}</span>
       </div>
       <div class="three-d-overlay__legend-item">
         <span class="three-d-overlay__legend-swatch" style="background:#fb923c"></span>
-        <span>${window.escapeHtml?.(t('threeD.legend.drainageLine')) || 'Drainage Line'}</span>
+        <span>${esc(t('threeD.legend.drainageLine'))}</span>
       </div>
       <div class="three-d-overlay__legend-item">
         <span class="three-d-overlay__legend-swatch" style="background:#0d9488"></span>
-        <span>${window.escapeHtml?.(t('threeD.legend.secondaryLine')) || 'Secondary Line'}</span>
+        <span>${esc(t('threeD.legend.secondaryLine'))}</span>
       </div>
       <div class="three-d-overlay__legend-item">
         <span class="three-d-overlay__legend-swatch three-d-overlay__legend-swatch--estimated" style="background:#888"></span>
-        <span>${window.escapeHtml?.(t('threeD.legend.estimated')) || 'Estimated'}</span>
+        <span>${esc(t('threeD.legend.estimated'))}</span>
       </div>
     </div>
-    <div class="three-d-overlay__controls-hint">
-      ${window.escapeHtml?.(t('threeD.controls.rotate')) || 'Rotate: drag mouse'}<br>
-      ${window.escapeHtml?.(t('threeD.controls.zoom')) || 'Zoom: scroll wheel'}<br>
-      ${window.escapeHtml?.(t('threeD.controls.pan')) || 'Pan: right-click drag'}
-    </div>
+    <div class="three-d-overlay__controls-hint"></div>
   `;
 
   document.body.appendChild(overlay);
@@ -80,13 +99,24 @@ export async function open3DView() {
   const container = overlay.querySelector('.three-d-overlay__canvas-container');
   const loadingEl = overlay.querySelector('.three-d-overlay__loading');
   const closeBtn = overlay.querySelector('.three-d-overlay__close');
+  const modeToggleBtn = overlay.querySelector('.three-d-overlay__mode-toggle');
   const controlsHint = overlay.querySelector('.three-d-overlay__controls-hint');
+  const crosshair = overlay.querySelector('.three-d-overlay__crosshair');
+
+  // ── Landscape orientation lock ────────────────────────────────────────
+  let orientationLocked = false;
+  try {
+    await screen.orientation?.lock?.('landscape');
+    orientationLocked = true;
+  } catch { /* not supported or not allowed — ignore */ }
 
   // ── Cleanup state ───────────────────────────────────────────────────────
   let renderer = null;
   let labelRenderer = null;
   let animFrameId = null;
-  let controls = null;
+  let orbitControls = null;
+  let fpsControls = null;
+  let joystick = null;
   let sceneResult = null;
   let resizeObserver = null;
 
@@ -94,7 +124,9 @@ export async function open3DView() {
     isOpen = false;
 
     if (animFrameId != null) cancelAnimationFrame(animFrameId);
-    if (controls) controls.dispose();
+    if (orbitControls) orbitControls.dispose();
+    if (fpsControls) fpsControls.dispose();
+    if (joystick) joystick.dispose();
     if (resizeObserver) resizeObserver.disconnect();
 
     // Dispose scene
@@ -117,12 +149,25 @@ export async function open3DView() {
       labelRenderer.domElement.remove();
     }
 
+    // Unlock orientation
+    if (orientationLocked) {
+      try { screen.orientation?.unlock?.(); } catch { /* ignore */ }
+    }
+
+    // Exit pointer lock
+    if (document.pointerLockElement) {
+      try { document.exitPointerLock(); } catch { /* ignore */ }
+    }
+
     overlay.remove();
     document.removeEventListener('keydown', onKeyDown);
   }
 
   function onKeyDown(e) {
     if (e.key === 'Escape') {
+      // In FPS pointer-lock mode, Escape just exits pointer lock (browser default)
+      // Only close overlay if not in pointer lock
+      if (document.pointerLockElement) return;
       e.preventDefault();
       e.stopPropagation();
       cleanup();
@@ -159,7 +204,18 @@ export async function open3DView() {
   };
 
   sceneResult = buildScene(THREE, data, CSS2DObject);
-  const { scene, camera, center } = sceneResult;
+  const { scene, camera, center, boundingBox, positions3D } = sceneResult;
+
+  // ── Camera framing based on selection ─────────────────────────────────
+  const framing = computeInitialCamera({
+    selection,
+    positions3D,
+    edges: data.edges,
+    center: { x: center.x, y: center.y, z: center.z },
+    boundingBox,
+  });
+  camera.position.set(framing.position.x, framing.position.y, framing.position.z);
+  camera.lookAt(framing.lookAt.x, framing.lookAt.y, framing.lookAt.z);
 
   // ── Renderer ────────────────────────────────────────────────────────────
   renderer = new THREE.WebGLRenderer({
@@ -180,17 +236,90 @@ export async function open3DView() {
   labelRenderer.domElement.style.pointerEvents = 'none';
   container.appendChild(labelRenderer.domElement);
 
-  // ── Controls ────────────────────────────────────────────────────────────
-  controls = new OrbitControls(camera, renderer.domElement);
-  controls.target.copy(center);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.08;
-  controls.minDistance = 1;
-  controls.maxDistance = 500;
-  controls.maxPolarAngle = Math.PI * 0.85; // don't go completely underneath
-  controls.update();
+  // ── Orbit controls ────────────────────────────────────────────────────
+  orbitControls = new OrbitControls(camera, renderer.domElement);
+  orbitControls.target.set(framing.lookAt.x, framing.lookAt.y, framing.lookAt.z);
+  orbitControls.enableDamping = true;
+  orbitControls.dampingFactor = 0.08;
+  orbitControls.minDistance = 1;
+  orbitControls.maxDistance = 500;
+  orbitControls.maxPolarAngle = Math.PI * 0.85;
+  orbitControls.update();
 
-  // ── Resize handling ─────────────────────────────────────────────────────
+  // ── FPS controls + Joystick ───────────────────────────────────────────
+  joystick = new VirtualJoystick(container);
+
+  fpsControls = new FPSControls(camera, renderer.domElement, {
+    onJoystickStart(x, y) { joystick.show(x, y); },
+    onJoystickMove(dx, dy, max) { joystick.move(dx, dy, max); },
+    onJoystickEnd() { joystick.hide(); },
+  });
+
+  // ── Mode switching ────────────────────────────────────────────────────
+  function setMode(mode) {
+    currentMode = mode;
+    const modeIcon = modeToggleBtn.querySelector('.material-icons');
+    const modeLabel = modeToggleBtn.querySelector('.three-d-overlay__mode-label');
+
+    if (mode === 'fps') {
+      orbitControls.enabled = false;
+      fpsControls.initFromCamera();
+      fpsControls.enable();
+      crosshair.style.display = 'flex';
+      // Button shows "switch to orbit"
+      modeIcon.textContent = '3d_rotation';
+      modeLabel.textContent = esc(t('threeD.modeOrbit'));
+      updateControlsHint('fps');
+    } else {
+      fpsControls.disable();
+      joystick.hide();
+      // Sync orbit target to where camera is looking
+      const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+      orbitControls.target.copy(camera.position).add(dir.multiplyScalar(5));
+      orbitControls.enabled = true;
+      orbitControls.update();
+      crosshair.style.display = 'none';
+      // Button shows "switch to FPS"
+      modeIcon.textContent = 'directions_walk';
+      modeLabel.textContent = esc(t('threeD.modeFPS'));
+      updateControlsHint('orbit');
+    }
+  }
+
+  modeToggleBtn.addEventListener('click', () => {
+    setMode(currentMode === 'fps' ? 'orbit' : 'fps');
+  });
+
+  // ── Controls hint ─────────────────────────────────────────────────────
+  function updateControlsHint(mode) {
+    if (!controlsHint) return;
+    controlsHint.style.opacity = '1';
+
+    if (mode === 'fps') {
+      controlsHint.innerHTML =
+        `${esc(t('threeD.controls.fpsMove'))}<br>` +
+        `${esc(t('threeD.controls.fpsLook'))}<br>` +
+        `${esc(t('threeD.controls.fpsSprint'))}<br>` +
+        `${esc(t('threeD.controls.fpsClick'))}`;
+    } else {
+      controlsHint.innerHTML =
+        `${esc(t('threeD.controls.rotate'))}<br>` +
+        `${esc(t('threeD.controls.zoom'))}<br>` +
+        `${esc(t('threeD.controls.pan'))}`;
+    }
+
+    // Fade out after 5s
+    clearTimeout(controlsHint._fadeTimer);
+    clearTimeout(controlsHint._removeTimer);
+    controlsHint._fadeTimer = setTimeout(() => {
+      controlsHint.style.opacity = '0';
+    }, 5000);
+  }
+
+  // Apply initial mode
+  setMode(currentMode);
+
+  // ── Resize handling ───────────────────────────────────────────────────
   function onResize() {
     const w = container.clientWidth;
     const h = container.clientHeight;
@@ -206,23 +335,23 @@ export async function open3DView() {
   resizeObserver.observe(container);
   onResize(); // initial size
 
-  // ── Fade controls hint ──────────────────────────────────────────────────
-  if (controlsHint) {
-    setTimeout(() => {
-      controlsHint.style.opacity = '0';
-    }, 5000);
-    setTimeout(() => {
-      controlsHint.remove();
-    }, 5500);
-  }
+  // ── Render loop (delta-time) ──────────────────────────────────────────
+  let lastTime = performance.now();
 
-  // ── Render loop ─────────────────────────────────────────────────────────
-  function animate() {
+  function animate(now) {
     animFrameId = requestAnimationFrame(animate);
-    controls.update();
+    const dt = Math.min((now - lastTime) / 1000, 0.1); // cap at 100ms
+    lastTime = now;
+
+    if (currentMode === 'fps') {
+      fpsControls.update(dt);
+    } else {
+      orbitControls.update();
+    }
+
     renderer.render(scene, camera);
     labelRenderer.render(scene, camera);
   }
 
-  animate();
+  animFrameId = requestAnimationFrame(animate);
 }
