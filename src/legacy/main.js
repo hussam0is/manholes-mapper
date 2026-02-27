@@ -3445,6 +3445,90 @@ function findIncompleteEdges() {
   return edges.filter(edge => edge.isDangling || edge.head === null || edge.tail === null);
 }
 
+// ── Required Field Validation ──────────────────────────────────────────────
+
+/**
+ * Mark required fields in a details container with visual indicators.
+ * Adds a red asterisk to labels of required fields and applies `.invalid`
+ * class to empty selects/inputs, with a small error message below.
+ *
+ * @param {HTMLElement} container - The form container
+ * @param {Set|Array} requiredFields - Field keys that are required (snake_case)
+ */
+function markRequiredFields(container, requiredFields) {
+  if (!requiredFields || requiredFields.size === 0) return;
+  const required = requiredFields instanceof Set ? requiredFields : new Set(requiredFields);
+
+  // Map snake_case field keys to DOM element IDs
+  const fieldIdMap = {
+    'accuracy_level': 'accuracyLevelSelect',
+    'maintenance_status': 'nodeMaintenanceStatusSelect',
+    'material': 'materialSelect',
+    'cover_diameter': 'coverDiameterSelect',
+    'access': 'accessSelect',
+    'note': 'noteInput',
+    'edge_type': 'edgeTypeSelect',
+    'engineering_status': 'edgeEngineeringStatusSelect',
+    'line_diameter': 'edgeDiameterSelect',
+    'tail_measurement': 'tailInput',
+    'head_measurement': 'headInput',
+    'fall_depth': 'fallDepthInput',
+    'fall_position': 'fallPositionSelect',
+  };
+
+  for (const fieldKey of required) {
+    const elId = fieldIdMap[fieldKey];
+    if (!elId) continue;
+    const el = container.querySelector('#' + elId);
+    if (!el) continue;
+
+    // Add required asterisk to the label
+    const field = el.closest('.field');
+    if (field) {
+      const label = field.querySelector('label');
+      if (label && !label.querySelector('.field-required-mark')) {
+        const mark = document.createElement('span');
+        mark.className = 'field-required-mark';
+        mark.textContent = ' *';
+        label.appendChild(mark);
+      }
+    }
+
+    // Check if the field value is empty
+    const isEmpty = el.tagName === 'TEXTAREA'
+      ? !el.value.trim()
+      : (el.tagName === 'SELECT' ? (!el.value || el.value === '') : !el.value.trim());
+
+    if (isEmpty) {
+      el.classList.add('invalid');
+      // Add error message below the field if not already present
+      if (field && !field.querySelector('.field-error')) {
+        const err = document.createElement('div');
+        err.className = 'field-error';
+        err.innerHTML = `<span class="material-icons" style="font-size:14px">error_outline</span> ${t('validation.required')}`;
+        field.appendChild(err);
+      }
+    }
+
+    // On change, re-evaluate validity
+    el.addEventListener('change', () => {
+      const nowEmpty = el.tagName === 'TEXTAREA'
+        ? !el.value.trim()
+        : (el.tagName === 'SELECT' ? (!el.value || el.value === '') : !el.value.trim());
+      el.classList.toggle('invalid', nowEmpty);
+      const errEl = field?.querySelector('.field-error');
+      if (nowEmpty && !errEl && field) {
+        const err = document.createElement('div');
+        err.className = 'field-error';
+        err.innerHTML = `<span class="material-icons" style="font-size:14px">error_outline</span> ${t('validation.required')}`;
+        field.appendChild(err);
+      } else if (!nowEmpty && errEl) {
+        errEl.remove();
+      }
+    });
+  }
+}
+
 // ── Long-Press Context Menu ────────────────────────────────────────────────
 
 /**
@@ -5363,6 +5447,10 @@ function renderDetails() {
       renderDetails();
       showToast(t('toasts.nodeDeleted'));
     });
+
+    // Mark required fields with visual indicators
+    markRequiredFields(container, ruleResults.required);
+
   } else if (selectedEdge) {
     const edge = selectedEdge;
     const tailNode = nodes.find((n) => String(n.id) === String(edge.tail));

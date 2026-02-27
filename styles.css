@@ -5046,6 +5046,11 @@ input:checked + .slider:before {
   font-size: 1.125rem;
 }
 
+.field-required-mark {
+  color: var(--color-danger, #dc2626);
+  font-weight: bold;
+}
+
 /* Validation error styles */
 .field-error {
   color: var(--color-danger-hover);
