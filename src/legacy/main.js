@@ -6063,9 +6063,14 @@ canvas.addEventListener('touchstart', (e) => {
       // Defer node creation until touchend to distinguish tap from pinch/drag
       const world = screenToWorld(x, y);
       if (currentMode === 'edge') {
-        const nodeAt = findNodeAtWithExpansion(world.x, world.y, TOUCH_SELECT_EXPANSION);
+        let nodeAt = findNodeAtWithExpansion(world.x, world.y, TOUCH_SELECT_EXPANSION);
         const edgeAt = findEdgeAt(world.x, world.y, TOUCH_EDGE_HIT_THRESHOLD);
-        
+        // Node priority: if an edge was hit but no node, re-check with wider
+        // radius so that taps near a node always prefer the node over the edge.
+        if (!nodeAt && edgeAt) {
+          nodeAt = findNodeAtWithExpansion(world.x, world.y, TOUCH_SELECT_EXPANSION * 1.6);
+        }
+
         if (nodeAt || edgeAt) {
           // Case 1: No pending edge yet
           if (!pendingEdgeTail && !pendingEdgeStartPosition) {
@@ -6268,9 +6273,20 @@ canvas.addEventListener('touchend', (e) => {
       } else {
         const world = screenToWorld(touchAddPoint.x, touchAddPoint.y);
         // Re-check proximity with touch-friendly thresholds to avoid creating next to an existing node/edge
-        const nearNode = findNodeAtWithExpansion(world.x, world.y, TOUCH_SELECT_EXPANSION);
+        let nearNode = findNodeAtWithExpansion(world.x, world.y, TOUCH_SELECT_EXPANSION);
         const nearEdge = findEdgeAt(world.x, world.y, TOUCH_EDGE_HIT_THRESHOLD);
-        if (!nearNode && !nearEdge) {
+        // Node priority: if an edge was hit but no node, widen the node check
+        if (!nearNode && nearEdge) {
+          nearNode = findNodeAtWithExpansion(world.x, world.y, TOUCH_SELECT_EXPANSION * 1.6);
+        }
+        if (nearNode) {
+          // Select nearby node instead of creating a new one
+          selectedNode = nearNode;
+          selectedEdge = null;
+          __wizardActiveTab = null;
+          renderDetails();
+          scheduleDraw();
+        } else if (!nearEdge) {
           const created = createNode(world.x, world.y);
           if (currentMode === 'home' && created) {
             // Keep numeric ID for home (like manholes/drainage)
