@@ -4544,6 +4544,21 @@ function buildWizardFieldHTML(node, activeKey, ruleResults, opts) {
  */
 function renderDetails() {
   detailsContainer.innerHTML = '';
+  // Dynamic sidebar title: show element type + ID instead of generic "Details"
+  if (sidebarTitleEl) {
+    if (selectedNode) {
+      const ntKey = (selectedNode.nodeType || 'Manhole').toLowerCase();
+      const typeLabel = t('nodeTypeLabel.' + ntKey) || t('nodeTypeLabel.manhole');
+      sidebarTitleEl.textContent = t('sidebarNodeTitle', typeLabel, selectedNode.id);
+      sidebarTitleEl.removeAttribute('data-i18n');
+    } else if (selectedEdge) {
+      sidebarTitleEl.textContent = t('sidebarEdgeTitle', selectedEdge.tail, selectedEdge.head);
+      sidebarTitleEl.removeAttribute('data-i18n');
+    } else {
+      sidebarTitleEl.textContent = t('sidebarTitle');
+      sidebarTitleEl.setAttribute('data-i18n', 'sidebarTitle');
+    }
+  }
   // Track last edited position for "center between" navigation
   if (selectedNode) {
     window.__setLastEditPosition?.(selectedNode.x, selectedNode.y);

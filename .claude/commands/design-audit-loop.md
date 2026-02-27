@@ -22,9 +22,11 @@ Each run creates a date-stamped folder:
 
 ```
 app_state_YYYY-MM-DD/
-  ├── NN_screenshot_name.png   ← Captured during Phase 0 workflow walkthrough
-  ├── ISSUES.md                ← Running issue tracker (severity, status, fix commit)
-  └── workflow_log.md          ← What workflow was followed, steps taken, observations
+  ├── NN_screenshot_name.png      ← Captured during Phase 0 workflow walkthrough
+  ├── walkthrough.webm             ← 1-min video recording of the full workflow (Playwright)
+  ├── gemini_video_report.md       ← Gemini's analysis of the video (issues + improvements)
+  ├── ISSUES.md                    ← Running issue tracker (severity, status, fix commit)
+  └── workflow_log.md              ← What workflow was followed, steps taken, observations
 ```
 
 If the folder already exists (same day, second run), append a suffix: `app_state_YYYY-MM-DD_02/`.
@@ -59,10 +61,49 @@ Spawn the agent with this prompt:
 
 ```
 Research the Manholes Mapper app at [URL]. Your goal is to identify the current visual
-state of these user workflows by navigating through each one and taking Playwright
-screenshots. Save ALL screenshots to [app_state_YYYY-MM-DD/] with numbered filenames.
+state of these user workflows by navigating through each one, taking Playwright
+screenshots, AND recording a video walkthrough. Save ALL screenshots and the video
+to [app_state_YYYY-MM-DD/] with numbered filenames.
 
 Login credentials: admin@geopoint.me / Geopoint2026!
+
+## VIDEO RECORDING (CRITICAL)
+
+You MUST record a video of the entire workflow walkthrough. The video captures
+everything Playwright sees — transitions, animations, loading states, jank — that
+screenshots miss.
+
+**How to record:** Use `browser_run_code` to launch a NEW browser context with video
+recording enabled, then perform ALL workflow navigation inside that context:
+
+```javascript
+async (page) => {
+  const context = await page.context().browser().newContext({
+    recordVideo: {
+      dir: '[ABSOLUTE_PATH_TO_app_state_YYYY-MM-DD]/',
+      size: { width: 1280, height: 720 }
+    }
+  });
+  const videoPage = await context.newPage();
+
+  // --- Perform all workflow steps on videoPage ---
+  await videoPage.goto('[URL]');
+  // ... login, navigate, interact ...
+  // Add short pauses (1-2s) between actions so the video is reviewable
+
+  await videoPage.close();
+  await context.close();
+  // Video is automatically saved to the dir above
+}
+```
+
+**Video rules:**
+- Keep the total recording under **60 seconds** (1 minute max). Prioritize breadth over depth — hit every major screen, don't linger.
+- Use `await videoPage.waitForTimeout(1500)` between major transitions so viewers can see each state.
+- Move briskly: login → home → open sketch → draw node → draw edge → select node → menu → projects → admin → mobile resize → done.
+- After recording, rename the video file to `walkthrough.webm` inside the output folder.
+
+## SCREENSHOTS (same as before)
 
 Walk through ALL of these workflows and screenshot every distinct screen/state:
 
@@ -108,22 +149,79 @@ For each screenshot use this naming pattern:
   NN_workflowLetter_description.png
   Examples: 01_A_pre_login.png, 02_A_login_form.png, 15_B_node_panel.png
 
-After all screenshots, write a file [app_state_YYYY-MM-DD/workflow_log.md] listing:
+After all screenshots + video, write a file [app_state_YYYY-MM-DD/workflow_log.md] listing:
 - Every screenshot taken with a one-line description
+- The video file path and approximate duration
 - Any issues you noticed while navigating (broken links, slow loads, errors, console warnings)
 - The overall state of each workflow (smooth, broken, rough edges)
 ```
 
-### Step 0.4 — Read the captured screenshots and workflow log
+### Step 0.4 — Send video to Gemini for analysis
 
-After the agent completes:
+Once the research agent finishes and the video is saved, spawn a **background agent** that runs the Gemini CLI to analyze the video. Gemini's multimodal model can watch the video and produce a detailed design/UX report.
+
+**Run this command via Bash** (headless, non-interactive):
+
+```bash
+gemini -p "You are a senior product designer and UX expert. Watch this 1-minute video walkthrough of the Manholes Mapper web app (a PWA for field surveying — users draw manhole/pipe networks on an HTML5 Canvas).
+
+Analyze the video and produce a structured report with:
+
+## Visual Issues
+- List every visual/design problem you spot (color, contrast, alignment, spacing, font, icons)
+
+## UX Issues
+- List every usability problem (confusing flows, missing affordances, poor feedback, unclear states)
+
+## Mobile Issues
+- Touch targets too small, elements overlapping, toolbar reachability
+
+## RTL/i18n Issues
+- Any Hebrew text rendering problems, mixed LTR/RTL layout issues
+
+## Animation & Performance
+- Jank, slow transitions, missing loading indicators, laggy interactions
+
+## Top 5 Improvements (Prioritized)
+1. [Most impactful fix] — why and how
+2. ...
+3. ...
+4. ...
+5. ...
+
+Be specific: reference timestamps (e.g. 0:15), screen areas (e.g. top-right toolbar), and element types (e.g. the blue FAB button). Output as markdown." \
+  --yolo \
+  -o text \
+  -- "[ABSOLUTE_PATH_TO_app_state_YYYY-MM-DD]/walkthrough.webm" \
+  > "[ABSOLUTE_PATH_TO_app_state_YYYY-MM-DD]/gemini_video_report.md" 2>&1
+```
+
+**Important:**
+- Use `--yolo` so Gemini doesn't prompt for approval
+- Use `-o text` for clean markdown output
+- Pipe stdout to `gemini_video_report.md` in the same output folder
+- If the video file doesn't exist or is empty, skip this step and note it in `workflow_log.md`
+- This runs in the **background** — don't block on it. Continue to Step 0.5 with screenshots while Gemini processes.
+
+### Step 0.5 — Read the captured screenshots and workflow log
+
+After the research agent completes:
 1. Read `workflow_log.md` to understand what was captured
 2. Read all screenshots (in parallel groups of 6)
 3. Analyze across all workflows for patterns
 
-### Step 0.5 — Identify top 3 improvement areas
+### Step 0.6 — Collect Gemini video report
 
-Based on the screenshots and workflow observations, identify the **top 3 areas** that need the most design/UX improvement. Categorize by workflow area, not individual issues.
+Check if `gemini_video_report.md` is ready. Read it and merge its findings into your analysis:
+- Gemini may catch motion/animation issues that static screenshots miss
+- Gemini may spot timing problems (slow loads, missing spinners)
+- Deduplicate: if Gemini and your screenshot audit found the same issue, keep the more detailed description
+
+If Gemini is still running, proceed to Step 0.7 and incorporate the report later in Phase 1.
+
+### Step 0.7 — Identify top 3 improvement areas
+
+Based on the screenshots, workflow observations, **and Gemini video report**, identify the **top 3 areas** that need the most design/UX improvement. Categorize by workflow area, not individual issues.
 
 Examples of areas:
 - "Mobile canvas toolbar is cluttered and hard to use"
@@ -133,13 +231,15 @@ Examples of areas:
 - "Project canvas sketch switching is confusing"
 - "RTL layout breaks in several panels"
 - "Dark mode has contrast issues across the app"
+- "Transitions feel janky — no loading indicators between screens" (from video)
 
-### Step 0.6 — Present choices to the user
+### Step 0.8 — Present choices to the user
 
 Use `AskUserQuestion` to present the top 3 areas plus a manual option:
 
 ```
-Based on my research of the app, here are the top 3 areas that need the most design improvement:
+Based on my research of the app (screenshots + Gemini video analysis), here are the
+top 3 areas that need the most design improvement:
 
 1. [Area 1] — [brief why]
 2. [Area 2] — [brief why]
@@ -151,7 +251,7 @@ Which area should I focus on for this audit iteration?
 
 The user's choice determines which screenshots get prioritized in Phase 1. If the user picks "Manual", ask them what workflow or screen to focus on.
 
-### Step 0.7 — Write workflow_log.md summary
+### Step 0.9 — Write workflow_log.md summary
 
 Append the user's chosen focus area to `workflow_log.md`:
 
@@ -159,6 +259,7 @@ Append the user's chosen focus area to `workflow_log.md`:
 ## Audit Focus
 **User chose**: [Area name]
 **Relevant screenshots**: [list the NN_*.png files related to this area]
+**Gemini report**: gemini_video_report.md (merged findings)
 ```
 
 ---
@@ -373,6 +474,8 @@ At the end of each iteration, produce a report:
 **Focus Area**: [User's chosen area from Phase 0]
 **Workflows Captured**: A (Login), B (Drawing), C (Projects), D (Admin), E (Mobile), F (Misc)
 **Screenshots Taken**: N total
+**Video**: walkthrough.webm (Ns duration)
+**Gemini Report**: gemini_video_report.md (N issues found)
 **Date**: YYYY-MM-DD
 **Issues Found**: N (C: N critical, H: N high, M: N medium, L: N low)
 **Issues Fixed This Iteration**: N
