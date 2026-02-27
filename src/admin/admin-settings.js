@@ -203,10 +203,11 @@ export class AdminSettings {
     Object.keys(include).forEach(k => {
       const checked = include[k] ? 'checked' : '';
       const id = `inc_${cfgKey}_${k}`;
+      const label = this.t(`admin.csvFields.${k}`) || k;
       const item = document.createElement('label');
       item.className = 'admin-toggle-item';
       item.innerHTML = `
-        <span class="admin-toggle-label">${k}</span>
+        <span class="admin-toggle-label">${label}</span>
         <input type="checkbox" data-inc="${cfgKey}:${k}" ${checked} id="${id}" class="admin-toggle-checkbox"/>
         <span class="admin-toggle-switch"></span>
       `;
