@@ -2001,8 +2001,13 @@ canvas {
   border-inline-start: 1px solid var(--color-border);
   overflow-y: auto;
   box-shadow: var(--shadow);
-  display: flex;
+  display: none;
   flex-direction: column;
+}
+
+/* Show sidebar only when a node or edge is selected */
+#sidebar.open {
+  display: flex;
 }
 
 /* Compact spacing for details inside the sidebar */
@@ -2091,6 +2096,8 @@ canvas {
     will-change: transform;
     backface-visibility: hidden;
     z-index: 40;
+    /* On mobile, always use flex layout — transform handles visibility */
+    display: flex;
   }
 
   .drawer.open {
@@ -5681,6 +5688,8 @@ select.invalid:focus {
     border-left: none;
     border-top-left-radius: var(--radius);
     border-top-right-radius: var(--radius);
+    /* On mobile, always use flex layout — transform handles visibility */
+    display: flex;
   }
 
   /* Disable height transition when resizing */
@@ -9117,6 +9126,8 @@ button:focus-visible,
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     transform: translate3d(0, 100%, 0);
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+    /* On mobile, always use flex layout — transform handles visibility */
+    display: flex;
   }
   
   .drawer.open {
