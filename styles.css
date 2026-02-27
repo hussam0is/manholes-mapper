@@ -10079,6 +10079,23 @@ button:focus-visible,
   pointer-events: none;
 }
 
+/* ── 3D Issue badges ── */
+.three-d-issue-badge {
+  background: rgba(239, 68, 68, 0.85);
+  color: #fff;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+}
+.three-d-issue-badge .material-icons {
+  font-size: 14px;
+}
+
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }

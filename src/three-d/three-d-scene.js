@@ -84,7 +84,7 @@ function getNodeDepth(nodeId, edges) {
  * @param {Function} CSS2DObject - CSS2DObject constructor from three/addons
  * @returns {{ scene: THREE.Scene, camera: THREE.PerspectiveCamera, materials: object, boundingBox: { min: THREE.Vector3, max: THREE.Vector3 }, center: THREE.Vector3 }}
  */
-export function buildScene(THREE, data, CSS2DObject) {
+export function buildScene(THREE, data, CSS2DObject, issues = []) {
   const { nodes, edges, ref, coordScale } = data;
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x1a1a2e);
@@ -209,6 +209,7 @@ export function buildScene(THREE, data, CSS2DObject) {
     const coverMat = materials.manholeCover(node.nodeType || 'Manhole');
     const cover = new THREE.Mesh(coverGeo, isEstimated ? materials.estimated(coverMat) : coverMat);
     cover.position.set(pos.x, pos.y + COVER_HEIGHT / 2, pos.z);
+    cover.userData = { type: 'node', nodeId: id };
     manholeGroup.add(cover);
 
     // Cover ring (metallic rim)
@@ -275,6 +276,7 @@ export function buildScene(THREE, data, CSS2DObject) {
     const pipeMat = materials.pipe(edge.edge_type || 'קו ראשי');
     const finalMat = isEstimated ? materials.estimated(pipeMat) : pipeMat;
     const pipeMesh = new THREE.Mesh(tubeGeo, finalMat);
+    pipeMesh.userData = { type: 'edge', edgeId: edge.id, tailId: tailId, headId: headId };
     pipeGroup.add(pipeMesh);
 
     // Pipe end caps (flat circles)
@@ -293,6 +295,60 @@ export function buildScene(THREE, data, CSS2DObject) {
   }
 
   scene.add(pipeGroup);
+
+  // ── Issue badges (3D) ──────────────────────────────────────────────────
+  const issueGroup = new THREE.Group();
+  issueGroup.name = 'issues';
+
+  const issueNodeIds = new Set(issues.filter(i => i.nodeId != null).map(i => String(i.nodeId)));
+  const issueEdgeIds = new Set(issues.filter(i => i.edgeId != null).map(i => String(i.edgeId)));
+
+  // Red pulsing ring around issue manhole covers
+  const issueRingMat = new THREE.MeshBasicMaterial({
+    color: 0xff3333,
+    transparent: true,
+    opacity: 0.8,
+    side: THREE.DoubleSide,
+  });
+
+  for (const node of nodes) {
+    const id = String(node.id);
+    if (!issueNodeIds.has(id)) continue;
+    const pos = positions3D.get(id);
+    if (!pos) continue;
+
+    const coverDiameterM = parseNum(node.coverDiameter, DEFAULT_COVER_DIAMETER_CM) / 100;
+    const outerRadius = coverDiameterM / 2 + 0.03;
+
+    // Glowing ring above cover
+    const ringGeo = new THREE.TorusGeometry(outerRadius + 0.08, 0.035, 8, MANHOLE_SEGMENTS);
+    ringGeo.rotateX(Math.PI / 2);
+    const ring = new THREE.Mesh(ringGeo, issueRingMat.clone());
+    ring.position.set(pos.x, pos.y + COVER_HEIGHT + 0.03, pos.z);
+    ring.userData = { type: 'issue-ring', nodeId: id };
+    issueGroup.add(ring);
+
+    // CSS2D warning badge floating above
+    if (CSS2DObject) {
+      const badgeDiv = document.createElement('div');
+      badgeDiv.className = 'three-d-issue-badge';
+      badgeDiv.innerHTML = '<span class="material-icons">warning</span>';
+      const badge = new CSS2DObject(badgeDiv);
+      badge.position.set(pos.x, pos.y + 1.0, pos.z);
+      issueGroup.add(badge);
+    }
+  }
+
+  // Red-tint pipes that have issues
+  pipeGroup.traverse((child) => {
+    if (child.isMesh && child.userData.type === 'edge' && issueEdgeIds.has(String(child.userData.edgeId))) {
+      child.material = child.material.clone();
+      child.material.color.set(0xff3333);
+      if (child.material.emissive) child.material.emissive.set(0x330000);
+    }
+  });
+
+  scene.add(issueGroup);
 
   // ── Camera ────────────────────────────────────────────────────────────────
   const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 2000);
@@ -318,6 +374,7 @@ export function buildScene(THREE, data, CSS2DObject) {
     },
     positions3D,
     nodeMap,
+    issueGroup,
   };
 }
 

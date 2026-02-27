@@ -13,6 +13,7 @@ import { EDGE_TYPE_COLORS } from './three-d-materials.js';
 import { computeInitialCamera } from './three-d-camera-framing.js';
 import { FPSControls } from './three-d-fps-controls.js';
 import { VirtualJoystick } from './three-d-joystick.js';
+import { computeSketchIssues } from '../project/sketch-issues.js';
 
 let isOpen = false;
 
@@ -54,6 +55,15 @@ export async function open3DView(opts = {}) {
         <span>${esc(t('threeD.title'))}</span>
       </div>
       <div class="three-d-overlay__header-actions">
+        <div class="three-d-overlay__speed-control" style="display:${currentMode === 'fps' ? 'flex' : 'none'}">
+          <button class="three-d-overlay__speed-btn" data-dir="-1">
+            <span class="material-icons">remove</span>
+          </button>
+          <span class="three-d-overlay__speed-badge">1×</span>
+          <button class="three-d-overlay__speed-btn" data-dir="1">
+            <span class="material-icons">add</span>
+          </button>
+        </div>
         <button class="three-d-overlay__mode-toggle" aria-label="${esc(t('threeD.modeToggle'))}">
           <span class="material-icons">${currentMode === 'fps' ? '3d_rotation' : 'directions_walk'}</span>
           <span class="three-d-overlay__mode-label">${esc(currentMode === 'fps' ? t('threeD.modeOrbit') : t('threeD.modeFPS'))}</span>
@@ -201,7 +211,8 @@ export async function open3DView(opts = {}) {
     coordScale,
   };
 
-  sceneResult = buildScene(THREE, data, CSS2DObject);
+  const { issues } = computeSketchIssues(data.nodes, data.edges);
+  sceneResult = buildScene(THREE, data, CSS2DObject, issues);
   const { scene, camera, center, boundingBox, positions3D } = sceneResult;
 
   // ── Camera framing based on selection ─────────────────────────────────
@@ -345,6 +356,16 @@ export async function open3DView(opts = {}) {
       fpsControls.update(dt);
     } else {
       orbitControls.update();
+    }
+
+    // Pulse issue rings
+    if (sceneResult?.issueGroup) {
+      const time = now / 1000;
+      sceneResult.issueGroup.traverse((child) => {
+        if (child.userData?.type === 'issue-ring' && child.material) {
+          child.material.opacity = 0.4 + 0.4 * Math.sin(time * 3);
+        }
+      });
     }
 
     renderer.render(scene, camera);
