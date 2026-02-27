@@ -352,11 +352,11 @@ export async function open3DView(opts = {}) {
         `${esc(t('threeD.controls.pan'))}`;
     }
 
-    // Fade to reduced opacity after 4s — stays visible
+    // Fade to reduced opacity after 5s — stays visible
     clearTimeout(controlsHint._fadeTimer);
     controlsHint._fadeTimer = setTimeout(() => {
-      controlsHint.style.opacity = '0.5';
-    }, 4000);
+      controlsHint.style.opacity = '0.7';
+    }, 5000);
   }
 
   // Apply initial mode

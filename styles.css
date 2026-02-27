@@ -10044,11 +10044,13 @@ button:focus-visible,
   position: absolute;
   bottom: 16px;
   inset-inline-end: 16px;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
   border-radius: var(--radius);
-  padding: var(--space-2) var(--space-3);
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.7rem;
+  padding: var(--space-3) var(--space-4);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.8rem;
+  line-height: 1.6;
   z-index: 1;
   pointer-events: none;
   transition: opacity 0.5s;
@@ -10194,18 +10196,19 @@ button:focus-visible,
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(37, 99, 235, 0.35);
+  border: 1px solid rgba(37, 99, 235, 0.6);
   color: #fff;
   cursor: pointer;
   border-radius: var(--radius);
-  padding: 0 var(--space-2);
-  font-size: 0.75rem;
+  padding: 0 var(--space-3);
+  font-size: 0.8rem;
+  font-weight: 500;
   transition: background 0.15s;
 }
 
 .three-d-overlay__mode-toggle:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(37, 99, 235, 0.5);
 }
 
 .three-d-overlay__mode-label {
@@ -10217,15 +10220,15 @@ button:focus-visible,
   display: flex;
   align-items: center;
   gap: 2px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(37, 99, 235, 0.2);
+  border: 1px solid rgba(37, 99, 235, 0.4);
   border-radius: var(--radius);
   padding: 2px;
 }
 
 .three-d-overlay__speed-btn {
-  min-width: 36px;
-  min-height: 36px;
+  min-width: 44px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -10375,10 +10378,10 @@ button:focus-visible,
     padding: var(--space-2);
   }
   .three-d-overlay__controls-hint {
-    font-size: 0.6rem;
+    font-size: 0.7rem;
     bottom: 8px;
     inset-inline-end: 8px;
-    padding: var(--space-1) var(--space-2);
+    padding: var(--space-2) var(--space-3);
   }
   .three-d-overlay__mode-label {
     display: none;
