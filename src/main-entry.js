@@ -22,6 +22,7 @@ import { initCanvasFabToolbar } from './canvas-fab-toolbar.js';
 import { onAuthStateChange, getAuthState, updateAuthState, guardRoute, redirectIfAuthenticated, refreshSession } from './auth/auth-guard.js';
 import { initSyncService } from './auth/sync-service.js';
 import { authClient, signOutUser, getCurrentSession } from './auth/auth-client.js';
+import { initPermissionsService } from './auth/permissions.js';
 import { menuEvents, setupEventDelegation } from './menu/menu-events.js';
 import {
   initGnssModule,
@@ -187,6 +188,7 @@ if (typeof window !== 'undefined') {
 // Initialize sync service for cloud synchronization
 if (typeof window !== 'undefined') {
   initSyncService();
+  initPermissionsService();
 }
 
 // Provide a translator globally for legacy code if not yet present
