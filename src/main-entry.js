@@ -540,15 +540,16 @@ function initMobileMenuBehavior() {
     isMobileMenuOpen = true;
     lastFocusedElement = document.activeElement;
 
-    // Reset scroll to top so Home/New Sketch buttons are always visible
-    const scrollContainer = mobileMenu.querySelector('.mobile-menu-content');
-    if (scrollContainer) scrollContainer.scrollTop = 0;
-
     mobileMenu.classList.add('mobile-menu--open');
     mobileMenu.style.display = 'flex';
     if (backdrop) backdrop.style.display = 'block';
     menuBtn.setAttribute('aria-expanded', 'true');
     document.body.classList.add('mobile-menu-open');
+
+    // Reset scroll to top AFTER display:flex so the assignment takes effect
+    // (scrollTop assignments on display:none elements are silently ignored by the browser)
+    const scrollContainer = mobileMenu.querySelector('.mobile-menu-content');
+    if (scrollContainer) scrollContainer.scrollTop = 0;
     
     // Focus close button for accessibility
     if (closeBtn) {
