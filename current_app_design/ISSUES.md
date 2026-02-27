@@ -654,6 +654,20 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Tests**: All 490 tests passing.
 - **Status**: Deployed to dev branch.
 
+### Iteration 6 (continued) Report (2026-02-27)
+- **Batch**: MEDIUM/LOW open issues — UX polish and new features
+- **New Fixes (8)**:
+  1. Better network error messages (401/429/500) in sync UI (bb078ae)
+  2. Improved empty sketch list state with helpful hint (4921e0e)
+  3. Long-press context menu on canvas nodes — Edit/Delete, 600ms (543b9fb)
+  4. Input validation feedback with red borders on required empty fields (bff74ca)
+  5. Undo button starts disabled on init when stack is empty (14fdf8c)
+  6. Precision "m" unit translated to i18n (meters/m') (669c0f3)
+  7. Standardized canvas toolbar icon sizing to 22px (8119a49)
+  8. SW bumped to v50 (367442b)
+- **Tests**: All 490 tests passing.
+- **Status**: Deployed to dev branch.
+
 ---
 
 ## Changelog
@@ -674,3 +688,4 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 | 2026-02-27 | Iteration 4 tested | All 9 fixes tested and verified (9/9 PASS). Tested via local dev server. All 490 unit tests pass. Zero console errors. |
 | 2026-02-27 | Iteration 5 fixes | Issues #8, #9, #12, #18, #20, #36 fixed. Additional: login/signup i18n (8c62462), CSV labels (421fb92), panel empty state (4934b00), projects skeleton (0bbadfc). New feature: 3D View (6b7ac18). SW v45 → v47. |
 | 2026-02-27 | Iteration 5 deployed | Deployed to dev branch. 11 commits: ecbb219, 8c62462, 99f40cf, c0e6ff6, 421fb92, 5484aa6, 6b4c0a4, b3f712c, 4934b00, 0bbadfc, 6b7ac18 |
+| 2026-02-27 | Iteration 6 (continued) | 8 fixes: network error messages, empty sketch hint, long-press context menu, input validation, undo init, meters i18n, icon sizing, SW v50. All 490 tests pass. |

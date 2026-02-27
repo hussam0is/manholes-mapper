@@ -416,7 +416,7 @@ header h1 {
 }
 
 .soft-blue-header .segmented {
-  background: #ffffff;
+  background: var(--color-surface, #ffffff);
   border: 1px solid var(--color-border);
 }
 
@@ -696,7 +696,7 @@ header .segmented .btn {
 }
 
 .soft-blue-header .search-input:focus {
-  background: #ffffff;
+  background: var(--color-surface, #ffffff);
   border-color: var(--color-primary);
   box-shadow: var(--ring);
 }
@@ -719,7 +719,7 @@ header .segmented .btn {
 }
 
 .mobile-search .search-input:focus {
-  background: #ffffff;
+  background: var(--color-surface, #ffffff);
   border-color: var(--color-primary);
   box-shadow: var(--ring);
 }
@@ -2408,7 +2408,7 @@ canvas {
 
 /* Details sections for clearer grouping */
 .details-section {
-  background: #ffffff;
+  background: var(--color-surface, #ffffff);
   border: 1px solid var(--color-border);
   border-radius: 10px;
   padding: 0.75rem;
@@ -2473,7 +2473,7 @@ canvas {
 .details-actions {
   position: sticky;
   bottom: 0;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0), #fff 32%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0), var(--color-surface, #fff) 32%);
   padding-top: 0.5rem;
   padding-bottom: 16px;
 }
