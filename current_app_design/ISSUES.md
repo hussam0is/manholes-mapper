@@ -17,10 +17,11 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 |----------|-------|-------|------|
 | CRITICAL | 1 | 0 | 1 (not app bug) |
 | HIGH | 12 | 10 | 2 (already ok) |
-| MEDIUM | 28 | 18 | 10 |
-| LOW | 19 | 3 | 15 (1 deferred) |
+| MEDIUM | 28 | 19 | 9 |
+| LOW | 19 | 8 | 10 (1 deferred) |
 | FEATURE | 1 | 1 | — |
-| **TOTAL** | **61** | **32** | **28** |
+| NEW (Iter 6) | 8 | 8 | — |
+| **TOTAL** | **69** | **46** | **22** |
 
 **By Iteration:**
 | Iteration | Issues Fixed | Cumulative |
@@ -29,7 +30,8 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 | Iter 2 | 5 (#19, #23, #27, #33, #34) | 8 |
 | Iter 3 | 5 (#41, #44, #45, #50, #55) | 13 |
 | Iter 4 | 8 (#6, #22, #29, #39, #40, #43, #46, #48) | 21 |
-| Iter 5 | 10 (#8, #9, #12, #18, #20, #36, #57, #58, #59, #60) + 1 feature (#61) | 32 |
+| Iter 5 | 11 (#8, #9, #12, #18, #20, #36, #57, #58, #59, #60, #61) | 32 |
+| Iter 6 | 14 (#15, #17, #21, #30, #42, #56, #62, #63, #64, #65, #66, #67, #68, #69) | 46 |
 
 ---
 
@@ -119,7 +121,7 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Screenshot**: 01_project_canvas_sketch_panel.png, 12_project_canvas_sketch_list_panel.png
 - **Problem**: All issue badges on sketch rows show the same red warning style regardless of severity (e.g., 99 issues vs 164 issues are visually identical). High-issue-count sketches should be more visually distinct.
 - **Fix**: Color-coded severity CSS classes: >100 red, 50-100 orange, <50 yellow. Applied in sketch-side-panel.js and styles.css.
-- **Status**: Fixed in Iter 5
+- **Status**: Fixed ✓ (Tested)
 - **Commit**: `6b4c0a4`
 
 ### Issue #9 — Edge Labels Overlap Badly at High Density
@@ -128,7 +130,7 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Screenshot**: 13_canvas_with_sketch_loaded_network_visible.png
 - **Problem**: When zoomed out to overview level, edge length labels (e.g., "3.5m", "5.36m", "7.00m") overlap each other in dense areas, making them completely unreadable. The canvas has dozens of overlapping text strings.
 - **Fix**: Edge labels are now hidden when viewScale < 0.3 (heavily zoomed out). Labels reappear on zoom in. Guard wraps the entire edge label loop in main.js draw().
-- **Status**: Fixed in Iter 5
+- **Status**: Fixed ✓ (Tested)
 - **Commit**: `b3f712c`
 
 ### Issue #10 — Admin Panel Shows Raw Field Names (id, type, note)
@@ -155,7 +157,7 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Screenshot**: 10_menu_survey_workday_settings_admin.png
 - **Problem**: "Admin Settings" and "Project Management" links in the menu have no visual indicator that they require elevated permissions. A regular user who sees these items and taps them will get an access denied error with no explanation.
 - **Fix**: Admin Settings and Project Management buttons are now hidden for non-admin users. Visibility updates on auth state change and when permissions are fetched asynchronously via `onPermissionChange` listener.
-- **Status**: Fixed in Iter 5
+- **Status**: Fixed ✓ (Tested)
 - **Commit**: `99f40cf`
 
 ### Issue #13 — Menu Very Long / No Quick Jump to Sections
@@ -185,9 +187,9 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Type**: ux
 - **Screenshot**: 02_main_canvas_clean.png, 14_canvas_toolbar_visible_nodemode_edgemode_zoom.png
 - **Problem**: Zoom is pinch-gesture only. Field workers wearing gloves or using a stylus cannot pinch-zoom. Zoom In / Zoom Out actions exist in the menu but not as quick-access canvas buttons.
-- **Fix**: The menu already has "Zoom in" and "Zoom out" items (screenshot 04). Consider adding small +/- buttons to the canvas toolbar or making them accessible via long-press on FAB.
-- **Status**: OPEN
-- **Commit**: —
+- **Fix**: Added dedicated +/- zoom buttons to the canvas toolbar for single-tap zoom control without pinch gesture.
+- **Status**: Fixed in Iter 6
+- **Commit**: `18021fb`
 
 ### Issue #16 — Stretch/Scale Settings Too Technical for General Menu
 - **Severity**: LOW
@@ -203,9 +205,9 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Type**: ux
 - **Screenshot**: 09_menu_livemeasure_survey_workday_settings.png
 - **Problem**: "Finish Workday" is not self-explanatory. New users don't know it exports all the day's sketches. The icon is generic.
-- **Fix**: Add a subtitle below: "Export all today's sketches" or change label to "End Day & Export". Add a tooltip or info icon that explains the action.
-- **Status**: OPEN
-- **Commit**: —
+- **Fix**: Added descriptive subtitle below the "Finish Workday" label explaining the export action.
+- **Status**: Fixed in Iter 6
+- **Commit**: `7e253a7`
 
 ---
 
@@ -217,7 +219,7 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Screenshot**: 21_canvas_clean_network_overview.png, 22_canvas_toolbar_gps_active_red.png
 - **Problem**: The GNSS info box shows "No Fix +/-120.6m", HDOP, elevation, and raw ITM coordinates at identical font size/weight with a red border. Field workers glancing down need fix quality at a glance, not four lines of technical data. Red border on a plain state implies error.
 - **Fix**: Fix quality label now renders at 13px bold (up from 11px) for at-a-glance readability. When quality is 0 (No Fix), HDOP/altitude/ITM detail lines are collapsed since they are meaningless.
-- **Status**: Fixed in Iter 5
+- **Status**: Fixed ✓ (Tested)
 - **Commit**: `5484aa6`
 
 ### Issue #19 — GNSS Accuracy Circle Enormous When No Fix — Dominates Canvas
@@ -235,7 +237,7 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Screenshot**: 23_canvas_node_mode_active_toolbar_highlight.png
 - **Problem**: Yellow "STALE" badge near GNSS marker has no tooltip or legend. The word is English-only — not translated to Hebrew, breaking RTL/i18n contract.
 - **Fix**: Added `gnssMarker.stale`, `gnssMarker.signalStale`, and all fix quality labels to i18n (he/en). Stale badge now shows "לא עדכני" in Hebrew. Precision card and status badge use window.t() for all text.
-- **Status**: Fixed in Iter 5
+- **Status**: Fixed ✓ (Tested)
 - **Commit**: `ecbb219`
 
 ### Issue #21 — Mode-Change Toast Overlaps Legend Bar
@@ -243,9 +245,9 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Type**: design
 - **Screenshot**: 23_canvas_node_mode_active_toolbar_highlight.png, 26_node_mode_manhole_active.png
 - **Problem**: "Node mode" toast appears at canvas top, overlapping the color legend ("Main Line / Drainage Line / Secondary Line"). Opaque green toast clashes with white legend background.
-- **Fix**: Position mode-change toast below legend bar (top: 140px), or use the existing bottom-of-screen toast area.
-- **Status**: OPEN
-- **Commit**: —
+- **Fix**: Repositioned toast to render below the edge legend bar, preventing overlap.
+- **Status**: Fixed in Iter 6
+- **Commit**: `2785c6c`
 
 ### Issue #22 — Home Node Form Missing Sub-Type Options (Maintenance Status)
 - **Severity**: HIGH
@@ -324,9 +326,9 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Type**: ux/design
 - **Screenshot**: 37_node_panel_scrolled_more_fields.png, 40_node_panel_top_with_survey_data.png
 - **Problem**: For nodes without survey data, the panel still shows "Survey X: --", "Survey Y: --", "TL: --", "Precision: --" as empty dashes — wasting space and creating noise. Fields should be hidden when empty.
-- **Fix**: (1) Hide empty fields entirely — show only fields with values. (2) For nodes without survey data, show a single "No survey data" message. (3) Group fields into collapsible sections: Location, Metadata, Maintenance.
-- **Status**: OPEN
-- **Commit**: —
+- **Fix**: Survey fields are now hidden entirely when they have no data, reducing panel noise for nodes without GPS capture.
+- **Status**: Fixed in Iter 6
+- **Commit**: `d098af0`
 
 ### Issue #31 — "Position Precision: Fixed" Badge Uses Confusing Terminology
 - **Severity**: LOW
@@ -379,7 +381,7 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Screenshot**: 32_canvas_full_network_zoomed_in.png, 34_canvas_after_cancel_dialog.png
 - **Problem**: When GovMap tiles are visible, Hebrew street names from map tiles compete with app's own node numbers and edge length labels. Dense overlap makes network nearly unreadable.
 - **Fix**: Node ID labels now render with a white stroke halo (rgba(255,255,255,0.92)) and bold font when map tiles are active. Applied only when `mapLayerEnabled && getMapReferencePoint()` is truthy, so no impact without map tiles.
-- **Status**: Fixed in Iter 5
+- **Status**: Fixed ✓ (Tested)
 - **Commit**: `c0e6ff6`
 
 ---
@@ -436,9 +438,9 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Type**: ux
 - **Screenshot**: 55_app_reopened.png, 56_panel_close_attempt.png
 - **Problem**: After app is backgrounded and reopened, the details panel remains open at exact same scroll position. User expects to see the canvas map on resume, not a stale form.
-- **Fix**: On `visibilitychange` (document becomes visible), optionally close the details panel to return user to canvas view.
-- **Status**: OPEN
-- **Commit**: —
+- **Fix**: Panel now closes automatically on `visibilitychange` when app returns from background, returning user to canvas view.
+- **Status**: Fixed in Iter 6
+- **Commit**: `a3143ae`
 
 ### Issue #43 — Panel Drag Handle Too Tiny (4px Tall)
 - **Severity**: MEDIUM
@@ -562,9 +564,9 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Type**: ux
 - **Screenshot**: 57_panel_close_y1250.png
 - **Problem**: Panel can be left in awkward partially-open state (screenshot 57 shows compressed canvas). No snap-to-open or snap-to-closed threshold behavior.
-- **Fix**: In `src/utils/resizable-drawer.js` `stopResize()`, add snap behavior: if dragged below 30% of default height → snap to closed; otherwise snap to default open height.
-- **Status**: OPEN
-- **Commit**: —
+- **Fix**: Added snap-to-default behavior in resizable-drawer.js — panel snaps to default height or closes when dragged past threshold.
+- **Status**: Fixed in Iter 6
+- **Commit**: `9cbc5a6`
 
 ---
 
@@ -575,7 +577,7 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Type**: i18n
 - **Problem**: Login and signup form labels/buttons were not using i18n translations, displaying only in English regardless of app language setting.
 - **Fix**: Added i18n keys and applied t() calls to all login/signup form elements.
-- **Status**: Fixed in Iter 5
+- **Status**: Fixed ✓ (Tested)
 - **Commit**: `8c62462`
 
 ### Issue #58 — CSV Export Field Labels Not Translated
@@ -583,7 +585,7 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Type**: i18n
 - **Problem**: CSV export column headers used raw field names instead of translated labels.
 - **Fix**: CSV export field labels now use i18n translations matching the current app language.
-- **Status**: Fixed in Iter 5
+- **Status**: Fixed ✓ (Tested)
 - **Commit**: `421fb92`
 
 ### Issue #59 — Details Panel Visible When Nothing Selected
@@ -591,7 +593,7 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Type**: ux
 - **Problem**: The node/edge details panel could remain visible even when no element was selected, showing stale or empty data.
 - **Fix**: Details panel is now hidden automatically when nothing is selected on the canvas.
-- **Status**: Fixed in Iter 5
+- **Status**: Fixed ✓ (Tested)
 - **Commit**: `4934b00`
 
 ### Issue #60 — Projects List Has No Loading State (Flash of Empty Content)
@@ -599,7 +601,7 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Type**: ux
 - **Problem**: Projects list showed a blank area while loading from API, causing a flash of empty content before projects appeared.
 - **Fix**: Added skeleton loading placeholders to the projects list while data is being fetched.
-- **Status**: Fixed in Iter 5
+- **Status**: Fixed ✓ (Tested)
 - **Commit**: `0bbadfc`
 
 ### Issue #61 — 3D View Feature (NEW FEATURE)
@@ -607,8 +609,76 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Type**: feature
 - **Problem**: No way to visualize the manhole/pipe network in 3D for presentation or review purposes.
 - **Fix**: Added 3D View feature using Three.js (lazy-loaded). Available to admin and super_admin roles only.
-- **Status**: NEW FEATURE — Added in Iter 5
+- **Status**: Fixed ✓ (Tested)
 - **Commit**: `6b7ac18`
+
+---
+
+## Iteration 6 Fixes (New Issues)
+
+### Issue #62 — Descriptive Network Error Messages (401/429/500)
+- **Severity**: MEDIUM
+- **Type**: ux
+- **Problem**: Sync failures showed generic "Network error" with no indication of cause. Users could not distinguish between auth expiry (401), rate limiting (429), or server errors (500).
+- **Fix**: Added descriptive error messages for common HTTP status codes in the sync UI, so users see actionable text (e.g., "Session expired — please log in again").
+- **Status**: Fixed in Iter 6
+- **Commit**: `bb078ae`
+
+### Issue #63 — Empty Sketch List Has No Helpful State
+- **Severity**: MEDIUM
+- **Type**: ux
+- **Problem**: When a user has no sketches, the sketch list area was blank with no guidance on how to create one.
+- **Fix**: Added an empty state message with a hint guiding the user to create their first sketch.
+- **Status**: Fixed in Iter 6
+- **Commit**: `4921e0e`
+
+### Issue #64 — No Long-Press Context Menu on Canvas Nodes
+- **Severity**: MEDIUM
+- **Type**: ux
+- **Problem**: Canvas nodes had no context menu. Users had to open the details panel to access Edit/Delete, which was slow for quick field operations.
+- **Fix**: Added a 600ms long-press context menu on canvas nodes with Edit and Delete actions.
+- **Status**: Fixed in Iter 6
+- **Commit**: `543b9fb`
+
+### Issue #65 — Input Validation Has No Visual Feedback
+- **Severity**: MEDIUM
+- **Type**: ux
+- **Problem**: Required form fields showed no visual indication when left empty or invalid. Users had to guess which fields were causing submission failures.
+- **Fix**: Added red border highlighting on required empty fields for clear validation feedback.
+- **Status**: Fixed in Iter 6
+- **Commit**: `bff74ca`
+
+### Issue #66 — Undo Button Enabled on Init When Stack Is Empty
+- **Severity**: LOW
+- **Type**: bug
+- **Problem**: The Undo button appeared enabled/active when the app first loaded, even though there was nothing to undo. Tapping it did nothing, which was confusing.
+- **Fix**: Undo button now starts in disabled state on init and only enables when the undo stack has entries.
+- **Status**: Fixed in Iter 6
+- **Commit**: `14fdf8c`
+
+### Issue #67 — Meters Unit Not Translated (i18n)
+- **Severity**: LOW
+- **Type**: i18n
+- **Problem**: The "m" (meters) unit suffix in precision and edge length displays was hardcoded in English, not respecting Hebrew locale (should be "מ׳").
+- **Fix**: Added i18n translation for meters unit, displaying "מ׳" in Hebrew and "m" in English.
+- **Status**: Fixed in Iter 6
+- **Commit**: `669c0f3`
+
+### Issue #68 — Canvas Toolbar Icon Sizes Inconsistent
+- **Severity**: LOW
+- **Type**: design
+- **Problem**: Toolbar icons had varying sizes (18px, 20px, 24px), creating a visually uneven toolbar appearance.
+- **Fix**: Standardized all canvas toolbar icons to 22px for consistent visual weight.
+- **Status**: Fixed in Iter 6
+- **Commit**: `8119a49`
+
+### Issue #69 — Landscape Mobile Layout Broken
+- **Severity**: MEDIUM
+- **Type**: ux
+- **Problem**: When a phone is rotated to landscape orientation, the app layout did not adapt properly — panels and toolbars overlapped or were inaccessible.
+- **Fix**: Added landscape-specific CSS media queries and layout adjustments for mobile landscape orientation.
+- **Status**: Fixed in Iter 6
+- **Commit**: `2c2f711`
 
 ---
 
@@ -647,24 +717,21 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 ### Iteration 5 Report (2026-02-27)
 - **Batch**: MEDIUM priority open issues + UX polish + new feature
 - **Issues Fixed**: 6 (Issues #8, #9, #12, #18, #20, #36)
-- **Additional Fixes**: Login/signup i18n (8c62462), CSV export field labels translated (421fb92), details panel hidden when nothing selected (4934b00), skeleton loading for projects list (0bbadfc)
-- **New Feature**: 3D View — admin/super_admin only, Three.js, lazy-loaded (6b7ac18)
+- **Additional Fixes**: Login/signup i18n (#57, 8c62462), CSV export field labels translated (#58, 421fb92), details panel hidden when nothing selected (#59, 4934b00), skeleton loading for projects list (#60, 0bbadfc)
+- **New Feature**: 3D View (#61) — admin/super_admin only, Three.js, lazy-loaded (6b7ac18)
 - **Commits**: ecbb219, 8c62462, 99f40cf, c0e6ff6, 421fb92, 5484aa6, 6b4c0a4, b3f712c, 4934b00, 0bbadfc, 6b7ac18
 - **SW**: v45 → v47
 - **Tests**: All 490 tests passing.
-- **Status**: Deployed to dev branch.
+- **Status**: All 7 primary tests PASS + 7 supplementary commit verifications PASS. 490/490 Vitest tests pass, 0 console errors.
+- **Tested**: #8 (6b4c0a4 PASS), #9 (b3f712c PASS), #12 (99f40cf PASS), #18 (5484aa6 PASS), #20 (ecbb219 PASS), #36 (c0e6ff6 PASS), #57 (8c62462 PASS), #58 (421fb92 PASS), #59 (4934b00 PASS), #60 (0bbadfc PASS), #61 (6b7ac18 PASS)
 
-### Iteration 6 (continued) Report (2026-02-27)
-- **Batch**: MEDIUM/LOW open issues — UX polish and new features
-- **New Fixes (8)**:
-  1. Better network error messages (401/429/500) in sync UI (bb078ae)
-  2. Improved empty sketch list state with helpful hint (4921e0e)
-  3. Long-press context menu on canvas nodes — Edit/Delete, 600ms (543b9fb)
-  4. Input validation feedback with red borders on required empty fields (bff74ca)
-  5. Undo button starts disabled on init when stack is empty (14fdf8c)
-  6. Precision "m" unit translated to i18n (meters/m') (669c0f3)
-  7. Standardized canvas toolbar icon sizing to 22px (8119a49)
-  8. SW bumped to v50 (367442b)
+### Iteration 6 Report (2026-02-27)
+- **Batch**: MEDIUM/LOW open issues — UX polish, field usability, and layout fixes
+- **Issues Fixed**: 14 (Issues #15, #17, #21, #30, #42, #56, #62, #63, #64, #65, #66, #67, #68, #69)
+- **Existing Issues Resolved (6)**: #15 (zoom buttons, 18021fb), #17 (Finish Workday subtitle, 7e253a7), #21 (toast below legend, 2785c6c), #30 (survey fields hidden, d098af0), #42 (panel closes on background, a3143ae), #56 (snap-to-default drag, 9cbc5a6)
+- **New Issues Added & Fixed (8)**: #62 (network errors, bb078ae), #63 (empty sketch list, 4921e0e), #64 (long-press context menu, 543b9fb), #65 (input validation, bff74ca), #66 (undo disabled on init, 14fdf8c), #67 (meters i18n, 669c0f3), #68 (icon sizing 22px, 8119a49), #69 (landscape layout, 2c2f711)
+- **Commits**: d098af0, 2785c6c, 7e253a7, 18021fb, 9cbc5a6, a3143ae, 2c2f711, bb078ae, 4921e0e, 543b9fb, bff74ca, 14fdf8c, 669c0f3, 8119a49
+- **SW**: v48 → v50
 - **Tests**: All 490 tests passing.
 - **Status**: Deployed to dev branch.
 
@@ -686,6 +753,8 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 | 2026-02-27 | Iteration 4 fixes | Issues #6, #22, #29, #39, #40, #43, #46, #48 fixed. Improved #44, #45. Deferred #47. SW v44. |
 | 2026-02-27 | Iteration 4 deployed | Deployed to dev branch. 9 commits: b16f825, b15c7ae, 75708fc, de8eb28, 9d08c32, 7a41094, a478d3e, d81ac10, f19da24 |
 | 2026-02-27 | Iteration 4 tested | All 9 fixes tested and verified (9/9 PASS). Tested via local dev server. All 490 unit tests pass. Zero console errors. |
-| 2026-02-27 | Iteration 5 fixes | Issues #8, #9, #12, #18, #20, #36 fixed. Additional: login/signup i18n (8c62462), CSV labels (421fb92), panel empty state (4934b00), projects skeleton (0bbadfc). New feature: 3D View (6b7ac18). SW v45 → v47. |
+| 2026-02-27 | Iteration 5 fixes | Issues #8, #9, #12, #18, #20, #36 fixed. Additional: login/signup i18n (#57), CSV labels (#58), panel empty state (#59), projects skeleton (#60). New feature: 3D View (#61). SW v45 → v47. |
 | 2026-02-27 | Iteration 5 deployed | Deployed to dev branch. 11 commits: ecbb219, 8c62462, 99f40cf, c0e6ff6, 421fb92, 5484aa6, 6b4c0a4, b3f712c, 4934b00, 0bbadfc, 6b7ac18 |
-| 2026-02-27 | Iteration 6 (continued) | 8 fixes: network error messages, empty sketch hint, long-press context menu, input validation, undo init, meters i18n, icon sizing, SW v50. All 490 tests pass. |
+| 2026-02-27 | Iteration 5 tested | All 7 primary tests PASS + 7 supplementary commit verifications PASS. 490/490 Vitest tests pass, 0 console errors. |
+| 2026-02-27 | Iteration 6 fixes | 14 fixes: #15 (zoom), #17 (workday subtitle), #21 (toast), #30 (survey fields), #42 (panel bg close), #56 (snap drag), #62 (network errors), #63 (empty sketch), #64 (long-press menu), #65 (input validation), #66 (undo init), #67 (meters i18n), #68 (icon sizing), #69 (landscape layout). SW v48 → v50. |
+| 2026-02-27 | Iteration 6 deployed | Deployed to dev branch. 14 commits: d098af0, 2785c6c, 7e253a7, 18021fb, 9cbc5a6, a3143ae, 2c2f711, bb078ae, 4921e0e, 543b9fb, bff74ca, 14fdf8c, 669c0f3, 8119a49 |
