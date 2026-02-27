@@ -72,18 +72,32 @@ export function initResizableDrawer() {
 
   function stopResize() {
     if (!isResizing) return;
-    
+
     isResizing = false;
-    
+
     // Re-enable transitions
     sidebar.style.transition = '';
-    
+
     // Remove resizing class
     sidebar.classList.remove('resizing');
-    
+
     // Re-enable text selection
     document.body.style.userSelect = '';
-    
+
+    // Snap-to-close: if user dragged below 30% of the default height, close the panel
+    const currentHeight = sidebar.offsetHeight;
+    const defaultHeight = window.innerWidth <= 600
+      ? (window.innerHeight * 0.4)  // 40vh default on mobile
+      : 400;
+    if (currentHeight < defaultHeight * 0.3) {
+      sidebar.classList.remove('open');
+      document.body.classList.remove('drawer-open');
+      sidebar.style.height = '';
+      sidebar.style.maxHeight = '';
+      updateDrawerHeightVariable(0);
+      return;
+    }
+
     // Store the height preference in localStorage and update CSS variable
     try {
       const height = sidebar.offsetHeight;
