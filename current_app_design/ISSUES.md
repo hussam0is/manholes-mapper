@@ -16,10 +16,10 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 | Severity | Total | Fixed | Open |
 |----------|-------|-------|------|
 | CRITICAL | 1 | 0 | 1 (not app bug) |
-| HIGH | 12 | 3 | 9 |
-| MEDIUM | 25 | 0 | 25 |
-| LOW | 18 | 0 | 18 |
-| **TOTAL** | **56** | **3** | **53** |
+| HIGH | 12 | 7 | 5 |
+| MEDIUM | 25 | 5 | 20 |
+| LOW | 18 | 1 | 17 |
+| **TOTAL** | **56** | **13** | **43** |
 
 ---
 
@@ -46,7 +46,7 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Affected**: `styles.css`, `index.html`
 - **Problem**: The "Measure" (Live Measure / GNSS) button at the bottom-left is a large red pill. Red is universally associated with danger, errors, or destructive actions. A feature activation button should not be red. When Live Measure is active, users see a red button and a red GPS toolbar icon simultaneously — confusing.
 - **Fix**: Change `#liveMeasureBtn` background from red/danger to the app's primary blue or a teal/green to signal "location/GPS active". When active, use a filled primary color; when inactive, use outlined/ghost style.
-- **Status**: FIXED
+- **Status**: Fixed ✓ (Tested)
 - **Commit**: `01c960d — "fix: change no-fix GNSS color from red to gray"`
 
 ### Issue #3 — GPS Toolbar Button Has Alarming Red Active State
@@ -56,7 +56,7 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Affected**: `styles.css`
 - **Problem**: When Live Measure is active, the GPS toolbar button (top of right-side toolbar) shows a full red background square. This looks like an error state, not an "active/enabled" state. Users associate red with "stop" or "error".
 - **Fix**: Change the active GPS button style from `background: red` to a green/teal active indicator (e.g., `background: var(--color-success)` or a blue ring/border). Alternatively, use a pulsing green dot overlay to signal "GPS is active and tracking".
-- **Status**: FIXED
+- **Status**: Fixed ✓ (Tested)
 - **Commit**: `01c960d — "fix: change no-fix GNSS color from red to gray"`
 
 ### Issue #4 — Menu Does Not Reset Scroll Position on Open (BUG)
@@ -66,7 +66,7 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Affected**: `src/main-entry.js`, `src/legacy/main.js`
 - **Problem**: When the hamburger menu is closed and reopened, it remembers its previous scroll position. The "Home" and "New Sketch" items (most commonly used) are at the top of the menu and are scrolled out of view. Users must scroll up to find them.
 - **Fix**: Find the menu open handler (where `#mobileMenu` becomes visible) and add `document.getElementById('mobileMenu').querySelector('.menu-scroll-container, ul, .menu-items').scrollTop = 0` before showing the menu. Or use `scrollTop = 0` on the scrollable container.
-- **Status**: FIXED
+- **Status**: Fixed ✓ (Tested)
 - **Commit**: `e33ce41 — "fix: reset mobile menu scroll to top on open so Home/New Sketch are visible"`
 
 ### Issue #5 — Sketch Side Panel Too Wide on Mobile
@@ -216,8 +216,8 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Screenshot**: 21_canvas_clean_network_overview.png, 22_canvas_toolbar_gps_active_red.png
 - **Problem**: With poor accuracy (e.g. ±120.6m), the accuracy circle takes ~40% of visible canvas, obscuring the network below. Dashed pink circle with red dot looks broken.
 - **Fix**: (1) Cap visual radius at max 150px screen diameter regardless of accuracy. (2) Reduce opacity for No Fix states. (3) Hide the accuracy circle entirely when fix quality is 0 (No Fix).
-- **Status**: OPEN
-- **Commit**: —
+- **Status**: Fixed ✓ (Tested)
+- **Commit**: `a525ac9`
 
 ### Issue #20 — "STALE" Badge Appears With No Explanation or Translation
 - **Severity**: MEDIUM
@@ -252,8 +252,8 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Screenshot**: 21_canvas_clean_network_overview.png, 34_canvas_after_cancel_dialog.png
 - **Problem**: 6 toolbar buttons show only Material Icons with no text labels, no long-press tooltips, no aria-label attributes. New field workers cannot determine what circle=Node, droplet=Drainage, trending-up=Edge, home=House Connection. App is inaccessible to screen readers.
 - **Fix**: (1) Add aria-label to all toolbar buttons. (2) Add title attributes for tooltips. (3) Consider adding 3-4 char text labels below each icon within the toolbar. (4) On first launch, show a brief overlay tutorial.
-- **Status**: OPEN
-- **Commit**: —
+- **Status**: Fixed ✓ (Tested)
+- **Commit**: `a6a24c7`
 
 ### Issue #24 — FAB Speed-Dial Menu Screenshot Mislabeled (FAB Not Expanded)
 - **Severity**: LOW
@@ -288,8 +288,8 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Screenshot**: 35_node_panel_open_existing_manhole.png, 40_node_panel_top_with_survey_data.png
 - **Problem**: Node/edge details panel always shows "Details" as its title. User cannot see which node/edge they are editing without scrolling down to find "Node ID: 280". When scrolled, context is lost entirely.
 - **Fix**: Change panel title to contextual: "Node 280" / "Manhole #280" for nodes, "Edge 145 → 146" for edges. Dynamic based on selected element.
-- **Status**: OPEN
-- **Commit**: —
+- **Status**: Fixed ✓ (Tested)
+- **Commit**: `061b431`
 
 ### Issue #28 — "OK" Badge in Node Panel Has Unclear Purpose
 - **Severity**: LOW
@@ -342,8 +342,8 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Screenshot**: 35_node_panel_open_existing_manhole.png, 37_node_panel_scrolled_more_fields.png, 39_edge_panel_open.png
 - **Problem**: Full-width red "Delete Node"/"Delete Edge" button is always at the bottom of the panel — the natural scroll terminus. Momentum scroll can overshoot into it. It is the most visually prominent element despite being least frequently used. Confirmation exists but accidental taps still cause UX friction.
 - **Fix**: (1) Move Delete behind overflow "..." menu or secondary actions section. (2) Make it ghost/outline style (red text, no fill). (3) Add bottom padding so it is not at exact scroll terminus.
-- **Status**: OPEN
-- **Commit**: —
+- **Status**: Fixed ✓ (Tested)
+- **Commit**: `48a2990`
 
 ### Issue #34 — Canvas Toolbar Touches Android Right-Edge Gesture Zone
 - **Severity**: HIGH
@@ -351,8 +351,8 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Screenshot**: 22_canvas_toolbar_gps_active_red.png, 31_canvas_navigated_to_active_sketch.png, 34_canvas_after_cancel_dialog.png
 - **Problem**: Right-side toolbar buttons are flush against the screen right edge. Android 12+ reserves ~24dp on both edges for system back gestures. Buttons in this zone conflict with system back gesture — users tapping toolbar may accidentally trigger back navigation in the field.
 - **Fix**: Add `padding-inline-end: max(8px, env(safe-area-inset-right))` to the toolbar container, or ensure at least 8px right margin. Prevents conflict with Android edge gestures.
-- **Status**: OPEN
-- **Commit**: —
+- **Status**: Fixed ✓ (Tested)
+- **Commit**: `a0862cb`
 
 ### Issue #35 — Sketch Edit Affordance Only Discoverable After Selecting Sketch
 - **Severity**: LOW
@@ -418,8 +418,8 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Screenshot**: 54_after_back_key.png, 55_app_reopened.png
 - **Problem**: Pressing Android Back button exits the entire app instead of closing the open details panel. The `popstate` handler does NOT check if `#sidebar` is visible before showing the exit prompt.
 - **Fix**: In `src/legacy/main.js` around the `popstate` handler (~line 9766), add check before exit prompt: if `#sidebar` is visible, close it and return. Insert before the home panel check.
-- **Status**: OPEN
-- **Commit**: —
+- **Status**: Fixed in Iter 3
+- **Commit**: `b923973`
 
 ### Issue #42 — Panel Persists After App Background/Foreground Cycle
 - **Severity**: LOW
@@ -445,8 +445,8 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Screenshot**: 56_panel_close_attempt.png, 57_panel_close_y1250.png
 - **Problem**: Field worker spent 60+ seconds trying to close the details panel (screenshots 56-57, timestamps 19:02-19:03). X button appears unresponsive on touch. This is a critical field usability failure.
 - **Fix**: Verify close button in `src/legacy/main.js` (`animatedPanelClose` ~line 964) registers `touchend` alongside `click`. Add tap-on-backdrop: tapping canvas above panel should close it.
-- **Status**: OPEN
-- **Commit**: —
+- **Status**: Fixed in Iter 3
+- **Commit**: `c96300a`
 
 ### Issue #45 — Menu Scroll Bug Regression (Fix from #4 Not Fully Effective)
 - **Severity**: MEDIUM
@@ -454,8 +454,8 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Screenshot**: 58_menu_top_section.png
 - **Problem**: Screenshot 58 (timestamp 19:03) still shows menu opening with Survey Device section visible instead of Home/New Sketch. Commits e33ce41 + 77ee19f fixed this in Playwright but the regression appears on the physical phone. The `scrollTop = 0` may be applied before the menu element is fully rendered/visible.
 - **Fix**: Ensure scroll reset fires AFTER menu transitions to visible. Use `requestAnimationFrame` or `transitionend` listener to delay reset until menu is actually rendered on screen.
-- **Status**: OPEN
-- **Commit**: —
+- **Status**: Fixed in Iter 3
+- **Commit**: `843deab`
 
 ### Issue #46 — Line Diameter Picker Shows Raw Numbers Without "mm" Units
 - **Severity**: MEDIUM
@@ -499,8 +499,8 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Screenshot**: 59_admin_panel_opened.png
 - **Problem**: Admin Settings action bar ("Cancel" + "Save Settings") is cut off at viewport bottom by system navigation bar. Users may miss or struggle to tap "Save Settings".
 - **Fix**: Add `padding-bottom: env(safe-area-inset-bottom, 20px)` to admin settings container. Or make action bar `position: sticky; bottom: 0` with opaque background.
-- **Status**: OPEN
-- **Commit**: —
+- **Status**: Fixed in Iter 3
+- **Commit**: `d463c64`
 
 ### Issue #51 — Canvas Fully Obscured When Panel Open — Selected Node Not Highlighted
 - **Severity**: MEDIUM
@@ -544,8 +544,8 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Screenshot**: All panel-open screenshots (41-57)
 - **Problem**: Blue FAB at bottom-right disappears behind the details panel when open. FAB actions (center map, quick capture) become inaccessible while editing a node.
 - **Fix**: `#fabBtn { bottom: calc(var(--drawer-height, 0px) + 16px); }` — floats FAB above the panel using the existing CSS variable set by `src/utils/resizable-drawer.js`.
-- **Status**: OPEN
-- **Commit**: —
+- **Status**: Fixed in Iter 3
+- **Commit**: `da98abe`
 
 ### Issue #56 — Panel Has Unstable Intermediate Drag States (No Snap Behavior)
 - **Severity**: LOW
@@ -565,13 +565,19 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Source**: Visual inspection of 20 screenshots + CSV reference notes
 - **Issues Found**: 17 (1 critical, 6 high, 6 medium, 4 low)
 - **Issues Fixed**: 3 (Issues #2, #3, #4)
-- **Status**: Fix agent ran. Commits: e33ce41, 01c960d. Test agent spawned.
+- **Status**: All 3 fixes tested and verified. Commits: e33ce41, 01c960d.
 
 ### Iteration 2 Report (2026-02-27)
 - **Batch**: Screenshots 21–40 (audit) + fixes applied
 - **Issues Fixed**: 5 (Issues #34, #23, #27, #33, #19)
 - **Commits**: a0862cb, a6a24c7, 061b431, 48a2990, a525ac9, a42ba75 (SW v42)
-- **Status**: Fixes pushed. Playwright test pending.
+- **Status**: All 5 fixes tested and verified.
+
+### Iteration 3 Report (2026-02-27)
+- **Batch**: Screenshots 41–59 (audit) + fixes applied
+- **Issues Fixed**: 5 (Issues #41, #44, #45, #55, #50)
+- **Commits**: b923973, c96300a, 843deab, da98abe, d463c64
+- **Status**: Fixes deployed. Testing pending.
 
 ---
 
@@ -581,5 +587,9 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 |------|--------|-------|
 | 2026-02-27 | Initial audit | 20 screenshots analyzed, 17 issues found |
 | 2026-02-27 | Iteration 1 fixes | Issues #2, #3, #4 fixed. Commits: e33ce41, 01c960d |
+| 2026-02-27 | Iteration 1 tested | All 3 fixes verified passing |
 | 2026-02-27 | Batch 2 audit | 19 new issues found (#18-#36) from screenshots 21-40 |
+| 2026-02-27 | Iteration 2 fixes | Issues #34, #23, #27, #33, #19 fixed. Commits: a0862cb, a6a24c7, 061b431, 48a2990, a525ac9 |
+| 2026-02-27 | Iteration 2 tested | All 5 fixes verified passing |
 | 2026-02-27 | Batch 3 audit | 20 new issues found (#37-#56) from screenshots 41-59 |
+| 2026-02-27 | Iteration 3 fixes | Issues #41, #44, #45, #55, #50 fixed. Commits: b923973, c96300a, 843deab, da98abe, d463c64 |
