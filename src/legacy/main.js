@@ -6847,6 +6847,8 @@ if (undoBtn) {
   undoBtn.addEventListener('click', () => {
     performUndo();
   });
+  // Ensure undo button starts disabled (stack is empty at init)
+  updateUndoButton();
 }
 // 3D View button (admin/super_admin only)
 if (threeDViewBtn) {
