@@ -2491,6 +2491,57 @@ canvas {
   background: var(--color-danger-light);
 }
 
+/* ── Fix Suggestions (node/edge drawer) ── */
+.fix-suggestions-section {
+  border-top: 1px solid var(--color-border);
+  padding: var(--space-2, 8px) 0;
+  margin-top: var(--space-2, 8px);
+}
+.fix-suggestions-section .details-section-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: var(--space-2, 8px);
+  color: var(--color-text-secondary);
+}
+.btn-fix-suggestion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  margin-bottom: 4px;
+  background: rgba(234, 179, 8, 0.08);
+  border: 1px solid rgba(234, 179, 8, 0.25);
+  border-radius: 8px;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 0.82rem;
+  text-align: start;
+  transition: background 0.15s;
+  min-height: 44px;
+}
+.btn-fix-suggestion:hover,
+.btn-fix-suggestion:active {
+  background: rgba(234, 179, 8, 0.18);
+}
+.btn-fix-suggestion .material-icons {
+  font-size: 18px;
+  color: #eab308;
+}
+@media (prefers-color-scheme: dark) {
+  .btn-fix-suggestion {
+    background: rgba(234, 179, 8, 0.12);
+    border-color: rgba(234, 179, 8, 0.3);
+  }
+  .btn-fix-suggestion:hover,
+  .btn-fix-suggestion:active {
+    background: rgba(234, 179, 8, 0.22);
+  }
+}
+
 /* Indicator chips */
 /* Pill radio bar for line diameter */
 .radio-bar {

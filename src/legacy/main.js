@@ -2790,6 +2790,10 @@ window.__setActiveSketchData = function (data) {
 };
 
 window.__scheduleDraw = function () { scheduleDraw(); };
+window.__saveToStorage = function () { saveToStorage(); };
+window.__getMutableSketchData = function () {
+  return { nodes, edges };
+};
 
 window.__setViewState = function (scale, tx, ty) {
   viewScale = scale;
@@ -5563,6 +5567,37 @@ function renderDetails() {
         });
       }
     } catch (_) { }
+    // ── Fix suggestions for selected node ──
+    if (typeof window.__computeSketchIssues === 'function' && typeof window.__getFixSuggestions === 'function') {
+      const { issues } = window.__computeSketchIssues(nodes, edges);
+      const nodeIssues = issues.filter(i => String(i.nodeId) === String(node.id));
+      if (nodeIssues.length > 0) {
+        const fixSection = document.createElement('div');
+        fixSection.className = 'details-section fix-suggestions-section';
+        fixSection.innerHTML = `<div class="details-section-title"><span class="material-icons" style="font-size:16px;color:var(--color-warning,#eab308);vertical-align:middle">lightbulb</span> ${escapeHtml(t('fixes.title'))}</div>`;
+
+        for (const issue of nodeIssues) {
+          const suggestions = window.__getFixSuggestions(issue, nodes, edges);
+          for (const fix of suggestions) {
+            if (fix.navigateTo) continue; // skip navigation-only fixes in this context
+            const btn = document.createElement('button');
+            btn.className = 'btn-fix-suggestion';
+            btn.innerHTML = `<span class="material-icons">${fix.icon}</span> ${escapeHtml(t(fix.labelKey))}`;
+            btn.addEventListener('click', () => {
+              fix.apply();
+              saveToStorage();
+              scheduleDraw();
+              renderDetails();
+              if (window.showToast) window.showToast(t('fixes.applied'));
+            });
+            fixSection.appendChild(btn);
+          }
+        }
+        if (fixSection.querySelectorAll('.btn-fix-suggestion').length > 0) {
+          container.appendChild(fixSection);
+        }
+      }
+    }
     // Add delete button at the bottom (after connected lines if present)
     const deleteButtonWrapper = document.createElement('div');
     deleteButtonWrapper.className = 'details-actions';
@@ -5895,6 +5930,44 @@ function renderDetails() {
       </div>
     `;
     detailsContainer.appendChild(container);
+
+    // ── Fix suggestions for selected edge ──
+    if (typeof window.__computeSketchIssues === 'function' && typeof window.__getFixSuggestions === 'function') {
+      const { issues } = window.__computeSketchIssues(nodes, edges);
+      const edgeIssues = issues.filter(i => i.edgeId === edge.id);
+      if (edgeIssues.length > 0) {
+        const fixSection = document.createElement('div');
+        fixSection.className = 'details-section fix-suggestions-section';
+        fixSection.innerHTML = `<div class="details-section-title"><span class="material-icons" style="font-size:16px;color:var(--color-warning,#eab308);vertical-align:middle">lightbulb</span> ${escapeHtml(t('fixes.title'))}</div>`;
+
+        for (const issue of edgeIssues) {
+          const suggestions = window.__getFixSuggestions(issue, nodes, edges);
+          for (const fix of suggestions) {
+            if (fix.navigateTo) continue;
+            const btn = document.createElement('button');
+            btn.className = 'btn-fix-suggestion';
+            btn.innerHTML = `<span class="material-icons">${fix.icon}</span> ${escapeHtml(t(fix.labelKey))}`;
+            btn.addEventListener('click', () => {
+              fix.apply();
+              saveToStorage();
+              scheduleDraw();
+              renderDetails();
+              if (window.showToast) window.showToast(t('fixes.applied'));
+            });
+            fixSection.appendChild(btn);
+          }
+        }
+        if (fixSection.querySelectorAll('.btn-fix-suggestion').length > 0) {
+          // Insert fix suggestions before the delete button actions div
+          const actionsDiv = container.querySelector('.details-actions');
+          if (actionsDiv) {
+            container.insertBefore(fixSection, actionsDiv);
+          } else {
+            container.appendChild(fixSection);
+          }
+        }
+      }
+    }
 
     // Attach listeners with field usage tracking
     const edgeTypeSelect = container.querySelector('#edgeTypeSelect');
