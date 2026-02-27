@@ -102,7 +102,7 @@ if (typeof window !== 'undefined') {
               <hr class="user-menu-divider" />
               <button class="user-menu-item user-menu-signout">
                 <span class="material-icons">logout</span>
-                <span>Sign Out</span>
+                <span>${window.t?.('auth.signOut') || 'Sign Out'}</span>
               </button>
             </div>
           </div>
