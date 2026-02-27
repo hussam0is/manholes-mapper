@@ -5665,12 +5665,12 @@ select.invalid:focus {
   }
 }
 
-/* Toast */
+/* Toast — positioned at bottom-center to avoid overlapping legend bar and header */
 #toast {
-  position: absolute;
+  position: fixed;
   left: 50%;
-  top: 50px;
-  transform: translateX(-50%);
+  bottom: calc(var(--drawer-height, 0px) + 80px);
+  transform: translateX(-50%) translateY(8px);
   background: var(--color-primary-strong);
   color: #fff;
   padding: 0.6rem 1.2rem;
@@ -5681,12 +5681,13 @@ select.invalid:focus {
   pointer-events: none;
   transition: opacity 0.25s ease, transform 0.25s ease;
   z-index: 160;
-  /* below header */
+  max-width: calc(100vw - 32px);
+  text-align: center;
 }
 
 #toast.show {
   opacity: 1;
-  transform: translateX(-50%) translateY(4px);
+  transform: translateX(-50%) translateY(0);
 }
 
 /* Help modal specific */
