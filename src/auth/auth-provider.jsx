@@ -1,8 +1,9 @@
 /**
  * Better Auth UI Components
- * 
+ *
  * Custom authentication UI components for Better Auth.
  * Provides SignIn, SignUp, and UserButton components.
+ * All strings use window.t() for i18n support.
  */
 
 import React, { useState } from 'react';
@@ -13,9 +14,15 @@ import { refreshSession } from './auth-guard.js';
 // Keep track of React roots to avoid multiple createRoot calls on the same container
 const roots = new Map();
 
+/** Helper: get translated string, fallback to key */
+function tt(key, ...args) {
+  if (typeof window.t === 'function') return window.t(key, ...args);
+  return key;
+}
+
 /**
  * Get or create a React root for a container
- * @param {HTMLElement} container 
+ * @param {HTMLElement} container
  * @returns {Object} React root
  */
 function getRoot(container) {
@@ -43,23 +50,23 @@ function SignInForm({ onSuccess, signUpUrl = '#/signup' }) {
 
     try {
       const { data, error: signInError } = await signInWithEmail(email, password);
-      
+
       if (signInError) {
-        setError(signInError.message || 'Sign in failed. Please check your credentials.');
+        setError(signInError.message || tt('auth.signInFailed'));
         setLoading(false);
         return;
       }
 
       // Refresh session to update auth state
       await refreshSession();
-      
+
       if (onSuccess) {
         onSuccess(data);
       } else {
         window.location.hash = '#/';
       }
     } catch (err) {
-      setError(err.message || 'An unexpected error occurred.');
+      setError(err.message || tt('auth.unexpectedError'));
       setLoading(false);
     }
   };
@@ -67,56 +74,56 @@ function SignInForm({ onSuccess, signUpUrl = '#/signup' }) {
   return (
     <div className="auth-form-container">
       <form onSubmit={handleSubmit} className="auth-form">
-        <h2 className="auth-form-title">Sign In</h2>
-        <p className="auth-form-subtitle">Enter your credentials to continue</p>
-        
+        <h2 className="auth-form-title">{tt('auth.signIn')}</h2>
+        <p className="auth-form-subtitle">{tt('auth.enterCredentials')}</p>
+
         {error && (
           <div className="auth-form-error">
             <span className="material-icons">error</span>
             <span>{error}</span>
           </div>
         )}
-        
+
         <div className="auth-form-field">
-          <label htmlFor="email">Email</label>
+          <label htmlFor="email">{tt('auth.email')}</label>
           <input
             type="email"
             id="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
+            placeholder={tt('auth.emailPlaceholder')}
             required
             disabled={loading}
           />
         </div>
-        
+
         <div className="auth-form-field">
-          <label htmlFor="password">Password</label>
+          <label htmlFor="password">{tt('auth.password')}</label>
           <input
             type="password"
             id="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter your password"
+            placeholder={tt('auth.passwordPlaceholder')}
             required
             disabled={loading}
           />
         </div>
-        
+
         <button type="submit" className="auth-form-submit" disabled={loading}>
           {loading ? (
             <>
               <span className="material-icons spin">sync</span>
-              <span>Signing in...</span>
+              <span>{tt('auth.signingIn')}</span>
             </>
           ) : (
-            <span>Sign In</span>
+            <span>{tt('auth.signIn')}</span>
           )}
         </button>
-        
+
         <p className="auth-form-footer">
-          Don't have an account?{' '}
-          <a href={signUpUrl} className="auth-form-link">Sign up</a>
+          {tt('auth.noAccount')}{' '}
+          <a href={signUpUrl} className="auth-form-link">{tt('auth.signUp')}</a>
         </p>
       </form>
     </div>
@@ -139,12 +146,12 @@ function SignUpForm({ onSuccess, signInUrl = '#/login' }) {
     setError('');
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError(tt('auth.passwordsNoMatch'));
       return;
     }
 
     if (password.length < 8) {
-      setError('Password must be at least 8 characters');
+      setError(tt('auth.passwordTooShort'));
       return;
     }
 
@@ -152,23 +159,23 @@ function SignUpForm({ onSuccess, signInUrl = '#/login' }) {
 
     try {
       const { data, error: signUpError } = await signUpWithEmail(email, password, name);
-      
+
       if (signUpError) {
-        setError(signUpError.message || 'Sign up failed. Please try again.');
+        setError(signUpError.message || tt('auth.signUpFailed'));
         setLoading(false);
         return;
       }
 
       // Refresh session to update auth state
       await refreshSession();
-      
+
       if (onSuccess) {
         onSuccess(data);
       } else {
         window.location.hash = '#/';
       }
     } catch (err) {
-      setError(err.message || 'An unexpected error occurred.');
+      setError(err.message || tt('auth.unexpectedError'));
       setLoading(false);
     }
   };
@@ -176,83 +183,83 @@ function SignUpForm({ onSuccess, signInUrl = '#/login' }) {
   return (
     <div className="auth-form-container">
       <form onSubmit={handleSubmit} className="auth-form">
-        <h2 className="auth-form-title">Create Account</h2>
-        <p className="auth-form-subtitle">Sign up to get started</p>
-        
+        <h2 className="auth-form-title">{tt('auth.createAccount')}</h2>
+        <p className="auth-form-subtitle">{tt('auth.signUpToStart')}</p>
+
         {error && (
           <div className="auth-form-error">
             <span className="material-icons">error</span>
             <span>{error}</span>
           </div>
         )}
-        
+
         <div className="auth-form-field">
-          <label htmlFor="name">Name</label>
+          <label htmlFor="name">{tt('auth.name')}</label>
           <input
             type="text"
             id="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Your name"
+            placeholder={tt('auth.namePlaceholder')}
             required
             disabled={loading}
           />
         </div>
-        
+
         <div className="auth-form-field">
-          <label htmlFor="signup-email">Email</label>
+          <label htmlFor="signup-email">{tt('auth.email')}</label>
           <input
             type="email"
             id="signup-email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
+            placeholder={tt('auth.emailPlaceholder')}
             required
             disabled={loading}
           />
         </div>
-        
+
         <div className="auth-form-field">
-          <label htmlFor="signup-password">Password</label>
+          <label htmlFor="signup-password">{tt('auth.password')}</label>
           <input
             type="password"
             id="signup-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="At least 8 characters"
+            placeholder={tt('auth.passwordMinLength')}
             required
             disabled={loading}
             minLength={8}
           />
         </div>
-        
+
         <div className="auth-form-field">
-          <label htmlFor="confirm-password">Confirm Password</label>
+          <label htmlFor="confirm-password">{tt('auth.confirmPassword')}</label>
           <input
             type="password"
             id="confirm-password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="Confirm your password"
+            placeholder={tt('auth.confirmPasswordPlaceholder')}
             required
             disabled={loading}
           />
         </div>
-        
+
         <button type="submit" className="auth-form-submit" disabled={loading}>
           {loading ? (
             <>
               <span className="material-icons spin">sync</span>
-              <span>Creating account...</span>
+              <span>{tt('auth.creatingAccount')}</span>
             </>
           ) : (
-            <span>Sign Up</span>
+            <span>{tt('auth.signUp')}</span>
           )}
         </button>
-        
+
         <p className="auth-form-footer">
-          Already have an account?{' '}
-          <a href={signInUrl} className="auth-form-link">Sign in</a>
+          {tt('auth.haveAccount')}{' '}
+          <a href={signInUrl} className="auth-form-link">{tt('auth.signIn')}</a>
         </p>
       </form>
     </div>
@@ -266,7 +273,7 @@ function SignUpForm({ onSuccess, signInUrl = '#/login' }) {
  */
 export function mountSignIn(container, props = {}) {
   if (!container) return;
-  
+
   const root = getRoot(container);
   root.render(
     React.createElement(SignInForm, {
@@ -283,7 +290,7 @@ export function mountSignIn(container, props = {}) {
  */
 export function mountSignUp(container, props = {}) {
   if (!container) return;
-  
+
   const root = getRoot(container);
   root.render(
     React.createElement(SignUpForm, {
@@ -295,11 +302,11 @@ export function mountSignUp(container, props = {}) {
 
 /**
  * Unmount auth component from a container
- * @param {HTMLElement} container 
+ * @param {HTMLElement} container
  */
 export function unmountAuth(container) {
   if (!container) return;
-  
+
   if (roots.has(container)) {
     const root = roots.get(container);
     root.unmount();

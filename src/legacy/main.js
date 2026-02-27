@@ -7030,6 +7030,18 @@ menuEvents.on('languageChange', ({ value, element }) => {
     renderHome();
   }
   renderDetails();
+  // Re-mount auth forms if login panel is visible (so translations update)
+  if (loginPanel && loginPanel.style.display === 'flex') {
+    const hash = location.hash;
+    if (hash === '#/signup') {
+      mountAuthSignUp();
+    } else {
+      mountAuthSignIn();
+    }
+    // Update login panel wrapper text
+    if (loginTitle) loginTitle.textContent = t('auth.loginTitle');
+    if (loginSubtitle) loginSubtitle.textContent = t('auth.loginSubtitle');
+  }
   // If admin modal is open, rebuild its UI to apply new translations
   if (adminModal && adminModal.style.display !== 'none') {
     openAdminModal();
