@@ -84,17 +84,29 @@ export function initResizableDrawer() {
     // Re-enable text selection
     document.body.style.userSelect = '';
 
-    // Snap-to-close: if user dragged below 30% of the default height, close the panel
+    // Snap behavior: close if below 30%, snap to default if below 50%
     const currentHeight = sidebar.offsetHeight;
     const defaultHeight = window.innerWidth <= 600
       ? (window.innerHeight * 0.4)  // 40vh default on mobile
       : 400;
     if (currentHeight < defaultHeight * 0.3) {
+      // Snap-to-close: user dragged below 30% of default
       sidebar.classList.remove('open');
       document.body.classList.remove('drawer-open');
       sidebar.style.height = '';
       sidebar.style.maxHeight = '';
       updateDrawerHeightVariable(0);
+      return;
+    }
+    if (currentHeight < defaultHeight * 0.5) {
+      // Snap-to-default: user dragged between 30%-50%, restore default height
+      const snapHeight = defaultHeight;
+      sidebar.style.height = `${snapHeight}px`;
+      if (window.innerWidth <= 600) {
+        sidebar.style.maxHeight = `${snapHeight}px`;
+      }
+      updateDrawerHeightVariable(snapHeight);
+      try { localStorage.setItem('sidebarHeight', snapHeight.toString()); } catch (_e) { /* ignore */ }
       return;
     }
 
