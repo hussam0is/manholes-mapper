@@ -1279,12 +1279,14 @@ select.btn:focus-visible {
   color: #fff;
 }
 
-/* Undo button */
-.canvas-toolbar .undo-btn {
+/* Undo/Redo buttons */
+.canvas-toolbar .undo-btn,
+.canvas-toolbar .redo-btn {
   transition: opacity 0.2s ease;
 }
 
-.canvas-toolbar .undo-btn:disabled {
+.canvas-toolbar .undo-btn:disabled,
+.canvas-toolbar .redo-btn:disabled {
   opacity: 0.3;
   pointer-events: none;
 }

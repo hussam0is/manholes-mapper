@@ -183,6 +183,7 @@ const homeNodeModeBtn = document.getElementById('homeNodeModeBtn');
 const drainageNodeModeBtn = document.getElementById('drainageNodeModeBtn');
 const edgeModeBtn = document.getElementById('edgeModeBtn');
 const undoBtn = document.getElementById('undoBtn');
+const redoBtn = document.getElementById('redoBtn');
 const threeDViewBtn = document.getElementById('threeDViewBtn');
 // Separate export buttons for nodes and edges
 const exportNodesBtn = document.getElementById('exportNodesBtn');
@@ -396,6 +397,7 @@ let dragOffset = { x: 0, y: 0 };
 // Undo action history
 const UNDO_STACK_MAX = 50;
 const undoStack = [];
+const redoStack = [];
 let dragStartNodeState = null; // { id, x, y, surveyX, surveyY } captured at drag start
 // Long-press context menu state
 let longPressTimer = null;
@@ -1532,6 +1534,9 @@ function applyLangToStaticUI() {
   }
   if (undoBtn) {
     undoBtn.innerHTML = '<span class="material-icons" aria-hidden="true">undo</span>';
+  }
+  if (redoBtn) {
+    redoBtn.innerHTML = '<span class="material-icons" aria-hidden="true">redo</span>';
   }
 
   // Dynamic inputs not present in index.html (created at runtime by other modules)
@@ -3569,26 +3574,7 @@ function showNodeContextMenu(node, screenX, screenY) {
   deleteBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     hideNodeContextMenu();
-    const hasConnections = edges.some(
-      (edge) => String(edge.tail) === String(node.id) || String(edge.head) === String(node.id)
-    );
-    if (hasConnections) {
-      if (!confirm(t('confirms.deleteNodeWithEdges'))) return;
-    }
-    nodes = nodes.filter((n) => n !== node);
-    edges = edges.filter(
-      (edge) => String(edge.tail) !== String(node.id) && String(edge.head) !== String(node.id)
-    );
-    if (selectedNode && String(selectedNode.id) === String(node.id)) {
-      selectedNode = null;
-      selectedEdge = null;
-      renderDetails();
-    }
-    computeNodeTypes();
-    updateIncompleteEdgeTracker();
-    saveToStorage();
-    scheduleDraw();
-    showToast(t('toasts.nodeDeleted'));
+    deleteNodeShared(node);
   });
 
   menu.appendChild(editBtn);
@@ -3648,13 +3634,25 @@ function clearLongPressTimer() {
 function pushUndo(action) {
   undoStack.push(action);
   if (undoStack.length > UNDO_STACK_MAX) undoStack.shift();
+  // New action forks the timeline — clear redo
+  redoStack.length = 0;
+  updateUndoButton();
+  updateRedoButton();
+}
+
+/** Push directly onto undo stack without clearing redo (used by performRedo). */
+function pushUndoDirect(action) {
+  undoStack.push(action);
+  if (undoStack.length > UNDO_STACK_MAX) undoStack.shift();
   updateUndoButton();
 }
 
-/** Clear the undo stack (on sketch load/new/switch). */
+/** Clear the undo and redo stacks (on sketch load/new/switch). */
 function clearUndoStack() {
   undoStack.length = 0;
+  redoStack.length = 0;
   updateUndoButton();
+  updateRedoButton();
 }
 
 /** Enable/disable the undo button based on stack state. */
@@ -3662,6 +3660,140 @@ function updateUndoButton() {
   if (undoBtn) {
     undoBtn.disabled = undoStack.length === 0 || !!window.__sketchReadOnly;
   }
+}
+
+/** Enable/disable the redo button based on stack state. */
+function updateRedoButton() {
+  if (redoBtn) {
+    redoBtn.disabled = redoStack.length === 0 || !!window.__sketchReadOnly;
+  }
+}
+
+/**
+ * Deep-copy a node or edge for undo storage.
+ */
+function deepCopyObj(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+/**
+ * Delete a node with smart edge preservation.
+ * Connected edges become dangling (open-ended) instead of being removed,
+ * unless both ends would be null.
+ * @param {object} node - The node to delete
+ * @param {boolean} pushToUndo - Whether to push an undo action (default true)
+ * @returns {boolean} true if deleted, false if cancelled
+ */
+function deleteNodeShared(node, pushToUndo = true) {
+  const nodeIdStr = String(node.id);
+  const connectedEdges = edges.filter(e =>
+    String(e.tail) === nodeIdStr || String(e.head) === nodeIdStr
+  );
+
+  if (connectedEdges.length > 0) {
+    if (!confirm(t('confirms.deleteNodeWithEdges'))) return false;
+  }
+
+  const removedEdges = []; // edges fully removed (both ends would be null)
+  const convertedEdges = []; // edges converted to dangling
+
+  for (const edge of connectedEdges) {
+    const isTail = String(edge.tail) === nodeIdStr;
+    const isHead = String(edge.head) === nodeIdStr;
+
+    // Check if the OTHER end is also null/missing — if so, remove entirely
+    const otherEnd = isTail ? edge.head : edge.tail;
+    const otherIsNull = otherEnd == null;
+
+    if (otherIsNull) {
+      // Both ends would be null — remove edge entirely
+      removedEdges.push(deepCopyObj(edge));
+    } else {
+      // Convert to dangling — save old state for undo
+      const oldState = {
+        edgeId: edge.id,
+        wasTail: isTail,
+        oldTail: edge.tail,
+        oldHead: edge.head,
+        oldIsDangling: edge.isDangling,
+        oldDanglingEndpoint: edge.danglingEndpoint ? { ...edge.danglingEndpoint } : null,
+        oldTailPosition: edge.tailPosition ? { ...edge.tailPosition } : null,
+      };
+      convertedEdges.push(oldState);
+
+      // Convert the edge to dangling
+      if (isTail) {
+        // Node was tail — set tail to null, store position
+        edge.tailPosition = { x: node.x, y: node.y };
+        edge.tail = null;
+      } else {
+        // Node was head — set head to null, store position
+        edge.danglingEndpoint = { x: node.x, y: node.y };
+        edge.head = null;
+      }
+      edge.isDangling = true;
+    }
+  }
+
+  // Remove fully-dead edges
+  const removedEdgeIds = new Set(removedEdges.map(e => e.id));
+  edges = edges.filter(e => !removedEdgeIds.has(e.id));
+
+  // Remove the node
+  nodes = nodes.filter(n => n !== node);
+
+  if (pushToUndo) {
+    // Push undo action with all info needed to restore
+    pushUndo({
+      type: 'nodeDelete',
+      node: deepCopyObj(node),
+      removedEdges,
+      convertedEdges,
+    });
+  }
+
+  // Clear selection if deleted node was selected
+  if (selectedNode && String(selectedNode.id) === nodeIdStr) {
+    selectedNode = null;
+    selectedEdge = null;
+    renderDetails();
+  }
+
+  computeNodeTypes();
+  updateIncompleteEdgeTracker();
+  saveToStorage();
+  scheduleDraw();
+  showToast(t('toasts.nodeDeleted'));
+  return true;
+}
+
+/**
+ * Delete an edge.
+ * @param {object} edge - The edge to delete
+ * @param {boolean} pushToUndo - Whether to push an undo action (default true)
+ * @returns {boolean} true if deleted, false if cancelled
+ */
+function deleteEdgeShared(edge, pushToUndo = true) {
+  if (!confirm(t('confirms.deleteEdge'))) return false;
+
+  if (pushToUndo) {
+    pushUndo({ type: 'edgeDelete', edge: deepCopyObj(edge) });
+  }
+
+  edges = edges.filter(e => e !== edge);
+
+  if (selectedEdge && selectedEdge.id === edge.id) {
+    selectedEdge = null;
+    selectedNode = null;
+    renderDetails();
+  }
+
+  computeNodeTypes();
+  updateIncompleteEdgeTracker();
+  saveToStorage();
+  scheduleDraw();
+  showToast(t('toasts.edgeDeleted'));
+  return true;
 }
 
 /** Check if a node has valuable GNSS data (Fixed or Device Float). */
@@ -3680,6 +3812,7 @@ function edgeHasValuableData(edge) {
 /**
  * Perform the undo of the last action on the stack.
  * Shows confirmation dialog if the item contains valuable data.
+ * Pushes a corresponding redo action onto the redo stack.
  */
 function performUndo() {
   if (undoStack.length === 0) {
@@ -3691,7 +3824,6 @@ function performUndo() {
   if (action.type === 'nodeCreate') {
     const node = nodes.find(n => String(n.id) === String(action.nodeId));
     if (!node) { undoStack.pop(); updateUndoButton(); return; }
-    // Check connected edges for valuable data too
     const connectedEdges = edges.filter(e =>
       String(e.tail) === String(action.nodeId) || String(e.head) === String(action.nodeId)
     );
@@ -3700,17 +3832,24 @@ function performUndo() {
     if (hasValuable) {
       if (!confirm(t('confirms.undoNodeWithData'))) return;
     }
+    // Save for redo before removing
+    const redoAction = {
+      type: 'nodeRestore',
+      node: deepCopyObj(node),
+      edges: connectedEdges.map(e => deepCopyObj(e)),
+    };
     // Remove node and connected edges
     const removedEdgeIds = new Set(connectedEdges.map(e => e.id));
     nodes = nodes.filter(n => n !== node);
     edges = edges.filter(e => !removedEdgeIds.has(e.id));
-    // Clean stale edge undo entries from the stack
     undoStack.pop();
+    // Clean stale edge undo entries from the stack
     for (let i = undoStack.length - 1; i >= 0; i--) {
       if (undoStack[i].type === 'edgeCreate' && removedEdgeIds.has(undoStack[i].edgeId)) {
         undoStack.splice(i, 1);
       }
     }
+    redoStack.push(redoAction);
     if (selectedNode && String(selectedNode.id) === String(action.nodeId)) {
       selectedNode = null;
       selectedEdge = null;
@@ -3728,6 +3867,8 @@ function performUndo() {
     if (edgeHasValuableData(edge)) {
       if (!confirm(t('confirms.undoEdgeWithData'))) return;
     }
+    // Save for redo before removing
+    redoStack.push({ type: 'edgeRestore', edge: deepCopyObj(edge) });
     edges = edges.filter(e => e !== edge);
     undoStack.pop();
     if (selectedEdge && selectedEdge.id === action.edgeId) {
@@ -3744,10 +3885,18 @@ function performUndo() {
   } else if (action.type === 'nodeMove') {
     const node = nodes.find(n => String(n.id) === String(action.nodeId));
     if (!node) { undoStack.pop(); updateUndoButton(); return; }
-    // Check if the node NOW has valuable data at its current position
     if (nodeHasValuableData(node)) {
       if (!confirm(t('confirms.undoNodeWithData'))) return;
     }
+    // Save current position for redo
+    redoStack.push({
+      type: 'nodeMove',
+      nodeId: action.nodeId,
+      oldX: node.x,
+      oldY: node.y,
+      oldSurveyX: node.surveyX,
+      oldSurveyY: node.surveyY,
+    });
     node.x = action.oldX;
     node.y = action.oldY;
     if (action.oldSurveyX !== undefined) node.surveyX = action.oldSurveyX;
@@ -3757,11 +3906,167 @@ function performUndo() {
     saveToStorage();
     scheduleDraw();
     showToast(t('toasts.undoNodeMove'));
+
+  } else if (action.type === 'nodeDelete') {
+    // Restore the deleted node
+    nodes.push(deepCopyObj(action.node));
+    // Restore fully removed edges
+    for (const edgeCopy of action.removedEdges) {
+      edges.push(deepCopyObj(edgeCopy));
+    }
+    // Revert converted edges back to connected
+    for (const conv of action.convertedEdges) {
+      const edge = edges.find(e => e.id === conv.edgeId);
+      if (edge) {
+        edge.tail = conv.oldTail;
+        edge.head = conv.oldHead;
+        edge.isDangling = conv.oldIsDangling;
+        edge.danglingEndpoint = conv.oldDanglingEndpoint;
+        edge.tailPosition = conv.oldTailPosition;
+      }
+    }
+    undoStack.pop();
+    // Push same action data to redo so redo can re-delete
+    redoStack.push(deepCopyObj(action));
+    computeNodeTypes();
+    updateIncompleteEdgeTracker();
+    saveToStorage();
+    scheduleDraw();
+    showToast(t('toasts.undoNodeDelete'));
+
+  } else if (action.type === 'edgeDelete') {
+    // Restore the deleted edge
+    edges.push(deepCopyObj(action.edge));
+    undoStack.pop();
+    redoStack.push(deepCopyObj(action));
+    computeNodeTypes();
+    updateIncompleteEdgeTracker();
+    saveToStorage();
+    scheduleDraw();
+    showToast(t('toasts.undoEdgeDelete'));
+
   } else {
     // Unknown action type — just remove it
     undoStack.pop();
   }
   updateUndoButton();
+  updateRedoButton();
+}
+
+/**
+ * Perform the redo of the last undone action.
+ * Re-applies the action and pushes it back onto the undo stack.
+ */
+function performRedo() {
+  if (redoStack.length === 0) {
+    showToast(t('toasts.redoEmpty'));
+    return;
+  }
+  const action = redoStack.pop();
+
+  if (action.type === 'nodeRestore') {
+    // Redo of "undo nodeCreate" — restore the node and edges
+    nodes.push(deepCopyObj(action.node));
+    for (const edgeCopy of action.edges) {
+      edges.push(deepCopyObj(edgeCopy));
+    }
+    // Push nodeCreate back onto undo (with the node id)
+    pushUndoDirect({ type: 'nodeCreate', nodeId: action.node.id });
+    computeNodeTypes();
+    updateIncompleteEdgeTracker();
+    saveToStorage();
+    scheduleDraw();
+    showToast(t('toasts.redoNodeCreate'));
+
+  } else if (action.type === 'edgeRestore') {
+    // Redo of "undo edgeCreate" — restore the edge
+    edges.push(deepCopyObj(action.edge));
+    pushUndoDirect({ type: 'edgeCreate', edgeId: action.edge.id });
+    computeNodeTypes();
+    updateIncompleteEdgeTracker();
+    saveToStorage();
+    scheduleDraw();
+    showToast(t('toasts.redoEdgeCreate'));
+
+  } else if (action.type === 'nodeMove') {
+    // Redo of "undo nodeMove" — move node to the redo position
+    const node = nodes.find(n => String(n.id) === String(action.nodeId));
+    if (!node) { updateRedoButton(); return; }
+    // Save current pos for undo
+    pushUndoDirect({
+      type: 'nodeMove',
+      nodeId: action.nodeId,
+      oldX: node.x,
+      oldY: node.y,
+      oldSurveyX: node.surveyX,
+      oldSurveyY: node.surveyY,
+    });
+    node.x = action.oldX;
+    node.y = action.oldY;
+    if (action.oldSurveyX !== undefined) node.surveyX = action.oldSurveyX;
+    if (action.oldSurveyY !== undefined) node.surveyY = action.oldSurveyY;
+    updateNodeTimestamp(node);
+    saveToStorage();
+    scheduleDraw();
+    showToast(t('toasts.redoNodeMove'));
+
+  } else if (action.type === 'nodeDelete') {
+    // Redo of "undo nodeDelete" — re-delete the node using same logic
+    const nodeIdStr = String(action.node.id);
+    const node = nodes.find(n => String(n.id) === nodeIdStr);
+    if (!node) { updateRedoButton(); return; }
+
+    // Re-apply the same edge conversions and removals
+    const removedEdgeIds = new Set(action.removedEdges.map(e => e.id));
+    edges = edges.filter(e => !removedEdgeIds.has(e.id));
+
+    for (const conv of action.convertedEdges) {
+      const edge = edges.find(e => e.id === conv.edgeId);
+      if (edge) {
+        if (conv.wasTail) {
+          edge.tailPosition = { x: node.x, y: node.y };
+          edge.tail = null;
+        } else {
+          edge.danglingEndpoint = { x: node.x, y: node.y };
+          edge.head = null;
+        }
+        edge.isDangling = true;
+      }
+    }
+
+    nodes = nodes.filter(n => n !== node);
+    // Push the nodeDelete action back onto undo
+    pushUndoDirect(deepCopyObj(action));
+    if (selectedNode && String(selectedNode.id) === nodeIdStr) {
+      selectedNode = null;
+      selectedEdge = null;
+      renderDetails();
+    }
+    computeNodeTypes();
+    updateIncompleteEdgeTracker();
+    saveToStorage();
+    scheduleDraw();
+    showToast(t('toasts.redoNodeDelete'));
+
+  } else if (action.type === 'edgeDelete') {
+    // Redo of "undo edgeDelete" — re-delete the edge
+    const edgeId = action.edge.id;
+    edges = edges.filter(e => e.id !== edgeId);
+    pushUndoDirect(deepCopyObj(action));
+    if (selectedEdge && selectedEdge.id === edgeId) {
+      selectedEdge = null;
+      selectedNode = null;
+      renderDetails();
+    }
+    computeNodeTypes();
+    updateIncompleteEdgeTracker();
+    saveToStorage();
+    scheduleDraw();
+    showToast(t('toasts.redoEdgeDelete'));
+  }
+
+  updateUndoButton();
+  updateRedoButton();
 }
 
 /**
@@ -5438,21 +5743,7 @@ function renderDetails() {
     // Delete node button listener
     const deleteNodeBtn = container.querySelector('#deleteNodeBtn');
     deleteNodeBtn.addEventListener('click', () => {
-      const hasConnections = edges.some((edge) => String(edge.tail) === String(node.id) || String(edge.head) === String(node.id));
-      if (hasConnections) {
-        const ok = confirm(t('confirms.deleteNodeWithEdges'));
-        if (!ok) return;
-      }
-      // Remove node and associated edges
-      nodes = nodes.filter((n) => n !== node);
-      edges = edges.filter((edge) => String(edge.tail) !== String(node.id) && String(edge.head) !== String(node.id));
-      selectedNode = null;
-      // Recompute types after deletion
-      computeNodeTypes();
-      saveToStorage();
-      scheduleDraw();
-      renderDetails();
-      showToast(t('toasts.nodeDeleted'));
+      deleteNodeShared(node);
     });
 
     // Mark required fields with visual indicators
@@ -5721,16 +6012,7 @@ function renderDetails() {
     }
     const deleteEdgeBtn = container.querySelector('#deleteEdgeBtn');
     deleteEdgeBtn.addEventListener('click', () => {
-      const ok = confirm(t('confirms.deleteEdge'));
-      if (!ok) return;
-      edges = edges.filter((ed) => ed !== edge);
-      selectedEdge = null;
-      // Recompute node types after deletion
-      computeNodeTypes();
-      saveToStorage();
-      scheduleDraw();
-      renderDetails();
-      showToast(t('toasts.edgeDeleted'));
+      deleteEdgeShared(edge);
     });
 
   } else {
@@ -6854,8 +7136,14 @@ if (undoBtn) {
   undoBtn.addEventListener('click', () => {
     performUndo();
   });
-  // Ensure undo button starts disabled (stack is empty at init)
   updateUndoButton();
+}
+// Redo button
+if (redoBtn) {
+  redoBtn.addEventListener('click', () => {
+    performRedo();
+  });
+  updateRedoButton();
 }
 // 3D View button (admin/super_admin only)
 if (threeDViewBtn) {
@@ -8966,6 +9254,17 @@ document.addEventListener('keydown', (e) => {
     return;
   }
 
+  // Ctrl+Shift+Z / Cmd+Shift+Z / Ctrl+Y / Cmd+Y — redo last action
+  if ((e.ctrlKey || e.metaKey) && (
+    (e.key === 'z' && e.shiftKey) ||
+    (e.key === 'y' && !e.shiftKey) ||
+    (e.key === 'Z' && e.shiftKey)
+  )) {
+    e.preventDefault();
+    performRedo();
+    return;
+  }
+
   // Mode toggles
   if (!isTyping && (e.key === 'n' || e.key === 'N')) {
     if (nodeModeBtn && edgeModeBtn) {
@@ -9029,34 +9328,10 @@ document.addEventListener('keydown', (e) => {
   // Delete selection (Delete/Backspace) if not typing in a field
   if (!isTyping && (e.key === 'Delete' || e.key === 'Backspace')) {
     if (selectedNode) {
-      const node = selectedNode;
-      const hasConnections = edges.some((edge) => String(edge.tail) === String(node.id) || String(edge.head) === String(node.id));
-      let proceed = true;
-      if (hasConnections) {
-        proceed = confirm('Delete selected node and its connected edges?');
-      }
-      if (proceed) {
-        nodes = nodes.filter((n) => n !== node);
-        edges = edges.filter((edge) => String(edge.tail) !== String(node.id) && String(edge.head) !== String(node.id));
-        selectedNode = null;
-        computeNodeTypes();
-        saveToStorage();
-        scheduleDraw();
-        renderDetails();
-        showToast(t('toasts.nodeDeleted'));
-      }
+      deleteNodeShared(selectedNode);
       e.preventDefault();
     } else if (selectedEdge) {
-      const ok = confirm(t('confirms.deleteSelectedEdge'));
-      if (ok) {
-        edges = edges.filter((ed) => ed !== selectedEdge);
-        selectedEdge = null;
-        computeNodeTypes();
-        saveToStorage();
-        scheduleDraw();
-        renderDetails();
-        showToast(t('toasts.edgeDeleted'));
-      }
+      deleteEdgeShared(selectedEdge);
       e.preventDefault();
     }
   }
