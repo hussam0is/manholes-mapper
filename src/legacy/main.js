@@ -6889,6 +6889,7 @@ if (exportNodesBtn) {
       alert(t('alerts.noNodesToExport'));
       return;
     }
+    showToast(t('toasts.exporting'));
     const csvContent = 'sep=,\r\n' + exportNodesCsv(nodes, adminConfig, t).replace(/\n/g, '\r\n');
     // Encode as UTF-16LE with BOM for best compatibility with Excel on Windows
     const bytes = encodeUtf16LeWithBom(csvContent);
@@ -6914,6 +6915,7 @@ if (exportEdgesBtn) {
       alert(t('alerts.noEdgesToExport'));
       return;
     }
+    showToast(t('toasts.exporting'));
     const csvContent = 'sep=,\r\n' + exportEdgesCsv(edges, adminConfig, t).replace(/\n/g, '\r\n');
     // Encode as UTF-16LE with BOM for best compatibility with Excel on Windows
     const bytes = encodeUtf16LeWithBom(csvContent);
@@ -6943,6 +6945,7 @@ if (exportSketchBtn) {
       return;
     }
     try {
+      showToast(t('toasts.exporting'));
       const sketchData = {
         nodes: nodes,
         edges: edges,
