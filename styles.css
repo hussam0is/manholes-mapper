@@ -1284,6 +1284,54 @@ select.btn:focus-visible {
   pointer-events: none;
 }
 
+/* ── Long-press context menu ──────────────────────────────────── */
+.canvas-context-menu {
+  position: fixed;
+  z-index: 9999;
+  background: var(--color-surface, #fff);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  min-width: 140px;
+  animation: ctx-menu-in 120ms ease-out;
+}
+
+@keyframes ctx-menu-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.canvas-context-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: none;
+  font-size: 14px;
+  color: var(--color-text, #1e293b);
+  cursor: pointer;
+  text-align: start;
+}
+
+.canvas-context-menu__item:active {
+  background: var(--color-surface-alt, #f1f5f9);
+}
+
+.canvas-context-menu__item .material-icons {
+  font-size: 20px;
+  opacity: 0.7;
+}
+
+.canvas-context-menu__item--danger {
+  color: var(--color-danger, #dc2626);
+}
+
+.canvas-context-menu__item--danger .material-icons {
+  opacity: 1;
+}
+
 /* Canvas zoom buttons */
 .canvas-zoom-btn .material-icons {
   font-size: 20px;

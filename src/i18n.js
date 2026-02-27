@@ -190,6 +190,10 @@ export const i18n = {
     undo: {
       title: 'ביטול פעולה אחרונה',
     },
+    contextMenu: {
+      edit: 'עריכה',
+      delete: 'מחיקה',
+    },
     confirms: {
       newClears: 'התחלת שרטוט חדש תמחק את השרטוט הנוכחי. להמשיך?',
       deleteSketch: 'למחוק שרטוט זה?',
@@ -767,6 +771,10 @@ export const i18n = {
     renamed: 'Renamed',
     undo: {
       title: 'Undo last action',
+    },
+    contextMenu: {
+      edit: 'Edit',
+      delete: 'Delete',
     },
     confirms: {
       newClears: 'Starting a new sketch will clear the current one. Continue?',

@@ -397,6 +397,9 @@ let dragOffset = { x: 0, y: 0 };
 const UNDO_STACK_MAX = 50;
 const undoStack = [];
 let dragStartNodeState = null; // { id, x, y, surveyX, surveyY } captured at drag start
+// Long-press context menu state
+let longPressTimer = null;
+const LONG_PRESS_MS = 600;
 // Current interaction mode: 'node' to create nodes, 'edge' to create edges
 let currentMode = 'node';
 let pendingEdgeTail = null;
@@ -3442,6 +3445,109 @@ function findIncompleteEdges() {
   return edges.filter(edge => edge.isDangling || edge.head === null || edge.tail === null);
 }
 
+// ── Long-Press Context Menu ────────────────────────────────────────────────
+
+/**
+ * Show a context menu near the given screen coordinates for the given node.
+ * Contains "Edit" (opens details panel) and "Delete" actions.
+ */
+function showNodeContextMenu(node, screenX, screenY) {
+  // Remove any existing context menu
+  hideNodeContextMenu();
+
+  const menu = document.createElement('div');
+  menu.className = 'canvas-context-menu';
+  menu.id = 'canvasContextMenu';
+
+  const editBtn = document.createElement('button');
+  editBtn.className = 'canvas-context-menu__item';
+  editBtn.innerHTML = `<span class="material-icons">edit</span><span>${t('contextMenu.edit')}</span>`;
+  editBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    selectedNode = node;
+    selectedEdge = null;
+    __wizardActiveTab = null;
+    renderDetails(); // also opens sidebar when a node is selected
+    scheduleDraw();
+    hideNodeContextMenu();
+  });
+
+  const deleteBtn = document.createElement('button');
+  deleteBtn.className = 'canvas-context-menu__item canvas-context-menu__item--danger';
+  deleteBtn.innerHTML = `<span class="material-icons">delete</span><span>${t('contextMenu.delete')}</span>`;
+  deleteBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    hideNodeContextMenu();
+    const hasConnections = edges.some(
+      (edge) => String(edge.tail) === String(node.id) || String(edge.head) === String(node.id)
+    );
+    if (hasConnections) {
+      if (!confirm(t('confirms.deleteNodeWithEdges'))) return;
+    }
+    nodes = nodes.filter((n) => n !== node);
+    edges = edges.filter(
+      (edge) => String(edge.tail) !== String(node.id) && String(edge.head) !== String(node.id)
+    );
+    if (selectedNode && String(selectedNode.id) === String(node.id)) {
+      selectedNode = null;
+      selectedEdge = null;
+      renderDetails();
+    }
+    computeNodeTypes();
+    updateIncompleteEdgeTracker();
+    saveToStorage();
+    scheduleDraw();
+    showToast(t('toasts.nodeDeleted'));
+  });
+
+  menu.appendChild(editBtn);
+  menu.appendChild(deleteBtn);
+
+  // Position near the tap, clamped to viewport
+  const pad = 8;
+  let left = screenX + canvas.getBoundingClientRect().left;
+  let top = screenY + canvas.getBoundingClientRect().top;
+  document.body.appendChild(menu);
+  // Clamp after appending so we can measure
+  const mw = menu.offsetWidth;
+  const mh = menu.offsetHeight;
+  if (left + mw > window.innerWidth - pad) left = window.innerWidth - mw - pad;
+  if (top + mh > window.innerHeight - pad) top = window.innerHeight - mh - pad;
+  if (left < pad) left = pad;
+  if (top < pad) top = pad;
+  menu.style.left = left + 'px';
+  menu.style.top = top + 'px';
+
+  // Dismiss on next tap anywhere else
+  setTimeout(() => {
+    document.addEventListener('pointerdown', _contextMenuDismiss, { once: true });
+  }, 0);
+}
+
+function _contextMenuDismiss(e) {
+  const menu = document.getElementById('canvasContextMenu');
+  if (menu && !menu.contains(e.target)) {
+    hideNodeContextMenu();
+  } else if (menu) {
+    // Re-add listener if tapped inside menu (buttons handle themselves)
+    document.addEventListener('pointerdown', _contextMenuDismiss, { once: true });
+  }
+}
+
+function hideNodeContextMenu() {
+  const existing = document.getElementById('canvasContextMenu');
+  if (existing) existing.remove();
+  // Clean up global dismiss listener
+  document.removeEventListener('pointerdown', _contextMenuDismiss);
+}
+
+function clearLongPressTimer() {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
+}
+
 // ── Undo Action System ──────────────────────────────────────────────────────
 
 /**
@@ -5971,6 +6077,8 @@ function pointerMove(x, y) {
     if (Math.hypot(dxScreen, dyScreen) > selectedNodeMoveThreshold) {
       pendingDetailsForSelectedNode = false;
       pendingDeselect = false;
+      // Cancel long-press if finger moved too much
+      clearLongPressTimer();
     }
   }
   if (isDragging && selectedNode) {
@@ -6130,6 +6238,7 @@ canvas.addEventListener('touchstart', (e) => {
       // Initialize pinch zoom
       isPinching = true;
       isDragging = false;
+      clearLongPressTimer();
       // Cancel any pending tap-to-add when multi-touch begins
       touchAddPending = false;
       touchAddPoint = null;
@@ -6262,6 +6371,20 @@ canvas.addEventListener('touchstart', (e) => {
           dragStartNodeState = { id: nodeAt.id, oldX: nodeAt.x, oldY: nodeAt.y, oldSurveyX: nodeAt.surveyX, oldSurveyY: nodeAt.surveyY };
           touchAddPending = false;
           touchAddPoint = null;
+          // Start long-press timer for context menu (only in non-read-only mode)
+          clearLongPressTimer();
+          if (!window.__sketchReadOnly) {
+            const lpNode = nodeAt;
+            const lpX = x;
+            const lpY = y;
+            longPressTimer = setTimeout(() => {
+              longPressTimer = null;
+              // Cancel drag so the node doesn't move
+              isDragging = false;
+              pendingDetailsForSelectedNode = false;
+              showNodeContextMenu(lpNode, lpX, lpY);
+            }, LONG_PRESS_MS);
+          }
           // Defer opening details until release if no drag movement occurred
           lastPointerType = 'touch';
           pendingDetailsForSelectedNode = true;
@@ -6344,6 +6467,7 @@ canvas.addEventListener('touchmove', (e) => {
 });
 canvas.addEventListener('touchend', (e) => {
   commitIdInputIfFocused();
+  clearLongPressTimer();
   e.preventDefault();
   if (e.touches.length < 2) {
     isPinching = false;
@@ -6392,6 +6516,7 @@ canvas.addEventListener('touchend', (e) => {
 });
 canvas.addEventListener('touchcancel', (e) => {
   commitIdInputIfFocused();
+  clearLongPressTimer();
   e.preventDefault();
   isPinching = false;
   pinchStartDistance = null;
