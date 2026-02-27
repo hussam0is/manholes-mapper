@@ -7,7 +7,7 @@ import { wgs84ToItm } from '../map/govmap-layer.js';
 
 // Marker colors based on fix quality
 const FIX_COLORS = {
-  0: '#ef4444', // No fix - red
+  0: '#6b7280', // No fix - gray (neutral; red only appropriate for error states)
   1: '#f59e0b', // GPS - amber
   2: '#f59e0b', // DGPS - amber
   3: '#f59e0b', // PPS - amber
