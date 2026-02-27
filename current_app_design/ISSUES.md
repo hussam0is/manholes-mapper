@@ -17,9 +17,9 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 |----------|-------|-------|------|
 | CRITICAL | 1 | 0 | 1 (not app bug) |
 | HIGH | 12 | 10 | 2 (already ok) |
-| MEDIUM | 25 | 9 | 16 |
+| MEDIUM | 25 | 15 | 10 |
 | LOW | 18 | 2 | 16 (1 deferred) |
-| **TOTAL** | **56** | **21** | **35** |
+| **TOTAL** | **56** | **27** | **29** |
 
 ---
 
@@ -108,18 +108,18 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Type**: design
 - **Screenshot**: 01_project_canvas_sketch_panel.png, 12_project_canvas_sketch_list_panel.png
 - **Problem**: All issue badges on sketch rows show the same red warning style regardless of severity (e.g., 99 issues vs 164 issues are visually identical). High-issue-count sketches should be more visually distinct.
-- **Fix**: Color-code badges: > 100 issues = red, 50-100 = orange, < 50 = yellow. Or add a tooltip showing issue breakdown by type.
-- **Status**: OPEN
-- **Commit**: —
+- **Fix**: Color-coded severity CSS classes: >100 red, 50-100 orange, <50 yellow. Applied in sketch-side-panel.js and styles.css.
+- **Status**: FIXED
+- **Commit**: `6b4c0a4`
 
 ### Issue #9 — Edge Labels Overlap Badly at High Density
 - **Severity**: MEDIUM
 - **Type**: performance/ux
 - **Screenshot**: 13_canvas_with_sketch_loaded_network_visible.png
 - **Problem**: When zoomed out to overview level, edge length labels (e.g., "3.5m", "5.36m", "7.00m") overlap each other in dense areas, making them completely unreadable. The canvas has dozens of overlapping text strings.
-- **Fix**: Hide edge labels below a certain zoom threshold (e.g., `viewScale < 0.3`). Already partially tracked in `label-collision.js` — ensure it's properly applied to edge labels. Consider adding a "labels on/off" toggle.
-- **Status**: OPEN
-- **Commit**: —
+- **Fix**: Edge labels are now hidden when viewScale < 0.3 (heavily zoomed out). Labels reappear on zoom in. Guard wraps the entire edge label loop in main.js draw().
+- **Status**: FIXED
+- **Commit**: `b3f712c`
 
 ### Issue #10 — Admin Panel Shows Raw Field Names (id, type, note)
 - **Severity**: MEDIUM
@@ -144,9 +144,9 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Type**: ux
 - **Screenshot**: 10_menu_survey_workday_settings_admin.png
 - **Problem**: "Admin Settings" and "Project Management" links in the menu have no visual indicator that they require elevated permissions. A regular user who sees these items and taps them will get an access denied error with no explanation.
-- **Fix**: Either (a) hide admin links from non-admin users in the menu, or (b) add a lock icon and tooltip "Admin only" next to them. Preferred: hide them since they're already role-gated in the API.
-- **Status**: OPEN
-- **Commit**: —
+- **Fix**: Admin Settings and Project Management buttons are now hidden for non-admin users. Visibility updates on auth state change and when permissions are fetched asynchronously via `onPermissionChange` listener.
+- **Status**: FIXED
+- **Commit**: `99f40cf`
 
 ### Issue #13 — Menu Very Long / No Quick Jump to Sections
 - **Severity**: MEDIUM
@@ -206,9 +206,9 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Type**: design
 - **Screenshot**: 21_canvas_clean_network_overview.png, 22_canvas_toolbar_gps_active_red.png
 - **Problem**: The GNSS info box shows "No Fix +/-120.6m", HDOP, elevation, and raw ITM coordinates at identical font size/weight with a red border. Field workers glancing down need fix quality at a glance, not four lines of technical data. Red border on a plain state implies error.
-- **Fix**: (1) Make fix quality status larger/bolder with color-coded badge. (2) Collapse detail lines behind expandable tap. (3) Use gray background for "No Fix" state, not red border.
-- **Status**: OPEN
-- **Commit**: —
+- **Fix**: Fix quality label now renders at 13px bold (up from 11px) for at-a-glance readability. When quality is 0 (No Fix), HDOP/altitude/ITM detail lines are collapsed since they are meaningless.
+- **Status**: FIXED
+- **Commit**: `5484aa6`
 
 ### Issue #19 — GNSS Accuracy Circle Enormous When No Fix — Dominates Canvas
 - **Severity**: MEDIUM
@@ -224,9 +224,9 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Type**: ux/i18n
 - **Screenshot**: 23_canvas_node_mode_active_toolbar_highlight.png
 - **Problem**: Yellow "STALE" badge near GNSS marker has no tooltip or legend. The word is English-only — not translated to Hebrew, breaking RTL/i18n contract.
-- **Fix**: (1) Add "STALE" to i18n with Hebrew translation ("ישן" / "לא עדכני"). (2) Add subtitle "Position outdated" / "מיקום לא עדכני". (3) Add STALE to GNSS legend.
-- **Status**: OPEN
-- **Commit**: —
+- **Fix**: Added `gnssMarker.stale`, `gnssMarker.signalStale`, and all fix quality labels to i18n (he/en). Stale badge now shows "לא עדכני" in Hebrew. Precision card and status badge use window.t() for all text.
+- **Status**: FIXED
+- **Commit**: `ecbb219`
 
 ### Issue #21 — Mode-Change Toast Overlaps Legend Bar
 - **Severity**: LOW
@@ -368,9 +368,9 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Type**: design/performance
 - **Screenshot**: 32_canvas_full_network_zoomed_in.png, 34_canvas_after_cancel_dialog.png
 - **Problem**: When GovMap tiles are visible, Hebrew street names from map tiles compete with app's own node numbers and edge length labels. Dense overlap makes network nearly unreadable.
-- **Fix**: (1) Add semi-transparent white background (text halo) behind edge/node labels. (2) Increase font weight of labels when map tiles are visible. (3) Consider offering simplified tile layer without street labels.
-- **Status**: OPEN
-- **Commit**: —
+- **Fix**: Node ID labels now render with a white stroke halo (rgba(255,255,255,0.92)) and bold font when map tiles are active. Applied only when `mapLayerEnabled && getMapReferencePoint()` is truthy, so no impact without map tiles.
+- **Status**: FIXED
+- **Commit**: `c0e6ff6`
 
 ---
 
@@ -590,6 +590,14 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Fixed**: #29, #40, #39, #22, #6, #46, #48, #43, #45(improved), #44(improved)
 - **Deferred**: #47 (DB migration required)
 
+### Iteration 5 Report (2026-02-27)
+- **Batch**: MEDIUM priority open issues
+- **Issues Fixed**: 6 (Issues #8, #9, #12, #18, #20, #36)
+- **Commits**: 6b4c0a4, b3f712c, ecbb219, 99f40cf, c0e6ff6, 5484aa6
+- **SW**: Bumped to v45 (47684cc)
+- **Tests**: All 490 tests passing.
+- **Status**: Deployed to dev branch.
+
 ---
 
 ## Changelog
@@ -607,3 +615,4 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 | 2026-02-27 | Iteration 3 tested | All 5 fixes verified passing (5/5). Tested against local dev server. All 490 unit tests pass. |
 | 2026-02-27 | Iteration 4 fixes | Issues #6, #22, #29, #39, #40, #43, #46, #48 fixed. Improved #44, #45. Deferred #47. SW v44. |
 | 2026-02-27 | Iteration 4 deployed | Deployed to dev branch. 9 commits: b16f825, b15c7ae, 75708fc, de8eb28, 9d08c32, 7a41094, a478d3e, d81ac10, f19da24 |
+| 2026-02-27 | Iteration 5 fixes | Issues #8, #9, #12, #18, #20, #36 fixed. SW v45. Commits: 6b4c0a4, b3f712c, ecbb219, 99f40cf, c0e6ff6, 5484aa6, 47684cc |
