@@ -1643,7 +1643,8 @@ function normalizeLegacySketch(nodes, edges) {
       node.coverDiameter = '';
       node.access = '';
       node.nodeEngineeringStatus = '';
-      node.maintenanceStatus = '';
+      // maintenanceStatus is editable for Home — initialize if missing
+      if (node.maintenanceStatus === undefined) node.maintenanceStatus = 0;
       if (node.directConnection === undefined) node.directConnection = false;
     }
     if (node.nodeType === 'Drainage') {
@@ -1651,7 +1652,8 @@ function normalizeLegacySketch(nodes, edges) {
       node.coverDiameter = '';
       node.access = '';
       node.nodeEngineeringStatus = '';
-      node.maintenanceStatus = '';
+      // maintenanceStatus is editable for Drainage via wizard — initialize if missing
+      if (node.maintenanceStatus === undefined) node.maintenanceStatus = 0;
     }
 
     // --- coverDiameter ---
@@ -4662,16 +4664,26 @@ function renderDetails() {
     if (node.nodeType === 'Home') {
       const dcText = t('labels.directConnection');
       container.innerHTML = `
-        <div class="field">
-          <label for="idInput">${t('labels.nodeId')}</label>
-          <input id="idInput" type="text" value="${escapeHtml(node.id)}" dir="auto" />
+        <div class="details-section">
+          <div class="field">
+            <label for="idInput">${t('labels.nodeId')}</label>
+            <input id="idInput" type="text" value="${escapeHtml(node.id)}" dir="auto" />
+          </div>
         </div>
-        <div class="field">
-          <label for="noteInput">${t('labels.note')}</label>
-          <textarea id="noteInput" rows="3" placeholder="${t('labels.notePlaceholder')}" dir="auto">${escapeHtml(node.note || '')}</textarea>
+        <div class="details-section">
+          <div class="field">
+            <label><input id="directConnectionToggle" type="checkbox" ${node.directConnection ? 'checked' : ''}/> ${dcText}</label>
+          </div>
+          <div class="field">
+            <label for="homeMaintenanceStatusSelect">${t('labels.maintenanceStatus')}</label>
+            <select id="homeMaintenanceStatusSelect">${maintenanceStatusOptions}</select>
+          </div>
         </div>
-        <div class="field">
-          <label><input id="directConnectionToggle" type="checkbox" ${node.directConnection ? 'checked' : ''}/> ${dcText}</label>
+        <div class="details-section">
+          <div class="field">
+            <label for="noteInput">${t('labels.note')}</label>
+            <textarea id="noteInput" rows="3" placeholder="${t('labels.notePlaceholder')}" dir="auto">${escapeHtml(node.note || '')}</textarea>
+          </div>
         </div>
       `;
     } else {
@@ -5060,6 +5072,18 @@ function renderDetails() {
         saveToStorage();
         scheduleDraw();
         renderDetails();
+      });
+    }
+    // Maintenance status for Home nodes
+    const homeMaintSelect = container.querySelector('#homeMaintenanceStatusSelect');
+    if (homeMaintSelect) {
+      homeMaintSelect.addEventListener('change', (e) => {
+        const num = Number(e.target.value);
+        node.maintenanceStatus = Number.isFinite(num) ? num : 0;
+        trackFieldUsage('nodes', 'maintenance_status', node.maintenanceStatus);
+        updateNodeTimestamp(node);
+        saveToStorage();
+        scheduleDraw();
       });
     }
 
