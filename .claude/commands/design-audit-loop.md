@@ -127,6 +127,16 @@ App URL: [URL]
 Login: admin@geopoint.me / Geopoint2026!
 Output folder: [ABSOLUTE_PATH_TO_app_state_YYYY-MM-DD]/
 
+## CRITICAL: Read the UI Reference FIRST
+
+Before navigating, read the complete UI reference file:
+```
+Read .claude/app-ui-reference.md
+```
+This file contains EVERY element ID, button, panel, menu item, dialog, canvas tool, map layer,
+keyboard shortcut, and i18n key in the app. Use it to know exactly what to screenshot and where
+to find each UI element.
+
 ## APP CONTEXT (read this before navigating)
 
 Manholes Mapper is a Hebrew-first (RTL) PWA for field workers who draw manhole/pipe networks
@@ -140,16 +150,25 @@ on an HTML5 Canvas. Key things to know:
 - `#/admin` → Admin panel (tabs: Users, Organizations, Features)
 - `#/project/:id` → Project canvas mode (multi-sketch view with side panel)
 
-**UI Structure:**
-- **Header** (#appHeader): brand logo left, sketch name center, hamburger menu right (in RTL: hamburger LEFT at ~109px, in LTR: RIGHT at ~970px)
-- **Canvas** (#graphCanvas): Full-screen HTML5 Canvas, nodes=circles with icons, edges=lines with length labels
-- **Right toolbar** (#modeGroup): Node mode (#nodeModeBtn), Edge mode (#edgeModeBtn), My Location (#myLocationBtn), zoom +/- buttons
-- **FAB** (#fab): Bottom-right floating action button with speed dial (undo, layers, etc.)
-- **Bottom drawer**: Appears when selecting a node/edge — shows details panel with fields, survey data, delete button
-- **Mobile menu** (#mobileMenu): Slides from right (LTR) or left (RTL), has Live Measure toggle, language switch, survey device section
-- **Home panel** (#homePanel): Full-screen overlay with gradient header, sketch cards, "New Sketch"/"New Sketch in Project" buttons
-- **Admin panel** (#adminModal): Tabbed interface — Users/Orgs/Features tabs with `.admin-modern-tabs`
-- **Layers panel**: Floating card with toggle list for map layers (GovMap, ArcGIS, reference layers)
+**UI Structure (see `.claude/app-ui-reference.md` for full element inventory):**
+- **Header** (#appHeader): brand logo, sketch name (#sketchNameDisplay), sync indicator (#headerSyncIndicator), hamburger menu (#mobileMenuBtn, in RTL: LEFT side, in LTR: RIGHT side)
+- **Desktop actions**: New Sketch (#newSketchBtn), Save (#saveBtn), Autosave (#autosaveToggle), Search (#searchNodeInput), Size controls (#sizeDecreaseBtn/#sizeIncreaseBtn/#autoSizeBtn)
+- **Command menu** (#exportMenuBtn → #exportDropdown): Sketch export/import, CSV export, Workday, Location & Coordinates (scale/stretch controls), GNSS/Live Measure, Map layers, Reference layers
+- **Canvas** (#graphCanvas): Full-screen HTML5 Canvas, nodes=circles with icons (Manhole/Home/Drainage), edges=colored lines with length labels, edge legend (#edgeLegend)
+- **Canvas toolbar** (#modeGroup, bottom-left): My Location (#myLocationBtn), Node mode (#nodeModeBtn), Home Node (#homeNodeModeBtn), Drainage (#drainageNodeModeBtn), Edge mode (#edgeModeBtn), Undo (#undoBtn), Zoom +/- (#canvasZoomInBtn/#canvasZoomOutBtn), 3D View (#threeDViewBtn)
+- **FAB speed dial** (#canvasFabToggle, bottom-right): Incomplete edge tracker (#incompleteEdgeTracker), Recenter density (#recenterDensityBtn), Recenter sketch (#recenterBtn), Zoom to fit (#zoomToFitBtn)
+- **GPS Quick Capture** (#gpsQuickCaptureBtn): Floating capture button, visible when location tracking active, pulses for RTK
+- **Bottom drawer** (#sidebar): Resizable via drag handle, shows node/edge details panel with wizard tabs (accuracy, maintenance, material, diameter, access, note), survey data section, connected lines section, delete button
+- **Node panel wizard tabs**: accuracy_level (gps_fixed), maintenance_status (build), material (layers), cover_diameter (circle), access (stairs), note (notes) — each shows one field at a time, visibility depends on maintenance status
+- **Edge panel**: type select, engineering status, material, diameter, fall depth/position, measurements, delete
+- **Mobile menu** (#mobileMenu): Slides from LEFT (RTL) or RIGHT (LTR), mirrors desktop: navigation, search, view controls, sketch ops, CSV export, location/coordinates, map layers, GNSS, survey device (Bluetooth/WebSocket), workday, settings (autosave, language, help, admin, projects)
+- **Home panel** (#homePanel): Full-screen overlay with sync status bar, personal/organization tabs, sketch list, "New Sketch" button
+- **Admin screen** (#adminScreen): Settings (Nodes/Edges tabs with CSV fields, defaults, options, custom fields), User/Org management (Users/Organizations/Features tabs), Input Flow Settings (#inputFlowScreen with conditional rules)
+- **Projects screen** (#projectsScreen): Project cards list, "Add Project" button
+- **Project canvas**: Sketch side panel (#sketchSidePanel) with sketch list, visibility toggles, stats (km, issues), issue navigation
+- **Layers**: GovMap tiles (orthophoto/street), reference GeoJSON layers (sections, survey_manholes, survey_pipes, streets, addresses), Street View pegman
+- **Floating keyboard** (#floatingKeyboard): Draggable numeric keypad for mobile
+- **Dialogs**: Login (#loginPanel), Start/New Sketch (#startPanel), Help (#helpModal), Finish Workday (#finishWorkdayModal), Point Capture (#pointCaptureDialog), Device Picker, Survey Node Type
 
 **Design system:**
 - CSS custom properties: `--color-primary: #2563eb`, `--color-success: #22c55e`, `--color-danger: #ef4444`, `--color-accent: #a855f7`, `--color-bg: #f8fafc`, `--color-surface: #ffffff`, `--color-text: #0f172a`
@@ -280,14 +299,19 @@ Manholes Mapper is a Hebrew-first (RTL) PWA for field workers who draw manhole/p
 - RTL layout (Hebrew default), hash-based SPA routing
 
 ## Key UI Sections (what you'll see in the video)
-- Login panel: gradient header, React auth form
-- Home panel: sketch cards, project cards, 'New Sketch' CTA
-- Canvas: full-screen drawing surface with right-side toolbar (Node/Edge/Location/Zoom buttons)
-- FAB: bottom-right floating action button (undo, layers)
-- Bottom drawer: appears on node/edge selection with detail fields
-- Mobile menu: slides from side, has Live Measure toggle, language switch
-- Admin panel: tabbed (Users/Orgs/Features)
-- Projects page: project cards with sketch side panel
+- **Login panel** (#loginPanel): gradient header, React auth form (email/password), sign-in/sign-up toggle
+- **Home panel** (#homePanel): sync status bar, personal/organization tabs, sketch cards, 'New Sketch' CTA button
+- **Canvas** (#graphCanvas): full-screen drawing surface with nodes (Manhole/Home/Drainage icons), edges (colored by type: Main=blue, Drainage=cyan, Secondary=orange), edge length labels, edge legend
+- **Canvas toolbar** (#modeGroup, bottom-left): My Location, Node/Home/Drainage/Edge mode buttons, Undo, Zoom +/-, 3D View
+- **FAB speed dial** (#canvasFabToggle, bottom-right): Incomplete edge tracker, Recenter density, Recenter sketch, Zoom to fit
+- **GPS Quick Capture** (#gpsQuickCaptureBtn): floating capture button, visible when location tracking active
+- **Bottom drawer** (#sidebar): resizable via drag handle, shows node details (wizard tabs: accuracy/maintenance/material/diameter/access/note), survey data section, connected lines with measurements, delete button. For edges: type/material/diameter/measurements/delete
+- **Mobile menu** (#mobileMenu): slides from LEFT (RTL) or RIGHT (LTR), has sections: Navigation, Search, View Controls, Sketch ops, CSV Export, Location/Coordinates (scale/stretch), Map Layers, GNSS/Live Measure, Survey Device (Bluetooth/WebSocket), Workday, Settings (autosave/language/help/admin/projects)
+- **Admin screen** (#adminScreen): Settings tabs (Nodes/Edges with CSV fields, defaults, options, custom fields), User/Org management (Users/Organizations/Features tabs), Input Flow Settings
+- **Projects screen** (#projectsScreen): project cards, "Add Project" button
+- **Project canvas**: sketch side panel with list, visibility toggles, stats (km, issues), issue navigation
+- **Floating keyboard** (#floatingKeyboard): draggable numeric keypad for mobile field workers
+- **Dialogs**: Start/New Sketch, Help/Shortcuts, Finish Workday (dangling edge resolution), Point Capture (GNSS), Device Picker (Bluetooth), Survey Node Type
 
 ## Analyze the video and produce a structured report:
 
@@ -464,6 +488,16 @@ Include this full context in the prompt:
 ```
 Task: Fix the following prioritized UI/UX issues in the Manholes Mapper app.
 
+## CRITICAL: Read the UI Reference FIRST
+
+Before making ANY changes, read the complete UI reference file:
+```
+Read .claude/app-ui-reference.md
+```
+This file contains EVERY element ID, button, panel, menu item, dialog, canvas tool, map layer,
+keyboard shortcut, and i18n key in the app. Use it to understand what each element does, its
+ID, its i18n key, and where it's defined. This prevents you from breaking other UI elements.
+
 ## APP ARCHITECTURE (read before making changes)
 
 Manholes Mapper is a vanilla JS + HTML5 Canvas PWA. Key things to know:
@@ -542,6 +576,16 @@ You are a **design verification tester** for the Manholes Mapper app. Your job i
 that specific UI/UX fixes are visually correct across different states. This is NOT functional
 QA — you're checking that things LOOK right.
 
+## CRITICAL: Read the UI Reference FIRST
+
+Before verifying ANY fixes, read the complete UI reference file:
+```
+Read .claude/app-ui-reference.md
+```
+This file contains EVERY element ID, button, panel, menu item, dialog, canvas tool, map layer,
+keyboard shortcut, and i18n key in the app. Use it to know exactly which elements to verify,
+their IDs for querying via Playwright, and what the expected visual states should be.
+
 ## CRITICAL: Browser Rules
 - Use Playwright MCP tools (browser_navigate, browser_snapshot, browser_take_screenshot, etc.)
 - NEVER run `taskkill`, `pkill`, or kill Chrome/Chromium processes — this destroys shared browser state
@@ -619,6 +663,16 @@ Pass this design-focused prompt as the skill argument:
 ```
 You are verifying DESIGN FIXES on the physical phone. This is a visual check, not
 functional QA. For each fix below, take ADB screenshots and evaluate the visual result.
+
+## CRITICAL: Read the UI Reference FIRST
+
+Before verifying anything on the phone, read the complete UI reference file:
+```
+Read .claude/app-ui-reference.md
+```
+This file contains EVERY element ID, button, panel, menu item, dialog, canvas tool, map layer,
+keyboard shortcut, and i18n key in the app. Use it to understand which UI elements exist on
+each screen, their positions, and expected behavior on mobile.
 
 ## DESIGN CRITERIA FOR PHONE VERIFICATION
 
@@ -723,16 +777,23 @@ After each full iteration:
 
 ## Audit Quick Reference — Manholes Mapper UI Sections
 
+**Full UI reference**: `.claude/app-ui-reference.md` — contains every element ID, i18n key, and behavior.
+
 | Screen | Key Elements to Check |
 |--------|----------------------|
-| Canvas main | Toolbar buttons (right side), FAB (bottom-right), Measure button (bottom-left), legend (top) |
-| Hamburger menu | Header/avatar, section headers, scroll behavior, item spacing |
-| Sketch side panel | Width on mobile, row layout, issue badges, navigate/eye buttons |
-| Node panel | Bottom drawer, survey data section, delete button placement |
-| Edge panel | Similar to node panel |
-| Home panel | Project cards, sketch list, CTA buttons |
-| Admin panel | Tab bar, field list, toggle switches, save button |
-| Layers panel | Floating card positioning, toggle list |
+| **Canvas main** | Canvas toolbar (#modeGroup, bottom-left: My Location, Node/Home/Drainage/Edge mode, Undo, Zoom +/-, 3D View), FAB speed dial (#canvasFabToggle, bottom-right: Incomplete edges, Recenter, Zoom to fit), GPS Quick Capture (#gpsQuickCaptureBtn), Edge legend (#edgeLegend), Survey badge (#surveyConnectionBadge) |
+| **Hamburger menu** (#mobileMenu) | Header/avatar, 9 collapsible groups: Navigation (Home, New Sketch), Search, View Controls (zoom, size), Sketch (save, export/import), CSV Export (nodes, edges), Location (coordinates, scale/stretch), Map Layers (tiles, ref layers), GNSS (Live Measure, status), Survey Device (Bluetooth/WebSocket), Workday, Settings (autosave, language, help, admin, projects) |
+| **Node panel** (bottom drawer) | Wizard tab interface (accuracy→maintenance→material→diameter→access→note), survey data section (X/Y/elevation/precision/fix type), connected lines section (per-edge measurements/type/material/diameter/fall), delete button |
+| **Edge panel** (bottom drawer) | Type select, engineering status, material, diameter, fall depth/position, tail/head measurements, target note, delete button |
+| **Home panel** (#homePanel) | Sync status bar, Personal/Organization tabs, sketch cards list, "New Sketch" footer button |
+| **Admin settings** (#adminScreen) | Nodes/Edges tabs with: CSV field checkboxes, default values, dropdown option management, custom fields |
+| **Admin panel** (user/org mgmt) | Users tab (name, email, role badge, org, edit), Organizations tab (super_admin only), Features tab (6 feature flags: export_csv, export_sketch, admin_settings, finish_workday, node_types, edge_types) |
+| **Projects screen** (#projectsScreen) | Project cards, "Add Project" button |
+| **Project canvas** | Sketch side panel (#sketchSidePanel: list, visibility toggles, km stats, issues sub-panel with go-to/center-between navigation) |
+| **Input Flow** (#inputFlowScreen) | Nodes/Edges tabs, rule list, per-rule: trigger condition (field+operator+value), actions (nullify/disable/require/reset/fill) |
+| **Dialogs** | Login (#loginPanel), Start/New Sketch (#startPanel), Help (#helpModal), Finish Workday (#finishWorkdayModal), Point Capture (GNSS), Device Picker (Bluetooth), Survey Node Type |
+| **Map layers** | GovMap tiles (orthophoto/street), reference GeoJSON layers (sections, survey_manholes, survey_pipes, streets, addresses), Street View pegman |
+| **Floating keyboard** (#floatingKeyboard) | Draggable/resizable numeric keypad for mobile |
 
 ---
 
