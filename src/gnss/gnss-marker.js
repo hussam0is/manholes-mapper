@@ -101,14 +101,17 @@ export function drawGnssMarker(ctx, position, referencePoint, coordinateScale, v
   const markerColor = FIX_COLORS[fixQuality] || FIX_COLORS[0];
 
   // --- 1. Accuracy circle with gradient fill and animated border ---
+  // Skip accuracy circle when there is no fix (quality 0) — a circle is meaningless
   const accuracyMeters = position.accuracy || (position.hdop ? position.hdop * 3 : 0);
-  if (accuracyMeters > 0) {
+  if (fixQuality > 0 && accuracyMeters > 0) {
     const baseRadius = accuracyMeters * coordinateScale * viewScale;
+    // Cap maximum screen radius to prevent enormous circles
+    const MAX_SCREEN_RADIUS_PX = 150;
 
-    if (baseRadius > 5 && baseRadius < 500) {
+    if (baseRadius > 5) {
       // Subtle breathing effect on the circle
       const breathFactor = 1 + Math.sin(pulsePhase) * 0.02;
-      const radius = baseRadius * breathFactor * ease;
+      const radius = Math.min(baseRadius * breathFactor * ease, MAX_SCREEN_RADIUS_PX);
 
       // Radial gradient fill — fades from center to edge
       const gradient = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, radius);
