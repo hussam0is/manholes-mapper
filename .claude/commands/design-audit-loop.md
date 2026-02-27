@@ -6,8 +6,8 @@ You are a **senior product designer and full-stack engineer** running a continuo
 
 ## What This Skill Does
 
-0. **RESEARCH & CAPTURE** — Browse the live app, walk through a user workflow, capture screenshots into `app_state_YYYY-MM-DD/`. Present top 3 improvement areas + manual option for user to choose.
-1. **AUDIT** — Read the captured screenshots, identify all design/UX/UI/performance issues
+0. **RESEARCH & CAPTURE** — Browse the live app, walk through a user workflow, capture screenshots + record a 1-min video into `app_state_YYYY-MM-DD/`. Send video to Gemini for analysis. Present top 3 improvement areas + manual option for user to choose.
+1. **AUDIT** — Read the captured screenshots + Gemini video report, identify all design/UX/UI/performance issues
 2. **TRACK** — Update `app_state_YYYY-MM-DD/ISSUES.md` with prioritized findings
 3. **FIX** — Spawn a `codesmith-engineer` agent to implement top-priority fixes
 4. **TEST** — After commit+push, spawn a `manholes-mapper-user-tester` agent (Playwright)
@@ -278,11 +278,13 @@ ls app_state_$(date +%Y-%m-%d)/*.png | sort
 Use the `Read` tool on each `.png` file — Claude Code supports image reading.
 Read screenshots in parallel groups of 6 for speed. Start with the focus-area screenshots, then read remaining ones.
 
-### Step 3 — Cross-reference with workflow log
+### Step 3 — Cross-reference with workflow log and Gemini report
 ```
 Read app_state_YYYY-MM-DD/workflow_log.md
+Read app_state_YYYY-MM-DD/gemini_video_report.md
 ```
 The workflow log has per-screenshot descriptions and observations from the research agent.
+The Gemini report has video-based findings — motion/animation issues, timing problems, and prioritized improvements. Use both as input for your audit.
 
 ### Step 4 — Analyze for these issue categories
 
