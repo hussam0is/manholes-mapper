@@ -280,6 +280,8 @@ const mobileHomeBtn = document.getElementById('mobileHomeBtn');
 const mobileNewSketchBtn = document.getElementById('mobileNewSketchBtn');
 const mobileZoomInBtn = document.getElementById('mobileZoomInBtn');
 const mobileZoomOutBtn = document.getElementById('mobileZoomOutBtn');
+const canvasZoomInBtn = document.getElementById('canvasZoomInBtn');
+const canvasZoomOutBtn = document.getElementById('canvasZoomOutBtn');
 const mobileSizeIncreaseBtn = document.getElementById('mobileSizeIncreaseBtn');
 const mobileSizeDecreaseBtn = document.getElementById('mobileSizeDecreaseBtn');
 const mobileAutoSizeBtn = document.getElementById('mobileAutoSizeBtn');
@@ -7146,6 +7148,17 @@ if (mobileZoomInBtn) {
 if (mobileZoomOutBtn) {
   mobileZoomOutBtn.addEventListener('click', () => {
     closeMobileMenu();
+    setZoom(viewScale / SCALE_STEP);
+  });
+}
+// Canvas toolbar zoom buttons (always visible, no pinch-zoom needed)
+if (canvasZoomInBtn) {
+  canvasZoomInBtn.addEventListener('click', () => {
+    setZoom(viewScale * SCALE_STEP);
+  });
+}
+if (canvasZoomOutBtn) {
+  canvasZoomOutBtn.addEventListener('click', () => {
     setZoom(viewScale / SCALE_STEP);
   });
 }

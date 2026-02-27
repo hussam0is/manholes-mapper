@@ -1284,6 +1284,11 @@ select.btn:focus-visible {
   pointer-events: none;
 }
 
+/* Canvas zoom buttons */
+.canvas-zoom-btn .material-icons {
+  font-size: 20px;
+}
+
 /* My Location button */
 .my-location-btn {
   transition: all 0.2s ease;
