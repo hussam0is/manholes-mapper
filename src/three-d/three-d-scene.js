@@ -74,6 +74,57 @@ function getNodeDepth(nodeId, edges) {
   return { depth: maxDepth + 0.3, isEstimated: false };
 }
 
+// ── House model builder ──────────────────────────────────────────────────────
+
+/**
+ * Build a transparent 3D house model for Home-type nodes.
+ * Dimensions: 3m front x 4m deep x 2.5m wall height + pitched roof.
+ */
+function buildHouseModel(THREE, group, pos, nodeId, isEstimated, materials, CSS2DObject) {
+  const WIDTH = 3;        // front face width (m)
+  const DEPTH = 4;        // side depth (m)
+  const WALL_H = 2.5;     // wall height (m)
+  const ROOF_H = 1.2;     // roof peak above walls (m)
+
+  const wallMat = isEstimated ? materials.estimated(materials.houseWall) : materials.houseWall;
+  const roofMat = isEstimated ? materials.estimated(materials.houseRoof) : materials.houseRoof;
+
+  // Box body (walls)
+  const bodyGeo = new THREE.BoxGeometry(WIDTH, WALL_H, DEPTH);
+  const body = new THREE.Mesh(bodyGeo, wallMat);
+  body.position.set(pos.x, pos.y + WALL_H / 2, pos.z);
+  body.userData = { type: 'node', nodeId };
+  group.add(body);
+
+  // Pitched roof using extruded triangle (ridge along Z / depth direction)
+  const roofShape = new THREE.Shape();
+  roofShape.moveTo(-WIDTH / 2 - 0.15, 0);
+  roofShape.lineTo(0, ROOF_H);
+  roofShape.lineTo(WIDTH / 2 + 0.15, 0);
+  roofShape.closePath();
+
+  const roofGeo = new THREE.ExtrudeGeometry(roofShape, {
+    depth: DEPTH + 0.3,
+    bevelEnabled: false,
+  });
+
+  const roof = new THREE.Mesh(roofGeo, roofMat);
+  // Position roof at wall top, centered along depth
+  roof.position.set(pos.x, pos.y + WALL_H, pos.z - (DEPTH + 0.3) / 2);
+  roof.userData = { type: 'node', nodeId };
+  group.add(roof);
+
+  // CSS2D Label above the roof
+  if (CSS2DObject) {
+    const labelDiv = document.createElement('div');
+    labelDiv.className = 'three-d-label';
+    labelDiv.textContent = nodeId;
+    const label = new CSS2DObject(labelDiv);
+    label.position.set(pos.x, pos.y + WALL_H + ROOF_H + 0.4, pos.z);
+    group.add(label);
+  }
+}
+
 // ── Main builder ────────────────────────────────────────────────────────────
 
 /**
@@ -169,65 +220,71 @@ export function buildScene(THREE, data, CSS2DObject, issues = []) {
     const pos = positions3D.get(id);
     if (!pos) continue;
 
-    const coverDiameterM = parseNum(node.coverDiameter, DEFAULT_COVER_DIAMETER_CM) / 100;
-    const outerRadius = coverDiameterM / 2;
-    const innerRadius = outerRadius - SHAFT_WALL_THICKNESS;
-    const depth = pos.depth;
-    const isEstimated = pos.isEstimated;
+    if (node.nodeType === 'Home') {
+      // ── House model ──
+      buildHouseModel(THREE, manholeGroup, pos, id, pos.isEstimated, materials, CSS2DObject);
+    } else {
+      // ── Manhole cylinder ──
+      const coverDiameterM = parseNum(node.coverDiameter, DEFAULT_COVER_DIAMETER_CM) / 100;
+      const outerRadius = coverDiameterM / 2;
+      const innerRadius = outerRadius - SHAFT_WALL_THICKNESS;
+      const depth = pos.depth;
+      const isEstimated = pos.isEstimated;
 
-    // Shaft (outer cylinder wall)
-    const shaftGeo = new THREE.CylinderGeometry(
-      outerRadius, outerRadius, depth, MANHOLE_SEGMENTS, 1, true
-    );
-    const wallMat = isEstimated ? materials.estimated(materials.manholeWall) : materials.manholeWall;
-    const shaft = new THREE.Mesh(shaftGeo, wallMat);
-    shaft.position.set(pos.x, pos.y - depth / 2, pos.z);
-    manholeGroup.add(shaft);
-
-    // Inner wall
-    if (innerRadius > 0.02) {
-      const innerGeo = new THREE.CylinderGeometry(
-        innerRadius, innerRadius, depth, MANHOLE_SEGMENTS, 1, true
+      // Shaft (outer cylinder wall)
+      const shaftGeo = new THREE.CylinderGeometry(
+        outerRadius, outerRadius, depth, MANHOLE_SEGMENTS, 1, true
       );
-      const innerMat = isEstimated ? materials.estimated(materials.manholeWallInner) : materials.manholeWallInner;
-      const inner = new THREE.Mesh(innerGeo, innerMat);
-      inner.position.set(pos.x, pos.y - depth / 2, pos.z);
-      manholeGroup.add(inner);
-    }
+      const wallMat = isEstimated ? materials.estimated(materials.manholeWall) : materials.manholeWall;
+      const shaft = new THREE.Mesh(shaftGeo, wallMat);
+      shaft.position.set(pos.x, pos.y - depth / 2, pos.z);
+      manholeGroup.add(shaft);
 
-    // Bottom disc (floor of manhole)
-    const bottomGeo = new THREE.CircleGeometry(innerRadius > 0.02 ? innerRadius : outerRadius, MANHOLE_SEGMENTS);
-    bottomGeo.rotateX(-Math.PI / 2);
-    const bottom = new THREE.Mesh(bottomGeo, materials.manholeWall);
-    bottom.position.set(pos.x, pos.y - depth, pos.z);
-    manholeGroup.add(bottom);
+      // Inner wall
+      if (innerRadius > 0.02) {
+        const innerGeo = new THREE.CylinderGeometry(
+          innerRadius, innerRadius, depth, MANHOLE_SEGMENTS, 1, true
+        );
+        const innerMat = isEstimated ? materials.estimated(materials.manholeWallInner) : materials.manholeWallInner;
+        const inner = new THREE.Mesh(innerGeo, innerMat);
+        inner.position.set(pos.x, pos.y - depth / 2, pos.z);
+        manholeGroup.add(inner);
+      }
 
-    // Cover disc at ground level
-    const coverGeo = new THREE.CylinderGeometry(
-      outerRadius + 0.03, outerRadius + 0.03, COVER_HEIGHT, MANHOLE_SEGMENTS
-    );
-    const coverMat = materials.manholeCover(node.nodeType || 'Manhole');
-    const cover = new THREE.Mesh(coverGeo, isEstimated ? materials.estimated(coverMat) : coverMat);
-    cover.position.set(pos.x, pos.y + COVER_HEIGHT / 2, pos.z);
-    cover.userData = { type: 'node', nodeId: id };
-    manholeGroup.add(cover);
+      // Bottom disc (floor of manhole)
+      const bottomGeo = new THREE.CircleGeometry(innerRadius > 0.02 ? innerRadius : outerRadius, MANHOLE_SEGMENTS);
+      bottomGeo.rotateX(-Math.PI / 2);
+      const bottom = new THREE.Mesh(bottomGeo, materials.manholeWall);
+      bottom.position.set(pos.x, pos.y - depth, pos.z);
+      manholeGroup.add(bottom);
 
-    // Cover ring (metallic rim)
-    const rimGeo = new THREE.TorusGeometry(outerRadius + 0.03, 0.015, 8, MANHOLE_SEGMENTS);
-    rimGeo.rotateX(Math.PI / 2);
-    const rimMat = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.6, roughness: 0.4 });
-    const rim = new THREE.Mesh(rimGeo, rimMat);
-    rim.position.set(pos.x, pos.y + COVER_HEIGHT, pos.z);
-    manholeGroup.add(rim);
+      // Cover disc at ground level
+      const coverGeo = new THREE.CylinderGeometry(
+        outerRadius + 0.03, outerRadius + 0.03, COVER_HEIGHT, MANHOLE_SEGMENTS
+      );
+      const coverMat = materials.manholeCover(node.nodeType || 'Manhole');
+      const cover = new THREE.Mesh(coverGeo, isEstimated ? materials.estimated(coverMat) : coverMat);
+      cover.position.set(pos.x, pos.y + COVER_HEIGHT / 2, pos.z);
+      cover.userData = { type: 'node', nodeId: id };
+      manholeGroup.add(cover);
 
-    // Label (CSS2D)
-    if (CSS2DObject) {
-      const labelDiv = document.createElement('div');
-      labelDiv.className = 'three-d-label';
-      labelDiv.textContent = node.id;
-      const label = new CSS2DObject(labelDiv);
-      label.position.set(pos.x, pos.y + 0.5, pos.z);
-      manholeGroup.add(label);
+      // Cover ring (metallic rim)
+      const rimGeo = new THREE.TorusGeometry(outerRadius + 0.03, 0.015, 8, MANHOLE_SEGMENTS);
+      rimGeo.rotateX(Math.PI / 2);
+      const rimMat = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.6, roughness: 0.4 });
+      const rim = new THREE.Mesh(rimGeo, rimMat);
+      rim.position.set(pos.x, pos.y + COVER_HEIGHT, pos.z);
+      manholeGroup.add(rim);
+
+      // Label (CSS2D)
+      if (CSS2DObject) {
+        const labelDiv = document.createElement('div');
+        labelDiv.className = 'three-d-label';
+        labelDiv.textContent = node.id;
+        const label = new CSS2DObject(labelDiv);
+        label.position.set(pos.x, pos.y + 0.5, pos.z);
+        manholeGroup.add(label);
+      }
     }
   }
 

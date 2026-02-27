@@ -43,6 +43,24 @@ export function createMaterials(THREE) {
     metalness: 0,
   });
 
+  const houseWall = new THREE.MeshStandardMaterial({
+    color: 0x795548,
+    transparent: true,
+    opacity: 0.35,
+    side: THREE.DoubleSide,
+    roughness: 0.8,
+    metalness: 0.05,
+  });
+
+  const houseRoof = new THREE.MeshStandardMaterial({
+    color: 0x8b4513,
+    transparent: true,
+    opacity: 0.4,
+    side: THREE.DoubleSide,
+    roughness: 0.7,
+    metalness: 0.05,
+  });
+
   /** Cache cover materials by node type */
   const coverCache = new Map();
   function manholeCover(nodeType) {
@@ -82,13 +100,15 @@ export function createMaterials(THREE) {
     ground.dispose();
     manholeWall.dispose();
     manholeWallInner.dispose();
+    houseWall.dispose();
+    houseRoof.dispose();
     for (const m of coverCache.values()) m.dispose();
     for (const m of pipeCache.values()) m.dispose();
     coverCache.clear();
     pipeCache.clear();
   }
 
-  return { ground, manholeWall, manholeWallInner, manholeCover, pipe, estimated, dispose };
+  return { ground, manholeWall, manholeWallInner, houseWall, houseRoof, manholeCover, pipe, estimated, dispose };
 }
 
 export { NODE_TYPE_COLORS, EDGE_TYPE_COLORS };
