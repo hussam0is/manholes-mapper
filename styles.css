@@ -10001,6 +10001,19 @@ button:focus-visible,
   height: 100% !important;
 }
 
+/* CSS2DRenderer label layer — must use physical positioning (not logical)
+   to avoid RTL layout shifting labels off-screen. */
+.three-d-overlay__label-layer {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 .three-d-overlay__legend {
   position: absolute;
   bottom: 16px;

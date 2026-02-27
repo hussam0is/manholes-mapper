@@ -262,10 +262,7 @@ export async function open3DView(opts = {}) {
 
   // Label renderer (CSS2D)
   labelRenderer = new CSS2DRenderer();
-  labelRenderer.domElement.style.position = 'absolute';
-  labelRenderer.domElement.style.top = '0';
-  labelRenderer.domElement.style.left = '0';
-  labelRenderer.domElement.style.pointerEvents = 'none';
+  labelRenderer.domElement.className = 'three-d-overlay__label-layer';
   container.appendChild(labelRenderer.domElement);
 
   // ── Orbit controls ────────────────────────────────────────────────────

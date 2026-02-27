@@ -373,7 +373,32 @@ export function buildScene(THREE, data, CSS2DObject, issues = []) {
     endCap.lookAt(start);
     pipeGroup.add(endCap);
 
-    meshRefs.pipeMeshes.set(String(edge.id), { tube: pipeMesh, startCap, endCap });
+    // Direction arrow (cone) at pipe midpoint pointing tail→head
+    const arrowRadius = Math.max(pipeRadius * 2.5, 0.06);
+    const arrowLength = Math.max(arrowRadius * 2.5, 0.15);
+    const arrowGeo = new THREE.ConeGeometry(arrowRadius, arrowLength, 8);
+    // ConeGeometry points up (+Y), we need to rotate it to align with pipe direction
+    arrowGeo.rotateX(Math.PI / 2); // now points along +Z
+    const arrowMat = new THREE.MeshStandardMaterial({
+      color: finalMat.color ? finalMat.color.clone() : new THREE.Color(0xffffff),
+      emissive: finalMat.color ? finalMat.color.clone().multiplyScalar(0.3) : new THREE.Color(0x333333),
+      metalness: 0.4,
+      roughness: 0.5,
+    });
+    const arrow = new THREE.Mesh(arrowGeo, arrowMat);
+    // Position at midpoint of pipe
+    arrow.position.set(
+      (start.x + end.x) / 2,
+      (start.y + end.y) / 2,
+      (start.z + end.z) / 2
+    );
+    // Orient cone to point from tail→head
+    const dir = new THREE.Vector3().subVectors(end, start).normalize();
+    const target = arrow.position.clone().add(dir);
+    arrow.lookAt(target);
+    pipeGroup.add(arrow);
+
+    meshRefs.pipeMeshes.set(String(edge.id), { tube: pipeMesh, startCap, endCap, arrow });
   }
 
   scene.add(pipeGroup);
