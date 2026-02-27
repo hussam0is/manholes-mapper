@@ -183,6 +183,7 @@ const homeNodeModeBtn = document.getElementById('homeNodeModeBtn');
 const drainageNodeModeBtn = document.getElementById('drainageNodeModeBtn');
 const edgeModeBtn = document.getElementById('edgeModeBtn');
 const undoBtn = document.getElementById('undoBtn');
+const threeDViewBtn = document.getElementById('threeDViewBtn');
 // Separate export buttons for nodes and edges
 const exportNodesBtn = document.getElementById('exportNodesBtn');
 const exportEdgesBtn = document.getElementById('exportEdgesBtn');
@@ -2824,9 +2825,10 @@ async function renderProjectsHome() {
   if (sketchTabs) sketchTabs.style.display = 'none';
 
   sketchListEl.innerHTML = `
-    <div class="sketch-list-loading">
-      <span class="material-icons spin">sync</span>
-      <span>${t('projectsLoading')}</span>
+    <div class="skeleton-cards" aria-busy="true" aria-label="${t('projectsLoading')}">
+      <div class="skeleton-card"><div class="skeleton-icon"></div><div class="skeleton-lines"><div class="skeleton-line skeleton-line--title"></div><div class="skeleton-line skeleton-line--meta"></div></div></div>
+      <div class="skeleton-card"><div class="skeleton-icon"></div><div class="skeleton-lines"><div class="skeleton-line skeleton-line--title"></div><div class="skeleton-line skeleton-line--meta"></div></div></div>
+      <div class="skeleton-card"><div class="skeleton-icon"></div><div class="skeleton-lines"><div class="skeleton-line skeleton-line--title"></div><div class="skeleton-line skeleton-line--meta"></div></div></div>
     </div>`;
 
   try {

@@ -7292,6 +7292,63 @@ select.invalid:focus {
   color: var(--color-primary);
 }
 
+/* Skeleton loading placeholders for projects */
+@keyframes skeleton-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.skeleton-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.skeleton-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  background: linear-gradient(90deg, var(--color-border) 25%, var(--color-bg) 50%, var(--color-border) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+.skeleton-lines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.skeleton-line {
+  height: 0.75rem;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--color-border) 25%, var(--color-bg) 50%, var(--color-border) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+.skeleton-line--title {
+  width: 60%;
+}
+
+.skeleton-line--meta {
+  width: 40%;
+  height: 0.625rem;
+}
+
 /* Sketch card */
 .sketch-card {
   background: var(--color-surface);
@@ -9751,4 +9808,162 @@ button:focus-visible,
 .survey-connection-badge .material-icons {
   font-size: 18px;
   line-height: 1;
+}
+
+/* ===========================================
+   3D View Overlay
+   =========================================== */
+
+.three-d-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: #1a1a2e;
+  display: flex;
+  flex-direction: column;
+}
+
+.three-d-overlay__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-4);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.three-d-overlay__title {
+  font-size: 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.three-d-overlay__close {
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  border-radius: var(--radius);
+  transition: background 0.15s;
+}
+
+.three-d-overlay__close:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.three-d-overlay__canvas-container {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.three-d-overlay__canvas-container canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.three-d-overlay__legend {
+  position: absolute;
+  bottom: 16px;
+  inset-inline-start: 16px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+  color: #fff;
+  font-size: 0.75rem;
+  z-index: 1;
+  max-width: 200px;
+}
+
+.three-d-overlay__legend h4 {
+  margin: 0 0 var(--space-2) 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.three-d-overlay__legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: 4px;
+}
+
+.three-d-overlay__legend-swatch {
+  width: 16px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.three-d-overlay__legend-swatch--estimated {
+  opacity: 0.5;
+  border: 1px dashed rgba(255, 255, 255, 0.5);
+}
+
+.three-d-overlay__controls-hint {
+  position: absolute;
+  bottom: 16px;
+  inset-inline-end: 16px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: var(--radius);
+  padding: var(--space-2) var(--space-3);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.7rem;
+  z-index: 1;
+  pointer-events: none;
+  transition: opacity 0.5s;
+}
+
+.three-d-overlay__loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 1.1rem;
+  gap: var(--space-2);
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 2;
+}
+
+/* 3D label (CSS2DRenderer) */
+.three-d-label {
+  color: #fff;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 600px) {
+  .three-d-overlay__legend {
+    bottom: 8px;
+    inset-inline-start: 8px;
+    font-size: 0.65rem;
+    padding: var(--space-2);
+  }
+  .three-d-overlay__controls-hint {
+    display: none;
+  }
 }
