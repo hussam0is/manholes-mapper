@@ -208,13 +208,14 @@ export function drawGnssMarker(ctx, position, referencePoint, coordinateScale, v
     ctx.stroke();
   }
 
-  // --- 6. Stale indicator ---
+  // --- 6. Stale indicator (translated) ---
   if (options.isStale) {
+    const staleText = typeof window.t === 'function' ? window.t('gnssMarker.stale') : 'Stale';
     ctx.fillStyle = '#ef4444';
     ctx.font = 'bold 10px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('STALE', screenX, screenY - 18);
+    ctx.fillText(staleText, screenX, screenY - 18);
   }
 
   // --- 7. Live precision info card below the marker ---
@@ -231,9 +232,16 @@ function drawPrecisionCard(ctx, cx, topY, position, posItm, markerColor, fixQual
   const font = 'Inter, Arial, sans-serif';
   const isRTL = document.documentElement.dir === 'rtl';
 
-  // Build info lines
-  const fixLabels = { 0: 'No Fix', 1: 'GPS', 2: 'DGPS', 4: 'RTK Fixed', 5: 'RTK Float' };
-  const fixLabel = fixLabels[fixQuality] || 'GPS';
+  // Build info lines (use i18n translations when available)
+  const _t = typeof window.t === 'function' ? window.t : (k) => k;
+  const fixLabels = {
+    0: _t('gnssMarker.noFix'),
+    1: _t('gnssMarker.fixGps'),
+    2: _t('gnssMarker.fixDgps'),
+    4: _t('gnssMarker.fixRtkFixed'),
+    5: _t('gnssMarker.fixRtkFloat')
+  };
+  const fixLabel = fixLabels[fixQuality] || _t('gnssMarker.fixGps');
 
   const accVal = position.accuracy;
   const accText = accVal != null
@@ -375,9 +383,10 @@ export function drawGnssStatusBadge(ctx, status, x, y) {
       lines.push({ text: `HDOP: ${status.hdop.toFixed(1)} (${hdopLabel})`, color: '#6b7280' });
     }
 
-    // Stale warning
+    // Stale warning (translated)
     if (status.isStale) {
-      lines.push({ text: 'Signal stale!', color: '#ef4444' });
+      const staleMsg = typeof window.t === 'function' ? window.t('gnssMarker.signalStale') : 'Signal stale!';
+      lines.push({ text: staleMsg, color: '#ef4444' });
     }
   }
 
