@@ -311,10 +311,15 @@ export class HeaderComponent {
       menuBtn.setAttribute('aria-expanded', 'true');
       document.body.classList.add('mobile-menu-open');
 
-      // Reset scroll to top AFTER display:flex so the assignment takes effect
-      // (scrollTop assignments on display:none elements are silently ignored by the browser)
-      const scrollContainer = mobileMenu.querySelector('.mobile-menu-content');
-      if (scrollContainer) scrollContainer.scrollTop = 0;
+      // Reset scroll to top using double-rAF to ensure the browser has
+      // fully rendered the element after display:flex + CSS transition start.
+      // Single rAF is insufficient on some Android WebViews.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const scrollContainer = mobileMenu.querySelector('.mobile-menu-content');
+          if (scrollContainer) scrollContainer.scrollTop = 0;
+        });
+      });
 
       // Focus trap
       const firstFocusable = mobileMenu.querySelector('button, input, select');
