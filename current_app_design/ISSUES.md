@@ -17,9 +17,19 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 |----------|-------|-------|------|
 | CRITICAL | 1 | 0 | 1 (not app bug) |
 | HIGH | 12 | 10 | 2 (already ok) |
-| MEDIUM | 25 | 15 | 10 |
-| LOW | 18 | 2 | 16 (1 deferred) |
-| **TOTAL** | **56** | **27** | **29** |
+| MEDIUM | 28 | 18 | 10 |
+| LOW | 19 | 3 | 15 (1 deferred) |
+| FEATURE | 1 | 1 | — |
+| **TOTAL** | **61** | **32** | **28** |
+
+**By Iteration:**
+| Iteration | Issues Fixed | Cumulative |
+|-----------|-------------|------------|
+| Iter 1 | 3 (#2, #3, #4) | 3 |
+| Iter 2 | 5 (#19, #23, #27, #33, #34) | 8 |
+| Iter 3 | 5 (#41, #44, #45, #50, #55) | 13 |
+| Iter 4 | 8 (#6, #22, #29, #39, #40, #43, #46, #48) | 21 |
+| Iter 5 | 10 (#8, #9, #12, #18, #20, #36, #57, #58, #59, #60) + 1 feature (#61) | 32 |
 
 ---
 
@@ -86,7 +96,7 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Problem**: In screenshot 01, the right-side canvas toolbar shows node numbers ("72, 79, 52..." etc.) bleeding through/overlapping the toolbar buttons area. This appears to be a z-index issue where canvas content renders on top of the toolbar, or the toolbar background is transparent.
 - **Affected**: `styles.css` (toolbar z-index, background)
 - **Fix**: Increased toolbar background opacity from 60% to 85% and added backdrop-filter blur.
-- **Status**: Fixed in Iter 4
+- **Status**: Fixed ✓ (Tested)
 - **Commit**: `a478d3e`
 
 ### Issue #7 — Delete Node/Edge Button Too Prominent and Dangerous
@@ -109,7 +119,7 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Screenshot**: 01_project_canvas_sketch_panel.png, 12_project_canvas_sketch_list_panel.png
 - **Problem**: All issue badges on sketch rows show the same red warning style regardless of severity (e.g., 99 issues vs 164 issues are visually identical). High-issue-count sketches should be more visually distinct.
 - **Fix**: Color-coded severity CSS classes: >100 red, 50-100 orange, <50 yellow. Applied in sketch-side-panel.js and styles.css.
-- **Status**: FIXED
+- **Status**: Fixed in Iter 5
 - **Commit**: `6b4c0a4`
 
 ### Issue #9 — Edge Labels Overlap Badly at High Density
@@ -118,7 +128,7 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Screenshot**: 13_canvas_with_sketch_loaded_network_visible.png
 - **Problem**: When zoomed out to overview level, edge length labels (e.g., "3.5m", "5.36m", "7.00m") overlap each other in dense areas, making them completely unreadable. The canvas has dozens of overlapping text strings.
 - **Fix**: Edge labels are now hidden when viewScale < 0.3 (heavily zoomed out). Labels reappear on zoom in. Guard wraps the entire edge label loop in main.js draw().
-- **Status**: FIXED
+- **Status**: Fixed in Iter 5
 - **Commit**: `b3f712c`
 
 ### Issue #10 — Admin Panel Shows Raw Field Names (id, type, note)
@@ -145,7 +155,7 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Screenshot**: 10_menu_survey_workday_settings_admin.png
 - **Problem**: "Admin Settings" and "Project Management" links in the menu have no visual indicator that they require elevated permissions. A regular user who sees these items and taps them will get an access denied error with no explanation.
 - **Fix**: Admin Settings and Project Management buttons are now hidden for non-admin users. Visibility updates on auth state change and when permissions are fetched asynchronously via `onPermissionChange` listener.
-- **Status**: FIXED
+- **Status**: Fixed in Iter 5
 - **Commit**: `99f40cf`
 
 ### Issue #13 — Menu Very Long / No Quick Jump to Sections
@@ -207,7 +217,7 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Screenshot**: 21_canvas_clean_network_overview.png, 22_canvas_toolbar_gps_active_red.png
 - **Problem**: The GNSS info box shows "No Fix +/-120.6m", HDOP, elevation, and raw ITM coordinates at identical font size/weight with a red border. Field workers glancing down need fix quality at a glance, not four lines of technical data. Red border on a plain state implies error.
 - **Fix**: Fix quality label now renders at 13px bold (up from 11px) for at-a-glance readability. When quality is 0 (No Fix), HDOP/altitude/ITM detail lines are collapsed since they are meaningless.
-- **Status**: FIXED
+- **Status**: Fixed in Iter 5
 - **Commit**: `5484aa6`
 
 ### Issue #19 — GNSS Accuracy Circle Enormous When No Fix — Dominates Canvas
@@ -225,7 +235,7 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Screenshot**: 23_canvas_node_mode_active_toolbar_highlight.png
 - **Problem**: Yellow "STALE" badge near GNSS marker has no tooltip or legend. The word is English-only — not translated to Hebrew, breaking RTL/i18n contract.
 - **Fix**: Added `gnssMarker.stale`, `gnssMarker.signalStale`, and all fix quality labels to i18n (he/en). Stale badge now shows "לא עדכני" in Hebrew. Precision card and status badge use window.t() for all text.
-- **Status**: FIXED
+- **Status**: Fixed in Iter 5
 - **Commit**: `ecbb219`
 
 ### Issue #21 — Mode-Change Toast Overlaps Legend Bar
@@ -243,7 +253,7 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Screenshot**: 24_node_type_dialog_select_manhole.png, 27_after_tap_canvas_in_nodemode.png
 - **Problem**: Home nodes had a minimal form (only ID, note, direct connection) with no maintenance status. Drainage nodes already had the full wizard form.
 - **Fix**: Added maintenance status dropdown to Home node panel. Normalization now preserves (not clears) maintenance status for Home/Drainage nodes.
-- **Status**: Fixed in Iter 4
+- **Status**: Fixed ✓ (Tested)
 - **Commit**: `7a41094`
 
 ### Issue #23 — Canvas Toolbar Buttons Have No Labels, Tooltips, or Aria-Labels
@@ -306,7 +316,7 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Screenshot**: 35_node_panel_open_existing_manhole.png, 37_node_panel_scrolled_more_fields.png, 39_edge_panel_open.png, 40_node_panel_top_with_survey_data.png
 - **Problem**: "Connected lines" and "Direct connection" labels were hardcoded with inline language-conditional fallbacks instead of using i18n t() calls.
 - **Fix**: Added missing i18n keys `labels.connectedLines` and `labels.directConnection` in both Hebrew and English. Replaced inline fallbacks with t() calls.
-- **Status**: Fixed in Iter 4
+- **Status**: Fixed ✓ (Tested)
 - **Commit**: `b16f825`
 
 ### Issue #30 — Node Panel Presents Empty Survey Fields as Dashes ("--")
@@ -369,7 +379,7 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Screenshot**: 32_canvas_full_network_zoomed_in.png, 34_canvas_after_cancel_dialog.png
 - **Problem**: When GovMap tiles are visible, Hebrew street names from map tiles compete with app's own node numbers and edge length labels. Dense overlap makes network nearly unreadable.
 - **Fix**: Node ID labels now render with a white stroke halo (rgba(255,255,255,0.92)) and bold font when map tiles are active. Applied only when `mapLayerEnabled && getMapReferencePoint()` is truthy, so no impact without map tiles.
-- **Status**: FIXED
+- **Status**: Fixed in Iter 5
 - **Commit**: `c0e6ff6`
 
 ---
@@ -400,7 +410,7 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Screenshot**: 45_node_panel_more_fields_scroll2.png, 48_edge_panel_scroll_more_fields.png
 - **Problem**: The "Connected lines" section within the node panel shows full edge editing fields inline. Visual hierarchy does not make clear the user has scrolled from node fields into edge fields. Section title easily missed.
 - **Fix**: Added primary-blue left border, uppercase section title with bottom border, and stronger edge dividers to the Connected Lines area.
-- **Status**: Fixed in Iter 4
+- **Status**: Fixed ✓ (Tested)
 - **Commit**: `75708fc`
 
 ### Issue #40 — Connected Edge Fields Create "Delete Node" Label Confusion
@@ -409,7 +419,7 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Screenshot**: 46_edge_mode_activated.png, 47_after_edge_mode_tap.png, 48_edge_panel_scroll_more_fields.png
 - **Problem**: When edge fields from "Connected lines" fill the viewport, the "Delete Node" button at panel bottom looks mismatched. Also: tapping near an edge while intending to select a node caused edge selection.
 - **Fix**: Visual separation fixed (issue #39). Node/edge tap priority: widened node re-check (1.6x radius) when an edge is hit but no node, ensuring nearby nodes always win.
-- **Status**: Fixed in Iter 4 (tap priority + visual separation)
+- **Status**: Fixed ✓ (Tested)
 - **Commit**: `b15c7ae`, `75708fc`
 
 ### Issue #41 — Panel Does NOT Close on Android Back Button
@@ -436,7 +446,7 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Screenshot**: 41_node_panel_very_top_nodeid_fields.png, 56_panel_close_attempt.png
 - **Problem**: Drawer drag handle is ~30px wide × 4px tall — impossible to target with gloves or in bright sunlight.
 - **Fix**: Enlarged drag handle bar to 48x6px with increased padding (min-height: 28px). Added snap-to-close when dragged below 30% of default height.
-- **Status**: Fixed in Iter 4
+- **Status**: Fixed ✓ (Tested)
 - **Commit**: `9d08c32`
 
 ### Issue #44 — Panel Close (X) Button Does Not Close Panel Reliably on Touch
@@ -463,7 +473,7 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Screenshot**: 49_canvas_panel_closed_ready_for_measure.png
 - **Problem**: Diameter picker shows "100, 150, 160, 200..." with no unit.
 - **Fix**: Appended "mm" suffix to numeric diameter option labels in rendering. Updated field label to include "(mm)" / "(מ"מ)" in both languages.
-- **Status**: Fixed in Iter 4
+- **Status**: Fixed ✓ (Tested)
 - **Commit**: `d81ac10`
 
 ### Issue #47 — Mixed Language: Labels English, Values Hebrew in Same Panel
@@ -481,7 +491,7 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Screenshot**: 44_node_panel_more_fields_scroll1.png
 - **Problem**: "TL: -109.763" is unexplained to field workers not familiar with survey terminology.
 - **Fix**: Updated i18n: Hebrew 'גובה שטח (TL)', English 'Terrain Level (TL)'. TL abbreviation preserved in parentheses.
-- **Status**: Fixed in Iter 4
+- **Status**: Fixed ✓ (Tested)
 - **Commit**: `f19da24`
 
 ### Issue #49 — "Precision" Field Shows Em Dash Without Tooltip Explanation
@@ -558,6 +568,50 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 
 ---
 
+## Iteration 5 Additional Fixes & Features
+
+### Issue #57 — Login/Signup Forms Not Translated (i18n)
+- **Severity**: MEDIUM
+- **Type**: i18n
+- **Problem**: Login and signup form labels/buttons were not using i18n translations, displaying only in English regardless of app language setting.
+- **Fix**: Added i18n keys and applied t() calls to all login/signup form elements.
+- **Status**: Fixed in Iter 5
+- **Commit**: `8c62462`
+
+### Issue #58 — CSV Export Field Labels Not Translated
+- **Severity**: MEDIUM
+- **Type**: i18n
+- **Problem**: CSV export column headers used raw field names instead of translated labels.
+- **Fix**: CSV export field labels now use i18n translations matching the current app language.
+- **Status**: Fixed in Iter 5
+- **Commit**: `421fb92`
+
+### Issue #59 — Details Panel Visible When Nothing Selected
+- **Severity**: MEDIUM
+- **Type**: ux
+- **Problem**: The node/edge details panel could remain visible even when no element was selected, showing stale or empty data.
+- **Fix**: Details panel is now hidden automatically when nothing is selected on the canvas.
+- **Status**: Fixed in Iter 5
+- **Commit**: `4934b00`
+
+### Issue #60 — Projects List Has No Loading State (Flash of Empty Content)
+- **Severity**: LOW
+- **Type**: ux
+- **Problem**: Projects list showed a blank area while loading from API, causing a flash of empty content before projects appeared.
+- **Fix**: Added skeleton loading placeholders to the projects list while data is being fetched.
+- **Status**: Fixed in Iter 5
+- **Commit**: `0bbadfc`
+
+### Issue #61 — 3D View Feature (NEW FEATURE)
+- **Severity**: N/A
+- **Type**: feature
+- **Problem**: No way to visualize the manhole/pipe network in 3D for presentation or review purposes.
+- **Fix**: Added 3D View feature using Three.js (lazy-loaded). Available to admin and super_admin roles only.
+- **Status**: NEW FEATURE — Added in Iter 5
+- **Commit**: `6b7ac18`
+
+---
+
 ## Iteration Reports
 
 ### Iteration 1 Report (2026-02-27)
@@ -586,15 +640,17 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Issues Deferred**: 1 (#47 — requires DB data migration, cannot fix without breaking existing sketch data)
 - **Commits**: b16f825, b15c7ae, 75708fc, de8eb28, 9d08c32, 7a41094, a478d3e, d81ac10, f19da24
 - **Tests**: All 490 tests passing. SW bumped to v44.
-- **Status**: Deployed to dev branch, SW v44.
-- **Fixed**: #29, #40, #39, #22, #6, #46, #48, #43, #45(improved), #44(improved)
+- **Status**: All 9 fixes tested and verified (9/9 PASS). Tested via local dev server. All 490 unit tests pass. Zero console errors.
+- **Fixed**: #29 (b16f825 TESTED PASS), #40 (b15c7ae TESTED PASS), #39 (75708fc TESTED PASS), #22 (7a41094 TESTED PASS), #6 (a478d3e TESTED PASS), #46 (d81ac10 TESTED PASS), #48 (f19da24 TESTED PASS), #43 (9d08c32 TESTED PASS), #45(improved), #44(improved)
 - **Deferred**: #47 (DB migration required)
 
 ### Iteration 5 Report (2026-02-27)
-- **Batch**: MEDIUM priority open issues
+- **Batch**: MEDIUM priority open issues + UX polish + new feature
 - **Issues Fixed**: 6 (Issues #8, #9, #12, #18, #20, #36)
-- **Commits**: 6b4c0a4, b3f712c, ecbb219, 99f40cf, c0e6ff6, 5484aa6
-- **SW**: Bumped to v45 (47684cc)
+- **Additional Fixes**: Login/signup i18n (8c62462), CSV export field labels translated (421fb92), details panel hidden when nothing selected (4934b00), skeleton loading for projects list (0bbadfc)
+- **New Feature**: 3D View — admin/super_admin only, Three.js, lazy-loaded (6b7ac18)
+- **Commits**: ecbb219, 8c62462, 99f40cf, c0e6ff6, 421fb92, 5484aa6, 6b4c0a4, b3f712c, 4934b00, 0bbadfc, 6b7ac18
+- **SW**: v45 → v47
 - **Tests**: All 490 tests passing.
 - **Status**: Deployed to dev branch.
 
@@ -615,4 +671,6 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 | 2026-02-27 | Iteration 3 tested | All 5 fixes verified passing (5/5). Tested against local dev server. All 490 unit tests pass. |
 | 2026-02-27 | Iteration 4 fixes | Issues #6, #22, #29, #39, #40, #43, #46, #48 fixed. Improved #44, #45. Deferred #47. SW v44. |
 | 2026-02-27 | Iteration 4 deployed | Deployed to dev branch. 9 commits: b16f825, b15c7ae, 75708fc, de8eb28, 9d08c32, 7a41094, a478d3e, d81ac10, f19da24 |
-| 2026-02-27 | Iteration 5 fixes | Issues #8, #9, #12, #18, #20, #36 fixed. SW v45. Commits: 6b4c0a4, b3f712c, ecbb219, 99f40cf, c0e6ff6, 5484aa6, 47684cc |
+| 2026-02-27 | Iteration 4 tested | All 9 fixes tested and verified (9/9 PASS). Tested via local dev server. All 490 unit tests pass. Zero console errors. |
+| 2026-02-27 | Iteration 5 fixes | Issues #8, #9, #12, #18, #20, #36 fixed. Additional: login/signup i18n (8c62462), CSV labels (421fb92), panel empty state (4934b00), projects skeleton (0bbadfc). New feature: 3D View (6b7ac18). SW v45 → v47. |
+| 2026-02-27 | Iteration 5 deployed | Deployed to dev branch. 11 commits: ecbb219, 8c62462, 99f40cf, c0e6ff6, 421fb92, 5484aa6, 6b4c0a4, b3f712c, 4934b00, 0bbadfc, 6b7ac18 |
