@@ -2251,7 +2251,7 @@ canvas {
 .connected-edge-divider {
   border: none;
   border-top: 2px solid var(--color-border, #0f172a);
-  margin: 0.5rem 0;
+  margin: 0.75rem 0 0.5rem;
 }
 
 /* Header showing target node ID for each connected edge */
@@ -2260,11 +2260,27 @@ canvas {
   font-weight: 600;
   color: var(--color-text-secondary, #64748b);
   padding: 0.25rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
-/* Light grey background for connected lines section */
+/* Light grey background + distinct border for connected lines section */
 .details-section:has(.connected-lines-grid) {
   background: var(--color-surface-hover);
+  border-color: var(--color-primary);
+  border-inline-start: 3px solid var(--color-primary);
+}
+
+/* Connected lines section title */
+.details-section:has(.connected-lines-grid) > .details-section-title {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-primary);
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 0.6rem;
 }
 
 /* Import history section styles */
