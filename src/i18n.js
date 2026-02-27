@@ -452,6 +452,9 @@ export const i18n = {
       edit: 'ערוך',
       delete: 'מחק',
     },
+    units: {
+      meters: 'מ׳',
+    },
     validation: {
       required: 'שדה חובה',
     },
@@ -1033,6 +1036,9 @@ export const i18n = {
       close: 'Close',
       edit: 'Edit',
       delete: 'Delete',
+    },
+    units: {
+      meters: 'm',
     },
     validation: {
       required: 'This field is required',

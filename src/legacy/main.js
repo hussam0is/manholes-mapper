@@ -4991,7 +4991,7 @@ function renderDetails() {
           if (node.surveyX != null) fields += `<div class="field"><label>${t('labels.surveyX')}</label><div class="field-value-readonly">${node.surveyX.toFixed(3)}</div></div>`;
           if (node.surveyY != null) fields += `<div class="field"><label>${t('labels.surveyY')}</label><div class="field-value-readonly">${node.surveyY.toFixed(3)}</div></div>`;
           if (node.surveyZ != null) fields += `<div class="field"><label>${t('labels.terrainLevel')}</label><div class="field-value-readonly">${node.surveyZ.toFixed(3)}</div></div>`;
-          fields += `<div class="field"><label>${t('labels.measurePrecision')}</label><div class="field-value-readonly">${node.measure_precision != null ? node.measure_precision.toFixed(3) + ' m' : t('labels.notRecorded')}</div></div>`;
+          fields += `<div class="field"><label>${t('labels.measurePrecision')}</label><div class="field-value-readonly">${node.measure_precision != null ? node.measure_precision.toFixed(3) + ' ' + t('units.meters') : t('labels.notRecorded')}</div></div>`;
           // Fix type badge — only show when node has survey coordinates
           if (node.surveyX != null || node.surveyY != null) {
             const inMap = coordinatesMap && coordinatesMap.has(String(node.id));
