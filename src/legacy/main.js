@@ -4853,7 +4853,7 @@ function renderDetails() {
               <label for="${diamSelectId}">${t('labels.lineDiameter')}</label>
               <select id="${diamSelectId}">
                 <option value="" ${e.line_diameter === '' ? 'selected' : ''}>${t('labels.optional')}</option>
-                ${diameterOptions.map((d) => `<option value="${String(d.code)}" ${String(e.line_diameter) === String(d.code) ? 'selected' : ''}>${String(d.label)}</option>`).join('')}
+                ${diameterOptions.map((d) => { const lbl = String(d.label); const display = /^\d+$/.test(lbl) ? lbl + ' mm' : lbl; return `<option value="${String(d.code)}" ${String(e.line_diameter) === String(d.code) ? 'selected' : ''}>${display}</option>`; }).join('')}
               </select>
             </div>`;
           } else {
@@ -5296,7 +5296,7 @@ function renderDetails() {
             <label for="edgeDiameterSelect">${t('labels.lineDiameter')}</label>
             <select id="edgeDiameterSelect">
               <option value="" ${edge.line_diameter === '' ? 'selected' : ''}>${t('labels.optional')}</option>
-              ${diameterOptions.map((d) => `<option value="${String(d.code)}" ${String(edge.line_diameter) === String(d.code) ? 'selected' : ''}>${String(d.label)}</option>`).join('')}
+              ${diameterOptions.map((d) => { const lbl = String(d.label); const display = /^\d+$/.test(lbl) ? lbl + ' mm' : lbl; return `<option value="${String(d.code)}" ${String(edge.line_diameter) === String(d.code) ? 'selected' : ''}>${display}</option>`; }).join('')}
             </select>
           </div>` : ''}
         </div>
