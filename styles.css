@@ -5049,6 +5049,7 @@ select.invalid:focus {
 
   .admin-actions {
     padding: 0.75rem;
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
     flex-direction: row;
     flex-wrap: wrap;
     align-items: center;
@@ -5430,6 +5431,7 @@ select.invalid:focus {
 
   .admin-actions {
     padding: 0.625rem;
+    padding-bottom: max(0.625rem, env(safe-area-inset-bottom, 0px));
     gap: 0.375rem;
   }
 
