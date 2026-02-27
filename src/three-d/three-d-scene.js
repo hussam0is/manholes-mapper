@@ -442,7 +442,7 @@ export function buildScene(THREE, data, CSS2DObject, issues = []) {
       badgeDiv.className = 'three-d-issue-badge';
       badgeDiv.innerHTML = '<span class="material-icons">warning</span>';
       const badge = new CSS2DObject(badgeDiv);
-      badge.position.set(pos.x, pos.y + 2.2, pos.z);
+      badge.position.set(pos.x + 0.3, pos.y + 3.5, pos.z);
       issueGroup.add(badge);
     }
   }

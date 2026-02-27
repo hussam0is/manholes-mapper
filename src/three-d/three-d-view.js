@@ -97,23 +97,29 @@ export async function open3DView(opts = {}) {
         </button>
       </div>
     </div>
-    <div class="three-d-overlay__legend">
-      <h4>${esc(t('threeD.legend.title'))}</h4>
-      <div class="three-d-overlay__legend-item">
-        <span class="three-d-overlay__legend-swatch" style="background:#2563eb"></span>
-        <span>${esc(t('threeD.legend.mainLine'))}</span>
-      </div>
-      <div class="three-d-overlay__legend-item">
-        <span class="three-d-overlay__legend-swatch" style="background:#fb923c"></span>
-        <span>${esc(t('threeD.legend.drainageLine'))}</span>
-      </div>
-      <div class="three-d-overlay__legend-item">
-        <span class="three-d-overlay__legend-swatch" style="background:#0d9488"></span>
-        <span>${esc(t('threeD.legend.secondaryLine'))}</span>
-      </div>
-      <div class="three-d-overlay__legend-item">
-        <span class="three-d-overlay__legend-swatch three-d-overlay__legend-swatch--estimated" style="background:#888"></span>
-        <span>${esc(t('threeD.legend.estimated'))}</span>
+    <div class="three-d-overlay__legend three-d-overlay__legend--collapsed">
+      <button class="three-d-overlay__legend-toggle">
+        <span class="material-icons">info</span>
+        <span class="three-d-overlay__legend-toggle-label">${esc(t('threeD.legend.title'))}</span>
+        <span class="material-icons three-d-overlay__legend-chevron">expand_less</span>
+      </button>
+      <div class="three-d-overlay__legend-items">
+        <div class="three-d-overlay__legend-item">
+          <span class="three-d-overlay__legend-swatch" style="background:#2563eb"></span>
+          <span>${esc(t('threeD.legend.mainLine'))}</span>
+        </div>
+        <div class="three-d-overlay__legend-item">
+          <span class="three-d-overlay__legend-swatch" style="background:#fb923c"></span>
+          <span>${esc(t('threeD.legend.drainageLine'))}</span>
+        </div>
+        <div class="three-d-overlay__legend-item">
+          <span class="three-d-overlay__legend-swatch" style="background:#0d9488"></span>
+          <span>${esc(t('threeD.legend.secondaryLine'))}</span>
+        </div>
+        <div class="three-d-overlay__legend-item">
+          <span class="three-d-overlay__legend-swatch three-d-overlay__legend-swatch--estimated" style="background:#888"></span>
+          <span>${esc(t('threeD.legend.estimated'))}</span>
+        </div>
       </div>
     </div>
     <div class="three-d-overlay__controls-hint"></div>
@@ -415,6 +421,17 @@ export async function open3DView(opts = {}) {
     label.textContent = esc(next ? t('threeD.realScale') : t('threeD.miniature'));
   });
 
+  // ── Legend toggle (collapsible) ────────────────────────────────────
+  const legendEl = overlay.querySelector('.three-d-overlay__legend');
+  const legendToggleBtn = overlay.querySelector('.three-d-overlay__legend-toggle');
+  if (legendToggleBtn) {
+    legendToggleBtn.addEventListener('click', () => {
+      const isCollapsed = legendEl.classList.toggle('three-d-overlay__legend--collapsed');
+      const chevron = legendEl.querySelector('.three-d-overlay__legend-chevron');
+      if (chevron) chevron.textContent = isCollapsed ? 'expand_less' : 'expand_more';
+    });
+  }
+
   // ── Issue interaction (raycasting + fix popups) ──────────────────────
   issueInteraction = setup3DIssueInteraction(THREE, {
     camera,
@@ -538,6 +555,29 @@ export async function open3DView(opts = {}) {
       fpsControls.update(dt);
     } else {
       orbitControls.update();
+    }
+
+    // Distance-based label visibility — hide when far, scale when close
+    if (sceneResult?.meshRefs?.nodeMeshes) {
+      const camPos = camera.position;
+      for (const [_nodeId, refs] of sceneResult.meshRefs.nodeMeshes) {
+        if (!refs.label) continue;
+        const lp = refs.label.position;
+        const dx = camPos.x - lp.x, dy = camPos.y - lp.y, dz = camPos.z - lp.z;
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        const labelEl = refs.label.element;
+        if (dist > 150) {
+          labelEl.style.display = 'none';
+        } else if (dist > 80) {
+          labelEl.style.display = '';
+          labelEl.style.opacity = String(1 - (dist - 80) / 70);
+          labelEl.style.fontSize = '9px';
+        } else {
+          labelEl.style.display = '';
+          labelEl.style.opacity = '1';
+          labelEl.style.fontSize = dist < 30 ? '13px' : '11px';
+        }
+      }
     }
 
     // Pulse issue rings
