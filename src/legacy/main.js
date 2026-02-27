@@ -3880,14 +3880,22 @@ function draw() {
     }));
   }
 
-  // Draw the optimally positioned labels
+  // Draw the optimally positioned labels.
+  // When map tiles are visible, add a white text halo so labels remain readable.
+  const useHalo = mapLayerEnabled && getMapReferencePoint();
   ctx.fillStyle = COLORS.node.label;
   for (let i = 0; i < positionedLabels.length; i++) {
     const label = positionedLabels[i];
     ctx.save();
-    ctx.font = `${label.fontSize}px Arial`;
+    ctx.font = useHalo ? `bold ${label.fontSize}px Arial` : `${label.fontSize}px Arial`;
     ctx.textAlign = label.align;
     ctx.textBaseline = label.baseline;
+    if (useHalo) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.92)';
+      ctx.lineWidth = 4 / sizeVS;
+      ctx.lineJoin = 'round';
+      ctx.strokeText(label.text, label.x, label.y);
+    }
     ctx.fillText(label.text, label.x, label.y);
     ctx.restore();
   }
