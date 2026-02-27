@@ -8,10 +8,11 @@
  *    or head_measurement (node is head)
  * 3. Long edge — edge whose ITM length exceeds 70m
  * 4. Not last manhole — manhole with only inbound edges (head) and no outbound (tail)
+ * 5. Negative gradient — pipe where head is deeper than tail (uphill flow)
  */
 
 /**
- * @typedef {{ type: 'missing_coords' | 'missing_measurement' | 'long_edge' | 'not_last_manhole', nodeId?: string|number, edgeId?: string|number, side?: 'tail'|'head', worldX: number, worldY: number, lengthM?: number }} Issue
+ * @typedef {{ type: 'missing_coords' | 'missing_measurement' | 'long_edge' | 'not_last_manhole' | 'negative_gradient', nodeId?: string|number, edgeId?: string|number, side?: 'tail'|'head', worldX: number, worldY: number, lengthM?: number, gradient?: number }} Issue
  * @typedef {{ totalKm: number, issueCount: number }} SketchStats
  */
 
@@ -130,8 +131,31 @@ export function computeSketchIssues(nodes, edges) {
     }
   }
 
-  // Sort: missing_coords first, then missing_measurement, then long_edge, then not_last_manhole; within each by id
-  const typeOrder = { missing_coords: 0, missing_measurement: 1, long_edge: 2, not_last_manhole: 3 };
+  // 5. Negative gradient — pipe where head is deeper than tail (uphill flow)
+  for (const edge of edges) {
+    const tailMeas = parseFloat(edge.tail_measurement);
+    const headMeas = parseFloat(edge.head_measurement);
+    if (isNaN(tailMeas) || isNaN(headMeas)) continue;
+    if (tailMeas <= 0 || headMeas <= 0) continue;
+
+    // head deeper than tail = pipe slopes uphill from tail→head = bad
+    if (headMeas > tailMeas) {
+      const tailNode = edge.tail != null ? nodeMap.get(String(edge.tail)) : null;
+      const headNode = edge.head != null ? nodeMap.get(String(edge.head)) : null;
+      issues.push({
+        type: 'negative_gradient',
+        edgeId: edge.id,
+        tailId: edge.tail,
+        headId: edge.head,
+        gradient: +(headMeas - tailMeas).toFixed(3),
+        worldX: tailNode && headNode ? (tailNode.x + headNode.x) / 2 : 0,
+        worldY: tailNode && headNode ? (tailNode.y + headNode.y) / 2 : 0,
+      });
+    }
+  }
+
+  // Sort: missing_coords first, then missing_measurement, then long_edge, then not_last_manhole, then negative_gradient; within each by id
+  const typeOrder = { missing_coords: 0, missing_measurement: 1, long_edge: 2, not_last_manhole: 3, negative_gradient: 4 };
   issues.sort((a, b) => {
     const tDiff = (typeOrder[a.type] ?? 9) - (typeOrder[b.type] ?? 9);
     if (tDiff !== 0) return tDiff;

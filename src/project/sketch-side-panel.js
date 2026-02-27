@@ -318,6 +318,10 @@ function renderIssuesView() {
       icon = 'last_page';
       typeText = t('projects.canvas.notLastManhole') || 'Not last manhole';
       nodeLabel = `#${issue.nodeId}`;
+    } else if (issue.type === 'negative_gradient') {
+      icon = 'trending_down';
+      typeText = `${t('projects.canvas.negativeGradient') || 'Negative gradient'} (${issue.gradient}m)`;
+      nodeLabel = `#${issue.tailId}→#${issue.headId}`;
     } else {
       icon = 'rule';
       typeText = t('projects.canvas.missingMeasurement') || 'Missing measurement';
