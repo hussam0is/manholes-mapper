@@ -5609,7 +5609,7 @@ select.invalid:focus {
 #toast {
   position: absolute;
   left: 50%;
-  top: 12px;
+  top: 50px;
   transform: translateX(-50%);
   background: var(--color-primary-strong);
   color: #fff;
