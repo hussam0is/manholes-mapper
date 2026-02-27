@@ -693,3 +693,128 @@ function initMobileMenuBehavior() {
 // syncAppHeightVar fixes Android devices (e.g., Samsung Note 10) where 100dvh doesn't work correctly
 try { syncAppHeightVar(); } catch (e) { console.warn('[main-entry] syncAppHeightVar failed:', e); }
 try { syncHeaderHeightVar(); } catch (e) { console.warn('[main-entry] syncHeaderHeightVar failed:', e); }
+
+// --- Landscape header auto-hide ---
+// In landscape mobile mode, the header auto-hides during canvas interaction to
+// maximise vertical drawing space, then reappears on idle or top-edge hover.
+function setupLandscapeHeaderAutoHide() {
+  const header = document.querySelector('header');
+  const canvas = document.getElementById('graphCanvas');
+  if (!header || !canvas) return;
+
+  let hideTimer = null;
+  let isLandscape = false;
+
+  /** Check if we're in landscape mobile mode */
+  function checkLandscape() {
+    isLandscape = window.innerHeight <= 450 && window.matchMedia('(orientation: landscape)').matches;
+    if (!isLandscape) {
+      // Portrait / desktop: ensure header is visible and classes removed
+      header.classList.remove('header--hidden');
+      header.classList.remove('header--landscape-auto-hide');
+      document.body.classList.remove('landscape-header-hidden');
+      clearTimeout(hideTimer);
+      // Re-sync the header height variable
+      syncHeaderHeight();
+    } else {
+      header.classList.add('header--landscape-auto-hide');
+    }
+  }
+
+  /** Sync --header-h based on current header visibility */
+  function syncHeaderHeight() {
+    if (header.classList.contains('header--hidden')) {
+      document.documentElement.style.setProperty('--header-h', '0px');
+      document.body.classList.add('landscape-header-hidden');
+    } else {
+      const h = Math.round(header.getBoundingClientRect().height);
+      document.documentElement.style.setProperty('--header-h', h + 'px');
+      document.body.classList.remove('landscape-header-hidden');
+    }
+  }
+
+  function hideHeader() {
+    if (!isLandscape) return;
+    header.classList.add('header--hidden');
+    syncHeaderHeight();
+  }
+
+  function showHeader() {
+    header.classList.remove('header--hidden');
+    syncHeaderHeight();
+    clearTimeout(hideTimer);
+    if (isLandscape) {
+      hideTimer = setTimeout(hideHeader, 2500);
+    }
+  }
+
+  // Watch for class changes on header to keep --header-h in sync
+  if (typeof MutationObserver !== 'undefined') {
+    const mo = new MutationObserver(() => syncHeaderHeight());
+    mo.observe(header, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  /** True when the mobile menu is open — header must stay visible */
+  function isMobileMenuOpen() {
+    return document.body.classList.contains('mobile-menu-open');
+  }
+
+  // Canvas interaction: hide immediately on touch, schedule re-show after release
+  canvas.addEventListener('pointerdown', () => {
+    if (isLandscape && !isMobileMenuOpen()) hideHeader();
+  }, { passive: true });
+
+  canvas.addEventListener('pointerup', () => {
+    if (isLandscape && !isMobileMenuOpen()) {
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(hideHeader, 2500);
+    }
+  }, { passive: true });
+
+  // Show header when pointer moves near the top edge (within 30px)
+  canvas.addEventListener('pointermove', (e) => {
+    if (!isLandscape) return;
+    if (e.clientY <= 30) showHeader();
+  }, { passive: true });
+
+  // Top-of-screen reveal zone (works even when header is hidden / pointer-events: none)
+  document.addEventListener('pointerdown', (e) => {
+    if (!isLandscape) return;
+    if (e.clientY <= 10) showHeader();
+  }, { passive: true });
+
+  // When mobile menu opens, ensure header stays visible; resume auto-hide when closed
+  const menuBtnEl = document.getElementById('mobileMenuBtn');
+  if (menuBtnEl) {
+    menuBtnEl.addEventListener('click', () => {
+      if (isLandscape) {
+        showHeader();
+        // Keep header visible while menu is open — cancel auto-hide timer
+        clearTimeout(hideTimer);
+      }
+    });
+  }
+
+  // Watch for mobile-menu-open class removal (menu closed) to restart auto-hide
+  if (typeof MutationObserver !== 'undefined') {
+    const bodyMo = new MutationObserver(() => {
+      if (isLandscape && !isMobileMenuOpen()) {
+        clearTimeout(hideTimer);
+        hideTimer = setTimeout(hideHeader, 2500);
+      }
+    });
+    bodyMo.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  // Re-evaluate on resize and orientation change
+  window.addEventListener('resize', checkLandscape);
+  window.addEventListener('orientationchange', checkLandscape);
+  checkLandscape();
+
+  // Start auto-hide timer on load in landscape
+  if (isLandscape) {
+    hideTimer = setTimeout(hideHeader, 3000);
+  }
+}
+
+try { setupLandscapeHeaderAutoHide(); } catch (e) { console.warn('[main-entry] setupLandscapeHeaderAutoHide failed:', e); }

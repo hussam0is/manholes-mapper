@@ -10559,7 +10559,7 @@ button:focus-visible,
    Uses max-height + orientation to avoid affecting tablets and desktops.
 */
 
-/* --- Landscape: Compact Header --- */
+/* --- Landscape: Compact Header (Glass Morphism + Auto-Hide) --- */
 @media (max-height: 450px) and (orientation: landscape) {
   :root {
     --header-h: 36px;
@@ -10570,20 +10570,51 @@ button:focus-visible,
     padding: 0.25rem 0.75rem;
   }
 
-  #brandLogo {
-    height: 22px;
+  /* --- Glass morphism header: floats over canvas --- */
+  .app-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: saturate(160%) blur(12px);
+    -webkit-backdrop-filter: saturate(160%) blur(12px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: none;
   }
 
-  #appTitle {
-    font-size: 1rem;
-    line-height: 1;
+  /* Override the solid .soft-blue-header gradient in landscape */
+  .soft-blue-header {
+    background: rgba(255, 255, 255, 0.7);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: none;
+    backdrop-filter: saturate(160%) blur(12px);
+    -webkit-backdrop-filter: saturate(160%) blur(12px);
   }
 
-  #appTitle::after {
-    height: 2px;
-    bottom: -2px;
+  /* Canvas extends to full height — no margin reserved for fixed header */
+  #main {
+    margin-top: 0;
   }
 
+  /* Edge-to-edge canvas behind the glass header */
+  #canvasContainer {
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  /* --- Minimal header: hide brand logo and title --- */
+  .menu-brand__logo,
+  .menu-brand__title {
+    display: none;
+  }
+
+  .menu-brand {
+    gap: 0.25rem;
+  }
+
+  /* Sketch name badge: keep visible and prominent */
   .sketch-name-display-mobile {
     font-size: 0.7rem;
     padding: 0.15rem 0.5rem;
@@ -10598,10 +10629,6 @@ button:focus-visible,
     font-size: 1.2rem;
   }
 
-  .menu-brand {
-    gap: 0.375rem;
-  }
-
   /* Header controls (zoom, home, help) — smaller in landscape */
   .menu-btn--small,
   .menu-btn--icon-only {
@@ -10613,6 +10640,18 @@ button:focus-visible,
   .menu-btn--small .material-icons,
   .menu-btn--icon-only .material-icons {
     font-size: 1rem;
+  }
+
+  /* --- Auto-hide animation --- */
+  .header--landscape-auto-hide {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .header--hidden {
+    transform: translateY(-100%);
+    opacity: 0;
+    pointer-events: none;
   }
 }
 
@@ -10704,7 +10743,8 @@ button:focus-visible,
 /* --- Landscape: Canvas Toolbar — Switch to Horizontal --- */
 @media (max-height: 450px) and (orientation: landscape) {
   .canvas-toolbar {
-    top: 8px;
+    /* Push below the fixed header; --header-h is set to 0 when header auto-hides */
+    top: calc(var(--header-h, 36px) + 8px);
     right: 50%;
     transform: translateX(50%);
   }
@@ -10729,9 +10769,9 @@ button:focus-visible,
     font-size: 18px;
   }
 
-  /* Edge legend — inline and compact */
+  /* Edge legend — inline and compact, pushed below fixed header */
   .edge-legend {
-    top: 4px;
+    top: calc(var(--header-h, 36px) + 4px);
     left: 4px;
     font-size: 10px;
     padding: 3px 8px;
@@ -11013,5 +11053,22 @@ button:focus-visible,
     max-height: calc(100dvh - var(--header-h, 36px) - 16px);
     transform: scale(0.85);
     transform-origin: bottom right;
+  }
+}
+
+/* --- Landscape: Dark Mode Glass Header --- */
+@media (prefers-color-scheme: dark) {
+  @media (max-height: 450px) and (orientation: landscape) {
+    .app-header,
+    .soft-blue-header {
+      background: rgba(11, 18, 32, 0.75);
+      border-bottom-color: rgba(255, 255, 255, 0.06);
+    }
+
+    .sketch-name-display-mobile {
+      background: rgba(15, 23, 42, 0.85);
+      border-color: rgba(96, 165, 250, 0.2);
+      color: #93c5fd;
+    }
   }
 }
