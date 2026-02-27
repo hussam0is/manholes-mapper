@@ -61,11 +61,12 @@ export async function open3DView(opts = {}) {
           <button class="three-d-overlay__speed-btn" data-dir="-1">
             <span class="material-icons">remove</span>
           </button>
-          <span class="three-d-overlay__speed-badge">1×</span>
+          <span class="three-d-overlay__speed-badge">1x</span>
           <button class="three-d-overlay__speed-btn" data-dir="1">
             <span class="material-icons">add</span>
           </button>
         </div>
+        <span class="three-d-overlay__header-divider"></span>
         <button class="three-d-overlay__miniature-toggle" aria-label="${esc(t('threeD.miniature'))}">
           <span class="material-icons">zoom_out_map</span>
           <span class="three-d-overlay__miniature-label">${esc(t('threeD.miniature'))}</span>
@@ -84,7 +85,7 @@ export async function open3DView(opts = {}) {
         <span class="material-icons" style="animation: spin 1s linear infinite">hourglass_top</span>
         <span>${esc(t('threeD.loading'))}</span>
       </div>
-      <div class="three-d-overlay__crosshair" style="display:${currentMode === 'fps' ? 'flex' : 'none'}">+</div>
+      <div class="three-d-overlay__crosshair" style="display:${currentMode === 'fps' ? 'flex' : 'none'}"></div>
       <div class="three-d-overlay__orbit-controls" style="display:${currentMode === 'orbit' ? 'flex' : 'none'}">
         <button class="three-d-overlay__orbit-btn" data-action="zoom-in" aria-label="${esc(t('threeD.controls.zoom'))} +">
           <span class="material-icons">add</span>

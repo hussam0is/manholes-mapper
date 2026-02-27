@@ -9977,16 +9977,17 @@ button:focus-visible,
   display: flex;
   align-items: center;
   justify-content: center;
-  background: none;
-  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   color: #fff;
   cursor: pointer;
   border-radius: var(--radius);
-  transition: background 0.15s;
+  transition: background 0.15s, border-color 0.15s;
 }
 
 .three-d-overlay__close:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(239, 68, 68, 0.45);
+  border-color: rgba(239, 68, 68, 0.6);
 }
 
 .three-d-overlay__canvas-container {
@@ -10099,13 +10100,13 @@ button:focus-visible,
   position: absolute;
   bottom: 16px;
   inset-inline-end: 16px;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(4px);
   border-radius: var(--radius);
   padding: var(--space-3) var(--space-4);
   color: rgba(255, 255, 255, 0.9);
-  font-size: 0.8rem;
-  line-height: 1.6;
+  font-size: 0.85rem;
+  line-height: 1.8;
   z-index: 1;
   pointer-events: none;
   transition: opacity 0.5s;
@@ -10244,6 +10245,15 @@ button:focus-visible,
   gap: var(--space-2);
 }
 
+/* Subtle vertical divider between action groups */
+.three-d-overlay__header-divider {
+  width: 1px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.2);
+  margin: 0 var(--space-1);
+  flex-shrink: 0;
+}
+
 /* 3D mode toggle button */
 .three-d-overlay__mode-toggle {
   min-width: 44px;
@@ -10270,7 +10280,7 @@ button:focus-visible,
   white-space: nowrap;
 }
 
-/* 3D Miniature Toggle */
+/* 3D Miniature Toggle — unified glass-morphism style with mode toggle */
 .three-d-overlay__miniature-toggle {
   min-width: 44px;
   min-height: 44px;
@@ -10279,15 +10289,17 @@ button:focus-visible,
   gap: 6px;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #e2e8f0;
+  backdrop-filter: blur(4px);
+  color: #fff;
   cursor: pointer;
   border-radius: var(--radius);
-  padding: 0 10px;
-  font-size: 0.75rem;
+  padding: 0 var(--space-3);
+  font-size: 0.8rem;
+  font-weight: 500;
   transition: background 0.15s;
 }
 .three-d-overlay__miniature-toggle:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.22);
 }
 .three-d-overlay__miniature-label {
   white-space: nowrap;
@@ -10383,7 +10395,7 @@ button:focus-visible,
   z-index: 2;
 }
 
-/* 3D FPS crosshair */
+/* 3D FPS crosshair (CSS pseudo-element lines) */
 .three-d-overlay__crosshair {
   position: absolute;
   inset: 0;
@@ -10392,11 +10404,22 @@ button:focus-visible,
   justify-content: center;
   pointer-events: none;
   z-index: 1;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 24px;
-  font-weight: 300;
-  font-family: monospace;
-  text-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
+}
+.three-d-overlay__crosshair::before,
+.three-d-overlay__crosshair::after {
+  content: '';
+  position: absolute;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 1px;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+}
+.three-d-overlay__crosshair::before {
+  width: 20px;
+  height: 2px;
+}
+.three-d-overlay__crosshair::after {
+  width: 2px;
+  height: 20px;
 }
 
 /* ── 3D Issues Panel ── */
