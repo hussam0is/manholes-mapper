@@ -2368,6 +2368,18 @@ canvas {
   bottom: 0;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0), #fff 32%);
   padding-top: 0.5rem;
+  padding-bottom: 16px;
+}
+
+/* Ghost style for delete buttons in details panel — less prominent to prevent accidental taps */
+.details-actions .btn-danger {
+  background: transparent;
+  color: var(--color-danger);
+  border: 1.5px solid var(--color-danger);
+}
+
+.details-actions .btn-danger:hover {
+  background: var(--color-danger-light);
 }
 
 /* Indicator chips */
