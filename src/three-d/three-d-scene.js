@@ -121,7 +121,7 @@ function buildHouseModel(THREE, group, pos, nodeId, isEstimated, materials, CSS2
     labelDiv.className = 'three-d-label';
     labelDiv.textContent = nodeId;
     label = new CSS2DObject(labelDiv);
-    label.position.set(pos.x, pos.y + WALL_H + ROOF_H + 0.4, pos.z);
+    label.position.set(pos.x, pos.y + WALL_H + ROOF_H + 1.0, pos.z);
     group.add(label);
   }
 
@@ -300,7 +300,7 @@ export function buildScene(THREE, data, CSS2DObject, issues = []) {
         labelDiv.className = 'three-d-label';
         labelDiv.textContent = node.id;
         label = new CSS2DObject(labelDiv);
-        label.position.set(pos.x, pos.y + 0.5, pos.z);
+        label.position.set(pos.x, pos.y + 1.5, pos.z);
         manholeGroup.add(label);
       }
 
@@ -442,7 +442,7 @@ export function buildScene(THREE, data, CSS2DObject, issues = []) {
       badgeDiv.className = 'three-d-issue-badge';
       badgeDiv.innerHTML = '<span class="material-icons">warning</span>';
       const badge = new CSS2DObject(badgeDiv);
-      badge.position.set(pos.x, pos.y + 1.0, pos.z);
+      badge.position.set(pos.x, pos.y + 2.2, pos.z);
       issueGroup.add(badge);
     }
   }
