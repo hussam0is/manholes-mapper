@@ -1391,7 +1391,7 @@ select.btn:focus-visible {
   position: absolute;
   top: 48px;
   left: 12px;
-  z-index: 150;
+  z-index: 140; /* below sketch side panel (150) to prevent click interception */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1495,6 +1495,23 @@ select.btn:focus-visible {
 
   .street-view-pegman__icon {
     font-size: 30px;
+  }
+}
+
+/* Landscape: hide pegman when sketch side panel is open to avoid click conflicts */
+@media (max-height: 450px) and (orientation: landscape) {
+  .sketch-side-panel.open ~ .street-view-pegman,
+  .street-view-pegman {
+    top: calc(var(--header-h, 36px) + 48px);
+    z-index: 130;
+  }
+
+  .street-view-pegman__icon {
+    font-size: 28px;
+  }
+
+  .street-view-pegman__label {
+    display: none;
   }
 }
 
@@ -9874,6 +9891,95 @@ button:focus-visible,
 
 }
 
+/* ── Landscape: narrower side panel to maximize canvas area ────────── */
+@media (max-height: 450px) and (orientation: landscape) {
+  .sketch-side-panel {
+    width: 220px;
+    top: 0;
+    font-size: 0.8rem;
+  }
+
+  .sketch-side-panel__back {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    gap: 4px;
+  }
+
+  .sketch-side-panel__back .material-icons {
+    font-size: 14px;
+  }
+
+  .sketch-side-panel__header {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+    gap: 4px;
+  }
+
+  .sketch-side-panel__header .material-icons:first-child {
+    font-size: 16px;
+  }
+
+  .sketch-side-panel__close {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+  }
+
+  .sketch-side-panel__close .material-icons {
+    font-size: 16px;
+  }
+
+  .sketch-side-panel__item {
+    padding: 0.25rem 0.4rem;
+    gap: 4px;
+    min-height: 32px;
+  }
+
+  .sketch-side-panel__name {
+    font-size: 0.75rem;
+  }
+
+  .sketch-side-panel__stats {
+    font-size: 0.65rem;
+    gap: 4px;
+  }
+
+  .sketch-side-panel__issues-btn {
+    font-size: 0.65rem;
+    padding: 0.1rem 0.35rem;
+    min-height: 20px;
+  }
+
+  .sketch-side-panel__totals {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+  }
+
+  .sketch-side-panel-toggle {
+    bottom: 60px;
+  }
+
+  /* Recenter button in item row */
+  .sketch-side-panel__recenter {
+    width: 24px;
+    height: 24px;
+  }
+
+  .sketch-side-panel__recenter .material-icons {
+    font-size: 16px;
+  }
+
+  /* Visibility toggle */
+  .sketch-side-panel__visibility {
+    width: 24px;
+    height: 24px;
+  }
+
+  .sketch-side-panel__visibility .material-icons {
+    font-size: 16px;
+  }
+}
+
 /* ── Dark mode for side panel ────────────────────────────────────────── */
 @media (prefers-color-scheme: dark) {
   .sketch-side-panel {
@@ -11025,6 +11131,63 @@ button:focus-visible,
   .admin-modern-content {
     padding: 0.5rem;
     max-height: calc(100dvh - 120px);
+    overflow-y: auto;
+  }
+
+  /* Compact the admin settings header (blue gradient) in landscape */
+  .admin-header {
+    padding: 0.4rem 0.75rem;
+  }
+
+  .admin-header h2 {
+    font-size: 0.95rem;
+    gap: 0.35rem;
+  }
+
+  .admin-header .material-icons {
+    font-size: 1.1rem;
+  }
+
+  /* Compact admin tabs in landscape */
+  .admin-tabs {
+    margin: -0.5rem -0.75rem 0.5rem -0.75rem;
+  }
+
+  .admin-tab {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  /* Sticky footer with save/cancel buttons */
+  .admin-actions {
+    position: sticky;
+    bottom: 0;
+    background: var(--color-surface, #fff);
+    padding: 0.35rem 0.5rem;
+    border-top: 1px solid var(--color-border);
+    z-index: 10;
+    margin: 0 -0.5rem -0.5rem;
+  }
+
+  .admin-actions .btn {
+    padding: 0.3rem 0.75rem;
+    font-size: 0.8rem;
+    min-height: 32px;
+  }
+
+  /* Make admin sections more compact */
+  .admin-section-header {
+    padding: 0.35rem 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  .admin-section-content {
+    padding: 0.35rem 0.5rem;
+  }
+
+  /* Compact admin screen wrapper to use full height */
+  #adminScreen {
+    max-height: calc(100dvh - var(--header-h, 36px));
     overflow-y: auto;
   }
 }
