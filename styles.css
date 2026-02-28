@@ -2213,14 +2213,15 @@ canvas {
 .drag-handle-bar {
   width: 48px;
   height: 6px;
-  background: #cbd5e1;
+  background: var(--color-text-secondary, #cbd5e1);
+  opacity: 0.4;
   border-radius: 3px;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, opacity 0.2s ease;
 }
 
 .sidebar-drag-handle:hover .drag-handle-bar,
 .sidebar-drag-handle:active .drag-handle-bar {
-  background: #94a3b8;
+  opacity: 0.6;
 }
 
 .sidebar-header {
@@ -2239,8 +2240,10 @@ canvas {
 
 /* Make sidebar close button larger and more prominent for mobile use */
 #sidebarCloseBtn {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: 50%;
   background: var(--color-danger-light);
   border-color: transparent;
@@ -2699,10 +2702,10 @@ canvas {
 }
 
 .wizard-field-area {
-  background: #fafafa;
+  background: var(--color-bg);
   border-radius: 10px;
   padding: 10px;
-  border: 1px solid #eee;
+  border: 1px solid var(--color-border);
 }
 
 .wizard-field-header {
@@ -2720,11 +2723,12 @@ canvas {
 
 .wizard-field-input {
   width: 100%;
-  border: 1.5px solid #ddd;
+  border: 1.5px solid var(--color-border);
   border-radius: 8px;
   padding: 8px 10px;
   font-size: 14px;
-  background: white;
+  background: var(--color-surface);
+  color: var(--color-text);
   box-sizing: border-box;
 }
 
@@ -2745,22 +2749,22 @@ textarea.wizard-field-input {
   }
 
   .wizard-field-area {
-    background: #1e1e1e;
-    border-color: #333;
+    background: var(--color-surface-alt, #1e293b);
+    border-color: var(--color-border);
   }
 
   .wizard-field-input {
-    background: #2d2d2d;
-    border-color: #444;
-    color: #e0e0e0;
+    background: var(--color-surface);
+    border-color: var(--color-border);
+    color: var(--color-text);
   }
 
   .wizard-check {
-    background: #1e1e1e;
+    background: var(--color-surface-alt, #1e293b);
   }
 
   .wizard-tab:not(.wizard-tab--active) {
-    background: #2a2a2a !important;
+    background: var(--color-surface-alt, #1e293b) !important;
   }
 }
 
@@ -7328,8 +7332,8 @@ select.invalid:focus {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border: none;
   background: rgba(255, 255, 255, 0.15);
   color: #fff;
@@ -7677,6 +7681,7 @@ select.invalid:focus {
   align-items: center;
   gap: 0.375rem;
   padding: 0.5rem 0.75rem;
+  min-height: 44px;
   border: 1px solid var(--color-border);
   background: var(--color-bg);
   color: var(--color-text);
@@ -7692,7 +7697,7 @@ select.invalid:focus {
 }
 
 .sketch-action-btn:hover {
-  background: #e2e8f0;
+  background: var(--color-bg-hover, var(--color-border));
   border-color: var(--color-muted);
 }
 
@@ -7869,8 +7874,8 @@ select.invalid:focus {
   }
 
   .home-panel-close {
-    width: 32px;
-    height: 32px;
+    width: 44px;
+    height: 44px;
   }
 
   .home-panel-close .material-icons {
@@ -11414,8 +11419,84 @@ button:focus-visible,
   }
 
   /* Hide drawer drag handle in landscape (side panel doesn't need it) */
-  .drawer-handle {
+  .drawer-handle,
+  .sidebar-drag-handle {
     display: none;
+  }
+
+  /* Landscape side-panel: remove bottom-sheet max-height constraints */
+  #detailsContainer {
+    max-height: none;
+  }
+
+  /* Compact spacing for landscape side panel */
+  .sidebar-header {
+    padding: 0.25rem 0.5rem;
+    padding-bottom: 0.4rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .sidebar-header h2 {
+    font-size: 0.85rem;
+  }
+
+  #sidebar .details-section {
+    padding: 0.35rem;
+    margin-bottom: 0.35rem;
+  }
+
+  #sidebar label {
+    font-size: 0.75rem;
+    margin-bottom: 0.1rem;
+  }
+
+  #sidebar input[type="text"],
+  #sidebar input[type="number"],
+  #sidebar input[type="date"],
+  #sidebar select,
+  #sidebar textarea {
+    padding: 0.3rem 0.4rem;
+    font-size: 0.8rem;
+    min-height: 36px;
+  }
+
+  .wizard-tabs-row {
+    gap: 4px;
+    margin-bottom: 6px;
+  }
+
+  .wizard-tab {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+  }
+
+  .wizard-tab .material-icons {
+    font-size: 18px;
+  }
+
+  .wizard-field-area {
+    padding: 6px;
+  }
+
+  .wizard-field-header {
+    font-size: 0.75rem;
+    margin-bottom: 4px;
+  }
+
+  .wizard-field-input {
+    padding: 6px 8px;
+    font-size: 0.8rem;
+  }
+
+  .wizard-accuracy-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    margin: 4px 0 2px;
+  }
+
+  #sidebar .details-grid.two-col {
+    gap: 0.3rem 0.3rem;
   }
 }
 
@@ -11440,8 +11521,8 @@ button:focus-visible,
   }
 
   .home-panel-close {
-    width: 28px;
-    height: 28px;
+    width: 44px;
+    height: 44px;
   }
 
   .home-panel-close .material-icons {
@@ -11450,7 +11531,7 @@ button:focus-visible,
 
   .home-panel-sync-status {
     padding: 0.15rem 0.75rem;
-    font-size: 0.65rem;
+    font-size: 0.75rem;
   }
 
   .home-panel-content {
@@ -11485,6 +11566,16 @@ button:focus-visible,
   .sketch-action-btn {
     padding: 0.3rem 0.5rem;
     font-size: 0.75rem;
+    min-height: 44px;
+  }
+
+  /* Hide text labels on non-primary action buttons in landscape */
+  .sketch-action-btn span:not(.material-icons) {
+    display: none;
+  }
+
+  .sketch-action-btn.sketch-action-primary span:not(.material-icons) {
+    display: inline;
   }
 
   .sketch-tabs {

@@ -6,7 +6,7 @@
 export function initResizableDrawer() {
   const sidebar = document.getElementById('sidebar');
   const dragHandle = document.querySelector('.sidebar-drag-handle');
-  
+
   if (!sidebar || !dragHandle) return;
 
   let isResizing = false;
@@ -15,11 +15,21 @@ export function initResizableDrawer() {
   const minHeight = 150; // Minimum height in pixels
   const maxHeightVh = 85; // Maximum height as percentage of viewport
 
+  /** Detect landscape side-panel mode (drawer becomes a side panel, not a bottom sheet) */
+  function isLandscapeSidePanel() {
+    return window.innerHeight <= 450
+      && window.innerWidth <= 900
+      && window.matchMedia('(orientation: landscape)').matches;
+  }
+
   function getMaxHeight() {
     return (window.innerHeight * maxHeightVh) / 100;
   }
 
   function startResize(e) {
+    // In landscape side-panel mode, resizing is disabled (CSS hides the handle,
+    // but guard here in case the event fires before repaint)
+    if (isLandscapeSidePanel()) return;
     isResizing = true;
     startY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
     
@@ -157,6 +167,12 @@ export function initResizableDrawer() {
     mutations.forEach((mutation) => {
       if (mutation.attributeName === 'class') {
         if (sidebar.classList.contains('open')) {
+          // In landscape side-panel mode, clear any bottom-sheet height overrides
+          if (isLandscapeSidePanel()) {
+            sidebar.style.height = '';
+            sidebar.style.maxHeight = '';
+            return;
+          }
           // Restore saved height when opening
           try {
             const savedHeight = localStorage.getItem('sidebarHeight');
@@ -195,9 +211,16 @@ export function initResizableDrawer() {
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(() => {
+      // In landscape side-panel mode, clear bottom-sheet inline height
+      if (isLandscapeSidePanel()) {
+        sidebar.style.height = '';
+        sidebar.style.maxHeight = '';
+        return;
+      }
+
       const currentHeight = sidebar.offsetHeight;
       const maxHeight = getMaxHeight();
-      
+
       if (currentHeight > maxHeight) {
         sidebar.style.height = `${maxHeight}px`;
         if (window.innerWidth <= 600) {
