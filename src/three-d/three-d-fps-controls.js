@@ -71,6 +71,10 @@ export class FPSControls {
     this._joystickOrigin = null;
     this._lookPrev = null;
 
+    // Double-tap tracking (for level-horizon gesture)
+    this._lastLookTapTime = 0;
+    this._doubleTapThreshold = 300; // ms
+
     // Desktop key state
     this._keys = {};
 
@@ -314,6 +318,15 @@ export class FPSControls {
         e.preventDefault();
         this._lookTouchId = touch.identifier;
         this._lookPrev = { x: touch.clientX, y: touch.clientY };
+
+        // Double-tap to level horizon (reset pitch to 0)
+        const now = performance.now();
+        if (now - this._lastLookTapTime < this._doubleTapThreshold) {
+          this._targetPitch = 0;
+          this._lastLookTapTime = 0; // reset to avoid triple-tap
+        } else {
+          this._lastLookTapTime = now;
+        }
       }
     }
   }
