@@ -377,7 +377,8 @@ export function mountSignUp(container, props = {}) {
 }
 
 /**
- * Unmount auth component from a container
+ * Unmount auth component from a container.
+ * Clears DOM children after unmounting so createRoot starts fresh.
  * @param {HTMLElement} container
  */
 export function unmountAuth(container) {
@@ -387,6 +388,8 @@ export function unmountAuth(container) {
     const root = roots.get(container);
     root.unmount();
     roots.delete(container);
+    // Clear any orphaned DOM nodes left by React so the next createRoot starts clean
+    container.textContent = '';
   }
 }
 
