@@ -7780,6 +7780,17 @@ select.invalid:focus {
   font-size: 2rem;
 }
 
+/* "View My Sketches" button in projects footer — outlined style */
+.home-panel-sketches-btn {
+  background: transparent;
+  color: var(--color-primary);
+  border: 1.5px solid var(--color-primary);
+}
+
+.home-panel-sketches-btn:hover {
+  background: var(--color-primary-light);
+}
+
 /* Mobile adjustments for home panel */
 @media (max-width: 480px) {
   .home-panel-modern {

@@ -2864,13 +2864,26 @@ async function renderProjectsHome() {
   subtitleEl.textContent = t('projects.homepage.subtitle');
   subtitleEl.style.display = '';
 
-  // Hide close button (projects page is the landing page)
+  // Show close button so user can dismiss the panel and access the canvas
   const closeBtn = document.getElementById('homePanelCloseBtn');
-  if (closeBtn) closeBtn.style.display = 'none';
+  if (closeBtn) closeBtn.style.display = '';
 
-  // Hide footer (New Sketch button is irrelevant on projects page)
+  // Show footer with "View My Sketches" button
   const footer = homePanel.querySelector('.home-panel-footer');
-  if (footer) footer.style.display = 'none';
+  if (footer) {
+    footer.style.display = '';
+    footer.innerHTML = `
+      <button id="viewMySketchesBtn" class="home-panel-new-btn home-panel-sketches-btn">
+        <span class="material-icons">folder_open</span>
+        <span>${t('homeTitle')}</span>
+      </button>`;
+    const viewSketchesBtn = footer.querySelector('#viewMySketchesBtn');
+    if (viewSketchesBtn) {
+      viewSketchesBtn.addEventListener('click', () => {
+        renderHome();
+      });
+    }
+  }
 
   // Hide sketch tabs
   const sketchTabs = document.getElementById('sketchTabs');
@@ -7408,7 +7421,6 @@ if (createFromHomeBtn) {
 const homePanelCloseBtn = document.getElementById('homePanelCloseBtn');
 if (homePanelCloseBtn) {
   homePanelCloseBtn.addEventListener('click', () => {
-    if (homeMode === 'projects') return; // Projects page is the landing page
     hideHome();
   });
 }
