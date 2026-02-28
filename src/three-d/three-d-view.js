@@ -651,6 +651,9 @@ export async function open3DView(opts = {}) {
 
   // ── Render loop (delta-time) ──────────────────────────────────────────
   let lastTime = performance.now();
+  const BASE_FOV = 60;
+  const MAX_FOV_BOOST = 12; // up to +12 deg at max speed
+  let currentFov = BASE_FOV;
 
   function animate(now) {
     animFrameId = requestAnimationFrame(animate);
@@ -659,8 +662,24 @@ export async function open3DView(opts = {}) {
 
     if (currentMode === 'fps') {
       fpsControls.update(dt);
+
+      // FOV widening at high speeds (cinematic spectator effect)
+      const speedRatio = fpsControls.speedMultiplier / 16; // 0..1 based on max speed
+      const targetFov = BASE_FOV + MAX_FOV_BOOST * speedRatio;
+      currentFov += (targetFov - currentFov) * Math.min(1, 3 * dt); // smooth lerp
+      if (Math.abs(camera.fov - currentFov) > 0.1) {
+        camera.fov = currentFov;
+        camera.updateProjectionMatrix();
+      }
     } else {
       orbitControls.update();
+
+      // Reset FOV when in orbit mode
+      if (Math.abs(camera.fov - BASE_FOV) > 0.1) {
+        currentFov += (BASE_FOV - currentFov) * Math.min(1, 3 * dt);
+        camera.fov = currentFov;
+        camera.updateProjectionMatrix();
+      }
     }
 
     // Distance-based label visibility — hide when far, scale when close
