@@ -8046,7 +8046,7 @@ select.invalid:focus {
   right: 0;
   bottom: 0;
   z-index: 1000;
-  background: linear-gradient(135deg, #eaf2ff 0%, #dbeafe 50%, #bfdbfe 100%);
+  background: linear-gradient(135deg, var(--color-bg, #f8fafc) 0%, var(--color-primary-light, #dbeafe) 50%, var(--color-primary-light, #dbeafe) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -8065,7 +8065,7 @@ select.invalid:focus {
 .login-panel-header {
   padding: 2rem 2rem 1.5rem;
   text-align: center;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: linear-gradient(135deg, var(--color-bg, #f8fafc) 0%, var(--color-surface-alt, #f1f5f9) 100%);
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -8382,10 +8382,10 @@ html[dir="rtl"] .auth-form-wrapper {
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1rem;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--color-danger-bg, #fef2f2);
+  border: 1px solid var(--color-danger-light, #fee2e2);
   border-radius: var(--radius);
-  color: #dc2626;
+  color: var(--color-danger, #ef4444);
   font-size: 0.875rem;
 }
 
@@ -8422,7 +8422,7 @@ html[dir="rtl"] .auth-form-wrapper {
 }
 
 .auth-form-field input:disabled {
-  background: #f1f5f9;
+  background: var(--color-bg, #f8fafc);
   cursor: not-allowed;
 }
 
@@ -10665,8 +10665,9 @@ button:focus-visible,
     left: 0;
     right: 0;
     z-index: 5;
-    padding: 4px var(--space-2);
+    padding: 2px var(--space-2);
     min-height: 32px;
+    max-height: 36px;
     background: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(4px);
     transition: opacity 0.4s ease, transform 0.4s ease;
@@ -10691,8 +10692,8 @@ button:focus-visible,
   .three-d-overlay__close,
   .three-d-overlay__mode-toggle,
   .three-d-overlay__miniature-toggle {
-    min-width: 36px;
-    min-height: 36px;
+    min-width: 32px;
+    min-height: 32px;
     padding: 0 6px;
     font-size: 0.7rem;
   }
@@ -10701,11 +10702,11 @@ button:focus-visible,
     display: none; /* Icon-only buttons in landscape */
   }
   .three-d-overlay__header-divider {
-    height: 20px;
+    height: 18px;
   }
   .three-d-overlay__speed-btn {
-    min-width: 40px;
-    min-height: 40px;
+    min-width: 32px;
+    min-height: 32px;
   }
   .three-d-overlay__speed-badge {
     font-size: 0.7rem;
@@ -11033,19 +11034,28 @@ button:focus-visible,
   }
 
   .auth-form-field input {
-    padding: 0.4rem 0.75rem;
+    padding: 0.5rem 0.75rem;
     font-size: 0.875rem;
+    min-height: 44px;
+    box-sizing: border-box;
   }
 
   .auth-form-submit {
     padding: 0.5rem;
     font-size: 0.875rem;
-    min-height: 36px;
+    min-height: 44px;
   }
 
   .auth-form-footer {
     font-size: 0.75rem;
     margin-top: 0.25rem;
+  }
+
+  .auth-form-link {
+    display: inline-block;
+    padding: 0.5rem;
+    min-height: 44px;
+    line-height: 1.5;
   }
 }
 
@@ -11069,13 +11079,13 @@ button:focus-visible,
   }
 
   .canvas-toolbar .segmented#modeGroup .btn {
-    min-width: 36px;
-    height: 36px;
-    padding: 0.3rem;
+    min-width: 40px;
+    height: 40px;
+    padding: 0.35rem;
   }
 
   .canvas-toolbar .segmented#modeGroup .btn .material-icons {
-    font-size: 18px;
+    font-size: 20px;
   }
 
   /* Edge legend — inline and compact, pushed below fixed header */
