@@ -759,6 +759,63 @@ export async function open3DView(opts = {}) {
       }
     }
 
+    // Label collision avoidance — hide overlapping labels, keep closer ones
+    if (sceneResult?.meshRefs) {
+      const halfW = container.clientWidth / 2;
+      const halfH = container.clientHeight / 2;
+      const camPos = camera.position;
+      const _proj = new THREE.Vector3();
+
+      // Collect all visible labels with their screen positions
+      const visibleLabels = [];
+
+      const collectLabel = (label, priority) => {
+        if (!label || label.element.style.display === 'none') return;
+        _proj.copy(label.position);
+        _proj.project(camera);
+        // Skip labels behind camera
+        if (_proj.z > 1) return;
+        const sx = (_proj.x * halfW) + halfW;
+        const sy = -(_proj.y * halfH) + halfH;
+        const dx = camPos.x - label.position.x;
+        const dy = camPos.y - label.position.y;
+        const dz = camPos.z - label.position.z;
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        visibleLabels.push({ label, sx, sy, dist, priority });
+      };
+
+      for (const [, refs] of sceneResult.meshRefs.nodeMeshes) {
+        collectLabel(refs.label, 1); // node labels have higher priority
+      }
+      for (const [, refs] of sceneResult.meshRefs.pipeMeshes) {
+        collectLabel(refs.label, 0); // pipe labels lower priority
+      }
+
+      // Sort: higher priority first, then closer first
+      visibleLabels.sort((a, b) => (b.priority - a.priority) || (a.dist - b.dist));
+
+      // Greedy overlap check — keep label if it doesn't overlap any already-kept label
+      const kept = [];
+      const MIN_DIST_PX = 30; // minimum pixel distance between label centers
+
+      for (const item of visibleLabels) {
+        let overlaps = false;
+        for (const k of kept) {
+          const ddx = item.sx - k.sx;
+          const ddy = item.sy - k.sy;
+          if (ddx * ddx + ddy * ddy < MIN_DIST_PX * MIN_DIST_PX) {
+            overlaps = true;
+            break;
+          }
+        }
+        if (overlaps) {
+          item.label.element.style.display = 'none';
+        } else {
+          kept.push(item);
+        }
+      }
+    }
+
     // Pulse issue rings
     if (sceneResult?.issueGroup) {
       const time = now / 1000;
