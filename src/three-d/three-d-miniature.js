@@ -42,6 +42,7 @@ export function setMiniatureMode(THREE, meshRefs, mini) {
             innerVis: refs.inner?.visible ?? true,
             rimVis: refs.rim?.visible ?? true,
             bottomVis: refs.bottom?.visible ?? true,
+            labelPos: refs.label?.position.y ?? null,
           });
         } else if (refs.type === 'house') {
           _originals.set(nodeId, {
@@ -49,20 +50,25 @@ export function setMiniatureMode(THREE, meshRefs, mini) {
             bodyGeo: refs.body?.geometry,
             bodyPos: refs.body?.position.y,
             roofVis: refs.roof?.visible ?? true,
+            labelPos: refs.label?.position.y ?? null,
           });
         }
       }
 
       if (refs.type === 'manhole') {
         // Swap cover to small sphere, hide everything else
+        const orig = _originals.get(nodeId);
+        const miniY = (orig?.coverPos ?? 0) + 0.25;
         if (refs.cover) {
           refs.cover.geometry = _sphereGeo;
-          refs.cover.position.y = (_originals.get(nodeId)?.coverPos ?? 0) + 0.25;
+          refs.cover.position.y = miniY;
         }
         if (refs.shaft) refs.shaft.visible = false;
         if (refs.inner) refs.inner.visible = false;
         if (refs.rim) refs.rim.visible = false;
         if (refs.bottom) refs.bottom.visible = false;
+        // Reposition label above mini sphere
+        if (refs.label) refs.label.position.y = miniY + 0.35;
       } else if (refs.type === 'house') {
         // Swap body to small cube, hide roof
         if (refs.body) {
@@ -70,6 +76,8 @@ export function setMiniatureMode(THREE, meshRefs, mini) {
           refs.body.position.y = 0.2;
         }
         if (refs.roof) refs.roof.visible = false;
+        // Reposition label above mini cube
+        if (refs.label) refs.label.position.y = 0.55;
       }
     } else {
       // Restore originals
@@ -85,12 +93,16 @@ export function setMiniatureMode(THREE, meshRefs, mini) {
         if (refs.inner) refs.inner.visible = orig.innerVis;
         if (refs.rim) refs.rim.visible = orig.rimVis;
         if (refs.bottom) refs.bottom.visible = orig.bottomVis;
+        // Restore label position
+        if (refs.label && orig.labelPos != null) refs.label.position.y = orig.labelPos;
       } else if (orig.type === 'house') {
         if (refs.body && orig.bodyGeo) {
           refs.body.geometry = orig.bodyGeo;
           refs.body.position.y = orig.bodyPos;
         }
         if (refs.roof) refs.roof.visible = orig.roofVis;
+        // Restore label position
+        if (refs.label && orig.labelPos != null) refs.label.position.y = orig.labelPos;
       }
     }
   }
