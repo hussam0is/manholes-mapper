@@ -10,6 +10,7 @@ import React, { useState, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import { signInWithEmail, signUpWithEmail, signOutUser, getCurrentSession } from './auth-client.js';
 import { refreshSession } from './auth-guard.js';
+import { isRTL } from '../i18n.js';
 
 // Keep track of React roots to avoid multiple createRoot calls on the same container
 const roots = new Map();
@@ -18,6 +19,28 @@ const roots = new Map();
 function tt(key, ...args) {
   if (typeof window.t === 'function') return window.t(key, ...args);
   return key;
+}
+
+/**
+ * Map known server error messages to i18n keys.
+ * Better Auth returns English error strings; we translate common ones
+ * so the login/signup UX stays in the user's chosen language.
+ */
+const SERVER_ERROR_MAP = {
+  'invalid email or password': 'auth.signInFailed',
+  'invalid credentials': 'auth.signInFailed',
+  'user not found': 'auth.signInFailed',
+  'user already exists': 'auth.signUpFailed',
+  'email already in use': 'auth.signUpFailed',
+};
+
+function translateServerError(serverMessage, fallbackKey) {
+  if (!serverMessage) return tt(fallbackKey);
+  const lower = serverMessage.toLowerCase().trim();
+  const mapped = SERVER_ERROR_MAP[lower];
+  if (mapped) return tt(mapped);
+  // Unknown server error -- return as-is
+  return serverMessage;
 }
 
 /**
@@ -66,7 +89,7 @@ function PasswordField({ id, value, onChange, placeholder, disabled, autoComplet
           aria-label={visible ? tt('auth.hidePassword') : tt('auth.showPassword')}
           tabIndex={-1}
         >
-          <span className="material-icons">
+          <span className="material-icons" aria-hidden="true">
             {visible ? 'visibility_off' : 'visibility'}
           </span>
         </button>
@@ -76,26 +99,44 @@ function PasswordField({ id, value, onChange, placeholder, disabled, autoComplet
 }
 
 /**
- * Language toggle for login/signup pages
+ * Language toggle for login/signup pages.
+ * Works both when the main app menu is loaded and on the bare login page.
  */
 function LanguageToggle() {
   const [, setTick] = useState(0);
 
   const toggleLanguage = useCallback(() => {
-    // Use the global setLanguage function if available (from main-entry.js or i18n.js)
     const currentLang = document.documentElement.lang || 'he';
     const newLang = currentLang === 'he' ? 'en' : 'he';
 
-    // Dispatch language change via the language selector if available
-    const langSelect = document.getElementById('languageSelect');
+    // 1. Update global state that the translator reads
+    try { window.currentLang = newLang; } catch (_) { /* */ }
+    localStorage.setItem('lang', newLang);
+
+    // 2. Update <html> lang + dir
+    document.documentElement.lang = newLang;
+    document.documentElement.dir = isRTL(newLang) ? 'rtl' : 'ltr';
+    document.body.classList.toggle('rtl', isRTL(newLang));
+
+    // 3. Try the main-app language selector (id="langSelect", data-action="languageChange")
+    const langSelect = document.getElementById('langSelect');
     if (langSelect) {
       langSelect.value = newLang;
       langSelect.dispatchEvent(new Event('change', { bubbles: true }));
-    } else if (typeof window.setLanguage === 'function') {
-      window.setLanguage(newLang);
     }
 
-    // Force re-render to update translated strings
+    // 4. Also try menuEvents if available (handles applyLangToStaticUI, etc.)
+    if (window.menuEvents && typeof window.menuEvents.emit === 'function') {
+      window.menuEvents.emit('languageChange', { value: newLang, element: langSelect });
+    }
+
+    // 5. Update the login panel wrapper text (outside React)
+    const loginTitle = document.getElementById('loginTitle');
+    const loginSubtitle = document.getElementById('loginSubtitle');
+    if (loginTitle) loginTitle.textContent = tt('auth.loginTitle');
+    if (loginSubtitle) loginSubtitle.textContent = tt('auth.loginSubtitle');
+
+    // 6. Force React re-render so all tt() calls pick up the new language
     setTick(t => t + 1);
   }, []);
 
@@ -105,7 +146,7 @@ function LanguageToggle() {
   return (
     <div className="auth-lang-toggle">
       <button type="button" onClick={toggleLanguage} aria-label={tt('auth.switchLanguage')}>
-        <span className="material-icons">translate</span>
+        <span className="material-icons" aria-hidden="true">translate</span>
         <span>{targetLabel}</span>
       </button>
     </div>
@@ -130,7 +171,7 @@ function SignInForm({ onSuccess, signUpUrl = '#/signup' }) {
       const { data, error: signInError } = await signInWithEmail(email, password);
 
       if (signInError) {
-        setError(signInError.message || tt('auth.signInFailed'));
+        setError(translateServerError(signInError.message, 'auth.signInFailed'));
         setLoading(false);
         return;
       }
@@ -157,7 +198,7 @@ function SignInForm({ onSuccess, signUpUrl = '#/signup' }) {
 
         {error && (
           <div className="auth-form-error" role="alert" aria-live="assertive">
-            <span className="material-icons">error</span>
+            <span className="material-icons" aria-hidden="true">error</span>
             <span>{error}</span>
           </div>
         )}
@@ -189,7 +230,7 @@ function SignInForm({ onSuccess, signUpUrl = '#/signup' }) {
         <button type="submit" className="auth-form-submit" disabled={loading}>
           {loading ? (
             <>
-              <span className="material-icons spin">sync</span>
+              <span className="material-icons spin" aria-hidden="true">sync</span>
               <span>{tt('auth.signingIn')}</span>
             </>
           ) : (
@@ -239,7 +280,7 @@ function SignUpForm({ onSuccess, signInUrl = '#/login' }) {
       const { data, error: signUpError } = await signUpWithEmail(email, password, name);
 
       if (signUpError) {
-        setError(signUpError.message || tt('auth.signUpFailed'));
+        setError(translateServerError(signUpError.message, 'auth.signUpFailed'));
         setLoading(false);
         return;
       }
@@ -266,7 +307,7 @@ function SignUpForm({ onSuccess, signInUrl = '#/login' }) {
 
         {error && (
           <div className="auth-form-error" role="alert" aria-live="assertive">
-            <span className="material-icons">error</span>
+            <span className="material-icons" aria-hidden="true">error</span>
             <span>{error}</span>
           </div>
         )}
@@ -323,7 +364,7 @@ function SignUpForm({ onSuccess, signInUrl = '#/login' }) {
         <button type="submit" className="auth-form-submit" disabled={loading}>
           {loading ? (
             <>
-              <span className="material-icons spin">sync</span>
+              <span className="material-icons spin" aria-hidden="true">sync</span>
               <span>{tt('auth.creatingAccount')}</span>
             </>
           ) : (

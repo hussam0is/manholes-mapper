@@ -968,6 +968,15 @@ header .btn-primary:hover {
   }
 }
 
+/* Landscape mobile touch target enforcement — phones rotated sideways are wider
+   than 600px so the portrait-only query above misses them. */
+@media (max-height: 450px) and (orientation: landscape) {
+  .btn-icon-sm {
+    min-width: var(--touch-target-min);
+    min-height: var(--touch-target-min);
+  }
+}
+
 /* Adjust size of material icons within buttons */
 .btn .material-icons {
   font-size: 1.125rem;
@@ -3293,7 +3302,7 @@ input.floating-keyboard-active {
 
 /* Admin modal actions bar */
 .admin-actions {
-  background: #f8fafc;
+  background: var(--color-bg, #f8fafc);
   border-top: 1px solid var(--color-border);
   padding: 1.25rem 1.5rem;
   display: flex;
@@ -6836,7 +6845,7 @@ select.invalid:focus {
 }
 
 .admin-toggle-item:hover {
-  background: #e2e8f0;
+  background: var(--color-surface-hover, #e2e8f0);
 }
 
 .admin-toggle-label {
@@ -6918,7 +6927,7 @@ select.invalid:focus {
 .admin-field-select:focus {
   outline: none;
   border-color: var(--color-primary);
-  background: #fff;
+  background: var(--color-surface, #fff);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
@@ -6983,7 +6992,7 @@ select.invalid:focus {
   border-radius: 8px;
   font-size: 16px;
   font-weight: 500;
-  background: #fff;
+  background: var(--color-surface, #fff);
   color: var(--color-text);
   transition: all 0.2s ease;
 }
@@ -7014,7 +7023,7 @@ select.invalid:focus {
   border: 1px solid var(--color-border);
   border-radius: 8px;
   font-size: 0.9rem;
-  background: #fff;
+  background: var(--color-surface, #fff);
   color: var(--color-text);
   text-align: center;
   transition: all 0.2s ease;
@@ -10849,8 +10858,8 @@ button:focus-visible,
     height: 18px;
   }
   .three-d-overlay__speed-btn {
-    min-width: 32px;
-    min-height: 32px;
+    min-width: 40px;
+    min-height: 36px;
   }
   .three-d-overlay__speed-badge {
     font-size: 0.7rem;
@@ -10934,16 +10943,16 @@ button:focus-visible,
     top: 6px;
     inset-inline-end: 6px;
     z-index: 4;
-    width: 32px;
-    height: 32px;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.35);
+    background: rgba(0, 0, 0, 0.45);
     backdrop-filter: blur(3px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 8px;
-    color: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    color: rgba(255, 255, 255, 0.7);
     cursor: pointer;
     opacity: 0;
     pointer-events: none;
@@ -11110,8 +11119,9 @@ button:focus-visible,
 }
 
 /* --- Landscape: Login Page --- */
-/* Issue #7: Login form must be fully usable at 375px height.
-   Side-by-side layout (logo left, form right), both halves scroll independently. */
+/* Login/Signup form must be fully usable at 375px height.
+   Side-by-side layout (logo left, form right), form side scrolls independently.
+   Signup has 4 fields so vertical space is tight — use compact gaps + small labels. */
 @media (max-height: 450px) and (orientation: landscape) {
   .login-panel {
     padding: 0.5rem;
@@ -11129,12 +11139,12 @@ button:focus-visible,
     overflow: hidden;
   }
 
-  /* Logo side: compact, vertically centered */
+  /* Logo side: compact, vertically centered, narrower to give form more space */
   .login-panel-header {
     padding: 0.75rem;
     writing-mode: horizontal-tb;
-    min-width: 140px;
-    max-width: 170px;
+    min-width: 120px;
+    max-width: 150px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -11156,21 +11166,25 @@ button:focus-visible,
     margin-top: 0.25rem;
   }
 
-  /* Form side: scrollable, compact fields */
+  /* Form side: scrollable, compact fields, takes remaining width */
   .auth-form-wrapper {
-    padding: 0.5rem 1rem;
+    padding: 0.25rem 0.75rem;
     min-height: unset;
     overflow-y: auto;
     flex: 1;
     max-height: calc(100dvh - 1rem);
+    /* Scroll indicator: subtle fade at bottom when content overflows */
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
   }
 
   .auth-form-container {
-    padding: 0.5rem 1rem;
+    padding: 0.25rem 0.75rem;
   }
 
   .auth-form {
-    gap: 0.4rem;
+    gap: 0.3rem;
   }
 
   .auth-form-title {
@@ -11184,24 +11198,26 @@ button:focus-visible,
   }
 
   .auth-form-field {
-    gap: 0.15rem;
+    gap: 0.1rem;
   }
 
+  /* Audit fix: labels at 0.75rem (12px) minimum for readability */
   .auth-form-field label {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
   }
 
   .auth-form-field input {
-    padding: 0.4rem 0.75rem;
+    padding: 0.35rem 0.75rem;
     font-size: 0.85rem;
     min-height: 44px;
     box-sizing: border-box;
   }
 
   .auth-form-submit {
-    padding: 0.4rem;
+    padding: 0.35rem;
     font-size: 0.85rem;
     min-height: 44px;
+    margin-top: 0.15rem;
   }
 
   /* Hide form title/subtitle in landscape — the login-panel-header already provides context */
@@ -11211,8 +11227,8 @@ button:focus-visible,
   }
 
   .auth-form-footer {
-    font-size: 0.7rem;
-    margin-top: 0.15rem;
+    font-size: 0.75rem;
+    margin-top: 0.1rem;
   }
 
   .auth-form-link {
@@ -11220,6 +11236,23 @@ button:focus-visible,
     padding: 0.5rem 0.75rem;
     min-height: 44px;
     line-height: 1.5;
+  }
+
+  /* Language toggle: more compact in landscape */
+  .auth-lang-toggle {
+    margin-top: 0.15rem;
+  }
+
+  .auth-lang-toggle button {
+    min-height: 36px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  /* Error message: compact */
+  .auth-form-error {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.75rem;
   }
 }
 
@@ -11730,15 +11763,15 @@ button:focus-visible,
     font-size: 0.8rem;
   }
 
-  /* Sticky footer with save/cancel buttons */
+  /* Fix: Actions bar always visible at bottom of panel */
   .admin-actions {
-    position: sticky;
-    bottom: 0;
+    position: static;
+    flex-shrink: 0;
     background: var(--color-surface, #fff);
     padding: 0.35rem 0.5rem;
     border-top: 1px solid var(--color-border);
     z-index: 10;
-    margin: 0 -0.5rem -0.5rem;
+    margin: 0;
   }
 
   .admin-actions .btn {
@@ -11757,10 +11790,133 @@ button:focus-visible,
     padding: 0.35rem 0.5rem;
   }
 
-  /* Compact admin screen wrapper to use full height */
+  /* Fix: Admin screen fills viewport, panel is flex column, content scrolls */
   #adminScreen {
-    max-height: calc(100dvh - var(--header-h, 36px));
+    padding: 0;
+    display: flex;
+    align-items: stretch;
+    max-height: none;
+    overflow: visible;
+    height: calc(100dvh - var(--header-h, 36px));
+  }
+
+  #adminScreen .panel {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    border-radius: 0;
+    margin: 0;
+  }
+
+  #adminScreen .admin-content {
+    flex: 1 1 0;
+    min-height: 0;
     overflow-y: auto;
+    padding: 0.5rem 0.75rem;
+    padding-bottom: 0.5rem;
+  }
+
+  /* Hide canvas toolbar and legend when admin screen is open */
+  body.admin-screen .canvas-toolbar,
+  body.admin-screen #edgeLegend,
+  body.admin-screen .canvas-fab-toolbar,
+  body.admin-screen #canvasFabToggle {
+    display: none !important;
+  }
+
+  /* Input Flow screen same fix */
+  #inputFlowScreen {
+    padding: 0;
+    display: flex;
+    align-items: stretch;
+    max-height: none;
+    overflow: visible;
+    height: calc(100dvh - var(--header-h, 36px));
+  }
+
+  #inputFlowScreen .panel {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    border-radius: 0;
+    margin: 0;
+  }
+
+  #inputFlowScreen .admin-content {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0.5rem 0.75rem;
+  }
+
+  /* Projects screen same fix */
+  #projectsScreen {
+    padding: 0;
+    display: flex;
+    align-items: stretch;
+    height: calc(100dvh - var(--header-h, 36px));
+  }
+
+  #projectsScreen .panel {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    border-radius: 0;
+    margin: 0;
+  }
+
+  /* Compact input flow empty state in landscape */
+  .input-flow-empty {
+    padding: 1rem;
+  }
+
+  .input-flow-empty .material-icons {
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem;
+  }
+
+  /* Input flow modal: full height in landscape */
+  .input-flow-modal {
+    max-height: calc(100dvh - 16px);
+    width: min(95vw, 700px);
+  }
+
+  .input-flow-modal-content {
+    max-height: calc(100dvh - 140px);
+    overflow-y: auto;
+  }
+
+  /* Compact input flow header in landscape */
+  .input-flow-header {
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .input-flow-header h2 {
+    font-size: 1rem;
+  }
+
+  .input-flow-tabs {
+    margin-bottom: 0.5rem;
+  }
+
+  .input-flow-tab {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .input-flow-footer {
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
   }
 }
 
