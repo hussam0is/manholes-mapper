@@ -396,11 +396,16 @@ export async function open3DView(opts = {}) {
     setMode(currentMode === 'fps' ? 'orbit' : 'fps');
   });
 
-  // ── Controls hint (always visible, fades to reduced opacity) ────────
+  // ── Controls hint ────────────────────────────────────────────────────
+  // In landscape mobile, auto-hide after 3s to reclaim vertical space.
+  // On desktop/portrait, fade to reduced opacity but stay visible.
+  const isLandscapeMobile = window.matchMedia('(orientation: landscape) and (max-height: 500px)').matches;
+
   function updateControlsHint(mode) {
     if (!controlsHint) return;
     controlsHint.style.opacity = '1';
     controlsHint.style.display = 'block';
+    controlsHint.style.transition = 'opacity 0.5s';
 
     if (mode === 'fps') {
       controlsHint.innerHTML =
@@ -416,11 +421,23 @@ export async function open3DView(opts = {}) {
         `${esc(t('threeD.controls.pan'))}`;
     }
 
-    // Fade to reduced opacity after 5s — stays visible
     clearTimeout(controlsHint._fadeTimer);
-    controlsHint._fadeTimer = setTimeout(() => {
-      controlsHint.style.opacity = '0.7';
-    }, 5000);
+    clearTimeout(controlsHint._hideTimer);
+
+    if (isLandscapeMobile) {
+      // In landscape mobile: fade out after 3s, then fully hide after transition
+      controlsHint._fadeTimer = setTimeout(() => {
+        controlsHint.style.opacity = '0';
+        controlsHint._hideTimer = setTimeout(() => {
+          controlsHint.style.display = 'none';
+        }, 600);
+      }, 3000);
+    } else {
+      // On desktop: fade to reduced opacity after 5s, stay visible
+      controlsHint._fadeTimer = setTimeout(() => {
+        controlsHint.style.opacity = '0.7';
+      }, 5000);
+    }
   }
 
   // Apply initial mode

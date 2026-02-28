@@ -10641,19 +10641,109 @@ button:focus-visible,
 
 /* Landscape adjustments for 3D overlay */
 @media (orientation: landscape) and (max-height: 500px) {
+  /* -- Compact header: 36px, icon-only buttons -- */
   .three-d-overlay__header {
-    padding: var(--space-1) var(--space-3);
+    padding: 2px var(--space-2);
+    min-height: 36px;
   }
-  .three-d-overlay__legend {
-    bottom: 8px;
-    inset-inline-start: 8px;
+  .three-d-overlay__title {
+    font-size: 0.8rem;
+    gap: 4px;
+  }
+  .three-d-overlay__title > span:last-child {
+    display: none; /* Hide "3D View" text, keep icon only */
+  }
+  .three-d-overlay__close,
+  .three-d-overlay__mode-toggle,
+  .three-d-overlay__miniature-toggle {
+    min-width: 36px;
+    min-height: 36px;
+    padding: 0 6px;
+    font-size: 0.7rem;
+  }
+  .three-d-overlay__mode-label,
+  .three-d-overlay__miniature-label {
+    display: none; /* Icon-only buttons in landscape */
+  }
+  .three-d-overlay__header-divider {
+    height: 20px;
+  }
+  .three-d-overlay__speed-btn {
+    min-width: 36px;
+    min-height: 36px;
+  }
+  .three-d-overlay__speed-badge {
+    font-size: 0.65rem;
+    min-width: 24px;
+  }
+  .three-d-overlay__speed-control {
+    padding: 1px;
+  }
+
+  /* -- Controls hint: auto-hide via JS, compact when visible -- */
+  .three-d-overlay__controls-hint {
     font-size: 0.6rem;
-    padding: var(--space-1) var(--space-2);
-    max-width: 150px;
+    line-height: 1.5;
+    padding: 4px 8px;
+    bottom: 4px;
+    inset-inline-end: 4px;
+  }
+
+  /* -- Legend: compact -- */
+  .three-d-overlay__legend {
+    bottom: 4px;
+    inset-inline-start: 4px;
+    font-size: 0.6rem;
+    padding: 0;
+    max-width: 130px;
+  }
+  .three-d-overlay__legend-toggle {
+    padding: 4px 6px;
+    font-size: 0.7rem;
   }
   .three-d-overlay__legend h4 {
     margin-bottom: var(--space-1);
     font-size: 0.7rem;
+  }
+
+  /* -- Issues panel: capped height, repositioned to bottom-right -- */
+  .three-d-overlay__issues-panel {
+    top: auto;
+    bottom: 4px;
+    inset-inline-end: 4px;
+    max-height: 40%;
+    min-width: 180px;
+    max-width: 240px;
+    font-size: 0.7rem;
+  }
+  .three-d-overlay__issues-panel.collapsed {
+    max-height: 36px;
+  }
+  .three-d-overlay__issues-toggle {
+    padding: 6px 8px;
+    font-size: 0.72rem;
+  }
+  .three-d-overlay__issues-count {
+    font-size: 0.65rem;
+    padding: 1px 5px;
+  }
+  .three-d-overlay__issue-row {
+    padding: 4px 6px;
+    font-size: 0.65rem;
+  }
+
+  /* -- Orbit controls: smaller buttons -- */
+  .three-d-overlay__orbit-controls {
+    gap: 4px;
+    inset-inline-end: 8px;
+  }
+  .three-d-overlay__orbit-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+  }
+  .three-d-overlay__orbit-btn .material-icons {
+    font-size: 20px;
   }
 }
 
