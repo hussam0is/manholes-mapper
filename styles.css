@@ -9892,67 +9892,69 @@ button:focus-visible,
 }
 
 /* ── Landscape: narrower side panel to maximize canvas area ────────── */
+/* Issue #8: Narrower panel (180px) with compact content in landscape.
+   The toggle button is always visible so the panel can be shown/hidden. */
 @media (max-height: 450px) and (orientation: landscape) {
   .sketch-side-panel {
-    width: 220px;
+    width: 180px;
     top: 0;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
   }
 
   .sketch-side-panel__back {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
-    gap: 4px;
+    padding: 0.2rem 0.4rem;
+    font-size: 0.7rem;
+    gap: 3px;
   }
 
   .sketch-side-panel__back .material-icons {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .sketch-side-panel__header {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.8rem;
-    gap: 4px;
+    padding: 0.2rem 0.4rem;
+    font-size: 0.75rem;
+    gap: 3px;
   }
 
   .sketch-side-panel__header .material-icons:first-child {
-    font-size: 16px;
+    font-size: 15px;
   }
 
   .sketch-side-panel__close {
-    width: 24px;
-    height: 24px;
-    min-width: 24px;
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
   }
 
   .sketch-side-panel__close .material-icons {
-    font-size: 16px;
+    font-size: 14px;
   }
 
   .sketch-side-panel__item {
-    padding: 0.25rem 0.4rem;
-    gap: 4px;
-    min-height: 32px;
+    padding: 0.2rem 0.35rem;
+    gap: 3px;
+    min-height: 28px;
   }
 
   .sketch-side-panel__name {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
   }
 
   .sketch-side-panel__stats {
-    font-size: 0.65rem;
-    gap: 4px;
+    font-size: 0.6rem;
+    gap: 3px;
   }
 
   .sketch-side-panel__issues-btn {
-    font-size: 0.65rem;
-    padding: 0.1rem 0.35rem;
-    min-height: 20px;
+    font-size: 0.6rem;
+    padding: 0.1rem 0.3rem;
+    min-height: 18px;
   }
 
   .sketch-side-panel__totals {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+    font-size: 0.65rem;
   }
 
   .sketch-side-panel-toggle {
@@ -9961,22 +9963,22 @@ button:focus-visible,
 
   /* Recenter button in item row */
   .sketch-side-panel__recenter {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
   }
 
   .sketch-side-panel__recenter .material-icons {
-    font-size: 16px;
+    font-size: 14px;
   }
 
   /* Visibility toggle */
   .sketch-side-panel__visibility {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
   }
 
   .sketch-side-panel__visibility .material-icons {
-    font-size: 16px;
+    font-size: 14px;
   }
 }
 
@@ -10966,143 +10968,172 @@ button:focus-visible,
 }
 
 /* --- Landscape: Login Page --- */
+/* Issue #7: Login form must be fully usable at 375px height.
+   Side-by-side layout (logo left, form right), both halves scroll independently. */
 @media (max-height: 450px) and (orientation: landscape) {
   .login-panel {
     padding: 0.5rem;
     overflow-y: auto;
+    /* Allow scroll to top when content exceeds viewport */
+    align-items: flex-start;
   }
 
   .login-panel-content {
-    max-width: 560px;
-    max-height: 100%;
+    max-width: 580px;
+    max-height: calc(100dvh - 1rem);
     display: flex;
     flex-direction: row;
     border-radius: 12px;
     overflow: hidden;
   }
 
+  /* Logo side: compact, vertically centered */
   .login-panel-header {
-    padding: 1rem;
+    padding: 0.75rem;
     writing-mode: horizontal-tb;
-    min-width: 160px;
-    max-width: 200px;
+    min-width: 140px;
+    max-width: 170px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     border-bottom: none;
   }
 
+  .login-logo {
+    height: 32px;
+    margin-bottom: 0.5rem;
+  }
+
   .login-panel-header h1 {
-    font-size: 1.2rem;
+    font-size: 1rem;
   }
 
-  .login-panel-header p {
-    font-size: 0.75rem;
+  .login-panel-header p,
+  .login-subtitle {
+    font-size: 0.7rem;
+    margin-top: 0.25rem;
   }
 
+  /* Form side: scrollable, compact fields */
   .auth-form-wrapper {
-    padding: 0.75rem 1.25rem;
+    padding: 0.5rem 1rem;
     min-height: unset;
     overflow-y: auto;
     flex: 1;
+    max-height: calc(100dvh - 1rem);
   }
 
   .auth-form-container {
-    padding: 0.75rem 1.25rem;
+    padding: 0.5rem 1rem;
   }
 
   .auth-form {
-    gap: 0.5rem;
+    gap: 0.4rem;
   }
 
   .auth-form-title {
-    font-size: 1.1rem;
+    font-size: 1rem;
     margin-bottom: 0;
   }
 
   .auth-form-subtitle {
-    font-size: 0.75rem;
-    margin-bottom: 0.25rem;
+    font-size: 0.7rem;
+    margin-bottom: 0.15rem;
   }
 
   .auth-form-field {
-    gap: 0.2rem;
+    gap: 0.15rem;
   }
 
   .auth-form-field label {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
   }
 
   .auth-form-field input {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
-    min-height: 44px;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.85rem;
+    min-height: 38px;
     box-sizing: border-box;
   }
 
   .auth-form-submit {
-    padding: 0.5rem;
-    font-size: 0.875rem;
-    min-height: 44px;
+    padding: 0.4rem;
+    font-size: 0.85rem;
+    min-height: 40px;
   }
 
   .auth-form-footer {
-    font-size: 0.75rem;
-    margin-top: 0.25rem;
+    font-size: 0.7rem;
+    margin-top: 0.15rem;
   }
 
   .auth-form-link {
     display: inline-block;
-    padding: 0.5rem;
-    min-height: 44px;
+    padding: 0.4rem;
+    min-height: 40px;
     line-height: 1.5;
   }
 }
 
 /* --- Landscape: Canvas Toolbar — Switch to Horizontal --- */
 @media (max-height: 450px) and (orientation: landscape) {
+  /* Issue #1 + #2: Compact horizontal toolbar with 44px touch targets.
+     Visual size is 34px to save vertical space, but each button has a
+     44px minimum touch area via padding so fat-finger taps still register. */
   .canvas-toolbar {
-    /* Push below the fixed header; --header-h is set to 0 when header auto-hides */
-    top: calc(var(--header-h, 36px) + 8px);
+    top: 4px;
     right: 50%;
     transform: translateX(50%);
   }
 
   .canvas-toolbar .segmented#modeGroup {
     flex-direction: row;
+    padding: 2px;
+    gap: 0;
+    border-radius: var(--radius-sm);
+  }
+
+  .canvas-toolbar .segmented {
+    border-radius: var(--radius-sm);
   }
 
   .canvas-toolbar-divider {
     height: auto;
     width: 1px;
-    margin: 8px 0;
+    margin: 4px 0;
   }
 
   .canvas-toolbar .segmented#modeGroup .btn {
-    min-width: 40px;
-    height: 40px;
-    padding: 0.35rem;
+    min-width: 34px;
+    height: 34px;
+    padding: 5px;
+    /* 44px touch target via minimum tap area */
+    min-height: var(--touch-target-min);
+    box-sizing: content-box;
+    padding-top: 5px;
+    padding-bottom: 5px;
   }
 
   .canvas-toolbar .segmented#modeGroup .btn .material-icons {
-    font-size: 20px;
+    font-size: 19px;
   }
 
-  /* Edge legend — inline and compact, pushed below fixed header */
+  /* Issue #6: Edge legend below toolbar row, not overlapping */
   .edge-legend {
-    top: calc(var(--header-h, 36px) + 4px);
+    top: 42px;
     left: 4px;
     font-size: 10px;
-    padding: 3px 8px;
+    padding: 2px 6px;
     gap: 6px;
-    opacity: 0.8;
+    opacity: 0.75;
+    border-radius: var(--radius-sm);
   }
 
-  /* FAB toolbar — position at bottom center in landscape */
+  /* Issue #3: FAB to bottom-right corner (not center) to avoid blocking canvas */
   .canvas-fab-toolbar {
-    right: auto;
-    left: 50%;
-    transform: translateX(-50%);
+    right: 8px;
+    left: auto;
+    transform: none;
     bottom: 8px;
   }
 
@@ -11132,18 +11163,50 @@ button:focus-visible,
   .take-measure-fab__label {
     font-size: 11px;
   }
+
+  /* Issue #5: Header recall handle — thin chevron strip at top edge when header hidden */
+  .header-recall-handle {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    cursor: pointer;
+    z-index: 201;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+
+  .header-recall-handle .material-icons {
+    font-size: 14px;
+    color: rgba(0, 0, 0, 0.4);
+  }
+
+  body.landscape-header-hidden .header-recall-handle {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 /* --- Landscape: Bottom Drawer — Side Panel Instead --- */
 @media (max-height: 450px) and (max-width: 900px) and (orientation: landscape) {
   .drawer {
-    /* Convert bottom sheet to side panel in landscape */
+    /* Issue #4: Convert bottom sheet to side panel; narrower (35vw, max 260px)
+       to give more canvas real estate in landscape */
     position: fixed;
     top: var(--header-h, 36px);
     bottom: 0;
     right: 0;
     left: auto;
-    width: min(300px, 42vw);
+    width: min(260px, 35vw);
     height: calc(100dvh - var(--header-h, 36px));
     height: calc(var(--app-height, 100dvh) - var(--header-h, 36px));
     max-height: none;
@@ -11178,24 +11241,24 @@ button:focus-visible,
 
   /* Reposition canvas controls when side drawer is open (LTR: drawer on right) */
   body.drawer-open .canvas-toolbar {
-    right: calc(min(300px, 42vw) + 12px);
+    right: calc(min(260px, 35vw) + 12px);
     transform: none;
   }
 
   body.drawer-open .canvas-fab-toolbar {
-    right: calc(min(300px, 42vw) + 12px);
+    right: calc(min(260px, 35vw) + 12px);
     left: auto;
     transform: none;
     bottom: 8px;
   }
 
   body.drawer-open .canvas-fab {
-    right: calc(min(300px, 42vw) + 8px);
+    right: calc(min(260px, 35vw) + 8px);
     bottom: 8px;
   }
 
   body.drawer-open .toggle-floating-keyboard {
-    right: calc(min(300px, 42vw) + 12px);
+    right: calc(min(260px, 35vw) + 12px);
     bottom: 8px;
   }
 
@@ -11203,13 +11266,13 @@ button:focus-visible,
   [dir="rtl"] body.drawer-open .canvas-toolbar,
   body.drawer-open[dir="rtl"] .canvas-toolbar {
     right: auto;
-    left: calc(min(300px, 42vw) + 12px);
+    left: calc(min(260px, 35vw) + 12px);
     transform: none;
   }
 
   [dir="rtl"] body.drawer-open .canvas-fab-toolbar,
   body.drawer-open[dir="rtl"] .canvas-fab-toolbar {
-    left: calc(min(300px, 42vw) + 12px);
+    left: calc(min(260px, 35vw) + 12px);
     right: auto;
     transform: none;
   }
@@ -11501,5 +11564,26 @@ button:focus-visible,
       border-color: rgba(96, 165, 250, 0.2);
       color: #93c5fd;
     }
+
+    /* Dark mode header recall handle */
+    .header-recall-handle {
+      background: rgba(255, 255, 255, 0.08);
+      border-bottom-color: rgba(255, 255, 255, 0.06);
+    }
+
+    .header-recall-handle .material-icons {
+      color: rgba(255, 255, 255, 0.35);
+    }
+  }
+}
+
+/* Header recall handle — hidden outside landscape */
+.header-recall-handle {
+  display: none;
+}
+
+@media (max-height: 450px) and (orientation: landscape) {
+  .header-recall-handle {
+    display: flex;
   }
 }

@@ -806,6 +806,20 @@ function setupLandscapeHeaderAutoHide() {
     bodyMo.observe(document.body, { attributes: true, attributeFilter: ['class'] });
   }
 
+  // Issue #5: Header recall handle — tapping the thin strip shows the header
+  const recallHandle = document.getElementById('headerRecallHandle');
+  if (recallHandle) {
+    recallHandle.addEventListener('click', () => {
+      if (isLandscape) showHeader();
+    });
+    recallHandle.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        if (isLandscape) showHeader();
+      }
+    });
+  }
+
   // Re-evaluate on resize and orientation change
   window.addEventListener('resize', checkLandscape);
   window.addEventListener('orientationchange', checkLandscape);
