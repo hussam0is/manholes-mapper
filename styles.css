@@ -10930,7 +10930,7 @@ button:focus-visible,
     bottom: 0;
     right: 0;
     left: auto;
-    width: min(320px, 45vw);
+    width: min(300px, 42vw);
     height: calc(100dvh - var(--header-h, 36px));
     height: calc(var(--app-height, 100dvh) - var(--header-h, 36px));
     max-height: none;
@@ -10943,6 +10943,17 @@ button:focus-visible,
     z-index: 40;
   }
 
+  /* RTL: drawer slides from left in landscape */
+  [dir="rtl"] .drawer {
+    right: auto;
+    left: 0;
+    transform: translate3d(-100%, 0, 0);
+  }
+
+  [dir="rtl"] .drawer.open {
+    transform: translate3d(0, 0, 0);
+  }
+
   .drawer.open {
     transform: translate3d(0, 0, 0);
   }
@@ -10952,27 +10963,42 @@ button:focus-visible,
     transition: none;
   }
 
-  /* Reposition canvas controls when side drawer is open */
+  /* Reposition canvas controls when side drawer is open (LTR: drawer on right) */
   body.drawer-open .canvas-toolbar {
-    right: calc(min(320px, 45vw) + 12px);
+    right: calc(min(300px, 42vw) + 12px);
     transform: none;
   }
 
   body.drawer-open .canvas-fab-toolbar {
-    right: calc(min(320px, 45vw) + 12px);
+    right: calc(min(300px, 42vw) + 12px);
     left: auto;
     transform: none;
     bottom: 8px;
   }
 
   body.drawer-open .canvas-fab {
-    right: calc(min(320px, 45vw) + 8px);
+    right: calc(min(300px, 42vw) + 8px);
     bottom: 8px;
   }
 
   body.drawer-open .toggle-floating-keyboard {
-    right: calc(min(320px, 45vw) + 12px);
+    right: calc(min(300px, 42vw) + 12px);
     bottom: 8px;
+  }
+
+  /* RTL: drawer on left, shift controls to left side */
+  [dir="rtl"] body.drawer-open .canvas-toolbar,
+  body.drawer-open[dir="rtl"] .canvas-toolbar {
+    right: auto;
+    left: calc(min(300px, 42vw) + 12px);
+    transform: none;
+  }
+
+  [dir="rtl"] body.drawer-open .canvas-fab-toolbar,
+  body.drawer-open[dir="rtl"] .canvas-fab-toolbar {
+    left: calc(min(300px, 42vw) + 12px);
+    right: auto;
+    transform: none;
   }
 
   body.drawer-open .take-measure-fab {
@@ -11069,6 +11095,35 @@ button:focus-visible,
   .home-panel-new-btn {
     padding: 0.4rem;
     font-size: 0.8rem;
+  }
+
+  /* Projects home panel — compact cards in landscape */
+  .home-panel--projects .home-panel-header {
+    padding-bottom: 0.4rem;
+  }
+
+  .home-panel-header-subtitle {
+    font-size: 0.7rem;
+    margin-top: 0.1rem;
+    padding-inline-start: 1.5rem;
+  }
+
+  .home-panel--projects .sketch-card.project-card {
+    padding: 0.5rem;
+  }
+
+  .home-panel--projects .sketch-card.project-card .sketch-card-icon .material-icons {
+    font-size: 1.2rem;
+  }
+
+  .project-card-desc {
+    font-size: 0.7rem;
+  }
+
+  .project-card-actions .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    min-height: 28px;
   }
 }
 
