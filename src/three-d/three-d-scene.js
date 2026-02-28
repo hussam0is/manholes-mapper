@@ -7,19 +7,19 @@
 import { createMaterials, EDGE_TYPE_COLORS } from './three-d-materials.js';
 
 // ── Default values for missing data ─────────────────────────────────────────
-const DEFAULT_DEPTH = 2.0;            // manhole shaft depth (m) when no edges have measurements
-const DEFAULT_PIPE_DEPTH = 1.5;       // pipe invert depth (m) when measurement is missing
-const DEFAULT_PIPE_DIAMETER_MM = 200; // pipe diameter (mm) when not specified
-const DEFAULT_COVER_DIAMETER_CM = 55; // manhole cover diameter (cm) when not specified
-const SHAFT_WALL_THICKNESS = 0.08;    // manhole wall thickness (m)
-const COVER_HEIGHT = 0.06;            // manhole cover disc thickness (m)
-const MANHOLE_SEGMENTS = 24;          // cylinder resolution
-const PIPE_RADIAL_SEGMENTS = 12;      // tube cross-section resolution
-const PIPE_TUBULAR_SEGMENTS = 16;     // tube length resolution
+export const DEFAULT_DEPTH = 2.0;            // manhole shaft depth (m) when no edges have measurements
+export const DEFAULT_PIPE_DEPTH = 1.5;       // pipe invert depth (m) when measurement is missing
+export const DEFAULT_PIPE_DIAMETER_MM = 200; // pipe diameter (mm) when not specified
+export const DEFAULT_COVER_DIAMETER_CM = 55; // manhole cover diameter (cm) when not specified
+export const SHAFT_WALL_THICKNESS = 0.08;    // manhole wall thickness (m)
+export const COVER_HEIGHT = 0.06;            // manhole cover disc thickness (m)
+export const MANHOLE_SEGMENTS = 24;          // cylinder resolution
+export const PIPE_RADIAL_SEGMENTS = 12;      // tube cross-section resolution
+export const PIPE_TUBULAR_SEGMENTS = 16;     // tube length resolution
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-function parseNum(val, fallback) {
+export function parseNum(val, fallback) {
   if (val == null || val === '') return fallback;
   const n = parseFloat(val);
   return isNaN(n) || n <= 0 ? fallback : n;
@@ -29,7 +29,7 @@ function parseNum(val, fallback) {
  * Get 3D horizontal position for a node.
  * Prefers surveyX/Y (ITM meters), falls back to manual_x/y, then canvas→ITM.
  */
-function getNodeXZ(node, ref, coordScale) {
+export function getNodeXZ(node, ref, coordScale) {
   let itmX, itmY;
   if (node.surveyX != null && node.surveyY != null) {
     itmX = node.surveyX;
@@ -52,7 +52,7 @@ function getNodeXZ(node, ref, coordScale) {
  * Compute the max pipe depth at a node from all connected edges.
  * Returns { depth, isEstimated }.
  */
-function getNodeDepth(nodeId, edges) {
+export function getNodeDepth(nodeId, edges) {
   let maxDepth = 0;
   let hasAnyMeasurement = false;
 
@@ -501,7 +501,7 @@ export function buildScene(THREE, data, CSS2DObject, issues = []) {
 
 // ── Bounding box ────────────────────────────────────────────────────────────
 
-function computeBounds(positions3D) {
+export function computeBounds(positions3D) {
   let minX = Infinity, maxX = -Infinity;
   let minZ = Infinity, maxZ = -Infinity;
 

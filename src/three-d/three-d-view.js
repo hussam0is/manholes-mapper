@@ -20,6 +20,21 @@ import { setMiniatureMode, isMiniatureMode, resetMiniatureState } from './three-
 let isOpen = false;
 
 /**
+ * Compute label visibility and font size based on distance from camera.
+ * @param {number} dist - distance from camera to label position
+ * @returns {{ display: string, opacity: string, fontSize: string }}
+ */
+export function computeLabelVisibility(dist) {
+  if (dist > 150) {
+    return { display: 'none', opacity: '0', fontSize: '11px' };
+  }
+  if (dist > 80) {
+    return { display: '', opacity: String(1 - (dist - 80) / 70), fontSize: '9px' };
+  }
+  return { display: '', opacity: '1', fontSize: dist < 30 ? '13px' : '11px' };
+}
+
+/**
  * Open the 3D view for the current active sketch.
  * Lazy-loads Three.js on first call.
  *
@@ -567,17 +582,10 @@ export async function open3DView(opts = {}) {
         const dx = camPos.x - lp.x, dy = camPos.y - lp.y, dz = camPos.z - lp.z;
         const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
         const labelEl = refs.label.element;
-        if (dist > 150) {
-          labelEl.style.display = 'none';
-        } else if (dist > 80) {
-          labelEl.style.display = '';
-          labelEl.style.opacity = String(1 - (dist - 80) / 70);
-          labelEl.style.fontSize = '9px';
-        } else {
-          labelEl.style.display = '';
-          labelEl.style.opacity = '1';
-          labelEl.style.fontSize = dist < 30 ? '13px' : '11px';
-        }
+        const vis = computeLabelVisibility(dist);
+        labelEl.style.display = vis.display;
+        labelEl.style.opacity = vis.opacity;
+        labelEl.style.fontSize = vis.fontSize;
       }
     }
 

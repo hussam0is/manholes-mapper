@@ -22,7 +22,7 @@ export function computeInitialCamera({ selection, positions3D, edges, center, bo
 
 // ── Node selected — side-view cross-section ──────────────────────────────────
 
-function frameNode(node, positions3D, edges) {
+export function frameNode(node, positions3D, edges) {
   const id = String(node.id);
   const pos = positions3D.get(id);
   if (!pos) return frameOverview({ x: 0, y: 0, z: 0 }, null);
@@ -84,7 +84,7 @@ function frameNode(node, positions3D, edges) {
 
 // ── Edge selected — side-view of pipe segment ────────────────────────────────
 
-function frameEdge(edge, positions3D) {
+export function frameEdge(edge, positions3D) {
   const tailPos = positions3D.get(String(edge.tail));
   const headPos = positions3D.get(String(edge.head));
   if (!tailPos || !headPos) return frameOverview({ x: 0, y: 0, z: 0 }, null);
@@ -130,7 +130,7 @@ function frameEdge(edge, positions3D) {
 
 // ── No selection — overview (fit-to-bounds using FOV) ────────────────────────
 
-function frameOverview(center, boundingBox) {
+export function frameOverview(center, boundingBox) {
   let sizeX = 20, sizeZ = 20;
   if (boundingBox) {
     sizeX = Math.max(boundingBox.max.x - boundingBox.min.x, 5);
