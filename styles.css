@@ -10340,6 +10340,15 @@ button:focus-visible,
   pointer-events: none;
 }
 
+/* 3D pipe label — smaller, slightly transparent blue tint */
+.three-d-pipe-label {
+  font-size: 9px;
+  font-weight: 500;
+  background: rgba(37, 99, 235, 0.55);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
 /* ── 3D Issue badges ── */
 .three-d-issue-badge {
   background: rgba(239, 68, 68, 0.85);

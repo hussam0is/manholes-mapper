@@ -735,6 +735,30 @@ export async function open3DView(opts = {}) {
       }
     }
 
+    // Distance-based pipe label visibility (shorter range than node labels)
+    if (sceneResult?.meshRefs?.pipeMeshes) {
+      const camPos = camera.position;
+      for (const [_edgeId, refs] of sceneResult.meshRefs.pipeMeshes) {
+        if (!refs.label) continue;
+        const lp = refs.label.position;
+        const dx = camPos.x - lp.x, dy = camPos.y - lp.y, dz = camPos.z - lp.z;
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        const labelEl = refs.label.element;
+        // Pipe labels visible at shorter range: hidden >80m, fade 40-80m, full <40m
+        if (dist > 80) {
+          labelEl.style.display = 'none';
+        } else if (dist > 40) {
+          labelEl.style.display = '';
+          labelEl.style.opacity = String(1 - (dist - 40) / 40);
+          labelEl.style.fontSize = '8px';
+        } else {
+          labelEl.style.display = '';
+          labelEl.style.opacity = '1';
+          labelEl.style.fontSize = dist < 20 ? '10px' : '9px';
+        }
+      }
+    }
+
     // Pulse issue rings
     if (sceneResult?.issueGroup) {
       const time = now / 1000;

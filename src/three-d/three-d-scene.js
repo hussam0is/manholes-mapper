@@ -400,7 +400,34 @@ export function buildScene(THREE, data, CSS2DObject, issues = []) {
     arrow.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
     pipeGroup.add(arrow);
 
-    meshRefs.pipeMeshes.set(String(edge.id), { tube: pipeMesh, startCap, endCap, arrow });
+    // Pipe label (CSS2D) at midpoint — shows length, material, diameter
+    let pipeLabel = null;
+    if (CSS2DObject) {
+      const parts = [];
+      // Length in meters (compute from 3D distance)
+      const pipeLen = start.distanceTo(end);
+      if (pipeLen > 0.01) parts.push(pipeLen.toFixed(1) + 'm');
+      // Diameter
+      const diamMM = parseNum(edge.line_diameter, 0);
+      if (diamMM > 0) parts.push(diamMM + 'mm');
+      // Material / edge type
+      if (edge.edge_type) parts.push(edge.edge_type);
+
+      if (parts.length > 0) {
+        const pipeLabelDiv = document.createElement('div');
+        pipeLabelDiv.className = 'three-d-label three-d-pipe-label';
+        pipeLabelDiv.textContent = parts.join(' | ');
+        pipeLabel = new CSS2DObject(pipeLabelDiv);
+        pipeLabel.position.set(
+          (start.x + end.x) / 2,
+          (start.y + end.y) / 2 + pipeRadius + 0.3,
+          (start.z + end.z) / 2
+        );
+        pipeGroup.add(pipeLabel);
+      }
+    }
+
+    meshRefs.pipeMeshes.set(String(edge.id), { tube: pipeMesh, startCap, endCap, arrow, label: pipeLabel });
   }
 
   scene.add(pipeGroup);
