@@ -732,7 +732,7 @@ header .btn-primary {
 }
 
 header .btn-primary:hover {
-  background: #f8fafc;
+  background: var(--color-bg);
   border-color: #f8fafc;
 }
 
@@ -1296,7 +1296,7 @@ select.btn:focus-visible {
 
 .canvas-toolbar .undo-btn:disabled,
 .canvas-toolbar .redo-btn:disabled {
-  opacity: 0.3;
+  opacity: 0.45;
   pointer-events: none;
 }
 
@@ -4242,7 +4242,7 @@ input:checked + .slider:before {
 }
 
 .dangling-edge-item {
-  background: #f8fafc;
+  background: var(--color-bg);
   border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 0.75rem 1rem;
@@ -4277,7 +4277,7 @@ input:checked + .slider:before {
   gap: 0.75rem;
   padding: 1rem 1.25rem;
   border-top: 1px solid var(--color-border);
-  background: #f8fafc;
+  background: var(--color-bg);
   border-radius: 0 0 12px 12px;
 }
 
@@ -4607,7 +4607,7 @@ input:checked + .slider:before {
 }
 
 .admin-checkbox-item:hover {
-  background: #f8fafc;
+  background: var(--color-bg);
   border-color: var(--color-primary);
 }
 
@@ -4657,7 +4657,7 @@ input:checked + .slider:before {
 
 .admin-tabs {
   display: flex;
-  background: #f8fafc;
+  background: var(--color-bg);
   border-bottom: 1px solid var(--color-border);
   /* Negative margins to counteract .admin-content padding and sit flush with header */
   margin: -1.5rem -1.5rem 1.5rem -1.5rem;
@@ -4670,6 +4670,7 @@ input:checked + .slider:before {
 .admin-tabs .tab {
   flex: 1;
   padding: 0.875rem 1.25rem;
+  min-height: 44px;
   border: none;
   background: transparent;
   color: var(--color-muted);
@@ -4700,7 +4701,7 @@ input:checked + .slider:before {
 }
 
 .admin-tabs .tab.active {
-  background: white;
+  background: var(--color-surface);
   color: var(--color-primary);
   border-bottom-color: var(--color-primary);
   font-weight: 600;
@@ -4733,7 +4734,7 @@ input:checked + .slider:before {
 }
 
 .admin-section-header {
-  background: #f8fafc;
+  background: var(--color-bg);
   padding: 0.875rem 1.25rem;
   border-bottom: 1px solid var(--color-border);
 }
@@ -4770,7 +4771,7 @@ input:checked + .slider:before {
 }
 
 .admin-group {
-  background: #f8fafc;
+  background: var(--color-bg);
   border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 1rem;
@@ -4832,7 +4833,7 @@ input:checked + .slider:before {
 }
 
 .option-table tbody tr:hover {
-  background: #f8fafc;
+  background: var(--color-bg);
 }
 
 .option-table tbody tr:last-child td {
@@ -5050,7 +5051,7 @@ input:checked + .slider:before {
   border-radius: 8px;
   font-size: 1rem;
   font-weight: 500;
-  background: #f8fafc;
+  background: var(--color-bg);
   transition: all 0.2s ease;
 }
 
@@ -5082,7 +5083,7 @@ input:checked + .slider:before {
   border: 1px solid var(--color-border);
   border-radius: 6px;
   font-size: 0.9rem;
-  background: #f8fafc;
+  background: var(--color-bg);
   max-width: 120px;
   transition: all 0.2s ease;
 }
@@ -7037,8 +7038,8 @@ select.invalid:focus {
 
 .admin-option-delete-btn {
   flex-shrink: 0;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -8952,7 +8953,7 @@ html[dir="rtl"] .user-menu-item {
   justify-content: space-between;
   padding: 1rem;
   border-bottom: 1px solid var(--color-border);
-  background: #f8fafc;
+  background: var(--color-bg);
 }
 
 .point-capture-header h3 {
@@ -9087,7 +9088,7 @@ html[dir="rtl"] .user-menu-item {
   gap: 0.75rem;
   padding: 1rem;
   border-top: 1px solid var(--color-border);
-  background: #f8fafc;
+  background: var(--color-bg);
 }
 
 .point-capture-footer .btn {
@@ -10816,12 +10817,12 @@ button:focus-visible,
   .three-d-overlay__header {
     position: absolute;
     top: 0;
-    left: 0;
-    right: 0;
+    inset-inline-start: 0;
+    inset-inline-end: 0;
     z-index: 5;
     padding: 2px var(--space-2);
-    min-height: 32px;
-    max-height: 36px;
+    min-height: 36px;
+    max-height: 40px;
     background: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(4px);
     transition: opacity 0.4s ease, transform 0.4s ease;
@@ -11361,14 +11362,14 @@ button:focus-visible,
     top: 0;
     left: 0;
     right: 0;
-    height: 18px;
+    height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.15);
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    background: rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
     cursor: pointer;
     z-index: 201;
     opacity: 0;
@@ -11377,8 +11378,8 @@ button:focus-visible,
   }
 
   .header-recall-handle .material-icons {
-    font-size: 14px;
-    color: rgba(0, 0, 0, 0.4);
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.8);
   }
 
   body.landscape-header-hidden .header-recall-handle {
