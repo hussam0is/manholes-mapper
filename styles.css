@@ -8426,6 +8426,78 @@ html[dir="rtl"] .auth-form-wrapper {
   cursor: not-allowed;
 }
 
+/* Password field wrapper for show/hide toggle */
+.auth-password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.auth-password-wrapper input {
+  padding-inline-end: 2.75rem;
+  width: 100%;
+}
+
+.auth-password-toggle {
+  position: absolute;
+  inset-inline-end: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+  border-radius: var(--radius);
+  transition: color 0.2s;
+}
+
+.auth-password-toggle:hover {
+  color: var(--color-text);
+}
+
+.auth-password-toggle .material-icons {
+  font-size: 1.25rem;
+}
+
+/* Language toggle on login page */
+.auth-lang-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.auth-lang-toggle button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  min-height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.auth-lang-toggle button:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.auth-lang-toggle button .material-icons {
+  font-size: 1rem;
+}
+
 .auth-form-submit {
   display: flex;
   align-items: center;
@@ -8467,6 +8539,10 @@ html[dir="rtl"] .auth-form-wrapper {
   color: var(--color-primary);
   text-decoration: none;
   font-weight: 500;
+  display: inline-block;
+  padding: 0.75rem;
+  min-height: 44px;
+  box-sizing: border-box;
 }
 
 .auth-form-link:hover {
@@ -8557,15 +8633,15 @@ html[dir="rtl"] .auth-form-wrapper {
 }
 
 .user-menu-item:hover {
-  background: #f1f5f9;
+  background: var(--color-surface-hover, #f1f5f9);
 }
 
 .user-menu-signout {
-  color: #dc2626;
+  color: var(--color-danger-hover, #dc2626);
 }
 
 .user-menu-signout:hover {
-  background: #fef2f2;
+  background: var(--color-danger-bg, #fef2f2);
 }
 
 .user-login-btn {
@@ -8601,6 +8677,25 @@ html[dir="rtl"] .auth-form-wrapper {
 
   .auth-form-field input:disabled {
     background: var(--color-surface);
+  }
+
+  .auth-password-toggle {
+    color: var(--color-muted);
+  }
+
+  .auth-password-toggle:hover {
+    color: var(--color-text-bright);
+  }
+
+  .auth-lang-toggle button {
+    border-color: var(--color-border-dark);
+    background: var(--color-surface);
+    color: var(--color-muted);
+  }
+
+  .auth-lang-toggle button:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
   }
 
   .user-menu-dropdown {
@@ -11052,14 +11147,20 @@ button:focus-visible,
   .auth-form-field input {
     padding: 0.4rem 0.75rem;
     font-size: 0.85rem;
-    min-height: 38px;
+    min-height: 44px;
     box-sizing: border-box;
   }
 
   .auth-form-submit {
     padding: 0.4rem;
     font-size: 0.85rem;
-    min-height: 40px;
+    min-height: 44px;
+  }
+
+  /* Hide form title/subtitle in landscape — the login-panel-header already provides context */
+  .auth-form-title,
+  .auth-form-subtitle {
+    display: none;
   }
 
   .auth-form-footer {
@@ -11069,8 +11170,8 @@ button:focus-visible,
 
   .auth-form-link {
     display: inline-block;
-    padding: 0.4rem;
-    min-height: 40px;
+    padding: 0.5rem 0.75rem;
+    min-height: 44px;
     line-height: 1.5;
   }
 }

@@ -133,6 +133,9 @@ export const i18n = {
       signInFailed: 'ההתחברות נכשלה. בדוק את הפרטים שלך.',
       signUpFailed: 'ההרשמה נכשלה. נסה שוב.',
       unexpectedError: 'אירעה שגיאה לא צפויה.',
+      showPassword: 'הצג סיסמה',
+      hidePassword: 'הסתר סיסמה',
+      switchLanguage: 'החלף שפה',
     },
     errors: {
       sessionExpired: 'פג תוקף ההתחברות — יש להתחבר מחדש',
@@ -759,6 +762,9 @@ export const i18n = {
       signInFailed: 'Sign in failed. Please check your credentials.',
       signUpFailed: 'Sign up failed. Please try again.',
       unexpectedError: 'An unexpected error occurred.',
+      showPassword: 'Show password',
+      hidePassword: 'Hide password',
+      switchLanguage: 'Switch language',
     },
     errors: {
       sessionExpired: 'Session expired — please sign in again',

@@ -6,7 +6,7 @@
  * All strings use window.t() for i18n support.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import { signInWithEmail, signUpWithEmail, signOutUser, getCurrentSession } from './auth-client.js';
 import { refreshSession } from './auth-guard.js';
@@ -32,6 +32,84 @@ function getRoot(container) {
   const root = createRoot(container);
   roots.set(container, root);
   return root;
+}
+
+/**
+ * Password field with show/hide toggle
+ */
+function PasswordField({ id, value, onChange, placeholder, disabled, autoComplete, minLength, label }) {
+  const [visible, setVisible] = useState(false);
+
+  const toggleVisibility = useCallback(() => {
+    setVisible(v => !v);
+  }, []);
+
+  return (
+    <div className="auth-form-field">
+      <label htmlFor={id}>{label}</label>
+      <div className="auth-password-wrapper">
+        <input
+          type={visible ? 'text' : 'password'}
+          id={id}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          required
+          disabled={disabled}
+          autoComplete={autoComplete}
+          minLength={minLength}
+        />
+        <button
+          type="button"
+          className="auth-password-toggle"
+          onClick={toggleVisibility}
+          aria-label={visible ? tt('auth.hidePassword') : tt('auth.showPassword')}
+          tabIndex={-1}
+        >
+          <span className="material-icons">
+            {visible ? 'visibility_off' : 'visibility'}
+          </span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Language toggle for login/signup pages
+ */
+function LanguageToggle() {
+  const [, setTick] = useState(0);
+
+  const toggleLanguage = useCallback(() => {
+    // Use the global setLanguage function if available (from main-entry.js or i18n.js)
+    const currentLang = document.documentElement.lang || 'he';
+    const newLang = currentLang === 'he' ? 'en' : 'he';
+
+    // Dispatch language change via the language selector if available
+    const langSelect = document.getElementById('languageSelect');
+    if (langSelect) {
+      langSelect.value = newLang;
+      langSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    } else if (typeof window.setLanguage === 'function') {
+      window.setLanguage(newLang);
+    }
+
+    // Force re-render to update translated strings
+    setTick(t => t + 1);
+  }, []);
+
+  const currentLang = document.documentElement.lang || 'he';
+  const targetLabel = currentLang === 'he' ? 'English' : '\u05E2\u05D1\u05E8\u05D9\u05EA';
+
+  return (
+    <div className="auth-lang-toggle">
+      <button type="button" onClick={toggleLanguage} aria-label={tt('auth.switchLanguage')}>
+        <span className="material-icons">translate</span>
+        <span>{targetLabel}</span>
+      </button>
+    </div>
+  );
 }
 
 /**
@@ -78,7 +156,7 @@ function SignInForm({ onSuccess, signUpUrl = '#/signup' }) {
         <p className="auth-form-subtitle">{tt('auth.enterCredentials')}</p>
 
         {error && (
-          <div className="auth-form-error">
+          <div className="auth-form-error" role="alert" aria-live="assertive">
             <span className="material-icons">error</span>
             <span>{error}</span>
           </div>
@@ -94,21 +172,19 @@ function SignInForm({ onSuccess, signUpUrl = '#/signup' }) {
             placeholder={tt('auth.emailPlaceholder')}
             required
             disabled={loading}
+            autoComplete="email"
           />
         </div>
 
-        <div className="auth-form-field">
-          <label htmlFor="password">{tt('auth.password')}</label>
-          <input
-            type="password"
-            id="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder={tt('auth.passwordPlaceholder')}
-            required
-            disabled={loading}
-          />
-        </div>
+        <PasswordField
+          id="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder={tt('auth.passwordPlaceholder')}
+          disabled={loading}
+          autoComplete="current-password"
+          label={tt('auth.password')}
+        />
 
         <button type="submit" className="auth-form-submit" disabled={loading}>
           {loading ? (
@@ -125,6 +201,8 @@ function SignInForm({ onSuccess, signUpUrl = '#/signup' }) {
           {tt('auth.noAccount')}{' '}
           <a href={signUpUrl} className="auth-form-link">{tt('auth.signUp')}</a>
         </p>
+
+        <LanguageToggle />
       </form>
     </div>
   );
@@ -187,7 +265,7 @@ function SignUpForm({ onSuccess, signInUrl = '#/login' }) {
         <p className="auth-form-subtitle">{tt('auth.signUpToStart')}</p>
 
         {error && (
-          <div className="auth-form-error">
+          <div className="auth-form-error" role="alert" aria-live="assertive">
             <span className="material-icons">error</span>
             <span>{error}</span>
           </div>
@@ -203,6 +281,7 @@ function SignUpForm({ onSuccess, signInUrl = '#/login' }) {
             placeholder={tt('auth.namePlaceholder')}
             required
             disabled={loading}
+            autoComplete="name"
           />
         </div>
 
@@ -216,35 +295,30 @@ function SignUpForm({ onSuccess, signInUrl = '#/login' }) {
             placeholder={tt('auth.emailPlaceholder')}
             required
             disabled={loading}
+            autoComplete="email"
           />
         </div>
 
-        <div className="auth-form-field">
-          <label htmlFor="signup-password">{tt('auth.password')}</label>
-          <input
-            type="password"
-            id="signup-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder={tt('auth.passwordMinLength')}
-            required
-            disabled={loading}
-            minLength={8}
-          />
-        </div>
+        <PasswordField
+          id="signup-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder={tt('auth.passwordMinLength')}
+          disabled={loading}
+          autoComplete="new-password"
+          minLength={8}
+          label={tt('auth.password')}
+        />
 
-        <div className="auth-form-field">
-          <label htmlFor="confirm-password">{tt('auth.confirmPassword')}</label>
-          <input
-            type="password"
-            id="confirm-password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder={tt('auth.confirmPasswordPlaceholder')}
-            required
-            disabled={loading}
-          />
-        </div>
+        <PasswordField
+          id="confirm-password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          placeholder={tt('auth.confirmPasswordPlaceholder')}
+          disabled={loading}
+          autoComplete="new-password"
+          label={tt('auth.confirmPassword')}
+        />
 
         <button type="submit" className="auth-form-submit" disabled={loading}>
           {loading ? (
@@ -261,6 +335,8 @@ function SignUpForm({ onSuccess, signInUrl = '#/login' }) {
           {tt('auth.haveAccount')}{' '}
           <a href={signInUrl} className="auth-form-link">{tt('auth.signIn')}</a>
         </p>
+
+        <LanguageToggle />
       </form>
     </div>
   );
