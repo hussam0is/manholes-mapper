@@ -29,7 +29,7 @@
 
 // IndexedDB bridge moved to src/state/persistence.js and src/db.js
 import { restoreFromIndexedDbIfNeeded, idbSaveCurrentCompat, idbSaveRecordCompat, idbDeleteRecordCompat, STORAGE_KEYS } from '../state/persistence.js';
-import { mountSignIn as _mountSignIn, mountSignUp as _mountSignUp } from '../auth/auth-provider.jsx';
+import { mountSignIn as _mountSignIn, mountSignUp as _mountSignUp, unmountAuth as _unmountAuth } from '../auth/auth-provider.jsx';
 import { encodeUtf16LeWithBom } from '../utils/encoding.js';
 import { distanceToSegment } from '../utils/geometry.js';
 import { isNumericId, generateHomeInternalId } from '../graph/id-utils.js';
@@ -1036,16 +1036,17 @@ function hideAuthLoading() {
 }
 
 // Mount SignIn component (Better Auth)
+// Re-uses the existing React root via getRoot() — no unmount needed.
+// React handles re-rendering internally when switching between SignIn/SignUp.
 function mountAuthSignIn() {
   if (!authContainer) return;
-  authContainer.innerHTML = '';
   _mountSignIn(authContainer, { signUpUrl: '#/signup' });
 }
 
 // Mount SignUp component (Better Auth)
+// Re-uses the existing React root via getRoot() — no unmount needed.
 function mountAuthSignUp() {
   if (!authContainer) return;
-  authContainer.innerHTML = '';
   _mountSignUp(authContainer, { signInUrl: '#/login' });
 }
 
