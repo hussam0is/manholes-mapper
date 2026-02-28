@@ -10216,13 +10216,17 @@ button:focus-visible,
   height: 100% !important;
 }
 
-/* CSS2DRenderer label layer — must use physical positioning (not logical)
-   to avoid RTL layout shifting labels off-screen. */
+/* CSS2DRenderer label layer — force LTR so absolutely-positioned label wrappers
+   default to left:0 instead of right:0 in RTL mode. CSS2DRenderer positions
+   child elements purely via transform(translate(Xpx, Ypx)) and relies on the
+   default position being the top-left corner (0,0). In RTL, absolute elements
+   default to the right edge, which shifts all labels off-screen. */
 .three-d-overlay__label-layer {
   position: absolute !important;
   top: 0 !important;
   left: 0 !important;
   right: auto !important;
+  direction: ltr !important;
   width: 100% !important;
   height: 100% !important;
   overflow: hidden;
