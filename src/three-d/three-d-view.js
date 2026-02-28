@@ -371,44 +371,81 @@ export async function open3DView(opts = {}) {
     });
   });
 
-  // ── Mode switching ────────────────────────────────────────────────────
-  function setMode(mode) {
+  // ── Mode switching with transition flash ────────────────────────────
+  let modeTransitioning = false;
+
+  function setMode(mode, animate = false) {
+    if (modeTransitioning) return;
     currentMode = mode;
     const modeIcon = modeToggleBtn.querySelector('.material-icons');
     const modeLabel = modeToggleBtn.querySelector('.three-d-overlay__mode-label');
 
-    if (mode === 'fps') {
-      orbitControls.enabled = false;
-      fpsControls.initFromCamera();
-      fpsControls.enable();
-      crosshair.style.display = 'flex';
-      speedControl.style.display = 'flex';
-      orbitControlsEl.style.display = 'none';
-      updateSpeedBadge(fpsControls.speedMultiplier);
-      // Button shows "switch to orbit"
-      modeIcon.textContent = '3d_rotation';
-      modeLabel.textContent = esc(t('threeD.modeOrbit'));
-      updateControlsHint('fps');
-    } else {
-      fpsControls.disable();
-      joystick.hide();
-      speedControl.style.display = 'none';
-      orbitControlsEl.style.display = 'flex';
-      // Sync orbit target to where camera is looking
-      const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-      orbitControls.target.copy(camera.position).add(dir.multiplyScalar(5));
-      orbitControls.enabled = true;
-      orbitControls.update();
-      crosshair.style.display = 'none';
-      // Button shows "switch to FPS"
-      modeIcon.textContent = 'directions_walk';
-      modeLabel.textContent = esc(t('threeD.modeFPS'));
-      updateControlsHint('orbit');
+    function applyMode() {
+      if (mode === 'fps') {
+        orbitControls.enabled = false;
+        fpsControls.initFromCamera();
+        fpsControls.enable();
+        crosshair.style.display = 'flex';
+        speedControl.style.display = 'flex';
+        orbitControlsEl.style.display = 'none';
+        updateSpeedBadge(fpsControls.speedMultiplier);
+        // Button shows "switch to orbit"
+        modeIcon.textContent = '3d_rotation';
+        modeLabel.textContent = esc(t('threeD.modeOrbit'));
+        updateControlsHint('fps');
+      } else {
+        fpsControls.disable();
+        joystick.hide();
+        speedControl.style.display = 'none';
+        orbitControlsEl.style.display = 'flex';
+        // Sync orbit target to where camera is looking
+        const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+        orbitControls.target.copy(camera.position).add(dir.multiplyScalar(5));
+        orbitControls.enabled = true;
+        orbitControls.update();
+        crosshair.style.display = 'none';
+        // Button shows "switch to FPS"
+        modeIcon.textContent = 'directions_walk';
+        modeLabel.textContent = esc(t('threeD.modeFPS'));
+        updateControlsHint('orbit');
+      }
     }
+
+    if (!animate) {
+      applyMode();
+      return;
+    }
+
+    // Brief flash transition for visual continuity
+    modeTransitioning = true;
+    const flash = document.createElement('div');
+    flash.style.cssText = `
+      position: absolute; inset: 0; z-index: 100;
+      background: rgba(0, 0, 0, 0.6);
+      opacity: 0; transition: opacity 150ms ease-in;
+      pointer-events: none;
+    `;
+    container.appendChild(flash);
+
+    // Phase 1: fade in black
+    requestAnimationFrame(() => {
+      flash.style.opacity = '1';
+      setTimeout(() => {
+        // Phase 2: apply mode switch at peak darkness
+        applyMode();
+        // Phase 3: fade out
+        flash.style.transition = 'opacity 200ms ease-out';
+        flash.style.opacity = '0';
+        setTimeout(() => {
+          flash.remove();
+          modeTransitioning = false;
+        }, 200);
+      }, 150);
+    });
   }
 
   modeToggleBtn.addEventListener('click', () => {
-    setMode(currentMode === 'fps' ? 'orbit' : 'fps');
+    setMode(currentMode === 'fps' ? 'orbit' : 'fps', true);
   });
 
   // ── Controls hint ────────────────────────────────────────────────────
