@@ -4,26 +4,38 @@
  * Mobile: left joystick (move XZ) + right area (look).
  * Desktop: WASD (move XZ) + Space/Ctrl (up/down) + pointer lock mouse look.
  *
+ * Features:
+ *   - Velocity-based movement with inertia (smooth start/stop)
+ *   - Look smoothing via lerp (cinematic "film camera" feel)
+ *   - Joystick sprint zone (outer ring activates sprint)
+ *   - Speed ramping on sustained input
+ *
  * No Three.js dependency — manipulates camera.position.{x,y,z} and
  * camera.rotation via plain trig. Expects Euler order 'YXZ'.
  */
 
-const BASE_SPEED = 5;     // m/s at 1× multiplier
-const SPRINT_FACTOR = 3;  // sprint = base × this
+const BASE_SPEED = 5;     // m/s at 1x multiplier
+const SPRINT_FACTOR = 3;  // sprint = base * this
 const LOOK_SENSITIVITY = 0.003;
 const TOUCH_LOOK_SENSITIVITY = 0.004;
-const PITCH_LIMIT = (85 * Math.PI) / 180; // ±85°
-const JOYSTICK_THRESHOLD = 8; // px deadzone
+const PITCH_LIMIT = (85 * Math.PI) / 180; // +/-85 deg
+const JOYSTICK_THRESHOLD = 10; // px deadzone (slightly larger for mobile comfort)
+const JOYSTICK_SPRINT_THRESHOLD = 0.82; // normalized distance to activate sprint
+
+// Inertia/smoothing constants
+const MOVE_ACCEL = 8.0;      // acceleration rate (units/s^2 factor)
+const MOVE_FRICTION = 5.0;   // friction when no input (higher = stops faster)
+const LOOK_SMOOTH = 0.20;    // lerp factor per frame for look smoothing (0-1, lower = smoother)
 
 // Speed multiplier presets (scroll wheel steps through these)
 const SPEED_STEPS = [0.25, 0.5, 1, 2, 4, 8, 16];
-const DEFAULT_SPEED_INDEX = 2; // 1×
+const DEFAULT_SPEED_INDEX = 2; // 1x
 
 export class FPSControls {
   /**
    * @param {object} camera - Three.js camera (only .position and .rotation used)
    * @param {HTMLElement} domElement - The canvas or container for events
-   * @param {{ onJoystickStart?: Function, onJoystickMove?: Function, onJoystickEnd?: Function, onSpeedChange?: Function }} [callbacks]
+   * @param {{ onJoystickStart?: Function, onJoystickMove?: Function, onJoystickEnd?: Function, onSpeedChange?: Function, onSprintChange?: Function }} [callbacks]
    */
   constructor(camera, domElement, callbacks = {}) {
     this._camera = camera;
@@ -36,15 +48,22 @@ export class FPSControls {
     this._speedIndex = DEFAULT_SPEED_INDEX;
     this._speedMultiplier = SPEED_STEPS[DEFAULT_SPEED_INDEX];
 
-    // Movement state (−1..1)
-    this._moveForward = 0;
-    this._moveRight = 0;
-    this._moveUp = 0;   // vertical (Space/Ctrl)
+    // Input state (-1..1) — raw desired direction
+    this._inputForward = 0;
+    this._inputRight = 0;
+    this._inputUp = 0;   // vertical (Space/Ctrl)
     this._sprint = false;
 
-    // Look state (radians)
+    // Velocity state (smoothed, in m/s along camera-relative axes)
+    this._velForward = 0;
+    this._velRight = 0;
+    this._velUp = 0;
+
+    // Look state (radians) — current (smoothed) and target
     this._yaw = 0;
     this._pitch = 0;
+    this._targetYaw = 0;
+    this._targetPitch = 0;
 
     // Touch tracking
     this._joystickTouchId = null;
@@ -89,6 +108,12 @@ export class FPSControls {
     if (r.order !== 'YXZ') r.order = 'YXZ';
     this._yaw = r.y;
     this._pitch = r.x;
+    this._targetYaw = r.y;
+    this._targetPitch = r.x;
+    // Reset velocity for clean start
+    this._velForward = 0;
+    this._velRight = 0;
+    this._velUp = 0;
   }
 
   enable() {
@@ -108,7 +133,7 @@ export class FPSControls {
     this._dom.addEventListener('touchend', this._onTouchEnd);
     this._dom.addEventListener('touchcancel', this._onTouchEnd);
 
-    // Scroll wheel → speed control
+    // Scroll wheel -> speed control
     this._dom.addEventListener('wheel', this._onWheel, { passive: false });
   }
 
@@ -145,22 +170,62 @@ export class FPSControls {
   update(dt) {
     if (!this._enabled) return;
 
-    // Compute movement from keys (desktop) — merge with touch joystick
-    let fwd = this._moveForward;
-    let right = this._moveRight;
-    let up = this._moveUp;
+    // ── 1. Compute desired input direction from keys + joystick ──
+    let inputFwd = this._inputForward;
+    let inputRight = this._inputRight;
+    let inputUp = this._inputUp;
 
-    if (this._keys['KeyW'] || this._keys['ArrowUp']) fwd = Math.min(fwd + 1, 1);
-    if (this._keys['KeyS'] || this._keys['ArrowDown']) fwd = Math.max(fwd - 1, -1);
-    if (this._keys['KeyA'] || this._keys['ArrowLeft']) right = Math.max(right - 1, -1);
-    if (this._keys['KeyD'] || this._keys['ArrowRight']) right = Math.min(right + 1, 1);
-    if (this._keys['Space']) up = Math.min(up + 1, 1);
-    if (this._keys['ControlLeft'] || this._keys['ControlRight'] || this._keys['KeyQ']) up = Math.max(up - 1, -1);
-    if (this._keys['KeyE']) up = Math.min(up + 1, 1);
+    if (this._keys['KeyW'] || this._keys['ArrowUp']) inputFwd = Math.min(inputFwd + 1, 1);
+    if (this._keys['KeyS'] || this._keys['ArrowDown']) inputFwd = Math.max(inputFwd - 1, -1);
+    if (this._keys['KeyA'] || this._keys['ArrowLeft']) inputRight = Math.max(inputRight - 1, -1);
+    if (this._keys['KeyD'] || this._keys['ArrowRight']) inputRight = Math.min(inputRight + 1, 1);
+    if (this._keys['Space']) inputUp = Math.min(inputUp + 1, 1);
+    if (this._keys['ControlLeft'] || this._keys['ControlRight'] || this._keys['KeyQ']) inputUp = Math.max(inputUp - 1, -1);
+    if (this._keys['KeyE']) inputUp = Math.min(inputUp + 1, 1);
 
     const sprint = this._sprint || this._keys['ShiftLeft'] || this._keys['ShiftRight'];
-    const speed = BASE_SPEED * this._speedMultiplier * (sprint ? SPRINT_FACTOR : 1);
+    const targetSpeed = BASE_SPEED * this._speedMultiplier * (sprint ? SPRINT_FACTOR : 1);
 
+    // ── 2. Velocity-based movement with inertia ──
+    // Target velocity based on input
+    const targetVelFwd = inputFwd * targetSpeed;
+    const targetVelRight = inputRight * targetSpeed;
+    const targetVelUp = inputUp * targetSpeed;
+
+    // Check if there is active input
+    const hasInput = Math.abs(inputFwd) > 0.01 || Math.abs(inputRight) > 0.01 || Math.abs(inputUp) > 0.01;
+
+    if (hasInput) {
+      // Accelerate toward target velocity (smooth ramp-up)
+      const accelFactor = 1 - Math.exp(-MOVE_ACCEL * dt);
+      this._velForward += (targetVelFwd - this._velForward) * accelFactor;
+      this._velRight += (targetVelRight - this._velRight) * accelFactor;
+      this._velUp += (targetVelUp - this._velUp) * accelFactor;
+    } else {
+      // Apply friction/damping (smooth coast-down)
+      const frictionFactor = Math.exp(-MOVE_FRICTION * dt);
+      this._velForward *= frictionFactor;
+      this._velRight *= frictionFactor;
+      this._velUp *= frictionFactor;
+
+      // Snap to zero when very slow to avoid perpetual drift
+      if (Math.abs(this._velForward) < 0.01) this._velForward = 0;
+      if (Math.abs(this._velRight) < 0.01) this._velRight = 0;
+      if (Math.abs(this._velUp) < 0.01) this._velUp = 0;
+    }
+
+    // ── 3. Look smoothing via lerp ──
+    // Smoothly interpolate current yaw/pitch toward target
+    // Use a high lerp factor for responsive feel with slight smoothing
+    const smoothFactor = Math.min(1, LOOK_SMOOTH * 60 * dt); // ~0.2 at 60fps
+    this._yaw += (this._targetYaw - this._yaw) * smoothFactor;
+    this._pitch += (this._targetPitch - this._pitch) * smoothFactor;
+
+    // Snap when very close to avoid perpetual lerp
+    if (Math.abs(this._targetYaw - this._yaw) < 0.0001) this._yaw = this._targetYaw;
+    if (Math.abs(this._targetPitch - this._pitch) < 0.0001) this._pitch = this._targetPitch;
+
+    // ── 4. Apply velocity to position ──
     // Spectator free-cam: forward vector follows camera pitch (fly toward where you look)
     const sinY = Math.sin(this._yaw);
     const cosY = Math.cos(this._yaw);
@@ -177,9 +242,9 @@ export class FPSControls {
     const rightZ = -sinY;
 
     const pos = this._camera.position;
-    pos.x += (fwdX * fwd + rightX * right) * speed * dt;
-    pos.y += (fwdY * fwd + up) * speed * dt;
-    pos.z += (fwdZ * fwd + rightZ * right) * speed * dt;
+    pos.x += (fwdX * this._velForward + rightX * this._velRight) * dt;
+    pos.y += (fwdY * this._velForward + this._velUp) * dt;
+    pos.z += (fwdZ * this._velForward + rightZ * this._velRight) * dt;
 
     // Apply rotation
     this._camera.rotation.set(this._pitch, this._yaw, 0, 'YXZ');
@@ -204,9 +269,10 @@ export class FPSControls {
     if (!this._enabled) return;
     if (document.pointerLockElement !== this._dom) return;
 
-    this._yaw -= e.movementX * LOOK_SENSITIVITY;
-    this._pitch -= e.movementY * LOOK_SENSITIVITY;
-    this._pitch = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, this._pitch));
+    // Write to target (smoothed in update())
+    this._targetYaw -= e.movementX * LOOK_SENSITIVITY;
+    this._targetPitch -= e.movementY * LOOK_SENSITIVITY;
+    this._targetPitch = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, this._targetPitch));
   }
 
   _handleClick() {
@@ -217,7 +283,7 @@ export class FPSControls {
   }
 
   _handlePointerLockChange() {
-    // No action needed — movement continues regardless
+    // No action needed -- movement continues regardless
   }
 
   _handleWheel(e) {
@@ -263,16 +329,20 @@ export class FPSControls {
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         if (dist < JOYSTICK_THRESHOLD) {
-          this._moveForward = 0;
-          this._moveRight = 0;
+          this._inputForward = 0;
+          this._inputRight = 0;
+          this._setSprint(false);
           this._cb.onJoystickMove?.(0, 0, 1);
         } else {
           const maxDist = 60; // max joystick travel px
           const clamped = Math.min(dist, maxDist);
           const norm = clamped / maxDist;
-          this._moveForward = -(dy / dist) * norm; // up = forward
-          this._moveRight = (dx / dist) * norm;
+          this._inputForward = -(dy / dist) * norm; // up = forward
+          this._inputRight = (dx / dist) * norm;
           this._cb.onJoystickMove?.(dx, dy, maxDist);
+
+          // Sprint zone: activate sprint when joystick pushed beyond threshold
+          this._setSprint(norm >= JOYSTICK_SPRINT_THRESHOLD);
         }
       }
 
@@ -281,9 +351,10 @@ export class FPSControls {
         const dx = touch.clientX - this._lookPrev.x;
         const dy = touch.clientY - this._lookPrev.y;
 
-        this._yaw -= dx * TOUCH_LOOK_SENSITIVITY;
-        this._pitch -= dy * TOUCH_LOOK_SENSITIVITY;
-        this._pitch = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, this._pitch));
+        // Write to target (smoothed in update())
+        this._targetYaw -= dx * TOUCH_LOOK_SENSITIVITY;
+        this._targetPitch -= dy * TOUCH_LOOK_SENSITIVITY;
+        this._targetPitch = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, this._targetPitch));
 
         this._lookPrev = { x: touch.clientX, y: touch.clientY };
       }
@@ -295,8 +366,9 @@ export class FPSControls {
       if (touch.identifier === this._joystickTouchId) {
         this._joystickTouchId = null;
         this._joystickOrigin = null;
-        this._moveForward = 0;
-        this._moveRight = 0;
+        this._inputForward = 0;
+        this._inputRight = 0;
+        this._setSprint(false);
         this._cb.onJoystickEnd?.();
       }
       if (touch.identifier === this._lookTouchId) {
@@ -306,11 +378,22 @@ export class FPSControls {
     }
   }
 
+  /** Set sprint state and notify callback on change. */
+  _setSprint(val) {
+    if (val !== this._sprint) {
+      this._sprint = val;
+      this._cb.onSprintChange?.(val);
+    }
+  }
+
   _resetMovement() {
-    this._moveForward = 0;
-    this._moveRight = 0;
-    this._moveUp = 0;
+    this._inputForward = 0;
+    this._inputRight = 0;
+    this._inputUp = 0;
     this._sprint = false;
+    this._velForward = 0;
+    this._velRight = 0;
+    this._velUp = 0;
     this._keys = {};
     this._joystickTouchId = null;
     this._lookTouchId = null;

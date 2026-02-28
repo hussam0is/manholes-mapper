@@ -100,7 +100,10 @@ export async function open3DView(opts = {}) {
         <span class="material-icons" style="animation: spin 1s linear infinite">hourglass_top</span>
         <span>${esc(t('threeD.loading'))}</span>
       </div>
-      <div class="three-d-overlay__crosshair" style="display:${currentMode === 'fps' ? 'flex' : 'none'}"></div>
+      <div class="three-d-overlay__crosshair" style="display:${currentMode === 'fps' ? 'flex' : 'none'}">
+        <div class="three-d-overlay__crosshair-dot"></div>
+      </div>
+      <div class="three-d-overlay__sprint-badge">SPRINT</div>
       <div class="three-d-overlay__orbit-controls" style="display:${currentMode === 'orbit' ? 'flex' : 'none'}">
         <button class="three-d-overlay__orbit-btn" data-action="zoom-in" aria-label="${esc(t('threeD.controls.zoom'))} +">
           <span class="material-icons">add</span>
@@ -138,6 +141,9 @@ export async function open3DView(opts = {}) {
         </div>
       </div>
     </div>
+    <button class="three-d-overlay__header-show-btn" aria-label="Show controls">
+      <span class="material-icons">tune</span>
+    </button>
     <div class="three-d-overlay__controls-hint"></div>
     <div class="three-d-overlay__issues-panel collapsed">
       <button class="three-d-overlay__issues-toggle">
@@ -181,11 +187,13 @@ export async function open3DView(opts = {}) {
   let sceneResult = null;
   let resizeObserver = null;
   let issueInteraction = null;
+  let headerAutoHideTimer = null;
 
   function cleanup() {
     isOpen = false;
 
     if (animFrameId != null) cancelAnimationFrame(animFrameId);
+    clearTimeout(headerAutoHideTimer);
     if (orbitControls) orbitControls.dispose();
     if (fpsControls) fpsControls.dispose();
     if (joystick) joystick.dispose();
@@ -318,11 +326,18 @@ export async function open3DView(opts = {}) {
     speedBadge.textContent = (mult >= 1 ? Math.round(mult) : mult) + '×';
   }
 
+  const sprintBadge = overlay.querySelector('.three-d-overlay__sprint-badge');
+
   fpsControls = new FPSControls(camera, renderer.domElement, {
     onJoystickStart(x, y) { joystick.show(x, y); },
     onJoystickMove(dx, dy, max) { joystick.move(dx, dy, max); },
     onJoystickEnd() { joystick.hide(); },
     onSpeedChange(mult) { updateSpeedBadge(mult); },
+    onSprintChange(isSprinting) {
+      if (sprintBadge) {
+        sprintBadge.classList.toggle('active', isSprinting);
+      }
+    },
   });
 
   // Speed +/- buttons (mobile)
@@ -401,8 +416,19 @@ export async function open3DView(opts = {}) {
   // On desktop/portrait, fade to reduced opacity but stay visible.
   const isLandscapeMobile = window.matchMedia('(orientation: landscape) and (max-height: 500px)').matches;
 
+  // Track how many times hint has been shown per mode to limit re-shows
+  const hintShownModes = new Set();
+
   function updateControlsHint(mode) {
     if (!controlsHint) return;
+
+    // Only show hint on first switch to each mode (game tutorial style)
+    if (hintShownModes.has(mode)) {
+      // Already shown for this mode — skip re-show
+      return;
+    }
+    hintShownModes.add(mode);
+
     controlsHint.style.opacity = '1';
     controlsHint.style.display = 'block';
     controlsHint.style.transition = 'opacity 0.5s';
@@ -425,23 +451,70 @@ export async function open3DView(opts = {}) {
     clearTimeout(controlsHint._hideTimer);
 
     if (isLandscapeMobile) {
-      // In landscape mobile: fade out after 3s, then fully hide after transition
+      // In landscape mobile: fade out after 2.5s (faster), then fully hide
       controlsHint._fadeTimer = setTimeout(() => {
         controlsHint.style.opacity = '0';
         controlsHint._hideTimer = setTimeout(() => {
           controlsHint.style.display = 'none';
         }, 600);
-      }, 3000);
+      }, 2500);
     } else {
-      // On desktop: fade to reduced opacity after 5s, stay visible
+      // On desktop: fade to reduced opacity after 4s, stay visible
       controlsHint._fadeTimer = setTimeout(() => {
-        controlsHint.style.opacity = '0.7';
-      }, 5000);
+        controlsHint.style.opacity = '0.5';
+      }, 4000);
     }
   }
 
   // Apply initial mode
   setMode(currentMode);
+
+  // ── Landscape header auto-hide (game HUD behavior) ──────────────────
+  const headerEl = overlay.querySelector('.three-d-overlay__header');
+  const headerShowBtn = overlay.querySelector('.three-d-overlay__header-show-btn');
+
+  function scheduleHeaderHide() {
+    if (!isLandscapeMobile) return;
+    clearTimeout(headerAutoHideTimer);
+    headerAutoHideTimer = setTimeout(() => {
+      headerEl.classList.add('auto-hidden');
+      if (headerShowBtn) headerShowBtn.classList.add('visible');
+    }, 3000);
+  }
+
+  function showHeader() {
+    headerEl.classList.remove('auto-hidden');
+    if (headerShowBtn) headerShowBtn.classList.remove('visible');
+    scheduleHeaderHide();
+  }
+
+  if (isLandscapeMobile) {
+    scheduleHeaderHide();
+    // Show header on tap of the show button
+    if (headerShowBtn) {
+      headerShowBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showHeader();
+      });
+    }
+    // Show header briefly when interacting with header actions
+    headerEl.addEventListener('pointerdown', () => {
+      clearTimeout(headerAutoHideTimer);
+    });
+    headerEl.addEventListener('pointerup', () => {
+      scheduleHeaderHide();
+    });
+  }
+
+  // ── Controls hint tap-to-dismiss (Issue #9) ──────────────────────────
+  if (controlsHint) {
+    controlsHint.style.cursor = 'pointer';
+    controlsHint.style.pointerEvents = 'auto';
+    controlsHint.addEventListener('click', () => {
+      controlsHint.style.opacity = '0';
+      setTimeout(() => { controlsHint.style.display = 'none'; }, 500);
+    });
+  }
 
   // ── Miniature toggle ────────────────────────────────────────────────
   const miniToggleBtn = overlay.querySelector('.three-d-overlay__miniature-toggle');

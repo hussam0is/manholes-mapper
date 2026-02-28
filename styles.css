@@ -10501,7 +10501,7 @@ button:focus-visible,
   z-index: 2;
 }
 
-/* 3D FPS crosshair (CSS pseudo-element lines) */
+/* 3D FPS crosshair — game-style with center dot and breathing animation */
 .three-d-overlay__crosshair {
   position: absolute;
   inset: 0;
@@ -10510,22 +10510,39 @@ button:focus-visible,
   justify-content: center;
   pointer-events: none;
   z-index: 1;
+  animation: crosshair-breathe 2.5s ease-in-out infinite;
 }
 .three-d-overlay__crosshair::before,
 .three-d-overlay__crosshair::after {
   content: '';
   position: absolute;
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.55);
   border-radius: 1px;
-  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
 }
 .three-d-overlay__crosshair::before {
-  width: 20px;
+  width: 24px;
   height: 2px;
 }
 .three-d-overlay__crosshair::after {
   width: 2px;
-  height: 20px;
+  height: 24px;
+}
+/* Center dot */
+.three-d-overlay__crosshair-dot {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.4), 0 0 2px rgba(0, 0, 0, 0.5);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+@keyframes crosshair-breathe {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.06); opacity: 1; }
 }
 
 /* ── 3D Issues Panel ── */
@@ -10639,15 +10656,33 @@ button:focus-visible,
   }
 }
 
-/* Landscape adjustments for 3D overlay */
+/* Landscape adjustments for 3D overlay — PUBG spectator game-HUD style */
 @media (orientation: landscape) and (max-height: 500px) {
-  /* -- Compact header: 36px, icon-only buttons -- */
+  /* -- Auto-hiding header: transparent overlay, fades after 3s via JS -- */
   .three-d-overlay__header {
-    padding: 2px var(--space-2);
-    min-height: 36px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 5;
+    padding: 4px var(--space-2);
+    min-height: 32px;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+  .three-d-overlay__header.auto-hidden {
+    opacity: 0;
+    transform: translateY(-100%);
+    pointer-events: none;
+  }
+  /* Canvas container fills entire overlay when header is absolute */
+  .three-d-overlay__canvas-container {
+    position: absolute;
+    inset: 0;
   }
   .three-d-overlay__title {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     gap: 4px;
   }
   .three-d-overlay__title > span:last-child {
@@ -10669,12 +10704,13 @@ button:focus-visible,
     height: 20px;
   }
   .three-d-overlay__speed-btn {
-    min-width: 36px;
-    min-height: 36px;
+    min-width: 40px;
+    min-height: 40px;
   }
   .three-d-overlay__speed-badge {
-    font-size: 0.65rem;
-    min-width: 24px;
+    font-size: 0.7rem;
+    min-width: 28px;
+    font-weight: 700;
   }
   .three-d-overlay__speed-control {
     padding: 1px;
@@ -10732,10 +10768,11 @@ button:focus-visible,
     font-size: 0.65rem;
   }
 
-  /* -- Orbit controls: smaller buttons -- */
+  /* -- Orbit controls: smaller buttons, positioned higher to avoid issues panel -- */
   .three-d-overlay__orbit-controls {
     gap: 4px;
     inset-inline-end: 8px;
+    top: 40%;
   }
   .three-d-overlay__orbit-btn {
     width: 40px;
@@ -10744,6 +10781,82 @@ button:focus-visible,
   }
   .three-d-overlay__orbit-btn .material-icons {
     font-size: 20px;
+  }
+
+  /* -- Floating header-show button (visible when header is hidden) -- */
+  .three-d-overlay__header-show-btn {
+    position: absolute;
+    top: 6px;
+    inset-inline-end: 6px;
+    z-index: 4;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(3px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .three-d-overlay__header-show-btn.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .three-d-overlay__header-show-btn:active {
+    background: rgba(255, 255, 255, 0.2);
+  }
+  .three-d-overlay__header-show-btn .material-icons {
+    font-size: 18px;
+  }
+
+  /* -- Sprint indicator badge -- */
+  .three-d-overlay__sprint-badge {
+    position: absolute;
+    bottom: 8px;
+    inset-inline-start: 50%;
+    transform: translateX(-50%);
+    background: rgba(251, 146, 60, 0.3);
+    border: 1px solid rgba(251, 146, 60, 0.5);
+    border-radius: 12px;
+    padding: 2px 12px;
+    color: #fb923c;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    z-index: 2;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .three-d-overlay__sprint-badge.active {
+    opacity: 1;
+  }
+}
+
+/* Sprint badge (non-landscape) — hidden by default */
+.three-d-overlay__sprint-badge {
+  display: none;
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .three-d-overlay__sprint-badge {
+    display: block;
+  }
+}
+
+/* Header show button — hidden outside landscape */
+.three-d-overlay__header-show-btn {
+  display: none;
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .three-d-overlay__header-show-btn {
+    display: flex;
   }
 }
 
