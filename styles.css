@@ -10681,16 +10681,17 @@ button:focus-visible,
   width: 2px;
   height: 24px;
 }
-/* Center dot */
+/* Center dot — 6px for visibility against complex 3D scenes */
 .three-d-overlay__crosshair-dot {
   position: absolute;
-  width: 4px;
-  height: 4px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.85);
-  box-shadow: 0 0 6px rgba(255, 255, 255, 0.4), 0 0 2px rgba(0, 0, 0, 0.5);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.5), 0 0 3px rgba(0, 0, 0, 0.7);
+  outline: 1px solid rgba(0, 0, 0, 0.3);
   top: 50%;
-  left: 50%;
+  inset-inline-start: 50%;
   transform: translate(-50%, -50%);
 }
 @keyframes crosshair-breathe {
@@ -10845,8 +10846,8 @@ button:focus-visible,
   .three-d-overlay__close,
   .three-d-overlay__mode-toggle,
   .three-d-overlay__miniature-toggle {
-    min-width: 32px;
-    min-height: 32px;
+    min-width: 36px;
+    min-height: 36px;
     padding: 0 6px;
     font-size: 0.7rem;
   }
@@ -11290,14 +11291,16 @@ button:focus-visible,
   }
 
   .canvas-toolbar .segmented#modeGroup .btn {
-    min-width: 34px;
-    height: 34px;
-    padding: 5px;
-    /* 44px touch target via minimum tap area */
-    min-height: var(--touch-target-min);
-    box-sizing: content-box;
-    padding-top: 5px;
-    padding-bottom: 5px;
+    /* Compact visual (36px) with proper touch area — border-box avoids
+       content-box sizing confusion; the icon is centred via flexbox. */
+    min-width: 36px;
+    min-height: 36px;
+    height: 36px;
+    padding: 4px;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center
   }
 
   .canvas-toolbar .segmented#modeGroup .btn .material-icons {
