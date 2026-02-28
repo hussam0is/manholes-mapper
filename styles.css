@@ -9616,9 +9616,14 @@ button:focus-visible,
   background: none;
   border: none;
   cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
+  padding: 6px;
+  border-radius: 6px;
   color: var(--color-text-muted, #64748b);
+  min-width: 36px;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .sketch-side-panel__close:hover {
@@ -9655,10 +9660,15 @@ button:focus-visible,
   background: none;
   border: none;
   cursor: pointer;
-  padding: 2px;
+  padding: 4px;
   border-radius: 4px;
   color: var(--color-text-muted, #64748b);
   flex-shrink: 0;
+  min-width: 32px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .sketch-side-panel__eye:hover {
@@ -10033,19 +10043,22 @@ button:focus-visible,
   }
 
   .sketch-side-panel__close {
-    width: 22px;
-    height: 22px;
-    min-width: 22px;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .sketch-side-panel__close .material-icons {
-    font-size: 14px;
+    font-size: 16px;
   }
 
   .sketch-side-panel__item {
-    padding: 0.2rem 0.35rem;
+    padding: 0.25rem 0.35rem;
     gap: 3px;
-    min-height: 28px;
+    min-height: 36px;
   }
 
   .sketch-side-panel__name {
@@ -10059,12 +10072,12 @@ button:focus-visible,
 
   .sketch-side-panel__issues-btn {
     font-size: 0.6rem;
-    padding: 0.1rem 0.3rem;
-    min-height: 18px;
+    padding: 0.15rem 0.35rem;
+    min-height: 28px;
   }
 
   .sketch-side-panel__totals {
-    padding: 0.2rem 0.4rem;
+    padding: 0.25rem 0.4rem;
     font-size: 0.65rem;
   }
 
@@ -10072,24 +10085,29 @@ button:focus-visible,
     bottom: 60px;
   }
 
-  /* Recenter button in item row */
-  .sketch-side-panel__recenter {
-    width: 22px;
-    height: 22px;
+  /* Recenter button in item row -- fix class name (was __recenter, actual is __recenter-btn) */
+  .sketch-side-panel__recenter-btn {
+    min-width: 28px;
+    min-height: 28px;
+    padding: 2px 4px;
   }
 
-  .sketch-side-panel__recenter .material-icons {
+  .sketch-side-panel__recenter-btn .material-icons {
     font-size: 14px;
   }
 
-  /* Visibility toggle */
-  .sketch-side-panel__visibility {
-    width: 22px;
-    height: 22px;
+  /* Visibility toggle -- fix class name (was __visibility, actual is __eye) */
+  .sketch-side-panel__eye {
+    min-width: 28px;
+    min-height: 28px;
+    padding: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  .sketch-side-panel__visibility .material-icons {
-    font-size: 14px;
+  .sketch-side-panel__eye .material-icons {
+    font-size: 16px;
   }
 }
 
