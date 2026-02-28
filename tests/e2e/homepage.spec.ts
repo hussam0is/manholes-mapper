@@ -96,6 +96,19 @@ async function mockAuthenticatedSession(page: Page) {
       body: JSON.stringify({}),
     });
   });
+
+  // Mock user-role endpoint to prevent network delays
+  await page.route('**/api/user-role**', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        role: 'admin',
+        permissions: ['read', 'write', 'admin'],
+        features: {},
+      }),
+    })
+  );
 }
 
 /**
@@ -331,18 +344,22 @@ test.describe('Projects Homepage', () => {
     await expect(openBtns).toHaveCount(3);
   });
 
-  test('should hide close button in projects mode', async ({ page }) => {
+  test('should show close button in projects mode', async ({ page }) => {
     await gotoHomeAuthenticated(page);
 
     const closeBtn = page.locator('#homePanelCloseBtn');
-    await expect(closeBtn).toBeHidden();
+    await expect(closeBtn).toBeVisible();
   });
 
-  test('should hide footer in projects mode', async ({ page }) => {
+  test('should show footer with View My Sketches button in projects mode', async ({ page }) => {
     await gotoHomeAuthenticated(page);
 
     const footer = page.locator('.home-panel-footer');
-    await expect(footer).toBeHidden();
+    await expect(footer).toBeVisible();
+
+    // Footer should contain "View My Sketches" button
+    const viewSketchesBtn = page.locator('#viewMySketchesBtn');
+    await expect(viewSketchesBtn).toBeVisible();
   });
 
   test('should hide sketch tabs in projects mode', async ({ page }) => {
