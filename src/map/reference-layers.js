@@ -32,6 +32,9 @@ const sectionVisibility = new Map();
 export const OUTSIDE_SECTIONS = { id: 'outside_sections_data', number: -1 };
 
 // Default styles per layer type
+// TODO: Label colors (labelColor) are hardcoded per layer type and don't adapt
+// to dark mode. The label background in drawLabels() has basic dark-mode support
+// but the text colors remain fixed. Consider reading CSS tokens for full theming.
 const DEFAULT_STYLES = {
   sections: {
     strokeColor: 'rgba(0, 100, 200, 0.6)',
@@ -623,6 +626,15 @@ function drawLabels(ctx, labels, style, viewScale, _stretchX, _stretchY) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
+  // Read theme colors for dark mode support
+  const rootStyle = typeof document !== 'undefined'
+    ? getComputedStyle(document.documentElement)
+    : null;
+  const isDark = rootStyle
+    ? (rootStyle.getPropertyValue('--color-bg').trim() || '').startsWith('#0')
+    : false;
+  const labelBg = isDark ? 'rgba(15, 23, 42, 0.75)' : 'rgba(255, 255, 255, 0.7)';
+
   // Simple deduplication: skip labels that would overlap
   const drawnPositions = [];
   const minGap = fontSize * 3;
@@ -643,7 +655,7 @@ function drawLabels(ctx, labels, style, viewScale, _stretchX, _stretchY) {
     // Draw label background for readability
     const metrics = ctx.measureText(label.text);
     const pad = 2 / viewScale;
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.fillStyle = labelBg;
     ctx.fillRect(
       label.x - metrics.width / 2 - pad,
       label.y - fontSize / 2 - pad,

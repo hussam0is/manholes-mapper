@@ -1552,6 +1552,8 @@ select.btn:focus-visible {
   z-index: 150;
   width: 44px;
   height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: var(--radius, 8px);
   border: none;
   background: var(--color-surface, #fff);
@@ -1618,14 +1620,14 @@ select.btn:focus-visible {
   background: none;
   border: none;
   cursor: pointer;
-  padding: var(--space-2, 8px);
+  padding: var(--space-3, 12px);
   border-radius: var(--radius-full, 9999px);
   display: flex;
   align-items: center;
   justify-content: center;
   line-height: 1;
-  min-width: 36px;
-  min-height: 36px;
+  min-width: 44px;
+  min-height: 44px;
 }
 
 .layers-config-panel__close:hover {
@@ -1670,7 +1672,11 @@ select.btn:focus-visible {
 .layers-config-panel__header-toggle input[type="checkbox"] {
   width: 20px;
   height: 20px;
+  min-width: 20px;
+  min-height: 20px;
   accent-color: var(--color-primary, #2563eb);
+  padding: 4px;
+  cursor: pointer;
 }
 
 .layers-config-panel__section-items {
@@ -1681,11 +1687,11 @@ select.btn:focus-visible {
   display: flex;
   align-items: center;
   gap: var(--space-2, 8px);
-  padding: var(--space-2, 8px) var(--space-2, 8px);
+  padding: var(--space-2, 8px) var(--space-3, 12px);
   border-radius: var(--radius-sm, 6px);
   cursor: pointer;
   transition: background 0.1s ease;
-  min-height: 40px;
+  min-height: 44px;
 }
 
 .layers-config-panel__toggle:hover {
@@ -1695,8 +1701,12 @@ select.btn:focus-visible {
 .layers-config-panel__toggle input[type="checkbox"] {
   width: 20px;
   height: 20px;
+  min-width: 20px;
+  min-height: 20px;
   accent-color: var(--color-primary, #2563eb);
   flex-shrink: 0;
+  padding: 4px;
+  cursor: pointer;
 }
 
 .layers-config-panel__toggle > span {
@@ -1725,9 +1735,9 @@ select.btn:focus-visible {
   display: flex;
   align-items: center;
   gap: var(--space-2, 8px);
-  padding: var(--space-2, 8px) var(--space-2, 8px);
+  padding: var(--space-2, 8px) var(--space-3, 12px);
   font-size: var(--text-sm, 0.875rem);
-  min-height: 40px;
+  min-height: 44px;
 }
 
 .layers-config-panel__select {
@@ -1747,6 +1757,8 @@ select.btn:focus-visible {
     inset-inline-start: 8px;
     width: 44px;
     height: 44px;
+    min-width: 44px;
+    min-height: 44px;
   }
 
   .layers-config-btn .material-icons {
@@ -4516,6 +4528,39 @@ input:checked + .slider:before {
   .finish-workday-actions .btn {
     padding: 0.45rem 1rem;
     font-size: 0.8125rem;
+  }
+  .finish-workday-success {
+    padding: 1rem;
+  }
+  .finish-workday-success .material-icons {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* Very short landscape (e.g. phone at 375px height) */
+@media (max-height: 400px) and (orientation: landscape) {
+  .finish-workday-container {
+    max-height: 98vh;
+    max-height: 98dvh;
+    max-width: 380px;
+  }
+  .finish-workday-header {
+    padding: 0.375rem 0.75rem;
+  }
+  .finish-workday-content {
+    padding: 0.5rem 0.75rem;
+  }
+  .finish-workday-desc {
+    font-size: 0.75rem;
+    margin-bottom: 0.375rem;
+    line-height: 1.3;
+  }
+  .dangling-edge-item {
+    padding: 0.375rem 0.5rem;
+  }
+  .finish-workday-actions {
+    padding: 0.375rem 0.75rem;
   }
 }
 

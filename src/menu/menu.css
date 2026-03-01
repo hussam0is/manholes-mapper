@@ -1146,6 +1146,12 @@
     font-size: 1rem;
     border-radius: 6px;
   }
+
+  /* Ensure scale/select dropdown variants respect 44px touch target */
+  .menu-dropdown__item--scale,
+  .menu-dropdown__item--select {
+    min-height: 44px;
+  }
 }
 
 /* ============================================
@@ -1552,9 +1558,8 @@ p.mobile-menu__group-label {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  
+  min-height: 44px;
   padding: 0.75rem 1rem;
-  
   font-size: 0.9375rem;
   color: var(--color-text, #0f172a);
 }
