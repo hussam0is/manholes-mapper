@@ -639,8 +639,8 @@ const defaultAdminConfig = {
       engineering_status: EDGE_ENGINEERING_STATUS.map(o => ({ code: o.code, label: o.label, enabled: true })),
       line_diameter: EDGE_LINE_DIAMETERS.map(v => ({ code: v, label: v, enabled: true })),
       fall_position: [
-        { code: 0, label: t('labels.fallPositionInternal'), enabled: true },
-        { code: 1, label: t('labels.fallPositionExternal'), enabled: true },
+        { code: 0, label: typeof t === 'function' ? t('labels.fallPositionInternal') : 'פנימי', enabled: true },
+        { code: 1, label: typeof t === 'function' ? t('labels.fallPositionExternal') : 'חיצוני', enabled: true },
       ],
     },
     // customFields removed
