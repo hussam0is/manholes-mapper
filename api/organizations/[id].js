@@ -1,24 +1,25 @@
 /**
  * API Route: /api/organizations/:id
- * 
+ *
  * GET    - Get a specific organization
  * PUT    - Update organization (super admin only)
  * DELETE - Delete organization (super admin only)
- * 
+ *
  * Requires admin role.
  */
 
 import { handleCors } from '../_lib/cors.js';
-import { verifyAuth, parseBody, sanitizeErrorMessage } from '../_lib/auth.js';
-import { 
-  ensureDb, 
+import { verifyAuth, parseBody } from '../_lib/auth.js';
+import {
+  ensureDb,
   getUserById,
   getOrganizationById,
   updateOrganization,
   deleteOrganization
 } from '../_lib/db.js';
 import { applyRateLimit } from '../_lib/rate-limit.js';
-import { validateUUID } from '../_lib/validators.js';
+import { validateUUID, validateOrganizationInput } from '../_lib/validators.js';
+import { handleApiError } from '../_lib/error-handler.js';
 
 export const config = { runtime: 'nodejs' };
 
@@ -90,14 +91,17 @@ export default async function handler(req, res) {
       }
 
       const body = await parseBody(request);
-      const { name } = body;
 
-      if (name !== undefined && !name.trim()) {
-        return res.status(400).json({ error: 'Organization name cannot be empty' });
+      // If name is provided, validate it (length, not empty)
+      if (body.name !== undefined) {
+        const validationErrors = validateOrganizationInput(body);
+        if (validationErrors) {
+          return res.status(400).json({ error: 'Validation failed', details: validationErrors });
+        }
       }
 
       const updates = {};
-      if (name) updates.name = name.trim();
+      if (body.name) updates.name = body.name.trim();
 
       const updatedOrg = await updateOrganization(orgId, updates);
 
@@ -126,7 +130,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
 
   } catch (error) {
-    console.error(`[API /api/organizations/${orgId}] Error:`, error);
-    return res.status(500).json({ error: sanitizeErrorMessage(error) });
+    return handleApiError(error, res, `[API /api/organizations/${orgId}]`);
   }
 }

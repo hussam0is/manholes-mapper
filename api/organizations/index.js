@@ -1,21 +1,23 @@
 /**
  * API Route: /api/organizations
- * 
+ *
  * GET  - List all organizations
  * POST - Create a new organization (super admin only)
- * 
+ *
  * Requires admin role.
  */
 
 import { handleCors } from '../_lib/cors.js';
-import { verifyAuth, parseBody, sanitizeErrorMessage } from '../_lib/auth.js';
-import { 
-  ensureDb, 
+import { verifyAuth, parseBody } from '../_lib/auth.js';
+import {
+  ensureDb,
   getUserById,
   getAllOrganizations,
   createOrganization
 } from '../_lib/db.js';
 import { applyRateLimit } from '../_lib/rate-limit.js';
+import { validateOrganizationInput } from '../_lib/validators.js';
+import { handleApiError } from '../_lib/error-handler.js';
 
 export const config = { runtime: 'nodejs' };
 
@@ -60,7 +62,7 @@ export default async function handler(req, res) {
 
     if (req.method === 'GET') {
       const organizations = await getAllOrganizations();
-      
+
       const transformed = organizations.map(o => ({
         id: o.id,
         name: o.name,
@@ -79,13 +81,14 @@ export default async function handler(req, res) {
       }
 
       const body = await parseBody(request);
-      const { name } = body;
 
-      if (!name || !name.trim()) {
-        return res.status(400).json({ error: 'Organization name is required' });
+      // Validate organization input (name required, length check)
+      const validationErrors = validateOrganizationInput(body);
+      if (validationErrors) {
+        return res.status(400).json({ error: 'Validation failed', details: validationErrors });
       }
 
-      const org = await createOrganization(name.trim());
+      const org = await createOrganization(body.name.trim());
 
       console.debug(`[API /api/organizations] Created org ${org.id} by ${userId}`);
       return res.status(201).json({
@@ -101,7 +104,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
 
   } catch (error) {
-    console.error(`[API /api/organizations] Error:`, error);
-    return res.status(500).json({ error: sanitizeErrorMessage(error) });
+    return handleApiError(error, res, '[API /api/organizations]');
   }
 }

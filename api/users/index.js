@@ -1,20 +1,21 @@
 /**
  * API Route: /api/users
- * 
+ *
  * GET - List users (super admin: all, admin: org only)
- * 
+ *
  * Requires admin role.
  */
 
 import { handleCors } from '../_lib/cors.js';
-import { verifyAuth, sanitizeErrorMessage } from '../_lib/auth.js';
-import { 
-  ensureDb, 
+import { verifyAuth } from '../_lib/auth.js';
+import {
+  ensureDb,
   getUserById,
   getAllUsers,
   getUsersByOrganization
 } from '../_lib/db.js';
 import { applyRateLimit } from '../_lib/rate-limit.js';
+import { handleApiError } from '../_lib/error-handler.js';
 
 export const config = { runtime: 'nodejs' };
 
@@ -95,7 +96,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ users: transformed, pagination: { limit, offset, count: transformed.length } });
 
   } catch (error) {
-    console.error(`[API /api/users] Error:`, error);
-    return res.status(500).json({ error: sanitizeErrorMessage(error) });
+    return handleApiError(error, res, '[API /api/users]');
   }
 }

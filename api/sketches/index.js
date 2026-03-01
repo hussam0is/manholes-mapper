@@ -1,14 +1,14 @@
 /**
  * API Route: /api/sketches
- * 
+ *
  * GET  - List all sketches for authenticated user
  * POST - Create a new sketch
- * 
+ *
  * Note: Uses standard Node.js (req, res) signature for better compatibility with vercel dev.
  */
 
 import { handleCors } from '../_lib/cors.js';
-import { verifyAuth, parseBody, sanitizeErrorMessage } from '../_lib/auth.js';
+import { verifyAuth, parseBody } from '../_lib/auth.js';
 import {
   getSketchesByUser,
   getSketchesMetaByUser,
@@ -24,6 +24,7 @@ import {
 } from '../_lib/db.js';
 import { validateSketchInput, validateUUID } from '../_lib/validators.js';
 import { applyRateLimit } from '../_lib/rate-limit.js';
+import { handleApiError } from '../_lib/error-handler.js';
 
 export const config = { runtime: 'nodejs' };
 
@@ -42,7 +43,7 @@ export default async function handler(req, res) {
   if (applyRateLimit(req, res)) {
     return; // Rate limited, response already sent
   }
-  
+
   try {
     // Initialize database
     await ensureDb();
@@ -178,7 +179,7 @@ export default async function handler(req, res) {
         });
         return res.status(400).json({ error: 'Validation failed', details: validationErrors });
       }
-      
+
       // Get project's input flow config if projectId is provided
       let snapshotInputFlowConfig = body.snapshotInputFlowConfig || {};
       if (body.projectId) {
@@ -188,7 +189,7 @@ export default async function handler(req, res) {
           snapshotInputFlowConfig = project.input_flow_config || {};
         }
       }
-      
+
       const sketch = await createSketch(userId, {
         name: body.name,
         creationDate: body.creationDate,
@@ -200,7 +201,7 @@ export default async function handler(req, res) {
         projectId: body.projectId || null,
         snapshotInputFlowConfig: snapshotInputFlowConfig,
       });
-      
+
       const transformed = {
         id: sketch.id,
         name: sketch.name,
@@ -215,20 +216,13 @@ export default async function handler(req, res) {
         projectId: sketch.project_id,
         snapshotInputFlowConfig: sketch.snapshot_input_flow_config || {},
       };
-      
+
       console.debug(`[API /api/sketches] Created sketch ${transformed.id} for ${userId} in project ${body.projectId || 'none'}`);
       return res.status(201).json({ sketch: transformed });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
-    console.error(`[API /api/sketches] Error:`, error.message);
-    
-    // Check for specific error types
-    if (error.message?.includes('Database connection not configured')) {
-      return res.status(503).json({ error: 'Database service unavailable' });
-    }
-    
-    return res.status(500).json({ error: sanitizeErrorMessage(error) });
+    return handleApiError(error, res, '[API /api/sketches]');
   }
 }

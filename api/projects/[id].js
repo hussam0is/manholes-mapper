@@ -1,15 +1,15 @@
 /**
  * API Route: /api/projects/:id
- * 
+ *
  * GET    - Get a specific project
  * PUT    - Update project (org admin/super admin only)
  * DELETE - Delete project (org admin/super admin only)
- * 
+ *
  * Requires authenticated user with organization membership.
  */
 
 import { handleCors } from '../_lib/cors.js';
-import { verifyAuth, parseBody, sanitizeErrorMessage } from '../_lib/auth.js';
+import { verifyAuth, parseBody } from '../_lib/auth.js';
 import {
   ensureDb,
   getUserById,
@@ -22,6 +22,9 @@ import {
 } from '../_lib/db.js';
 import { applyRateLimit } from '../_lib/rate-limit.js';
 import { validateUUID } from '../_lib/validators.js';
+import { handleApiError } from '../_lib/error-handler.js';
+
+const MAX_NAME_LENGTH = 200;
 
 export const config = { runtime: 'nodejs' };
 
@@ -147,6 +150,9 @@ export default async function handler(req, res) {
       if (name !== undefined && !name.trim()) {
         return res.status(400).json({ error: 'Project name cannot be empty' });
       }
+      if (name && name.length > MAX_NAME_LENGTH) {
+        return res.status(400).json({ error: `Project name exceeds maximum of ${MAX_NAME_LENGTH} characters` });
+      }
 
       const updates = {};
       if (name) updates.name = name.trim();
@@ -192,6 +198,9 @@ export default async function handler(req, res) {
 
       if (action === 'duplicate') {
         const newName = body.name || `${project.name} (Copy)`;
+        if (newName.length > MAX_NAME_LENGTH) {
+          return res.status(400).json({ error: `Project name exceeds maximum of ${MAX_NAME_LENGTH} characters` });
+        }
         const duplicated = await duplicateProject(projectId, newName);
 
         console.debug(`[API /api/projects/${projectId}] Duplicated to ${duplicated.id} by ${userId}`);
@@ -214,7 +223,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
 
   } catch (error) {
-    console.error(`[API /api/projects/${projectId}] Error:`, error);
-    return res.status(500).json({ error: sanitizeErrorMessage(error) });
+    return handleApiError(error, res, `[API /api/projects/${projectId}]`);
   }
 }

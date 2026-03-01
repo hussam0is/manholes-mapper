@@ -1,17 +1,17 @@
 /**
  * API Route: /api/features/:targetType/:targetId
- * 
+ *
  * GET - Get feature settings for a user or organization
  * PUT - Update feature settings (requires admin)
- * 
+ *
  * targetType: 'user' or 'organization'
  * targetId: user_id or org_id
  */
 
 import { handleCors } from '../_lib/cors.js';
-import { verifyAuth, parseBody, sanitizeErrorMessage } from '../_lib/auth.js';
-import { 
-  ensureDb, 
+import { verifyAuth, parseBody } from '../_lib/auth.js';
+import {
+  ensureDb,
   getUserById,
   getOrganizationById,
   getFeatures,
@@ -20,6 +20,7 @@ import {
 } from '../_lib/db.js';
 import { applyRateLimit } from '../_lib/rate-limit.js';
 import { validateFeaturesInput, validateUUID } from '../_lib/validators.js';
+import { handleApiError } from '../_lib/error-handler.js';
 
 export const config = { runtime: 'nodejs' };
 
@@ -101,7 +102,7 @@ export default async function handler(req, res) {
 
     if (req.method === 'GET') {
       const features = await getFeatures(targetType, targetId);
-      
+
       return res.status(200).json({
         targetType,
         targetId,
@@ -145,7 +146,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
 
   } catch (error) {
-    console.error(`[API /api/features/${targetType}/${targetId}] Error:`, error);
-    return res.status(500).json({ error: sanitizeErrorMessage(error) });
+    return handleApiError(error, res, `[API /api/features/${targetType}/${targetId}]`);
   }
 }

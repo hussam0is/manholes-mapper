@@ -1,23 +1,23 @@
 /**
  * API Route: /api/sketches/[id]
- * 
+ *
  * GET    - Get a single sketch by ID (includes lock status)
  * PUT    - Update a sketch
  * DELETE - Delete a sketch
  * POST   - Lock operations (action=lock, action=unlock, action=refresh)
- * 
+ *
  * Note: Uses standard Node.js (req, res) signature for better compatibility with vercel dev.
  */
 
 import { handleCors } from '../_lib/cors.js';
-import { verifyAuth, parseBody, sanitizeErrorMessage } from '../_lib/auth.js';
-import { 
-  getSketchById, 
-  getSketchByIdAdmin, 
-  updateSketch, 
-  deleteSketch, 
-  ensureDb, 
-  getProjectById, 
+import { verifyAuth, parseBody } from '../_lib/auth.js';
+import {
+  getSketchById,
+  getSketchByIdAdmin,
+  updateSketch,
+  deleteSketch,
+  ensureDb,
+  getProjectById,
   getOrCreateUser,
   acquireSketchLock,
   releaseSketchLock,
@@ -27,6 +27,7 @@ import {
 } from '../_lib/db.js';
 import { validateSketchInput, validateUUID } from '../_lib/validators.js';
 import { applyRateLimit } from '../_lib/rate-limit.js';
+import { handleApiError } from '../_lib/error-handler.js';
 
 export const config = { runtime: 'nodejs' };
 
@@ -55,7 +56,7 @@ export default async function handler(req, res) {
     if (!sketchId || sketchId === 'sketches') {
       return res.status(400).json({ error: 'Sketch ID is required' });
     }
-    
+
     // Validate UUID format
     if (!validateUUID(sketchId)) {
       return res.status(400).json({ error: 'Invalid sketch ID format' });
@@ -77,10 +78,10 @@ export default async function handler(req, res) {
       const userRecord = await getOrCreateUser(userId, { username, email });
       const userRole = userRecord?.role || 'user';
       const userOrgId = userRecord?.organization_id;
-      
+
       let sketch;
       let isOwner = false;
-      
+
       // Role-based access:
       // - super_admin: can view any sketch
       // - admin: can view sketches from their organization
@@ -100,14 +101,14 @@ export default async function handler(req, res) {
         sketch = await getSketchById(sketchId, userId);
         isOwner = true;
       }
-      
+
       if (!sketch) {
         return res.status(404).json({ error: 'Sketch not found' });
       }
-      
+
       // Check lock status
       const lockStatus = await checkSketchLock(sketchId);
-      
+
       const transformed = {
         id: sketch.id,
         name: sketch.name,
@@ -135,7 +136,7 @@ export default async function handler(req, res) {
           canEdit: !lockStatus.isLocked || lockStatus.lockedBy === userId,
         },
       };
-      
+
       return res.status(200).json({ sketch: transformed });
     }
 
@@ -143,14 +144,14 @@ export default async function handler(req, res) {
       // Handle lock operations
       const body = await parseBody(request);
       const action = body.action;
-      
+
       if (!action) {
         return res.status(400).json({ error: 'Action is required (lock, unlock, refresh, forceUnlock)' });
       }
-      
+
       // Get user info
       const username = authUser?.name || authUser?.email || userId;
-      
+
       switch (action) {
         case 'lock': {
           const result = await acquireSketchLock(sketchId, userId, username);
@@ -159,8 +160,8 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, lock: result });
           } else {
             console.warn(`[API /api/sketches/${sketchId}] Lock failed: ${result.message}`);
-            return res.status(409).json({ 
-              error: result.message, 
+            return res.status(409).json({
+              error: result.message,
               lock: {
                 lockedBy: result.lockedBy,
                 lockedAt: result.lockedAt,
@@ -169,13 +170,13 @@ export default async function handler(req, res) {
             });
           }
         }
-        
+
         case 'unlock': {
           const result = await releaseSketchLock(sketchId, userId);
           console.debug(`[API /api/sketches/${sketchId}] Lock released by ${userId}`);
           return res.status(200).json({ success: result.success, message: result.message });
         }
-        
+
         case 'refresh': {
           const result = await refreshSketchLock(sketchId, userId);
           if (result.success) {
@@ -184,21 +185,21 @@ export default async function handler(req, res) {
             return res.status(400).json({ success: false, message: result.message });
           }
         }
-        
+
         case 'forceUnlock': {
           // Only allow admins to force unlock
           const userRecord = await getOrCreateUser(userId, { username: authUser?.name, email: authUser?.email });
           const userRole = userRecord?.role || 'user';
-          
+
           if (userRole !== 'admin' && userRole !== 'super_admin') {
             return res.status(403).json({ error: 'Only admins can force unlock sketches' });
           }
-          
+
           const result = await forceReleaseSketchLock(sketchId);
           console.debug(`[API /api/sketches/${sketchId}] Lock force released by admin ${userId}`);
           return res.status(200).json({ success: result.success, message: result.message });
         }
-        
+
         default:
           return res.status(400).json({ error: 'Unknown action. Use: lock, unlock, refresh, forceUnlock' });
       }
@@ -206,12 +207,12 @@ export default async function handler(req, res) {
 
     if (req.method === 'PUT') {
       const body = await parseBody(request);
-      
+
       // Check lock status before allowing update
       const lockStatus = await checkSketchLock(sketchId);
       if (lockStatus.isLocked && lockStatus.lockedBy !== userId) {
         console.warn(`[API /api/sketches/${sketchId}] Update blocked - locked by ${lockStatus.lockedBy}`);
-        return res.status(409).json({ 
+        return res.status(409).json({
           error: 'Sketch is locked by another user',
           lock: {
             lockedBy: lockStatus.lockedBy,
@@ -220,7 +221,7 @@ export default async function handler(req, res) {
           }
         });
       }
-      
+
       // Validate input
       const validationErrors = validateSketchInput(body);
       if (validationErrors) {
@@ -236,7 +237,7 @@ export default async function handler(req, res) {
         });
         return res.status(400).json({ error: 'Validation failed', details: validationErrors });
       }
-      
+
       // If projectId is being changed, get the new project's input flow config
       let snapshotInputFlowConfig = body.snapshotInputFlowConfig;
       if (body.projectId !== undefined && body.updateInputFlowSnapshot) {
@@ -250,7 +251,7 @@ export default async function handler(req, res) {
           snapshotInputFlowConfig = snapshotInputFlowConfig || {};
         }
       }
-      
+
       const updated = await updateSketch(sketchId, userId, {
         name: body.name,
         creationDate: body.creationDate,
@@ -292,7 +293,7 @@ export default async function handler(req, res) {
           currentSketch: currentTransformed,
         });
       }
-      
+
       const transformed = {
         id: updated.id,
         name: updated.name,
@@ -307,31 +308,24 @@ export default async function handler(req, res) {
         projectId: updated.project_id,
         snapshotInputFlowConfig: updated.snapshot_input_flow_config || {},
       };
-      
+
       console.debug(`[API /api/sketches/${sketchId}] Updated sketch`);
       return res.status(200).json({ sketch: transformed });
     }
 
     if (req.method === 'DELETE') {
       const deleted = await deleteSketch(sketchId, userId);
-      
+
       if (!deleted) {
         return res.status(404).json({ error: 'Sketch not found' });
       }
-      
+
       console.debug(`[API /api/sketches/${sketchId}] Deleted sketch`);
       return res.status(200).json({ success: true });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
-    console.error(`[API /api/sketches/${sketchId}] Error:`, error.message);
-    
-    // Check for specific error types
-    if (error.message?.includes('Database connection not configured')) {
-      return res.status(503).json({ error: 'Database service unavailable' });
-    }
-    
-    return res.status(500).json({ error: sanitizeErrorMessage(error) });
+    return handleApiError(error, res, `[API /api/sketches/${sketchId}]`);
   }
 }

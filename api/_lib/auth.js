@@ -1,6 +1,6 @@
 /**
  * Authentication helper for Vercel API routes
- * 
+ *
  * Verifies Better Auth sessions and extracts user information.
  * Supports both Web API Request and Node.js IncomingMessage formats.
  */
@@ -16,12 +16,12 @@ import { auth } from '../../lib/auth.js';
  */
 export function sanitizeErrorMessage(error, defaultMessage = 'Internal server error') {
   const isDev = process.env.NODE_ENV !== 'production' && process.env.VERCEL_ENV !== 'production';
-  
+
   if (isDev) {
     // In development, return the actual error message for debugging
     return error?.message || String(error) || defaultMessage;
   }
-  
+
   // In production, return generic message to avoid leaking internal details
   return defaultMessage;
 }
@@ -34,15 +34,15 @@ export function sanitizeErrorMessage(error, defaultMessage = 'Internal server er
  */
 function getHeader(request, name) {
   const normalizedName = name.toLowerCase();
-  
+
   if (typeof request.headers?.get === 'function') {
     return request.headers.get(normalizedName);
   }
-  
+
   if (request.headers) {
     return request.headers[normalizedName] || null;
   }
-  
+
   return null;
 }
 
@@ -55,13 +55,13 @@ function getHeader(request, name) {
 function getCookie(request, name) {
   const cookieHeader = getHeader(request, 'cookie');
   if (!cookieHeader) return null;
-  
+
   const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
     const [key, value] = cookie.trim().split('=');
     acc[key] = value;
     return acc;
   }, {});
-  
+
   return cookies[name] || null;
 }
 
@@ -70,15 +70,23 @@ const MAX_BODY_SIZE = 15 * 1024 * 1024;
 
 /**
  * Parse JSON body from request (handles both Web API and Node.js formats)
- * Includes protection against oversized payloads.
+ * Includes protection against oversized payloads and Content-Type validation.
  * @param {Request|IncomingMessage} request
  * @param {number} maxSize - Maximum allowed body size in bytes
  * @returns {Promise<any>}
- * @throws {Error} If body exceeds maximum size
+ * @throws {Error} If body exceeds maximum size, Content-Type is wrong, or JSON is invalid
  */
 export async function parseBody(request, maxSize = MAX_BODY_SIZE) {
+  // Validate Content-Type header (must be application/json for POST/PUT)
+  const contentType = getHeader(request, 'content-type') || '';
+  if (contentType && !contentType.includes('application/json')) {
+    const error = new Error('Content-Type must be application/json');
+    error.status = 415;
+    throw error;
+  }
+
   // Check Content-Length header if available
-  const contentLength = parseInt(request.headers?.['content-length'] || '0', 10);
+  const contentLength = parseInt(getHeader(request, 'content-length') || '0', 10);
   if (contentLength > maxSize) {
     const error = new Error(`Request body too large. Maximum size is ${Math.round(maxSize / 1024 / 1024)}MB`);
     error.status = 413;
@@ -87,7 +95,13 @@ export async function parseBody(request, maxSize = MAX_BODY_SIZE) {
 
   if (typeof request.json === 'function') {
     // For Web API Request, we can't easily limit size, but Content-Length check helps
-    return request.json();
+    try {
+      return await request.json();
+    } catch (e) {
+      const error = new Error('Invalid JSON in request body');
+      error.status = 400;
+      throw error;
+    }
   }
   if (request.body !== undefined) {
     return request.body;
@@ -95,10 +109,10 @@ export async function parseBody(request, maxSize = MAX_BODY_SIZE) {
   return new Promise((resolve, reject) => {
     let data = '';
     let size = 0;
-    
+
     request.on('data', chunk => {
       size += chunk.length;
-      
+
       // SECURITY: Check body size limit during streaming
       if (size > maxSize) {
         request.destroy();
@@ -107,18 +121,20 @@ export async function parseBody(request, maxSize = MAX_BODY_SIZE) {
         reject(error);
         return;
       }
-      
+
       data += chunk;
     });
-    
+
     request.on('end', () => {
       try {
         resolve(data ? JSON.parse(data) : {});
       } catch (e) {
-        reject(e);
+        const error = new Error('Invalid JSON in request body');
+        error.status = 400;
+        reject(error);
       }
     });
-    
+
     request.on('error', reject);
   });
 }
@@ -158,18 +174,18 @@ export async function verifyAuth(request) {
     } else {
       headers = new Headers();
     }
-    
+
     // Get session from Better Auth
     const session = await auth.api.getSession({
       headers,
     });
-    
+
     if (!session || !session.user) {
       return { userId: null, error: 'Not authenticated', user: null };
     }
 
-    return { 
-      userId: session.user.id, 
+    return {
+      userId: session.user.id,
       error: null,
       user: session.user,
     };

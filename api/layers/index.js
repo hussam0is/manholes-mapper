@@ -1,9 +1,9 @@
 /**
  * API Route: /api/layers/[...path]
- * 
+ *
  * Catch-all handler for layers API (consolidated to save serverless function slots).
  * Uses vercel.json rewrite: /api/layers -> /api/layers/_  so this catch-all handles both.
- * 
+ *
  * /api/layers          GET  - List layers for a project (metadata or full with ?full=true)
  * /api/layers          POST - Create a new layer (admin/super_admin only)
  * /api/layers/[id]     GET  - Get a single layer with full geojson
@@ -12,7 +12,7 @@
  */
 
 import { handleCors } from '../_lib/cors.js';
-import { verifyAuth, parseBody, sanitizeErrorMessage } from '../_lib/auth.js';
+import { verifyAuth, parseBody } from '../_lib/auth.js';
 import {
   ensureDb,
   getUserById,
@@ -26,6 +26,10 @@ import {
 } from '../_lib/db.js';
 import { applyRateLimit } from '../_lib/rate-limit.js';
 import { validateUUID } from '../_lib/validators.js';
+import { handleApiError } from '../_lib/error-handler.js';
+
+const MAX_NAME_LENGTH = 200;
+const VALID_LAYER_TYPES = ['geojson', 'points', 'lines', 'polygons', 'reference', 'overlay'];
 
 export const config = { runtime: 'nodejs' };
 
@@ -38,7 +42,7 @@ export default async function handler(req, res) {
   // Parse path segments from URL if query.path is missing (common with rewrites)
   let pathSegments = req.query.path || [];
   if (typeof pathSegments === 'string') pathSegments = [pathSegments];
-  
+
   if (pathSegments.length === 0 && req.url.includes('/api/layers/')) {
     const parts = req.url.split('?')[0].split('/');
     const layersIdx = parts.indexOf('layers');
@@ -77,7 +81,7 @@ export default async function handler(req, res) {
     const isSuperAdmin = currentUser.role === 'super_admin';
     const isAdmin = currentUser.role === 'admin' || isSuperAdmin;
 
-    // ─── Routes with a layer ID: /api/layers/[id] ───
+    // --- Routes with a layer ID: /api/layers/[id] ---
     if (layerId) {
       // Validate UUID format before passing to handler
       if (!validateUUID(layerId)) {
@@ -86,21 +90,23 @@ export default async function handler(req, res) {
       return handleSingleLayer(req, res, request, layerId, currentUser, isSuperAdmin, isAdmin, userId);
     }
 
-    // ─── Collection routes: /api/layers ───
+    // --- Collection routes: /api/layers ---
     return handleCollection(req, res, request, currentUser, isSuperAdmin, isAdmin, userId);
 
   } catch (error) {
-    console.error(`[API /api/layers] Error:`, error);
-    return res.status(500).json({ error: sanitizeErrorMessage(error) });
+    return handleApiError(error, res, '[API /api/layers]');
   }
 }
 
-// ─── /api/layers (GET list, POST create) ───
+// --- /api/layers (GET list, POST create) ---
 async function handleCollection(req, res, request, currentUser, isSuperAdmin, isAdmin, userId) {
   if (req.method === 'GET') {
     const projectId = req.query.projectId;
     if (!projectId) {
       return res.status(400).json({ error: 'projectId query parameter is required' });
+    }
+    if (!validateUUID(projectId)) {
+      return res.status(400).json({ error: 'Invalid projectId format' });
     }
 
     const project = await getProjectById(projectId);
@@ -147,9 +153,12 @@ async function handleCollection(req, res, request, currentUser, isSuperAdmin, is
     const { projectId, name, layerType, geojson, style, visible, displayOrder } = body;
 
     if (!projectId) return res.status(400).json({ error: 'projectId is required' });
+    if (!validateUUID(projectId)) return res.status(400).json({ error: 'Invalid projectId format' });
     if (!name || !name.trim()) return res.status(400).json({ error: 'Layer name is required' });
+    if (name.length > MAX_NAME_LENGTH) return res.status(400).json({ error: `Layer name exceeds maximum of ${MAX_NAME_LENGTH} characters` });
     if (!layerType) return res.status(400).json({ error: 'layerType is required' });
-    if (!geojson) return res.status(400).json({ error: 'geojson data is required' });
+    if (!VALID_LAYER_TYPES.includes(layerType)) return res.status(400).json({ error: `Invalid layerType. Must be one of: ${VALID_LAYER_TYPES.join(', ')}` });
+    if (!geojson || typeof geojson !== 'object' || Array.isArray(geojson)) return res.status(400).json({ error: 'geojson must be a valid GeoJSON object' });
 
     const project = await getProjectById(projectId);
     if (!project) return res.status(404).json({ error: 'Project not found' });
@@ -187,7 +196,7 @@ async function handleCollection(req, res, request, currentUser, isSuperAdmin, is
   return res.status(405).json({ error: `Method ${req.method} not allowed` });
 }
 
-// ─── /api/layers/[id] (GET single, PUT update, DELETE) ───
+// --- /api/layers/[id] (GET single, PUT update, DELETE) ---
 async function handleSingleLayer(req, res, request, layerId, currentUser, isSuperAdmin, isAdmin, userId) {
   const layer = await getProjectLayer(layerId);
   if (!layer) {

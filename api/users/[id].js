@@ -1,21 +1,22 @@
 /**
  * API Route: /api/users/:id
- * 
+ *
  * GET - Get a specific user
  * PUT - Update user role/organization
- * 
+ *
  * Requires admin role.
  */
 
 import { handleCors } from '../_lib/cors.js';
-import { verifyAuth, parseBody, sanitizeErrorMessage } from '../_lib/auth.js';
-import { 
-  ensureDb, 
+import { verifyAuth, parseBody } from '../_lib/auth.js';
+import {
+  ensureDb,
   getUserById,
   updateUser
 } from '../_lib/db.js';
 import { applyRateLimit } from '../_lib/rate-limit.js';
-import { VALID_ROLES, validateUUID } from '../_lib/validators.js';
+import { VALID_ROLES, validateUUID, validateUserUpdateInput } from '../_lib/validators.js';
+import { handleApiError } from '../_lib/error-handler.js';
 
 export const config = { runtime: 'nodejs' };
 
@@ -95,9 +96,10 @@ export default async function handler(req, res) {
       const body = await parseBody(request);
       const { role, organizationId } = body;
 
-      // Validation: Ensure role is a valid value
-      if (role !== undefined && !VALID_ROLES.includes(role)) {
-        return res.status(400).json({ error: `Invalid role. Must be one of: ${VALID_ROLES.join(', ')}` });
+      // Validate input structure (role enum, organizationId UUID format)
+      const validationErrors = validateUserUpdateInput(body, isSuperAdmin);
+      if (validationErrors) {
+        return res.status(400).json({ error: 'Validation failed', details: validationErrors });
       }
 
       // Validation: Only super admin can change roles to/from super_admin or admin
@@ -142,7 +144,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
 
   } catch (error) {
-    console.error(`[API /api/users/${targetUserId}] Error:`, error);
-    return res.status(500).json({ error: sanitizeErrorMessage(error) });
+    return handleApiError(error, res, `[API /api/users/${targetUserId}]`);
   }
 }

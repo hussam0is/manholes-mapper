@@ -1,14 +1,14 @@
 /**
  * API Route: /api/user-role
- * 
+ *
  * GET - Get current user's role, permissions, and features
  *       Auto-creates user record on first access
- * 
+ *
  * Returns user info with effective features based on user and org settings.
  */
 
 import { handleCors } from '../_lib/cors.js';
-import { verifyAuth, sanitizeErrorMessage } from '../_lib/auth.js';
+import { verifyAuth } from '../_lib/auth.js';
 import {
   ensureDb,
   sql,
@@ -21,6 +21,7 @@ import {
   updateUser
 } from '../_lib/db.js';
 import { applyRateLimit } from '../_lib/rate-limit.js';
+import { handleApiError } from '../_lib/error-handler.js';
 
 export const config = { runtime: 'nodejs' };
 
@@ -50,7 +51,7 @@ export default async function handler(req, res) {
 
     // Verify authentication using Better Auth
     const { userId, error: authError, user: authUser } = await verifyAuth(request);
-    
+
     if (authError || !userId) {
       return res.status(401).json({ error: authError || 'Not authenticated' });
     }
@@ -67,7 +68,7 @@ export default async function handler(req, res) {
       const orgs = await getAllOrganizations();
       let orgId;
       if (orgs.length === 0) {
-        // Derive org name from email domain (e.g. admin@geopoint.me → "Geopoint")
+        // Derive org name from email domain (e.g. admin@geopoint.me -> "Geopoint")
         const domain = (email || '').split('@')[1] || 'Default';
         const orgName = domain.split('.')[0].charAt(0).toUpperCase() + domain.split('.')[0].slice(1);
         const newOrg = await createOrganization(orgName);
@@ -102,7 +103,6 @@ export default async function handler(req, res) {
     return res.status(200).json(response);
 
   } catch (error) {
-    console.error(`[API /api/user-role] Error:`, error);
-    return res.status(500).json({ error: sanitizeErrorMessage(error) });
+    return handleApiError(error, res, '[API /api/user-role]');
   }
 }

@@ -91,7 +91,7 @@ describe('parseBody - extended edge cases', () => {
       json: vi.fn().mockRejectedValue(new Error('JSON parse error')),
     };
 
-    await expect(parseBody(mockRequest as any)).rejects.toThrow('JSON parse error');
+    await expect(parseBody(mockRequest as any)).rejects.toThrow('Invalid JSON in request body');
   });
 
   it('should handle request with body as empty object', async () => {

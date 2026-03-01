@@ -1,14 +1,14 @@
 /**
  * API Route: /api/projects
- * 
+ *
  * GET  - List all projects for user's organization
  * POST - Create a new project (org admin/super admin only)
- * 
+ *
  * Requires authenticated user with organization membership.
  */
 
 import { handleCors } from '../_lib/cors.js';
-import { verifyAuth, parseBody, sanitizeErrorMessage } from '../_lib/auth.js';
+import { verifyAuth, parseBody } from '../_lib/auth.js';
 import {
   ensureDb,
   sql,
@@ -18,6 +18,9 @@ import {
   getProjectById
 } from '../_lib/db.js';
 import { applyRateLimit } from '../_lib/rate-limit.js';
+import { handleApiError } from '../_lib/error-handler.js';
+
+const MAX_NAME_LENGTH = 200;
 
 export const config = { runtime: 'nodejs' };
 
@@ -64,9 +67,9 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       // Get organization ID from query param (for super admin) or from user
       const orgId = req.query.organizationId || currentUser.organization_id;
-      
+
       let projects;
-      
+
       // Super admin with no org filter - return all projects
       if (isSuperAdmin && !orgId) {
         const { getAllProjects } = await import('../_lib/db.js');
@@ -83,7 +86,7 @@ export default async function handler(req, res) {
         projects = await getProjectsByOrganization(orgId);
         console.debug(`[API /api/projects] Returning ${projects.length} projects for org ${orgId}`);
       }
-      
+
       const transformed = projects.map(p => ({
         id: p.id,
         organizationId: p.organization_id,
@@ -122,10 +125,13 @@ export default async function handler(req, res) {
       if (!name || !name.trim()) {
         return res.status(400).json({ error: 'Project name is required' });
       }
+      if (name.length > MAX_NAME_LENGTH) {
+        return res.status(400).json({ error: `Project name exceeds maximum of ${MAX_NAME_LENGTH} characters` });
+      }
 
       // Determine which organization to create the project in
       let targetOrgId = organizationId || currentUser.organization_id;
-      
+
       // Only super admin can create projects in other organizations
       if (organizationId && organizationId !== currentUser.organization_id && !isSuperAdmin) {
         return res.status(403).json({ error: 'Cannot create project in another organization' });
@@ -158,7 +164,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
 
   } catch (error) {
-    console.error(`[API /api/projects] Error:`, error);
-    return res.status(500).json({ error: sanitizeErrorMessage(error) });
+    return handleApiError(error, res, '[API /api/projects]');
   }
 }
