@@ -5844,10 +5844,10 @@ select.invalid:focus {
     bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 8px + 44px + 8px);
   }
 
-  /* Optimize canvas toolbar for mobile */
+  /* Optimize canvas toolbar for mobile — keep 44px touch target minimum */
   .canvas-toolbar .segmented#modeGroup .btn {
-    min-width: 40px;
-    height: 40px;
+    min-width: 44px;
+    height: 44px;
     padding: 0.4rem;
   }
 
@@ -5862,7 +5862,7 @@ select.invalid:focus {
 
   .canvas-fab-toolbar {
     inset-inline-end: 8px;
-    bottom: 60px;
+    bottom: calc(60px + env(safe-area-inset-bottom, 0px));
     transition: bottom 0.3s ease, inset-inline-end 240ms cubic-bezier(.2, .8, .2, 1);
   }
 
