@@ -5289,7 +5289,7 @@ function renderDetails() {
     const sortedMaterialOptions = getSortedOptions('nodes', 'material', rawMaterialOptions);
     sortedMaterialOptions.forEach((opt) => {
       const mat = opt.label || opt;
-      materialOptions += `<option value="${mat}" ${node.material === mat ? 'selected' : ''}>${mat}</option>`;
+      materialOptions += `<option value="${escapeHtml(mat)}" ${node.material === mat ? 'selected' : ''}>${escapeHtml(mat)}</option>`;
     });
     // Cover diameter as free integer input
     // Access options with smart sorting
@@ -5297,7 +5297,7 @@ function renderDetails() {
       .filter(o => (o.enabled !== false));
     const sortedAccessOptions = getSortedOptions('nodes', 'access', rawAccessOptions);
     const accessOptions = sortedAccessOptions
-      .map(({ code, label }) => `<option value="${code}" ${Number(node.access)===Number(code)?'selected':''}>${label}</option>`)
+      .map(({ code, label }) => `<option value="${escapeHtml(String(code))}" ${Number(node.access)===Number(code)?'selected':''}>${escapeHtml(label)}</option>`)
       .join('');
     
     // Accuracy level options with smart sorting
@@ -5305,7 +5305,7 @@ function renderDetails() {
       .filter(o => (o.enabled !== false));
     const sortedAccuracyOptions = getSortedOptions('nodes', 'accuracy_level', rawAccuracyOptions);
     const accuracyLevelOptions = sortedAccuracyOptions
-      .map(({ code, label }) => `<option value="${code}" ${Number(node.accuracyLevel)===Number(code)?'selected':''}>${label}</option>`)
+      .map(({ code, label }) => `<option value="${escapeHtml(String(code))}" ${Number(node.accuracyLevel)===Number(code)?'selected':''}>${escapeHtml(label)}</option>`)
       .join('');
 
     // Maintenance status options with smart sorting
@@ -5313,7 +5313,7 @@ function renderDetails() {
       .filter(o => (o.enabled !== false));
     const sortedMaintenanceOptions = getSortedOptions('nodes', 'maintenance_status', rawMaintenanceOptions);
     const maintenanceStatusOptions = sortedMaintenanceOptions
-      .map(({ code, label }) => `<option value="${code}" ${Number(node.maintenanceStatus)===Number(code)?'selected':''}>${label}</option>`)
+      .map(({ code, label }) => `<option value="${escapeHtml(String(code))}" ${Number(node.maintenanceStatus)===Number(code)?'selected':''}>${escapeHtml(label)}</option>`)
       .join('');
 
     // Node type options: A (default), B (house), C (grey)
@@ -5904,14 +5904,14 @@ function renderDetails() {
     const sortedEdgeTypeOptions = getSortedOptions('edges', 'edge_type', rawEdgeTypeOptions);
     sortedEdgeTypeOptions.forEach((opt) => {
       const et = opt.label || opt;
-      edgeTypeOptions += `<option value="${et}" ${edge.edge_type === et ? 'selected' : ''}>${et}</option>`;
+      edgeTypeOptions += `<option value="${escapeHtml(et)}" ${edge.edge_type === et ? 'selected' : ''}>${escapeHtml(et)}</option>`;
     });
 
     // Engineering status options for edge with smart sorting
     const rawEngineeringOptions = (adminConfig.edges?.options?.engineering_status ?? EDGE_ENGINEERING_STATUS);
     const sortedEngineeringOptions = getSortedOptions('edges', 'engineering_status', rawEngineeringOptions);
     const edgeEngineeringOptions = sortedEngineeringOptions
-      .map(({ code, label }) => `<option value="${code}" ${Number(edge.engineeringStatus)===Number(code)?'selected':''}>${label}</option>`)
+      .map(({ code, label }) => `<option value="${escapeHtml(String(code))}" ${Number(edge.engineeringStatus)===Number(code)?'selected':''}>${escapeHtml(label)}</option>`)
       .join('');
 
     // Normalize line diameter options with smart sorting
@@ -5932,7 +5932,7 @@ function renderDetails() {
       .filter(o => (o.enabled !== false));
     const sortedFallPositionOptions = getSortedOptions('edges', 'fall_position', rawFallPositionOptions);
     const fallPositionOptionsHtml = sortedFallPositionOptions
-      .map(({code,label}) => `<option value="${String(code)}" ${Number(edge.fall_position)===Number(code)?'selected':''}>${label}</option>`)
+      .map(({code,label}) => `<option value="${escapeHtml(String(code))}" ${Number(edge.fall_position)===Number(code)?'selected':''}>${escapeHtml(label)}</option>`)
       .join('');
 
     container.innerHTML = `
@@ -7978,7 +7978,7 @@ function renderDanglingEdgesForm(danglingEdgesList) {
       <div class="dangling-edge-item" data-edge-id="${edge.id}">
         <div class="dangling-edge-item-header">
           <span class="material-icons">call_missed_outgoing</span>
-          <span>${t('labels.danglingEdge')}: ${tailLabel} → ?</span>
+          <span>${t('labels.danglingEdge')}: ${escapeHtml(tailLabel)} → ?</span>
         </div>
         <select class="dangling-edge-select" data-edge-index="${index}">
           <option value="">${t('labels.selectNodeType')}</option>

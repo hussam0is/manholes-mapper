@@ -155,6 +155,12 @@ export const i18n = {
       sessionExpired: 'פג תוקף ההתחברות — יש להתחבר מחדש',
       rateLimited: 'יותר מדי בקשות — נסה שוב בעוד דקה',
       serverError: 'שגיאת שרת — נסה שוב מאוחר יותר',
+      unexpected: 'שגיאה לא צפויה',
+    },
+    timeAgo: {
+      justNow: 'עכשיו',
+      minutesAgo: (mins) => `לפני ${mins} דקות`,
+      hoursAgo: (hours) => `לפני ${hours} שעות`,
     },
     toasts: {
       nodeMode: 'מצב שוחה',
@@ -414,6 +420,14 @@ export const i18n = {
       geojsonFile: 'קובץ GeoJSON',
       noLayers: 'אין שכבות ייחוס עבור פרויקט זה.',
       confirmDeleteLayer: 'האם למחוק שכבה זו?',
+      loadError: 'שגיאה בטעינת פרויקטים',
+      layers: {
+        selectFile: 'יש לבחור קובץ GeoJSON',
+        invalidGeoJSON: 'GeoJSON לא תקין: חייב להיות FeatureCollection',
+        uploadSuccess: (name) => `שכבה "${name}" הועלתה בהצלחה`,
+        deleted: 'השכבה נמחקה',
+        deleteError: 'שגיאה במחיקת שכבה',
+      },
       homepage: {
         title: 'פרויקטים',
         subtitle: 'בחר פרויקט לעבודה',
@@ -826,6 +840,12 @@ export const i18n = {
       sessionExpired: 'Session expired — please sign in again',
       rateLimited: 'Too many requests — try again in a minute',
       serverError: 'Server error — please try again later',
+      unexpected: 'Unexpected error',
+    },
+    timeAgo: {
+      justNow: 'just now',
+      minutesAgo: (mins) => `${mins} min ago`,
+      hoursAgo: (hours) => `${hours} hr ago`,
     },
     toasts: {
       nodeMode: 'Node mode',

@@ -670,6 +670,15 @@ export class InputFlowSettings {
   }
 
   /**
+   * Escape HTML special characters to prevent XSS
+   */
+  _escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  /**
    * Get action type label
    */
   _getActionTypeLabel(type) {
