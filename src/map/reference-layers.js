@@ -31,10 +31,7 @@ const sectionVisibility = new Map();
 /** Virtual section representing data outside all defined section polygons */
 export const OUTSIDE_SECTIONS = { id: 'outside_sections_data', number: -1 };
 
-// Default styles per layer type
-// TODO: Label colors (labelColor) are hardcoded per layer type and don't adapt
-// to dark mode. The label background in drawLabels() has basic dark-mode support
-// but the text colors remain fixed. Consider reading CSS tokens for full theming.
+// Default styles per layer type — light/dark label color pairs for dark mode support
 const DEFAULT_STYLES = {
   sections: {
     strokeColor: 'rgba(0, 100, 200, 0.6)',
@@ -43,6 +40,7 @@ const DEFAULT_STYLES = {
     lineDash: [8, 4],
     labelField: 'name',
     labelColor: '#0064c8',
+    labelColorDark: '#60a5fa',
     labelFontSize: 11
   },
   survey_manholes: {
@@ -52,6 +50,7 @@ const DEFAULT_STYLES = {
     pointShape: 'square',
     labelField: 'OBJECTID',
     labelColor: '#b43c14',
+    labelColorDark: '#f97066',
     labelFontSize: 9
   },
   survey_pipes: {
@@ -61,6 +60,7 @@ const DEFAULT_STYLES = {
     lineDash: [],
     labelField: null,
     labelColor: '#3c8c3c',
+    labelColorDark: '#4ade80',
     labelFontSize: 9,
     showArrows: true // Enable direction arrows
   },
@@ -71,6 +71,7 @@ const DEFAULT_STYLES = {
     lineDash: [4, 2],
     labelField: 'ST_NAME',
     labelColor: '#555',
+    labelColorDark: '#cbd5e1',
     labelFontSize: 10
   },
   addresses: {
@@ -80,6 +81,7 @@ const DEFAULT_STYLES = {
     pointShape: 'circle',
     labelField: 'HOUSE_NUM',
     labelColor: '#965096',
+    labelColorDark: '#d8b4fe',
     labelFontSize: 8
   }
 };
@@ -615,25 +617,38 @@ function drawPolygon(ctx, rings, properties, style, refPoint, coordScale, stretc
 }
 
 /**
- * Draw labels collected from features
+ * Draw labels collected from features.
+ * Reads CSS custom properties to determine dark mode and adapts label colors
+ * and background accordingly.
  */
 function drawLabels(ctx, labels, style, viewScale, _stretchX, _stretchY) {
   if (labels.length === 0) return;
 
   const fontSize = (style.labelFontSize || 10) / viewScale;
   ctx.font = `${fontSize}px sans-serif`;
-  ctx.fillStyle = style.labelColor || '#333';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  // Read theme colors for dark mode support
+  // Determine dark mode from CSS custom property or media query
+  const isDark = typeof window !== 'undefined'
+    ? window.matchMedia('(prefers-color-scheme: dark)').matches
+    : false;
+
+  // Read theme surface color for label background
   const rootStyle = typeof document !== 'undefined'
     ? getComputedStyle(document.documentElement)
     : null;
-  const isDark = rootStyle
-    ? (rootStyle.getPropertyValue('--color-bg').trim() || '').startsWith('#0')
-    : false;
+  const surfaceColor = rootStyle
+    ? rootStyle.getPropertyValue('--color-surface').trim()
+    : '';
   const labelBg = isDark ? 'rgba(15, 23, 42, 0.75)' : 'rgba(255, 255, 255, 0.7)';
+
+  // Use dark mode label color variant when available
+  const labelColor = isDark
+    ? (style.labelColorDark || style.labelColor || '#cbd5e1')
+    : (style.labelColor || '#333');
+
+  ctx.fillStyle = labelColor;
 
   // Simple deduplication: skip labels that would overlap
   const drawnPositions = [];
@@ -664,7 +679,7 @@ function drawLabels(ctx, labels, style, viewScale, _stretchX, _stretchY) {
     );
 
     // Draw label text
-    ctx.fillStyle = style.labelColor || '#333';
+    ctx.fillStyle = labelColor;
     ctx.fillText(label.text, label.x, label.y);
 
     drawnPositions.push({ x: label.x, y: label.y });
