@@ -7821,10 +7821,6 @@ select.invalid:focus {
   justify-content: flex-start;
 }
 
-[dir="rtl"] .sketch-card-stats {
-  flex-direction: row-reverse;
-}
-
 .sketch-stat {
   display: flex;
   align-items: center;
@@ -7832,10 +7828,6 @@ select.invalid:focus {
   font-size: 0.9rem;
   color: var(--color-muted);
   font-weight: 500;
-}
-
-[dir="rtl"] .sketch-stat {
-  flex-direction: row-reverse;
 }
 
 .sketch-stat .material-icons {
@@ -8011,6 +8003,7 @@ select.invalid:focus {
   .sketch-action-btn {
     padding: 0.5rem 0.625rem;
     font-size: 0.8rem;
+    min-height: 44px;
   }
 
   .sketch-action-btn span:not(.material-icons) {
@@ -8062,7 +8055,7 @@ select.invalid:focus {
 
   .home-panel-sync-status {
     padding: 0.25rem 0.75rem;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
   }
 
   .sketch-tabs {
@@ -8184,7 +8177,7 @@ select.invalid:focus {
 
   .sketch-action-btn:hover {
     background: var(--color-surface-hover);
-    border-color: #475569;
+    border-color: var(--color-border-dark);
   }
 
   .sketch-action-btn.sketch-action-primary {
@@ -8193,20 +8186,20 @@ select.invalid:focus {
   }
 
   .sketch-action-btn.sketch-action-primary:hover {
-    background: #2563eb;
-    border-color: #2563eb;
+    background: var(--color-accent);
+    border-color: var(--color-accent);
   }
 
   .sketch-action-btn.sketch-action-danger {
     background: var(--color-error-bg);
-    border-color: #991b1b;
+    border-color: var(--color-error-border);
     /* Brighter red for better WCAG AA contrast in dark mode */
     color: var(--color-error-text);
   }
 
   .sketch-action-btn.sketch-action-danger:hover {
     background: var(--color-error-border);
-    border-color: #dc2626;
+    border-color: var(--color-danger-hover);
   }
 
   /* Better contrast for modifier icons in dark mode */
@@ -9708,7 +9701,7 @@ button:focus-visible,
   /* Sketch cards - ensure action buttons are tappable */
   .sketch-action-btn {
     min-width: var(--touch-target-min);
-    min-height: 36px;
+    min-height: var(--touch-target-min);
   }
 }
 
