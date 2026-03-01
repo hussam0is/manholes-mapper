@@ -24,7 +24,7 @@ function createFixture() {
     </div>
     <button id="homePanelCloseBtn"></button>
     <div id="sketchSidePanel" style="display:none;">
-      <a id="backToProjectsBtn" class="sketch-side-panel__back" href="#/">
+      <a id="backToProjectsBtn" class="sketch-side-panel__back" href="#/projects">
         <span class="material-icons">arrow_back</span>
         <span>Back to Projects</span>
       </a>
@@ -282,10 +282,10 @@ describe('projects homepage DOM mutations', () => {
       expect(btn).not.toBeNull();
     });
 
-    it('is an anchor with href="#/"', () => {
+    it('is an anchor with href="#/projects"', () => {
       const btn = document.getElementById('backToProjectsBtn')!;
       expect(btn.tagName).toBe('A');
-      expect(btn.getAttribute('href')).toBe('#/');
+      expect(btn.getAttribute('href')).toBe('#/projects');
     });
 
     it('contains arrow_back icon', () => {

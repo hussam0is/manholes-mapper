@@ -1509,10 +1509,15 @@ select.btn:focus-visible {
 
 /* Landscape: hide pegman when sketch side panel is open to avoid click conflicts */
 @media (max-height: 450px) and (orientation: landscape) {
-  .sketch-side-panel.open ~ .street-view-pegman,
   .street-view-pegman {
     top: calc(var(--header-h, 36px) + 48px);
     z-index: 130;
+  }
+
+  .sketch-side-panel.open ~ .street-view-pegman {
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
   }
 
   .street-view-pegman__icon {
@@ -4188,7 +4193,7 @@ input:checked + .slider:before {
 }
 
 .finish-workday-container {
-  background: white;
+  background: var(--color-surface);
   border-radius: 12px;
   max-width: 500px;
   width: 90%;
@@ -4268,7 +4273,7 @@ input:checked + .slider:before {
   border: 1px solid var(--color-border);
   border-radius: 6px;
   font-size: 0.875rem;
-  background: white;
+  background: var(--color-surface);
 }
 
 .finish-workday-actions {
@@ -4523,18 +4528,19 @@ input:checked + .slider:before {
   padding: 0.55rem 1.25rem;
   font-size: 0.875rem;
   font-weight: 500;
+  min-height: 44px;
   border-radius: 6px;
   transition: all 0.2s ease;
 }
 
 .admin-actions .btn-ghost {
-  background: white;
+  background: var(--color-surface);
   color: var(--color-muted);
   border-color: var(--color-border);
 }
 
 .admin-actions .btn-ghost:hover {
-  background: #f1f5f9;
+  background: var(--color-bg);
   color: var(--color-text);
   transform: translateY(-1px);
 }
@@ -4573,6 +4579,8 @@ input:checked + .slider:before {
 .admin-section select {
   width: 100%;
   padding: 0.5rem 0.65rem;
+  min-height: 44px;
+  box-sizing: border-box;
   border: 1px solid var(--color-border);
   border-radius: 6px;
   font-size: 0.875rem;
@@ -4599,8 +4607,10 @@ input:checked + .slider:before {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.4rem 0.6rem;
-  background: white;
+  padding: 0.6rem 0.75rem;
+  min-height: 44px;
+  box-sizing: border-box;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 6px;
   transition: all 0.2s ease;
@@ -4612,8 +4622,8 @@ input:checked + .slider:before {
 }
 
 .admin-checkbox-item input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   accent-color: var(--color-primary);
   flex-shrink: 0;
 }
@@ -4727,7 +4737,7 @@ input:checked + .slider:before {
 
 .admin-section {
   margin-bottom: 1.5rem;
-  background: white;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 12px;
   overflow: hidden;
@@ -4794,7 +4804,7 @@ input:checked + .slider:before {
   gap: 1rem;
   flex-wrap: wrap;
   padding: 0.75rem;
-  background: white;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 6px;
 }
@@ -4807,7 +4817,7 @@ input:checked + .slider:before {
 .option-table {
   border-collapse: collapse;
   width: 100%;
-  background: white;
+  background: var(--color-surface);
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -5013,7 +5023,7 @@ input:checked + .slider:before {
 }
 
 .option-card {
-  background: white;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 10px;
   padding: 1rem;
@@ -5058,7 +5068,7 @@ input:checked + .slider:before {
 .option-card-header .option-card-label:focus {
   outline: none;
   border-color: var(--color-primary);
-  background: white;
+  background: var(--color-surface);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
@@ -5091,7 +5101,7 @@ input:checked + .slider:before {
 .option-card-body .option-card-code:focus {
   outline: none;
   border-color: var(--color-primary);
-  background: white;
+  background: var(--color-surface);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
@@ -5099,7 +5109,7 @@ input:checked + .slider:before {
   display: flex;
   justify-content: flex-end;
   padding-top: 0.5rem;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--color-border);
 }
 
 .option-card-actions button {
@@ -5254,7 +5264,7 @@ select.invalid:focus {
     bottom: 0;
     left: 0;
     right: 0;
-    background: rgba(255, 255, 255, 0.98);
+    background: color-mix(in srgb, var(--color-surface) 98%, transparent);
     backdrop-filter: blur(10px);
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
     z-index: 100;
@@ -5436,7 +5446,7 @@ select.invalid:focus {
     grid-template-columns: auto 1fr;
     grid-template-rows: auto auto auto;
     gap: 0.5rem;
-    background: white;
+    background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: 12px;
     padding: 1rem;
@@ -5641,7 +5651,7 @@ select.invalid:focus {
   .admin-actions .btn {
     padding: 0.5rem 0.625rem;
     font-size: 0.8rem;
-    min-height: 40px;
+    min-height: 44px;
   }
 
   .admin-action-buttons .btn {
@@ -6557,7 +6567,7 @@ select.invalid:focus {
   }
 
   .admin-section .field label {
-    color: #cbd5e1;
+    color: var(--color-text-secondary, #cbd5e1);
   }
 
   .admin-actions {
@@ -6972,8 +6982,11 @@ select.invalid:focus {
   flex-shrink: 0;
   display: flex;
   align-items: center;
+  justify-content: center;
   cursor: pointer;
   padding-top: 0.5rem;
+  min-width: 44px;
+  min-height: 44px;
 }
 
 .admin-option-card-fields {
@@ -6989,6 +7002,8 @@ select.invalid:focus {
 .admin-option-label-input {
   width: 100%;
   padding: 0.625rem 0.875rem;
+  min-height: 44px;
+  box-sizing: border-box;
   border: 1px solid var(--color-border);
   border-radius: 8px;
   font-size: 16px;
@@ -7021,6 +7036,8 @@ select.invalid:focus {
   flex: 1;
   max-width: 100px;
   padding: 0.5rem 0.75rem;
+  min-height: 44px;
+  box-sizing: border-box;
   border: 1px solid var(--color-border);
   border-radius: 8px;
   font-size: 0.9rem;
@@ -9629,8 +9646,8 @@ button:focus-visible,
   padding: 6px;
   border-radius: 6px;
   color: var(--color-text-muted, #64748b);
-  min-width: 36px;
-  min-height: 36px;
+  min-width: var(--touch-target-min, 44px);
+  min-height: var(--touch-target-min, 44px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -9655,6 +9672,7 @@ button:focus-visible,
   cursor: pointer;
   transition: background 0.15s;
   font-size: 13px;
+  min-height: var(--touch-target-min, 44px);
 }
 
 .sketch-side-panel__item:hover {
@@ -9674,8 +9692,8 @@ button:focus-visible,
   border-radius: 4px;
   color: var(--color-text-muted, #64748b);
   flex-shrink: 0;
-  min-width: 32px;
-  min-height: 32px;
+  min-width: var(--touch-target-min, 44px);
+  min-height: var(--touch-target-min, 44px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -9758,11 +9776,11 @@ button:focus-visible,
   color: var(--color-danger, #ef4444);
   border: none;
   border-radius: 10px;
-  padding: 1px 7px;
+  padding: 2px 8px;
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  min-height: 22px;
+  min-height: 32px;
   transition: background 0.15s;
 }
 
@@ -9793,11 +9811,11 @@ button:focus-visible,
   color: #fff;
 }
 .sketch-side-panel__issues-btn--low {
-  background: #fef9c3;
-  color: #a16207;
+  background: var(--color-warning-light, #fef3c7);
+  color: var(--color-warning-hover, #d97706);
 }
 .sketch-side-panel__issues-btn--low:hover {
-  background: #eab308;
+  background: var(--color-warning, #f59e0b);
   color: #fff;
 }
 
@@ -9814,13 +9832,15 @@ button:focus-visible,
 .sketch-side-panel__recenter-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   background: var(--color-surface-alt, #f1f5f9);
   color: var(--color-text-secondary, #475569);
   border: none;
   border-radius: 10px;
   padding: 2px 5px;
   cursor: pointer;
-  min-height: 22px;
+  min-width: 36px;
+  min-height: 36px;
   transition: background 0.15s, color 0.15s;
 }
 
@@ -10053,9 +10073,8 @@ button:focus-visible,
   }
 
   .sketch-side-panel__close {
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
+    min-width: 36px;
+    min-height: 36px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -10095,10 +10114,10 @@ button:focus-visible,
     bottom: 60px;
   }
 
-  /* Recenter button in item row -- fix class name (was __recenter, actual is __recenter-btn) */
+  /* Recenter button in item row */
   .sketch-side-panel__recenter-btn {
-    min-width: 28px;
-    min-height: 28px;
+    min-width: 32px;
+    min-height: 32px;
     padding: 2px 4px;
   }
 
@@ -10106,10 +10125,10 @@ button:focus-visible,
     font-size: 14px;
   }
 
-  /* Visibility toggle -- fix class name (was __visibility, actual is __eye) */
+  /* Visibility toggle */
   .sketch-side-panel__eye {
-    min-width: 28px;
-    min-height: 28px;
+    min-width: 32px;
+    min-height: 32px;
     padding: 4px;
     display: inline-flex;
     align-items: center;
@@ -10129,12 +10148,54 @@ button:focus-visible,
     box-shadow: -2px 0 8px rgba(0, 0, 0, 0.25);
   }
 
+  .sketch-side-panel__back {
+    color: var(--color-accent, #60a5fa);
+    border-color: var(--color-border, #334155);
+  }
+
+  .sketch-side-panel__back:hover {
+    background: var(--color-surface-alt, #1e293b);
+  }
+
+  .sketch-side-panel__header {
+    border-color: var(--color-border, #334155);
+  }
+
   .sketch-side-panel__item.active {
     background: rgba(37, 99, 235, 0.2);
   }
 
+  .sketch-side-panel__eye:hover {
+    color: var(--color-accent, #60a5fa);
+  }
+
+  .sketch-side-panel__badge {
+    background: var(--color-surface-alt, #1e293b);
+    color: var(--color-text-secondary, #94a3b8);
+  }
+
+  .sketch-side-panel__recenter-btn {
+    background: var(--color-surface-alt, #1e293b);
+    color: var(--color-text-secondary, #94a3b8);
+  }
+
+  .sketch-side-panel__recenter-btn:hover {
+    background: var(--color-accent, #60a5fa);
+    color: #fff;
+  }
+
   .sketch-side-panel__issues-btn {
     background: rgba(239, 68, 68, 0.2);
+  }
+
+  .sketch-side-panel__issues-btn--low {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--color-warning, #f59e0b);
+  }
+
+  .sketch-side-panel__issues-btn--medium {
+    background: rgba(245, 158, 11, 0.2);
+    color: var(--color-warning, #f59e0b);
   }
 
   .sketch-side-panel__totals {
@@ -10145,6 +10206,11 @@ button:focus-visible,
     border-color: var(--color-border, #334155);
   }
 
+  .sketch-side-panel__issues-back {
+    color: var(--color-accent, #60a5fa);
+    border-color: var(--color-border, #334155);
+  }
+
   .sketch-side-panel__issue-row {
     border-color: rgba(255, 255, 255, 0.06);
   }
@@ -10152,6 +10218,12 @@ button:focus-visible,
   .sketch-side-panel__issue-goto,
   .sketch-side-panel__issue-center {
     border-color: var(--color-border, #334155);
+  }
+
+  .sketch-side-panel__issue-goto:hover,
+  .sketch-side-panel__issue-center:hover {
+    background: rgba(37, 99, 235, 0.2);
+    color: var(--color-accent, #60a5fa);
   }
 }
 
@@ -11133,7 +11205,7 @@ button:focus-visible,
   }
 
   .login-panel-content {
-    max-width: 580px;
+    max-width: 680px;
     max-height: calc(100dvh - 1rem);
     display: flex;
     flex-direction: row;
@@ -11145,8 +11217,8 @@ button:focus-visible,
   .login-panel-header {
     padding: 0.75rem;
     writing-mode: horizontal-tb;
-    min-width: 120px;
-    max-width: 150px;
+    min-width: 100px;
+    max-width: 140px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -11246,7 +11318,7 @@ button:focus-visible,
   }
 
   .auth-lang-toggle button {
-    min-height: 36px;
+    min-height: 44px;
     padding: 0.25rem 0.5rem;
     font-size: 0.75rem;
   }
@@ -11762,16 +11834,17 @@ button:focus-visible,
     margin: -0.5rem -0.75rem 0.5rem -0.75rem;
   }
 
-  .admin-tab {
+  .admin-tabs .tab {
     padding: 0.35rem 0.75rem;
     font-size: 0.8rem;
+    min-height: 44px;
   }
 
   /* Fix: Actions bar always visible at bottom of panel */
   .admin-actions {
     position: static;
     flex-shrink: 0;
-    background: var(--color-surface, #fff);
+    background: var(--color-surface);
     padding: 0.35rem 0.5rem;
     border-top: 1px solid var(--color-border);
     z-index: 10;
@@ -11781,7 +11854,7 @@ button:focus-visible,
   .admin-actions .btn {
     padding: 0.3rem 0.75rem;
     font-size: 0.8rem;
-    min-height: 32px;
+    min-height: 44px;
   }
 
   /* Make admin sections more compact */
