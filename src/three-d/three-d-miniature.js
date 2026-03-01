@@ -128,8 +128,11 @@ export function isMiniatureMode() {
   return _isMiniature;
 }
 
-/** Reset state (call on 3D view close). */
+/** Reset state (call on 3D view close). Disposes GPU geometries. */
 export function resetMiniatureState() {
   _isMiniature = false;
   _originals.clear();
+  // Dispose shared mini geometries to free GPU memory between 3D sessions
+  if (_sphereGeo) { _sphereGeo.dispose(); _sphereGeo = null; }
+  if (_smallBoxGeo) { _smallBoxGeo.dispose(); _smallBoxGeo = null; }
 }

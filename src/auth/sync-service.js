@@ -45,6 +45,11 @@ let listenerAbortController = null;
 let onlineDebounceTimer = null;
 const ONLINE_DEBOUNCE_MS = 2000;
 
+// Unsubscribe function for the auth state listener registered in initSyncService().
+// Tracked here so re-calling initSyncService() unsubscribes the old listener first,
+// preventing auth listener accumulation.
+let authListenerUnsub = null;
+
 // API base URL - in development without vercel dev, API won't be available
 // In production or with vercel dev, API is same-origin
 const API_BASE = '';
@@ -1159,15 +1164,21 @@ export function initSyncService() {
     console.debug('[Sync] Gone offline — changes will be queued');
   }, { signal });
 
+  // Unsubscribe any previous auth listener to prevent accumulation on re-init
+  if (authListenerUnsub) {
+    authListenerUnsub();
+    authListenerUnsub = null;
+  }
+
   // Initial sync on auth ready
   if (window.authGuard?.onAuthStateChange) {
-    window.authGuard.onAuthStateChange((authState) => {
+    authListenerUnsub = window.authGuard.onAuthStateChange((authState) => {
       if (authState.isSignedIn && authState.isLoaded) {
         // Small delay to ensure everything is ready
         setTimeout(() => {
           syncFromCloud().catch((error) => {
             // Don't log expected "API not available" errors in dev mode
-            if (error.message?.includes('API not available') || 
+            if (error.message?.includes('API not available') ||
                 error.message?.includes('network error') ||
                 error.message?.includes('non-JSON response')) {
               // Already handled - silent in dev mode

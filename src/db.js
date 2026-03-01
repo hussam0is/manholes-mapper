@@ -18,12 +18,30 @@
 const DB_NAME = 'graphSketchDB';
 const DB_VERSION = 2; // Version 2: Added backups store
 
+// Cached IDBDatabase handle — reused across calls to avoid leaking connections.
+// Each openDb() previously created a new handle that was never closed, leading to
+// unbounded connection growth over long field sessions.
+let _cachedDb = null;
+
 /**
  * Open the IndexedDB database and upgrade schema if necessary.
+ * Returns a cached connection when available to prevent connection leaks.
  *
  * @returns {Promise<IDBDatabase>}
  */
 export function openDb() {
+  // Return the cached handle if it is still usable
+  if (_cachedDb) {
+    try {
+      // Accessing objectStoreNames throws if the db was force-closed
+      if (_cachedDb.objectStoreNames.length >= 0) {
+        return Promise.resolve(_cachedDb);
+      }
+    } catch {
+      _cachedDb = null;
+    }
+  }
+
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onupgradeneeded = (event) => {
@@ -48,7 +66,15 @@ export function openDb() {
       }
     };
     request.onsuccess = () => {
-      resolve(request.result);
+      const db = request.result;
+      // If another tab triggers a version upgrade, close gracefully and
+      // invalidate the cache so the next call opens a fresh connection.
+      db.onversionchange = () => {
+        db.close();
+        _cachedDb = null;
+      };
+      _cachedDb = db;
+      resolve(db);
     };
     request.onerror = () => {
       reject(request.error);

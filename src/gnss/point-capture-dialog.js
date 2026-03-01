@@ -212,8 +212,9 @@ function setupEventListeners() {
     edgeOptions.style.display = createEdgeCheck.checked ? 'block' : 'none';
   });
 
-  // Listen for position updates while dialog is open
-  gnssState.on('position', updatePositionDisplay);
+  // NOTE: Position listener is registered in openPointCaptureDialog() and
+  // unregistered in closeDialog()/handleConfirm() to avoid running the
+  // handler continuously when the dialog is hidden (~1/sec with 6 DOM lookups).
 }
 
 /**
@@ -281,6 +282,9 @@ export function openPointCaptureDialog(nodes, onCaptureCallback, onCancelCallbac
   // Update position display
   updatePositionDisplay(gnssState.getPosition());
 
+  // Start listening for live position updates while dialog is visible
+  gnssState.on('position', updatePositionDisplay);
+
   // Show dialog
   dialogEl.style.display = 'flex';
   isOpen = true;
@@ -290,6 +294,9 @@ export function openPointCaptureDialog(nodes, onCaptureCallback, onCancelCallbac
  * Close the dialog
  */
 export function closeDialog() {
+  // Stop listening for position updates to avoid leaking CPU cycles
+  gnssState.off('position', updatePositionDisplay);
+
   if (dialogEl) {
     dialogEl.style.display = 'none';
   }
@@ -306,6 +313,9 @@ export function closeDialog() {
  * Handle confirm button click
  */
 function handleConfirm() {
+  // Stop listening for position updates
+  gnssState.off('position', updatePositionDisplay);
+
   const nodeSelect = document.getElementById('captureNodeSelect');
   const createNew = document.getElementById('captureCreateNew').checked;
   const createEdge = document.getElementById('captureCreateEdge').checked;

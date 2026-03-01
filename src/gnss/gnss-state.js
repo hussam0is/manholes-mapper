@@ -142,8 +142,12 @@ class GNSSStateManager {
     };
 
     this.capturedPoints.push(capturedPoint);
+    // Cap captured points to prevent unbounded memory growth during long sessions
+    if (this.capturedPoints.length > 1000) {
+      this.capturedPoints = this.capturedPoints.slice(-1000);
+    }
     this.lastCapturedNodeId = nodeId;
-    
+
     this.notifyListeners('capture', capturedPoint);
     
     return capturedPoint;
@@ -241,13 +245,15 @@ class GNSSStateManager {
   }
 
   /**
-   * Add event listener
+   * Add event listener (deduplicated — same callback will not be added twice).
    * @param {string} event - 'connection', 'position', or 'capture'
    * @param {Function} callback
    */
   on(event, callback) {
     if (this.listeners[event]) {
-      this.listeners[event].push(callback);
+      if (this.listeners[event].indexOf(callback) === -1) {
+        this.listeners[event].push(callback);
+      }
     }
   }
 
