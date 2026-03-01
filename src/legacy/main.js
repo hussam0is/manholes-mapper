@@ -639,8 +639,8 @@ const defaultAdminConfig = {
       engineering_status: EDGE_ENGINEERING_STATUS.map(o => ({ code: o.code, label: o.label, enabled: true })),
       line_diameter: EDGE_LINE_DIAMETERS.map(v => ({ code: v, label: v, enabled: true })),
       fall_position: [
-        { code: 0, label: 'פנימי', enabled: true },
-        { code: 1, label: 'חיצוני', enabled: true },
+        { code: 0, label: t('labels.fallPositionInternal'), enabled: true },
+        { code: 1, label: t('labels.fallPositionExternal'), enabled: true },
       ],
     },
     // customFields removed
@@ -829,8 +829,11 @@ function formatSketchDisplayName(rec) {
 let adminSettingsModal = null;
 let adminSettingsScreen = null;
 
-function openAdminModal() {
+async function openAdminModal() {
   if (!adminModal || !adminContent) return;
+
+  // Lazy-load AdminSettings (admin-only module)
+  const { AdminSettings } = await import('../admin/admin-settings.js');
 
   // Create or reuse AdminSettings instance
   adminSettingsModal = new AdminSettings({
@@ -858,8 +861,11 @@ function closeAdminModal() {
 }
 
 // Admin screen (separate view) open/close
-function openAdminScreen() {
+async function openAdminScreen() {
   if (!adminScreen || !adminScreenContent) return;
+
+  // Lazy-load AdminSettings (admin-only module)
+  const { AdminSettings } = await import('../admin/admin-settings.js');
 
   // Create or reuse AdminSettings instance for screen
   adminSettingsScreen = new AdminSettings({
@@ -899,6 +905,9 @@ async function openProjectsScreen() {
   if (mainEl) mainEl.style.display = 'none';
   projectsScreen.style.display = 'block';
   applyLangToStaticUI();
+
+  // Lazy-load ProjectsSettings (admin-only module)
+  const { ProjectsSettings } = await import('../admin/projects-settings.js');
 
   // Create or reuse ProjectsSettings instance for screen
   projectsSettingsScreen = new ProjectsSettings({
@@ -1573,9 +1582,7 @@ function applyLangToStaticUI() {
   updateLayersConfigTranslations(t);
 }
 
-// CSV helpers moved to src/utils/csv.js
-import { csvQuote, exportNodesCsv, exportEdgesCsv } from '../utils/csv.js';
-import { exportSketchToJson, importSketchFromJson } from '../utils/sketch-io.js';
+// CSV helpers and sketch I/O are lazy-loaded on demand (export/import actions only)
 
 /**
  * Utility: determine if an id is a strictly numeric positive integer string.
@@ -2482,10 +2489,10 @@ function formatTimeAgo(date) {
   const now = new Date();
   const diff = now - new Date(date);
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return currentLang === 'he' ? 'עכשיו' : 'just now';
-  if (mins < 60) return currentLang === 'he' ? `לפני ${mins} דקות` : `${mins} min ago`;
+  if (mins < 1) return t('timeAgo.justNow');
+  if (mins < 60) return t('timeAgo.minutesAgo', mins);
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return currentLang === 'he' ? `לפני ${hours} שעות` : `${hours} hr ago`;
+  if (hours < 24) return t('timeAgo.hoursAgo', hours);
   return new Date(date).toLocaleDateString(currentLang === 'he' ? 'he-IL' : 'en-GB');
 }
 
@@ -3158,7 +3165,7 @@ async function loadProjectCanvas(projectId) {
     showToast(`${sketches.length} ${t('projects.canvas.sketches') || 'sketches loaded'}`);
   } catch (err) {
     console.error('[App] Failed to load project canvas:', err);
-    showToast(err.message || 'Failed to load project', 'error');
+    showToast(err.message || t('projects.canvas.loadError'), 'error');
   }
 }
 
@@ -3299,7 +3306,7 @@ async function handleChangeProject(sketchId) {
 
   } catch (err) {
     console.error('[Projects] Error loading projects:', err.message);
-    showToast('Error loading projects', 'error');
+    showToast(t('projects.loadError'), 'error');
   }
 }
 
@@ -5434,7 +5441,7 @@ function renderDetails() {
         const ceEngineeringOptions = (adminConfig.edges?.options?.engineering_status ?? EDGE_ENGINEERING_STATUS);
         const ceSortedEngineeringOptions = getSortedOptions('edges', 'engineering_status', ceEngineeringOptions);
         // Fall position options
-        const ceFallPositionOptions = (adminConfig.edges?.options?.fall_position || [{code:0,label:'פנימי'},{code:1,label:'חיצוני'}])
+        const ceFallPositionOptions = (adminConfig.edges?.options?.fall_position || [{code:0,label:t('labels.fallPositionInternal')},{code:1,label:t('labels.fallPositionExternal')}])
           .filter(o => (o.enabled !== false));
         const ceSortedFallPositionOptions = getSortedOptions('edges', 'fall_position', ceFallPositionOptions);
 
@@ -5451,17 +5458,17 @@ function renderDetails() {
           const engStatusId = `edgeEngStatus_${e.id}`;
           const fallDepthId = `edgeFallDepth_${e.id}`;
           const fallPosId = `edgeFallPosition_${e.id}`;
-          const materialOptions = edgeMaterialOptionLabels.map((m) => `<option value="${m}" ${e.material === m ? 'selected' : ''}>${m}</option>`).join('');
+          const materialOptions = edgeMaterialOptionLabels.map((m) => `<option value="${escapeHtml(m)}" ${e.material === m ? 'selected' : ''}>${escapeHtml(m)}</option>`).join('');
           const currentDiameterIndex = diameterIndexFromCode(e.line_diameter);
           const edgeTypeOptionsHtml = ceSortedEdgeTypeOptions.map(opt => {
             const et = opt.label || opt;
-            return `<option value="${et}" ${e.edge_type === et ? 'selected' : ''}>${et}</option>`;
+            return `<option value="${escapeHtml(et)}" ${e.edge_type === et ? 'selected' : ''}>${escapeHtml(et)}</option>`;
           }).join('');
           const engStatusOptionsHtml = ceSortedEngineeringOptions.map(({code, label}) =>
-            `<option value="${code}" ${Number(e.engineeringStatus)===Number(code)?'selected':''}>${label}</option>`
+            `<option value="${escapeHtml(String(code))}" ${Number(e.engineeringStatus)===Number(code)?'selected':''}>${escapeHtml(label)}</option>`
           ).join('');
           const fallPosOptionsHtml = ceSortedFallPositionOptions.map(({code, label}) =>
-            `<option value="${String(code)}" ${Number(e.fall_position)===Number(code)?'selected':''}>${label}</option>`
+            `<option value="${escapeHtml(String(code))}" ${Number(e.fall_position)===Number(code)?'selected':''}>${escapeHtml(label)}</option>`
           ).join('');
           if (ceIdx > 0) html += `<hr class="connected-edge-divider" />`;
           html += `<div class="connected-edge-header">${isRTL(currentLang) ? '←' : '→'} ${escapeHtml(String(otherNodeId))}</div>`;
@@ -5878,7 +5885,7 @@ function renderDetails() {
     const sortedEdgeMaterialOptions = getSortedOptions('edges', 'material', rawEdgeMaterialOptions);
     sortedEdgeMaterialOptions.forEach((opt) => {
       const m = opt.label || opt;
-      materialOptions += `<option value="${m}" ${edge.material === m ? 'selected' : ''}>${m}</option>`;
+      materialOptions += `<option value="${escapeHtml(m)}" ${edge.material === m ? 'selected' : ''}>${escapeHtml(m)}</option>`;
     });
 
     // Compute current material code based on label
@@ -5921,7 +5928,7 @@ function renderDetails() {
     const currentDiameterIndex = diameterIndexFromCode(edge.line_diameter);
 
     // Fall position options with smart sorting
-    const rawFallPositionOptions = (adminConfig.edges?.options?.fall_position || [{code:0,label:'פנימי'},{code:1,label:'חיצוני'}])
+    const rawFallPositionOptions = (adminConfig.edges?.options?.fall_position || [{code:0,label:t('labels.fallPositionInternal')},{code:1,label:t('labels.fallPositionExternal')}])
       .filter(o => (o.enabled !== false));
     const sortedFallPositionOptions = getSortedOptions('edges', 'fall_position', rawFallPositionOptions);
     const fallPositionOptionsHtml = sortedFallPositionOptions
@@ -7334,12 +7341,13 @@ if (zoomOutBtn) {
 
 // Export nodes CSV
 if (exportNodesBtn) {
-  exportNodesBtn.addEventListener('click', () => {
+  exportNodesBtn.addEventListener('click', async () => {
     if (nodes.length === 0) {
       showToast(t('alerts.noNodesToExport'));
       return;
     }
     showToast(t('toasts.exporting'));
+    const { exportNodesCsv } = await import('../utils/csv.js');
     const csvContent = 'sep=,\r\n' + exportNodesCsv(nodes, adminConfig, t).replace(/\n/g, '\r\n');
     // Encode as UTF-16LE with BOM for best compatibility with Excel on Windows
     const bytes = encodeUtf16LeWithBom(csvContent);
@@ -7360,12 +7368,13 @@ if (exportNodesBtn) {
 
 // Export edges CSV
 if (exportEdgesBtn) {
-  exportEdgesBtn.addEventListener('click', () => {
+  exportEdgesBtn.addEventListener('click', async () => {
     if (edges.length === 0) {
       showToast(t('alerts.noEdgesToExport'));
       return;
     }
     showToast(t('toasts.exporting'));
+    const { exportEdgesCsv } = await import('../utils/csv.js');
     const csvContent = 'sep=,\r\n' + exportEdgesCsv(edges, adminConfig, t).replace(/\n/g, '\r\n');
     // Encode as UTF-16LE with BOM for best compatibility with Excel on Windows
     const bytes = encodeUtf16LeWithBom(csvContent);
@@ -7389,13 +7398,14 @@ if (exportEdgesBtn) {
 
 // Export complete sketch as JSON
 if (exportSketchBtn) {
-  exportSketchBtn.addEventListener('click', () => {
+  exportSketchBtn.addEventListener('click', async () => {
     if (nodes.length === 0 && edges.length === 0) {
       showToast(t('alerts.noSketchToExport'));
       return;
     }
     try {
       showToast(t('toasts.exporting'));
+      const { exportSketchToJson } = await import('../utils/sketch-io.js');
       const sketchData = {
         nodes: nodes,
         edges: edges,
@@ -7425,6 +7435,7 @@ if (importSketchBtn && importSketchFile) {
     if (!file) return;
 
     try {
+      const { importSketchFromJson } = await import('../utils/sketch-io.js');
       const importedSketch = await importSketchFromJson(file);
 
       // Ask user if they want to replace current sketch or create new
@@ -9998,12 +10009,12 @@ if (window.matchMedia) {
 // telemetry.
 window.addEventListener('error', (e) => {
   console.error('[App] Unhandled error:', e.error?.message || e.message || e);
-  showToast('⚠️ ' + (e.message || 'Unexpected error'));
+  showToast(e.message || t('errors.unexpected'));
 });
 
 window.addEventListener('unhandledrejection', (e) => {
   console.error('[App] Unhandled rejection:', e.reason?.message || e.reason);
-  showToast('⚠️ ' + (e.reason && e.reason.message ? e.reason.message : 'Unexpected error'));
+  showToast(e.reason && e.reason.message ? e.reason.message : t('errors.unexpected'));
 });
 
 

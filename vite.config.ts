@@ -30,7 +30,15 @@ export default defineConfig({
             if (id.includes('react') || id.includes('scheduler')) {
               return 'react-vendor';
             }
+            // Separate proj4 (~44KB minified) — only needed by projections.js
+            if (id.includes('proj4') || id.includes('mgrs') || id.includes('wkt-parser')) {
+              return 'proj4-vendor';
+            }
             return 'vendor';
+          }
+          // Lazy-loaded admin modules get their own chunk
+          if (id.includes('/admin/admin-settings') || id.includes('/admin/projects-settings') || id.includes('/admin/input-flow-settings')) {
+            return 'admin';
           }
         },
       },

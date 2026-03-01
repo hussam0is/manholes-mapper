@@ -74,6 +74,16 @@ export const i18n = {
       'Esc: ביטול פעולה או ניקוי בחירה',
       'Delete/Backspace: מחיקת פריט נבחר',
     ],
+    helpLine: {
+      nodeMode: 'N: מצב שוחה',
+      edgeMode: 'E: מצב קו',
+      save: 'S: שמירה',
+      pan: 'Space: הזזת קנבס (לחוץ וגרור)',
+      zoom: '= / - : זום פנימה / החוצה (0 לאיפוס)',
+      wheel: 'גלגלת עכבר מעל הקנבס: זום',
+      cancel: 'Esc: ביטול פעולה או ניקוי בחירה',
+      delete: 'Delete/Backspace: מחיקת פריט נבחר',
+    },
     helpNote: 'במצב קו, בחר שוחת מקור ואז שוחת יעד.',
     listUpdated: (d) => `עודכן ${d}`,
     listCounts: (n, e) => `שוחות: ${n}, קווים: ${e}`,
@@ -292,6 +302,11 @@ export const i18n = {
       notRecorded: 'לא נמדד',
       connectedLines: 'קווים מחוברים',
       directConnection: 'חיבור ישיר',
+      fallPositionInternal: 'פנימי',
+      fallPositionExternal: 'חיצוני',
+    },
+    a11y: {
+      skipToContent: 'דלג לתוכן הראשי',
     },
     finishWorkday: {
       title: 'סיום יום עבודה',
@@ -429,6 +444,7 @@ export const i18n = {
         centerBetween: 'מרכז ביניהם',
         recenterToSketch: 'מרכז על שרטוט',
         backToList: 'חזרה לרשימה',
+        loadError: 'שגיאה בטעינת הפרויקט',
       },
     },
     inputFlow: {
@@ -729,6 +745,16 @@ export const i18n = {
       'Esc: Cancel or clear selection',
       'Delete/Backspace: Delete selected',
     ],
+    helpLine: {
+      nodeMode: 'N: Node mode',
+      edgeMode: 'E: Edge mode',
+      save: 'S: Save',
+      pan: 'Space: Pan canvas (hold & drag)',
+      zoom: '= / - : Zoom in / out (0 to reset)',
+      wheel: 'Mouse Wheel over canvas: Zoom',
+      cancel: 'Esc: Cancel or clear selection',
+      delete: 'Delete/Backspace: Delete selected',
+    },
     helpNote: 'In Edge mode, pick source node then target node.',
     listUpdated: (d) => `Updated ${d}`,
     listCounts: (n, e) => `Nodes: ${n}, Edges: ${e}`,
@@ -947,6 +973,11 @@ export const i18n = {
       notRecorded: 'Not recorded',
       connectedLines: 'Connected Lines',
       directConnection: 'Direct connection',
+      fallPositionInternal: 'Internal',
+      fallPositionExternal: 'External',
+    },
+    a11y: {
+      skipToContent: 'Skip to main content',
     },
     finishWorkday: {
       title: 'Finish Workday',
@@ -1054,6 +1085,14 @@ export const i18n = {
       geojsonFile: 'GeoJSON File',
       noLayers: 'No reference layers configured for this project.',
       confirmDeleteLayer: 'Delete this layer?',
+      loadError: 'Error loading projects',
+      layers: {
+        selectFile: 'Please select a GeoJSON file',
+        invalidGeoJSON: 'Invalid GeoJSON: must be a FeatureCollection',
+        uploadSuccess: (name) => `Layer "${name}" uploaded successfully`,
+        deleted: 'Layer deleted',
+        deleteError: 'Error deleting layer',
+      },
       homepage: {
         title: 'Projects',
         subtitle: 'Select a project to work on',
@@ -1084,6 +1123,7 @@ export const i18n = {
         centerBetween: 'Center between',
         recenterToSketch: 'Recenter to sketch',
         backToList: 'Back to list',
+        loadError: 'Failed to load project',
       },
     },
     inputFlow: {
