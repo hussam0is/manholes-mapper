@@ -220,6 +220,11 @@ export const i18n = {
       appUpdated: 'האפליקציה עודכנה',
     },
     incompleteEdgeTracker: 'חסר בית/שוחה',
+    emptyState: {
+      heading: 'התחל לצייר את הרשת שלך',
+      instruction: 'לחץ על כלי השוחה \u26AA בסרגל הכלים, ואז לחץ על הקנבס כדי להניח את הנקודה הראשונה',
+      dismiss: 'הבנתי',
+    },
     renamed: 'שם עודכן',
     undo: {
       title: 'ביטול פעולה אחרונה',
@@ -914,6 +919,11 @@ export const i18n = {
       appUpdated: 'App updated',
     },
     incompleteEdgeTracker: 'Missing home/manhole',
+    emptyState: {
+      heading: 'Start drawing your network',
+      instruction: 'Tap the manhole tool \u26AA on the toolbar, then tap the canvas to place your first node',
+      dismiss: 'Got it',
+    },
     renamed: 'Renamed',
     undo: {
       title: 'Undo last action',

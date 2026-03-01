@@ -2868,6 +2868,8 @@ function hideHome(immediate) {
   } else {
     hidePanelAnimated(homePanel);
   }
+  // Deferred update: after panel animation completes, show empty state if applicable
+  setTimeout(() => updateCanvasEmptyState(), 350);
 }
 
 // ── Projects Homepage & Project Canvas ────────────────────────────────────
@@ -3349,6 +3351,7 @@ async function handleChangeProject(sketchId) {
 function newSketch(date, projectId = null, inputFlowConfig = null) {
   nodes = [];
   edges = [];
+  _emptyStateDismissed = false; // reset so empty-state overlay can show again
   clearUndoStack();
   markEdgeLabelCacheDirty(); // sketch cleared
   nextNodeId = 1;
@@ -4566,6 +4569,8 @@ function draw() {
   scheduleEdgeLegendUpdate();
   // Update incomplete edge tracker (throttled)
   scheduleIncompleteEdgeUpdate();
+  // Show/hide empty-state overlay
+  updateCanvasEmptyState();
 }
 
 // Throttled DOM updates – avoid running inside every draw frame
@@ -5117,6 +5122,25 @@ function drawHouse(cx, cy, radius) {
  */
 function drawDirectConnectionBadge(cx, cy, radius) {
   primitivesDrawDirectConnectionBadge(ctx, cx, cy, radius, sizeVS);
+}
+
+/**
+ * Show/hide the canvas empty-state overlay based on sketch contents.
+ * Visible when: no nodes AND no edges AND canvas is visible (home panel closed,
+ * not in project-canvas mode, start panel closed, login panel hidden).
+ */
+let _emptyStateDismissed = false;
+function updateCanvasEmptyState() {
+  const el = document.getElementById('canvasEmptyState');
+  if (!el) return;
+  const isEmpty = nodes.length === 0 && edges.length === 0;
+  const homePanelVisible = homePanel && homePanel.style.display !== 'none';
+  const startPanelVisible = startPanel && startPanel.style.display !== 'none';
+  const loginPanelEl = document.getElementById('loginPanel');
+  const loginVisible = loginPanelEl && loginPanelEl.style.display !== 'none';
+  const inProjectCanvas = typeof isProjectCanvasMode === 'function' && isProjectCanvasMode();
+  const shouldShow = isEmpty && !_emptyStateDismissed && !homePanelVisible && !startPanelVisible && !loginVisible && !inProjectCanvas;
+  el.style.display = shouldShow ? 'flex' : 'none';
 }
 
 /**
@@ -7536,6 +7560,15 @@ const homePanelCloseBtn = document.getElementById('homePanelCloseBtn');
 if (homePanelCloseBtn) {
   homePanelCloseBtn.addEventListener('click', () => {
     hideHome();
+    updateCanvasEmptyState();
+  });
+}
+// Dismiss button for canvas empty-state overlay
+const emptyStateDismissBtn = document.querySelector('.canvas-empty-state__dismiss');
+if (emptyStateDismissBtn) {
+  emptyStateDismissBtn.addEventListener('click', () => {
+    _emptyStateDismissed = true;
+    updateCanvasEmptyState();
   });
 }
 if (sketchListEl) {
