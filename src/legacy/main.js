@@ -2437,7 +2437,12 @@ function updateSyncStatusUI(state) {
   if (!state.isOnline) {
     syncStatusBar.classList.add('offline');
     if (syncStatusIcon) syncStatusIcon.textContent = 'cloud_off';
-    if (syncStatusText) syncStatusText.textContent = t('auth.offline');
+    if (syncStatusText) {
+      const pending = state.pendingChanges || 0;
+      syncStatusText.textContent = pending > 0
+        ? t('auth.offlinePending', pending)
+        : t('auth.offline');
+    }
   } else if (state.isSyncing) {
     syncStatusBar.classList.add('syncing');
     if (syncStatusIcon) {
@@ -5937,7 +5942,7 @@ function renderDetails() {
       <div class="details-section">
         <div class="field">
           <div class="field-label">${t('labels.targetNote')}</div>
-          <div class="muted">${headNode.note}</div>
+          <div class="muted">${escapeHtml(headNode.note)}</div>
         </div>
       </div>` : ''}
 
@@ -7271,7 +7276,7 @@ if (zoomOutBtn) {
 if (exportNodesBtn) {
   exportNodesBtn.addEventListener('click', () => {
     if (nodes.length === 0) {
-      alert(t('alerts.noNodesToExport'));
+      showToast(t('alerts.noNodesToExport'));
       return;
     }
     showToast(t('toasts.exporting'));
@@ -7297,7 +7302,7 @@ if (exportNodesBtn) {
 if (exportEdgesBtn) {
   exportEdgesBtn.addEventListener('click', () => {
     if (edges.length === 0) {
-      alert(t('alerts.noEdgesToExport'));
+      showToast(t('alerts.noEdgesToExport'));
       return;
     }
     showToast(t('toasts.exporting'));
@@ -7326,7 +7331,7 @@ if (exportEdgesBtn) {
 if (exportSketchBtn) {
   exportSketchBtn.addEventListener('click', () => {
     if (nodes.length === 0 && edges.length === 0) {
-      alert(t('alerts.noSketchToExport'));
+      showToast(t('alerts.noSketchToExport'));
       return;
     }
     try {
@@ -7343,7 +7348,7 @@ if (exportSketchBtn) {
       showToast(t('toasts.sketchExported'));
     } catch (error) {
       console.error('[App] Export error:', error.message);
-      alert(t('alerts.exportFailed'));
+      showToast(t('alerts.exportFailed'));
     }
   });
 }
@@ -7399,7 +7404,7 @@ if (importSketchBtn && importSketchFile) {
 
     } catch (error) {
       console.error('[App] Import error:', error.message);
-      alert(t('alerts.importFailed') + '\n' + error.message);
+      showToast(t('alerts.importFailed'));
     } finally {
       // Reset file input so same file can be imported again
       importSketchFile.value = '';
@@ -8092,7 +8097,7 @@ async function handleCoordinatesImport(file) {
     const newCoordinates = await importCoordinatesFromFile(file);
     
     if (newCoordinates.size === 0) {
-      showToast(t('coordinates.noCoordinatesFound') || 'לא נמצאו קואורדינטות בקובץ');
+      showToast(t('coordinates.noCoordinatesFound'));
       return;
     }
     
@@ -8147,8 +8152,10 @@ async function handleCoordinatesImport(file) {
       const matchCount = matchingIds.length;
       const totalNodes = nodes.length;
       const addedNew = coordinatesMap.size - prevSize;
-      const mergeNote = (shouldMerge && prevSize > 0) ? ` (+${addedNew} חדשים, סה"כ ${coordinatesMap.size})` : '';
-      showToast(`נטענו ${newCoordinates.size} קואורדינטות, ${matchCount}/${totalNodes} שוחות תואמות${mergeNote}`);
+      const toastMsg = (shouldMerge && prevSize > 0)
+        ? t('coordinates.importResultMerge', newCoordinates.size, matchCount, totalNodes, addedNew, coordinatesMap.size)
+        : t('coordinates.importResult', newCoordinates.size, matchCount, totalNodes);
+      showToast(toastMsg);
 
       if (!coordinatesEnabled) {
         coordinatesEnabled = true;
@@ -8177,9 +8184,7 @@ async function handleCoordinatesImport(file) {
 
       if (dist > 1500) {
         // Different project area detected — ask user
-        const msg = `הקובץ החדש נמצא ${Math.round(dist)}מ' ממרכז המפה הקיים.\n` +
-          `ייתכן שהוא שייך לפרויקט אחר עם אותם מספרי שוחות.\n\n` +
-          `לחץ OK להחלפה מלאה (מומלץ)\nלחץ ביטול למיזוג`;
+        const msg = t('coordinates.differentAreaConfirm', Math.round(dist));
         if (window.confirm(msg)) {
           await doImport(false); // replace
         } else {
@@ -8194,7 +8199,7 @@ async function handleCoordinatesImport(file) {
 
   } catch (error) {
     console.error('[Coordinates] Failed to import coordinates:', error.message);
-    showToast(t('coordinates.importError') || 'שגיאה בטעינת קואורדינטות');
+    showToast(t('coordinates.importError'));
   }
 }
 

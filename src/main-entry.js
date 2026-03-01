@@ -22,7 +22,7 @@ import { initCanvasFabToolbar } from './canvas-fab-toolbar.js';
 import { onAuthStateChange, getAuthState, updateAuthState, guardRoute, redirectIfAuthenticated, refreshSession } from './auth/auth-guard.js';
 import { initSyncService } from './auth/sync-service.js';
 import { authClient, signOutUser, getCurrentSession } from './auth/auth-client.js';
-import { initPermissionsService } from './auth/permissions.js';
+import { initPermissionsService, getUserRole } from './auth/permissions.js';
 import { menuEvents, setupEventDelegation } from './menu/menu-events.js';
 import {
   initGnssModule,
@@ -89,21 +89,35 @@ if (typeof window !== 'undefined') {
       if (!container) return;
       
       if (user) {
-        // User is signed in - show user menu
+        // User is signed in - show user menu with role badge
+        const roleData = getUserRole();
+        const roleName = roleData?.role || 'user';
+        const roleLabel = roleName === 'super_admin'
+          ? (window.t?.('auth.roleSuperAdmin') || 'Super Admin')
+          : roleName === 'admin'
+            ? (window.t?.('auth.roleAdmin') || 'Admin')
+            : (window.t?.('auth.roleUser') || 'User');
+        const roleCssClass = roleName === 'super_admin'
+          ? 'user-menu-role--super-admin'
+          : roleName === 'admin'
+            ? 'user-menu-role--admin'
+            : 'user-menu-role--user';
+
         container.innerHTML = `
           <div class="user-menu">
-            <button class="user-menu-trigger" title="${escapeHtml(user.name || user.email)}">
+            <button class="user-menu-trigger" title="${escapeHtml(user.name || user.email)}" aria-haspopup="true" aria-expanded="false">
               <div class="user-avatar">
                 ${user.image ? `<img src="${escapeHtml(user.image)}" alt="${escapeHtml(user.name || 'User')}" />` : `<span>${escapeHtml((user.name || user.email || 'U')[0].toUpperCase())}</span>`}
               </div>
             </button>
-            <div class="user-menu-dropdown" style="display: none;">
+            <div class="user-menu-dropdown" style="display: none;" role="menu">
               <div class="user-menu-header">
                 <div class="user-menu-name">${escapeHtml(user.name || 'User')}</div>
                 <div class="user-menu-email">${escapeHtml(user.email || '')}</div>
+                <span class="user-menu-role ${roleCssClass}">${escapeHtml(roleLabel)}</span>
               </div>
               <hr class="user-menu-divider" />
-              <button class="user-menu-item user-menu-signout">
+              <button class="user-menu-item user-menu-signout" role="menuitem">
                 <span class="material-icons">logout</span>
                 <span>${window.t?.('auth.signOut') || 'Sign Out'}</span>
               </button>
@@ -119,12 +133,24 @@ if (typeof window !== 'undefined') {
         if (trigger && dropdown) {
           trigger.addEventListener('click', (e) => {
             e.stopPropagation();
-            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+            const isOpen = dropdown.style.display !== 'none';
+            dropdown.style.display = isOpen ? 'none' : 'block';
+            trigger.setAttribute('aria-expanded', String(!isOpen));
           });
-          
+
           // Close dropdown when clicking outside (uses AbortController to prevent listener accumulation)
           document.addEventListener('click', () => {
             dropdown.style.display = 'none';
+            trigger.setAttribute('aria-expanded', 'false');
+          }, { signal: userMenuAbortController.signal });
+
+          // Close on Escape key
+          document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && dropdown.style.display !== 'none') {
+              dropdown.style.display = 'none';
+              trigger.setAttribute('aria-expanded', 'false');
+              trigger.focus();
+            }
           }, { signal: userMenuAbortController.signal });
         }
         

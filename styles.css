@@ -346,7 +346,7 @@ header h1 {
   font-weight: 600;
   color: var(--color-primary-strong);
   padding: 3px 8px;
-  background: rgba(255, 255, 255, 0.95);
+  background: color-mix(in srgb, var(--color-surface) 95%, transparent);
   border-radius: 12px;
   border: 1px solid rgba(37, 99, 235, 0.2);
   max-width: 120px;
@@ -412,7 +412,7 @@ header h1 {
 }
 
 .soft-blue-header #controls .toolbar-group {
-  background: rgba(255, 255, 255, 0.7);
+  background: color-mix(in srgb, var(--color-surface) 70%, transparent);
   border: 1px solid var(--color-border);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
   backdrop-filter: blur(2px);
@@ -432,7 +432,7 @@ header h1 {
 }
 
 .soft-blue-header .btn-ghost {
-  background: rgba(255, 255, 255, 0.7);
+  background: color-mix(in srgb, var(--color-surface) 70%, transparent);
   color: var(--color-text);
   border-color: var(--color-border);
 }
@@ -1051,14 +1051,14 @@ header .btn-primary:hover {
 /* Ghost variant for dark backgrounds (header) */
 header .btn-ghost,
 .soft-blue-header .btn-ghost {
-  background: rgba(255, 255, 255, 0.7);
+  background: color-mix(in srgb, var(--color-surface) 70%, transparent);
   color: var(--color-text);
   border-color: var(--color-border);
 }
 
 header .btn-ghost:hover,
 .soft-blue-header .btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.9);
+  background: color-mix(in srgb, var(--color-surface) 90%, transparent);
   border-color: var(--color-primary);
 }
 
@@ -3154,8 +3154,8 @@ input.floating-keyboard-active {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   border: none;
   background: transparent;
   color: var(--color-muted);
@@ -3588,13 +3588,16 @@ input.floating-keyboard-active {
 .projects-modal-close {
   background: none;
   border: none;
+  width: 44px;
+  height: 44px;
   padding: 0.25rem;
   cursor: pointer;
-  color: var(--color-text-secondary, #666);
-  border-radius: 4px;
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-sm, 4px);
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background 0.15s ease;
 }
 
 .projects-modal-close:hover {
@@ -4279,11 +4282,13 @@ input:checked + .slider:before {
 
 .dangling-edge-select {
   width: 100%;
-  padding: 0.5rem 0.65rem;
+  padding: 0.75rem;
+  min-height: 44px;
   border: 1px solid var(--color-border);
   border-radius: 6px;
   font-size: 0.875rem;
   background: var(--color-surface);
+  color: var(--color-text);
 }
 
 .finish-workday-actions {
@@ -4331,6 +4336,42 @@ input:checked + .slider:before {
 .finish-workday-success p {
   font-size: 1.1rem;
   color: var(--color-text);
+}
+
+/* Finish workday modal -- landscape optimization */
+@media (max-height: 500px) and (orientation: landscape) {
+  .finish-workday-container {
+    max-height: 95vh;
+    max-height: 95dvh;
+    max-width: 420px;
+    border-radius: 8px;
+  }
+  .finish-workday-header {
+    padding: 0.5rem 1rem;
+  }
+  .finish-workday-header h2 {
+    font-size: 0.95rem;
+  }
+  .finish-workday-content {
+    padding: 0.75rem 1rem;
+  }
+  .finish-workday-desc {
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+  }
+  .dangling-edges-list {
+    gap: 0.5rem;
+  }
+  .dangling-edge-item {
+    padding: 0.5rem 0.75rem;
+  }
+  .finish-workday-actions {
+    padding: 0.5rem 1rem;
+  }
+  .finish-workday-actions .btn {
+    padding: 0.45rem 1rem;
+    font-size: 0.8125rem;
+  }
 }
 
 /* Dropdown item primary styling */
@@ -5776,11 +5817,15 @@ select.invalid:focus {
   bottom: calc(var(--drawer-height, 0px) + 80px);
   transform: translateX(-50%) translateY(8px);
   background: var(--color-primary-strong);
-  color: #fff;
+  color: var(--color-text-on-primary, #fff);
   padding: 0.6rem 1.2rem;
   border-radius: 24px;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
   font-size: 0.92rem;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.25s ease, transform 0.25s ease;
@@ -5792,6 +5837,20 @@ select.invalid:focus {
 #toast.show {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+}
+
+/* Toast variants -- applied via data-variant attribute */
+#toast[data-variant="success"] {
+  background: var(--color-success);
+}
+
+#toast[data-variant="error"] {
+  background: var(--color-danger);
+}
+
+#toast[data-variant="warning"] {
+  background: var(--color-warning, #f59e0b);
+  color: var(--color-text, #0f172a);
 }
 
 /* Help modal specific */
@@ -8326,6 +8385,7 @@ select.invalid:focus {
     background: rgba(96, 165, 250, 0.2);
   }
 }
+/* Sync status bar dark mode state colors */  .home-panel-sync-status {    background: var(--color-surface-alt);    border-color: var(--color-border-dark);  }  .home-panel-sync-status.syncing {    color: var(--color-accent);    background: rgba(96, 165, 250, 0.1);  }  .home-panel-sync-status.offline {    color: var(--color-warning);    background: rgba(245, 158, 11, 0.1);  }  .home-panel-sync-status.error {    color: var(--color-danger);    background: rgba(239, 68, 68, 0.1);  }
 
 /* ================================================
    Login Panel Styles
@@ -12489,11 +12549,12 @@ body.admin-screen #canvasFabToggle {
 
 /* --- Landscape: Toast Position --- */
 @media (max-height: 450px) and (orientation: landscape) {
-  .toast {
+  #toast {
     bottom: 8px;
     top: auto;
     font-size: 0.8rem;
     padding: 0.375rem 0.75rem;
+    min-height: 28px;
   }
 }
 
