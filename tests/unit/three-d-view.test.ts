@@ -294,46 +294,48 @@ describe('Label Y-offset from object', () => {
 // =============================================================================
 
 describe('computeLabelVisibility', () => {
-  it('hides label when distance > 150', () => {
+  it('hides label when distance > 120', () => {
     const vis = computeLabelVisibility(200);
     expect(vis.display).toBe('none');
   });
 
-  it('hides label at exactly 150.01', () => {
-    const vis = computeLabelVisibility(150.01);
+  it('hides label at exactly 120.01', () => {
+    const vis = computeLabelVisibility(120.01);
     expect(vis.display).toBe('none');
   });
 
-  it('shows faded label between 80 and 150', () => {
-    const vis = computeLabelVisibility(115);
+  it('shows faded label between 60 and 120', () => {
+    const vis = computeLabelVisibility(90);
     expect(vis.display).toBe('');
     expect(vis.fontSize).toBe('9px');
-    // opacity = 1 - (115-80)/70 = 1 - 35/70 = 0.5
+    // opacity = 1 - (90-60)/60 = 1 - 30/60 = 0.5
     expect(parseFloat(vis.opacity)).toBeCloseTo(0.5, 2);
   });
 
-  it('at distance 80, opacity approaches 1', () => {
-    const vis = computeLabelVisibility(80);
-    // dist > 80 is false (80 is not > 80), falls to else branch
+  it('at distance 60, opacity is 1 (full visibility)', () => {
+    const vis = computeLabelVisibility(60);
+    // dist > 60 is false (60 is not > 60), falls to else branch
     expect(vis.display).toBe('');
     expect(vis.opacity).toBe('1');
     expect(vis.fontSize).toBe('11px');
   });
 
-  it('at distance 80.01, opacity is near 1', () => {
-    const vis = computeLabelVisibility(80.01);
+  it('at distance 60.01, opacity is near 1', () => {
+    const vis = computeLabelVisibility(60.01);
     expect(vis.fontSize).toBe('9px');
+    // opacity = 1 - (60.01-60)/60 ≈ 0.9998
     expect(parseFloat(vis.opacity)).toBeCloseTo(1.0, 2);
   });
 
-  it('at distance 150, opacity approaches 0', () => {
-    const vis = computeLabelVisibility(150);
-    // dist > 80 is true, so fade branch
+  it('at distance 120, opacity approaches 0', () => {
+    const vis = computeLabelVisibility(120);
+    // dist > 120 is false (120 is not > 120), so fade branch
+    // opacity = 1 - (120-60)/60 = 1 - 1 = 0
     expect(vis.fontSize).toBe('9px');
     expect(parseFloat(vis.opacity)).toBeCloseTo(0.0, 2);
   });
 
-  it('full visibility at distance < 80, uses 11px', () => {
+  it('full visibility at distance < 60, uses 11px', () => {
     const vis = computeLabelVisibility(50);
     expect(vis.display).toBe('');
     expect(vis.opacity).toBe('1');
