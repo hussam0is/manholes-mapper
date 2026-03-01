@@ -1844,6 +1844,30 @@ canvas {
   visibility: hidden;
 }
 
+/* On narrow portrait viewports, stack FAB items vertically */
+@media (max-width: 480px) and (orientation: portrait) {
+  .canvas-fab-toolbar__actions {
+    flex-direction: column-reverse;
+    max-width: none;
+    max-height: 0;
+    transition: max-height 0.3s cubic-bezier(.4, 0, .2, 1);
+  }
+  .canvas-fab-toolbar.open .canvas-fab-toolbar__actions {
+    max-width: none;
+    max-height: 300px;
+  }
+  .canvas-fab-toolbar__item {
+    transform: scale(0.4) translateY(8px);
+  }
+  .canvas-fab-toolbar.open .canvas-fab-toolbar__item {
+    transform: scale(1) translateY(0);
+  }
+  .canvas-fab-toolbar {
+    flex-direction: column-reverse;
+    align-items: flex-end;
+  }
+}
+
 /* Incomplete tracker styling inside toolbar */
 .canvas-fab-toolbar .incomplete-tracker {
   position: static;
@@ -4855,7 +4879,7 @@ input:checked + .slider:before {
 
 #homePanel .panel {
   width: 360px;
-  max-width: calc(100% - 2rem);
+  max-width: calc(100vw - 1rem);
 }
 
 #helpModal .panel {

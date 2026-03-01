@@ -246,7 +246,7 @@ export class AdminSettings {
         const optionsHtml = [`<option value="">${this.t('labels.optional')}</option>`].concat(
           opts.filter(o => o.enabled !== false).map(o => {
             const value = (spec.valueKind === 'code') ? String(o.code) : String(o.label);
-            return `<option value="${value}">${o.label}</option>`;
+            return `<option value="${this._escapeHtml(value)}">${this._escapeHtml(o.label)}</option>`;
           })
         ).join('');
 
@@ -257,7 +257,7 @@ export class AdminSettings {
       } else {
         field.innerHTML = `
           <label for="${id}" class="admin-field-label">${spec.label}</label>
-          <input id="${id}" type="text" value="${current}" data-def="${cfgKey}:${spec.key}" 
+          <input id="${id}" type="text" value="${this._escapeHtml(String(current))}" data-def="${cfgKey}:${spec.key}"
                  placeholder="${this.t('admin.placeholders.defaultValue')}" class="admin-field-input"/>
         `;
       }

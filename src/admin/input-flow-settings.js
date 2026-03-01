@@ -313,13 +313,13 @@ export class InputFlowSettings {
           </label>
         </div>
         <div class="rule-card-info">
-          <h4>${rule.name || `${this.t('inputFlow.rule')} ${index + 1}`}</h4>
+          <h4>${this._escapeHtml(rule.name || `${this.t('inputFlow.rule')} ${index + 1}`)}</h4>
           <p class="rule-card-trigger">
-            ${this.t('inputFlow.when')} <strong>${triggerFieldLabel}</strong> 
-            ${triggerOperatorLabel} 
-            <strong>${triggerValueLabel}</strong>
+            ${this._escapeHtml(this.t('inputFlow.when'))} <strong>${this._escapeHtml(triggerFieldLabel)}</strong>
+            ${this._escapeHtml(triggerOperatorLabel)}
+            <strong>${this._escapeHtml(String(triggerValueLabel))}</strong>
           </p>
-          <p class="rule-card-actions">${actionsSummary}</p>
+          <p class="rule-card-actions">${this._escapeHtml(actionsSummary)}</p>
         </div>
         <div class="rule-card-buttons">
           <button class="btn-icon" data-edit-rule="${index}" title="${this.t('buttons.edit')}">
@@ -512,11 +512,11 @@ export class InputFlowSettings {
       container.innerHTML = `
         <select id="triggerValue">
           <option value="">${this.t('inputFlow.selectValue')}</option>
-          ${field.options.map(o => `<option value="${o.code}" ${String(o.code) === String(currentValue) ? 'selected' : ''}>${o.label}</option>`).join('')}
+          ${field.options.map(o => `<option value="${this._escapeHtml(String(o.code))}" ${String(o.code) === String(currentValue) ? 'selected' : ''}>${this._escapeHtml(o.label)}</option>`).join('')}
         </select>
       `;
     } else {
-      container.innerHTML = `<input type="text" id="triggerValue" value="${currentValue || ''}">`;
+      container.innerHTML = `<input type="text" id="triggerValue" value="${this._escapeHtml(String(currentValue || ''))}">`;
     }
   }
 
@@ -549,10 +549,10 @@ export class InputFlowSettings {
       if (action.type === 'bulk_reset') {
         actionDiv.innerHTML = `
           <select class="action-type" data-action-idx="${idx}">
-            ${INPUT_FLOW_ACTION_TYPES.map(t => `<option value="${t}" ${action.type === t ? 'selected' : ''}>${this._getActionTypeLabel(t)}</option>`).join('')}
+            ${INPUT_FLOW_ACTION_TYPES.map(t => `<option value="${t}" ${action.type === t ? 'selected' : ''}>${this._escapeHtml(this._getActionTypeLabel(t))}</option>`).join('')}
           </select>
           <select class="action-fields" data-action-idx="${idx}" multiple>
-            ${fields.map(f => `<option value="${f.key}" ${action.fields?.includes(f.key) ? 'selected' : ''}>${f.label}</option>`).join('')}
+            ${fields.map(f => `<option value="${this._escapeHtml(f.key)}" ${action.fields?.includes(f.key) ? 'selected' : ''}>${this._escapeHtml(f.label)}</option>`).join('')}
           </select>
           <button class="btn-icon btn-danger action-delete" data-action-idx="${idx}">
             <span class="material-icons">delete</span>
@@ -562,18 +562,18 @@ export class InputFlowSettings {
         // Fill value action: needs field selector AND value selector
         const selectedField = fields.find(f => f.key === action.field);
         const valueOptions = selectedField?.options || [];
-        
+
         actionDiv.innerHTML = `
           <select class="action-type" data-action-idx="${idx}">
-            ${INPUT_FLOW_ACTION_TYPES.map(t => `<option value="${t}" ${action.type === t ? 'selected' : ''}>${this._getActionTypeLabel(t)}</option>`).join('')}
+            ${INPUT_FLOW_ACTION_TYPES.map(t => `<option value="${t}" ${action.type === t ? 'selected' : ''}>${this._escapeHtml(this._getActionTypeLabel(t))}</option>`).join('')}
           </select>
           <select class="action-field" data-action-idx="${idx}">
             <option value="">${this.t('inputFlow.selectField')}</option>
-            ${fields.map(f => `<option value="${f.key}" ${action.field === f.key ? 'selected' : ''}>${f.label}</option>`).join('')}
+            ${fields.map(f => `<option value="${this._escapeHtml(f.key)}" ${action.field === f.key ? 'selected' : ''}>${this._escapeHtml(f.label)}</option>`).join('')}
           </select>
           <select class="action-value" data-action-idx="${idx}">
             <option value="">${this.t('inputFlow.selectValue')}</option>
-            ${valueOptions.map(o => `<option value="${o.code}" ${String(o.code) === String(action.value) ? 'selected' : ''}>${o.label}</option>`).join('')}
+            ${valueOptions.map(o => `<option value="${this._escapeHtml(String(o.code))}" ${String(o.code) === String(action.value) ? 'selected' : ''}>${this._escapeHtml(o.label)}</option>`).join('')}
           </select>
           <button class="btn-icon btn-danger action-delete" data-action-idx="${idx}">
             <span class="material-icons">delete</span>
@@ -598,11 +598,11 @@ export class InputFlowSettings {
       } else {
         actionDiv.innerHTML = `
           <select class="action-type" data-action-idx="${idx}">
-            ${INPUT_FLOW_ACTION_TYPES.map(t => `<option value="${t}" ${action.type === t ? 'selected' : ''}>${this._getActionTypeLabel(t)}</option>`).join('')}
+            ${INPUT_FLOW_ACTION_TYPES.map(t => `<option value="${t}" ${action.type === t ? 'selected' : ''}>${this._escapeHtml(this._getActionTypeLabel(t))}</option>`).join('')}
           </select>
           <select class="action-field" data-action-idx="${idx}">
             <option value="">${this.t('inputFlow.selectField')}</option>
-            ${fields.map(f => `<option value="${f.key}" ${action.field === f.key ? 'selected' : ''}>${f.label}</option>`).join('')}
+            ${fields.map(f => `<option value="${this._escapeHtml(f.key)}" ${action.field === f.key ? 'selected' : ''}>${this._escapeHtml(f.label)}</option>`).join('')}
           </select>
           <button class="btn-icon btn-danger action-delete" data-action-idx="${idx}">
             <span class="material-icons">delete</span>

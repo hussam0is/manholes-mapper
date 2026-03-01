@@ -634,7 +634,7 @@ export class ProjectsSettings {
         return;
       }
       if (!file) {
-        this.showToast('Please select a GeoJSON file', 'error');
+        this.showToast(this.t('projects.layers.selectFile'), 'error');
         return;
       }
 
@@ -643,7 +643,7 @@ export class ProjectsSettings {
         const geojson = JSON.parse(text);
 
         if (!geojson.type || !geojson.features) {
-          this.showToast('Invalid GeoJSON: must be a FeatureCollection', 'error');
+          this.showToast(this.t('projects.layers.invalidGeoJSON'), 'error');
           return;
         }
 
@@ -680,7 +680,7 @@ export class ProjectsSettings {
           throw new Error(errorMsg);
         }
 
-        this.showToast(`Layer "${name}" uploaded successfully`, 'success');
+        this.showToast(this.t('projects.layers.uploadSuccess', name), 'success');
         
         // Clear form
         modal.querySelector('#newLayerName').value = '';
@@ -766,11 +766,11 @@ export class ProjectsSettings {
               credentials: 'include'
             });
             if (!resp.ok) throw new Error('Delete failed');
-            this.showToast('Layer deleted', 'success');
+            this.showToast(this.t('projects.layers.deleted'), 'success');
             await this._loadLayersList(projectId, container);
           } catch (err) {
             console.error('[ProjectsSettings] Failed to delete layer:', err.message);
-            this.showToast('Error deleting layer', 'error');
+            this.showToast(this.t('projects.layers.deleteError'), 'error');
           }
         });
       });
