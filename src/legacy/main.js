@@ -2677,7 +2677,7 @@ function renderHome() {
             <span class="material-icons">description</span>
           </div>
           <div class="sketch-card-info">
-            <div class="sketch-card-title sketch-title" data-id="${safeRecId}">${safeTitle}</div>
+            <div class="sketch-card-title sketch-title" data-id="${safeRecId}" role="button" tabindex="0" aria-label="${t('aria.sketchTitleEdit')}">${safeTitle}</div>
             <div class="sketch-card-meta">
               <span class="material-icons">schedule</span>
               ${t('listUpdated', new Date(rec.updatedAt || rec.createdAt).toLocaleString(currentLang === 'he' ? 'he-IL' : 'en-GB'))}
@@ -7509,6 +7509,15 @@ if (homePanelCloseBtn) {
   });
 }
 if (sketchListEl) {
+  // S-04: Allow keyboard activation (Enter/Space) on sketch titles with role="button"
+  sketchListEl.addEventListener('keydown', (e) => {
+    const target = e.target;
+    if (!(target instanceof HTMLElement)) return;
+    if (target.classList.contains('sketch-title') && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      target.click();
+    }
+  });
   sketchListEl.addEventListener('click', async (e) => {
     const target = e.target;
     if (!(target instanceof HTMLElement)) return;
@@ -9470,10 +9479,42 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
   }
 
-  // Escape: cancel pending edge or clear selection, or close help
+  // Escape: close modals/panels, cancel pending edge, or clear selection
   if (e.key === 'Escape') {
+    // K-01: Close admin screen if open
+    if (adminScreen && adminScreen.style.display !== 'none') {
+      closeAdminScreen();
+      try { location.hash = '#/'; } catch (_) {}
+      e.preventDefault();
+      return;
+    }
+    // K-01: Close projects screen if open
+    if (projectsScreen && projectsScreen.style.display !== 'none') {
+      closeProjectsScreen();
+      try { location.hash = '#/'; } catch (_) {}
+      e.preventDefault();
+      return;
+    }
+    // K-01: Close admin modal if open
+    if (adminModal && adminModal.style.display !== 'none') {
+      closeAdminModal();
+      e.preventDefault();
+      return;
+    }
     if (helpModal && helpModal.style.display === 'flex') {
       hidePanelAnimated(helpModal);
+      e.preventDefault();
+      return;
+    }
+    // K-02: Close home panel if open
+    if (homePanel && homePanel.style.display === 'flex') {
+      hideHome();
+      e.preventDefault();
+      return;
+    }
+    // Close start panel if open
+    if (startPanel && startPanel.style.display === 'flex') {
+      startPanel.style.display = 'none';
       e.preventDefault();
       return;
     }

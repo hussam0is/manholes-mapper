@@ -256,6 +256,13 @@
 - **A-10**: `.floating-keyboard-resize-handle` already has `aria-hidden="true"`
 - **A-11**: `#sketchSidePanelToggle` already has `aria-label="Toggle sketches panel"`
 
-### Fixed in this commit
+### Fixed in prior commit
 - **A-03**: Admin settings tabs (`src/admin/admin-settings.js`) -- added `role="tablist"` + `aria-label` to container, `role="tab"` + `aria-selected` to buttons, `aria-hidden="true"` on icon spans. Tab switch handler now updates `aria-selected` dynamically.
 - **A-12**: Incomplete edge tracker (`src/legacy/main.js`) -- `updateIncompleteEdgeTracker()` now sets a dynamic `aria-label` that includes the count (e.g., "3 incomplete edges" / "3 קווים לא מחוברים"). New i18n key `a11y.incompleteEdges` added for both `he` and `en`.
+
+### Fixed in this commit
+- **K-01**: Escape key handler for admin panels -- pressing Escape now closes `#adminScreen`, `#projectsScreen`, and `#adminModal` via the global keydown listener in `src/legacy/main.js`.
+- **K-02**: Escape key handler for home panel -- pressing Escape now closes `#homePanel` and `#startPanel`.
+- **S-04**: Sketch card titles (`src/legacy/main.js`) -- added `role="button"`, `tabindex="0"`, `aria-label` to `.sketch-card-title.sketch-title`. Added `keydown` listener for Enter/Space keyboard activation. CSS already has `cursor: pointer`.
+- **F-03**: Scale/stretch buttons (`index.html`) -- added `aria-describedby` on all 12 scale/stretch adjuster buttons (desktop + mobile) pointing to their respective value display spans.
+- **i18n**: New `aria.sketchTitleEdit`, `aria.closePanel`, `aria.detailsRegion` keys added for both `he` and `en` in `src/i18n.js`.

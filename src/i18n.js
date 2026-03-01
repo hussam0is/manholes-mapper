@@ -316,6 +316,11 @@ export const i18n = {
       incompleteEdges: (n) => `${n} קווים לא מחוברים`,
       adminSettingsTabs: 'לשוניות הגדרות מנהל',
     },
+    aria: {
+      sketchTitleEdit: 'לחץ לעריכת שם השרטוט',
+      closePanel: 'סגור חלונית',
+      detailsRegion: 'פרטי הפריט הנבחר',
+    },
     finishWorkday: {
       title: 'סיום יום עבודה',
       button: 'סיים יום עבודה',
@@ -1002,6 +1007,11 @@ export const i18n = {
       skipToContent: 'Skip to main content',
       incompleteEdges: (n) => `${n} incomplete edges`,
       adminSettingsTabs: 'Admin settings tabs',
+    },
+    aria: {
+      sketchTitleEdit: 'Click to edit sketch name',
+      closePanel: 'Close panel',
+      detailsRegion: 'Selected item details',
     },
     finishWorkday: {
       title: 'Finish Workday',
