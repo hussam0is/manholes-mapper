@@ -12,7 +12,7 @@
 - **Affected**: `styles.css`
 - **Problem**: `updateSyncStatusUI()` in `main.js:2434` adds classes `.syncing`, `.offline`, `.error` directly to `#syncStatusBar` (which has class `.home-panel-sync-status`), but there are NO CSS rules for `.home-panel-sync-status.syncing`, `.home-panel-sync-status.offline`, or `.home-panel-sync-status.error`. The `.sync-indicator` class at line 8227 has these state styles, but `#syncStatusBar` uses `.home-panel-sync-status`, not `.sync-indicator`. Result: the sync status bar shows no visual color differentiation between syncing, offline, error, and synced states -- they all look the same muted gray.
 - **Fix**: Add CSS rules for `.home-panel-sync-status.syncing`, `.home-panel-sync-status.offline`, `.home-panel-sync-status.error` with appropriate colors using design tokens.
-- **Status**: OPEN
+- **Status**: FIXED -- CSS rules exist at styles.css:8449-8467 using `var(--color-primary)`, `var(--color-warning)`, `var(--color-danger)` with matching `*-bg` tokens. Spinning animation on `.syncing .material-icons`.
 
 ## Issue #2 -- Header sync indicator uses hardcoded hex colors
 - **Severity**: MEDIUM
@@ -20,7 +20,7 @@
 - **Affected**: `src/menu/menu.css:243,249,254,259`
 - **Problem**: `.header-sync-indicator--syncing` uses `#3b82f6`, `--synced` uses `#22c55e`, `--error` uses `#ef4444` -- these are all hardcoded hex values instead of CSS custom properties. Should use `var(--color-primary)`, `var(--color-success)`, `var(--color-danger)`.
 - **Fix**: Replace hardcoded hex with design token custom properties.
-- **Status**: OPEN
+- **Status**: FIXED -- menu.css:242-260 already uses `var(--color-primary)`, `var(--color-success)`, `var(--color-muted)`, `var(--color-danger)` design tokens.
 
 ## Issue #3 -- Header sync indicator too small for touch (28px / 24px mobile)
 - **Severity**: MEDIUM
@@ -28,7 +28,7 @@
 - **Affected**: `src/menu/menu.css:222-233,274-278`
 - **Problem**: `.header-sync-indicator` is 28px on desktop, 24px on mobile (<600px). The minimum touch target is 44px. While this is currently title-only (no click action), it should still be tappable to show sync details or trigger a manual sync. Even as a status indicator, the icon at 24px is hard to see on mobile in landscape.
 - **Fix**: Increase minimum size to 32px on mobile (this is an info-only icon, not a button, so strict 44px is not required, but readability matters). Consider making it tappable with a 44px hit area.
-- **Status**: OPEN
+- **Status**: FIXED -- menu.css:275-278 sets 32px on mobile (<600px).
 
 ## Issue #4 -- Offline fallback page (`offline.html`) is English-only, no RTL
 - **Severity**: HIGH
@@ -44,7 +44,7 @@
 - **Affected**: `styles.css:5755`
 - **Problem**: `#toast` has `color: #fff` hardcoded. Should use a token or at least an explicit white-on-primary token. While white-on-primary is correct, hardcoded hex violates the design token rule.
 - **Fix**: Replace with a semantic token reference.
-- **Status**: OPEN
+- **Status**: FIXED -- styles.css:5702 uses `color: var(--color-text-on-primary, #fff)`.
 
 ## Issue #6 -- No pending changes / sync queue indicator in UI
 - **Severity**: MEDIUM
@@ -60,7 +60,7 @@
 - **Affected**: `styles.css`
 - **Problem**: `.home-panel-sync-status` uses `background: var(--color-bg)` and `color: var(--color-muted)` which work in light mode, but there is no explicit dark mode override block for the sync status state classes (`.syncing`, `.offline`, `.error`). The `.sync-indicator` dark mode styles (if any) are separate and don't apply. The warning-light and danger-light token backgrounds will look wrong in dark mode since they are light-mode pastel colors.
 - **Fix**: Add dark mode overrides for the sync status bar state colors.
-- **Status**: OPEN
+- **Status**: FIXED -- Wrapped dangling dark mode sync status styles in proper `@media (prefers-color-scheme: dark)` block at styles.css:8243-8264. Uses `var(--color-accent)` for syncing, `var(--color-warning)` for offline, `var(--color-danger)` for error, with `rgba()` dark-appropriate backgrounds.
 
 ## Issue #8 -- Offline page has no retry/refresh button
 - **Severity**: MEDIUM
@@ -76,7 +76,7 @@
 - **Affected**: `styles.css:12123-12129`
 - **Problem**: In landscape `@media (max-height: 450px)`, the toast is positioned at `bottom: 8px` which is very close to the bottom edge and may be obscured by the system navigation bar on Android phones.
 - **Fix**: Increase bottom offset to `bottom: 16px` in landscape for safe area clearance.
-- **Status**: OPEN
+- **Status**: FIXED -- Changed `bottom: 8px` to `bottom: 16px` in landscape toast media query.
 
 ## Issue #10 -- Service worker update notification is silent (auto-reload)
 - **Severity**: MEDIUM
@@ -100,7 +100,7 @@
 - **Affected**: `styles.css:12124`
 - **Problem**: The landscape toast rule at line 12124 targets `.toast` (class selector) but the actual element uses `#toast` (id selector). This CSS rule has no effect. The id-based `#toast` rule wins.
 - **Fix**: Change `.toast` to `#toast` in the landscape media query.
-- **Status**: OPEN
+- **Status**: FIXED -- Landscape toast media query already uses `#toast` id selector (styles.css:12422). The `.toast` class references at lines 9585 and 9823 are in reduce-motion and print media queries (different contexts, not landscape toast).
 
 ---
 
