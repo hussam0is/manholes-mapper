@@ -717,7 +717,7 @@ export async function syncSketchToCloud(sketch) {
       sketch.id = cloudSketch.id;
       sketch.cloudSynced = true;
       await saveSketchToIdb(sketch);
-      
+
       // Also remove the old local ID from IndexedDB to prevent duplicates
       if (oldId && oldId !== cloudSketch.id) {
         try {
@@ -726,7 +726,7 @@ export async function syncSketchToCloud(sketch) {
           // Ignore errors - old ID might not exist
         }
       }
-      
+
       // Update localStorage to replace old ID with new UUID
       // This prevents duplicates when the legacy UI re-reads the library
       if (typeof window !== 'undefined' && window.localStorage) {
@@ -740,6 +740,10 @@ export async function syncSketchToCloud(sketch) {
               if (idx >= 0) {
                 lib[idx] = { ...lib[idx], id: cloudSketch.id, cloudSynced: true };
                 window.localStorage.setItem('graphSketch.library', JSON.stringify(lib));
+                // Invalidate the in-memory library cache so getLibrary() reads the fresh data
+                if (typeof window.invalidateLibraryCache === 'function') {
+                  window.invalidateLibraryCache();
+                }
                 console.debug(`[Sync] Updated localStorage: ${oldId} → ${cloudSketch.id}`);
               }
             }
@@ -747,6 +751,22 @@ export async function syncSketchToCloud(sketch) {
         } catch (err) {
           console.warn('[Sync] Failed to update localStorage with new cloud ID:', err);
         }
+      }
+
+      // Notify main.js (and any other listener) that the sketch ID has changed.
+      // This is critical: without this, main.js keeps using the old sk_xxx ID,
+      // causing every subsequent save to create yet another cloud duplicate.
+      if (typeof window !== 'undefined' && typeof window.__onSketchIdChanged === 'function') {
+        try {
+          window.__onSketchIdChanged(oldId, cloudSketch.id);
+        } catch (err) {
+          console.warn('[Sync] __onSketchIdChanged callback error:', err);
+        }
+      }
+
+      // Track the server's updated_at for the new sketch
+      if (cloudSketch.updatedAt) {
+        lastKnownServerUpdatedAt.set(cloudSketch.id, cloudSketch.updatedAt);
       }
     }
 
@@ -916,6 +936,7 @@ export async function processSyncQueue() {
               lastKnownServerUpdatedAt.set(op.data.id, queueResult.updatedAt);
             }
           } else {
+            const oldQueueId = op.data.id;
             const cloudSketch = await createSketchInCloud({
               name: op.data.name,
               creationDate: op.data.creationDate,
@@ -929,6 +950,21 @@ export async function processSyncQueue() {
             op.data.id = cloudSketch.id;
             op.data.cloudSynced = true;
             await saveSketchToIdb(op.data);
+
+            // Remove old local-ID entry from IndexedDB
+            if (oldQueueId && oldQueueId !== cloudSketch.id) {
+              try { await deleteSketchFromIdb(oldQueueId); } catch (_e) {}
+            }
+
+            // Notify main.js of the ID change
+            if (typeof window !== 'undefined' && typeof window.__onSketchIdChanged === 'function') {
+              try { window.__onSketchIdChanged(oldQueueId, cloudSketch.id); } catch (_e) {}
+            }
+
+            // Track updated_at for optimistic locking
+            if (cloudSketch.updatedAt) {
+              lastKnownServerUpdatedAt.set(cloudSketch.id, cloudSketch.updatedAt);
+            }
           }
         } else if (op.type === 'DELETE') {
           await deleteSketchFromCloud(op.sketchId);

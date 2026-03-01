@@ -2843,6 +2843,23 @@ window.__projectCanvas = {
   switchActiveSketch,
 };
 
+/**
+ * Called by sync-service when a locally-created sketch (sk_xxx ID) is first
+ * synced to the cloud and receives a UUID. Without this, main.js keeps using
+ * the old sk_xxx ID, causing every subsequent save to create a new cloud
+ * duplicate instead of updating the existing one.
+ */
+window.__onSketchIdChanged = function (oldId, newId) {
+  if (currentSketchId === oldId) {
+    console.debug(`[App] Sketch ID updated by cloud sync: ${oldId} → ${newId}`);
+    currentSketchId = newId;
+    // Invalidate library cache so next getLibrary() call picks up the updated ID
+    if (typeof window.invalidateLibraryCache === 'function') {
+      window.invalidateLibraryCache();
+    }
+  }
+};
+
 function hideHome(immediate) {
   if (!homePanel) return;
   if (immediate) {
