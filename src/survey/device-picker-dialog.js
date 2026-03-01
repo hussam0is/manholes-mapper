@@ -35,8 +35,8 @@ function _ensureStyles() {
     }
     .device-picker-content {
       position: relative;
-      background: var(--surface, #fff);
-      color: var(--on-surface, #222);
+      background: var(--color-surface, #fff);
+      color: var(--color-text, #222);
       border-radius: 16px;
       padding: 24px;
       min-width: 300px;
@@ -65,7 +65,7 @@ function _ensureStyles() {
       align-items: flex-start;
       gap: 2px;
       padding: 14px 16px;
-      border: 2px solid var(--outline, #ccc);
+      border: 2px solid var(--color-border, #ccc);
       border-radius: 12px;
       background: transparent;
       color: inherit;
@@ -78,12 +78,12 @@ function _ensureStyles() {
     }
     .device-picker-btn:hover,
     .device-picker-btn:focus {
-      background: var(--surface-variant, #f0f0f0);
-      border-color: var(--primary, #1976d2);
+      background: var(--color-surface-hover, #f0f0f0);
+      border-color: var(--color-primary, #2563eb);
       outline: none;
     }
     .device-picker-btn.is-survey {
-      border-color: var(--primary, #1976d2);
+      border-color: var(--color-primary, #2563eb);
     }
     .device-picker-btn.is-survey .device-picker-name::before {
       content: '';
@@ -91,7 +91,7 @@ function _ensureStyles() {
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: var(--primary, #1976d2);
+      background: var(--color-primary, #2563eb);
       margin-inline-end: 8px;
       vertical-align: middle;
     }
@@ -121,7 +121,7 @@ function _ensureStyles() {
     .device-picker-cancel:hover,
     .device-picker-cancel:focus {
       opacity: 1;
-      background: var(--surface-variant, #f0f0f0);
+      background: var(--color-surface-hover, #f0f0f0);
       outline: none;
     }
   `;

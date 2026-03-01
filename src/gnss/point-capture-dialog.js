@@ -14,6 +14,11 @@ let isOpen = false;
 let onCapture = null;
 let onCancel = null;
 
+/** Shorthand for i18n — falls back to key if window.t is unavailable */
+function _t(key) {
+  return typeof window.t === 'function' ? window.t(key) : key;
+}
+
 /**
  * Initialize the point capture dialog
  * Creates the dialog element and appends to the DOM
@@ -26,6 +31,8 @@ export function initPointCaptureDialog() {
   dialogEl = document.createElement('div');
   dialogEl.id = 'pointCaptureDialog';
   dialogEl.className = 'point-capture-dialog';
+  dialogEl.setAttribute('role', 'dialog');
+  dialogEl.setAttribute('aria-modal', 'true');
   dialogEl.style.display = 'none';
   dialogEl.innerHTML = `
     <div class="point-capture-overlay"></div>
@@ -33,17 +40,17 @@ export function initPointCaptureDialog() {
       <div class="point-capture-header">
         <h3>
           <span class="material-icons">gps_fixed</span>
-          <span id="captureDialogTitle">לכידת נקודה</span>
+          <span id="captureDialogTitle"></span>
         </h3>
-        <button class="point-capture-close" id="captureDialogClose">
+        <button class="point-capture-close" id="captureDialogClose" aria-label="${_t('close')}">
           <span class="material-icons">close</span>
         </button>
       </div>
-      
+
       <div class="point-capture-body">
         <!-- Current Position Section -->
         <div class="capture-section">
-          <h4>מיקום נוכחי</h4>
+          <h4 id="capturePositionTitle"></h4>
           <div class="position-info" id="capturePositionInfo">
             <div class="position-row">
               <span class="position-label">Lat:</span>
@@ -71,48 +78,48 @@ export function initPointCaptureDialog() {
             </div>
           </div>
         </div>
-        
+
         <!-- Node Selection Section -->
         <div class="capture-section">
-          <h4>בחר שוחה</h4>
+          <h4 id="captureNodeTitle"></h4>
           <select id="captureNodeSelect" class="capture-select">
-            <option value="">-- בחר שוחה --</option>
+            <option value=""></option>
           </select>
           <label class="capture-checkbox">
             <input type="checkbox" id="captureCreateNew" />
-            <span>צור שוחה חדשה</span>
+            <span id="captureCreateNewLabel"></span>
           </label>
         </div>
-        
+
         <!-- Edge Creation Section -->
         <div class="capture-section" id="captureEdgeSection" style="display: none;">
-          <h4>יצירת קו</h4>
+          <h4 id="captureEdgeTitle"></h4>
           <label class="capture-checkbox">
             <input type="checkbox" id="captureCreateEdge" />
-            <span>צור קו מהנקודה הקודמת</span>
+            <span id="captureCreateEdgeLabel"></span>
           </label>
           <div id="captureEdgeOptions" style="display: none;">
             <div class="capture-field">
-              <label>שוחת מקור:</label>
+              <label id="captureSourceLabel"></label>
               <span id="captureEdgeFrom">--</span>
             </div>
             <div class="capture-field">
-              <label>סוג קו:</label>
+              <label id="captureLineTypeLabel"></label>
               <select id="captureEdgeType" class="capture-select">
-                <option value="קו ראשי">קו ראשי</option>
-                <option value="קו סניקה">קו סניקה</option>
-                <option value="קו משני">קו משני</option>
+                <option value="" id="captureEdgeTypeMain"></option>
+                <option value="" id="captureEdgeTypeDrainage"></option>
+                <option value="" id="captureEdgeTypeSecondary"></option>
               </select>
             </div>
           </div>
         </div>
       </div>
-      
+
       <div class="point-capture-footer">
-        <button class="btn btn-ghost" id="captureDialogCancel">ביטול</button>
-        <button class="btn btn-primary" id="captureDialogConfirm" disabled>
+        <button class="btn btn-ghost" id="captureDialogCancel"></button>
+        <button class="btn btn-primary" id="captureDialogConfirm" disabled aria-label="${_t('gpsCapture.capturePoint')}">
           <span class="material-icons">check</span>
-          <span>לכוד נקודה</span>
+          <span id="captureConfirmLabel"></span>
         </button>
       </div>
     </div>
@@ -122,6 +129,51 @@ export function initPointCaptureDialog() {
 
   // Set up event listeners
   setupEventListeners();
+}
+
+/**
+ * Populate all translatable text in the dialog.
+ * Called every time the dialog opens so language switches take effect.
+ */
+function applyTranslations() {
+  const el = (id) => document.getElementById(id);
+
+  // Header
+  el('captureDialogTitle').textContent = _t('gpsCapture.dialogTitle');
+  el('captureDialogClose').setAttribute('aria-label', _t('close'));
+
+  // Section headers
+  el('capturePositionTitle').textContent = _t('gpsCapture.currentPosition');
+  el('captureNodeTitle').textContent = _t('gpsCapture.selectManhole');
+  el('captureEdgeTitle').textContent = _t('gpsCapture.createLine');
+
+  // Node selection
+  el('captureCreateNewLabel').textContent = _t('gpsCapture.createNewNode');
+
+  // Edge creation
+  el('captureCreateEdgeLabel').textContent = _t('gpsCapture.createLineFromPrevious');
+  el('captureSourceLabel').textContent = _t('gpsCapture.sourceManhole');
+  el('captureLineTypeLabel').textContent = _t('gpsCapture.lineType');
+
+  // Edge type options
+  const mainOpt = el('captureEdgeTypeMain');
+  mainOpt.value = _t('gpsCapture.lineTypeMain');
+  mainOpt.textContent = _t('gpsCapture.lineTypeMain');
+
+  const drainageOpt = el('captureEdgeTypeDrainage');
+  drainageOpt.value = _t('gpsCapture.lineTypeDrainage');
+  drainageOpt.textContent = _t('gpsCapture.lineTypeDrainage');
+
+  const secOpt = el('captureEdgeTypeSecondary');
+  secOpt.value = _t('gpsCapture.lineTypeSecondary');
+  secOpt.textContent = _t('gpsCapture.lineTypeSecondary');
+
+  // Footer buttons
+  el('captureDialogCancel').textContent = _t('gpsCapture.cancel');
+  el('captureConfirmLabel').textContent = _t('gpsCapture.capturePoint');
+
+  // Dialog aria-label
+  dialogEl.setAttribute('aria-label', _t('gpsCapture.dialogTitle'));
 }
 
 /**
@@ -178,9 +230,17 @@ export function openPointCaptureDialog(nodes, onCaptureCallback, onCancelCallbac
   onCapture = onCaptureCallback;
   onCancel = onCancelCallback;
 
+  // Refresh translations every time dialog opens (language may have changed)
+  applyTranslations();
+
   // Populate node select
   const nodeSelect = document.getElementById('captureNodeSelect');
-  nodeSelect.innerHTML = '<option value="">-- בחר שוחה --</option>';
+  const placeholder = _t('gpsCapture.selectManholePlaceholder');
+  nodeSelect.innerHTML = '';
+  const defaultOpt = document.createElement('option');
+  defaultOpt.value = '';
+  defaultOpt.textContent = placeholder;
+  nodeSelect.appendChild(defaultOpt);
 
   // Sort nodes: those without coordinates first
   const sortedNodes = [...nodes].sort((a, b) => {
@@ -192,10 +252,11 @@ export function openPointCaptureDialog(nodes, onCaptureCallback, onCancelCallbac
     return aHasCoords ? 1 : -1;
   });
 
+  const noCoordsLabel = _t('gpsCapture.noCoordinates');
   sortedNodes.forEach(node => {
     const option = document.createElement('option');
     option.value = node.id;
-    const coordsIndicator = node.hasCoordinates ? ' ✓' : ' (ללא קואורדינטות)';
+    const coordsIndicator = node.hasCoordinates ? ' \u2713' : ` ${noCoordsLabel}`;
     option.textContent = `${node.id}${coordsIndicator}`;
     nodeSelect.appendChild(option);
   });
@@ -203,7 +264,7 @@ export function openPointCaptureDialog(nodes, onCaptureCallback, onCancelCallbac
   // Show/hide edge creation section based on previous capture
   const edgeSection = document.getElementById('captureEdgeSection');
   const lastNodeId = gnssState.lastCapturedNodeId;
-  
+
   if (lastNodeId) {
     edgeSection.style.display = 'block';
     document.getElementById('captureEdgeFrom').textContent = lastNodeId;
@@ -252,7 +313,7 @@ function handleConfirm() {
 
   const position = gnssState.getPosition();
   if (!position.isValid) {
-    alert('אין מיקום GPS תקין');
+    window.showToast?.(_t('gpsCapture.noValidGps'));
     return;
   }
 
@@ -312,7 +373,7 @@ function updatePositionDisplay(position) {
     latEl.textContent = '--';
     lonEl.textContent = '--';
     altEl.textContent = '--';
-    fixEl.textContent = 'אין מיקום';
+    fixEl.textContent = _t('gpsCapture.noPosition');
     fixEl.className = 'position-value fix-0';
     hdopEl.textContent = '--';
     satsEl.textContent = '--';
