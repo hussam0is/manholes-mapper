@@ -2543,6 +2543,8 @@ function renderHome() {
   const organizationTab = document.getElementById('organizationTab');
   
   if (sketchTabs) {
+    // Clear inline display:none set by renderProjectsHome()
+    sketchTabs.style.display = '';
     // Show organization tab only for admin users
     if (isAdminUser) {
       sketchTabs.classList.add('show-org');

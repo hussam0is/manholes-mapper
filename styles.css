@@ -8057,7 +8057,7 @@ select.invalid:focus {
   /* Better contrast for modifier icons in dark mode */
   .sketch-card-creator .material-icons,
   .sketch-card-modifier .material-icons {
-    color: #9ca3af;
+    color: var(--color-muted);
   }
 
   .home-panel-footer {
@@ -8066,12 +8066,22 @@ select.invalid:focus {
   }
 
   .home-panel-new-btn {
-    background: linear-gradient(135deg, var(--color-accent-strong) 0%, #2563eb 100%);
+    background: linear-gradient(135deg, var(--color-accent-strong) 0%, var(--color-primary) 100%);
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
   }
 
   .home-panel-new-btn:hover {
     box-shadow: 0 6px 16px rgba(59, 130, 246, 0.5);
+  }
+
+  .home-panel-sketches-btn {
+    background: rgba(96, 165, 250, 0.1);
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+  }
+
+  .home-panel-sketches-btn:hover {
+    background: rgba(96, 165, 250, 0.2);
   }
 }
 
@@ -11583,7 +11593,7 @@ button:focus-visible,
   }
 
   #sidebar label {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     margin-bottom: 0.1rem;
   }
 
@@ -11592,9 +11602,9 @@ button:focus-visible,
   #sidebar input[type="date"],
   #sidebar select,
   #sidebar textarea {
-    padding: 0.3rem 0.4rem;
-    font-size: 0.8rem;
-    min-height: 36px;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.875rem;
+    min-height: var(--touch-target-min);
   }
 
   .wizard-tabs-row {
@@ -11602,34 +11612,41 @@ button:focus-visible,
     margin-bottom: 6px;
   }
 
+  /* Keep wizard tabs at 44px minimum touch target -- never shrink below */
   .wizard-tab {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
+    width: var(--touch-target-min);
+    height: var(--touch-target-min);
+    border-radius: 10px;
   }
 
   .wizard-tab .material-icons {
-    font-size: 18px;
+    font-size: 20px;
   }
 
   .wizard-field-area {
-    padding: 6px;
+    padding: 8px;
   }
 
   .wizard-field-header {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     margin-bottom: 4px;
   }
 
   .wizard-field-input {
     padding: 6px 8px;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
+    min-height: var(--touch-target-min);
   }
 
   .wizard-accuracy-badge {
     font-size: 11px;
     padding: 2px 8px;
     margin: 4px 0 2px;
+  }
+
+  /* Ensure delete/action buttons meet touch target in landscape */
+  #sidebar .btn {
+    min-height: var(--touch-target-min);
   }
 
   #sidebar .details-grid.two-col {
