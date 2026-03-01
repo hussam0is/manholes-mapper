@@ -105,13 +105,15 @@ export class AdminSettings {
   _createTabs() {
     const tabs = document.createElement('div');
     tabs.className = 'admin-modern-tabs';
+    tabs.setAttribute('role', 'tablist');
+    tabs.setAttribute('aria-label', this.t('admin.title'));
     tabs.innerHTML = `
-      <button class="admin-modern-tab active" data-tab-btn="nodes">
-        <span class="material-icons">account_tree</span>
+      <button class="admin-modern-tab active" data-tab-btn="nodes" role="tab" aria-selected="true">
+        <span class="material-icons" aria-hidden="true">account_tree</span>
         <span class="tab-label">${this.t('admin.tabNodes')}</span>
       </button>
-      <button class="admin-modern-tab" data-tab-btn="edges">
-        <span class="material-icons">timeline</span>
+      <button class="admin-modern-tab" data-tab-btn="edges" role="tab" aria-selected="false">
+        <span class="material-icons" aria-hidden="true">timeline</span>
         <span class="tab-label">${this.t('admin.tabEdges')}</span>
       </button>
     `;
@@ -435,8 +437,12 @@ export class AdminSettings {
       const target = btn.getAttribute('data-tab-btn');
       this.activeTab = target;
 
-      tabs.querySelectorAll('.admin-modern-tab').forEach(b => b.classList.remove('active'));
+      tabs.querySelectorAll('.admin-modern-tab').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+      });
       btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
 
       this.container.querySelectorAll('[data-tab]').forEach(sec => {
         sec.style.display = (sec.getAttribute('data-tab') === target) ? '' : 'none';

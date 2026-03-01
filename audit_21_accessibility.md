@@ -244,4 +244,18 @@
 
 ## Fixes Implemented
 
-(To be filled in after implementing fixes)
+### Already fixed (prior commits)
+- **A-01**: `#mobileMenu` already has `role="dialog"`, `aria-label="Navigation menu"`, `aria-hidden="true"`
+- **A-02**: `#sketchTabs` already has `role="tablist"`, `aria-label="Sketch categories"`, child buttons have `role="tab"` + `aria-selected`
+- **A-04**: Admin panel modals (`admin-panel-modal-overlay`) -- CSS exists but no JS generates these elements; not actionable
+- **A-05**: Scale buttons (`.menu-scale-btn`, `.mobile-menu__scale-btn`) already have descriptive `aria-label` (e.g., "Decrease scale", "Increase horizontal stretch")
+- **A-06**: `#finishWorkdayCloseBtn` already has `aria-label="Close"` and `data-i18n-aria-label="close"`
+- **A-07**: `#gpsQuickCaptureBtn` already has `aria-label="Take Measure"` and `data-i18n-aria-label="gpsCapture.takeMeasure"`
+- **A-08**: `#edgeLegend` already has `role="img"` and `aria-label="Edge type color legend"`
+- **A-09**: `.sidebar-drag-handle` already has `role="separator"`, `aria-label="Resize sidebar"`, `aria-orientation="horizontal"`
+- **A-10**: `.floating-keyboard-resize-handle` already has `aria-hidden="true"`
+- **A-11**: `#sketchSidePanelToggle` already has `aria-label="Toggle sketches panel"`
+
+### Fixed in this commit
+- **A-03**: Admin settings tabs (`src/admin/admin-settings.js`) -- added `role="tablist"` + `aria-label` to container, `role="tab"` + `aria-selected` to buttons, `aria-hidden="true"` on icon spans. Tab switch handler now updates `aria-selected` dynamically.
+- **A-12**: Incomplete edge tracker (`src/legacy/main.js`) -- `updateIncompleteEdgeTracker()` now sets a dynamic `aria-label` that includes the count (e.g., "3 incomplete edges" / "3 קווים לא מחוברים"). New i18n key `a11y.incompleteEdges` added for both `he` and `en`.

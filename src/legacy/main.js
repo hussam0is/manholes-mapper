@@ -4111,7 +4111,13 @@ function updateIncompleteEdgeTracker() {
   
   const incompleteCount = findIncompleteEdges().length;
   countEl.textContent = String(incompleteCount);
-  
+
+  // Update aria-label with dynamic count for screen readers
+  const label = typeof t === 'function'
+    ? t('a11y.incompleteEdges', incompleteCount)
+    : `${incompleteCount} incomplete edges`;
+  tracker.setAttribute('aria-label', label);
+
   // Show/hide tracker based on count
   if (incompleteCount > 0) {
     tracker.style.display = 'inline-flex';

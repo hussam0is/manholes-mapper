@@ -313,6 +313,8 @@ export const i18n = {
     },
     a11y: {
       skipToContent: 'דלג לתוכן הראשי',
+      incompleteEdges: (n) => `${n} קווים לא מחוברים`,
+      adminSettingsTabs: 'לשוניות הגדרות מנהל',
     },
     finishWorkday: {
       title: 'סיום יום עבודה',
@@ -998,6 +1000,8 @@ export const i18n = {
     },
     a11y: {
       skipToContent: 'Skip to main content',
+      incompleteEdges: (n) => `${n} incomplete edges`,
+      adminSettingsTabs: 'Admin settings tabs',
     },
     finishWorkday: {
       title: 'Finish Workday',
