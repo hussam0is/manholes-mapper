@@ -5,6 +5,7 @@
  */
 
 import { createMaterials, EDGE_TYPE_COLORS } from './three-d-materials.js';
+import { EDGE_TYPES } from '../state/constants.js';
 
 // ── Default values for missing data ─────────────────────────────────────────
 export const DEFAULT_DEPTH = 2.0;            // manhole shaft depth (m) when no edges have measurements
@@ -358,7 +359,7 @@ export function buildScene(THREE, data, CSS2DObject, issues = []) {
       curve, PIPE_TUBULAR_SEGMENTS, pipeRadius, PIPE_RADIAL_SEGMENTS, false
     );
 
-    const pipeMat = materials.pipe(edge.edge_type || 'קו ראשי');
+    const pipeMat = materials.pipe(edge.edge_type || EDGE_TYPES[0]);
     const finalMat = isEstimated ? materials.estimated(pipeMat) : pipeMat;
     const pipeMesh = new THREE.Mesh(tubeGeo, finalMat);
     pipeMesh.userData = { type: 'edge', edgeId: edge.id, tailId: tailId, headId: headId };
