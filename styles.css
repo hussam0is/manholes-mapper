@@ -1095,7 +1095,7 @@ select.btn:focus-visible {
 
 .canvas-toolbar {
   position: absolute;
-  top: 12px;
+  top: max(12px, env(safe-area-inset-top, 0px));
   inset-inline-end: 12px;
   z-index: 150;
   /* keep under header */
@@ -8257,15 +8257,21 @@ select.invalid:focus {
   align-items: center;
   justify-content: center;
   padding: 1rem;
+  padding-top: max(1rem, env(safe-area-inset-top, 0px));
+  padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
 }
 
 .login-panel-content {
   width: 100%;
   max-width: 420px;
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
   background: var(--color-surface);
   border-radius: var(--radius);
   box-shadow: 0 20px 60px rgba(2, 6, 23, 0.15);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .login-panel-header {
@@ -8576,6 +8582,26 @@ html[dir="rtl"] .auth-form-wrapper {
 
   .auth-loading-content {
     background: var(--color-surface-alt);
+  }
+}
+
+/* Compact login on small portrait viewports to prevent language toggle cutoff */
+@media (max-width: 480px) and (max-height: 820px) {
+  .login-panel-header {
+    padding: 1.25rem 1.5rem 1rem;
+  }
+  .login-logo {
+    height: 36px;
+    margin-bottom: 0.5rem;
+  }
+  .login-panel-header h1 {
+    font-size: 1.25rem;
+  }
+  .auth-form-wrapper {
+    padding: 1rem 1.5rem 1.5rem;
+  }
+  .auth-form-container {
+    padding: 1rem 1.5rem 1.5rem;
   }
 }
 
