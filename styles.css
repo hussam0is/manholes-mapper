@@ -3303,7 +3303,7 @@ input.floating-keyboard-active {
 
 /* Admin modal actions bar */
 .admin-actions {
-  background: var(--color-bg, #f8fafc);
+  background: var(--color-bg);
   border-top: 1px solid var(--color-border);
   padding: 1.25rem 1.5rem;
   display: flex;
@@ -3311,6 +3311,7 @@ input.floating-keyboard-active {
   align-items: center;
   gap: 0.875rem;
   flex-wrap: wrap;
+  flex-shrink: 0; /* Never shrink — always visible at bottom of flex column */
 }
 
 .admin-import-export {
@@ -6765,14 +6766,14 @@ select.invalid:focus {
   width: 100%;
   padding: 0.875rem 1rem;
   border: none;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: linear-gradient(135deg, var(--color-bg) 0%, var(--color-surface-hover) 100%);
   cursor: pointer;
   transition: all 0.15s ease;
   text-align: start;
 }
 
 .admin-menu-group-header:hover {
-  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  background: linear-gradient(135deg, var(--color-surface-hover) 0%, var(--color-border) 100%);
 }
 
 .admin-menu-group-title {
@@ -6852,7 +6853,7 @@ select.invalid:focus {
 }
 
 .admin-toggle-item:hover {
-  background: var(--color-surface-hover, #e2e8f0);
+  background: var(--color-surface-hover);
 }
 
 .admin-toggle-label {
@@ -6868,7 +6869,7 @@ select.invalid:focus {
   position: relative;
   width: 44px;
   height: 24px;
-  background: #cbd5e1;
+  background: var(--color-border-strong);
   border-radius: 24px;
   transition: all 0.25s ease;
   flex-shrink: 0;
@@ -6881,7 +6882,7 @@ select.invalid:focus {
   left: 2px;
   width: 20px;
   height: 20px;
-  background: #fff;
+  background: var(--color-surface);
   border-radius: 50%;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   transition: all 0.25s ease;
@@ -7004,7 +7005,7 @@ select.invalid:focus {
   border-radius: 8px;
   font-size: 16px;
   font-weight: 500;
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
   color: var(--color-text);
   transition: all 0.2s ease;
 }
@@ -11269,11 +11270,11 @@ button:focus-visible,
   }
 
   .auth-form-container {
-    padding: 0.25rem 0.75rem 0;
+    padding: 0.125rem 0.75rem 0;
   }
 
   .auth-form {
-    gap: 0.2rem;
+    gap: 0.125rem;
   }
 
   .auth-form-title {
@@ -11293,19 +11294,20 @@ button:focus-visible,
   /* Audit fix: labels at 0.75rem (12px) minimum for readability */
   .auth-form-field label {
     font-size: 0.75rem;
+    line-height: 1.2;
   }
 
   .auth-form-field input {
-    padding: 0.35rem 0.75rem;
+    padding: 0.3rem 0.75rem;
     font-size: 0.85rem;
-    min-height: 44px;
+    min-height: 36px;
     box-sizing: border-box;
   }
 
   .auth-form-submit {
-    padding: 0.35rem;
+    padding: 0.3rem;
     font-size: 0.85rem;
-    min-height: 44px;
+    min-height: 38px;
     margin-top: 0;
   }
 
@@ -11316,33 +11318,46 @@ button:focus-visible,
   }
 
   .auth-form-footer {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     margin-top: 0;
+    line-height: 1;
   }
 
   .auth-form-link {
     display: inline-block;
-    padding: 0.35rem 0.75rem;
-    min-height: 44px;
+    padding: 0.25rem 0.5rem;
+    min-height: 36px;
     line-height: 1.5;
     box-sizing: border-box;
   }
 
-  /* Language toggle: 44px touch target, compact layout */
+  /* Language toggle: compact in landscape, inline with footer to save vertical space */
   .auth-lang-toggle {
     margin-top: 0;
   }
 
   .auth-lang-toggle button {
-    min-height: 44px;
-    padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
+    min-height: 36px;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.7rem;
   }
 
-  /* Error message: compact */
+  /* Error message: compact, no extra margin, minimal height impact */
   .auth-form-error {
-    padding: 0.3rem 0.75rem;
-    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.7rem;
+    margin: 0;
+    gap: 0.25rem;
+  }
+
+  .auth-form-error .material-icons {
+    font-size: 1rem;
+  }
+
+  /* Password toggle: compact in landscape */
+  .auth-password-toggle {
+    width: 36px;
+    height: 36px;
   }
 }
 
@@ -11820,6 +11835,14 @@ button:focus-visible,
   }
 }
 
+/* Hide canvas toolbar and legend when admin screen is open (all viewports) */
+body.admin-screen .canvas-toolbar,
+body.admin-screen #edgeLegend,
+body.admin-screen .canvas-fab-toolbar,
+body.admin-screen #canvasFabToggle {
+  display: none !important;
+}
+
 /* --- Landscape: Admin Panel --- */
 @media (max-height: 450px) and (orientation: landscape) {
   .admin-modern-modal {
@@ -11957,14 +11980,6 @@ button:focus-visible,
     overflow-y: auto;
     padding: 0.5rem 0.75rem;
     padding-bottom: 0.5rem;
-  }
-
-  /* Hide canvas toolbar and legend when admin screen is open */
-  body.admin-screen .canvas-toolbar,
-  body.admin-screen #edgeLegend,
-  body.admin-screen .canvas-fab-toolbar,
-  body.admin-screen #canvasFabToggle {
-    display: none !important;
   }
 
   /* Input Flow screen same fix */

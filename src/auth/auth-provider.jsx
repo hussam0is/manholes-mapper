@@ -6,7 +6,7 @@
  * All strings use window.t() for i18n support.
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { signInWithEmail, signUpWithEmail, signOutUser, getCurrentSession } from './auth-client.js';
 import { refreshSession } from './auth-guard.js';
@@ -131,10 +131,12 @@ function LanguageToggle() {
     }
 
     // 5. Update the login panel wrapper text (outside React)
+    //    Detect whether we are on signup or login to use the correct i18n keys
+    const isOnSignup = (location.hash || '').includes('/signup');
     const loginTitle = document.getElementById('loginTitle');
     const loginSubtitle = document.getElementById('loginSubtitle');
-    if (loginTitle) loginTitle.textContent = tt('auth.loginTitle');
-    if (loginSubtitle) loginSubtitle.textContent = tt('auth.loginSubtitle');
+    if (loginTitle) loginTitle.textContent = tt(isOnSignup ? 'auth.signupTitle' : 'auth.loginTitle');
+    if (loginSubtitle) loginSubtitle.textContent = tt(isOnSignup ? 'auth.signupSubtitle' : 'auth.loginSubtitle');
 
     // 6. Force React re-render so all tt() calls pick up the new language
     setTick(t => t + 1);
@@ -259,6 +261,18 @@ function SignUpForm({ onSuccess, signInUrl = '#/login' }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const formRef = useRef(null);
+
+  // Scroll the closest scrollable ancestor (auth-form-wrapper) to top on mount
+  // so the Name field is always visible, especially in landscape where the form
+  // wrapper has overflow-y: auto and scrollHeight > clientHeight.
+  useEffect(() => {
+    if (!formRef.current) return;
+    const wrapper = formRef.current.closest('.auth-form-wrapper');
+    if (wrapper) {
+      wrapper.scrollTop = 0;
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -301,7 +315,7 @@ function SignUpForm({ onSuccess, signInUrl = '#/login' }) {
 
   return (
     <div className="auth-form-container">
-      <form onSubmit={handleSubmit} className="auth-form">
+      <form ref={formRef} onSubmit={handleSubmit} className="auth-form">
         <h2 className="auth-form-title">{tt('auth.createAccount')}</h2>
         <p className="auth-form-subtitle">{tt('auth.signUpToStart')}</p>
 
@@ -391,6 +405,9 @@ function SignUpForm({ onSuccess, signInUrl = '#/login' }) {
 export function mountSignIn(container, props = {}) {
   if (!container) return;
 
+  // Reset scroll position so form starts at top (landscape signup may have scrolled)
+  container.scrollTop = 0;
+
   const root = getRoot(container);
   root.render(
     React.createElement(SignInForm, {
@@ -398,6 +415,9 @@ export function mountSignIn(container, props = {}) {
       ...props
     })
   );
+
+  // After React renders, ensure scroll is at top
+  requestAnimationFrame(() => { container.scrollTop = 0; });
 }
 
 /**
@@ -408,6 +428,11 @@ export function mountSignIn(container, props = {}) {
 export function mountSignUp(container, props = {}) {
   if (!container) return;
 
+  // Reset scroll position so Name field (first field) is visible at top.
+  // Use both immediate and deferred reset: immediate clears any stale
+  // scroll from the login form, deferred ensures React has rendered.
+  container.scrollTop = 0;
+
   const root = getRoot(container);
   root.render(
     React.createElement(SignUpForm, {
@@ -415,6 +440,14 @@ export function mountSignUp(container, props = {}) {
       ...props
     })
   );
+
+  // After React renders, ensure scroll is at top.
+  // Use double-rAF: first rAF fires after React commits to DOM,
+  // second rAF fires after the browser has laid out the new content.
+  requestAnimationFrame(() => {
+    container.scrollTop = 0;
+    requestAnimationFrame(() => { container.scrollTop = 0; });
+  });
 }
 
 /**
