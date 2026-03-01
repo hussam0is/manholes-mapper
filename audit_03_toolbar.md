@@ -74,8 +74,8 @@
 - **Affected**: `styles.css` line 1935
 - **Problem**: When the FAB is collapsed, the sub-items (recenterDensityBtn, recenterBtn, zoomToFitBtn) show at 14x14px instead of being fully hidden. The `transform: scale(0.4)` brings them down to 40% of their 36px size = ~14px, with `opacity: 0` they should be invisible, but they register as having dimensions. This could cause accidental tap targets near the FAB.
 - **Fix**: Add `pointer-events: none; visibility: hidden;` to collapsed sub-items, or ensure `max-width: 0; overflow: hidden` on the actions container fully clips them.
-- **Status**: OPEN
-- **Commit**: --
+- **Status**: FIXED (already applied in commit 3d9deab — `.canvas-fab-toolbar:not(.open) .canvas-fab-toolbar__item` has `pointer-events: none; visibility: hidden`)
+- **Commit**: 3d9deab
 
 ## Issue #8 -- Canvas toolbar uses hardcoded hex colors instead of design tokens
 - **Severity**: MEDIUM
