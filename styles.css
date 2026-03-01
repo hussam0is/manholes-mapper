@@ -2494,7 +2494,7 @@ canvas {
 .details-actions {
   position: sticky;
   bottom: 0;
-  background: linear-gradient(180deg, transparent, var(--color-surface, #fff) 32%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-surface, #fff) 0%, transparent), var(--color-surface, #fff) 32%);
   padding-top: 0.5rem;
   padding-bottom: 16px;
 }
@@ -5983,7 +5983,7 @@ select.invalid:focus {
 
   /* Better touch targets for mobile */
   .btn {
-    min-height: 40px;
+    min-height: var(--touch-target-min);
   }
 
   /* Adjust sidebar header for mobile */
@@ -5996,7 +5996,7 @@ select.invalid:focus {
   #sidebar input[type="number"],
   #sidebar input[type="date"],
   #sidebar select {
-    min-height: 40px;
+    min-height: var(--touch-target-min);
     font-size: 16px;
     /* Prevents zoom on iOS */
   }
@@ -10270,6 +10270,36 @@ button:focus-visible,
   background: var(--color-3d-bg, #1a1a2e);
   display: flex;
   flex-direction: column;
+
+  /* 3D-scoped design tokens — the 3D view is always dark-themed */
+  --color-3d-text: #fff;
+  --color-3d-text-muted: #94a3b8;
+  --color-3d-text-secondary: #e2e8f0;
+  --color-3d-surface: rgba(0, 0, 0, 0.6);
+  --color-3d-surface-alt: rgba(15, 23, 42, 0.82);
+  --color-3d-glass: rgba(255, 255, 255, 0.08);
+  --color-3d-glass-hover: rgba(255, 255, 255, 0.15);
+  --color-3d-border: rgba(255, 255, 255, 0.15);
+  --color-3d-border-muted: rgba(255, 255, 255, 0.1);
+  --color-3d-primary: rgba(37, 99, 235, 0.35);
+  --color-3d-primary-border: rgba(37, 99, 235, 0.6);
+  --color-3d-primary-hover: rgba(37, 99, 235, 0.5);
+  --color-3d-primary-active: rgba(37, 99, 235, 0.7);
+  --color-3d-danger: rgba(239, 68, 68, 0.85);
+  --color-3d-danger-glow: rgba(239, 68, 68, 0.6);
+  --color-3d-danger-muted: rgba(239, 68, 68, 0.25);
+  --color-3d-warning: #eab308;
+  --color-3d-danger-solid: #ef4444;
+  --color-3d-danger-text: #fca5a5;
+  --color-3d-danger-border: rgba(239, 68, 68, 0.4);
+  --color-3d-pipe-label: rgba(37, 99, 235, 0.55);
+  --color-3d-primary-muted: rgba(37, 99, 235, 0.2);
+  --color-3d-primary-border-muted: rgba(37, 99, 235, 0.4);
+  --color-3d-sprint: #fb923c;
+  --color-3d-swatch-main: #2563eb;
+  --color-3d-swatch-drainage: #fb923c;
+  --color-3d-swatch-secondary: #0d9488;
+  --color-3d-swatch-estimated: #888;
 }
 
 .three-d-overlay__header {
@@ -10277,9 +10307,9 @@ button:focus-visible,
   align-items: center;
   justify-content: space-between;
   padding: var(--space-2) var(--space-4);
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--color-3d-surface);
   backdrop-filter: blur(4px);
-  color: #fff;
+  color: var(--color-3d-text);
   flex-shrink: 0;
   z-index: 1;
 }
@@ -10298,17 +10328,17 @@ button:focus-visible,
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #fff;
+  background: var(--color-3d-glass);
+  border: 1px solid var(--color-3d-border);
+  color: var(--color-3d-text);
   cursor: pointer;
   border-radius: var(--radius);
   transition: background 0.15s, border-color 0.15s;
 }
 
 .three-d-overlay__close:hover {
-  background: rgba(239, 68, 68, 0.45);
-  border-color: rgba(239, 68, 68, 0.6);
+  background: var(--color-3d-danger);
+  border-color: var(--color-3d-danger-glow);
 }
 
 .three-d-overlay__canvas-container {
@@ -10348,7 +10378,7 @@ button:focus-visible,
   backdrop-filter: blur(4px);
   border-radius: var(--radius);
   padding: 0;
-  color: #fff;
+  color: var(--color-3d-text);
   font-size: 0.75rem;
   z-index: 1;
   max-width: 200px;
@@ -10363,7 +10393,7 @@ button:focus-visible,
   padding: var(--space-2) var(--space-3);
   background: none;
   border: none;
-  color: #fff;
+  color: var(--color-3d-text);
   cursor: pointer;
   font-size: 0.8rem;
   font-weight: 600;
@@ -10371,7 +10401,7 @@ button:focus-visible,
   min-height: var(--touch-target-min, 44px);
 }
 .three-d-overlay__legend-toggle:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--color-3d-glass-hover);
 }
 .three-d-overlay__legend-toggle .material-icons:first-child {
   font-size: 16px;
@@ -10382,7 +10412,7 @@ button:focus-visible,
 }
 .three-d-overlay__legend-chevron {
   font-size: 18px !important;
-  color: #94a3b8;
+  color: var(--color-3d-text-muted);
   transition: transform 0.2s;
 }
 .three-d-overlay__legend--collapsed .three-d-overlay__legend-chevron {
@@ -10430,7 +10460,7 @@ button:focus-visible,
   backdrop-filter: blur(4px);
   border-radius: var(--radius);
   padding: var(--space-3) var(--space-4);
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--color-3d-text-secondary);
   font-size: 0.85rem;
   line-height: 1.8;
   z-index: 1;
@@ -10444,7 +10474,7 @@ button:focus-visible,
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: var(--color-3d-text);
   font-size: 1.1rem;
   gap: var(--space-2);
   background: rgba(0, 0, 0, 0.3);
@@ -10453,8 +10483,8 @@ button:focus-visible,
 
 /* 3D label (CSS2DRenderer) */
 .three-d-label {
-  color: #fff;
-  background: rgba(0, 0, 0, 0.6);
+  color: var(--color-3d-text);
+  background: var(--color-3d-surface);
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 11px;
@@ -10467,15 +10497,15 @@ button:focus-visible,
 .three-d-pipe-label {
   font-size: 9px;
   font-weight: 500;
-  background: rgba(37, 99, 235, 0.55);
+  background: var(--color-3d-pipe-label);
   padding: 1px 5px;
   border-radius: 3px;
 }
 
 /* ── 3D Issue badges ── */
 .three-d-issue-badge {
-  background: rgba(239, 68, 68, 0.85);
-  color: #fff;
+  background: var(--color-3d-danger);
+  color: var(--color-3d-text);
   width: 22px;
   height: 22px;
   border-radius: 50%;
@@ -10483,7 +10513,7 @@ button:focus-visible,
   align-items: center;
   justify-content: center;
   pointer-events: none;
-  box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+  box-shadow: 0 0 8px var(--color-3d-danger-glow);
 }
 .three-d-issue-badge .material-icons {
   font-size: 14px;
@@ -10494,10 +10524,10 @@ button:focus-visible,
   position: absolute;
   background: rgba(15, 23, 42, 0.92);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(239, 68, 68, 0.4);
+  border: 1px solid var(--color-3d-danger-border);
   border-radius: 10px;
   padding: 10px;
-  color: #e2e8f0;
+  color: var(--color-3d-text-secondary);
   font-size: 0.8rem;
   z-index: 10;
   min-width: 180px;
@@ -10510,34 +10540,37 @@ button:focus-visible,
   gap: 6px;
   margin-bottom: 8px;
   padding-bottom: 6px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  border-bottom: 1px solid var(--color-3d-border);
   font-weight: 600;
 }
 .three-d-fix-popup__header .material-icons:first-child {
-  color: #ef4444;
+  color: var(--color-3d-danger-solid);
   font-size: 18px;
 }
 .three-d-fix-popup__close {
   margin-inline-start: auto;
   background: none;
   border: none;
-  color: #94a3b8;
+  color: var(--color-3d-text-muted);
   cursor: pointer;
   padding: 2px;
   border-radius: 4px;
   display: flex;
   align-items: center;
+  justify-content: center;
+  min-width: var(--touch-target-min, 44px);
+  min-height: var(--touch-target-min, 44px);
 }
 .three-d-fix-popup__close:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-3d-text);
+  background: var(--color-3d-border-muted);
 }
 .three-d-fix-popup__close .material-icons {
   font-size: 16px;
 }
 .three-d-fix-popup__issue-label {
   font-size: 0.7rem;
-  color: #94a3b8;
+  color: var(--color-3d-text-muted);
   margin: 6px 0 3px;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -10549,23 +10582,23 @@ button:focus-visible,
   width: 100%;
   padding: 7px 10px;
   margin-bottom: 3px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: var(--color-3d-glass);
+  border: 1px solid var(--color-3d-border);
   border-radius: 6px;
-  color: #e2e8f0;
+  color: var(--color-3d-text-secondary);
   cursor: pointer;
   font-size: 0.75rem;
   text-align: start;
   transition: background 0.15s;
-  min-height: 40px;
+  min-height: var(--touch-target-min, 44px);
 }
 .three-d-fix-popup__btn:hover,
 .three-d-fix-popup__btn:active {
-  background: rgba(255, 255, 255, 0.16);
+  background: var(--color-3d-glass-hover);
 }
 .three-d-fix-popup__btn .material-icons {
   font-size: 16px;
-  color: #eab308;
+  color: var(--color-3d-warning);
 }
 
 @keyframes spin {
@@ -10596,9 +10629,9 @@ button:focus-visible,
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  background: rgba(37, 99, 235, 0.35);
-  border: 1px solid rgba(37, 99, 235, 0.6);
-  color: #fff;
+  background: var(--color-3d-primary);
+  border: 1px solid var(--color-3d-primary-border);
+  color: var(--color-3d-text);
   cursor: pointer;
   border-radius: var(--radius);
   padding: 0 var(--space-3);
@@ -10608,7 +10641,7 @@ button:focus-visible,
 }
 
 .three-d-overlay__mode-toggle:hover {
-  background: rgba(37, 99, 235, 0.5);
+  background: var(--color-3d-primary-hover);
 }
 
 .three-d-overlay__mode-label {
@@ -10622,10 +10655,10 @@ button:focus-visible,
   display: flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--color-3d-border-muted);
   border: 1px solid rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(4px);
-  color: #fff;
+  color: var(--color-3d-text);
   cursor: pointer;
   border-radius: var(--radius);
   padding: 0 var(--space-3);
@@ -10645,8 +10678,8 @@ button:focus-visible,
   display: flex;
   align-items: center;
   gap: 2px;
-  background: rgba(37, 99, 235, 0.2);
-  border: 1px solid rgba(37, 99, 235, 0.4);
+  background: var(--color-3d-primary-muted);
+  border: 1px solid var(--color-3d-primary-border-muted);
   border-radius: var(--radius);
   padding: 2px;
 }
@@ -10666,7 +10699,7 @@ button:focus-visible,
 }
 
 .three-d-overlay__speed-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--color-3d-glass-hover);
 }
 
 .three-d-overlay__speed-btn .material-icons {
@@ -10678,7 +10711,7 @@ button:focus-visible,
   text-align: center;
   font-size: 0.75rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--color-3d-text);
   font-variant-numeric: tabular-nums;
 }
 
@@ -10703,7 +10736,7 @@ button:focus-visible,
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(4px);
   border: 1px solid rgba(255, 255, 255, 0.25);
-  color: #fff;
+  color: var(--color-3d-text);
   cursor: pointer;
   border-radius: 12px;
   transition: background 0.15s, transform 0.1s;
@@ -10711,12 +10744,12 @@ button:focus-visible,
 }
 
 .three-d-overlay__orbit-btn:hover {
-  background: rgba(37, 99, 235, 0.5);
+  background: var(--color-3d-primary-hover);
 }
 
 .three-d-overlay__orbit-btn:active {
   transform: scale(0.92);
-  background: rgba(37, 99, 235, 0.7);
+  background: var(--color-3d-primary-active);
 }
 
 .three-d-overlay__orbit-btn .material-icons {
@@ -10780,11 +10813,11 @@ button:focus-visible,
   position: absolute;
   top: 60px;
   inset-inline-end: 12px;
-  background: rgba(15, 23, 42, 0.82);
+  background: var(--color-3d-surface-alt);
   backdrop-filter: blur(6px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-3d-border-muted);
   border-radius: 10px;
-  color: #e2e8f0;
+  color: var(--color-3d-text-secondary);
   z-index: 1;
   min-width: 200px;
   max-width: 280px;
@@ -10803,7 +10836,7 @@ button:focus-visible,
   gap: 6px;
   background: none;
   border: none;
-  color: #e2e8f0;
+  color: var(--color-3d-text-secondary);
   padding: 10px 12px;
   cursor: pointer;
   font-size: 0.82rem;
@@ -10813,12 +10846,12 @@ button:focus-visible,
   min-height: var(--touch-target-min, 44px);
 }
 .three-d-overlay__issues-toggle .material-icons:first-child {
-  color: #ef4444;
+  color: var(--color-3d-danger-solid);
   font-size: 18px;
 }
 .three-d-overlay__issues-count {
-  background: rgba(239, 68, 68, 0.25);
-  color: #fca5a5;
+  background: var(--color-3d-danger-muted);
+  color: var(--color-3d-danger-text);
   padding: 1px 7px;
   border-radius: 10px;
   font-size: 0.72rem;
@@ -10831,7 +10864,7 @@ button:focus-visible,
 }
 .three-d-overlay__issues-chevron {
   font-size: 20px !important;
-  color: #94a3b8;
+  color: var(--color-3d-text-muted);
   transition: transform 0.2s;
 }
 .three-d-overlay__issues-panel:not(.collapsed) .three-d-overlay__issues-chevron {
@@ -10851,13 +10884,14 @@ button:focus-visible,
   border-radius: 6px;
   font-size: 0.72rem;
   transition: background 0.15s;
+  min-height: var(--touch-target-min, 44px);
 }
 .three-d-overlay__issue-row:hover {
   background: rgba(255, 255, 255, 0.12);
 }
 .three-d-overlay__issue-row .material-icons {
   font-size: 16px;
-  color: #ef4444;
+  color: var(--color-3d-danger-solid);
   flex-shrink: 0;
 }
 .three-d-overlay__issue-text {
@@ -10986,11 +11020,12 @@ button:focus-visible,
     font-size: 0.7rem;
   }
   .three-d-overlay__issues-panel.collapsed {
-    max-height: 36px;
+    max-height: var(--touch-target-min, 44px);
   }
   .three-d-overlay__issues-toggle {
     padding: 6px 8px;
     font-size: 0.72rem;
+    min-height: var(--touch-target-min, 44px);
   }
   .three-d-overlay__issues-count {
     font-size: 0.65rem;
