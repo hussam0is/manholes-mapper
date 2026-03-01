@@ -197,7 +197,6 @@ export function getMapType() {
  */
 export async function drawMapTiles(ctx, canvasWidth, canvasHeight, viewTranslate, viewScale, coordinateScale, onTilesLoaded, stretchX = 1, stretchY = 1) {
   if (!mapLayerEnabled || !referencePoint) {
-    console.debug('[Map] Map layer disabled or no reference point', { mapLayerEnabled, referencePoint });
     return;
   }
   
@@ -214,7 +213,6 @@ export async function drawMapTiles(ctx, canvasWidth, canvasHeight, viewTranslate
   );
   
   if (!viewBounds) {
-    console.debug('[Map] No view bounds calculated');
     return;
   }
   
@@ -227,16 +225,6 @@ export async function drawMapTiles(ctx, canvasWidth, canvasHeight, viewTranslate
   
   // Get visible tiles
   const tiles = calculateVisibleTiles(viewBounds, zoom);
-  
-  console.debug('[Map] Drawing map tiles', { 
-    viewBounds, 
-    zoom, 
-    tilesCount: tiles.length,
-    effectiveScale,
-    referencePoint,
-    coordinateScale,
-    viewScale
-  });
   
   // Draw each tile
   for (const tile of tiles) {
@@ -295,27 +283,43 @@ export async function drawMapTiles(ctx, canvasWidth, canvasHeight, viewTranslate
  */
 export function drawMapAttribution(ctx, canvasWidth, canvasHeight) {
   if (!mapLayerEnabled) return;
-  
+
   ctx.save();
-  
+
   const text = 'Map: Esri World Imagery';
   const padding = 4;
   const fontSize = 10;
-  
+
   ctx.font = `${fontSize}px sans-serif`;
   const metrics = ctx.measureText(text);
-  
+
   const x = canvasWidth - metrics.width - padding - 8;
   const y = canvasHeight - padding - 4;
-  
+
+  // Read theme colors from CSS custom properties for dark mode support
+  const rootStyle = typeof document !== 'undefined'
+    ? getComputedStyle(document.documentElement)
+    : null;
+  const bgColor = rootStyle
+    ? rootStyle.getPropertyValue('--color-surface').trim() || 'rgba(255, 255, 255, 0.7)'
+    : 'rgba(255, 255, 255, 0.7)';
+  const textColor = rootStyle
+    ? rootStyle.getPropertyValue('--color-text-secondary').trim() || '#333'
+    : '#333';
+
   // Background
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+  ctx.fillStyle = bgColor.startsWith('#') || bgColor.startsWith('rgb')
+    ? bgColor.replace(')', ', 0.7)').replace('rgb(', 'rgba(')
+    : bgColor;
+  // Simpler approach: use semi-transparent surface color
+  ctx.globalAlpha = 0.8;
   ctx.fillRect(x - padding, y - fontSize, metrics.width + padding * 2, fontSize + padding);
-  
+  ctx.globalAlpha = 1.0;
+
   // Text
-  ctx.fillStyle = '#333';
+  ctx.fillStyle = textColor;
   ctx.fillText(text, x, y);
-  
+
   ctx.restore();
 }
 

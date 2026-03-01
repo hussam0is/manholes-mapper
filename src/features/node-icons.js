@@ -365,22 +365,48 @@ export function drawNodeIcon(ctx, node, radius, colors, selectedNode, options = 
     fillColor = node.type === 'type2' ? colors.node.fillMissing : colors.node.fillDefault;
   }
   
-  // Dispatch to appropriate icon drawer
-  if (node.nodeType === 'ForLater' || node.nodeType === 'למדידה מאוחרת') {
-    drawForLaterIcon(ctx, node.x, node.y, radius, colors, isSelected, fillColor, viewScale);
-  } else if (node.nodeType === 'Home') {
-    drawHomeIcon(ctx, node.x, node.y, radius, colors, isSelected, fillColor, viewScale);
-  } else if (node.nodeType === 'Drainage' || node.nodeType === 'קולטן') {
-    drawDrainageIcon(ctx, node.x, node.y, radius, colors, isSelected, fillColor, viewScale);
-  } else if (node.nodeType === 'Covered' || node.nodeType === 'שוחה מכוסה') {
-    drawCoveredIcon(ctx, node.x, node.y, radius, colors, isSelected, fillColor, viewScale);
+  // LOD: when zoomed out very far (node would be < ~6px on screen), draw a simple filled circle
+  // instead of detailed icons with multiple paths, bezier curves, and clipping.
+  // viewScale here is sizeVS (the auto-size divisor), so larger = more zoomed out.
+  if (viewScale > 3) {
+    ctx.save();
+    const isDrainage = node.nodeType === 'Drainage' || node.nodeType === 'קולטן';
+    if (isDrainage) {
+      const w = radius * 1.8, h = radius * 1.3;
+      ctx.fillStyle = fillColor;
+      ctx.fillRect(node.x - w / 2, node.y - h / 2, w, h);
+      ctx.strokeStyle = colors.node.stroke;
+      ctx.lineWidth = 2 / viewScale;
+      ctx.strokeRect(node.x - w / 2, node.y - h / 2, w, h);
+    } else {
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = fillColor;
+      ctx.fill();
+      ctx.strokeStyle = colors.node.stroke;
+      ctx.lineWidth = 2 / viewScale;
+      ctx.stroke();
+    }
+    ctx.restore();
   } else {
-    // Default manhole icon
-    drawManholeIcon(ctx, node.x, node.y, radius, colors, isSelected, fillColor, viewScale);
+    // Dispatch to appropriate icon drawer (detailed)
+    if (node.nodeType === 'ForLater' || node.nodeType === 'למדידה מאוחרת') {
+      drawForLaterIcon(ctx, node.x, node.y, radius, colors, isSelected, fillColor, viewScale);
+    } else if (node.nodeType === 'Home') {
+      drawHomeIcon(ctx, node.x, node.y, radius, colors, isSelected, fillColor, viewScale);
+    } else if (node.nodeType === 'Drainage' || node.nodeType === 'קולטן') {
+      drawDrainageIcon(ctx, node.x, node.y, radius, colors, isSelected, fillColor, viewScale);
+    } else if (node.nodeType === 'Covered' || node.nodeType === 'שוחה מכוסה') {
+      drawCoveredIcon(ctx, node.x, node.y, radius, colors, isSelected, fillColor, viewScale);
+    } else {
+      // Default manhole icon
+      drawManholeIcon(ctx, node.x, node.y, radius, colors, isSelected, fillColor, viewScale);
+    }
   }
 
-  // Draw coordinate status indicator if enabled
-  if (showCoordinateStatus) {
+  // Draw coordinate status indicator if enabled.
+  // LOD: skip when zoomed out far (viewScale > 2.5 means indicator would be < ~3px on screen)
+  if (showCoordinateStatus && viewScale < 2.5) {
     const fixQuality = node.gnssFixQuality;
     // Nodes in coordinatesMap come from the cords file (RTK Fixed survey).
     // Treat them as Fixed (4) even if gnssFixQuality wasn't persisted yet.

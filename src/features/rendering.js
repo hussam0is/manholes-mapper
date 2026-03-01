@@ -30,10 +30,10 @@ export function renderEdgeLegend(legendEl, edgeTypeColors) {
  * @param {number} [viewStretchX=1] - Horizontal stretch factor
  * @param {number} [viewStretchY=1] - Vertical stretch factor
  */
-export function drawInfiniteGrid(ctx, viewTranslate, viewScale, canvas, viewStretchX = 1, viewStretchY = 1) {
-  const rect = canvas.getBoundingClientRect();
-  const screenWidth = rect.width;
-  const screenHeight = rect.height;
+export function drawInfiniteGrid(ctx, viewTranslate, viewScale, canvas, viewStretchX = 1, viewStretchY = 1, screenW, screenH) {
+  // Use pre-computed dimensions when available to avoid getBoundingClientRect() reflow per frame
+  const screenWidth = screenW || canvas.getBoundingClientRect().width;
+  const screenHeight = screenH || canvas.getBoundingClientRect().height;
   const worldStep = 20;
   const screenStepX = worldStep * viewScale * viewStretchX;
   const screenStepY = worldStep * viewScale * viewStretchY;

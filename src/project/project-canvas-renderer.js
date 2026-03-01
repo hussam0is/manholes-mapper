@@ -53,7 +53,16 @@ export function drawBackgroundSketches(ctx, sketches, opts) {
     const nMap = new Map();
     for (const n of nodes) nMap.set(String(n.id), n);
 
-    // ── Draw edges ────────────────────────────────────────────────────
+    // ── Draw edges (batched by color group) ─────────────────────────
+    // Collect visible edge segments into color buckets, then draw each bucket
+    // with a single beginPath/stroke + fill instead of per-edge draw calls.
+    const colorPrimary = COLORS.edge.typePrimary;
+    const colorDrainage = COLORS.edge.typeDrainage;
+    const colorSecondary = COLORS.edge.typeSecondary;
+    const lineBuckets = { primary: [], drainage: [], secondary: [] };
+    const arrowBuckets = { primary: [], drainage: [], secondary: [] };
+    const arrowLen = 8 / viewScale;
+
     for (const edge of edges) {
       const tn = edge.tail != null ? nMap.get(String(edge.tail)) : null;
       const hn = edge.head != null ? nMap.get(String(edge.head)) : null;
@@ -84,29 +93,51 @@ export function drawBackgroundSketches(ctx, sketches, opts) {
       const eMinY = Math.min(y1, y2), eMaxY = Math.max(y1, y2);
       if (eMaxX < visMinX || eMinX > visMaxX || eMaxY < visMinY || eMinY > visMaxY) continue;
 
-      // Determine color
+      // Determine color bucket
       const edgeType = edge.pipeType || edge.lineType || 'primary';
-      let strokeColor;
-      if (edgeType === 'secondary') strokeColor = COLORS.edge.typeSecondary;
-      else if (edgeType === 'drainage') strokeColor = COLORS.edge.typeDrainage;
-      else strokeColor = COLORS.edge.typePrimary;
+      const bucket = edgeType === 'secondary' ? 'secondary'
+        : edgeType === 'drainage' ? 'drainage' : 'primary';
 
+      lineBuckets[bucket].push(x1, y1, x2, y2);
+
+      // Precompute arrow vertices
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      const cosA1 = Math.cos(angle - Math.PI / 6), sinA1 = Math.sin(angle - Math.PI / 6);
+      const cosA2 = Math.cos(angle + Math.PI / 6), sinA2 = Math.sin(angle + Math.PI / 6);
+      arrowBuckets[bucket].push(
+        x2, y2,
+        x2 - arrowLen * cosA1, y2 - arrowLen * sinA1,
+        x2 - arrowLen * cosA2, y2 - arrowLen * sinA2
+      );
+    }
+
+    ctx.lineWidth = 2 / viewScale;
+    const bucketKeys = ['primary', 'drainage', 'secondary'];
+    const bucketColors = [colorPrimary, colorDrainage, colorSecondary];
+    for (let bi = 0; bi < 3; bi++) {
+      const lines = lineBuckets[bucketKeys[bi]];
+      const arrows = arrowBuckets[bucketKeys[bi]];
+      if (lines.length === 0) continue;
+      const color = bucketColors[bi];
+
+      // Batch stroke all lines in one path
+      ctx.strokeStyle = color;
       ctx.beginPath();
-      ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = 2 / viewScale;
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
+      for (let li = 0; li < lines.length; li += 4) {
+        ctx.moveTo(lines[li], lines[li + 1]);
+        ctx.lineTo(lines[li + 2], lines[li + 3]);
+      }
       ctx.stroke();
 
-      // Arrow head
-      const angle = Math.atan2(y2 - y1, x2 - x1);
-      const arrowLen = 8 / viewScale;
+      // Batch fill all arrow triangles in one path
+      ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.fillStyle = strokeColor;
-      ctx.moveTo(x2, y2);
-      ctx.lineTo(x2 - arrowLen * Math.cos(angle - Math.PI / 6), y2 - arrowLen * Math.sin(angle - Math.PI / 6));
-      ctx.lineTo(x2 - arrowLen * Math.cos(angle + Math.PI / 6), y2 - arrowLen * Math.sin(angle + Math.PI / 6));
-      ctx.closePath();
+      for (let ai = 0; ai < arrows.length; ai += 6) {
+        ctx.moveTo(arrows[ai], arrows[ai + 1]);
+        ctx.lineTo(arrows[ai + 2], arrows[ai + 3]);
+        ctx.lineTo(arrows[ai + 4], arrows[ai + 5]);
+        ctx.closePath();
+      }
       ctx.fill();
     }
 

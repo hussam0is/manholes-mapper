@@ -4191,7 +4191,10 @@ function draw() {
   ctx.save();
   // Read devicePixelRatio once per frame (avoids 3 separate property reads per frame)
   const dpr = window.devicePixelRatio || 1;
-  
+  // Compute logical (CSS) dimensions once per frame — reused everywhere below
+  const canvasLogicalW = canvas.width / dpr;
+  const canvasLogicalH = canvas.height / dpr;
+
   // Draw map tiles as background layer (before grid and other elements)
   // Map layer stretches with coordinates (like the grid) to align with positions
   if (mapLayerEnabled && getMapReferencePoint()) {
@@ -4199,50 +4202,39 @@ function draw() {
     ctx.translate(viewTranslate.x, viewTranslate.y);
     // Apply stretch to map layer so it aligns with stretched coordinates
     ctx.scale(viewScale * viewStretchX, viewScale * viewStretchY);
-    // Use logical (CSS) dimensions for tile calculations since viewTranslate is in CSS pixels
-    // canvas.width/height are in device pixels (CSS * devicePixelRatio)
-    // dpr already read at draw() top
     drawMapTiles(
-      ctx, 
-      canvas.width / dpr,  // Logical width
-      canvas.height / dpr, // Logical height
-      viewTranslate, 
-      viewScale, 
-      coordinateScale, 
+      ctx,
+      canvasLogicalW,
+      canvasLogicalH,
+      viewTranslate,
+      viewScale,
+      coordinateScale,
       () => scheduleDraw(), // Callback to redraw when tiles load
       viewStretchX,
       viewStretchY
     );
     ctx.restore();
   }
-  
+
   // Since we scaled for device pixel ratio, treat coordinates unscaled.
   // Apply view transform for zooming and translation
   // Draw infinite grid first in screen space but offset by transform
-  drawInfiniteGrid();
+  drawInfiniteGrid(canvasLogicalW, canvasLogicalH);
   ctx.translate(viewTranslate.x, viewTranslate.y);
   ctx.scale(viewScale, viewScale);
-  
+
   // Draw GIS reference layers (sections, survey data, streets, addresses)
   // Drawn after grid but before edges/nodes so user data appears on top
-  {
-    // dpr already read at draw() top
-    drawReferenceLayers(
-      ctx,
-      coordinateScale,
-      viewScale,
-      viewStretchX,
-      viewStretchY,
-      viewTranslate,
-      canvas.width / dpr,
-      canvas.height / dpr
-    );
-  }
-  
-  // Compute visible world-coordinate bounds for culling (with generous margin)
-  // dpr already read at draw() top; reused for logical canvas dimensions
-  const canvasLogicalW = canvas.width / dpr;
-  const canvasLogicalH = canvas.height / dpr;
+  drawReferenceLayers(
+    ctx,
+    coordinateScale,
+    viewScale,
+    viewStretchX,
+    viewStretchY,
+    viewTranslate,
+    canvasLogicalW,
+    canvasLogicalH
+  );
   const cullMargin = 100 / viewScale; // extra margin in world coords
   const visMinX = -viewTranslate.x / viewScale - cullMargin;
   const visMinY = -viewTranslate.y / viewScale - cullMargin;
@@ -4443,39 +4435,59 @@ function draw() {
 
   // Draw the optimally positioned labels.
   // When map tiles are visible, add a white text halo so labels remain readable.
-  const useHalo = mapLayerEnabled && getMapReferencePoint();
-  ctx.fillStyle = COLORS.node.label;
-  for (let i = 0; i < positionedLabels.length; i++) {
-    const label = positionedLabels[i];
+  // Skip labels entirely when zoomed out so far they'd be unreadable (< ~5px screen font).
+  const effectiveFontPx = positionedLabels.length > 0
+    ? positionedLabels[0].fontSize * viewScale
+    : 16;
+  if (effectiveFontPx >= 4 && positionedLabels.length > 0) {
+    const useHalo = mapLayerEnabled && getMapReferencePoint();
     ctx.save();
-    ctx.font = useHalo ? `bold ${label.fontSize}px Arial` : `${label.fontSize}px Arial`;
-    ctx.textAlign = label.align;
-    ctx.textBaseline = label.baseline;
+    ctx.fillStyle = COLORS.node.label;
     if (useHalo) {
       ctx.strokeStyle = 'rgba(255,255,255,0.92)';
       ctx.lineWidth = 4 / sizeVS;
       ctx.lineJoin = 'round';
-      ctx.strokeText(label.text, label.x, label.y);
     }
-    ctx.fillText(label.text, label.x, label.y);
+    // Batch: set font once if all labels share the same fontSize (common case)
+    const uniformFont = positionedLabels.length > 0 ? positionedLabels[0].fontSize : 16;
+    const allSameFont = positionedLabels.every(l => l.fontSize === uniformFont);
+    if (allSameFont) {
+      ctx.font = useHalo ? `bold ${uniformFont}px Arial` : `${uniformFont}px Arial`;
+    }
+    for (let i = 0; i < positionedLabels.length; i++) {
+      const label = positionedLabels[i];
+      if (!allSameFont) {
+        ctx.font = useHalo ? `bold ${label.fontSize}px Arial` : `${label.fontSize}px Arial`;
+      }
+      ctx.textAlign = label.align;
+      ctx.textBaseline = label.baseline;
+      if (useHalo) {
+        ctx.strokeText(label.text, label.x, label.y);
+      }
+      ctx.fillText(label.text, label.x, label.y);
+    }
     ctx.restore();
   }
 
   // Draw edge measurement labels after node labels to ensure they're on top.
   // Skip when zoomed out too far — labels overlap and become unreadable.
-  if (viewScale >= 0.3) {
-    for (let i = 0; i < edges.length; i++) {
-      const edge = edges[i];
-      // Quick viewport cull for edge labels (same as edge drawing)
-      const tn = edge.tail != null ? nodeMap.get(String(edge.tail)) : null;
-      const hn = edge.head != null ? nodeMap.get(String(edge.head)) : null;
-      if (tn && hn) {
-        const sx1 = tn.x * viewStretchX, sy1 = tn.y * viewStretchY;
-        const sx2 = hn.x * viewStretchX, sy2 = hn.y * viewStretchY;
-        if (Math.max(sx1, sx2) < visMinX || Math.min(sx1, sx2) > visMaxX ||
-            Math.max(sy1, sy2) < visMinY || Math.min(sy1, sy2) > visMaxY) continue;
+  {
+    // Check effective font size: skip entirely when labels would be < 4px on screen
+    const _elf = Math.round(14 * sizeScale / sizeVS) * viewScale;
+    if (viewScale >= 0.3 && _elf >= 4) {
+      for (let i = 0; i < edges.length; i++) {
+        const edge = edges[i];
+        // Quick viewport cull for edge labels (same as edge drawing)
+        const tn = edge.tail != null ? nodeMap.get(String(edge.tail)) : null;
+        const hn = edge.head != null ? nodeMap.get(String(edge.head)) : null;
+        if (tn && hn) {
+          const sx1 = tn.x * viewStretchX, sy1 = tn.y * viewStretchY;
+          const sx2 = hn.x * viewStretchX, sy2 = hn.y * viewStretchY;
+          if (Math.max(sx1, sx2) < visMinX || Math.min(sx1, sx2) > visMaxX ||
+              Math.max(sy1, sy2) < visMinY || Math.min(sy1, sy2) > visMaxY) continue;
+        }
+        drawEdgeLabels(edge);
       }
-      drawEdgeLabels(edge);
     }
   }
   
@@ -4543,8 +4555,8 @@ function renderEdgeLegend() {
  * Draw a grid that appears infinite by offsetting with viewTranslate/viewScale.
  * The grid is rendered in screen space but aligned to world units so it scrolls with pan and zoom.
  */
-function drawInfiniteGrid() {
-  drawInfiniteGridFeature(ctx, viewTranslate, viewScale, canvas, viewStretchX, viewStretchY);
+function drawInfiniteGrid(logicalW, logicalH) {
+  drawInfiniteGridFeature(ctx, viewTranslate, viewScale, canvas, viewStretchX, viewStretchY, logicalW, logicalH);
 }
 
 /**
@@ -4642,36 +4654,82 @@ function computeNodeTypes() {
 function drawEdge(edge) {
   const tailNode = edge.tail != null ? nodeMap.get(String(edge.tail)) || null : null;
   const headNode = edge.head != null ? nodeMap.get(String(edge.head)) || null : null;
-  
-  // Apply stretch to node positions for drawing
-  const stretchedTail = stretchedNode(tailNode);
-  const stretchedHead = stretchedNode(headNode);
-  
+
   // Handle inbound dangling edges (tail is null, head is a node)
   if (edge.tail === null && headNode && edge.tailPosition) {
     drawDanglingEdgeLocal(edge, headNode, 'inbound');
     return;
   }
-  
+
   // Handle outbound dangling edges (head is null, tail is a node)
   if (edge.head === null && tailNode && (edge.isDangling || edge.danglingEndpoint)) {
     drawDanglingEdgeLocal(edge, tailNode, 'outbound');
     return;
   }
-  
-  const angle = stretchedTail && stretchedHead ? Math.atan2(stretchedHead.y - stretchedTail.y, stretchedHead.x - stretchedTail.x) : 0;
-  drawEdgeFeature(ctx, edge, stretchedTail, stretchedHead, {
-    selectedEdge,
-    edgeTypeColors: EDGE_TYPE_COLORS,
-    highlightedHalfEdge,
-    colors: COLORS,
-    viewScale: sizeVS,
-  });
-  if (!stretchedTail || !stretchedHead) return;
+
+  // Inline stretch math to avoid object allocation (stretchedNode spreads a new object per call)
+  const tx1 = tailNode ? tailNode.x * viewStretchX : 0;
+  const ty1 = tailNode ? tailNode.y * viewStretchY : 0;
+  const tx2 = headNode ? headNode.x * viewStretchX : 0;
+  const ty2 = headNode ? headNode.y * viewStretchY : 0;
+
+  const angle = tailNode && headNode ? Math.atan2(ty2 - ty1, tx2 - tx1) : 0;
+
+  // Inline edge drawing to avoid creating options object and stretched node objects per edge.
+  // This replaces drawEdgeFeature(ctx, edge, stretchedTail, stretchedHead, {...}) with direct calls.
+  if (tailNode && headNode) {
+    const resolvedColor = edge === selectedEdge
+      ? (COLORS?.edge?.selected || '#7c3aed')
+      : (EDGE_TYPE_COLORS?.[edge.edge_type] || '#555');
+    ctx.strokeStyle = resolvedColor;
+    ctx.lineWidth = 2 / sizeVS;
+    ctx.beginPath();
+    ctx.moveTo(tx1, ty1);
+    ctx.lineTo(tx2, ty2);
+    ctx.stroke();
+    // Arrowhead at head
+    const arrowLength = 10 / sizeVS;
+    ctx.beginPath();
+    ctx.moveTo(tx2, ty2);
+    ctx.lineTo(tx2 - arrowLength * Math.cos(angle - Math.PI / 6), ty2 - arrowLength * Math.sin(angle - Math.PI / 6));
+    ctx.lineTo(tx2 - arrowLength * Math.cos(angle + Math.PI / 6), ty2 - arrowLength * Math.sin(angle + Math.PI / 6));
+    ctx.closePath();
+    ctx.fillStyle = resolvedColor;
+    ctx.fill();
+    // Highlighted half-edge overlay
+    if (highlightedHalfEdge && highlightedHalfEdge.edgeId === edge.id) {
+      const dx = tx2 - tx1;
+      const dy = ty2 - ty1;
+      const ratioStart = highlightedHalfEdge.half === 'tail' ? 0.0 : 0.5;
+      const ratioEnd = highlightedHalfEdge.half === 'tail' ? 0.5 : 1.0;
+      ctx.save();
+      ctx.strokeStyle = (COLORS?.edge?.selected || '#7c3aed');
+      ctx.lineWidth = 5 / sizeVS;
+      ctx.beginPath();
+      ctx.moveTo(tx1 + dx * ratioStart, ty1 + dy * ratioStart);
+      ctx.lineTo(tx1 + dx * ratioEnd, ty1 + dy * ratioEnd);
+      ctx.stroke();
+      ctx.restore();
+    }
+  } else {
+    // Fallback for edges missing a node — use the feature function with stretched copies
+    const stretchedTail = stretchedNode(tailNode);
+    const stretchedHead = stretchedNode(headNode);
+    drawEdgeFeature(ctx, edge, stretchedTail, stretchedHead, {
+      selectedEdge,
+      edgeTypeColors: EDGE_TYPE_COLORS,
+      highlightedHalfEdge,
+      colors: COLORS,
+      viewScale: sizeVS,
+    });
+    return;
+  }
+  // LOD: skip fall icons and mid-arrows when zoomed out far (too small to see)
+  if (sizeVS > 3) return;
   if (edge.fall_depth !== '' && edge.fall_depth !== null && edge.fall_depth !== undefined) {
     const iconDistanceFromHead = ((typeof NODE_RADIUS === 'number' ? NODE_RADIUS : 20) * sizeScale + 7 * sizeScale) / sizeVS;
-    const iconX = stretchedHead.x - Math.cos(angle) * iconDistanceFromHead;
-    const iconY = stretchedHead.y - Math.sin(angle) * iconDistanceFromHead;
+    const iconX = tx2 - Math.cos(angle) * iconDistanceFromHead;
+    const iconY = ty2 - Math.sin(angle) * iconDistanceFromHead;
     const size = 16 * sizeScale / sizeVS;
     if (fallIconImage && fallIconReady) {
       ctx.save();
@@ -4705,9 +4763,8 @@ function drawEdge(edge) {
     }
   }
   // mid-arrow remains inline; labels are drawn in a later pass above nodes
-  const x1 = stretchedTail.x, y1 = stretchedTail.y, x2 = stretchedHead.x, y2 = stretchedHead.y;
-  const midX = (x1 + x2) / 2;
-  const midY = (y1 + y2) / 2;
+  const midX = (tx1 + tx2) / 2;
+  const midY = (ty1 + ty2) / 2;
   const midArrowLen = 8 / sizeVS;
   ctx.beginPath();
   ctx.moveTo(midX, midY);
@@ -4959,8 +5016,12 @@ function drawEdgeLabels(edge) {
 function drawNode(node) {
   const radius = NODE_RADIUS * sizeScale / sizeVS;
 
-  // Apply stretch to position for drawing (shapes stay the same, only position stretches)
-  const stretchedN = stretchedNode(node);
+  // Inline stretch to avoid object allocation (stretchedNode creates a spread copy).
+  // We need stretched x/y for drawing but also pass to drawNodeIcon which reads other node props.
+  // Use stretchedNodeFast (reusable scratch object) to avoid GC pressure.
+  const stretchedN = stretchedNodeFast(node);
+  const stretchedX = stretchedN.x;
+  const stretchedY = stretchedN.y;
 
   // Check if this node is selected (compare by ID since we're using stretched copies)
   const isSelected = selectedNode && String(selectedNode.id) === String(node.id);
@@ -4969,15 +5030,14 @@ function drawNode(node) {
   const coordinateOptions = {
     showCoordinateStatus: coordinatesEnabled,
     coordinatesMap: coordinatesMap,
-    isSelected: isSelected,  // Pass selection state explicitly
+    isSelected: isSelected,
     viewScale: sizeVS
   };
-  // Pass the same node for both if selected, so identity comparison works
   drawNodeIcon(ctx, stretchedN, radius, COLORS, isSelected ? stretchedN : null, coordinateOptions);
 
   // For Home nodes with directConnection badge, draw it on top
   if (node.nodeType === 'Home' && node.directConnection) {
-    drawDirectConnectionBadge(stretchedN.x, stretchedN.y, radius);
+    drawDirectConnectionBadge(stretchedX, stretchedY, radius);
   }
 
   // Return label data for deferred rendering (smart positioning)
@@ -4995,8 +5055,8 @@ function drawNode(node) {
 
   return {
     text: labelText,
-    nodeX: stretchedN.x,
-    nodeY: stretchedN.y,
+    nodeX: stretchedX,
+    nodeY: stretchedY,
     nodeRadius: radius,
     fontSize: fontSize
   };
@@ -5632,12 +5692,12 @@ function renderDetails() {
       const oldId = String(node.id);
       if (!raw || raw === oldId) return;
       if (node.nodeType !== 'Home' && !/^\d+$/.test(raw)) {
-        alert(t('alerts.nodeIdUnique'));
+        showToast(t('alerts.nodeIdUnique'), 'error');
         idInput.value = oldId;
         return;
       }
       if (nodes.some((n) => n !== node && String(n.id) === raw)) {
-        alert(t('alerts.nodeIdUnique'));
+        showToast(t('alerts.nodeIdUnique'), 'error');
         idInput.value = oldId;
         return;
       }
@@ -6704,7 +6764,7 @@ canvas.addEventListener('touchstart', (e) => {
   commitIdInputIfFocused();
   if (e.touches.length > 0) {
     e.preventDefault();
-    const rect = canvas.getBoundingClientRect();
+    const rect = getCachedCanvasRect(); // cached — avoids layout reflow
     if (e.touches.length >= 2) {
       // Initialize pinch zoom
       isPinching = true;
@@ -6875,7 +6935,7 @@ canvas.addEventListener('touchstart', (e) => {
 canvas.addEventListener('touchmove', (e) => {
   if (e.touches.length > 0) {
     e.preventDefault();
-    const rect = canvas.getBoundingClientRect();
+    const rect = getCachedCanvasRect(); // cached — avoids layout reflow per touch frame
     if (e.touches.length >= 2) {
       // Update pinch zoom
       const t1 = e.touches[0];
@@ -7107,7 +7167,7 @@ startBtn.addEventListener('click', () => {
   commitIdInputIfFocused();
   const dateVal = dateInput.value;
   if (!dateVal) {
-    alert(t('alerts.pickDate'));
+    showToast(t('alerts.pickDate'));
     return;
   }
   
@@ -7117,7 +7177,7 @@ startBtn.addEventListener('click', () => {
   
   // If projects are available, require selection
   if (availableProjects.length > 0 && !selectedProjectId) {
-    alert(t('alerts.selectProject') || 'Please select a project');
+    showToast(t('alerts.selectProject'));
     return;
   }
   
@@ -7152,7 +7212,7 @@ if (cancelBtn) {
   cancelBtn.addEventListener('click', () => {
     commitIdInputIfFocused();
     startPanel.style.display = 'none';
-    showToast('בוטל');
+    showToast(t('toasts.cancelled'));
   });
 }
 
@@ -8365,9 +8425,9 @@ function toggleCoordinates(enabled) {
     restoreOriginalPositions();
   }
   
-  const msg = enabled 
-    ? (t('coordinates.enabled') || 'קואורדינטות הופעלו')
-    : (t('coordinates.disabled') || 'קואורדינטות כובו');
+  const msg = enabled
+    ? t('coordinates.enabled')
+    : t('coordinates.disabled');
   showToast(msg);
 }
 
@@ -8912,7 +8972,7 @@ function changeCoordinateScale(delta) {
       applyCoordinatesIfEnabled({ recenter: false, oldScale: oldScale });
     }
     
-    showToast(`קנה מידה: 1:${coordinateScale}`);
+    showToast(t('coordinates.scaleChanged', coordinateScale));
   }
 }
 
@@ -9453,9 +9513,11 @@ document.addEventListener('keyup', (e) => {
 });
 
 // Ctrl/Cmd + wheel zoom on canvas
+// Throttled zoom toast — avoid DOM manipulation on every wheel tick
+let _zoomToastTimer = 0;
 canvas.addEventListener('wheel', (e) => {
   e.preventDefault();
-  const rect = canvas.getBoundingClientRect();
+  const rect = getCachedCanvasRect(); // use cached rect to avoid layout reflow
   const mouseX = e.clientX - rect.left;
   const mouseY = e.clientY - rect.top;
   const focusWorld = screenToWorld(mouseX, mouseY);
@@ -9468,7 +9530,11 @@ canvas.addEventListener('wheel', (e) => {
   viewTranslate.x = mouseX - viewScale * viewStretchX * focusWorld.x;
   viewTranslate.y = mouseY - viewScale * viewStretchY * focusWorld.y;
   scheduleDraw();
-  showToast(t('toasts.zoom', (viewScale * 100).toFixed(0)));
+  // Throttle toast to once per 120ms to reduce DOM churn during rapid scrolling
+  clearTimeout(_zoomToastTimer);
+  _zoomToastTimer = setTimeout(() => {
+    showToast(t('toasts.zoom', (viewScale * 100).toFixed(0)));
+  }, 120);
 }, { passive: false });
 
 /**
@@ -9498,9 +9564,25 @@ function applyStretch(x, y) {
 
 /**
  * Create a stretched version of a node for drawing (position only, not the actual node).
+ * Uses a reusable scratch object for the hot draw path to avoid GC pressure from
+ * creating ~150+ spread copies per frame (nodes + edges * 2).
  * @param {object} node - The node object
  * @returns {object} A copy with stretched x and y coordinates
  */
+// Reusable scratch object for stretchedNode in the draw loop.
+// WARNING: only valid until the next stretchedNode() call -- do not cache.
+const _stretchedScratch = {};
+function stretchedNodeFast(node) {
+  if (!node) return null;
+  // Copy all properties from node onto the scratch object
+  const keys = Object.keys(node);
+  for (let i = 0; i < keys.length; i++) {
+    _stretchedScratch[keys[i]] = node[keys[i]];
+  }
+  _stretchedScratch.x = node.x * viewStretchX;
+  _stretchedScratch.y = node.y * viewStretchY;
+  return _stretchedScratch;
+}
 function stretchedNode(node) {
   if (!node) return null;
   return {
@@ -9712,10 +9794,10 @@ function searchAndCenterNode(searchId) {
     scheduleDraw();
 
     // Show success toast
-    showToast(t('toasts.nodeFound', String(foundNode.id)) || `שוחה ${foundNode.id} נמצאה`);
+    showToast(t('toasts.nodeFound', String(foundNode.id)));
   } else {
     // Show error toast
-    showToast(t('toasts.nodeNotFound', searchIdStr) || `שוחה ${searchIdStr} לא נמצאה`, 'error');
+    showToast(t('toasts.nodeNotFound', searchIdStr), 'error');
   }
 }
 
@@ -9751,7 +9833,7 @@ async function searchAddressAndCenter(query) {
   try {
     const result = await geocodeAddress(q);
     if (!result) {
-      showToast(t('toasts.addressNotFound') || 'כתובת לא נמצאה', 'error');
+      showToast(t('toasts.addressNotFound'), 'error');
       return;
     }
     const { x, y } = wgs84ToItm(result.lat, result.lon);
@@ -9760,10 +9842,10 @@ async function searchAddressAndCenter(query) {
     viewTranslate.x = centerScreen.x - viewScale * viewStretchX * x;
     viewTranslate.y = centerScreen.y - viewScale * viewStretchY * y;
     scheduleDraw();
-    showToast(result.display_name || t('toasts.addressFound') || 'נמצא');
+    showToast(result.display_name || t('toasts.addressFound'));
   } catch (err) {
     console.warn('[App] Geocode error:', err.message);
-    showToast(t('toasts.geocodeError') || 'שגיאה בחיפוש כתובת', 'error');
+    showToast(t('toasts.geocodeError'), 'error');
   }
 }
 
@@ -10072,7 +10154,7 @@ function handleGnssPointCapture(captureData) {
       id: getNextEdgeId(),
       tail: captureData.edgeFromNode,
       head: targetNodeId,
-      edge_type: captureData.edgeType || 'קו ראשי',
+      edge_type: captureData.edgeType || EDGE_TYPES[0],
       material: 0,
       line_diameter: null
     };
@@ -10096,7 +10178,7 @@ function handleGnssPointCapture(captureData) {
   renderDetails();
 
   scheduleDraw();
-  showToast(`נלכדה נקודה עבור שוחה ${targetNodeId}`);
+  showToast(t('gpsCapture.pointCaptured', targetNodeId));
 }
 
 /**
