@@ -1973,7 +1973,7 @@ canvas {
 /* Take Measure FAB — pill-shaped, dynamically colored by GNSS precision */
 .take-measure-fab {
   position: absolute;
-  left: 12px;
+  inset-inline-start: 12px;
   bottom: 12px;
   z-index: 16;
   background: var(--fix-color, #9ca3af);
@@ -1981,7 +1981,7 @@ canvas {
   border: none;
   border-radius: 28px;
   height: 48px;
-  padding: 0 16px 0 12px;
+  padding-inline: 12px 16px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -1996,7 +1996,7 @@ canvas {
 }
 
 .take-measure-fab:disabled {
-  background: #9ca3af;
+  background: var(--color-muted, #9ca3af);
   pointer-events: none;
   opacity: 0.6;
 }
@@ -2607,19 +2607,19 @@ canvas {
   border-radius: 999px;
   font-size: 0.85rem;
   border: 1px solid var(--color-border);
-  background: #f5f5f5;
+  background: var(--color-bg);
 }
 
 .chip-ok {
   background: #e8f5e9;
-  color: #1b5e20;
-  border-color: #c8e6c9;
+  color: #166534;
+  border-color: #bbf7d0;
 }
 
 .chip-warn {
-  background: #fff3e0;
-  color: #e65100;
-  border-color: #ffe0b2;
+  background: #fff7ed;
+  color: #c2410c;
+  border-color: #fed7aa;
 }
 
 /* ── Node Tab Wizard ─────────────────────────────────────── */
@@ -2764,6 +2764,23 @@ textarea.wizard-field-input {
 
   .wizard-tab:not(.wizard-tab--active) {
     background: var(--color-surface-alt, #1e293b) !important;
+  }
+
+  /* Chip dark mode */
+  .chip {
+    background: var(--color-surface-alt, #1e293b);
+  }
+
+  .chip-ok {
+    background: #14532d;
+    color: #bbf7d0;
+    border-color: #166534;
+  }
+
+  .chip-warn {
+    background: #7c2d12;
+    color: #fed7aa;
+    border-color: #c2410c;
   }
 }
 
@@ -5915,8 +5932,8 @@ select.invalid:focus {
   /* Take Measure FAB mobile sizing */
   .take-measure-fab {
     height: 44px;
-    padding: 0 14px 0 10px;
-    left: 8px;
+    padding-inline: 10px 14px;
+    inset-inline-start: 8px;
     bottom: 8px;
   }
 
@@ -6647,6 +6664,207 @@ select.invalid:focus {
   /* Fix 6: hardcoded background colors in details sections */
   .details-section:has(.connected-lines-grid) {
     background: var(--color-surface-hover);
+  }
+}
+
+/* ===========================================
+   Survey Node Type Dialog
+   =========================================== */
+.survey-type-dialog {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+}
+
+.survey-type-dialog.open {
+  display: flex;
+}
+
+.survey-type-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.survey-type-content {
+  position: relative;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-radius: var(--radius-lg, 16px);
+  padding: 24px;
+  min-width: 300px;
+  max-width: 90vw;
+  box-shadow: var(--shadow-lg, 0 8px 32px rgba(0, 0, 0, 0.25));
+  text-align: center;
+}
+
+.survey-type-content h3 {
+  margin: 0 0 4px;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.survey-type-content .survey-type-desc {
+  margin: 0 0 16px;
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--color-text-secondary);
+}
+
+.survey-type-coords {
+  font-family: monospace;
+  font-size: 0.8125rem;
+  margin-bottom: 16px;
+  color: var(--color-text-secondary);
+  direction: ltr;
+  text-align: center;
+}
+
+.survey-type-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.survey-type-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 24px;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius, 12px);
+  background: transparent;
+  color: inherit;
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: 500;
+  cursor: pointer;
+  min-width: 90px;
+  min-height: var(--touch-target-min);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.survey-type-btn:hover,
+.survey-type-btn:focus-visible {
+  background: var(--color-surface-hover, var(--color-bg));
+  border-color: var(--color-primary);
+}
+
+.survey-type-btn:active {
+  background: var(--color-primary-light, #dbeafe);
+}
+
+.survey-type-btn .material-icons {
+  font-size: 32px;
+  color: var(--color-primary);
+}
+
+.survey-type-autoconnect {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+  font-size: var(--text-sm, 0.875rem);
+  cursor: pointer;
+  user-select: none;
+  min-height: var(--touch-target-min);
+  color: var(--color-text);
+}
+
+.survey-type-autoconnect input[type="checkbox"] {
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.survey-type-cancel {
+  margin-top: 12px;
+  padding: 8px 24px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius, 8px);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: var(--text-sm, 0.875rem);
+  min-height: var(--touch-target-min);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.survey-type-cancel:hover,
+.survey-type-cancel:focus-visible {
+  background: var(--color-surface-hover, var(--color-bg));
+  color: var(--color-text);
+}
+
+/* Dark mode overrides for survey dialog */
+@media (prefers-color-scheme: dark) {
+  .survey-type-overlay {
+    background: rgba(0, 0, 0, 0.7);
+  }
+
+  .survey-type-content {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  }
+
+  .survey-type-btn:active {
+    background: var(--color-surface-alt, #1e293b);
+  }
+}
+
+/* Landscape compact layout for survey dialog */
+@media (max-height: 450px) and (orientation: landscape) {
+  .survey-type-content {
+    padding: 14px 20px;
+    min-width: auto;
+    max-width: min(500px, 90vw);
+    max-height: calc(100dvh - 20px);
+    overflow-y: auto;
+  }
+
+  .survey-type-content h3 {
+    font-size: 1rem;
+    margin-bottom: 2px;
+  }
+
+  .survey-type-content .survey-type-desc {
+    margin-bottom: 8px;
+    font-size: 0.8125rem;
+  }
+
+  .survey-type-coords {
+    margin-bottom: 8px;
+    font-size: 0.75rem;
+  }
+
+  .survey-type-buttons {
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+
+  .survey-type-btn {
+    padding: 10px 16px;
+    gap: 4px;
+    min-width: 80px;
+  }
+
+  .survey-type-btn .material-icons {
+    font-size: 26px;
+  }
+
+  .survey-type-autoconnect {
+    margin-top: 8px;
+    font-size: 0.8125rem;
+  }
+
+  .survey-type-cancel {
+    margin-top: 8px;
+    padding: 6px 20px;
   }
 }
 
@@ -8815,7 +9033,7 @@ html[dir="rtl"] .user-menu-item {
 .gnss-status-pill {
   position: absolute;
   bottom: 12px;
-  left: 12px;
+  inset-inline-start: 12px;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -8837,7 +9055,7 @@ html[dir="rtl"] .user-menu-item {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #9ca3af;
+  background: var(--color-muted, #9ca3af);
 }
 
 .gnss-status-pill .status-indicator.connected {
@@ -8888,7 +9106,7 @@ html[dir="rtl"] .user-menu-item {
 .gnss-controls-panel {
   position: absolute;
   bottom: 60px;
-  left: 12px;
+  inset-inline-start: 12px;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -8909,6 +9127,7 @@ html[dir="rtl"] .user-menu-item {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
+  min-height: 44px;
   font-size: 0.875rem;
 }
 
@@ -8933,7 +9152,7 @@ html[dir="rtl"] .user-menu-item {
 }
 
 .capture-point-btn:disabled {
-  background: #9ca3af;
+  background: var(--color-muted, #9ca3af);
   cursor: not-allowed;
 }
 
@@ -8991,6 +9210,11 @@ html[dir="rtl"] .user-menu-item {
 .point-capture-close {
   background: none;
   border: none;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 0.25rem;
   cursor: pointer;
   color: var(--color-muted);
@@ -9029,7 +9253,7 @@ html[dir="rtl"] .user-menu-item {
   grid-template-columns: 1fr 1fr;
   gap: 0.5rem;
   padding: 0.75rem;
-  background: #f1f5f9;
+  background: var(--color-surface-hover, #f1f5f9);
   border-radius: 8px;
 }
 
@@ -9157,16 +9381,7 @@ html[dir="rtl"] .user-menu-item {
   }
 }
 
-/* RTL adjustments */
-html[dir="rtl"] .gnss-status-pill {
-  left: auto;
-  right: 12px;
-}
-
-html[dir="rtl"] .gnss-controls-panel {
-  left: auto;
-  right: 12px;
-}
+/* RTL adjustments — inset-inline-start handles directionality automatically */
 
 /* Mobile adjustments */
 @media (max-width: 768px) {
@@ -9181,6 +9396,14 @@ html[dir="rtl"] .gnss-controls-panel {
   .point-capture-content {
     width: 95%;
     max-height: 85vh;
+  }
+}
+
+/* Landscape: wider point capture dialog to reduce scrolling */
+@media (max-height: 450px) and (orientation: landscape) {
+  .point-capture-content {
+    max-width: 540px;
+    max-height: 90vh;
   }
 }
 
@@ -11216,12 +11439,26 @@ button:focus-visible,
     font-size: 1.2rem;
   }
 
-  /* Header controls (zoom, home, help) — smaller in landscape */
+  /* Header controls (zoom, home, help) — compact visual, expanded touch area.
+     Visual size is 28px for space savings, but position: relative + ::after
+     provides a 44px touch target for WCAG 2.5.8 compliance. */
   .menu-btn--small,
   .menu-btn--icon-only {
     min-height: 28px;
     min-width: 28px;
     padding: 0.15rem;
+    position: relative;
+  }
+
+  .menu-btn--small::after,
+  .menu-btn--icon-only::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 44px;
+    height: 44px;
   }
 
   .menu-btn--small .material-icons,
@@ -11479,12 +11716,12 @@ button:focus-visible,
     height: 44px;
   }
 
-  /* Take Measure FAB */
+  /* Take Measure FAB — min 44px touch target even in landscape */
   .take-measure-fab {
     bottom: 4px;
-    left: 4px;
-    height: 36px;
-    padding: 0 10px 0 8px;
+    inset-inline-start: 4px;
+    height: 44px;
+    padding-inline: 8px 10px;
     font-size: 12px;
   }
 

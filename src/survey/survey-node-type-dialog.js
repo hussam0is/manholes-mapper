@@ -1,7 +1,7 @@
 /**
  * Survey Node Type Dialog
  * Modal for selecting the type of a new survey point (Manhole, Home, Drainage).
- * Self-contained: creates its own DOM elements and inline styles.
+ * Styles are in styles.css under ".survey-type-*" selectors.
  */
 
 let dialogEl = null;
@@ -17,110 +17,6 @@ const DIALOG_ID = 'surveyNodeTypeDialog';
  */
 export function initSurveyNodeTypeDialog() {
   if (dialogEl) return;
-
-  // Inject styles
-  const style = document.createElement('style');
-  style.textContent = `
-    .survey-type-dialog {
-      display: none;
-      position: fixed;
-      inset: 0;
-      z-index: 10000;
-      align-items: center;
-      justify-content: center;
-    }
-    .survey-type-dialog.open {
-      display: flex;
-    }
-    .survey-type-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
-    }
-    .survey-type-content {
-      position: relative;
-      background: var(--surface, #fff);
-      color: var(--on-surface, #222);
-      border-radius: 16px;
-      padding: 24px;
-      min-width: 300px;
-      max-width: 90vw;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
-      text-align: center;
-    }
-    .survey-type-content h3 {
-      margin: 0 0 4px;
-      font-size: 18px;
-    }
-    .survey-type-content .survey-type-desc {
-      margin: 0 0 20px;
-      font-size: 14px;
-      opacity: 0.7;
-    }
-    .survey-type-coords {
-      font-family: monospace;
-      font-size: 13px;
-      margin-bottom: 16px;
-      opacity: 0.6;
-    }
-    .survey-type-buttons {
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-    .survey-type-btn {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      padding: 16px 24px;
-      border: 2px solid var(--outline, #ccc);
-      border-radius: 12px;
-      background: transparent;
-      color: inherit;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      min-width: 90px;
-      transition: background 0.15s, border-color 0.15s;
-    }
-    .survey-type-btn:hover, .survey-type-btn:focus {
-      background: var(--surface-variant, #f0f0f0);
-      border-color: var(--primary, #1976d2);
-    }
-    .survey-type-btn .material-icons {
-      font-size: 32px;
-    }
-    .survey-type-autoconnect {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      margin-top: 16px;
-      font-size: 14px;
-      cursor: pointer;
-      user-select: none;
-    }
-    .survey-type-autoconnect input {
-      width: 18px;
-      height: 18px;
-    }
-    .survey-type-cancel {
-      margin-top: 16px;
-      padding: 8px 24px;
-      border: none;
-      background: transparent;
-      color: inherit;
-      opacity: 0.6;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    .survey-type-cancel:hover {
-      opacity: 1;
-    }
-  `;
-  document.head.appendChild(style);
 
   dialogEl = document.createElement('div');
   dialogEl.id = DIALOG_ID;
