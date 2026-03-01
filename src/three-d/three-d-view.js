@@ -25,11 +25,11 @@ let isOpen = false;
  * @returns {{ display: string, opacity: string, fontSize: string }}
  */
 export function computeLabelVisibility(dist) {
-  if (dist > 150) {
+  if (dist > 120) {
     return { display: 'none', opacity: '0', fontSize: '11px' };
   }
-  if (dist > 80) {
-    return { display: '', opacity: String(1 - (dist - 80) / 70), fontSize: '9px' };
+  if (dist > 60) {
+    return { display: '', opacity: String(1 - (dist - 60) / 60), fontSize: '9px' };
   }
   return { display: '', opacity: '1', fontSize: dist < 30 ? '13px' : '11px' };
 }
@@ -124,19 +124,19 @@ export async function open3DView(opts = {}) {
       </button>
       <div class="three-d-overlay__legend-items">
         <div class="three-d-overlay__legend-item">
-          <span class="three-d-overlay__legend-swatch" style="background:#2563eb"></span>
+          <span class="three-d-overlay__legend-swatch three-d-overlay__legend-swatch--pipe"></span>
           <span>${esc(t('threeD.legend.mainLine'))}</span>
         </div>
         <div class="three-d-overlay__legend-item">
-          <span class="three-d-overlay__legend-swatch" style="background:#fb923c"></span>
+          <span class="three-d-overlay__legend-swatch three-d-overlay__legend-swatch--drainage"></span>
           <span>${esc(t('threeD.legend.drainageLine'))}</span>
         </div>
         <div class="three-d-overlay__legend-item">
-          <span class="three-d-overlay__legend-swatch" style="background:#0d9488"></span>
+          <span class="three-d-overlay__legend-swatch three-d-overlay__legend-swatch--house"></span>
           <span>${esc(t('threeD.legend.secondaryLine'))}</span>
         </div>
         <div class="three-d-overlay__legend-item">
-          <span class="three-d-overlay__legend-swatch three-d-overlay__legend-swatch--estimated" style="background:#888"></span>
+          <span class="three-d-overlay__legend-swatch three-d-overlay__legend-swatch--estimated"></span>
           <span>${esc(t('threeD.legend.estimated'))}</span>
         </div>
       </div>
@@ -748,17 +748,17 @@ export async function open3DView(opts = {}) {
         const dx = camPos.x - lp.x, dy = camPos.y - lp.y, dz = camPos.z - lp.z;
         const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
         const labelEl = refs.label.element;
-        // Pipe labels visible at shorter range: hidden >80m, fade 40-80m, full <40m
-        if (dist > 80) {
+        // Pipe labels visible at shorter range: hidden >60m, fade 30-60m, full <30m
+        if (dist > 60) {
           labelEl.style.display = 'none';
-        } else if (dist > 40) {
+        } else if (dist > 30) {
           labelEl.style.display = '';
-          labelEl.style.opacity = String(1 - (dist - 40) / 40);
+          labelEl.style.opacity = String(1 - (dist - 30) / 30);
           labelEl.style.fontSize = '8px';
         } else {
           labelEl.style.display = '';
           labelEl.style.opacity = '1';
-          labelEl.style.fontSize = dist < 20 ? '10px' : '9px';
+          labelEl.style.fontSize = dist < 15 ? '10px' : '9px';
         }
       }
     }
@@ -800,9 +800,14 @@ export async function open3DView(opts = {}) {
 
       // Greedy overlap check — keep label if it doesn't overlap any already-kept label
       const kept = [];
-      const MIN_DIST_PX = 30; // minimum pixel distance between label centers
+      const MIN_DIST_PX = 70; // minimum pixel distance between label centers (accounts for label width)
+      const MAX_VISIBLE_LABELS = 15; // cap total visible labels to prevent information overload
 
       for (const item of visibleLabels) {
+        if (kept.length >= MAX_VISIBLE_LABELS) {
+          item.label.element.style.display = 'none';
+          continue;
+        }
         let overlaps = false;
         for (const k of kept) {
           const ddx = item.sx - k.sx;

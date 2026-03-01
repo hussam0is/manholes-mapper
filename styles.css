@@ -10447,7 +10447,17 @@ button:focus-visible,
   flex-shrink: 0;
 }
 
+.three-d-overlay__legend-swatch--pipe {
+  background: var(--color-3d-swatch-main);
+}
+.three-d-overlay__legend-swatch--drainage {
+  background: var(--color-3d-swatch-drainage);
+}
+.three-d-overlay__legend-swatch--house {
+  background: var(--color-3d-swatch-secondary);
+}
 .three-d-overlay__legend-swatch--estimated {
+  background: var(--color-3d-swatch-estimated);
   opacity: 0.5;
   border: 1px dashed rgba(255, 255, 255, 0.5);
 }
@@ -10931,7 +10941,7 @@ button:focus-visible,
     inset-inline-end: 0;
     z-index: 5;
     padding: 2px var(--space-2);
-    min-height: 40px;
+    min-height: var(--touch-target-min, 44px);
     max-height: 48px;
     background: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(4px);
@@ -11093,7 +11103,7 @@ button:focus-visible,
     border: 1px solid rgba(251, 146, 60, 0.5);
     border-radius: 12px;
     padding: 2px 12px;
-    color: #fb923c;
+    color: var(--color-3d-sprint);
     font-size: 0.65rem;
     font-weight: 700;
     text-transform: uppercase;
