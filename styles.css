@@ -1397,7 +1397,7 @@ select.btn:focus-visible {
 .street-view-pegman {
   position: absolute;
   top: 48px;
-  left: 12px;
+  inset-inline-start: 12px;
   z-index: 140; /* below sketch side panel (150) to prevent click interception */
   display: flex;
   flex-direction: column;
@@ -1407,6 +1407,10 @@ select.btn:focus-visible {
   user-select: none;
   touch-action: none;
   transition: transform 0.15s ease, opacity 0.15s ease;
+  /* Ensure 44px minimum touch target */
+  min-width: 44px;
+  min-height: 44px;
+  justify-content: center;
 }
 
 .street-view-pegman:hover {
@@ -1422,19 +1426,19 @@ select.btn:focus-visible {
 
 .street-view-pegman__icon {
   font-size: 36px;
-  color: #f9ab00;
+  color: var(--color-streetview, #f9ab00);
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
   transition: color 0.15s ease;
 }
 
 .street-view-pegman:hover .street-view-pegman__icon {
-  color: #e69500;
+  color: var(--color-streetview-hover, #e69500);
 }
 
 .street-view-pegman__label {
   font-size: 10px;
-  color: #fff;
-  background: rgba(0, 0, 0, 0.6);
+  color: var(--color-surface, #fff);
+  background: var(--color-text-overlay, rgba(0, 0, 0, 0.6));
   padding: 1px 6px;
   border-radius: 4px;
   white-space: nowrap;
@@ -1458,7 +1462,7 @@ select.btn:focus-visible {
 
 .street-view-pegman-ghost .material-icons {
   font-size: 44px;
-  color: #f9ab00;
+  color: var(--color-streetview, #f9ab00);
   animation: pegman-bounce 0.6s ease-in-out infinite alternate;
 }
 
@@ -1472,7 +1476,7 @@ select.btn:focus-visible {
   position: absolute;
   width: 24px;
   height: 24px;
-  border: 3px solid #f9ab00;
+  border: 3px solid var(--color-streetview, #f9ab00);
   border-radius: 50%;
   transform: translate(-50%, -50%);
   pointer-events: none;
@@ -1497,7 +1501,7 @@ select.btn:focus-visible {
 @media (max-width: 600px) {
   .street-view-pegman {
     top: 44px;
-    left: 8px;
+    inset-inline-start: 8px;
   }
 
   .street-view-pegman__icon {
@@ -1533,10 +1537,10 @@ select.btn:focus-visible {
 .layers-config-btn {
   position: absolute;
   top: 100px;
-  left: 12px;
+  inset-inline-start: 12px;
   z-index: 150;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: var(--radius, 8px);
   border: none;
   background: var(--color-surface, #fff);
@@ -1571,7 +1575,7 @@ select.btn:focus-visible {
 .layers-config-panel {
   position: absolute;
   top: 100px;
-  left: 60px;
+  inset-inline-start: 60px;
   z-index: 200;
   width: 260px;
   max-height: 70vh;
@@ -1603,11 +1607,14 @@ select.btn:focus-visible {
   background: none;
   border: none;
   cursor: pointer;
-  padding: var(--space-1, 4px);
+  padding: var(--space-2, 8px);
   border-radius: var(--radius-full, 9999px);
   display: flex;
   align-items: center;
+  justify-content: center;
   line-height: 1;
+  min-width: 36px;
+  min-height: 36px;
 }
 
 .layers-config-panel__close:hover {
@@ -1650,8 +1657,8 @@ select.btn:focus-visible {
 }
 
 .layers-config-panel__header-toggle input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   accent-color: var(--color-primary, #2563eb);
 }
 
@@ -1663,10 +1670,11 @@ select.btn:focus-visible {
   display: flex;
   align-items: center;
   gap: var(--space-2, 8px);
-  padding: var(--space-1, 4px) var(--space-2, 8px);
+  padding: var(--space-2, 8px) var(--space-2, 8px);
   border-radius: var(--radius-sm, 6px);
   cursor: pointer;
   transition: background 0.1s ease;
+  min-height: 40px;
 }
 
 .layers-config-panel__toggle:hover {
@@ -1674,8 +1682,8 @@ select.btn:focus-visible {
 }
 
 .layers-config-panel__toggle input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   accent-color: var(--color-primary, #2563eb);
   flex-shrink: 0;
 }
@@ -1706,8 +1714,9 @@ select.btn:focus-visible {
   display: flex;
   align-items: center;
   gap: var(--space-2, 8px);
-  padding: var(--space-1, 4px) var(--space-2, 8px);
+  padding: var(--space-2, 8px) var(--space-2, 8px);
   font-size: var(--text-sm, 0.875rem);
+  min-height: 40px;
 }
 
 .layers-config-panel__select {
@@ -1724,9 +1733,9 @@ select.btn:focus-visible {
 @media (max-width: 600px) {
   .layers-config-btn {
     top: 88px;
-    left: 8px;
-    width: 36px;
-    height: 36px;
+    inset-inline-start: 8px;
+    width: 44px;
+    height: 44px;
   }
 
   .layers-config-btn .material-icons {
@@ -1735,7 +1744,7 @@ select.btn:focus-visible {
 
   .layers-config-panel {
     top: 88px;
-    left: 52px;
+    inset-inline-start: 56px;
     width: 230px;
     max-height: 60vh;
   }
@@ -2285,8 +2294,8 @@ canvas {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   border-radius: 6px;
   border: 1px solid var(--color-border);
   background: var(--color-surface);
@@ -3762,6 +3771,112 @@ input.floating-keyboard-active {
 }
 
 /* ============================================
+   Admin Panel Modal Styles (user edit, org create, features)
+   ============================================ */
+
+.admin-panel-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  backdrop-filter: blur(2px);
+  padding: var(--space-4, 1rem);
+}
+
+.admin-panel-modal {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg, 12px);
+  max-width: 440px;
+  width: 90%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-lg, 0 20px 60px rgba(0, 0, 0, 0.3));
+  animation: modalSlideIn 0.2s ease-out;
+}
+
+.admin-panel-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.admin-panel-modal-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.admin-panel-modal-close {
+  background: none;
+  border: none;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-sm, 4px);
+  transition: background 0.15s ease;
+}
+
+.admin-panel-modal-close:hover {
+  background: var(--color-surface-hover);
+}
+
+.admin-panel-modal-content {
+  padding: 1.25rem;
+  overflow-y: auto;
+}
+
+.admin-panel-modal-content .admin-panel-field {
+  margin-bottom: 1rem;
+}
+
+.admin-panel-modal-content .admin-panel-field:last-child {
+  margin-bottom: 0;
+}
+
+.admin-panel-modal-content label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.admin-panel-modal-content select {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius, 6px);
+  background: var(--color-surface);
+  color: var(--color-text);
+  min-height: 44px;
+}
+
+.admin-panel-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3, 0.75rem);
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.admin-panel-modal-footer .btn {
+  min-height: 44px;
+  padding: 0.5rem 1.25rem;
+}
+
+/* ============================================
    Input Flow Settings Styles
    ============================================ */
 
@@ -4309,6 +4424,7 @@ input:checked + .slider:before {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  min-height: 44px;
 }
 
 .finish-workday-actions .btn-primary {
