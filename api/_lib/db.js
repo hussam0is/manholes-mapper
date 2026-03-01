@@ -527,7 +527,7 @@ export async function updateSketch(sketchId, userId, updates) {
       snapshot_input_flow_config = COALESCE(${snapshotInputFlowConfig != null ? JSON.stringify(snapshotInputFlowConfig) : null}::jsonb, snapshot_input_flow_config),
       updated_at = NOW()
     WHERE id = ${sketchId} AND user_id = ${userId}
-      AND (${clientUpdatedAt}::timestamptz IS NULL OR updated_at = ${clientUpdatedAt}::timestamptz)
+      AND (${clientUpdatedAt}::timestamptz IS NULL OR date_trunc('milliseconds', updated_at) = date_trunc('milliseconds', ${clientUpdatedAt}::timestamptz))
     RETURNING id, name, creation_date, nodes, edges, admin_config, created_by, last_edited_by,
               project_id, snapshot_input_flow_config, created_at, updated_at
   `;
