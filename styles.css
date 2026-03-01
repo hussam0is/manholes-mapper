@@ -1274,7 +1274,7 @@ select.btn:focus-visible {
 
 .canvas-toolbar .segmented .btn.active {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-surface, #fff);
 }
 
 /* Undo/Redo buttons */
@@ -11252,7 +11252,7 @@ button:focus-visible,
   }
 
   .auth-form-container {
-    padding: 0 0.75rem;
+    padding: 0.25rem 0.75rem 0;
   }
 
   .auth-form {
