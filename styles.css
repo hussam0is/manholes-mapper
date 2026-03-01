@@ -59,7 +59,18 @@
   /* Accent/Purple colors */
   --color-accent: #a855f7;            /* purple-500 */
   --color-accent-hover: #9333ea;      /* purple-600 */
-  
+  --color-accent-light: #f3e8ff;      /* purple-100 */
+
+  /* Contrast text on colored backgrounds */
+  --color-text-on-primary: #ffffff;
+
+  /* Street View (Google pegman yellow) */
+  --color-streetview: #f9ab00;
+  --color-streetview-hover: #e69500;
+
+  /* Overlay text (labels on canvas, tooltips) */
+  --color-text-overlay: rgba(0, 0, 0, 0.6);
+
   /* 3D View */
   --color-3d-bg: #1a1a2e;            /* Dark navy for 3D overlay */
 
@@ -1783,6 +1794,25 @@ select.btn:focus-visible {
     color: var(--color-text, #e0e0e0);
     border-color: var(--color-border, #333);
   }
+
+  .edge-legend {
+    background: rgba(15, 23, 42, 0.85);
+  }
+}
+
+/* Landscape: reposition layers config to avoid overflow */
+@media (max-height: 450px) and (orientation: landscape) {
+  .layers-config-btn {
+    top: calc(var(--header-h, 36px) + 96px);
+    inset-inline-start: 8px;
+  }
+
+  .layers-config-panel {
+    top: calc(var(--header-h, 36px) + 48px);
+    inset-inline-start: 56px;
+    max-height: calc(100vh - var(--header-h, 36px) - 56px);
+    width: 240px;
+  }
 }
 
 canvas {
@@ -1795,8 +1825,7 @@ canvas {
 .edge-legend {
   position: absolute;
   top: 12px;
-  left: 12px;
-  right: auto;
+  inset-inline-start: 12px;
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid var(--color-border);
   border-radius: 8px;
@@ -6140,7 +6169,7 @@ select.invalid:focus {
   /* Optimize edge legend for mobile */
   .edge-legend {
     top: 8px;
-    left: 8px;
+    inset-inline-start: 8px;
     font-size: 11px;
     padding: 4px 8px;
     gap: 8px;
@@ -9075,7 +9104,7 @@ html[dir="rtl"] .auth-form-wrapper {
   height: 40px;
   border-radius: 50%;
   background: var(--color-primary);
-  color: var(--color-surface, #fff);
+  color: var(--color-text-on-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -9260,7 +9289,7 @@ html[dir="rtl"] .auth-form-wrapper {
 
   .user-menu-role--super-admin {
     background: rgba(168, 85, 247, 0.15);
-    color: #c084fc;
+    color: var(--color-accent, #c084fc);
   }
 
   .user-menu-role--user {
