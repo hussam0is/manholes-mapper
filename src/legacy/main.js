@@ -7226,8 +7226,8 @@ newSketchBtn.addEventListener('click', async () => {
   
   startPanel.style.display = 'flex';
   showToast(t('toasts.startNew'));
-  // If current sketch is not empty, reveal Cancel button
-  if (cancelBtn) cancelBtn.style.display = (nodes.length || edges.length) ? 'inline-block' : 'none';
+  // Always show Cancel so first-time users can dismiss the start panel
+  if (cancelBtn) cancelBtn.style.display = 'inline-block';
 });
 
 startBtn.addEventListener('click', () => {
