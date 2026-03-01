@@ -962,19 +962,7 @@ header .btn-primary:hover {
     min-height: var(--touch-target-min);
   }
 
-  .btn-icon-sm {
-    min-width: var(--touch-target-min);
-    min-height: var(--touch-target-min);
-  }
-}
-
-/* Landscape mobile touch target enforcement — phones rotated sideways are wider
-   than 600px so the portrait-only query above misses them. */
-@media (max-height: 450px) and (orientation: landscape) {
-  .btn-icon-sm {
-    min-width: var(--touch-target-min);
-    min-height: var(--touch-target-min);
-  }
+  /* .btn-icon-sm base class is already 44px — no override needed */
 }
 
 /* Adjust size of material icons within buttons */
@@ -1093,13 +1081,14 @@ header .btn-ghost:hover,
   width: 100%;
 }
 
-/* Button with icon only - for small size */
+/* Button with icon only — 44px touch target (meets WCAG 2.5.8 / Android 44dp) */
 .btn-icon-sm {
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
-  min-height: 28px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   padding: 0;
+  box-sizing: border-box;
 }
 
 /* Make selects inside header match ghost buttons */
@@ -1917,6 +1906,8 @@ canvas {
 .canvas-fab-toolbar.open .canvas-fab-toolbar__item {
   opacity: 1;
   transform: scale(1) translateX(0);
+  pointer-events: auto;
+  visibility: visible;
 }
 
 .canvas-fab-toolbar.open .canvas-fab-toolbar__item:nth-child(1) {
@@ -1931,9 +1922,11 @@ canvas {
   transition-delay: 0.06s;
 }
 
-/* Collapse faster (no stagger) */
+/* Collapse faster (no stagger) — also fully hide items to prevent ghost touch targets */
 .canvas-fab-toolbar:not(.open) .canvas-fab-toolbar__item {
   transition-delay: 0s;
+  pointer-events: none;
+  visibility: hidden;
 }
 
 /* Incomplete tracker styling inside toolbar */
@@ -4838,7 +4831,7 @@ input:checked + .slider:before {
 
 .option-table td {
   padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--color-border);
   vertical-align: middle;
 }
 
@@ -8378,6 +8371,11 @@ html[dir="rtl"] .auth-form-wrapper {
     color: var(--color-text-bright);
   }
 
+  /* Brighten the logo so it is visible on dark backgrounds */
+  .login-logo {
+    filter: brightness(1.6) contrast(1.1);
+  }
+
   .login-subtitle {
     color: var(--color-muted);
   }
@@ -11254,11 +11252,11 @@ button:focus-visible,
   }
 
   .auth-form-container {
-    padding: 0.25rem 0.75rem;
+    padding: 0 0.75rem;
   }
 
   .auth-form {
-    gap: 0.3rem;
+    gap: 0.2rem;
   }
 
   .auth-form-title {
@@ -11268,11 +11266,11 @@ button:focus-visible,
 
   .auth-form-subtitle {
     font-size: 0.7rem;
-    margin-bottom: 0.15rem;
+    margin-bottom: 0;
   }
 
   .auth-form-field {
-    gap: 0.1rem;
+    gap: 0;
   }
 
   /* Audit fix: labels at 0.75rem (12px) minimum for readability */
@@ -11291,7 +11289,7 @@ button:focus-visible,
     padding: 0.35rem;
     font-size: 0.85rem;
     min-height: 44px;
-    margin-top: 0.15rem;
+    margin-top: 0;
   }
 
   /* Hide form title/subtitle in landscape — the login-panel-header already provides context */
@@ -11302,19 +11300,20 @@ button:focus-visible,
 
   .auth-form-footer {
     font-size: 0.75rem;
-    margin-top: 0.1rem;
+    margin-top: 0;
   }
 
   .auth-form-link {
     display: inline-block;
-    padding: 0.5rem 0.75rem;
+    padding: 0.35rem 0.75rem;
     min-height: 44px;
     line-height: 1.5;
+    box-sizing: border-box;
   }
 
-  /* Language toggle: more compact in landscape */
+  /* Language toggle: 44px touch target, compact layout */
   .auth-lang-toggle {
-    margin-top: 0.15rem;
+    margin-top: 0;
   }
 
   .auth-lang-toggle button {
@@ -11325,7 +11324,7 @@ button:focus-visible,
 
   /* Error message: compact */
   .auth-form-error {
-    padding: 0.4rem 0.75rem;
+    padding: 0.3rem 0.75rem;
     font-size: 0.75rem;
   }
 }
@@ -11364,27 +11363,28 @@ button:focus-visible,
   }
 
   .canvas-toolbar .segmented#modeGroup .btn {
-    /* Compact visual (36px) with proper touch area — border-box avoids
-       content-box sizing confusion; the icon is centred via flexbox. */
-    min-width: 36px;
+    /* 44px touch target with compact 20px icon — border-box keeps sizing predictable.
+       The 44px meets WCAG 2.5.8 minimum while staying compact in landscape. */
+    min-width: 44px;
     min-height: 36px;
     height: 36px;
     padding: 4px;
     box-sizing: border-box;
     display: inline-flex;
     align-items: center;
-    justify-content: center
+    justify-content: center;
   }
 
   .canvas-toolbar .segmented#modeGroup .btn .material-icons {
-    font-size: 19px;
+    font-size: 20px;
   }
 
-  /* Issue #6: Edge legend below toolbar row, follows header via --header-h */
+  /* Edge legend below toolbar row, follows header via --header-h.
+     Toolbar is at --header-h + 4px and is ~40px tall, so legend starts at +48px. */
   .edge-legend {
     position: fixed;
-    top: calc(var(--header-h, 36px) + 42px);
-    left: 4px;
+    top: calc(var(--header-h, 36px) + 48px);
+    inset-inline-start: 4px;
     transition: top 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     font-size: 10px;
     padding: 2px 6px;
@@ -11402,13 +11402,13 @@ button:focus-visible,
   }
 
   .canvas-fab-toolbar__toggle {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
   }
 
   .canvas-fab-toolbar__item {
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
   }
 
   /* Take Measure FAB */
@@ -11428,17 +11428,20 @@ button:focus-visible,
     font-size: 11px;
   }
 
-  /* Issue #5: Header recall handle — thin chevron strip at top edge when header hidden */
+  /* Header recall handle — chevron strip at top edge when header hidden.
+     Visual height is 28px but the touch target extends to 44px via padding-bottom
+     so finger taps register reliably on real devices. */
   .header-recall-handle {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    height: 24px;
+    height: 28px;
+    padding-bottom: 16px; /* extends touch area to 44px total */
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.28);
+    background: rgba(0, 0, 0, 0.32);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
@@ -11450,8 +11453,8 @@ button:focus-visible,
   }
 
   .header-recall-handle .material-icons {
-    font-size: 16px;
-    color: rgba(255, 255, 255, 0.8);
+    font-size: 18px;
+    color: rgba(255, 255, 255, 0.85);
   }
 
   body.landscape-header-hidden .header-recall-handle {
