@@ -29,7 +29,7 @@
 
 <body>
   <!-- Skip link for keyboard navigation -->
-  <a href="#main" class="skip-link">Skip to main content</a>
+  <a href="#main" class="skip-link" data-i18n="a11y.skipToContent">Skip to main content</a>
   
   <!-- Landscape header recall handle: thin strip at top edge when header is auto-hidden -->
   <div class="header-recall-handle" id="headerRecallHandle" aria-label="Show header" role="button" tabindex="0">
@@ -187,27 +187,27 @@
                   <span class="material-icons">straighten</span>
                   <span class="menu-dropdown__label" data-i18n="coordinates.scale">קנה מידה:</span>
                   <div class="menu-scale-adjuster">
-                    <button id="scaleDecreaseBtn" class="menu-scale-btn" title="הקטן">−</button>
-                    <span id="scaleValueDisplay" class="menu-scale-value">1:100</span>
-                    <button id="scaleIncreaseBtn" class="menu-scale-btn" title="הגדל">+</button>
+                    <button id="scaleDecreaseBtn" class="menu-scale-btn" title="הקטן" aria-label="Decrease scale">−</button>
+                    <span id="scaleValueDisplay" class="menu-scale-value" aria-live="polite">1:100</span>
+                    <button id="scaleIncreaseBtn" class="menu-scale-btn" title="הגדל" aria-label="Increase scale">+</button>
                   </div>
                 </div>
                 <div id="stretchXControls" class="menu-dropdown__item menu-dropdown__item--scale">
                   <span class="material-icons">swap_horiz</span>
                   <span class="menu-dropdown__label" data-i18n="stretch.horizontal">מתיחה אופקית:</span>
                   <div class="menu-scale-adjuster">
-                    <button id="stretchXDecreaseBtn" class="menu-scale-btn" title="הקטן">−</button>
-                    <span id="stretchXValueDisplay" class="menu-scale-value">1.0</span>
-                    <button id="stretchXIncreaseBtn" class="menu-scale-btn" title="הגדל">+</button>
+                    <button id="stretchXDecreaseBtn" class="menu-scale-btn" title="הקטן" aria-label="Decrease horizontal stretch">−</button>
+                    <span id="stretchXValueDisplay" class="menu-scale-value" aria-live="polite">1.0</span>
+                    <button id="stretchXIncreaseBtn" class="menu-scale-btn" title="הגדל" aria-label="Increase horizontal stretch">+</button>
                   </div>
                 </div>
                 <div id="stretchYControls" class="menu-dropdown__item menu-dropdown__item--scale">
                   <span class="material-icons">swap_vert</span>
                   <span class="menu-dropdown__label" data-i18n="stretch.vertical">מתיחה אנכית:</span>
                   <div class="menu-scale-adjuster">
-                    <button id="stretchYDecreaseBtn" class="menu-scale-btn" title="הקטן">−</button>
-                    <span id="stretchYValueDisplay" class="menu-scale-value">1.0</span>
-                    <button id="stretchYIncreaseBtn" class="menu-scale-btn" title="הגדל">+</button>
+                    <button id="stretchYDecreaseBtn" class="menu-scale-btn" title="הקטן" aria-label="Decrease vertical stretch">−</button>
+                    <span id="stretchYValueDisplay" class="menu-scale-value" aria-live="polite">1.0</span>
+                    <button id="stretchYIncreaseBtn" class="menu-scale-btn" title="הגדל" aria-label="Increase vertical stretch">+</button>
                   </div>
                 </div>
                 <button id="resetStretchBtn" class="menu-dropdown__item" role="menuitem" data-action="resetStretch">
@@ -252,7 +252,7 @@
                 <div id="mapTypeControls" class="menu-dropdown__item menu-dropdown__item--select">
                   <span class="material-icons">terrain</span>
                   <span class="menu-dropdown__label" data-i18n="map.type">סוג מפה:</span>
-                  <select id="mapTypeSelect" class="menu-inline-select">
+                  <select id="mapTypeSelect" class="menu-inline-select" aria-label="Map type">
                     <option value="orthophoto" data-i18n="map.orthophoto">אורתופוטו</option>
                     <option value="street" data-i18n="map.street">רחובות</option>
                   </select>
@@ -314,14 +314,14 @@
     <div class="login-panel-content">
       <div class="login-panel-header">
         <img src="./geopoint_logo.png" alt="Geopoint" class="login-logo" />
-        <h1 id="loginTitle">Manhole Mapper</h1>
-        <p id="loginSubtitle" class="login-subtitle">התחבר כדי לגשת לשרטוטים שלך</p>
+        <h2 id="loginTitle" data-i18n="appTitle">Manhole Mapper</h2>
+        <p id="loginSubtitle" class="login-subtitle" data-i18n="auth.loginSubtitle">התחבר כדי לגשת לשרטוטים שלך</p>
       </div>
       <div id="authContainer" class="auth-form-wrapper">
         <!-- SignIn/SignUp component will be mounted here -->
         <div class="login-loading">
           <span class="material-icons spin">sync</span>
-          <span id="loginLoadingText">טוען...</span>
+          <span id="loginLoadingText" data-i18n="auth.loading">טוען...</span>
         </div>
       </div>
     </div>
@@ -331,18 +331,18 @@
   <div id="authLoadingOverlay" class="auth-loading-overlay" style="display: none;">
     <div class="auth-loading-content">
       <span class="material-icons spin">sync</span>
-      <span id="authLoadingText">בודק הרשאות...</span>
+      <span id="authLoadingText" data-i18n="auth.checkingAuth">בודק הרשאות...</span>
     </div>
   </div>
 
   <!-- Mobile overflow menu. This menu is hidden on larger screens and shows a vertical list of actions on small screens. -->
-  <div id="mobileMenu" class="mobile-menu" style="display:none;">
+  <div id="mobileMenu" class="mobile-menu" role="dialog" aria-label="Navigation menu" aria-hidden="true" style="display:none;">
     <!-- Menu header with close button -->
     <div class="mobile-menu-header">
-      <h3>
-        <span class="material-icons">menu</span>
+      <h2 class="mobile-menu-heading">
+        <span class="material-icons" aria-hidden="true">menu</span>
         <span id="mobileMenuTitle" data-i18n="menu">תפריט</span>
-      </h3>
+      </h2>
       <button id="mobileMenuCloseBtn" class="mobile-menu-close" title="סגור" aria-label="Close menu" data-i18n-title="close" data-i18n-aria-label="close">
         <span class="material-icons">close</span>
       </button>
@@ -464,27 +464,27 @@
           <span class="material-icons">straighten</span>
           <span class="mobile-menu__label" data-i18n="coordinates.scale">קנה מידה:</span>
           <div class="mobile-menu__scale-adjuster">
-            <button id="mobileScaleDecreaseBtn" class="mobile-menu__scale-btn" title="הקטן">−</button>
-            <span id="mobileScaleValueDisplay" class="mobile-menu__scale-value">1:100</span>
-            <button id="mobileScaleIncreaseBtn" class="mobile-menu__scale-btn" title="הגדל">+</button>
+            <button id="mobileScaleDecreaseBtn" class="mobile-menu__scale-btn" title="הקטן" aria-label="Decrease scale">−</button>
+            <span id="mobileScaleValueDisplay" class="mobile-menu__scale-value" aria-live="polite">1:100</span>
+            <button id="mobileScaleIncreaseBtn" class="mobile-menu__scale-btn" title="הגדל" aria-label="Increase scale">+</button>
           </div>
         </div>
         <div id="mobileStretchXControls" class="mobile-menu__scale">
           <span class="material-icons">swap_horiz</span>
           <span class="mobile-menu__label" data-i18n="stretch.horizontal">מתיחה אופקית:</span>
           <div class="mobile-menu__scale-adjuster">
-            <button id="mobileStretchXDecreaseBtn" class="mobile-menu__scale-btn" title="הקטן">−</button>
-            <span id="mobileStretchXValueDisplay" class="mobile-menu__scale-value">1.0</span>
-            <button id="mobileStretchXIncreaseBtn" class="mobile-menu__scale-btn" title="הגדל">+</button>
+            <button id="mobileStretchXDecreaseBtn" class="mobile-menu__scale-btn" title="הקטן" aria-label="Decrease horizontal stretch">−</button>
+            <span id="mobileStretchXValueDisplay" class="mobile-menu__scale-value" aria-live="polite">1.0</span>
+            <button id="mobileStretchXIncreaseBtn" class="mobile-menu__scale-btn" title="הגדל" aria-label="Increase horizontal stretch">+</button>
           </div>
         </div>
         <div id="mobileStretchYControls" class="mobile-menu__scale">
           <span class="material-icons">swap_vert</span>
           <span class="mobile-menu__label" data-i18n="stretch.vertical">מתיחה אנכית:</span>
           <div class="mobile-menu__scale-adjuster">
-            <button id="mobileStretchYDecreaseBtn" class="mobile-menu__scale-btn" title="הקטן">−</button>
-            <span id="mobileStretchYValueDisplay" class="mobile-menu__scale-value">1.0</span>
-            <button id="mobileStretchYIncreaseBtn" class="mobile-menu__scale-btn" title="הגדל">+</button>
+            <button id="mobileStretchYDecreaseBtn" class="mobile-menu__scale-btn" title="הקטן" aria-label="Decrease vertical stretch">−</button>
+            <span id="mobileStretchYValueDisplay" class="mobile-menu__scale-value" aria-live="polite">1.0</span>
+            <button id="mobileStretchYIncreaseBtn" class="mobile-menu__scale-btn" title="הגדל" aria-label="Increase vertical stretch">+</button>
           </div>
         </div>
         <button id="mobileResetStretchBtn" class="mobile-menu__btn" title="" aria-label="Reset stretch">
@@ -507,7 +507,7 @@
         <div id="mobileMapTypeControls" class="mobile-menu__select-row">
           <span class="material-icons">terrain</span>
           <span class="mobile-menu__label" data-i18n="map.type">סוג מפה:</span>
-          <select id="mobileMapTypeSelect" class="mobile-menu__inline-select">
+          <select id="mobileMapTypeSelect" class="mobile-menu__inline-select" aria-label="Map type">
             <option value="orthophoto" data-i18n="map.orthophoto">אורתופוטו</option>
             <option value="street" data-i18n="map.street">רחובות</option>
           </select>
@@ -604,7 +604,7 @@
   <!-- Mobile menu backdrop overlay -->
   <div id="mobileMenuBackdrop" class="mobile-menu-backdrop" style="display:none;"></div>
   <!-- Projects Management Screen -->
-  <div id="projectsScreen" class="admin-screen-wrapper" style="display:none;">
+  <div id="projectsScreen" class="admin-screen-wrapper" role="dialog" aria-modal="true" aria-labelledby="projectsScreenTitle" style="display:none;">
     <div class="panel admin-container admin-screen-panel">
       <div class="admin-header">
         <h2 id="projectsScreenTitle">
@@ -628,7 +628,7 @@
   </div>
   
   <!-- Input Flow Settings Screen -->
-  <div id="inputFlowScreen" class="admin-screen-wrapper" style="display:none;">
+  <div id="inputFlowScreen" class="admin-screen-wrapper" role="dialog" aria-modal="true" aria-labelledby="inputFlowScreenTitle" style="display:none;">
     <div class="panel admin-container admin-screen-panel input-flow-screen-panel">
       <div class="admin-header">
         <h2 id="inputFlowScreenTitle">
@@ -658,7 +658,7 @@
   </div>
   
   <!-- Dedicated Admin Screen (separate from the canvas) -->
-  <div id="adminScreen" class="admin-screen-wrapper" style="display:none;">
+  <div id="adminScreen" class="admin-screen-wrapper" role="dialog" aria-modal="true" aria-labelledby="adminScreenTitle" style="display:none;">
     <div class="panel admin-container admin-screen-panel">
       <div class="admin-header">
         <h2 id="adminScreenTitle">
@@ -724,7 +724,9 @@
       <button id="gpsQuickCaptureBtn"
               class="take-measure-fab"
               title="Take Measure"
+              aria-label="Take Measure"
               data-i18n-title="gpsCapture.takeMeasure"
+              data-i18n-aria-label="gpsCapture.takeMeasure"
               style="display: none;">
         <span class="material-icons" aria-hidden="true">add_location_alt</span>
         <span class="take-measure-fab__label" data-i18n="gpsCapture.takeMeasure"></span>
@@ -735,7 +737,7 @@
       </div>
       <div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
       <!-- Edge type legend -->
-      <div id="edgeLegend" class="edge-legend"></div>
+      <div id="edgeLegend" class="edge-legend" role="img" aria-label="Edge type color legend"></div>
       <!-- Canvas FAB Speed Dial Toolbar -->
       <div id="canvasFabToolbar" class="canvas-fab-toolbar">
         <div class="canvas-fab-toolbar__actions">
@@ -774,15 +776,15 @@
         <div class="sketch-side-panel__list"></div>
       </div>
       <!-- Sketch Side Panel Toggle (project-canvas mode) -->
-      <button id="sketchSidePanelToggle" class="btn btn-icon canvas-fab sketch-side-panel-toggle" title="Toggle sketches panel" style="display:none;">
-        <span class="material-icons">layers</span>
+      <button id="sketchSidePanelToggle" class="btn btn-icon canvas-fab sketch-side-panel-toggle" title="Toggle sketches panel" aria-label="Toggle sketches panel" style="display:none;">
+        <span class="material-icons" aria-hidden="true">layers</span>
       </button>
       <!-- Toggle button for floating keyboard (shown when numeric input is focused on mobile) -->
       <button id="toggleFloatingKeyboard" class="toggle-floating-keyboard" style="display:none;" aria-label="Toggle numeric keyboard">
         <span class="material-icons" aria-hidden="true">dialpad</span>
         <span class="toggle-keyboard-label"></span>
       </button>
-      <div id="startPanel" style="display: none;">
+      <div id="startPanel" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="startTitle">
         <div class="panel">
           <h2 id="startTitle" data-i18n="startTitle">התחלת שרטוט חדש</h2>
           <div class="field">
@@ -801,7 +803,7 @@
           </div>
         </div>
       </div>
-      <div id="homePanel" style="display: none;">
+      <div id="homePanel" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="homeTitle">
         <div class="panel home-panel-modern">
           <!-- Header -->
           <div class="home-panel-header">
@@ -814,18 +816,18 @@
             </button>
           </div>
           <!-- Sync status indicator -->
-          <div id="syncStatusBar" class="home-panel-sync-status" style="display: none;">
-            <span class="material-icons sync-icon">cloud_sync</span>
+          <div id="syncStatusBar" class="home-panel-sync-status" style="display: none;" aria-live="polite">
+            <span class="material-icons sync-icon" aria-hidden="true">cloud_sync</span>
             <span id="syncStatusText">מסונכרן</span>
           </div>
           <!-- Tabs for Personal/Organization sketches -->
-          <div class="sketch-tabs" id="sketchTabs">
-            <button class="sketch-tab active" data-tab="personal" id="personalTab">
-              <span class="material-icons">person</span>
+          <div class="sketch-tabs" id="sketchTabs" role="tablist" aria-label="Sketch categories">
+            <button class="sketch-tab active" data-tab="personal" id="personalTab" role="tab" aria-selected="true">
+              <span class="material-icons" aria-hidden="true">person</span>
               <span data-i18n="sketches.personal">שרטוטים שלי</span>
             </button>
-            <button class="sketch-tab" data-tab="organization" id="organizationTab">
-              <span class="material-icons">business</span>
+            <button class="sketch-tab" data-tab="organization" id="organizationTab" role="tab" aria-selected="false">
+              <span class="material-icons" aria-hidden="true">business</span>
               <span data-i18n="sketches.organization">שרטוטי הארגון</span>
             </button>
           </div>
@@ -846,14 +848,14 @@
         <div class="panel">
           <h2 id="helpTitle" data-i18n="helpTitle">טיפים וקיצורי מקשים</h2>
           <ul id="helpList">
-            <li>N: מצב שוחה</li>
-            <li>E: מצב קו</li>
-            <li>S: שמירה</li>
-            <li>Space: הזזת קנבס (לחוץ וגרור)</li>
-            <li>= / - : זום פנימה / החוצה (0 לאיפוס)</li>
-            <li>גלגלת עכבר מעל הקנבס: זום</li>
-            <li>Esc: ביטול פעולה או ניקוי בחירה</li>
-            <li>Delete/Backspace: מחיקת פריט נבחר</li>
+            <li data-i18n="helpLine.nodeMode">N: מצב שוחה</li>
+            <li data-i18n="helpLine.edgeMode">E: מצב קו</li>
+            <li data-i18n="helpLine.save">S: שמירה</li>
+            <li data-i18n="helpLine.pan">Space: הזזת קנבס (לחוץ וגרור)</li>
+            <li data-i18n="helpLine.zoom">= / - : זום פנימה / החוצה (0 לאיפוס)</li>
+            <li data-i18n="helpLine.wheel">גלגלת עכבר מעל הקנבס: זום</li>
+            <li data-i18n="helpLine.cancel">Esc: ביטול פעולה או ניקוי בחירה</li>
+            <li data-i18n="helpLine.delete">Delete/Backspace: מחיקת פריט נבחר</li>
           </ul>
           <p id="helpNote" data-i18n="helpNote">במצב קו, בחר שוחת מקור ואז שוחת יעד.</p>
           <button class="close-btn" id="closeHelpBtn" data-i18n="close">סגור</button>
@@ -895,8 +897,8 @@
               <span class="material-icons">done_all</span>
               <span class="finish-workday-title-text" data-i18n="finishWorkday.title">סיום יום עבודה</span>
             </h2>
-            <button id="finishWorkdayCloseBtn" class="icon-btn" title="סגור">
-              <span class="material-icons">close</span>
+            <button id="finishWorkdayCloseBtn" class="icon-btn" title="סגור" aria-label="Close" data-i18n-aria-label="close">
+              <span class="material-icons" aria-hidden="true">close</span>
             </button>
           </div>
           <div id="finishWorkdayContent" class="finish-workday-content">
@@ -917,7 +919,7 @@
       </div>
     </div>
     <div id="sidebar" class="drawer">
-      <div class="sidebar-drag-handle">
+      <div class="sidebar-drag-handle" role="separator" aria-label="Resize sidebar" aria-orientation="horizontal">
         <div class="drag-handle-bar"></div>
       </div>
       <div class="sidebar-header">
@@ -926,7 +928,7 @@
           <span class="material-icons">close</span>
         </button>
       </div>
-      <div id="detailsContainer">
+      <div id="detailsContainer" aria-live="polite">
         <p id="detailsDefault" data-i18n="detailsDefault">בחר שוחה או קו כדי לערוך.</p>
       </div>
     </div>
@@ -959,7 +961,7 @@
         </button>
       </div>
     </div>
-    <div class="floating-keyboard-resize-handle"></div>
+    <div class="floating-keyboard-resize-handle" aria-hidden="true"></div>
   </div>
   <!-- Application logic and UI behavior (ES Module entry) -->
   <script type="module" src="./src/main-entry.js"></script>

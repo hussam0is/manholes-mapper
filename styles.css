@@ -467,32 +467,6 @@ header h1 {
   overflow-x: auto;
 }
 
-/* Dropdown menu for export actions */
-.dropdown {
-  position: relative;
-  display: inline-block;
-}
-
-.dropdown-menu {
-  display: none;
-  position: absolute;
-  top: 100%;
-  right: 0;
-  min-width: 180px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  z-index: 300;
-  padding: 0.25rem 0;
-  margin-top: 4px;
-}
-
-[dir="rtl"] .dropdown-menu {
-  right: auto;
-  left: 0;
-}
-
 /* RTL support for mobile menu (supports both legacy and new BEM class names) */
 [dir="rtl"] #mobileMenu .mobile-menu-header,
 [dir="rtl"] .mobile-menu__header {
@@ -526,39 +500,6 @@ header h1 {
 [dir="rtl"] .mobile-menu__select {
   text-align: right;
   direction: rtl;
-}
-
-.dropdown-menu.open {
-  display: block;
-}
-
-.dropdown-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font-size: 0.875rem;
-  color: var(--color-text);
-  text-align: start;
-}
-
-.dropdown-item:hover {
-  background: var(--color-bg);
-}
-
-.dropdown-item .material-icons {
-  font-size: 1.1rem;
-  color: var(--color-muted);
-}
-
-.dropdown-divider {
-  margin: 0.25rem 0;
-  border: none;
-  border-top: 1px solid var(--color-border);
 }
 
 /* Professional grouped controls in header */
@@ -608,30 +549,6 @@ header #controls .toolbar-group .btn {
 .btn-icon:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
-}
-
-/* Small CSV indicator for icon-only export buttons */
-/* Small file icon overlay for icon-only export buttons */
-.badge-icon {
-  position: absolute;
-  top: 18px;
-  right: 1px;
-  font-size: 12px;
-  background: rgba(255, 255, 255, 0.95);
-  color: var(--color-primary-strong);
-  border-radius: 3px;
-  padding: 0px;
-  line-height: 1;
-  pointer-events: none;
-}
-
-/* Inline CSV chip for regular buttons (mobile menu) */
-/* Inline file icon for mobile export buttons */
-.file-tag.material-icons {
-  font-size: 16px;
-  color: var(--color-primary-strong);
-  opacity: 0.9;
-  margin-inline-start: 4px;
 }
 
 /* Segment groups inside header enrich with glass look */
@@ -721,29 +638,6 @@ header .segmented .btn {
   box-shadow: var(--ring);
 }
 
-/* Mobile search styling */
-.mobile-search {
-  width: 100%;
-}
-
-.mobile-search .search-input {
-  width: 100%;
-  background: var(--color-bg);
-  color: var(--color-text);
-  border-color: var(--color-border);
-  text-align: start;
-}
-
-.mobile-search .search-input::placeholder {
-  color: var(--color-muted);
-}
-
-.mobile-search .search-input:focus {
-  background: var(--color-surface, #ffffff);
-  border-color: var(--color-primary);
-  box-shadow: var(--ring);
-}
-
 /* Improve contrast of primary actions in the header */
 header .btn-primary {
   background: #ffffff;
@@ -775,7 +669,6 @@ header .btn-primary:hover {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  -webkit-overflow-scrolling: touch;
   transform-origin: top right;
   animation: mobileMenuSlideIn 0.2s ease-out;
 }
@@ -1122,45 +1015,6 @@ header select.btn option {
   color: #0f172a;
 }
 
-/* Button-like autosave control in header, toggle remains for state */
-.autosave-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  /* match .btn spacing */
-  cursor: pointer;
-  height: 36px;
-  /* match header buttons */
-  padding: 0 0.9rem;
-  /* vertical padding handled by fixed height */
-  border-radius: 999px;
-  /* pill like other header buttons */
-  line-height: 1;
-  /* avoid extra vertical room */
-  box-sizing: border-box;
-}
-
-.autosave-btn input[type="checkbox"] {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 3px;
-  border: 2px solid currentColor;
-  position: relative;
-  margin: 0;
-  /* remove default margins that increase height */
-}
-
-.autosave-btn input[type="checkbox"]:checked::after {
-  content: "check";
-  font-family: 'Material Icons';
-  font-size: 16px;
-  position: absolute;
-  left: -2px;
-  top: -2px;
-}
-
 .btn-danger {
   background: var(--color-danger);
   color: #fff;
@@ -1242,7 +1096,7 @@ select.btn:focus-visible {
 .canvas-toolbar {
   position: absolute;
   top: 12px;
-  right: 12px;
+  inset-inline-end: 12px;
   z-index: 150;
   /* keep under header */
   padding-inline-end: max(4px, env(safe-area-inset-right));
@@ -1281,6 +1135,8 @@ select.btn:focus-visible {
   color: #f9fafb;
   border: none;
   background: transparent;
+  min-width: 44px;
+  min-height: 44px;
 }
 
 /* Standardize Material Icon size across all canvas toolbar buttons */
@@ -1855,14 +1711,14 @@ canvas {
 /* --- Canvas FAB Speed Dial Toolbar --- */
 .canvas-fab-toolbar {
   position: absolute;
-  right: 12px;
-  bottom: 64px;
+  inset-inline-end: 12px;
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   z-index: 16;
   display: flex;
   flex-direction: row-reverse;
   align-items: center;
   gap: 0;
-  transition: right 240ms cubic-bezier(.2, .8, .2, 1),
+  transition: inset-inline-end 240ms cubic-bezier(.2, .8, .2, 1),
               bottom 0.3s ease;
 }
 
@@ -2226,7 +2082,7 @@ canvas {
   .drawer {
     position: fixed;
     top: var(--header-h, 56px);
-    right: 0;
+    inset-inline-end: 0;
     height: calc(100vh - var(--header-h, 56px));
     height: calc(100dvh - var(--header-h, 56px));
     height: calc(var(--app-height, 100dvh) - var(--header-h, 56px));
@@ -2242,29 +2098,32 @@ canvas {
     display: flex;
   }
 
+  [dir="rtl"] .drawer {
+    transform: translate3d(-100%, 0, 0);
+  }
+
   .drawer.open {
     transform: translate3d(0, 0, 0);
   }
 
-  /* When the drawer is open, move the canvas toolbar left so it's still visible */
+  /* When the drawer is open, move the canvas toolbar away so it's still visible */
   body.drawer-open .canvas-toolbar {
-    right: calc(12px + var(--drawer-w));
+    inset-inline-end: calc(12px + var(--drawer-w));
   }
 
   /* Offset FAB toolbar and standalone elements when drawer is open */
   body.drawer-open .canvas-fab-toolbar,
   body.drawer-open .canvas-fab {
-    right: calc(12px + var(--drawer-w));
+    inset-inline-end: calc(12px + var(--drawer-w));
   }
 
   body.drawer-open .toggle-floating-keyboard {
     inset-inline-end: calc(12px + var(--drawer-w));
-    right: auto;
   }
 
   /* Animate toolbar offset for a smooth coordinated slide */
   .canvas-toolbar {
-    transition: right 240ms cubic-bezier(.2, .8, .2, 1);
+    transition: inset-inline-end 240ms cubic-bezier(.2, .8, .2, 1);
   }
 }
 
@@ -2444,27 +2303,6 @@ canvas {
   margin-bottom: 0.6rem;
 }
 
-/* Import history section styles */
-.import-history-section {
-  background: var(--color-primary-bg); /* light blue tint */
-  border-color: var(--color-primary);
-}
-.import-history-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  max-height: 150px;
-  overflow-y: auto;
-  padding: 4px;
-}
-.import-history-btn {
-  flex: 0 0 auto;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 140px;
-}
-
 @media (max-width: 640px) {
   .details-grid.two-col {
     grid-template-columns: 1fr;
@@ -2618,39 +2456,9 @@ canvas {
   }
 }
 
-/* Indicator chips */
-/* Pill radio bar for line diameter */
-.radio-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.radio-bar .radio-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.35rem 0.6rem;
-  border: 1px solid var(--border-color, #d1d5db);
-  border-radius: 9999px;
-  background: var(--pill-bg, #fff);
-  cursor: pointer;
-  user-select: none;
-}
-
-.radio-bar input[type="radio"] {
-  accent-color: var(--primary, #2563eb);
-}
-
 .field select#edgeDiameterSelect,
 .field select[id^="edgeDiameterSelect_"] {
   width: 100%;
-}
-
-.range-value {
-  margin-top: 0.25rem;
-  font-size: 0.85rem;
-  color: #374151;
 }
 
 .muted {
@@ -3031,13 +2839,6 @@ input[type="radio"] {
   }
 }
 
-/* Form help text */
-.form-help {
-  font-size: var(--text-xs);
-  color: var(--color-muted);
-  margin-top: var(--space-1);
-}
-
 .form-error {
   font-size: var(--text-xs);
   color: var(--color-danger);
@@ -3045,18 +2846,6 @@ input[type="radio"] {
   display: flex;
   align-items: center;
   gap: var(--space-1);
-}
-
-/* Input groups */
-.input-group {
-  display: flex;
-  gap: var(--space-2);
-  align-items: stretch;
-}
-
-.input-group > input,
-.input-group > select {
-  flex: 1;
 }
 
 /* Input with icon */
@@ -3115,7 +2904,6 @@ input.floating-keyboard-active {
   backdrop-filter: blur(4px);
   overflow-y: auto;
   padding: var(--space-4);
-  -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
 }
 
@@ -3171,8 +2959,6 @@ input.floating-keyboard-active {
 .modal-sm { width: 400px; }
 .modal-md { width: 500px; }
 .modal-lg { width: 700px; }
-.modal-xl { width: 900px; }
-.modal-full { width: 95vw; max-width: 1200px; }
 
 /* Modal header */
 .modal-header {
@@ -3229,7 +3015,6 @@ input.floating-keyboard-active {
   flex: 1;
   padding: var(--space-5);
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
 }
 
 /* Modal footer */
@@ -3289,7 +3074,6 @@ input.floating-keyboard-active {
   backdrop-filter: blur(4px);
   overflow-y: auto;
   padding: var(--space-4);
-  -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
 }
 
@@ -4564,51 +4348,6 @@ input:checked + .slider:before {
   }
 }
 
-/* Dropdown item primary styling */
-.dropdown-item-primary {
-  color: var(--color-success) !important;
-  font-weight: 500;
-}
-
-.dropdown-item-primary:hover {
-  background: var(--color-success-bg) !important;
-}
-
-/* Coordinate toggle dropdown item */
-.dropdown-toggle-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.9rem;
-  color: var(--color-text);
-  background: none;
-  border: none;
-  text-align: start;
-  cursor: pointer;
-}
-
-.dropdown-toggle-item:hover {
-  background: var(--color-bg);
-}
-
-.dropdown-toggle-item input[type="checkbox"] {
-  accent-color: var(--color-success-hover);
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-}
-
-.dropdown-toggle-item .material-icons {
-  font-size: 1.1rem;
-  color: var(--color-muted);
-}
-
-.dropdown-toggle-item:has(input:checked) .material-icons {
-  color: var(--color-success-hover);
-}
-
 /* Coordinates toggle button for mobile menu */
 .coordinates-toggle-btn {
   display: flex;
@@ -4630,48 +4369,6 @@ input:checked + .slider:before {
 
 .coordinates-toggle-btn:has(input:checked) .material-icons {
   color: var(--color-success-hover);
-}
-
-/* Coordinate status indicator for canvas toolbar */
-.coordinate-status {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.25rem 0.5rem;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 6px;
-  font-size: 0.75rem;
-  color: var(--color-muted);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.coordinate-status .material-icons {
-  font-size: 1rem;
-}
-
-.coordinate-status.active {
-  color: #16a34a;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-}
-
-.coordinate-status.active .material-icons {
-  color: #16a34a;
-}
-
-/* Coordinate scale controls */
-.coordinate-scale-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  border-top: 1px solid var(--color-border);
-  margin-top: 0.25rem;
-}
-
-.coordinate-scale-controls .material-icons {
-  font-size: 1.1rem;
-  color: var(--color-muted);
 }
 
 .scale-adjuster {
@@ -4969,7 +4666,6 @@ input:checked + .slider:before {
   /* allow the flex child to shrink and enable scrolling */
   overflow-y: auto;
   overflow-x: hidden; /* prevent horizontal scroll/dance */
-  -webkit-overflow-scrolling: touch;
 }
 
 .admin-content > .admin-tabs:first-child {
@@ -5031,27 +4727,6 @@ input:checked + .slider:before {
 
 .admin-group:last-child {
   margin-bottom: 0;
-}
-
-.custom-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.custom-row {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-  padding: 0.75rem;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-}
-
-.custom-row:hover {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 /* Admin options table: layout and visual style */
@@ -5446,7 +5121,6 @@ select.invalid:focus {
 
   .admin-tabs {
     overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
     position: sticky;
     top: 0;
     z-index: 10;
@@ -5706,7 +5380,7 @@ select.invalid:focus {
     font-weight: 600;
     color: var(--color-muted);
     font-size: 0.8rem;
-    margin-left: 0.5rem;
+    margin-inline-start: 0.5rem;
     min-width: 50px;
   }
 
@@ -5716,9 +5390,9 @@ select.invalid:focus {
     width: auto;
     justify-content: center;
     align-items: center;
-    border-left: 1px solid var(--color-border);
-    padding-left: 0.75rem;
-    margin-left: 0.75rem;
+    border-inline-start: 1px solid var(--color-border);
+    padding-inline-start: 0.75rem;
+    margin-inline-start: 0.75rem;
   }
 
   .option-table .opt-enabled::before {
@@ -5779,12 +5453,6 @@ select.invalid:focus {
     min-width: 44px;
     min-height: 44px;
     border-radius: 8px;
-  }
-
-  .custom-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
   }
 
   /* Add option button styling on mobile */
@@ -5957,9 +5625,9 @@ select.invalid:focus {
   .option-table .opt-enabled {
     grid-column: 1;
     grid-row: auto;
-    border-left: none;
-    padding-left: 0;
-    margin-left: 0;
+    border-inline-start: none;
+    padding-inline-start: 0;
+    margin-inline-start: 0;
     justify-content: flex-start;
     gap: 0.5rem;
   }
@@ -6095,8 +5763,7 @@ select.invalid:focus {
   /* Bottom-sheet behavior for details drawer on phones */
   .drawer {
     position: fixed;
-    left: 0;
-    right: 0;
+    inset-inline: 0;
     bottom: 0;
     top: auto;
     width: 100%;
@@ -6106,9 +5773,9 @@ select.invalid:focus {
     transition: transform 260ms cubic-bezier(.2, .8, .2, 1);
     z-index: 40;
     border-top: 1px solid var(--color-border);
-    border-left: none;
-    border-top-left-radius: var(--radius);
-    border-top-right-radius: var(--radius);
+    border-inline-start: none;
+    border-start-start-radius: var(--radius);
+    border-start-end-radius: var(--radius);
     /* On mobile, always use flex layout — transform handles visibility */
     display: flex;
   }
@@ -6126,12 +5793,11 @@ select.invalid:focus {
   body.drawer-open .canvas-toolbar,
   body.drawer-open .canvas-fab-toolbar,
   body.drawer-open .canvas-fab {
-    right: 12px;
+    inset-inline-end: 12px;
   }
 
   body.drawer-open .toggle-floating-keyboard {
     inset-inline-end: 12px;
-    right: auto;
     bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 8px);
   }
 
@@ -6167,13 +5833,13 @@ select.invalid:focus {
 
   .canvas-toolbar {
     top: 8px;
-    right: 8px;
+    inset-inline-end: 8px;
   }
 
   .canvas-fab-toolbar {
-    right: 8px;
+    inset-inline-end: 8px;
     bottom: 60px;
-    transition: bottom 0.3s ease, right 240ms cubic-bezier(.2, .8, .2, 1);
+    transition: bottom 0.3s ease, inset-inline-end 240ms cubic-bezier(.2, .8, .2, 1);
   }
 
   .canvas-fab {
@@ -6183,7 +5849,7 @@ select.invalid:focus {
   /* Only adjust bottom position when drawer is closed */
   body:not(.drawer-open) .canvas-fab {
     bottom: 8px;
-    right: 8px;
+    inset-inline-end: 8px;
   }
 
   /* Take Measure FAB mobile sizing */
@@ -6220,19 +5886,10 @@ select.invalid:focus {
     gap: 8px;
   }
 
-  .edge-legend-item {
-    gap: 4px;
-  }
-
   /* Wrap control buttons to two columns */
   #controls>* {
     flex: 1 1 45%;
     margin-top: 0.4rem;
-  }
-
-  /* Make search input full width on small screens */
-  .search-group {
-    flex: 1 1 100% !important;
   }
 
   .search-input {
@@ -6280,7 +5937,7 @@ select.invalid:focus {
 .floating-keyboard {
   position: fixed;
   bottom: 20px;
-  right: 20px;
+  inset-inline-end: 20px;
   background: var(--color-surface);
   border: none;
   border-radius: 16px;
@@ -6451,7 +6108,7 @@ select.invalid:focus {
 .floating-keyboard-resize-handle {
   position: absolute;
   bottom: 0;
-  right: 0;
+  inset-inline-end: 0;
   width: 44px;
   height: 44px;
   cursor: nwse-resize;
@@ -6469,7 +6126,7 @@ select.invalid:focus {
   content: '';
   position: absolute;
   bottom: 0;
-  right: 0;
+  inset-inline-end: 0;
   width: 20px;
   height: 20px;
   background: linear-gradient(135deg, transparent 50%, color-mix(in srgb, var(--color-primary) 50%, transparent) 50%);
@@ -6829,16 +6486,6 @@ select.invalid:focus {
     background: var(--color-surface);
   }
 
-  .custom-row {
-    background: var(--color-surface);
-    border-color: var(--color-border);
-  }
-
-  .custom-row:hover {
-    background: var(--color-surface-alt);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  }
-
   .admin-section input[type="text"],
   .admin-section select {
     background: var(--color-bg);
@@ -6880,12 +6527,6 @@ select.invalid:focus {
   .details-section {
     background: var(--color-surface);
     border-color: var(--color-border);
-  }
-
-  /* Dark mode for import history section */
-  .import-history-section {
-    background: #0c2d48; /* dark blue tint */
-    border-color: #0369a1;
   }
 
   .soft-blue-header .segmented {
@@ -7871,7 +7512,6 @@ select.invalid:focus {
   overflow-y: auto;
   padding: 1rem;
   background: var(--color-bg);
-  -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   scroll-behavior: smooth;
 }
@@ -9898,17 +9538,6 @@ button:focus-visible,
   }
 }
 
-/* Focus-visible polyfill support */
-.js-focus-visible :focus:not(.focus-visible) {
-  outline: none;
-  box-shadow: none;
-}
-
-.js-focus-visible .focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
-}
-
 /* ===========================================
    Responsive Refinements - Small Screens (360px)
    =========================================== */
@@ -9938,7 +9567,7 @@ button:focus-visible,
   
   /* Stack mode buttons if needed */
   .canvas-toolbar {
-    right: var(--space-2);
+    inset-inline-end: var(--space-2);
     top: var(--space-2);
   }
   
@@ -10017,7 +9646,6 @@ button:focus-visible,
   }
   
   /* Dropdown items */
-  .dropdown-item,
   .menu-dropdown__item {
     min-height: var(--touch-target-min);
   }
@@ -10044,14 +9672,13 @@ button:focus-visible,
     position: fixed;
     top: auto;
     bottom: 0;
-    left: 0;
-    right: 0;
+    inset-inline: 0;
     width: 100%;
     max-width: 100%;
     height: auto;
     max-height: 60vh;
     max-height: 60dvh;
-    border-left: none;
+    border-inline-start: none;
     border-top: 1px solid var(--color-border);
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     transform: translate3d(0, 100%, 0);
@@ -11910,7 +11537,6 @@ button:focus-visible,
     flex: 1;
     max-height: calc(100dvh - 1rem);
     /* Scroll indicator: subtle fade at bottom when content overflows */
-    -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
     scrollbar-color: var(--color-border) transparent;
   }
@@ -12071,10 +11697,10 @@ button:focus-visible,
     border-radius: var(--radius-sm);
   }
 
-  /* Issue #3: FAB to bottom-right corner (not center) to avoid blocking canvas */
+  /* Issue #3: FAB to bottom-end corner (not center) to avoid blocking canvas */
   .canvas-fab-toolbar {
-    right: 8px;
-    left: auto;
+    inset-inline-end: 8px;
+    inset-inline-start: auto;
     transform: none;
     bottom: 8px;
   }
@@ -12151,8 +11777,8 @@ button:focus-visible,
     position: fixed;
     top: var(--header-h, 36px);
     bottom: 0;
-    right: 0;
-    left: auto;
+    inset-inline-end: 0;
+    inset-inline-start: auto;
     width: var(--drawer-w);
     height: calc(100dvh - var(--header-h, 36px));
     height: calc(var(--app-height, 100dvh) - var(--header-h, 36px));
@@ -12160,16 +11786,14 @@ button:focus-visible,
     transform: translate3d(100%, 0, 0);
     transition: transform 260ms cubic-bezier(.2, .8, .2, 1);
     border-top: none;
-    border-top-left-radius: 0;
-    border-top-right-radius: 0;
+    border-start-start-radius: 0;
+    border-start-end-radius: 0;
     border-inline-start: 1px solid var(--color-border);
     z-index: 40;
   }
 
   /* RTL: drawer slides from left in landscape */
   [dir="rtl"] .drawer {
-    right: auto;
-    left: 0;
     transform: translate3d(-100%, 0, 0);
   }
 
@@ -12186,43 +11810,27 @@ button:focus-visible,
     transition: none;
   }
 
-  /* Reposition canvas controls when side drawer is open (LTR: drawer on right) */
+  /* Reposition canvas controls when side drawer is open */
   body.drawer-open .canvas-toolbar {
-    right: calc(var(--drawer-w) + 12px);
+    inset-inline-end: calc(var(--drawer-w) + 12px);
     transform: none;
   }
 
   body.drawer-open .canvas-fab-toolbar {
-    right: calc(var(--drawer-w) + 12px);
-    left: auto;
+    inset-inline-end: calc(var(--drawer-w) + 12px);
+    inset-inline-start: auto;
     transform: none;
     bottom: 8px;
   }
 
   body.drawer-open .canvas-fab {
-    right: calc(var(--drawer-w) + 8px);
+    inset-inline-end: calc(var(--drawer-w) + 8px);
     bottom: 8px;
   }
 
   body.drawer-open .toggle-floating-keyboard {
     inset-inline-end: calc(var(--drawer-w) + 12px);
-    right: auto;
     bottom: 8px;
-  }
-
-  /* RTL: drawer on left, shift controls to left side */
-  [dir="rtl"] body.drawer-open .canvas-toolbar,
-  body.drawer-open[dir="rtl"] .canvas-toolbar {
-    right: auto;
-    left: calc(var(--drawer-w) + 12px);
-    transform: none;
-  }
-
-  [dir="rtl"] body.drawer-open .canvas-fab-toolbar,
-  body.drawer-open[dir="rtl"] .canvas-fab-toolbar {
-    left: calc(var(--drawer-w) + 12px);
-    right: auto;
-    transform: none;
   }
 
   body.drawer-open .take-measure-fab {

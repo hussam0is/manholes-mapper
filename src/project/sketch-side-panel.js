@@ -24,6 +24,9 @@ import { computeSketchIssues, computeProjectTotals } from './sketch-issues.js';
 import { startIssueHighlight } from './issue-highlight.js';
 import { getLastEditPosition } from './last-edit-tracker.js';
 
+/** Escape HTML special characters to prevent XSS */
+const esc = (str) => (typeof window.escapeHtml === 'function' ? window.escapeHtml(str) : String(str || ''));
+
 let panelEl = null;
 let listEl = null;
 let _unsub = null;
@@ -177,7 +180,7 @@ function renderListView() {
         <span class="material-icons">${sketch.isVisible ? 'visibility' : 'visibility_off'}</span>
       </button>
       <div class="sketch-side-panel__info">
-        <span class="sketch-side-panel__name">${displayName}</span>
+        <span class="sketch-side-panel__name">${esc(displayName)}</span>
         <span class="sketch-side-panel__badge">${nodeCount}</span>
       </div>
       <div class="sketch-side-panel__stats">
@@ -271,7 +274,7 @@ function renderIssuesView() {
   backEl.className = 'sketch-side-panel__issues-back';
   backEl.innerHTML = `
     <span class="material-icons">arrow_back</span>
-    <span>${displayName} — ${t('projects.canvas.workingStatus') || 'Working Status'}</span>
+    <span>${esc(displayName)} — ${t('projects.canvas.workingStatus') || 'Working Status'}</span>
   `;
   backEl.addEventListener('click', () => {
     _currentView = 'list';
@@ -331,8 +334,8 @@ function renderIssuesView() {
     row.innerHTML = `
       <div class="sketch-side-panel__issue-info">
         <span class="sketch-side-panel__issue-icon"><span class="material-icons">${icon}</span></span>
-        <span class="sketch-side-panel__issue-node">${nodeLabel}</span>
-        <span class="sketch-side-panel__issue-type">${typeText}</span>
+        <span class="sketch-side-panel__issue-node">${esc(nodeLabel)}</span>
+        <span class="sketch-side-panel__issue-type">${esc(typeText)}</span>
       </div>
       <div class="sketch-side-panel__issue-actions">
         <button class="sketch-side-panel__issue-goto" title="${t('projects.canvas.goToIssue') || 'Go to issue'}">

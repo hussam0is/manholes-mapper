@@ -667,7 +667,7 @@
 }
 
 [dir="rtl"] .menu-search__input {
-  text-align: right;
+  text-align: start;
 }
 
 .menu-search__input::placeholder {
