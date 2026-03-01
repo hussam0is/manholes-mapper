@@ -451,10 +451,24 @@ export class AdminSettings {
   }
 
   /**
-   * Initialize collapsible groups (mobile menu style)
+   * Initialize collapsible groups (mobile menu style).
+   * In landscape orientation, collapse all groups except the first to reduce
+   * initial scroll depth (addresses 7900px+ scroll issue on small screens).
    */
   _initializeCollapsibleGroups() {
-    this.container.querySelectorAll('.admin-menu-group-header').forEach((header) => {
+    const headers = this.container.querySelectorAll('.admin-menu-group-header');
+    const isLandscape = window.matchMedia('(orientation: landscape) and (max-height: 500px)').matches;
+
+    headers.forEach((header, index) => {
+      // In landscape, collapse all groups except the first one
+      if (isLandscape && index > 0) {
+        const group = header.closest('.admin-menu-group');
+        if (group) {
+          group.classList.add('collapsed');
+          header.setAttribute('aria-expanded', 'false');
+        }
+      }
+
       header.addEventListener('click', () => {
         const group = header.closest('.admin-menu-group');
         if (!group) return;

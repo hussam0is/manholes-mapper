@@ -214,7 +214,7 @@ header {
 
 /* Soft light-blue header variant for better logo contrast */
 .soft-blue-header {
-  background: linear-gradient(135deg, #eaf2ff 0%, #dbeafe 100%);
+  background: linear-gradient(135deg, var(--color-primary-bg) 0%, var(--color-primary-light) 100%);
   color: var(--color-text);
   box-shadow: var(--shadow);
   backdrop-filter: none;
@@ -283,7 +283,7 @@ header h1 {
 
 @media (prefers-color-scheme: dark) {
   #appTitle {
-    background: linear-gradient(90deg, #e2e8f0 0%, #80d6f9 42%, #80d6f9 58%, #e2e8f0 100%);
+    background: linear-gradient(90deg, var(--color-text) 0%, #80d6f9 42%, #80d6f9 58%, var(--color-text) 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -640,14 +640,14 @@ header .segmented .btn {
 
 /* Improve contrast of primary actions in the header */
 header .btn-primary {
-  background: #ffffff;
+  background: var(--color-surface);
   color: var(--color-primary);
-  border-color: #ffffff;
+  border-color: var(--color-surface);
 }
 
 header .btn-primary:hover {
   background: var(--color-bg);
-  border-color: #f8fafc;
+  border-color: var(--color-bg);
 }
 
 /* Mobile menu toggle button is hidden by default. It appears on small screens via media query. */
@@ -1042,7 +1042,7 @@ select.btn {
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  background: #fff;
+  background: var(--color-surface);
   color: var(--color-primary);
   border: 1px solid var(--color-border);
   border-radius: 6px;
@@ -2383,18 +2383,18 @@ canvas {
 }
 /* Fixed (RTK Fixed from GNSS receiver) — green */
 .survey-fix-badge.fix-4 {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--color-success-light);
+  color: var(--color-success-hover);
 }
 /* Device Float (RTK Float from GNSS receiver) — blue */
 .survey-fix-badge.fix-5 {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--color-primary-light);
+  color: var(--color-primary-hover);
 }
 /* Manual Float (user positioned on map) — amber */
 .survey-fix-badge.fix-6 {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--color-warning-light);
+  color: var(--color-warning-hover);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -2500,15 +2500,15 @@ canvas {
 }
 
 .chip-ok {
-  background: #e8f5e9;
-  color: #166534;
-  border-color: #bbf7d0;
+  background: var(--color-success-light);
+  color: var(--color-success-hover);
+  border-color: var(--color-success-light);
 }
 
 .chip-warn {
-  background: #fff7ed;
-  color: #c2410c;
-  border-color: #fed7aa;
+  background: var(--color-warning-light);
+  color: var(--color-warning-hover);
+  border-color: var(--color-warning-light);
 }
 
 /* ── Node Tab Wizard ─────────────────────────────────────── */
@@ -2516,9 +2516,9 @@ canvas {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #E8F5E9;
-  color: #2E7D32;
-  border: 1px solid #A5D6A7;
+  background: var(--color-success-light);
+  color: var(--color-success-hover);
+  border: 1px solid var(--color-success);
   border-radius: 20px;
   padding: 4px 12px;
   font-size: 13px;
@@ -7885,7 +7885,7 @@ select.invalid:focus {
 .sketch-action-btn.sketch-action-danger {
   /* Darker red for better WCAG AA contrast (4.5:1+ against background) */
   color: var(--color-danger-hover);
-  border-color: #fca5a5;
+  border-color: var(--color-danger-light);
   background: var(--color-danger-bg);
 }
 
