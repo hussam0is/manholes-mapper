@@ -60,6 +60,9 @@
   --color-accent: #a855f7;            /* purple-500 */
   --color-accent-hover: #9333ea;      /* purple-600 */
   
+  /* 3D View */
+  --color-3d-bg: #1a1a2e;            /* Dark navy for 3D overlay */
+
   /* Neutral colors */
   --color-bg: #f8fafc;                /* slate-50 */
   --color-surface: #ffffff;
@@ -7648,7 +7651,7 @@ select.invalid:focus {
 .sketch-card-modifier .material-icons {
   font-size: 0.85rem;
   /* Use explicit color instead of opacity for WCAG AA contrast compliance */
-  color: #6b7280;
+  color: var(--color-muted);
 }
 
 /* Stats row */
@@ -7935,6 +7938,7 @@ select.invalid:focus {
   .home-panel-new-btn {
     padding: 0.5rem;
     font-size: 0.875rem;
+    min-height: 44px;
   }
 }
 
@@ -7953,7 +7957,7 @@ select.invalid:focus {
   }
 
   .sketch-list-empty {
-    color: #64748b;
+    color: var(--color-muted);
   }
 
   .sketch-card {
@@ -7967,21 +7971,21 @@ select.invalid:focus {
   }
 
   .sketch-card-active {
-    border-color: #10b981;
+    border-color: var(--color-success);
     background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
   }
 
   .sketch-card-active:hover {
-    border-color: #10b981;
+    border-color: var(--color-success);
     box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
   }
 
   .sketch-card-active-badge {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-hover) 100%);
   }
 
   .sketch-card-icon {
-    background: linear-gradient(135deg, var(--color-accent-strong) 0%, #2563eb 100%);
+    background: linear-gradient(135deg, var(--color-accent-strong) 0%, var(--color-primary) 100%);
   }
 
   .sketch-card-title {
@@ -10263,7 +10267,7 @@ button:focus-visible,
   position: fixed;
   inset: 0;
   z-index: 2000;
-  background: #1a1a2e;
+  background: var(--color-3d-bg, #1a1a2e);
   display: flex;
   flex-direction: column;
 }
@@ -10891,8 +10895,8 @@ button:focus-visible,
     inset-inline-end: 0;
     z-index: 5;
     padding: 2px var(--space-2);
-    min-height: 36px;
-    max-height: 40px;
+    min-height: 40px;
+    max-height: 48px;
     background: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(4px);
     transition: opacity 0.4s ease, transform 0.4s ease;
@@ -10917,9 +10921,9 @@ button:focus-visible,
   .three-d-overlay__close,
   .three-d-overlay__mode-toggle,
   .three-d-overlay__miniature-toggle {
-    min-width: 36px;
-    min-height: 36px;
-    padding: 0 6px;
+    min-width: 44px;
+    min-height: 40px;
+    padding: 0 8px;
     font-size: 0.7rem;
   }
   .three-d-overlay__mode-label,
@@ -10930,24 +10934,25 @@ button:focus-visible,
     height: 18px;
   }
   .three-d-overlay__speed-btn {
-    min-width: 40px;
-    min-height: 36px;
+    min-width: 44px;
+    min-height: 40px;
   }
   .three-d-overlay__speed-badge {
-    font-size: 0.7rem;
-    min-width: 28px;
-    font-weight: 700;
+    font-size: 0.8rem;
+    min-width: 34px;
+    font-weight: 800;
   }
   .three-d-overlay__speed-control {
     padding: 1px;
   }
 
   /* -- Controls hint: auto-hide via JS, compact when visible -- */
+  /* Positioned above the issues panel to avoid overlap in RTL */
   .three-d-overlay__controls-hint {
     font-size: 0.6rem;
     line-height: 1.5;
     padding: 4px 8px;
-    bottom: 4px;
+    bottom: 48px;
     inset-inline-end: 4px;
   }
 
@@ -11001,12 +11006,12 @@ button:focus-visible,
     top: 40%;
   }
   .three-d-overlay__orbit-btn {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border-radius: 10px;
   }
   .three-d-overlay__orbit-btn .material-icons {
-    font-size: 20px;
+    font-size: 22px;
   }
 
   /* -- Floating header-show button (visible when header is hidden) -- */
@@ -11015,8 +11020,8 @@ button:focus-visible,
     top: 6px;
     inset-inline-end: 6px;
     z-index: 4;
-    width: 40px;
-    height: 40px;
+    width: 48px;
+    height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -11243,6 +11248,8 @@ button:focus-visible,
     padding: 0.25rem 0.75rem;
     min-height: unset;
     overflow-y: auto;
+    align-items: flex-start;
+    justify-content: flex-start;
     flex: 1;
     max-height: calc(100dvh - 1rem);
     /* Scroll indicator: subtle fade at bottom when content overflows */
@@ -11677,12 +11684,12 @@ button:focus-visible,
   }
 
   .sketch-card-icon {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
   }
 
   .sketch-card-icon .material-icons {
-    font-size: 1rem;
+    font-size: 1.1rem;
   }
 
   .sketch-card-body h3 {
@@ -11715,6 +11722,7 @@ button:focus-visible,
   .sketch-tab {
     padding: 0.3rem 0.5rem;
     font-size: 0.75rem;
+    min-height: 44px;
   }
 
   .home-panel-footer {
@@ -11724,6 +11732,7 @@ button:focus-visible,
   .home-panel-new-btn {
     padding: 0.4rem;
     font-size: 0.8rem;
+    min-height: 44px;
   }
 
   /* Projects home panel — compact cards in landscape */
@@ -11752,7 +11761,7 @@ button:focus-visible,
   .project-card-actions .btn {
     padding: 0.25rem 0.5rem;
     font-size: 0.75rem;
-    min-height: 28px;
+    min-height: 44px;
   }
 }
 

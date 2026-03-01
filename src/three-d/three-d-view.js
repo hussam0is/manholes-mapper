@@ -103,7 +103,7 @@ export async function open3DView(opts = {}) {
       <div class="three-d-overlay__crosshair" style="display:${currentMode === 'fps' ? 'flex' : 'none'}">
         <div class="three-d-overlay__crosshair-dot"></div>
       </div>
-      <div class="three-d-overlay__sprint-badge">SPRINT</div>
+      <div class="three-d-overlay__sprint-badge">${esc(t('threeD.sprint'))}</div>
       <div class="three-d-overlay__orbit-controls" style="display:${currentMode === 'orbit' ? 'flex' : 'none'}">
         <button class="three-d-overlay__orbit-btn" data-action="zoom-in" aria-label="${esc(t('threeD.controls.zoom'))} +">
           <span class="material-icons">add</span>
@@ -526,7 +526,11 @@ export async function open3DView(opts = {}) {
   }
 
   if (isLandscapeMobile) {
-    scheduleHeaderHide();
+    // NOTE: Do NOT call scheduleHeaderHide() here — it fires before Three.js loads
+    // and scene builds (2-3s). The header would already be hidden before users see it.
+    // Instead, we schedule it later (after scene is rendered) via scheduleHeaderHide()
+    // called from the post-scene-build block below.
+
     // Show header on tap of the show button
     if (headerShowBtn) {
       headerShowBtn.addEventListener('click', (e) => {
@@ -831,4 +835,15 @@ export async function open3DView(opts = {}) {
   }
 
   animFrameId = requestAnimationFrame(animate);
+
+  // ── Deferred header auto-hide ──────────────────────────────────────────
+  // Now that the scene is built and rendering, give users 5s to see the header
+  // controls before auto-hiding. This ensures the header is visible after loading.
+  if (isLandscapeMobile) {
+    clearTimeout(headerAutoHideTimer);
+    headerAutoHideTimer = setTimeout(() => {
+      headerEl.classList.add('auto-hidden');
+      if (headerShowBtn) headerShowBtn.classList.add('visible');
+    }, 5000);
+  }
 }
