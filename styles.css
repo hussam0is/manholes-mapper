@@ -2138,6 +2138,8 @@ canvas {
 #sidebar textarea {
   padding: 0.4rem 0.5rem;
   font-size: 0.9rem;
+  min-height: var(--touch-target-min, 44px);
+  box-sizing: border-box;
 }
 
 #sidebar input[type="number"],
@@ -2308,37 +2310,24 @@ canvas {
 
 .field-auto-filled select,
 .field-auto-filled input {
-  background-color: #e2e8f0 !important;
-  color: #64748b !important;
+  background-color: var(--color-surface-alt, #e2e8f0) !important;
+  color: var(--color-text-secondary, #64748b) !important;
   cursor: not-allowed !important;
   opacity: 0.8;
 }
 
 .field-auto-filled label {
-  color: #64748b;
+  color: var(--color-text-secondary, #64748b);
 }
 
 .field-auto-filled::after {
   content: '🔒';
   position: absolute;
-  right: 8px;
+  inset-inline-end: 8px;
   top: 50%;
   transform: translateY(-50%);
   font-size: 0.75rem;
   opacity: 0.6;
-}
-
-/* Dark mode for auto-filled fields */
-@media (prefers-color-scheme: dark) {
-  .field-auto-filled select,
-  .field-auto-filled input {
-    background-color: #334155 !important;
-    color: #94a3b8 !important;
-  }
-
-  .field-auto-filled label {
-    color: #94a3b8;
-  }
 }
 
 /* Compact two-column layout for details panel */
@@ -2365,7 +2354,7 @@ canvas {
 /* Divider between connected edges */
 .connected-edge-divider {
   border: none;
-  border-top: 2px solid var(--color-border, #0f172a);
+  border-top: 2px solid var(--color-border, #e5e7eb);
   margin: 0.75rem 0 0.5rem;
 }
 
@@ -2505,7 +2494,7 @@ canvas {
 .details-actions {
   position: sticky;
   bottom: 0;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0), var(--color-surface, #fff) 32%);
+  background: linear-gradient(180deg, transparent, var(--color-surface, #fff) 32%);
   padding-top: 0.5rem;
   padding-bottom: 16px;
 }
@@ -2559,7 +2548,7 @@ canvas {
 }
 .btn-fix-suggestion .material-icons {
   font-size: 18px;
-  color: #eab308;
+  color: var(--color-warning, #eab308);
 }
 @media (prefers-color-scheme: dark) {
   .btn-fix-suggestion {
@@ -7226,7 +7215,7 @@ select.invalid:focus {
   }
 
   .admin-menu-group-header:hover {
-    background: linear-gradient(135deg, #475569 0%, var(--color-surface-hover) 100%);
+    background: linear-gradient(135deg, var(--color-border) 0%, var(--color-surface-hover) 100%);
   }
 
   .admin-menu-group-title {
@@ -7254,7 +7243,7 @@ select.invalid:focus {
   }
 
   .admin-toggle-switch {
-    background: #475569;
+    background: var(--color-muted);
   }
 
   .admin-field-input,
@@ -7294,11 +7283,11 @@ select.invalid:focus {
 
   .admin-option-delete-btn:hover {
     background: var(--color-error-bg);
-    color: #f87171;
+    color: var(--color-danger);
   }
 
   .admin-add-btn {
-    border-color: #475569;
+    border-color: var(--color-border);
     color: var(--color-accent);
   }
 
@@ -10379,6 +10368,7 @@ button:focus-visible,
   font-size: 0.8rem;
   font-weight: 600;
   text-align: start;
+  min-height: var(--touch-target-min, 44px);
 }
 .three-d-overlay__legend-toggle:hover {
   background: rgba(255, 255, 255, 0.1);
@@ -10820,6 +10810,7 @@ button:focus-visible,
   font-weight: 600;
   width: 100%;
   text-align: start;
+  min-height: var(--touch-target-min, 44px);
 }
 .three-d-overlay__issues-toggle .material-icons:first-child {
   color: #ef4444;
@@ -10933,7 +10924,7 @@ button:focus-visible,
   .three-d-overlay__mode-toggle,
   .three-d-overlay__miniature-toggle {
     min-width: 44px;
-    min-height: 40px;
+    min-height: var(--touch-target-min, 44px);
     padding: 0 8px;
     font-size: 0.7rem;
   }
@@ -10946,7 +10937,7 @@ button:focus-visible,
   }
   .three-d-overlay__speed-btn {
     min-width: 44px;
-    min-height: 40px;
+    min-height: var(--touch-target-min, 44px);
   }
   .three-d-overlay__speed-badge {
     font-size: 0.8rem;
