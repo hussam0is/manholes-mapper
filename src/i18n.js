@@ -121,6 +121,7 @@ export const i18n = {
       lastSynced: (time) => `סונכרן לאחרונה: ${time}`,
       offline: 'לא מקוון',
       offlinePending: (n) => `לא מקוון — ${n} שינויים ממתינים`,
+      pendingChanges: (n) => `${n} שינויים ממתינים לסנכרון`,
       syncError: 'שגיאת סנכרון',
       syncNow: 'סנכרן עכשיו',
       // Auth form strings
@@ -216,6 +217,7 @@ export const i18n = {
       redoNodeDelete: 'השוחה נמחקה שוב',
       redoEdgeDelete: 'הקו נמחק שוב',
       redoEmpty: 'אין פעולה לשחזור',
+      appUpdated: 'האפליקציה עודכנה',
     },
     incompleteEdgeTracker: 'חסר בית/שוחה',
     renamed: 'שם עודכן',
@@ -813,6 +815,7 @@ export const i18n = {
       lastSynced: (time) => `Last synced: ${time}`,
       offline: 'Offline',
       offlinePending: (n) => `Offline — ${n} changes pending`,
+      pendingChanges: (n) => `${n} changes pending`,
       syncError: 'Sync error',
       syncNow: 'Sync now',
       // Auth form strings
@@ -908,6 +911,7 @@ export const i18n = {
       redoNodeDelete: 'Node re-deleted',
       redoEdgeDelete: 'Edge re-deleted',
       redoEmpty: 'Nothing to redo',
+      appUpdated: 'App updated',
     },
     incompleteEdgeTracker: 'Missing home/manhole',
     renamed: 'Renamed',

@@ -2420,9 +2420,14 @@ function updateSyncStatusUI(state) {
       } else {
         headerSyncEl.classList.add('header-sync-indicator--synced');
         if (headerSyncIcon) headerSyncIcon.textContent = 'cloud_done';
-        headerSyncEl.title = state.lastSyncTime
-          ? t('auth.lastSynced', formatTimeAgo(state.lastSyncTime))
-          : t('auth.synced');
+        const hdrPending = state.pendingChanges || 0;
+        if (hdrPending > 0) {
+          headerSyncEl.title = t('auth.pendingChanges', hdrPending);
+        } else {
+          headerSyncEl.title = state.lastSyncTime
+            ? t('auth.lastSynced', formatTimeAgo(state.lastSyncTime))
+            : t('auth.synced');
+        }
       }
     }
   }
@@ -2463,19 +2468,27 @@ function updateSyncStatusUI(state) {
     // Show descriptive error message based on HTTP status code
     if (syncStatusText) {
       const code = state.errorStatusCode;
+      let errMsg;
       if (code === 401) {
-        syncStatusText.textContent = t('errors.sessionExpired');
+        errMsg = t('errors.sessionExpired');
       } else if (code === 429) {
-        syncStatusText.textContent = t('errors.rateLimited');
+        errMsg = t('errors.rateLimited');
       } else if (code >= 500) {
-        syncStatusText.textContent = t('errors.serverError');
+        errMsg = t('errors.serverError');
       } else {
-        syncStatusText.textContent = t('auth.syncError');
+        errMsg = t('auth.syncError');
       }
+      const pending = state.pendingChanges || 0;
+      syncStatusText.textContent = pending > 0
+        ? `${errMsg} — ${t('auth.pendingChanges', pending)}`
+        : errMsg;
     }
   } else {
     if (syncStatusIcon) syncStatusIcon.textContent = 'cloud_done';
-    if (state.lastSyncTime) {
+    const pending = state.pendingChanges || 0;
+    if (pending > 0) {
+      if (syncStatusText) syncStatusText.textContent = t('auth.pendingChanges', pending);
+    } else if (state.lastSyncTime) {
       const timeAgo = formatTimeAgo(state.lastSyncTime);
       if (syncStatusText) syncStatusText.textContent = t('auth.lastSynced', timeAgo);
     } else {
