@@ -211,7 +211,7 @@ function SignInForm({ onSuccess, signUpUrl = '#/signup' }) {
             type="email"
             id="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => { setEmail(e.target.value); if (error) setError(''); }}
             placeholder={tt('auth.emailPlaceholder')}
             required
             disabled={loading}
@@ -222,7 +222,7 @@ function SignInForm({ onSuccess, signUpUrl = '#/signup' }) {
         <PasswordField
           id="password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => { setPassword(e.target.value); if (error) setError(''); }}
           placeholder={tt('auth.passwordPlaceholder')}
           disabled={loading}
           autoComplete="current-password"
@@ -332,7 +332,7 @@ function SignUpForm({ onSuccess, signInUrl = '#/login' }) {
             type="text"
             id="name"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => { setName(e.target.value); if (error) setError(''); }}
             placeholder={tt('auth.namePlaceholder')}
             required
             disabled={loading}
@@ -346,7 +346,7 @@ function SignUpForm({ onSuccess, signInUrl = '#/login' }) {
             type="email"
             id="signup-email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => { setEmail(e.target.value); if (error) setError(''); }}
             placeholder={tt('auth.emailPlaceholder')}
             required
             disabled={loading}
@@ -357,7 +357,7 @@ function SignUpForm({ onSuccess, signInUrl = '#/login' }) {
         <PasswordField
           id="signup-password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => { setPassword(e.target.value); if (error) setError(''); }}
           placeholder={tt('auth.passwordMinLength')}
           disabled={loading}
           autoComplete="new-password"
@@ -368,7 +368,7 @@ function SignUpForm({ onSuccess, signInUrl = '#/login' }) {
         <PasswordField
           id="confirm-password"
           value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
+          onChange={(e) => { setConfirmPassword(e.target.value); if (error) setError(''); }}
           placeholder={tt('auth.confirmPasswordPlaceholder')}
           disabled={loading}
           autoComplete="new-password"
