@@ -11838,12 +11838,44 @@ button:focus-visible,
   .admin-modern-tab {
     padding: 0.3rem 0.75rem;
     font-size: 0.8rem;
+    min-height: 44px;
   }
 
   .admin-modern-content {
     padding: 0.5rem;
     max-height: calc(100dvh - 120px);
     overflow-y: auto;
+  }
+
+  /* Touch target fixes for admin settings form elements in landscape */
+  .admin-field-input,
+  .admin-field-select,
+  .admin-option-label-input,
+  .admin-option-code-input {
+    min-height: 44px;
+  }
+
+  .admin-option-delete-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Project card buttons must meet 44px minimum */
+  .project-card-actions .btn-sm {
+    min-height: 44px;
+    padding-block: 0.5rem;
+  }
+
+  #projectsScreen .btn,
+  #projectsScreen .btn-sm,
+  .projects-add-btn,
+  #projectsScreenCloseBtn {
+    min-height: 44px;
+  }
+
+  /* Input flow tabs touch target */
+  .input-flow-tab {
+    min-height: 44px;
   }
 
   /* Compact the admin settings header (blue gradient) in landscape */
