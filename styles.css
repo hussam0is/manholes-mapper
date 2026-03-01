@@ -428,7 +428,7 @@ header h1 {
 }
 
 .soft-blue-header .segmented .btn:hover {
-  background: #f1f5f9;
+  background: var(--color-surface-hover);
 }
 
 .soft-blue-header .btn-ghost {
@@ -863,12 +863,12 @@ header .btn-primary:hover {
 }
 
 #mobileMenu .btn:hover {
-  background: #f1f5f9;
+  background: var(--color-surface-hover);
   transform: none;
 }
 
 #mobileMenu .btn:active {
-  background: #e2e8f0;
+  background: var(--color-border);
   transform: scale(0.98);
 }
 
@@ -892,7 +892,7 @@ header .btn-primary:hover {
 }
 
 #mobileMenu label:hover {
-  background: #f1f5f9;
+  background: var(--color-surface-hover);
 }
 
 #mobileMenu select {
@@ -4888,7 +4888,7 @@ input:checked + .slider:before {
   width: 100%;
   max-width: 180px;
   box-sizing: border-box;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   border-radius: 4px;
   padding: 0.4rem 0.5rem;
   font-size: 0.875rem;
@@ -4899,7 +4899,7 @@ input:checked + .slider:before {
 .option-table .opt-code input[type="text"] {
   width: 50px;
   box-sizing: border-box;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   border-radius: 4px;
   padding: 0.4rem 0.5rem;
   font-size: 0.875rem;
@@ -6431,7 +6431,9 @@ select.invalid:focus {
 
   input[type="text"],
   input[type="date"],
-  textarea {
+  input[type="number"],
+  textarea,
+  select {
     background: var(--color-bg);
     border-color: var(--color-border);
     color: var(--color-text);
@@ -6441,6 +6443,12 @@ select.invalid:focus {
     background: var(--color-bg);
     color: var(--color-text);
     border-color: var(--color-border);
+  }
+
+  /* Enhanced focus ring visibility in dark mode */
+  :root {
+    --ring: 0 0 0 3px rgba(96, 165, 250, 0.4);
+    --focus-ring: 0 0 0 3px rgba(96, 165, 250, 0.4);
   }
 
   #toast {
@@ -8400,7 +8408,7 @@ select.invalid:focus {
   right: 0;
   bottom: 0;
   z-index: 999;
-  background: rgba(248, 250, 252, 0.9);
+  background: color-mix(in srgb, var(--color-bg) 90%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -8516,6 +8524,26 @@ select.invalid:focus {
 .home-panel-sync-status .material-icons {
   font-size: 1rem;
   margin-inline-end: 0.5rem;
+}
+
+/* Sync status bar state colors */
+.home-panel-sync-status.syncing {
+  color: var(--color-primary);
+  background: var(--color-primary-bg);
+}
+
+.home-panel-sync-status.syncing .material-icons {
+  animation: spin 1s linear infinite;
+}
+
+.home-panel-sync-status.offline {
+  color: var(--color-warning);
+  background: var(--color-warning-bg);
+}
+
+.home-panel-sync-status.error {
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
 }
 
 /* Sketch tabs for Personal/Organization */
@@ -8901,18 +8929,48 @@ html[dir="rtl"] .auth-form-wrapper {
 }
 
 .user-menu-header {
-  padding: 1rem;
+  padding: 0.875rem 1rem;
 }
 
 .user-menu-name {
-  font-weight: 600;
+  font-weight: var(--font-semibold, 600);
+  font-size: var(--text-sm, 0.875rem);
   color: var(--color-text);
 }
 
 .user-menu-email {
-  font-size: 0.875rem;
+  font-size: var(--text-xs, 0.75rem);
   color: var(--color-muted);
   word-break: break-all;
+  margin-top: 2px;
+}
+
+/* Role badge in user dropdown */
+.user-menu-role {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  padding: 2px 8px;
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: var(--font-medium, 500);
+  border-radius: var(--radius-full);
+  line-height: 1.4;
+}
+
+.user-menu-role--admin {
+  background: var(--color-primary-light, #dbeafe);
+  color: var(--color-primary, #2563eb);
+}
+
+.user-menu-role--super-admin {
+  background: var(--color-accent-light, #f3e8ff);
+  color: var(--color-accent, #a855f7);
+}
+
+.user-menu-role--user {
+  background: var(--color-surface-hover, #f1f5f9);
+  color: var(--color-muted, #64748b);
 }
 
 .user-menu-divider {
@@ -8926,29 +8984,37 @@ html[dir="rtl"] .auth-form-wrapper {
   align-items: center;
   gap: 0.5rem;
   width: 100%;
-  padding: 0.75rem 1rem;
+  min-height: 44px;
+  padding: 0.625rem 1rem;
   background: transparent;
   border: none;
   color: var(--color-text);
-  font-size: 0.875rem;
+  font-size: var(--text-sm, 0.875rem);
   cursor: pointer;
-  text-align: left;
+  text-align: start;
   transition: background 0.2s;
 }
 
 .user-menu-item:hover {
-  background: var(--color-surface-hover, #f1f5f9);
+  background: var(--color-surface-hover);
+}
+
+.user-menu-item:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
 }
 
 .user-menu-signout {
-  color: var(--color-danger-hover, #dc2626);
+  color: var(--color-danger-hover);
 }
 
 .user-menu-signout:hover {
-  background: var(--color-danger-bg, #fef2f2);
+  background: var(--color-danger-bg);
 }
 
 .user-login-btn {
+  min-width: 44px;
+  min-height: 44px;
   padding: 0.5rem;
 }
 
@@ -9007,6 +9073,25 @@ html[dir="rtl"] .auth-form-wrapper {
     border-color: var(--color-border-dark);
   }
 
+  .user-menu-trigger:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .user-menu-role--admin {
+    background: rgba(37, 99, 235, 0.15);
+    color: var(--color-accent, #60a5fa);
+  }
+
+  .user-menu-role--super-admin {
+    background: rgba(168, 85, 247, 0.15);
+    color: #c084fc;
+  }
+
+  .user-menu-role--user {
+    background: var(--color-surface-hover);
+    color: var(--color-muted);
+  }
+
   .user-menu-name {
     color: var(--color-text-bright);
   }
@@ -9042,14 +9127,9 @@ html[dir="rtl"] .auth-form-container {
   direction: rtl;
 }
 
-html[dir="rtl"] .user-menu-dropdown {
-  right: auto;
-  left: 0;
-}
+/* RTL dropdown: uses inset-inline-end, no override needed */
 
-html[dir="rtl"] .user-menu-item {
-  text-align: right;
-}
+/* RTL menu items: uses text-align: start, no override needed */
 
 /* ============================================
    GNSS / Live Measure Mode Styles

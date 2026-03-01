@@ -932,30 +932,30 @@
     </div>
   </main>
   <!-- Floating Keyboard for Mobile Numeric Input -->
-  <div id="floatingKeyboard" class="floating-keyboard" style="display:none;">
+  <div id="floatingKeyboard" class="floating-keyboard" role="toolbar" aria-label="Numeric keyboard" style="display:none;">
     <div class="floating-keyboard-header">
       <div class="floating-keyboard-drag-handle">
-        <span class="material-icons">drag_indicator</span>
+        <span class="material-icons" aria-hidden="true">drag_indicator</span>
       </div>
-      <button id="closeFloatingKeyboard" class="floating-keyboard-close">
-        <span class="material-icons">close</span>
+      <button id="closeFloatingKeyboard" class="floating-keyboard-close" aria-label="Close keyboard">
+        <span class="material-icons" aria-hidden="true">close</span>
       </button>
     </div>
     <div class="floating-keyboard-body">
-      <div class="floating-keyboard-keys">
-        <button class="floating-key" data-key="7">7</button>
-        <button class="floating-key" data-key="8">8</button>
-        <button class="floating-key" data-key="9">9</button>
-        <button class="floating-key" data-key="4">4</button>
-        <button class="floating-key" data-key="5">5</button>
-        <button class="floating-key" data-key="6">6</button>
-        <button class="floating-key" data-key="1">1</button>
-        <button class="floating-key" data-key="2">2</button>
-        <button class="floating-key" data-key="3">3</button>
-        <button class="floating-key" data-key=".">.</button>
-        <button class="floating-key" data-key="0">0</button>
-        <button class="floating-key floating-key-backspace" data-key="backspace">
-          <span class="material-icons">backspace</span>
+      <div class="floating-keyboard-keys" role="group" aria-label="Numeric keyboard">
+        <button class="floating-key" data-key="7" aria-label="7">7</button>
+        <button class="floating-key" data-key="8" aria-label="8">8</button>
+        <button class="floating-key" data-key="9" aria-label="9">9</button>
+        <button class="floating-key" data-key="4" aria-label="4">4</button>
+        <button class="floating-key" data-key="5" aria-label="5">5</button>
+        <button class="floating-key" data-key="6" aria-label="6">6</button>
+        <button class="floating-key" data-key="1" aria-label="1">1</button>
+        <button class="floating-key" data-key="2" aria-label="2">2</button>
+        <button class="floating-key" data-key="3" aria-label="3">3</button>
+        <button class="floating-key" data-key="." aria-label="Decimal point">.</button>
+        <button class="floating-key" data-key="0" aria-label="0">0</button>
+        <button class="floating-key floating-key-backspace" data-key="backspace" aria-label="Backspace">
+          <span class="material-icons" aria-hidden="true">backspace</span>
         </button>
       </div>
     </div>

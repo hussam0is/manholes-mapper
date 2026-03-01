@@ -280,9 +280,9 @@ export class FloatingKeyboard {
     const deltaX = clientX - this.startX;
     const deltaY = clientY - this.startY;
     
-    // Allow 3x smaller minimum size: 80px x 93px (down from 240px x 280px)
-    const newWidth = Math.max(80, Math.min(this.startWidth + deltaX, window.innerWidth * 0.9));
-    const newHeight = Math.max(93, Math.min(this.startHeight + deltaY, window.innerHeight * 0.8));
+    // Minimum 200x260 ensures 44px touch targets on all keys
+    const newWidth = Math.max(200, Math.min(this.startWidth + deltaX, window.innerWidth * 0.9));
+    const newHeight = Math.max(260, Math.min(this.startHeight + deltaY, window.innerHeight * 0.8));
     
     this.keyboard.style.width = newWidth + 'px';
     this.keyboard.style.height = newHeight + 'px';
