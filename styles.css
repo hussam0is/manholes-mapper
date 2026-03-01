@@ -11483,14 +11483,16 @@ button:focus-visible,
 /* --- Landscape: Bottom Drawer — Side Panel Instead --- */
 @media (max-height: 450px) and (max-width: 900px) and (orientation: landscape) {
   .drawer {
-    /* Issue #4: Convert bottom sheet to side panel; narrower (35vw, max 260px)
-       to give more canvas real estate in landscape */
+    /* Issue #4: Convert bottom sheet to side panel; narrower (35vw, max 280px)
+       to give more canvas real estate in landscape.
+       Override --drawer-w so #sidebar picks up the narrower width too. */
+    --drawer-w: min(280px, 35vw);
     position: fixed;
     top: var(--header-h, 36px);
     bottom: 0;
     right: 0;
     left: auto;
-    width: min(260px, 35vw);
+    width: var(--drawer-w);
     height: calc(100dvh - var(--header-h, 36px));
     height: calc(var(--app-height, 100dvh) - var(--header-h, 36px));
     max-height: none;
@@ -11525,24 +11527,24 @@ button:focus-visible,
 
   /* Reposition canvas controls when side drawer is open (LTR: drawer on right) */
   body.drawer-open .canvas-toolbar {
-    right: calc(min(260px, 35vw) + 12px);
+    right: calc(var(--drawer-w) + 12px);
     transform: none;
   }
 
   body.drawer-open .canvas-fab-toolbar {
-    right: calc(min(260px, 35vw) + 12px);
+    right: calc(var(--drawer-w) + 12px);
     left: auto;
     transform: none;
     bottom: 8px;
   }
 
   body.drawer-open .canvas-fab {
-    right: calc(min(260px, 35vw) + 8px);
+    right: calc(var(--drawer-w) + 8px);
     bottom: 8px;
   }
 
   body.drawer-open .toggle-floating-keyboard {
-    right: calc(min(260px, 35vw) + 12px);
+    right: calc(var(--drawer-w) + 12px);
     bottom: 8px;
   }
 
@@ -11550,13 +11552,13 @@ button:focus-visible,
   [dir="rtl"] body.drawer-open .canvas-toolbar,
   body.drawer-open[dir="rtl"] .canvas-toolbar {
     right: auto;
-    left: calc(min(260px, 35vw) + 12px);
+    left: calc(var(--drawer-w) + 12px);
     transform: none;
   }
 
   [dir="rtl"] body.drawer-open .canvas-fab-toolbar,
   body.drawer-open[dir="rtl"] .canvas-fab-toolbar {
-    left: calc(min(260px, 35vw) + 12px);
+    left: calc(var(--drawer-w) + 12px);
     right: auto;
     transform: none;
   }
@@ -11634,7 +11636,7 @@ button:focus-visible,
 
   .wizard-field-input {
     padding: 6px 8px;
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     min-height: var(--touch-target-min);
   }
 
