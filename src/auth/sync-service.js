@@ -50,6 +50,20 @@ const ONLINE_DEBOUNCE_MS = 2000;
 // preventing auth listener accumulation.
 let authListenerUnsub = null;
 
+// UUID validation regex — matches the server-side pattern in api/_lib/validators.js.
+// Used to skip cloud sync for legacy local-only sketch IDs (e.g. sk_xxx).
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Check if a sketch ID is a valid UUID suitable for cloud API calls.
+ * Legacy local IDs (e.g. `sk_1234`, numeric strings) will return false.
+ * @param {string} id
+ * @returns {boolean}
+ */
+function isValidCloudUUID(id) {
+  return typeof id === 'string' && UUID_RE.test(id);
+}
+
 // API base URL - in development without vercel dev, API won't be available
 // In production or with vercel dev, API is same-origin
 const API_BASE = '';
@@ -238,6 +252,11 @@ export async function createSketchInCloud(sketch) {
  * @returns {Promise<Object>} Full sketch data
  */
 export async function fetchSketchFromCloud(sketchId) {
+  // Reject legacy non-UUID IDs before hitting the API
+  if (!isValidCloudUUID(sketchId)) {
+    throw new Error(`Cannot fetch sketch with legacy ID "${sketchId}" from cloud`);
+  }
+
   const response = await apiRequest(`/api/sketches/${sketchId}`, { method: 'GET' });
   const data = await response.json();
   return data.sketch;
@@ -446,10 +465,15 @@ const LOCK_REFRESH_INTERVAL_MS = 15 * 60 * 1000; // Refresh every 15 minutes
  * @returns {Promise<{success: boolean, lock?: object, error?: string}>}
  */
 export async function acquireSketchLock(sketchId) {
+  // Allow editing legacy sketches without a lock — they aren't in the cloud
+  if (sketchId && !isValidCloudUUID(sketchId)) {
+    return { success: true, offline: true };
+  }
+
   if (!apiAvailable) {
     return { success: true, offline: true }; // Allow editing offline
   }
-  
+
   if (!navigator.onLine) {
     return { success: true, offline: true }; // Allow editing offline
   }
@@ -494,7 +518,13 @@ export async function acquireSketchLock(sketchId) {
 export async function releaseSketchLock(sketchId) {
   // Stop refresh timer
   stopLockRefreshTimer();
-  
+
+  // Legacy IDs never acquired a cloud lock — nothing to release
+  if (sketchId && !isValidCloudUUID(sketchId)) {
+    currentLock = null;
+    return { success: true };
+  }
+
   if (!apiAvailable || !navigator.onLine) {
     currentLock = null;
     return { success: true };
@@ -590,7 +620,7 @@ export function hasLockForSketch(sketchId) {
 // for same-origin requests — no token is needed since the app uses cookie-based auth.
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', () => {
-    if (currentLock && currentLock.sketchId && navigator.sendBeacon) {
+    if (currentLock && currentLock.sketchId && navigator.sendBeacon && isValidCloudUUID(currentLock.sketchId)) {
       // sendBeacon requires a Blob with an explicit content-type so the server-side
       // JSON parser receives the correct MIME type (text/plain is the default).
       const payload = new Blob(
@@ -611,6 +641,16 @@ export async function syncSketchToCloud(sketch) {
   // Skip if API not available (dev mode)
   if (!apiAvailable) {
     console.debug('[Sync] Cloud sync skipped — API not available');
+    return;
+  }
+
+  // Skip sync for legacy non-UUID sketch IDs (e.g. sk_xxx) — the API
+  // requires a valid UUID and would return 400. Legacy sketches remain
+  // in local storage untouched; they just won't sync to the cloud.
+  // This check is before the offline queue to prevent legacy IDs from
+  // being enqueued in the first place.
+  if (sketch.id && !isValidCloudUUID(sketch.id)) {
+    console.warn(`[Sync] Skipping cloud sync for legacy sketch ID "${sketch.id}" (not a valid UUID)`);
     return;
   }
 
@@ -656,7 +696,7 @@ export async function syncSketchToCloud(sketch) {
 
   try {
     // Check if sketch exists in cloud (has UUID format)
-    const isCloudSketch = sketch.id && /^[0-9a-f-]{36}$/i.test(sketch.id);
+    const isCloudSketch = isValidCloudUUID(sketch.id);
     
     // Log sketch data for debugging validation issues
     console.debug(`[Sync] Syncing sketch "${sketch.name}" (${sketch.id}):`, {
@@ -808,6 +848,11 @@ export async function syncSketchToCloud(sketch) {
  * @param {Object} sketch - Sketch to sync
  */
 export function debouncedSyncToCloud(sketch) {
+  // Skip legacy non-UUID sketch IDs early (before debounce timer)
+  if (sketch?.id && !isValidCloudUUID(sketch.id)) {
+    return; // silently skip — syncSketchToCloud would also skip with a warning
+  }
+
   // Never sync empty sketches to cloud
   const nodes = sketch?.nodes || [];
   const edges = sketch?.edges || [];
@@ -832,6 +877,12 @@ export function debouncedSyncToCloud(sketch) {
 export async function deleteSketchEverywhere(sketchId) {
   // Delete locally first
   await deleteSketchFromIdb(sketchId);
+
+  // Skip cloud operations for legacy non-UUID IDs
+  if (sketchId && !isValidCloudUUID(sketchId)) {
+    console.debug('[Sync] Cloud delete skipped — legacy sketch ID:', sketchId);
+    return;
+  }
 
   // Skip cloud delete if API not available
   if (!apiAvailable) {
@@ -885,8 +936,25 @@ export async function processSyncQueue() {
     return;
   }
 
-  const operations = await drainSyncQueue();
-  if (operations.length === 0) return;
+  const allOperations = await drainSyncQueue();
+  if (allOperations.length === 0) return;
+
+  // Filter out operations for legacy non-UUID sketch IDs — these would
+  // cause 400 errors from the API. The sketches themselves are preserved
+  // locally; we just discard their cloud sync requests.
+  const operations = allOperations.filter(op => {
+    const opSketchId = op.type === 'DELETE' ? op.sketchId : op.data?.id;
+    if (opSketchId && !isValidCloudUUID(opSketchId)) {
+      console.warn(`[Sync] Discarding queued ${op.type} for legacy sketch ID "${opSketchId}"`);
+      return false;
+    }
+    return true;
+  });
+
+  if (operations.length === 0) {
+    console.debug('[Sync] All queued operations were for legacy IDs — nothing to sync');
+    return;
+  }
 
   if (isSyncInProgress) {
     console.debug('[Sync] Sync in progress, will retry queue later');
@@ -903,12 +971,7 @@ export async function processSyncQueue() {
     for (const op of operations) {
       try {
         if (op.type === 'UPDATE') {
-          // Internal call - we already have the lock
-          // We bypass the check in syncSketchToCloud by calling its logic directly
-          // or just letting it fail the lock check and re-queue.
-          // Actually, let's just use the syncSketchToCloud logic but without the lock check.
-          
-          const isCloudSketch = op.data.id && /^[0-9a-f-]{36}$/i.test(op.data.id);
+          const isCloudSketch = isValidCloudUUID(op.data.id);
           if (isCloudSketch) {
             const queuePayload = {
               name: op.data.name,
@@ -1015,7 +1078,7 @@ function computeSketchFingerprint(sketch) {
  * @returns {boolean}
  */
 function isCloudId(id) {
-  return id && /^[0-9a-f-]{36}$/i.test(id);
+  return isValidCloudUUID(id);
 }
 
 /**

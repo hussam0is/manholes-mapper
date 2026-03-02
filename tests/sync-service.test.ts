@@ -145,15 +145,36 @@ describe('Sync Service Unit Tests', () => {
 
     it('should queue update if offline', async () => {
       mockOnLine(false);
-      const sketch = { id: 's1', name: 'Offline Edit', nodes: [{ id: 1, x: 0, y: 0 }], edges: [] };
-      
+      const uuid = '12345678-1234-1234-1234-123456789099';
+      const sketch = { id: uuid, name: 'Offline Edit', nodes: [{ id: 1, x: 0, y: 0 }], edges: [] };
+
       await syncSketchToCloud(sketch);
 
       expect(db.enqueueSyncOperation).toHaveBeenCalledWith(expect.objectContaining({
         type: 'UPDATE',
-        sketchId: 's1'
+        sketchId: uuid
       }));
       expect(getSyncState().pendingChanges).toBe(1);
+    });
+
+    it('should skip sync for legacy non-UUID sketch IDs', async () => {
+      const sketch = { id: 'sk_abc123', name: 'Legacy Sketch', nodes: [{ id: 1, x: 0, y: 0 }], edges: [] };
+
+      await syncSketchToCloud(sketch);
+
+      // Should NOT call fetch or enqueue — silently skipped
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(db.enqueueSyncOperation).not.toHaveBeenCalled();
+    });
+
+    it('should skip sync for legacy IDs even when offline', async () => {
+      mockOnLine(false);
+      const sketch = { id: 'sk_abc123', name: 'Legacy Offline', nodes: [{ id: 1, x: 0, y: 0 }], edges: [] };
+
+      await syncSketchToCloud(sketch);
+
+      // Should NOT enqueue legacy IDs
+      expect(db.enqueueSyncOperation).not.toHaveBeenCalled();
     });
   });
 
@@ -211,6 +232,22 @@ describe('Sync Service Unit Tests', () => {
       await processSyncQueue();
 
       expect(db.enqueueSyncOperation).toHaveBeenCalledWith(queuedOps[0]);
+    });
+
+    it('should filter out legacy IDs from queued operations', async () => {
+      const uuid1 = '12345678-1234-1234-1234-123456789011';
+      const queuedOps = [
+        { type: 'UPDATE', data: { id: 'sk_legacy', name: 'Legacy Queued' } },
+        { type: 'DELETE', sketchId: 'sk_old' },
+        { type: 'UPDATE', data: { id: uuid1, name: 'Valid Queued' } },
+      ];
+      (db.drainSyncQueue as any).mockResolvedValue(queuedOps);
+
+      await processSyncQueue();
+
+      // Only the valid UUID operation should be processed
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(global.fetch).toHaveBeenCalledWith(`/api/sketches/${uuid1}`, expect.objectContaining({ method: 'PUT' }));
     });
   });
 
