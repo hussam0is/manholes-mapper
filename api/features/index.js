@@ -1,6 +1,9 @@
 /**
  * API Route: /api/features/:targetType/:targetId
  *
+ * Catch-all handler for features API (consolidated to save serverless function slots).
+ * Uses vercel.json rewrite: /api/features/:path* -> /api/features
+ *
  * GET - Get feature settings for a user or organization
  * PUT - Update feature settings (requires admin)
  *
@@ -33,13 +36,24 @@ export default async function handler(req, res) {
     request.headers.get = (name) => req.headers[name.toLowerCase()];
   }
 
-  // Parse slug: /api/features/user/uuid => ['user', 'uuid']
-  const { slug } = req.query;
-  if (!slug || slug.length < 2) {
+  // Parse path segments from query (catch-all) or URL (rewrite fallback)
+  let pathSegments = req.query.slug || req.query.path || [];
+  if (typeof pathSegments === 'string') pathSegments = [pathSegments];
+
+  // Fallback: parse from URL when rewrites strip query params
+  if (pathSegments.length === 0 && req.url.includes('/api/features/')) {
+    const parts = req.url.split('?')[0].split('/');
+    const featuresIdx = parts.indexOf('features');
+    if (featuresIdx !== -1 && featuresIdx < parts.length - 1) {
+      pathSegments = parts.slice(featuresIdx + 1).filter(Boolean);
+    }
+  }
+
+  if (!pathSegments || pathSegments.length < 2) {
     return res.status(400).json({ error: 'Invalid path. Expected /api/features/:targetType/:targetId' });
   }
 
-  const [targetType, targetId] = slug;
+  const [targetType, targetId] = pathSegments;
   console.debug(`[API /api/features/${targetType}/${targetId}] ${req.method} request started`);
 
   // Apply rate limiting

@@ -12,6 +12,10 @@
     {
       "source": "/api/layers/:path*",
       "destination": "/api/layers"
+    },
+    {
+      "source": "/api/features/:path*",
+      "destination": "/api/features"
     }
   ],
   "headers": [

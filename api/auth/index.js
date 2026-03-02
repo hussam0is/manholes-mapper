@@ -24,8 +24,11 @@ export default async function authHandler(req, res) {
 
   if (handleCors(req, res)) return;
 
-  // Auth endpoints get stricter rate limiting (20 req/min) to prevent brute-force
-  if (applyRateLimit(req, res, MAX_REQUESTS_AUTH)) {
+  // Sign-out is exempt from rate limiting — users must always be able to terminate their session
+  const isSignOut = req.url?.includes('/sign-out');
+
+  // All other auth endpoints get stricter rate limiting (20 req/min) to prevent brute-force
+  if (!isSignOut && applyRateLimit(req, res, MAX_REQUESTS_AUTH)) {
     return;
   }
 
