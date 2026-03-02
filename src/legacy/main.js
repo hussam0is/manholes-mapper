@@ -513,8 +513,9 @@ const EDGE_MATERIALS = EDGE_MATERIAL_OPTIONS.map(o => o.label);
 let fallIconImage = null;
 let fallIconReady = false;
 
-// Fast node lookup map – rebuilt at the start of each draw() frame
+// Fast node lookup map – rebuilt lazily when nodes array changes
 let nodeMap = new Map(); // Map<String(id), node>
+let _nodeMapDirty = true; // Set true when nodes array is mutated
 
 // --- Draw-loop performance caches ---
 
@@ -1808,6 +1809,7 @@ function loadFromStorage() {
     const parsed = JSON.parse(data);
     if (!parsed || !parsed.nodes || !parsed.edges) return false;
     nodes = parsed.nodes;
+    _nodeMapDirty = true;
     edges = parsed.edges;
     clearUndoStack();
     markEdgeLabelCacheDirty(); // new sketch data loaded
@@ -2198,6 +2200,7 @@ async function loadFromLibrary(sketchId) {
     }
   }
   nodes = sketchData.nodes || [];
+  _nodeMapDirty = true;
   edges = sketchData.edges || [];
   clearUndoStack();
   markEdgeLabelCacheDirty(); // sketch record loaded
@@ -2796,6 +2799,7 @@ window.__getSelection = function () {
  */
 window.__setActiveSketchData = function (data) {
   nodes = data.nodes || [];
+  _nodeMapDirty = true;
   edges = data.edges || [];
   clearUndoStack();
   nextNodeId = data.nextNodeId || 1;
@@ -3353,6 +3357,7 @@ async function handleChangeProject(sketchId) {
  */
 function newSketch(date, projectId = null, inputFlowConfig = null) {
   nodes = [];
+  _nodeMapDirty = true;
   edges = [];
   _emptyStateDismissed = false; // reset so empty-state overlay can show again
   clearUndoStack();
@@ -3422,7 +3427,8 @@ function createNode(x, y) {
     });
   }
   nodes.push(node);
-  
+  _nodeMapDirty = true;
+
   // Check for nearby dangling edges and auto-connect
   const nearbyDangling = findDanglingEdgeNear(x, y);
   if (nearbyDangling) {
@@ -3809,6 +3815,7 @@ function deleteNodeShared(node, pushToUndo = true) {
 
   // Remove the node
   nodes = nodes.filter(n => n !== node);
+  _nodeMapDirty = true;
 
   if (pushToUndo) {
     // Push undo action with all info needed to restore
@@ -3909,6 +3916,7 @@ function performUndo() {
     // Remove node and connected edges
     const removedEdgeIds = new Set(connectedEdges.map(e => e.id));
     nodes = nodes.filter(n => n !== node);
+    _nodeMapDirty = true;
     edges = edges.filter(e => !removedEdgeIds.has(e.id));
     undoStack.pop();
     // Clean stale edge undo entries from the stack
@@ -3978,6 +3986,7 @@ function performUndo() {
   } else if (action.type === 'nodeDelete') {
     // Restore the deleted node
     nodes.push(deepCopyObj(action.node));
+    _nodeMapDirty = true;
     // Restore fully removed edges
     for (const edgeCopy of action.removedEdges) {
       edges.push(deepCopyObj(edgeCopy));
@@ -4035,6 +4044,7 @@ function performRedo() {
   if (action.type === 'nodeRestore') {
     // Redo of "undo nodeCreate" — restore the node and edges
     nodes.push(deepCopyObj(action.node));
+    _nodeMapDirty = true;
     for (const edgeCopy of action.edges) {
       edges.push(deepCopyObj(edgeCopy));
     }
@@ -4103,6 +4113,7 @@ function performRedo() {
     }
 
     nodes = nodes.filter(n => n !== node);
+    _nodeMapDirty = true;
     // Push the nodeDelete action back onto undo
     pushUndoDirect(deepCopyObj(action));
     if (selectedNode && String(selectedNode.id) === nodeIdStr) {
@@ -4229,10 +4240,13 @@ function draw() {
   // When autoSize is enabled, divide sizes by viewScale for constant screen-pixel size
   sizeVS = autoSizeEnabled ? viewScale : 1;
 
-  // Rebuild fast node lookup map once per frame
-  nodeMap.clear();
-  for (let i = 0; i < nodes.length; i++) {
-    nodeMap.set(String(nodes[i].id), nodes[i]);
+  // Rebuild fast node lookup map only when nodes changed
+  if (_nodeMapDirty) {
+    nodeMap.clear();
+    for (let i = 0; i < nodes.length; i++) {
+      nodeMap.set(String(nodes[i].id), nodes[i]);
+    }
+    _nodeMapDirty = false;
   }
 
   // Clear canvas
@@ -7620,6 +7634,7 @@ if (importSketchBtn && importSketchFile) {
 
       // Load the imported sketch
       nodes = importedSketch.nodes;
+      _nodeMapDirty = true;
       edges = importedSketch.edges;
       nextNodeId = importedSketch.nextNodeId;
       creationDate = importedSketch.creationDate;
@@ -8525,7 +8540,8 @@ function applyCoordinatesIfEnabled(options = {}) {
   // Apply coordinates to matching nodes using logical (CSS) dimensions and current scale
   const result = applyCoordinatesToNodes(nodes, coordinatesMap, logicalWidth, logicalHeight, coordinateScale);
   nodes = result.updatedNodes;
-  
+  _nodeMapDirty = true;
+
   // Log results for debugging
   console.debug(`[Coordinates] Applied: ${result.matchedCount} matched, ${result.unmatchedCount} unmatched`);
   
@@ -8533,6 +8549,7 @@ function applyCoordinatesIfEnabled(options = {}) {
   // Pass original positions to calculate distance ratios
   if (result.unmatchedCount > 0 && result.matchedCount > 0) {
     nodes = approximateUncoordinatedNodePositions(nodes, edges, originalNodePositions);
+    _nodeMapDirty = true;
   }
   
   // Handle view adjustment based on options
@@ -10352,6 +10369,7 @@ function handleGnssPointCapture(captureData) {
       hasCoordinates: true
     };
     nodes.push(newNode);
+    _nodeMapDirty = true;
     targetNodeId = newId;
   }
   
