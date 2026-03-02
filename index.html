@@ -633,26 +633,25 @@
     <div class="panel admin-container admin-screen-panel">
       <div class="admin-header">
         <h2 id="adminScreenTitle">
-          <span class="material-icons">settings</span>
-          <span class="admin-title-text" data-i18n="admin.title">הגדרות מנהל מתקדמות</span>
+          <span class="material-icons">admin_panel_settings</span>
+          <span class="admin-title-text" data-i18n="adminPanel.tabs.settings">הגדרות</span>
         </h2>
       </div>
-      <div id="adminScreenContent" class="admin-content" role="region" aria-label="Admin settings"></div>
-      <div class="admin-actions">
+      <div id="adminScreenContent" class="admin-content" role="region" aria-label="Admin panel"></div>
+      <!-- Legacy action buttons kept for JS compatibility but hidden — AdminPanel renders its own actions per-tab -->
+      <div class="admin-actions" style="display:none;" aria-hidden="true">
         <div class="admin-import-export">
           <input id="adminScreenImportFile" type="file" accept="application/json,.json" class="visually-hidden" aria-label="Import admin settings file" />
-          <button id="adminScreenImportBtn" class="btn btn-ghost" type="button" data-i18n-title="admin.import">
+          <button id="adminScreenImportBtn" class="btn btn-ghost" type="button" tabindex="-1">
             <span class="material-icons">upload_file</span>
-            <span class="label" data-i18n="admin.import">יבא הגדרות</span>
           </button>
-          <button id="adminScreenExportBtn" class="btn btn-ghost" type="button" data-i18n-title="admin.export">
+          <button id="adminScreenExportBtn" class="btn btn-ghost" type="button" tabindex="-1">
             <span class="material-icons">download</span>
-            <span class="label" data-i18n="admin.export">יצא הגדרות</span>
           </button>
         </div>
         <div class="admin-action-buttons">
-          <button id="adminScreenCancelBtn" class="btn btn-ghost" type="button" data-i18n="buttons.cancel">ביטול</button>
-          <button id="adminScreenSaveBtn" class="btn btn-primary" type="button" data-i18n="admin.saveSettings">שמור הגדרות</button>
+          <button id="adminScreenCancelBtn" class="btn btn-ghost" type="button" tabindex="-1">ביטול</button>
+          <button id="adminScreenSaveBtn" class="btn btn-primary" type="button" tabindex="-1">שמור</button>
         </div>
       </div>
     </div>

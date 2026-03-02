@@ -870,21 +870,39 @@ function closeAdminModal() {
 async function openAdminScreen() {
   if (!adminScreen || !adminScreenContent) return;
 
-  // Lazy-load AdminSettings (admin-only module)
-  const { AdminSettings } = await import('../admin/admin-settings.js');
+  // Lazy-load AdminPanel hub (admin-only module)
+  const { AdminPanel } = await import('../admin/admin-panel.js');
 
-  // Create or reuse AdminSettings instance for screen
-  adminSettingsScreen = new AdminSettings({
+  // Preserve active tab across re-renders
+  const prevTab = adminSettingsScreen ? adminSettingsScreen.getActiveTab?.() : null;
+
+  // Create AdminPanel hub instance
+  adminSettingsScreen = new AdminPanel({
     container: adminScreenContent,
-    config: adminConfig,
+    adminConfig,
     t,
-    showHeader: false, // Screen uses simpler headers
+    showToast,
+    onSaveSettings: (cfg) => {
+      Object.assign(adminConfig, cfg);
+      saveAdminConfig();
+      renderDetails();
+    },
+    onClose: () => {
+      markInternalNavigation();
+      closeAdminScreen();
+      try { location.hash = '#/'; } catch (_) { }
+    },
   });
-  adminSettingsScreen.render();
+  await adminSettingsScreen.render();
+
+  // Restore previously active tab if applicable
+  if (prevTab) {
+    try { adminSettingsScreen.setActiveTab(prevTab); } catch (_) { }
+  }
 
   if (adminScreenTitleEl) {
     const titleText = adminScreenTitleEl.querySelector('.admin-title-text');
-    if (titleText) titleText.textContent = t('admin.title');
+    if (titleText) titleText.textContent = t('adminPanel.tabs.settings');
   }
   if (mainEl) mainEl.style.display = 'none';
   adminScreen.style.display = 'block';
