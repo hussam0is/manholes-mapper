@@ -7592,7 +7592,7 @@ function getProjectInputFlowConfig(projectId) {
 }
 
 // Control buttons handlers
-newSketchBtn.addEventListener('click', async () => {
+if (newSketchBtn) newSketchBtn.addEventListener('click', async () => {
   commitIdInputIfFocused();
   // Show start panel to choose date
   hideHome();
