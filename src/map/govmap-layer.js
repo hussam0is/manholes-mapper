@@ -49,6 +49,10 @@ let referencePoint = null; // {itm: {x, y}, canvas: {x, y}}
 const MAX_RETRY_COUNT = 2;
 const tileRetryCount = new Map();
 
+// Tile projection cache: stores ITM corners to avoid per-frame proj4 trig calls
+// Key: "z/x/y" → { topLeftItm, bottomRightItm, widthMeters, heightMeters }
+const _tileItmCache = new Map();
+
 /**
  * Get the tile URL for a specific tile
  * @param {number} x - Tile X coordinate
@@ -243,22 +247,30 @@ export async function drawMapTiles(ctx, canvasWidth, canvasHeight, viewTranslate
       continue;
     }
     
-    // Convert tile corners to lat/lon
-    const topLeft = tileToLatLon(x, y, z);
-    const bottomRight = tileToLatLon(x + 1, y + 1, z);
-    
-    // Convert tile corners to ITM using accurate projection
-    const topLeftItm = projectWgs84ToItm(topLeft.lat, topLeft.lon);
-    const bottomRightItm = projectWgs84ToItm(bottomRight.lat, bottomRight.lon);
-    
-    // Calculate tile dimensions in meters
-    const tileWidthMeters = Math.abs(bottomRightItm.x - topLeftItm.x);
-    const tileHeightMeters = Math.abs(topLeftItm.y - bottomRightItm.y);
+    // Look up or compute ITM corners for this tile (cached to avoid per-frame proj4)
+    const tileCacheKey = `${z}/${x}/${y}`;
+    let tileItm = _tileItmCache.get(tileCacheKey);
+    if (!tileItm) {
+      const topLeft = tileToLatLon(x, y, z);
+      const bottomRight = tileToLatLon(x + 1, y + 1, z);
+      const topLeftItm = projectWgs84ToItm(topLeft.lat, topLeft.lon);
+      const bottomRightItm = projectWgs84ToItm(bottomRight.lat, bottomRight.lon);
+      tileItm = {
+        tlX: topLeftItm.x,
+        tlY: topLeftItm.y,
+        widthMeters: Math.abs(bottomRightItm.x - topLeftItm.x),
+        heightMeters: Math.abs(topLeftItm.y - bottomRightItm.y)
+      };
+      _tileItmCache.set(tileCacheKey, tileItm);
+    }
+
+    const tileWidthMeters = tileItm.widthMeters;
+    const tileHeightMeters = tileItm.heightMeters;
     
     // Convert ITM to canvas coordinates using reference point
     // These are in WORLD coordinates (before view transform)
-    const worldX = referencePoint.canvas.x + (topLeftItm.x - referencePoint.itm.x) * coordinateScale;
-    const worldY = referencePoint.canvas.y - (topLeftItm.y - referencePoint.itm.y) * coordinateScale;
+    const worldX = referencePoint.canvas.x + (tileItm.tlX - referencePoint.itm.x) * coordinateScale;
+    const worldY = referencePoint.canvas.y - (tileItm.tlY - referencePoint.itm.y) * coordinateScale;
     
     // Calculate tile size in world coordinates
     const worldWidth = tileWidthMeters * coordinateScale;
