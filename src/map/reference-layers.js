@@ -22,6 +22,12 @@ let layers = [];
 /** @type {boolean} Whether reference layers are globally enabled */
 let refLayersEnabled = true;
 
+/** @type {Array<LayerData>|null} Cached sorted layers (invalidated on layer change) */
+let _sortedLayersCache = null;
+
+/** @type {Map<string, object>} Cached merged styles per layer id (invalidated on layer change) */
+let _styleCache = new Map();
+
 /** @type {Map<string, boolean>} Per-layer visibility overrides */
 const layerVisibility = new Map();
 
@@ -96,6 +102,9 @@ const DEFAULT_STYLES = {
  */
 export function setReferenceLayers(layerDataArray) {
   layers = layerDataArray || [];
+  // Invalidate sorted/style caches
+  _sortedLayersCache = null;
+  _styleCache.clear();
   // Initialize visibility from server-side visible flag
   layers.forEach(l => {
     if (!layerVisibility.has(l.id)) {
@@ -163,6 +172,8 @@ export function isRefLayersEnabled() {
 export function clearReferenceLayers() {
   layers = [];
   layerVisibility.clear();
+  _sortedLayersCache = null;
+  _styleCache.clear();
 }
 
 // ============================================
@@ -336,14 +347,20 @@ export function drawReferenceLayers(ctx, coordinateScale, viewScale, stretchX, s
   const visMaxX = (canvasWidth - viewTranslate.x) / viewScale;
   const visMaxY = (canvasHeight - viewTranslate.y) / viewScale;
 
-  // Draw layers in display order
-  const sortedLayers = [...layers].sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+  // Build sorted layers + merged styles once, then reuse until layers change
+  if (!_sortedLayersCache) {
+    _sortedLayersCache = [...layers].sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+    _styleCache.clear();
+    for (const layer of _sortedLayersCache) {
+      _styleCache.set(layer.id, { ...(DEFAULT_STYLES[layer.layerType] || {}), ...(layer.style || {}) });
+    }
+  }
 
-  for (const layer of sortedLayers) {
+  for (const layer of _sortedLayersCache) {
     if (!isLayerVisible(layer.id)) continue;
     if (!layer.geojson || !layer.geojson.features) continue;
 
-    const style = { ...(DEFAULT_STYLES[layer.layerType] || {}), ...(layer.style || {}) };
+    const style = _styleCache.get(layer.id);
     
     ctx.save();
     drawLayerFeatures(ctx, layer, style, refPoint, coordinateScale, stretchX, stretchY, viewScale, visMinX, visMinY, visMaxX, visMaxY);
