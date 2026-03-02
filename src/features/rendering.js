@@ -26,15 +26,10 @@ export function renderEdgeLegend(legendEl, edgeTypeColors) {
   legendEl.innerHTML = items
     .map((i) => `<span class="item"><span class="swatch" style="background:${i.color}"></span>${window.escapeHtml ? window.escapeHtml(i.label) : i.label}</span>`)
     .join('');
-  // RTL-aware positioning: use logical CSS property via inline style attribute
-  const isRtl = typeof window.isRTL === 'function' ? window.isRTL() : document.documentElement.dir === 'rtl';
-  if (isRtl) {
-    legendEl.style.right = '12px';
-    legendEl.style.left = 'auto';
-  } else {
-    legendEl.style.left = '12px';
-    legendEl.style.right = 'auto';
-  }
+  // Remove any stale physical left/right inline overrides so the CSS logical
+  // property (inset-inline-start: 12px) can handle RTL positioning correctly.
+  legendEl.style.removeProperty('left');
+  legendEl.style.removeProperty('right');
 }
 
 /**
