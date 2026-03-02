@@ -1162,31 +1162,38 @@ select.btn:focus-visible {
 
 .canvas-toolbar-divider {
   height: 1px;
-  background: rgba(255, 255, 255, 0.2);
-  margin: 0 8px;
+  background: rgba(255, 255, 255, 0.25);
+  margin: 2px 8px;
   flex-shrink: 0;
 }
 
 .canvas-toolbar .segmented .btn {
-  color: #f9fafb;
+  /* Always white — toolbar background is dark regardless of OS theme */
+  color: #ffffff;
   border: none;
   background: transparent;
   min-width: 44px;
   min-height: 44px;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 /* Standardize Material Icon size across all canvas toolbar buttons */
 .canvas-toolbar .material-icons {
   font-size: 22px;
+  /* Inherit color from parent button so active/hover states propagate */
+  color: inherit;
 }
 
 .canvas-toolbar .segmented .btn:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.18);
 }
 
 .canvas-toolbar .segmented .btn.active {
-  background: var(--color-primary);
-  color: var(--color-surface, #fff);
+  background: var(--color-primary, #2563eb);
+  /* Always white icon text on the blue active button — never use --color-surface which
+     resolves to dark navy (#0f172a) in dark mode, making icons invisible */
+  color: #ffffff;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35) inset;
 }
 
 /* Undo/Redo buttons */

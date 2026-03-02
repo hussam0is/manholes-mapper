@@ -8,17 +8,33 @@ import { COLORS } from '../state/constants.js';
  */
 export function renderEdgeLegend(legendEl, edgeTypeColors) {
   if (!legendEl) return;
-  const t = window.t || ((k) => k);
+
+  // window.t may not be available yet during early module initialization
+  // (main-entry.js sets it after all static imports run). Schedule a deferred
+  // re-render so the legend always shows translated text once i18n is ready.
+  if (typeof window.t !== 'function') {
+    setTimeout(() => renderEdgeLegend(legendEl, edgeTypeColors), 50);
+    return;
+  }
+
+  const t = window.t;
   const items = [
     { label: t('labels.edgeTypePrimary'), color: edgeTypeColors['קו ראשי'] || '#2563eb' },
     { label: t('labels.edgeTypeDrainage'), color: edgeTypeColors['קו סניקה'] || '#fb923c' },
     { label: t('labels.edgeTypeSecondary'), color: edgeTypeColors['קו משני'] || '#0d9488' },
   ];
   legendEl.innerHTML = items
-    .map((i) => `<span class="item"><span class="swatch" style="background:${i.color}"></span>${i.label}</span>`) 
+    .map((i) => `<span class="item"><span class="swatch" style="background:${i.color}"></span>${window.escapeHtml ? window.escapeHtml(i.label) : i.label}</span>`)
     .join('');
-  legendEl.style.left = '12px';
-  legendEl.style.right = 'auto';
+  // RTL-aware positioning: use logical CSS property via inline style attribute
+  const isRtl = typeof window.isRTL === 'function' ? window.isRTL() : document.documentElement.dir === 'rtl';
+  if (isRtl) {
+    legendEl.style.right = '12px';
+    legendEl.style.left = 'auto';
+  } else {
+    legendEl.style.left = '12px';
+    legendEl.style.right = 'auto';
+  }
 }
 
 /**
