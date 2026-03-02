@@ -167,8 +167,20 @@ function renderListView() {
         ? 'sketch-side-panel__issues-btn--medium'
         : 'sketch-side-panel__issues-btn--low';
 
+    const missingCoords = sketchData ? (sketchData.stats.missingCoordsCount || 0) : 0;
+    const missingPipeData = sketchData ? (sketchData.stats.missingPipeDataCount || 0) : 0;
+
+    // Build tooltip with issue type breakdown
+    let issueTooltip = t('projects.canvas.workingStatus') || 'Working Status';
+    if (issues > 0) {
+      const parts = [];
+      if (missingCoords > 0) parts.push(t('projects.canvas.issueBreakdownCoords', missingCoords));
+      if (missingPipeData > 0) parts.push(t('projects.canvas.issueBreakdownPipeData', missingPipeData));
+      if (parts.length > 0) issueTooltip = parts.join(' · ');
+    }
+
     const issuesBadge = issues > 0
-      ? `<button class="sketch-side-panel__issues-btn ${severityClass}" data-sketch-issues="${sketch.id}" title="${t('projects.canvas.workingStatus') || 'Working Status'}">
+      ? `<button class="sketch-side-panel__issues-btn ${severityClass}" data-sketch-issues="${sketch.id}" title="${esc(issueTooltip)}">
            <span class="material-icons">warning</span>${issues}
          </button>`
       : `<span class="sketch-side-panel__no-issues" title="${t('projects.canvas.noIssues') || 'OK'}">
@@ -230,17 +242,40 @@ function renderListView() {
     listEl.appendChild(item);
   }
 
-  // Add totals footer
+  // Add totals footer with issue type breakdown
   const totalsEl = document.createElement('div');
   totalsEl.className = 'sketch-side-panel__totals';
   const issuesClass = totals.issueCount > 0 ? 'sketch-side-panel__totals-issues--warn' : 'sketch-side-panel__totals-issues--ok';
   const issuesIcon = totals.issueCount > 0 ? 'warning' : 'check_circle';
+
+  // Build breakdown text for totals
+  let breakdownHtml = '';
+  if (totals.issueCount > 0) {
+    const breakdownParts = [];
+    if (totals.missingCoordsCount > 0) {
+      breakdownParts.push(`<span class="sketch-side-panel__totals-breakdown-item">
+        <span class="material-icons" style="font-size:13px;vertical-align:middle">location_off</span>
+        ${totals.missingCoordsCount} ${t('projects.canvas.missingCoords') || 'missing coords'}
+      </span>`);
+    }
+    if (totals.missingPipeDataCount > 0) {
+      breakdownParts.push(`<span class="sketch-side-panel__totals-breakdown-item">
+        <span class="material-icons" style="font-size:13px;vertical-align:middle">rule</span>
+        ${totals.missingPipeDataCount} ${t('projects.canvas.missingPipeData') || 'missing pipe data'}
+      </span>`);
+    }
+    if (breakdownParts.length > 0) {
+      breakdownHtml = `<div class="sketch-side-panel__totals-breakdown">${breakdownParts.join('')}</div>`;
+    }
+  }
+
   totalsEl.innerHTML = `
     <span class="sketch-side-panel__totals-km">${totals.totalKm.toFixed(2)} ${t('projects.canvas.totalKm') || 'km'}</span>
     <span class="sketch-side-panel__totals-issues ${issuesClass}">
       <span class="material-icons">${issuesIcon}</span>
       ${totals.issueCount} ${t('projects.canvas.issues') || 'Issues'}
     </span>
+    ${breakdownHtml}
   `;
   // Insert after listEl (inside panelEl)
   listEl.parentNode.insertBefore(totalsEl, listEl.nextSibling);
@@ -312,6 +347,10 @@ function renderIssuesView() {
     if (issue.type === 'missing_coords') {
       icon = 'location_off';
       typeText = t('projects.canvas.missingCoords') || 'Missing coordinates';
+      nodeLabel = `#${issue.nodeId}`;
+    } else if (issue.type === 'missing_pipe_data') {
+      icon = 'rule';
+      typeText = t('projects.canvas.missingPipeData') || 'Missing pipe data';
       nodeLabel = `#${issue.nodeId}`;
     } else if (issue.type === 'long_edge') {
       icon = 'straighten';

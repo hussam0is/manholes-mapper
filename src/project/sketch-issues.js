@@ -12,8 +12,8 @@
  */
 
 /**
- * @typedef {{ type: 'missing_coords' | 'missing_measurement' | 'long_edge' | 'not_last_manhole' | 'negative_gradient', nodeId?: string|number, edgeId?: string|number, side?: 'tail'|'head', worldX: number, worldY: number, lengthM?: number, gradient?: number }} Issue
- * @typedef {{ totalKm: number, issueCount: number }} SketchStats
+ * @typedef {{ type: 'missing_coords' | 'missing_pipe_data' | 'long_edge' | 'not_last_manhole' | 'negative_gradient', nodeId?: string|number, edgeId?: string|number, side?: 'tail'|'head', worldX: number, worldY: number, lengthM?: number, gradient?: number }} Issue
+ * @typedef {{ totalKm: number, issueCount: number, missingCoordsCount: number, missingPipeDataCount: number }} SketchStats
  */
 
 const LONG_EDGE_THRESHOLD_M = 70;
@@ -28,7 +28,7 @@ const SCHEMATIC_ACCURACY = 1;
  * @returns {{ issues: Issue[], stats: SketchStats }}
  */
 export function computeSketchIssues(nodes, edges) {
-  if (!nodes || !edges) return { issues: [], stats: { totalKm: 0, issueCount: 0 } };
+  if (!nodes || !edges) return { issues: [], stats: { totalKm: 0, issueCount: 0, missingCoordsCount: 0, missingPipeDataCount: 0 } };
 
   const nodeMap = new Map();
   for (const n of nodes) nodeMap.set(String(n.id), n);
@@ -51,7 +51,8 @@ export function computeSketchIssues(nodes, edges) {
     }
   }
 
-  // 2. Missing measurements on תקין (maintenanceStatus === 1) nodes
+  // 2. Missing pipe data (depth measurements) on תקין (maintenanceStatus === 1) nodes.
+  //    These are nodes that have GPS coordinates but are missing edge depth/measurement data.
   for (const edge of edges) {
     const tailNode = edge.tail != null ? nodeMap.get(String(edge.tail)) : null;
     const headNode = edge.head != null ? nodeMap.get(String(edge.head)) : null;
@@ -60,7 +61,7 @@ export function computeSketchIssues(nodes, edges) {
     if (tailNode && tailNode.maintenanceStatus === 1) {
       if (!edge.tail_measurement && edge.tail_measurement !== 0) {
         issues.push({
-          type: 'missing_measurement',
+          type: 'missing_pipe_data',
           nodeId: tailNode.id,
           edgeId: edge.id,
           side: 'tail',
@@ -74,7 +75,7 @@ export function computeSketchIssues(nodes, edges) {
     if (headNode && headNode.maintenanceStatus === 1) {
       if (!edge.head_measurement && edge.head_measurement !== 0) {
         issues.push({
-          type: 'missing_measurement',
+          type: 'missing_pipe_data',
           nodeId: headNode.id,
           edgeId: edge.id,
           side: 'head',
@@ -154,8 +155,8 @@ export function computeSketchIssues(nodes, edges) {
     }
   }
 
-  // Sort: missing_coords first, then missing_measurement, then long_edge, then not_last_manhole, then negative_gradient; within each by id
-  const typeOrder = { missing_coords: 0, missing_measurement: 1, long_edge: 2, not_last_manhole: 3, negative_gradient: 4 };
+  // Sort: missing_coords first, then missing_pipe_data, then long_edge, then not_last_manhole, then negative_gradient; within each by id
+  const typeOrder = { missing_coords: 0, missing_pipe_data: 1, long_edge: 2, not_last_manhole: 3, negative_gradient: 4 };
   issues.sort((a, b) => {
     const tDiff = (typeOrder[a.type] ?? 9) - (typeOrder[b.type] ?? 9);
     if (tDiff !== 0) return tDiff;
@@ -177,11 +178,21 @@ export function computeSketchIssues(nodes, edges) {
     }
   }
 
+  // Count issues by category for the breakdown display
+  let missingCoordsCount = 0;
+  let missingPipeDataCount = 0;
+  for (const issue of issues) {
+    if (issue.type === 'missing_coords') missingCoordsCount++;
+    else if (issue.type === 'missing_pipe_data') missingPipeDataCount++;
+  }
+
   return {
     issues,
     stats: {
       totalKm: totalMeters / 1000,
       issueCount: issues.length,
+      missingCoordsCount,
+      missingPipeDataCount,
     },
   };
 }
@@ -194,9 +205,13 @@ export function computeSketchIssues(nodes, edges) {
 export function computeProjectTotals(statsArray) {
   let totalKm = 0;
   let issueCount = 0;
+  let missingCoordsCount = 0;
+  let missingPipeDataCount = 0;
   for (const s of statsArray) {
     totalKm += s.totalKm;
     issueCount += s.issueCount;
+    missingCoordsCount += s.missingCoordsCount || 0;
+    missingPipeDataCount += s.missingPipeDataCount || 0;
   }
-  return { totalKm, issueCount };
+  return { totalKm, issueCount, missingCoordsCount, missingPipeDataCount };
 }

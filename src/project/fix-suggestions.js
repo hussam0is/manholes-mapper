@@ -13,7 +13,7 @@
 export function getFixSuggestions(issue, nodes, edges) {
   const suggestions = [];
 
-  if (issue.type === 'missing_measurement') {
+  if (issue.type === 'missing_pipe_data' || issue.type === 'missing_measurement') {
     const node = nodes.find(n => String(n.id) === String(issue.nodeId));
     if (!node) return suggestions;
 

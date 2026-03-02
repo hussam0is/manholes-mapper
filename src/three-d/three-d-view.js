@@ -620,9 +620,9 @@ export async function open3DView(opts = {}) {
       if (issue.type === 'missing_coords') {
         icon = 'location_off';
         label = `#${issue.nodeId} — ${esc(t('projects.canvas.missingCoords'))}`;
-      } else if (issue.type === 'missing_measurement') {
+      } else if (issue.type === 'missing_pipe_data' || issue.type === 'missing_measurement') {
         icon = 'rule';
-        label = `#${issue.nodeId} — ${esc(t('projects.canvas.missingMeasurement'))}`;
+        label = `#${issue.nodeId} — ${esc(t('projects.canvas.missingPipeData'))}`;
       } else if (issue.type === 'long_edge') {
         icon = 'straighten';
         label = `#${issue.tailId}→#${issue.headId} — ${esc(t('projects.canvas.longPipe'))} (${issue.lengthM}m)`;

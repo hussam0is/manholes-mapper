@@ -5452,7 +5452,18 @@ function renderDetails() {
             <span>${t('labels.accuracyBadge')}</span>
           </div>` : ''}
           <div class="wizard-indicator-row">
-            <div class="chip ${node.type === 'type2' ? 'chip-warn' : 'chip-ok'}">${node.type === 'type2' ? t('labels.indicatorMissing') : t('labels.indicatorOk')}</div>
+            ${(() => {
+              if (node.type === 'type2') {
+                // Node has missing pipe measurements. If it has GPS coords, the issue is pipe data;
+                // otherwise the coordinates themselves are missing.
+                const hasSurveyCoords = node.surveyX != null && node.surveyY != null;
+                const label = hasSurveyCoords
+                  ? t('labels.indicatorMissingPipeData')
+                  : t('labels.indicatorMissingCoords');
+                return `<div class="chip chip-warn">${label}</div>`;
+              }
+              return `<div class="chip chip-ok">${t('labels.indicatorOk')}</div>`;
+            })()}
           </div>
           <div class="node-tab-wizard" id="nodeTabWizard">
             <div class="wizard-tabs-row" id="wizardTabsRow">
@@ -5755,7 +5766,7 @@ function renderDetails() {
           if (issue.type === 'missing_coords') {
             issueIcon = 'location_off';
             issueText = t('elementIssues.missingCoords');
-          } else if (issue.type === 'missing_measurement') {
+          } else if (issue.type === 'missing_pipe_data' || issue.type === 'missing_measurement') {
             issueIcon = 'rule';
             const sideLabel = issue.side === 'tail' ? t('elementIssues.tail') : t('elementIssues.head');
             issueText = t('elementIssues.missingMeasurementSide', sideLabel);
@@ -6178,7 +6189,7 @@ function renderDetails() {
           issueEl.className = 'element-issue-item';
           let issueIcon = 'warning';
           let issueText = '';
-          if (issue.type === 'missing_measurement') {
+          if (issue.type === 'missing_pipe_data' || issue.type === 'missing_measurement') {
             issueIcon = 'rule';
             const sideLabel = issue.side === 'tail' ? t('elementIssues.tail') : t('elementIssues.head');
             issueText = t('elementIssues.missingMeasurementSide', sideLabel);

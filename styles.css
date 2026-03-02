@@ -6063,13 +6063,15 @@ select.invalid:focus {
     font-size: 10px;
   }
 
-  /* Optimize edge legend for mobile */
+  /* Optimize edge legend for mobile: limit width to avoid overlapping canvas toolbar */
   .edge-legend {
     top: 8px;
     inset-inline-start: 8px;
-    font-size: 11px;
-    padding: 4px 8px;
-    gap: 8px;
+    font-size: 10px;
+    padding: 3px 6px;
+    gap: 6px;
+    max-width: calc(100vw - 70px); /* leave room for the canvas toolbar on the opposite side */
+    flex-wrap: wrap;
   }
 
   /* Wrap control buttons to two columns */
@@ -10326,8 +10328,9 @@ button:focus-visible,
 /* ── Totals footer ─────────────────────────────────────────────────── */
 .sketch-side-panel__totals {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 4px 8px;
   padding: 8px 16px;
   border-top: 1px solid var(--color-border, #e2e8f0);
   font-size: 12px;
@@ -10356,6 +10359,25 @@ button:focus-visible,
 
 .sketch-side-panel__totals-issues--warn {
   color: var(--color-danger, #ef4444);
+}
+
+/* Issue type breakdown below the totals summary row */
+.sketch-side-panel__totals-breakdown {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 4px;
+  border-top: 1px dashed var(--color-border, #e2e8f0);
+  font-size: 11px;
+  color: var(--color-text-secondary, #475569);
+}
+
+.sketch-side-panel__totals-breakdown-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
 }
 
 /* ── Issues sub-panel ──────────────────────────────────────────────── */

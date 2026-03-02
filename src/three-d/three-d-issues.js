@@ -79,7 +79,7 @@ export function setup3DIssueInteraction(THREE, opts) {
       // Issue type label
       let typeLabel = issue.type;
       if (issue.type === 'missing_coords') typeLabel = t('projects.canvas.missingCoords');
-      else if (issue.type === 'missing_measurement') typeLabel = t('projects.canvas.missingMeasurement');
+      else if (issue.type === 'missing_pipe_data' || issue.type === 'missing_measurement') typeLabel = t('projects.canvas.missingPipeData');
       else if (issue.type === 'long_edge') typeLabel = t('projects.canvas.longPipe');
       else if (issue.type === 'not_last_manhole') typeLabel = t('projects.canvas.notLastManhole');
       else if (issue.type === 'negative_gradient') typeLabel = t('projects.canvas.negativeGradient');
