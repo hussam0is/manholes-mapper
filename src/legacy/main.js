@@ -400,6 +400,7 @@ let draggingDanglingEdge = null;      // the edge being dragged
 let draggingDanglingType = null;      // 'outbound' (danglingEndpoint) or 'inbound' (tailPosition)
 let draggingDanglingStart = null;     // { x, y } pre-drag position for undo
 let hoveredDanglingEndpoint = null;   // { edge, type } for hover highlight
+let danglingSnapTarget = null;        // { type: 'node'|'dangling', node?, edge?, danglingType? } during drag
 // Undo action history
 const UNDO_STACK_MAX = 50;
 const undoStack = [];
@@ -4097,6 +4098,24 @@ function performUndo() {
     saveToStorage();
     scheduleDraw();
 
+  } else if (action.type === 'danglingMerge') {
+    // Undo merge: restore edgeA to pre-merge state and re-add edgeB
+    const edgeA = edges.find(e => e.id === action.edgeABefore.id);
+    if (!edgeA) { undoStack.pop(); updateUndoButton(); return; }
+    // Capture current merged state for redo
+    redoStack.push({ type: 'danglingMerge', edgeABefore: deepCopyObj(edgeA), edgeBBefore: action.edgeBBefore });
+    // Restore edgeA
+    Object.assign(edgeA, action.edgeABefore);
+    // Re-add edgeB
+    edges.push(deepCopyObj(action.edgeBBefore));
+    undoStack.pop();
+    computeNodeTypes();
+    updateIncompleteEdgeTracker();
+    markEdgeLabelCacheDirty();
+    saveToStorage();
+    scheduleDraw();
+    showToast(t('toasts.undoEdgeCreate'));
+
   } else {
     // Unknown action type — just remove it
     undoStack.pop();
@@ -4234,6 +4253,22 @@ function performRedo() {
     markEdgeLabelCacheDirty();
     saveToStorage();
     scheduleDraw();
+
+  } else if (action.type === 'danglingMerge') {
+    // Redo merge: re-apply merge (edgeA already exists, delete edgeB again, restore merged state)
+    const edgeA = edges.find(e => e.id === action.edgeABefore.id);
+    if (!edgeA) { updateRedoButton(); return; }
+    // Save current (un-merged) state for undo
+    pushUndoDirect({ type: 'danglingMerge', edgeABefore: deepCopyObj(edgeA), edgeBBefore: action.edgeBBefore });
+    // Remove edgeB
+    edges = edges.filter(e => e.id !== action.edgeBBefore.id);
+    // Restore edgeA to merged state (use edgeABefore which was the merged state at redo time)
+    Object.assign(edgeA, action.edgeABefore);
+    computeNodeTypes();
+    updateIncompleteEdgeTracker();
+    markEdgeLabelCacheDirty();
+    saveToStorage();
+    scheduleDraw();
   }
 
   updateUndoButton();
@@ -4328,6 +4363,100 @@ function findDanglingEndpointAt(x, y) {
 }
 
 /**
+ * Detect snap targets for a dragged dangling endpoint.
+ * Checks nodes first, then other dangling edge free endpoints.
+ * Excludes the edge being dragged itself.
+ * @returns {{ type: 'node', node: object } | { type: 'dangling', edge: object, danglingType: string } | null}
+ */
+function findDanglingSnapTarget(x, y, excludeEdge) {
+  const sv = autoSizeEnabled ? viewScale : 1;
+  const snapDist = 25 * sizeScale / sv;
+
+  // Check nodes first (higher priority)
+  const node = findNodeAt(x, y);
+  if (node) {
+    // For outbound: the dragged edge's tail must not be this node (self-loop)
+    // For inbound: the dragged edge's head must not be this node
+    const isSelf = (draggingDanglingType === 'outbound' && String(excludeEdge?.tail) === String(node.id)) ||
+                   (draggingDanglingType === 'inbound' && String(excludeEdge?.head) === String(node.id));
+    if (!isSelf) return { type: 'node', node };
+  }
+
+  // Check other dangling edge free endpoints
+  const incompleteEdges = findIncompleteEdges();
+  let closest = null;
+  let minDist = snapDist;
+  for (const edge of incompleteEdges) {
+    if (edge === excludeEdge) continue;
+    if (edge.danglingEndpoint) {
+      const dist = Math.hypot(edge.danglingEndpoint.x - x, edge.danglingEndpoint.y - y);
+      if (dist < minDist) { minDist = dist; closest = { type: 'dangling', edge, danglingType: 'outbound' }; }
+    }
+    if (edge.tailPosition) {
+      const dist = Math.hypot(edge.tailPosition.x - x, edge.tailPosition.y - y);
+      if (dist < minDist) { minDist = dist; closest = { type: 'dangling', edge, danglingType: 'inbound' }; }
+    }
+  }
+  return closest;
+}
+
+/**
+ * Merge two dangling edges that meet at their free ends into a single complete edge.
+ * Keeps edgeA, deletes edgeB. Merges measurements directionally.
+ */
+function mergeDanglingEdges(edgeA, typeA, edgeB, typeB) {
+  // Capture pre-merge state for undo BEFORE any mutation
+  const edgeABefore = deepCopyObj(edgeA);
+  const edgeBBefore = deepCopyObj(edgeB);
+
+  // Determine tail and head for the merged edge
+  let tailId, headId;
+  if (typeA === 'outbound') {
+    tailId = edgeA.tail;
+  } else {
+    headId = edgeA.head;
+  }
+  if (typeB === 'outbound') {
+    if (tailId == null) tailId = edgeB.tail; else headId = edgeB.tail;
+  } else {
+    if (headId == null) headId = edgeB.head; else tailId = edgeB.head;
+  }
+
+  // Directional measurements: tail-side from the edge contributing the tail node
+  const tailEdge = (typeA === 'outbound') ? edgeA : edgeB;
+  const headEdge = (typeA === 'outbound') ? edgeB : edgeA;
+
+  edgeA.tail = tailId;
+  edgeA.head = headId;
+  edgeA.isDangling = false;
+  edgeA.danglingEndpoint = null;
+  edgeA.tailPosition = null;
+  edgeA.tail_measurement = tailEdge.tail_measurement || headEdge.tail_measurement || '';
+  edgeA.head_measurement = headEdge.head_measurement || tailEdge.head_measurement || '';
+
+  // Shared fields: prefer non-empty from either edge
+  const sharedFields = ['edge_type', 'material', 'line_diameter', 'fall_depth', 'fall_position', 'engineeringStatus'];
+  for (const field of sharedFields) {
+    if (!edgeA[field] && edgeB[field]) edgeA[field] = edgeB[field];
+  }
+
+  // Remove edgeB
+  edges = edges.filter(e => e !== edgeB);
+
+  pushUndo({
+    type: 'danglingMerge',
+    edgeABefore,
+    edgeBBefore,
+  });
+
+  computeNodeTypes();
+  updateIncompleteEdgeTracker();
+  markEdgeLabelCacheDirty();
+  saveToStorage();
+  scheduleDraw();
+}
+
+/**
  * Connect a dangling edge to a newly created node.
  * @param {object} edge - The dangling edge to connect
  * @param {string} nodeId - The node ID to connect to
@@ -4351,7 +4480,23 @@ function connectDanglingEdge(edge, nodeId, type = 'outbound') {
  * Finalize a dangling endpoint drag: push undo if moved, save, and reset state.
  */
 function finalizeDanglingEndpointDrag() {
-  if (draggingDanglingEdge && draggingDanglingStart) {
+  const snap = danglingSnapTarget;
+  danglingSnapTarget = null;
+
+  if (draggingDanglingEdge && snap) {
+    if (snap.type === 'node') {
+      // Snap to node — connect the dangling edge
+      connectDanglingEdge(draggingDanglingEdge, snap.node.id, draggingDanglingType);
+      showToast(t('toasts.danglingEndpointSnapped'));
+      // Push undo as edgeCreate-like (undo would need to re-dangle — handled by nodeDelete undo pattern)
+      // For simplicity, just save — the connectDanglingEdge already saves
+    } else if (snap.type === 'dangling') {
+      // Merge two dangling edges
+      mergeDanglingEdges(draggingDanglingEdge, draggingDanglingType, snap.edge, snap.danglingType);
+      showToast(t('toasts.danglingEdgesMerged'));
+    }
+  } else if (draggingDanglingEdge && draggingDanglingStart) {
+    // No snap — just a plain move
     const pos = draggingDanglingType === 'outbound'
       ? draggingDanglingEdge.danglingEndpoint : draggingDanglingEdge.tailPosition;
     if (pos) {
@@ -4551,6 +4696,32 @@ function draw() {
     }
     ctx.restore();
   }
+
+  // Draw snap indicator during dangling endpoint drag
+  if (isDraggingDanglingEnd && danglingSnapTarget) {
+    ctx.save();
+    let snapX, snapY;
+    if (danglingSnapTarget.type === 'node') {
+      snapX = danglingSnapTarget.node.x * viewStretchX;
+      snapY = danglingSnapTarget.node.y * viewStretchY;
+    } else {
+      const pos = danglingSnapTarget.danglingType === 'outbound'
+        ? danglingSnapTarget.edge.danglingEndpoint : danglingSnapTarget.edge.tailPosition;
+      if (pos) { snapX = pos.x * viewStretchX; snapY = pos.y * viewStretchY; }
+    }
+    if (snapX != null && snapY != null) {
+      const snapRadius = 18 * sizeScale / sizeVS;
+      ctx.setLineDash([4 / sizeVS, 3 / sizeVS]);
+      ctx.strokeStyle = '#16a34a'; // green-600
+      ctx.lineWidth = 2.5 / sizeVS;
+      ctx.beginPath();
+      ctx.arc(snapX, snapY, snapRadius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    ctx.restore();
+  }
+
   // Draw nodes on top and collect label data
   const labelData = [];
   const nodeData = [];
@@ -7328,6 +7499,7 @@ canvas.addEventListener('mousemove', (e) => {
     } else {
       draggingDanglingEdge.tailPosition = { x: world.x, y: world.y };
     }
+    danglingSnapTarget = findDanglingSnapTarget(world.x, world.y, draggingDanglingEdge);
     markEdgeLabelCacheDirty();
     scheduleDraw();
     return;
@@ -7631,6 +7803,7 @@ canvas.addEventListener('touchmove', (e) => {
           } else {
             draggingDanglingEdge.tailPosition = { x: world.x, y: world.y };
           }
+          danglingSnapTarget = findDanglingSnapTarget(world.x, world.y, draggingDanglingEdge);
           markEdgeLabelCacheDirty();
           scheduleDraw();
           return;
