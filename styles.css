@@ -1247,9 +1247,28 @@ input.floating-keyboard-active {
 #homePanel .panel { width: 360px; max-width: calc(100% - 2rem); }
 #helpModal .panel { width: 360px; max-width: calc(100% - 2rem); }
 #startPanel .panel input[type="date"] { width: 100%; margin-top: 0.5rem; }
-#startPanel .panel button { margin-top: 0.7rem; width: 100%; padding: 0.5rem; background: var(--color-primary); color: #fff; border: none; border-radius: 8px; font-size: 0.95rem; cursor: pointer; }
 #startPanel .panel .actions { display: flex; gap: 0.5rem; margin-top: 0.7rem; }
-#startPanel .panel .actions .btn { flex: 1; }
+#startPanel .panel .actions .btn { flex: 1; padding: 0.5rem; font-size: 0.95rem; border-radius: 8px; }
+/* Start (primary) button — solid blue fill */
+#startPanel #startBtn {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+#startPanel #startBtn:hover {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+/* Cancel (secondary) button — outlined style */
+#startPanel #cancelBtn {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+}
+#startPanel #cancelBtn:hover {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
+}
 /* Collapsible admin groups for mobile */
 .admin-group {
   position: relative;
@@ -2109,7 +2128,17 @@ input.floating-keyboard-active {
   input[type="text"], input[type="date"], textarea { background: #0b1220; border-color: var(--color-border); color: var(--color-text); }
   select.btn { background: #0b1220; color: var(--color-text); border-color: var(--color-border); }
   #toast { background: var(--color-primary-strong); }
-  
+  /* Start panel Cancel button — dark mode outlined style */
+  #startPanel #cancelBtn {
+    background: var(--color-surface);
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+  }
+  #startPanel #cancelBtn:hover {
+    background: rgba(37, 99, 235, 0.15);
+    border-color: var(--color-primary);
+  }
+
   /* Dark mode for floating keyboard */
   .floating-keyboard {
     background: rgba(15, 23, 42, 0.95);
