@@ -40,6 +40,8 @@ let _unsubMerge = null;
 let _currentView = 'list';
 /** Sketch ID whose issues are being viewed */
 let _issuesSketchId = null;
+/** Unsubscribe for nav state changes */
+let _unsubNav = null;
 
 /** Cached per-sketch stats (recomputed on render) */
 let _sketchStats = new Map();
@@ -80,6 +82,13 @@ export function initSketchSidePanel() {
       _refreshMergeModeData();
     }
     render();
+  });
+
+  // Subscribe to issue nav state changes (highlight active issue row when nav changes)
+  _unsubNav = onNavStateChange((navState) => {
+    if (_currentView === 'issues' && _issuesSketchId) {
+      _highlightActiveIssueRow(navState.currentIndex);
+    }
   });
 
   // Subscribe to merge mode changes (re-render when nearby nodes update)
