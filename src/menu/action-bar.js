@@ -38,19 +38,19 @@ export function createActionButton(action, t, options = {}) {
 }
 
 /**
- * Create the primary actions group (New Sketch, Save)
+ * Create the primary actions group (Save)
  * @param {Function} t - Translation function
  * @returns {string} HTML string
  */
 export function createPrimaryActions(t) {
+  // Save is the sole primary action; render it with its autosave indicator
   const buttons = menuConfig.primary.map(action => {
     if (action.id === 'save') {
-      // Save button with autosave indicator
       return `
         <div class="menu-save-group">
-          <button 
+          <button
             id="saveBtn"
-            class="menu-btn menu-btn--primary" 
+            class="menu-btn menu-btn--primary"
             data-action="save"
             title="${t('save')}"
             aria-label="${t('save')}"

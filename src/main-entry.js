@@ -38,6 +38,7 @@ import {
 } from './map/user-location.js';
 import { getFixSuggestions } from './project/fix-suggestions.js';
 import { computeSketchIssues } from './project/sketch-issues.js';
+import './project/issue-nav-state.js'; // registers window.__issueNav
 
 // Initialize Vercel Speed Insights only when deployed on Vercel (production)
 // The /_vercel/speed-insights/script.js endpoint only exists on Vercel's platform
@@ -379,10 +380,24 @@ function initMenuSystem() {
   
   // Initialize command dropdown (More menu)
   initCommandDropdown();
-  
+
   // Initialize mobile menu behavior
   initMobileMenuBehavior();
-  
+
+  // Wire My Sketches button (desktop + mobile) — navigates to home screen (#/)
+  menuEvents.on('mySketches', () => {
+    window.location.hash = '#/';
+  });
+
+  // Wire standalone mobile My Sketches button (not inside a group, not caught by delegation)
+  const mobileMySketches = document.getElementById('mobileMySketchesBtn');
+  if (mobileMySketches) {
+    mobileMySketches.addEventListener('click', () => {
+      window.location.hash = '#/';
+      if (window.closeMobileMenu) window.closeMobileMenu();
+    });
+  }
+
   // Expose menuEvents globally for legacy code access
   window.menuEvents = menuEvents;
 }
@@ -738,7 +753,7 @@ function initCollapsibleMobileMenuGroups(menuEl) {
   if (!menuEl) return;
 
   // Groups that are open by default (not in the collapsed set)
-  const DEFAULT_EXPANDED = new Set(['nav', 'settings']);
+  const DEFAULT_EXPANDED = new Set(['settings']);
 
   // Load persisted collapsed state; derive defaults if absent
   let collapsedGroups;

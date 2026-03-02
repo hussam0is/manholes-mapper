@@ -7,12 +7,6 @@ export const menuConfig = {
   // Primary actions - always visible, prominent styling
   primary: [
     {
-      id: 'newSketch',
-      icon: 'note_add',
-      labelKey: 'newSketch',
-      showLabel: true,
-    },
-    {
       id: 'save',
       icon: 'save',
       labelKey: 'save',
@@ -201,21 +195,15 @@ export const menuConfig = {
       showLabel: false,
     },
     {
-      id: 'home',
-      icon: 'home',
-      labelKey: 'home',
-      showLabel: true,
+      id: 'mySketches',
+      icon: 'description',
+      labelKey: 'mySketches',
+      showLabel: false,
     },
   ],
 
   // Mobile menu groups for organized slide-out panel
   mobileGroups: [
-    {
-      id: 'nav',
-      labelKey: 'menuGroupNav',
-      icon: 'home',
-      items: ['home', 'newSketch'],
-    },
     {
       id: 'search',
       labelKey: 'menuGroupSearch',
@@ -229,40 +217,25 @@ export const menuConfig = {
       items: ['sizeDecrease', 'sizeIncrease'],
     },
     {
-      id: 'sketch',
-      labelKey: 'menuGroup.sketch',
+      // Merged: Sketch + Data Export
+      id: 'sketchExport',
+      labelKey: 'menuGroup.sketchExport',
       icon: 'description',
-      items: ['save', 'exportSketch', 'importSketch'],
+      items: ['save', 'exportSketch', 'importSketch', 'exportNodes', 'exportEdges'],
     },
     {
-      id: 'csv',
-      labelKey: 'menuGroup.csv',
-      icon: 'table_chart',
-      items: ['exportNodes', 'exportEdges'],
-    },
-    {
-      id: 'location',
-      labelKey: 'menuGroup.location',
+      // Merged: Location & Coordinates + Map Layer
+      id: 'locationMap',
+      labelKey: 'menuGroup.locationMap',
       icon: 'location_on',
       items: ['importCoordinates', 'toggleCoordinates', 'coordinateScale', 'toggleMapLayer'],
     },
     {
-      id: 'gnss',
-      labelKey: 'menuGroup.gnss',
+      // Merged: Live Measurement + Survey Device + Workday
+      id: 'measurement',
+      labelKey: 'menuGroup.measurement',
       icon: 'satellite_alt',
-      items: ['toggleLiveMeasure'],
-    },
-    {
-      id: 'survey',
-      labelKey: 'menuGroup.survey',
-      icon: 'precision_manufacturing',
-      items: ['connectSurveyBluetooth', 'connectSurveyWebSocket', 'disconnectSurvey'],
-    },
-    {
-      id: 'workday',
-      labelKey: 'menuGroup.workday',
-      icon: 'schedule',
-      items: ['finishWorkday'],
+      items: ['toggleLiveMeasure', 'connectSurveyBluetooth', 'connectSurveyWebSocket', 'disconnectSurvey', 'finishWorkday'],
     },
     {
       id: 'settings',

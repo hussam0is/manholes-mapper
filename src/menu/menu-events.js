@@ -138,7 +138,6 @@ export function bridgeAllToLegacy(mappings) {
 
 // Legacy element ID mappings for backward compatibility
 export const legacyMappings = {
-  newSketch: 'newSketchBtn',
   save: 'saveBtn',
   exportSketch: 'exportSketchBtn',
   importSketch: 'importSketchBtn',
@@ -152,5 +151,5 @@ export const legacyMappings = {
   help: 'helpBtn',
   admin: 'adminBtn',
   projects: 'projectsBtn',
-  home: 'homeBtn',
+  mySketches: 'mySketchesBtn',
 };

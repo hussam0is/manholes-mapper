@@ -694,6 +694,42 @@ header .btn-primary:hover {
   padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
 }
 
+/* Standalone My Sketches button — sits above the collapsible groups */
+.mobile-menu__btn--standalone {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  background: var(--color-accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, opacity 0.15s ease;
+  min-height: 48px;
+}
+
+.mobile-menu__btn--standalone:hover {
+  opacity: 0.9;
+}
+
+.mobile-menu__btn--standalone:active {
+  opacity: 0.8;
+}
+
+.mobile-menu__btn--standalone .material-icons {
+  font-size: 20px;
+  color: #fff;
+}
+
+[dir="rtl"] .mobile-menu__btn--standalone {
+  flex-direction: row-reverse;
+}
+
 /* Mobile menu header with close button */
 #mobileMenu .mobile-menu-header {
   display: flex;
@@ -2639,6 +2675,69 @@ canvas {
   .element-issue-item:hover,
   .element-issue-item:active {
     background: rgba(239, 68, 68, 0.16);
+  }
+}
+
+/* ── Issue Navigation Bar (prev / counter / next) ── */
+.issue-nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  margin-top: var(--space-2, 8px);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-primary-light, #dbeafe);
+  border-radius: var(--radius-md, 8px);
+}
+.issue-nav-bar__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--color-primary, #2563eb);
+  border-radius: var(--radius-full, 50%);
+  background: var(--color-surface, #ffffff);
+  color: var(--color-primary, #2563eb);
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  flex-shrink: 0;
+}
+.issue-nav-bar__btn:hover {
+  background: var(--color-primary, #2563eb);
+  color: #fff;
+}
+.issue-nav-bar__btn:active {
+  transform: scale(0.92);
+}
+.issue-nav-bar__btn .material-icons {
+  font-size: 24px;
+}
+.issue-nav-bar__counter {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary, #2563eb);
+  white-space: nowrap;
+  min-width: 60px;
+  text-align: center;
+}
+@media (prefers-color-scheme: dark) {
+  .issue-nav-bar {
+    background: rgba(37, 99, 235, 0.12);
+    border-color: rgba(37, 99, 235, 0.3);
+  }
+  .issue-nav-bar__btn {
+    background: var(--color-surface, #0f172a);
+    border-color: var(--color-accent, #60a5fa);
+    color: var(--color-accent, #60a5fa);
+  }
+  .issue-nav-bar__btn:hover {
+    background: var(--color-accent, #60a5fa);
+    color: var(--color-surface, #0f172a);
+  }
+  .issue-nav-bar__counter {
+    color: var(--color-accent, #60a5fa);
   }
 }
 
@@ -10451,6 +10550,21 @@ button:focus-visible,
   padding: 8px 10px;
   border-bottom: 1px solid var(--color-border-light, #f1f5f9);
   font-size: 13px;
+  transition: background 0.15s, border-inline-start 0.15s;
+  border-inline-start: 3px solid transparent;
+}
+.sketch-side-panel__issue-row--active {
+  background: var(--color-primary-light, #dbeafe);
+  border-inline-start-color: var(--color-primary, #2563eb);
+}
+
+.sketch-side-panel__issues-counter {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-primary, #2563eb);
+  background: var(--color-primary-light, #dbeafe);
+  padding: 2px 8px;
+  border-radius: 10px;
 }
 
 .sketch-side-panel__issue-info {
@@ -10866,6 +10980,14 @@ button:focus-visible,
 
   .sketch-side-panel__issue-row {
     border-color: rgba(255, 255, 255, 0.06);
+  }
+  .sketch-side-panel__issue-row--active {
+    background: rgba(37, 99, 235, 0.15);
+    border-inline-start-color: var(--color-accent, #60a5fa);
+  }
+  .sketch-side-panel__issues-counter {
+    color: var(--color-accent, #60a5fa);
+    background: rgba(37, 99, 235, 0.15);
   }
 
   .sketch-side-panel__issue-goto,

@@ -58,12 +58,8 @@
     <nav id="controls" class="menu-controls" role="navigation" aria-label="Main navigation">
       <!-- Primary actions group -->
       <div class="menu-group menu-group--primary">
-        <button id="newSketchBtn" class="menu-btn menu-btn--primary" title="" aria-label="New sketch" data-action="newSketch" data-i18n-title="newSketch" data-i18n-aria-label="newSketch">
-          <span class="material-icons">note_add</span>
-          <span class="menu-btn__label"></span>
-        </button>
         <div class="menu-save-group">
-          <button id="saveBtn" class="menu-btn menu-btn--ghost" title="" aria-label="Save sketch" data-action="save" data-i18n-title="save" data-i18n-aria-label="save">
+          <button id="saveBtn" class="menu-btn menu-btn--primary" title="" aria-label="Save sketch" data-action="save" data-i18n-title="save" data-i18n-aria-label="save">
             <span class="material-icons">save</span>
             <span class="menu-btn__label"></span>
           </button>
@@ -287,9 +283,8 @@
         <button id="projectsBtn" class="menu-btn menu-btn--ghost menu-btn--icon-only" title="" aria-label="Projects" data-action="projects">
           <span class="material-icons">folder_open</span>
         </button>
-        <button id="homeBtn" class="menu-btn menu-btn--ghost" title="" aria-label="Home" data-action="home" data-i18n-title="home" data-i18n-aria-label="home">
-          <span class="material-icons">home</span>
-          <span class="menu-btn__label"></span>
+        <button id="mySketchesBtn" class="menu-btn menu-btn--ghost menu-btn--icon-only" title="" aria-label="My Sketches" data-action="mySketches" data-i18n-title="mySketches" data-i18n-aria-label="mySketches">
+          <span class="material-icons">description</span>
         </button>
       </div>
 
@@ -353,24 +348,11 @@
     </div>
     <!-- Scrollable content area -->
     <div class="mobile-menu-content">
-      <!-- Navigation group — expanded by default -->
-      <div class="mobile-menu__group" data-group="nav">
-        <button class="mobile-menu__group-header mobile-menu__group-toggle" id="menuGroupNav" type="button" aria-expanded="true" data-group-toggle="nav">
-          <span class="material-icons mobile-menu__group-icon" aria-hidden="true">home</span>
-          <span class="mobile-menu__group-label" data-i18n="menuGroupNav">ניווט</span>
-          <span class="material-icons mobile-menu__group-chevron" aria-hidden="true">expand_less</span>
-        </button>
-        <div class="mobile-menu__group-content">
-          <button id="mobileHomeBtn" class="mobile-menu__btn" title="" aria-label="Home" data-i18n-title="home">
-            <span class="material-icons">home</span>
-            <span class="mobile-menu__label" data-i18n="home">בית</span>
-          </button>
-          <button id="mobileNewSketchBtn" class="mobile-menu__btn" title="" aria-label="New sketch" data-i18n-title="newSketch">
-            <span class="material-icons">note_add</span>
-            <span class="mobile-menu__label" data-i18n="newSketch">שרטוט חדש</span>
-          </button>
-        </div>
-      </div>
+      <!-- My Sketches standalone action — always visible at top -->
+      <button id="mobileMySketchesBtn" class="mobile-menu__btn mobile-menu__btn--standalone" title="" aria-label="My Sketches" data-action="mySketches" data-i18n-title="mySketches" data-i18n-aria-label="mySketches">
+        <span class="material-icons">description</span>
+        <span class="mobile-menu__label" data-i18n="mySketches">הסקיצות שלי</span>
+      </button>
 
       <!-- Search group — collapsed by default -->
       <div class="mobile-menu__group mobile-menu__group--collapsed" data-group="search">
@@ -418,11 +400,11 @@
         </div>
       </div>
 
-      <!-- Sketch group — collapsed by default -->
-      <div class="mobile-menu__group mobile-menu__group--collapsed" data-group="sketch">
-        <button class="mobile-menu__group-header mobile-menu__group-toggle" id="menuGroupSketch" type="button" aria-expanded="false" data-group-toggle="sketch">
+      <!-- Sketch & Export group (merged: Sketch + Data Export) — collapsed by default -->
+      <div class="mobile-menu__group mobile-menu__group--collapsed" data-group="sketchExport">
+        <button class="mobile-menu__group-header mobile-menu__group-toggle" id="menuGroupSketchExport" type="button" aria-expanded="false" data-group-toggle="sketchExport">
           <span class="material-icons mobile-menu__group-icon" aria-hidden="true">description</span>
-          <span class="mobile-menu__group-label" data-i18n="menuGroup.sketch">שרטוט</span>
+          <span class="mobile-menu__group-label" data-i18n="menuGroup.sketchExport">שרטוט ויצוא</span>
           <span class="material-icons mobile-menu__group-chevron" aria-hidden="true">expand_more</span>
         </button>
         <div class="mobile-menu__group-content">
@@ -438,17 +420,6 @@
             <span class="material-icons">upload</span>
             <span class="mobile-menu__label" data-i18n="importSketch">יבוא שרטוט</span>
           </button>
-        </div>
-      </div>
-
-      <!-- CSV Export group — collapsed by default -->
-      <div class="mobile-menu__group mobile-menu__group--collapsed" data-group="csv">
-        <button class="mobile-menu__group-header mobile-menu__group-toggle" id="menuGroupCsv" type="button" aria-expanded="false" data-group-toggle="csv">
-          <span class="material-icons mobile-menu__group-icon" aria-hidden="true">table_chart</span>
-          <span class="mobile-menu__group-label" data-i18n="menuGroup.csv">יצוא נתונים</span>
-          <span class="material-icons mobile-menu__group-chevron" aria-hidden="true">expand_more</span>
-        </button>
-        <div class="mobile-menu__group-content">
           <button id="mobileExportNodesBtn" class="mobile-menu__btn" title="" aria-label="Export nodes" data-i18n-title="exportNodes">
             <span class="material-icons">donut_large</span>
             <span class="mobile-menu__label" data-i18n="exportNodes">יצוא שוחות</span>
@@ -460,11 +431,11 @@
         </div>
       </div>
 
-      <!-- Location group — collapsed by default -->
-      <div class="mobile-menu__group mobile-menu__group--collapsed" data-group="location">
-        <button class="mobile-menu__group-header mobile-menu__group-toggle" id="menuGroupLocation" type="button" aria-expanded="false" data-group-toggle="location">
+      <!-- Location & Map group (merged: Location & Coordinates + Map Layer) — collapsed by default -->
+      <div class="mobile-menu__group mobile-menu__group--collapsed" data-group="locationMap">
+        <button class="mobile-menu__group-header mobile-menu__group-toggle" id="menuGroupLocationMap" type="button" aria-expanded="false" data-group-toggle="locationMap">
           <span class="material-icons mobile-menu__group-icon" aria-hidden="true">location_on</span>
-          <span class="mobile-menu__group-label" data-i18n="menuGroup.location">מיקום וקואורדינטות</span>
+          <span class="mobile-menu__group-label" data-i18n="menuGroup.locationMap">מיקום ומפה</span>
           <span class="material-icons mobile-menu__group-chevron" aria-hidden="true">expand_more</span>
         </button>
         <div class="mobile-menu__group-content">
@@ -508,17 +479,6 @@
             <span class="material-icons">refresh</span>
             <span class="mobile-menu__label" data-i18n="stretch.reset">אפס מתיחה</span>
           </button>
-        </div>
-      </div>
-
-      <!-- Map Layer group — collapsed by default -->
-      <div class="mobile-menu__group mobile-menu__group--collapsed" data-group="map">
-        <button class="mobile-menu__group-header mobile-menu__group-toggle" id="menuGroupMap" type="button" aria-expanded="false" data-group-toggle="map">
-          <span class="material-icons mobile-menu__group-icon" aria-hidden="true">map</span>
-          <span class="mobile-menu__group-label" data-i18n="menuGroup.map">שכבת מפה</span>
-          <span class="material-icons mobile-menu__group-chevron" aria-hidden="true">expand_more</span>
-        </button>
-        <div class="mobile-menu__group-content">
           <label id="mobileToggleMapLayerLabel" class="mobile-menu__toggle">
             <input type="checkbox" id="mobileMapLayerToggle" />
             <span class="material-icons">layers</span>
@@ -544,11 +504,11 @@
         </div>
       </div>
 
-      <!-- GNSS / Live Measure group — collapsed by default -->
-      <div class="mobile-menu__group mobile-menu__group--collapsed" data-group="gnss">
-        <button class="mobile-menu__group-header mobile-menu__group-toggle" type="button" aria-expanded="false" data-group-toggle="gnss">
+      <!-- Measurement group (merged: Live Measurement + Survey Device + Workday) — collapsed by default -->
+      <div class="mobile-menu__group mobile-menu__group--collapsed" data-group="measurement">
+        <button class="mobile-menu__group-header mobile-menu__group-toggle" id="menuGroupMeasurement" type="button" aria-expanded="false" data-group-toggle="measurement">
           <span class="material-icons mobile-menu__group-icon" aria-hidden="true">satellite_alt</span>
-          <span class="mobile-menu__group-label" data-i18n="menuGroup.gnss">מדידה חיה</span>
+          <span class="mobile-menu__group-label" data-i18n="menuGroup.measurement">מדידה</span>
           <span class="material-icons mobile-menu__group-chevron" aria-hidden="true">expand_more</span>
         </button>
         <div class="mobile-menu__group-content">
@@ -558,17 +518,6 @@
             <span class="mobile-menu__label" data-i18n="liveMeasure.enable">מדידה חיה</span>
             <span id="mobileLocationStatus" class="mobile-menu__status"></span>
           </label>
-        </div>
-      </div>
-
-      <!-- Survey Device group — collapsed by default -->
-      <div class="mobile-menu__group mobile-menu__group--collapsed" data-group="survey">
-        <button class="mobile-menu__group-header mobile-menu__group-toggle" id="menuGroupSurvey" type="button" aria-expanded="false" data-group-toggle="survey">
-          <span class="material-icons mobile-menu__group-icon" aria-hidden="true">precision_manufacturing</span>
-          <span class="mobile-menu__group-label" data-i18n="menuGroup.survey">מכשיר מדידה</span>
-          <span class="material-icons mobile-menu__group-chevron" aria-hidden="true">expand_more</span>
-        </button>
-        <div class="mobile-menu__group-content">
           <button id="mobileConnectSurveyBluetoothBtn" class="mobile-menu__btn" data-action="connectSurveyBluetooth" title="" aria-label="Connect via Bluetooth">
             <span class="material-icons">bluetooth</span>
             <span class="mobile-menu__label" data-i18n="survey.connectBluetooth">חבר Bluetooth</span>
@@ -581,17 +530,6 @@
             <span class="material-icons">bluetooth_disabled</span>
             <span class="mobile-menu__label" data-i18n="survey.disconnect">נתק מכשיר</span>
           </button>
-        </div>
-      </div>
-
-      <!-- Workday group — collapsed by default -->
-      <div class="mobile-menu__group mobile-menu__group--collapsed" data-group="workday">
-        <button class="mobile-menu__group-header mobile-menu__group-toggle" id="menuGroupWorkday" type="button" aria-expanded="false" data-group-toggle="workday">
-          <span class="material-icons mobile-menu__group-icon" aria-hidden="true">schedule</span>
-          <span class="mobile-menu__group-label" data-i18n="menuGroup.workday">יום עבודה</span>
-          <span class="material-icons mobile-menu__group-chevron" aria-hidden="true">expand_more</span>
-        </button>
-        <div class="mobile-menu__group-content">
           <button id="mobileFinishWorkdayBtn" class="mobile-menu__btn mobile-menu__btn--success" title="" aria-label="Finish workday" data-i18n-title="finishWorkday.button">
             <span class="material-icons">done_all</span>
             <span class="mobile-menu__label-group">
