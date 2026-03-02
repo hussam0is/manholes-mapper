@@ -4500,11 +4500,23 @@ function draw() {
     edges.forEach((edge) => {
       const tailNode = edge.tail != null ? nodeMap.get(String(edge.tail)) : undefined;
       const headNode = edge.head != null ? nodeMap.get(String(edge.head)) : undefined;
-      if (!tailNode || !headNode) return;
 
-      // Apply stretch to positions for label placement
-      const x1 = tailNode.x * viewStretchX, y1 = tailNode.y * viewStretchY;
-      const x2 = headNode.x * viewStretchX, y2 = headNode.y * viewStretchY;
+      // For dangling edges, synthesize the missing endpoint position
+      let x1, y1, x2, y2;
+      if (tailNode && headNode) {
+        x1 = tailNode.x * viewStretchX; y1 = tailNode.y * viewStretchY;
+        x2 = headNode.x * viewStretchX; y2 = headNode.y * viewStretchY;
+      } else if (tailNode && !headNode && edge.danglingEndpoint) {
+        // Outbound dangling: tail is node, head is danglingEndpoint
+        x1 = tailNode.x * viewStretchX; y1 = tailNode.y * viewStretchY;
+        x2 = edge.danglingEndpoint.x * viewStretchX; y2 = edge.danglingEndpoint.y * viewStretchY;
+      } else if (!tailNode && headNode && edge.tailPosition) {
+        // Inbound dangling: tail is tailPosition, head is node
+        x1 = edge.tailPosition.x * viewStretchX; y1 = edge.tailPosition.y * viewStretchY;
+        x2 = headNode.x * viewStretchX; y2 = headNode.y * viewStretchY;
+      } else {
+        return;
+      }
       const dx = x2 - x1;
       const dy = y2 - y1;
       const length = Math.sqrt(dx * dx + dy * dy);
@@ -5082,11 +5094,24 @@ function drawDanglingEdgeLocal(edge, connectedNode, type = 'outbound') {
 function drawEdgeLabels(edge) {
   const tailNode = edge.tail != null ? nodeMap.get(String(edge.tail)) : undefined;
   const headNode = edge.head != null ? nodeMap.get(String(edge.head)) : undefined;
-  if (!tailNode || !headNode) return;
-  if (tailNode._hidden || headNode._hidden) return;
-  // Apply stretch to positions for label placement
-  const x1 = tailNode.x * viewStretchX, y1 = tailNode.y * viewStretchY;
-  const x2 = headNode.x * viewStretchX, y2 = headNode.y * viewStretchY;
+
+  // For dangling edges, synthesize the missing endpoint position
+  let x1, y1, x2, y2;
+  if (tailNode && headNode) {
+    if (tailNode._hidden || headNode._hidden) return;
+    x1 = tailNode.x * viewStretchX; y1 = tailNode.y * viewStretchY;
+    x2 = headNode.x * viewStretchX; y2 = headNode.y * viewStretchY;
+  } else if (tailNode && !headNode && edge.danglingEndpoint) {
+    if (tailNode._hidden) return;
+    x1 = tailNode.x * viewStretchX; y1 = tailNode.y * viewStretchY;
+    x2 = edge.danglingEndpoint.x * viewStretchX; y2 = edge.danglingEndpoint.y * viewStretchY;
+  } else if (!tailNode && headNode && edge.tailPosition) {
+    if (headNode._hidden) return;
+    x1 = edge.tailPosition.x * viewStretchX; y1 = edge.tailPosition.y * viewStretchY;
+    x2 = headNode.x * viewStretchX; y2 = headNode.y * viewStretchY;
+  } else {
+    return;
+  }
   const dx = x2 - x1;
   const dy = y2 - y1;
   const lengthPx = Math.sqrt(dx * dx + dy * dy);
@@ -5109,7 +5134,7 @@ function drawEdgeLabels(edge) {
     // Calculate actual length in meters from survey coordinates or pixel distance
     let lengthMeters = null;
     
-    if (tailNode.surveyX != null && headNode.surveyX != null) {
+    if (tailNode?.surveyX != null && headNode?.surveyX != null) {
       // Both nodes have survey coordinates - calculate real distance
       const surveyDx = headNode.surveyX - tailNode.surveyX;
       const surveyDy = headNode.surveyY - tailNode.surveyY;
