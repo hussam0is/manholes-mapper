@@ -28,6 +28,19 @@ let _sortedLayersCache = null;
 /** @type {Map<string, object>} Cached merged styles per layer id (invalidated on layer change) */
 let _styleCache = new Map();
 
+// Dark mode + surface color caches (avoid per-frame getComputedStyle / matchMedia)
+let _isDarkCached = typeof window !== 'undefined'
+  ? window.matchMedia('(prefers-color-scheme: dark)').matches
+  : false;
+let _surfaceColorCached = null;
+
+if (typeof window !== 'undefined') {
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    _isDarkCached = e.matches;
+    _surfaceColorCached = null; // invalidate so it re-reads next frame
+  });
+}
+
 /** @type {Map<string, boolean>} Per-layer visibility overrides */
 const layerVisibility = new Map();
 
@@ -646,18 +659,13 @@ function drawLabels(ctx, labels, style, viewScale, _stretchX, _stretchY) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  // Determine dark mode from CSS custom property or media query
-  const isDark = typeof window !== 'undefined'
-    ? window.matchMedia('(prefers-color-scheme: dark)').matches
-    : false;
+  // Use cached dark mode flag (updated via matchMedia listener, not per-frame)
+  const isDark = _isDarkCached;
 
-  // Read theme surface color for label background
-  const rootStyle = typeof document !== 'undefined'
-    ? getComputedStyle(document.documentElement)
-    : null;
-  const surfaceColor = rootStyle
-    ? rootStyle.getPropertyValue('--color-surface').trim()
-    : '';
+  // Use cached surface color (invalidated on dark mode change, re-read lazily)
+  if (!_surfaceColorCached && typeof document !== 'undefined') {
+    _surfaceColorCached = getComputedStyle(document.documentElement).getPropertyValue('--color-surface').trim() || '#ffffff';
+  }
   const labelBg = isDark ? 'rgba(15, 23, 42, 0.75)' : 'rgba(255, 255, 255, 0.7)';
 
   // Use dark mode label color variant when available
