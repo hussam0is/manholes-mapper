@@ -394,6 +394,12 @@ let selectedNode = null;
 let selectedEdge = null;
 let isDragging = false;
 let dragOffset = { x: 0, y: 0 };
+// Dangling endpoint drag state
+let isDraggingDanglingEnd = false;
+let draggingDanglingEdge = null;      // the edge being dragged
+let draggingDanglingType = null;      // 'outbound' (danglingEndpoint) or 'inbound' (tailPosition)
+let draggingDanglingStart = null;     // { x, y } pre-drag position for undo
+let hoveredDanglingEndpoint = null;   // { edge, type } for hover highlight
 // Undo action history
 const UNDO_STACK_MAX = 50;
 const undoStack = [];
@@ -4073,6 +4079,24 @@ function performUndo() {
     scheduleDraw();
     showToast(t('toasts.undoEdgeDelete'));
 
+  } else if (action.type === 'danglingEndpointMove') {
+    const edge = edges.find(e => e.id === action.edgeId);
+    if (!edge) { undoStack.pop(); updateUndoButton(); return; }
+    const prop = action.danglingType === 'outbound' ? 'danglingEndpoint' : 'tailPosition';
+    const current = edge[prop];
+    redoStack.push({
+      type: 'danglingEndpointMove',
+      edgeId: action.edgeId,
+      danglingType: action.danglingType,
+      oldX: current ? current.x : action.oldX,
+      oldY: current ? current.y : action.oldY,
+    });
+    edge[prop] = { x: action.oldX, y: action.oldY };
+    undoStack.pop();
+    markEdgeLabelCacheDirty();
+    saveToStorage();
+    scheduleDraw();
+
   } else {
     // Unknown action type — just remove it
     undoStack.pop();
@@ -4193,6 +4217,23 @@ function performRedo() {
     saveToStorage();
     scheduleDraw();
     showToast(t('toasts.redoEdgeDelete'));
+
+  } else if (action.type === 'danglingEndpointMove') {
+    const edge = edges.find(e => e.id === action.edgeId);
+    if (!edge) { updateRedoButton(); return; }
+    const prop = action.danglingType === 'outbound' ? 'danglingEndpoint' : 'tailPosition';
+    const current = edge[prop];
+    pushUndoDirect({
+      type: 'danglingEndpointMove',
+      edgeId: action.edgeId,
+      danglingType: action.danglingType,
+      oldX: current ? current.x : action.oldX,
+      oldY: current ? current.y : action.oldY,
+    });
+    edge[prop] = { x: action.oldX, y: action.oldY };
+    markEdgeLabelCacheDirty();
+    saveToStorage();
+    scheduleDraw();
   }
 
   updateUndoButton();
@@ -4264,6 +4305,29 @@ function findDanglingEdgeNear(x, y, snapDistance = 30) {
 }
 
 /**
+ * Hit-test dangling edge free endpoints (the open circle at the unconnected end).
+ * Returns { edge, type } or null.
+ */
+function findDanglingEndpointAt(x, y) {
+  const sv = autoSizeEnabled ? viewScale : 1;
+  const hitRadius = 10 * sizeScale / sv;
+  const incompleteEdges = findIncompleteEdges();
+  let closest = null;
+  let minDist = hitRadius;
+  for (const edge of incompleteEdges) {
+    if (edge.danglingEndpoint) {
+      const dist = Math.hypot(edge.danglingEndpoint.x - x, edge.danglingEndpoint.y - y);
+      if (dist < minDist) { minDist = dist; closest = { edge, type: 'outbound' }; }
+    }
+    if (edge.tailPosition) {
+      const dist = Math.hypot(edge.tailPosition.x - x, edge.tailPosition.y - y);
+      if (dist < minDist) { minDist = dist; closest = { edge, type: 'inbound' }; }
+    }
+  }
+  return closest;
+}
+
+/**
  * Connect a dangling edge to a newly created node.
  * @param {object} edge - The dangling edge to connect
  * @param {string} nodeId - The node ID to connect to
@@ -4281,6 +4345,36 @@ function connectDanglingEdge(edge, nodeId, type = 'outbound') {
   }
   edge.isDangling = false;
   saveToStorage();
+}
+
+/**
+ * Finalize a dangling endpoint drag: push undo if moved, save, and reset state.
+ */
+function finalizeDanglingEndpointDrag() {
+  if (draggingDanglingEdge && draggingDanglingStart) {
+    const pos = draggingDanglingType === 'outbound'
+      ? draggingDanglingEdge.danglingEndpoint : draggingDanglingEdge.tailPosition;
+    if (pos) {
+      const dx = pos.x - draggingDanglingStart.x;
+      const dy = pos.y - draggingDanglingStart.y;
+      if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+        pushUndo({
+          type: 'danglingEndpointMove',
+          edgeId: draggingDanglingEdge.id,
+          danglingType: draggingDanglingType,
+          oldX: draggingDanglingStart.x,
+          oldY: draggingDanglingStart.y,
+        });
+        saveToStorage();
+      }
+    }
+  }
+  isDraggingDanglingEnd = false;
+  draggingDanglingEdge = null;
+  draggingDanglingType = null;
+  draggingDanglingStart = null;
+  canvas.style.cursor = '';
+  scheduleDraw();
 }
 
 // Drawing functions
@@ -5080,14 +5174,26 @@ function drawDanglingEdgeLocal(edge, connectedNode, type = 'outbound') {
   ctx.fillStyle = (COLORS.edge.label || '#000');
   ctx.fill();
 
-  // Draw a small open circle at the dangling end (unfilled, subtle indicator)
-  const circleRadius = 5 * sizeScale / sizeVS;
+  // Draw the dangling end handle — larger/purple when hovered or being dragged
+  const isHovered = hoveredDanglingEndpoint &&
+    hoveredDanglingEndpoint.edge === edge && hoveredDanglingEndpoint.type === type;
+  const isBeingDragged = isDraggingDanglingEnd &&
+    draggingDanglingEdge === edge && draggingDanglingType === type;
+  const handleActive = isHovered || isBeingDragged;
+  const circleRadius = (handleActive ? 8 : 5) * sizeScale / sizeVS;
   ctx.beginPath();
   ctx.arc(openEndX, openEndY, circleRadius, 0, Math.PI * 2);
-  ctx.strokeStyle = solidColor;
-  ctx.lineWidth = 1.5 / sizeVS;
+  if (handleActive) {
+    ctx.fillStyle = 'rgba(147, 51, 234, 0.25)'; // purple fill
+    ctx.fill();
+    ctx.strokeStyle = '#7c3aed'; // purple-600
+    ctx.lineWidth = 2 / sizeVS;
+  } else {
+    ctx.strokeStyle = solidColor;
+    ctx.lineWidth = 1.5 / sizeVS;
+  }
   ctx.stroke();
-  
+
   ctx.restore();
 }
 
@@ -7188,6 +7294,20 @@ canvas.addEventListener('mousedown', (e) => {
         lastPointerType = 'mouse';
         pointerDown(e.offsetX, e.offsetY);
       } else {
+        // Check for dangling endpoint before treating as empty space
+        if (!window.__sketchReadOnly) {
+          const danglingHit = findDanglingEndpointAt(world.x, world.y);
+          if (danglingHit) {
+            isDraggingDanglingEnd = true;
+            draggingDanglingEdge = danglingHit.edge;
+            draggingDanglingType = danglingHit.type;
+            const pos = danglingHit.type === 'outbound'
+              ? danglingHit.edge.danglingEndpoint : danglingHit.edge.tailPosition;
+            draggingDanglingStart = pos ? { x: pos.x, y: pos.y } : null;
+            canvas.style.cursor = 'grabbing';
+            return;
+          }
+        }
         // Empty background: prepare to either pan (if moved) or create node on release (node/home/drainage modes)
         mousePanCandidate = true;
         mouseAddPending = (currentMode === 'node' || currentMode === 'home' || currentMode === 'drainage' || currentMode === 'edge');
@@ -7200,6 +7320,18 @@ canvas.addEventListener('mousedown', (e) => {
   }
 });
 canvas.addEventListener('mousemove', (e) => {
+  // Dragging a dangling endpoint
+  if (isDraggingDanglingEnd && draggingDanglingEdge) {
+    const world = screenToWorld(e.offsetX, e.offsetY);
+    if (draggingDanglingType === 'outbound') {
+      draggingDanglingEdge.danglingEndpoint = { x: world.x, y: world.y };
+    } else {
+      draggingDanglingEdge.tailPosition = { x: world.x, y: world.y };
+    }
+    markEdgeLabelCacheDirty();
+    scheduleDraw();
+    return;
+  }
   if (isPanning) {
     const dx = e.clientX - panStart.x;
     const dy = e.clientY - panStart.y;
@@ -7223,10 +7355,28 @@ canvas.addEventListener('mousemove', (e) => {
       }
     }
     pointerMove(e.offsetX, e.offsetY);
+    // Hover detection for dangling endpoints (cursor feedback)
+    if (!isDragging && !mousePanCandidate) {
+      const world = screenToWorld(e.offsetX, e.offsetY);
+      const danglingHit = findDanglingEndpointAt(world.x, world.y);
+      const prevHovered = hoveredDanglingEndpoint;
+      hoveredDanglingEndpoint = danglingHit;
+      if (danglingHit) {
+        canvas.style.cursor = 'grab';
+      } else if (prevHovered) {
+        canvas.style.cursor = '';
+      }
+      if (!!danglingHit !== !!prevHovered) scheduleDraw();
+    }
   }
 });
 canvas.addEventListener('mouseup', (e) => {
   commitIdInputIfFocused();
+  // Finalize dangling endpoint drag
+  if (isDraggingDanglingEnd && draggingDanglingEdge) {
+    finalizeDanglingEndpointDrag();
+    return;
+  }
   if (isPanning) {
     isPanning = false;
     canvas.style.cursor = '';
@@ -7242,7 +7392,14 @@ canvas.addEventListener('mouseup', (e) => {
   mouseAddPending = false;
   mouseAddPoint = null;
 });
-canvas.addEventListener('mouseleave', pointerUp);
+canvas.addEventListener('mouseleave', () => {
+  // Clean up dangling drag on mouse leave
+  if (isDraggingDanglingEnd && draggingDanglingEdge) {
+    finalizeDanglingEndpointDrag();
+    return;
+  }
+  pointerUp();
+});
 
 // Touch events for mobile
 canvas.addEventListener('touchstart', (e) => {
@@ -7408,6 +7565,21 @@ canvas.addEventListener('touchstart', (e) => {
           selectedNodeMoveThreshold = TOUCH_TAP_MOVE_THRESHOLD;
           scheduleDraw(); // show selection highlight without opening panel yet
         } else {
+          // Check for dangling endpoint before treating as background
+          if (!window.__sketchReadOnly) {
+            const danglingHit = findDanglingEndpointAt(world.x, world.y);
+            if (danglingHit) {
+              isDraggingDanglingEnd = true;
+              draggingDanglingEdge = danglingHit.edge;
+              draggingDanglingType = danglingHit.type;
+              const pos = danglingHit.type === 'outbound'
+                ? danglingHit.edge.danglingEndpoint : danglingHit.edge.tailPosition;
+              draggingDanglingStart = pos ? { x: pos.x, y: pos.y } : null;
+              touchAddPending = false;
+              touchAddPoint = null;
+              return;
+            }
+          }
           // Background: candidate for panning or tap-to-add on release
           touchPanCandidate = true;
           touchAddPending = (currentMode === 'node' || currentMode === 'home' || currentMode === 'drainage');
@@ -7451,6 +7623,18 @@ canvas.addEventListener('touchmove', (e) => {
         pendingEdgePreview = { x: world.x, y: world.y };
         scheduleDraw();
       } else {
+        // Handle dangling endpoint drag during touch
+        if (isDraggingDanglingEnd && draggingDanglingEdge) {
+          const world = screenToWorld(x, y);
+          if (draggingDanglingType === 'outbound') {
+            draggingDanglingEdge.danglingEndpoint = { x: world.x, y: world.y };
+          } else {
+            draggingDanglingEdge.tailPosition = { x: world.x, y: world.y };
+          }
+          markEdgeLabelCacheDirty();
+          scheduleDraw();
+          return;
+        }
         // If background touch and movement exceeds threshold, treat as panning
         if (touchPanCandidate && touchAddPoint) {
           const dx = (touch.clientX - (touchAddPoint.x + rect.left));
@@ -7489,6 +7673,14 @@ canvas.addEventListener('touchend', (e) => {
     isPinching = false;
     pinchStartDistance = null;
     pinchStartScale = null;
+  }
+  // Finalize dangling endpoint drag on touch end
+  if (isDraggingDanglingEnd && draggingDanglingEdge && e.touches.length === 0) {
+    finalizeDanglingEndpointDrag();
+    touchPanCandidate = false;
+    touchAddPending = false;
+    touchAddPoint = null;
+    return;
   }
   if (e.touches.length === 0) {
     // If a tap-to-add is pending and didn't move much, create node/edge now
