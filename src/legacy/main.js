@@ -1840,6 +1840,7 @@ function loadFromStorage() {
     autoRepositionFromEmbeddedCoords();
     // Load reference layers for the project (if sketch belongs to one)
     loadProjectReferenceLayers(currentProjectId);
+    updateCanvasEmptyState();
     return true;
   } catch (e) {
     console.error('[App] Error loading sketch from storage:', e.message);
@@ -2244,6 +2245,7 @@ async function loadFromLibrary(sketchId) {
 
   // Load reference layers for the project (if sketch belongs to one)
   loadProjectReferenceLayers(currentProjectId);
+  updateCanvasEmptyState();
 
   return true;
 }
@@ -2818,6 +2820,7 @@ window.__setActiveSketchData = function (data) {
   computeNodeTypes();
   autoRepositionFromEmbeddedCoords();
   renderDetails();
+  updateCanvasEmptyState();
   scheduleDraw();
 };
 
@@ -3375,6 +3378,7 @@ function newSketch(date, projectId = null, inputFlowConfig = null) {
   currentInputFlowConfig = inputFlowConfig || DEFAULT_INPUT_FLOW_CONFIG;
   updateSketchNameDisplay();
   saveToStorage();
+  updateCanvasEmptyState();
   draw();
   renderDetails();
 }
@@ -3439,6 +3443,7 @@ function createNode(x, y) {
   computeNodeTypes();
   pushUndo({ type: 'nodeCreate', nodeId: node.id });
   saveToStorage();
+  updateCanvasEmptyState();
   return node;
 }
 
@@ -3837,6 +3842,7 @@ function deleteNodeShared(node, pushToUndo = true) {
   computeNodeTypes();
   updateIncompleteEdgeTracker();
   saveToStorage();
+  updateCanvasEmptyState();
   scheduleDraw();
   showToast(t('toasts.nodeDeleted'));
   return true;
@@ -4586,8 +4592,7 @@ function draw() {
   scheduleEdgeLegendUpdate();
   // Update incomplete edge tracker (throttled)
   scheduleIncompleteEdgeUpdate();
-  // Show/hide empty-state overlay
-  updateCanvasEmptyState();
+  // Note: updateCanvasEmptyState() moved out of draw() — called on state changes only
 }
 
 // Throttled DOM updates – avoid running inside every draw frame
@@ -7647,6 +7652,7 @@ if (importSketchBtn && importSketchFile) {
       // Recompute node types and save
       computeNodeTypes();
       saveToStorage();
+      updateCanvasEmptyState();
       draw();
       renderDetails();
 
