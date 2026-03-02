@@ -713,6 +713,102 @@ function initMobileMenuBehavior() {
   
   // Expose close function for legacy code
   window.closeMobileMenu = closeMobileMenu;
+
+  // Initialize collapsible group toggles inside the mobile menu
+  initCollapsibleMobileMenuGroups(mobileMenu);
+}
+
+/**
+ * Make mobile menu groups collapsible with localStorage persistence.
+ *
+ * Groups expanded by default: "nav" and "settings".
+ * All other groups start collapsed and the user's choices are
+ * persisted to localStorage('menuCollapsedGroups').
+ *
+ * Each group uses:
+ *   .mobile-menu__group[data-group]              — wrapper element
+ *   .mobile-menu__group--collapsed               — CSS class that hides content
+ *   .mobile-menu__group-toggle[data-group-toggle] — clickable header button
+ *   .mobile-menu__group-chevron                  — Material Icon that rotates
+ *   aria-expanded                                — accessibility state
+ *
+ * @param {HTMLElement} menuEl — the #mobileMenu container element
+ */
+function initCollapsibleMobileMenuGroups(menuEl) {
+  if (!menuEl) return;
+
+  // Groups that are open by default (not in the collapsed set)
+  const DEFAULT_EXPANDED = new Set(['nav', 'settings']);
+
+  // Load persisted collapsed state; derive defaults if absent
+  let collapsedGroups;
+  try {
+    const stored = localStorage.getItem('menuCollapsedGroups');
+    collapsedGroups = stored ? new Set(JSON.parse(stored)) : null;
+  } catch (_) {
+    collapsedGroups = null;
+  }
+
+  if (collapsedGroups === null) {
+    collapsedGroups = new Set();
+    menuEl.querySelectorAll('.mobile-menu__group-toggle[data-group-toggle]').forEach((btn) => {
+      const group = btn.dataset.groupToggle;
+      if (!DEFAULT_EXPANDED.has(group)) {
+        collapsedGroups.add(group);
+      }
+    });
+  }
+
+  function saveCollapsedState() {
+    try {
+      localStorage.setItem('menuCollapsedGroups', JSON.stringify([...collapsedGroups]));
+    } catch (_) { /* storage quota or private mode — fail silently */ }
+  }
+
+  /**
+   * Apply collapsed/expanded state to a single group element.
+   * @param {HTMLElement} groupEl
+   * @param {boolean}     collapsed
+   */
+  function applyGroupState(groupEl, collapsed) {
+    const toggleBtn = groupEl.querySelector('.mobile-menu__group-toggle');
+    const chevron = groupEl.querySelector('.mobile-menu__group-chevron');
+
+    groupEl.classList.toggle('mobile-menu__group--collapsed', collapsed);
+
+    if (toggleBtn) {
+      toggleBtn.setAttribute('aria-expanded', String(!collapsed));
+    }
+    if (chevron) {
+      chevron.textContent = collapsed ? 'expand_more' : 'expand_less';
+    }
+  }
+
+  // Apply initial state and wire click handlers
+  menuEl.querySelectorAll('.mobile-menu__group-toggle[data-group-toggle]').forEach((toggleBtn) => {
+    const group = toggleBtn.dataset.groupToggle;
+    const groupEl = toggleBtn.closest('.mobile-menu__group');
+    if (!groupEl) return;
+
+    applyGroupState(groupEl, collapsedGroups.has(group));
+
+    toggleBtn.addEventListener('click', (e) => {
+      // Prevent the mobile-menu click handler from closing the whole menu
+      e.stopPropagation();
+
+      const isCollapsed = groupEl.classList.contains('mobile-menu__group--collapsed');
+      const nowCollapsed = !isCollapsed;
+
+      applyGroupState(groupEl, nowCollapsed);
+
+      if (nowCollapsed) {
+        collapsedGroups.add(group);
+      } else {
+        collapsedGroups.delete(group);
+      }
+      saveCollapsedState();
+    });
+  });
 }
 
 // After app scripts load, ensure header height and app height variables are synced

@@ -144,6 +144,14 @@
 @media (max-width: 600px) {
   .menu-brand__title {
     font-size: 1.1rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+
+  /* When a sketch is open, the mobile sketch name badge takes priority over the brand title */
+  .app-header:has(.menu-sketch-name--mobile:not(:empty)) .menu-brand__title {
+    display: none;
   }
 }
 
@@ -207,11 +215,11 @@
   .menu-sketch-name:not(.menu-sketch-name--mobile) {
     display: none !important;
   }
-  
+
   .menu-sketch-name--mobile:not(:empty) {
     display: inline-flex !important;
     font-size: 0.75rem;
-    max-width: 100px;
+    max-width: 160px;
     padding: 0.25rem 0.5rem;
   }
 }
@@ -1321,14 +1329,55 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  
+
   padding: 0.625rem 1rem 0.5rem;
-  
+
   font-size: 0.6875rem;
   font-weight: 700;
   color: var(--color-muted, #64748b);
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+
+/* When the group header acts as a collapsible toggle button */
+.mobile-menu__group-toggle {
+  width: 100%;
+  min-height: 44px; /* touch target */
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: start;
+  border-radius: 8px;
+  transition: background 0.15s ease;
+}
+
+.mobile-menu__group-toggle:hover,
+.mobile-menu__group-toggle:focus-visible {
+  background: var(--color-bg, #f8fafc);
+  outline: none;
+}
+
+/* Chevron icon in collapsible group header */
+.mobile-menu__group-chevron {
+  font-size: 1.1rem;
+  color: var(--color-muted, #64748b);
+  flex-shrink: 0;
+  opacity: 0.75;
+  transition: transform 0.25s ease;
+}
+
+/* Collapsible group content */
+.mobile-menu__group-content {
+  overflow: hidden;
+  max-height: 800px; /* large enough for any group */
+  transition: max-height 0.28s ease, opacity 0.2s ease;
+  opacity: 1;
+}
+
+/* Collapsed state */
+.mobile-menu__group--collapsed .mobile-menu__group-content {
+  max-height: 0;
+  opacity: 0;
 }
 
 .mobile-menu__group-icon {
@@ -1670,6 +1719,16 @@ body.mobile-menu-open {
 
   .menu-toggle .material-icons {
     color: var(--color-text, #e2e8f0);
+  }
+
+  /* Collapsible group toggle — dark mode */
+  .mobile-menu__group-toggle:hover,
+  .mobile-menu__group-toggle:focus-visible {
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .mobile-menu__group-chevron {
+    color: var(--color-muted, #94a3b8);
   }
 
   .mobile-menu__search {
