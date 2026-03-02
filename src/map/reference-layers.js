@@ -118,6 +118,8 @@ export function setReferenceLayers(layerDataArray) {
   // Invalidate sorted/style caches
   _sortedLayersCache = null;
   _styleCache.clear();
+  // Invalidate pre-transform cache (new layers need world coords recomputed)
+  _preTransformRefX = null;
   // Initialize visibility from server-side visible flag
   layers.forEach(l => {
     if (!layerVisibility.has(l.id)) {
@@ -187,6 +189,7 @@ export function clearReferenceLayers() {
   layerVisibility.clear();
   _sortedLayersCache = null;
   _styleCache.clear();
+  _preTransformRefX = null;
 }
 
 // ============================================
@@ -317,6 +320,109 @@ export function loadRefLayerSettings() {
 }
 
 // ============================================
+// Pre-transformed World Coordinates Cache
+// ============================================
+
+/** Cached refPoint/coordScale used for pre-transform (detect changes) */
+let _preTransformRefX = null;
+let _preTransformRefY = null;
+let _preTransformCanvasX = null;
+let _preTransformCanvasY = null;
+let _preTransformCoordScale = null;
+
+/**
+ * Check if pre-transform cache is valid for current params.
+ * Returns true if features need re-transforming.
+ */
+function needsPreTransform(refPoint, coordScale) {
+  return (
+    _preTransformRefX !== refPoint.itm.x ||
+    _preTransformRefY !== refPoint.itm.y ||
+    _preTransformCanvasX !== refPoint.canvas.x ||
+    _preTransformCanvasY !== refPoint.canvas.y ||
+    _preTransformCoordScale !== coordScale
+  );
+}
+
+/**
+ * Pre-compute world coordinates and bounding boxes for all features across all layers.
+ * Stored as _worldCoords, _worldRings, _worldPoint, _worldMultiCoords, _bbox on each feature.
+ */
+function preTransformAllFeatures(refPoint, coordScale) {
+  _preTransformRefX = refPoint.itm.x;
+  _preTransformRefY = refPoint.itm.y;
+  _preTransformCanvasX = refPoint.canvas.x;
+  _preTransformCanvasY = refPoint.canvas.y;
+  _preTransformCoordScale = coordScale;
+
+  for (const layer of layers) {
+    if (!layer.geojson || !layer.geojson.features) continue;
+    for (const feature of layer.geojson.features) {
+      const geom = feature.geometry;
+      if (!geom) continue;
+      const coords = geom.coordinates;
+
+      switch (geom.type) {
+        case 'Point':
+          if (coords) {
+            feature._worldPoint = itmToWorld(coords[0], coords[1], refPoint, coordScale);
+          }
+          break;
+        case 'MultiPoint':
+          if (coords) {
+            feature._worldMultiPoints = coords.map(c => itmToWorld(c[0], c[1], refPoint, coordScale));
+          }
+          break;
+        case 'LineString':
+          if (coords) {
+            feature._worldCoords = coords.map(c => itmToWorld(c[0], c[1], refPoint, coordScale));
+            feature._bbox = computeBBox(feature._worldCoords);
+          }
+          break;
+        case 'MultiLineString':
+          if (coords) {
+            feature._worldMultiCoords = coords.map(line =>
+              line.map(c => itmToWorld(c[0], c[1], refPoint, coordScale))
+            );
+          }
+          break;
+        case 'Polygon':
+          if (coords) {
+            feature._worldRings = coords.map(ring =>
+              ring.map(c => itmToWorld(c[0], c[1], refPoint, coordScale))
+            );
+            if (feature._worldRings[0]) {
+              feature._bbox = computeBBox(feature._worldRings[0]);
+            }
+          }
+          break;
+        case 'MultiPolygon':
+          if (coords) {
+            feature._worldMultiPolygons = coords.map(poly =>
+              poly.map(ring => ring.map(c => itmToWorld(c[0], c[1], refPoint, coordScale)))
+            );
+          }
+          break;
+      }
+    }
+  }
+}
+
+/**
+ * Compute axis-aligned bounding box from an array of {x, y} points.
+ */
+function computeBBox(points) {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const p of points) {
+    if (p.x < minX) minX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y > maxY) maxY = p.y;
+  }
+  return { minX, minY, maxX, maxY };
+}
+
+// ============================================
 // Drawing Functions
 // ============================================
 
@@ -353,6 +459,11 @@ export function drawReferenceLayers(ctx, coordinateScale, viewScale, stretchX, s
 
   const refPoint = getMapReferencePoint();
   if (!refPoint) return;
+
+  // Pre-transform ITM → world coords once (cached until refPoint/coordScale change)
+  if (needsPreTransform(refPoint, coordinateScale)) {
+    preTransformAllFeatures(refPoint, coordinateScale);
+  }
 
   // Calculate visible bounds in world coordinates for culling
   const visMinX = -viewTranslate.x / viewScale;
@@ -402,32 +513,50 @@ function drawLayerFeatures(ctx, layer, style, refPoint, coordScale, stretchX, st
 
     switch (geomType) {
       case 'Point':
-        drawPoint(ctx, coords, feature.properties, style, refPoint, coordScale, stretchX, stretchY, viewScale, visMinX, visMinY, visMaxX, visMaxY, labelsToDraw);
+        drawPoint(ctx, coords, feature.properties, style, refPoint, coordScale, stretchX, stretchY, viewScale, visMinX, visMinY, visMaxX, visMaxY, labelsToDraw, feature._worldPoint);
         break;
 
       case 'MultiPoint':
-        for (const pt of coords) {
-          drawPoint(ctx, pt, feature.properties, style, refPoint, coordScale, stretchX, stretchY, viewScale, visMinX, visMinY, visMaxX, visMaxY, labelsToDraw);
+        if (feature._worldMultiPoints) {
+          for (const wp of feature._worldMultiPoints) {
+            drawPoint(ctx, null, feature.properties, style, refPoint, coordScale, stretchX, stretchY, viewScale, visMinX, visMinY, visMaxX, visMaxY, labelsToDraw, wp);
+          }
+        } else {
+          for (const pt of coords) {
+            drawPoint(ctx, pt, feature.properties, style, refPoint, coordScale, stretchX, stretchY, viewScale, visMinX, visMinY, visMaxX, visMaxY, labelsToDraw);
+          }
         }
         break;
 
       case 'LineString':
-        drawLineString(ctx, coords, feature.properties, style, refPoint, coordScale, stretchX, stretchY, viewScale, visMinX, visMinY, visMaxX, visMaxY, labelsToDraw);
+        drawLineString(ctx, coords, feature.properties, style, refPoint, coordScale, stretchX, stretchY, viewScale, visMinX, visMinY, visMaxX, visMaxY, labelsToDraw, feature._worldCoords, feature._bbox);
         break;
 
       case 'MultiLineString':
-        for (const line of coords) {
-          drawLineString(ctx, line, feature.properties, style, refPoint, coordScale, stretchX, stretchY, viewScale, visMinX, visMinY, visMaxX, visMaxY, labelsToDraw);
+        if (feature._worldMultiCoords) {
+          for (const worldLine of feature._worldMultiCoords) {
+            drawLineString(ctx, null, feature.properties, style, refPoint, coordScale, stretchX, stretchY, viewScale, visMinX, visMinY, visMaxX, visMaxY, labelsToDraw, worldLine);
+          }
+        } else {
+          for (const line of coords) {
+            drawLineString(ctx, line, feature.properties, style, refPoint, coordScale, stretchX, stretchY, viewScale, visMinX, visMinY, visMaxX, visMaxY, labelsToDraw);
+          }
         }
         break;
 
       case 'Polygon':
-        drawPolygon(ctx, coords, feature.properties, style, refPoint, coordScale, stretchX, stretchY, viewScale, visMinX, visMinY, visMaxX, visMaxY, labelsToDraw);
+        drawPolygon(ctx, coords, feature.properties, style, refPoint, coordScale, stretchX, stretchY, viewScale, visMinX, visMinY, visMaxX, visMaxY, labelsToDraw, feature._worldRings, feature._bbox);
         break;
 
       case 'MultiPolygon':
-        for (const poly of coords) {
-          drawPolygon(ctx, poly, feature.properties, style, refPoint, coordScale, stretchX, stretchY, viewScale, visMinX, visMinY, visMaxX, visMaxY, labelsToDraw);
+        if (feature._worldMultiPolygons) {
+          for (const worldPoly of feature._worldMultiPolygons) {
+            drawPolygon(ctx, null, feature.properties, style, refPoint, coordScale, stretchX, stretchY, viewScale, visMinX, visMinY, visMaxX, visMaxY, labelsToDraw, worldPoly);
+          }
+        } else {
+          for (const poly of coords) {
+            drawPolygon(ctx, poly, feature.properties, style, refPoint, coordScale, stretchX, stretchY, viewScale, visMinX, visMinY, visMaxX, visMaxY, labelsToDraw);
+          }
         }
         break;
     }
@@ -442,8 +571,8 @@ function drawLayerFeatures(ctx, layer, style, refPoint, coordScale, stretchX, st
 /**
  * Draw a point feature
  */
-function drawPoint(ctx, coords, properties, style, refPoint, coordScale, stretchX, stretchY, viewScale, visMinX, visMinY, visMaxX, visMaxY, labelsToDraw) {
-  const world = itmToWorld(coords[0], coords[1], refPoint, coordScale);
+function drawPoint(ctx, coords, properties, style, refPoint, coordScale, stretchX, stretchY, viewScale, visMinX, visMinY, visMaxX, visMaxY, labelsToDraw, preWorld) {
+  const world = preWorld || itmToWorld(coords[0], coords[1], refPoint, coordScale);
   const sx = world.x * stretchX;
   const sy = world.y * stretchY;
 
@@ -479,22 +608,36 @@ function drawPoint(ctx, coords, properties, style, refPoint, coordScale, stretch
 /**
  * Draw a line string feature
  */
-function drawLineString(ctx, coords, properties, style, refPoint, coordScale, stretchX, stretchY, viewScale, visMinX, visMinY, visMaxX, visMaxY, labelsToDraw) {
-  if (coords.length < 2) return;
+function drawLineString(ctx, coords, properties, style, refPoint, coordScale, stretchX, stretchY, viewScale, visMinX, visMinY, visMaxX, visMaxY, labelsToDraw, preWorldCoords, preBBox) {
+  // Use pre-computed world coords if available, otherwise compute on the fly
+  let points;
+  if (preWorldCoords) {
+    // Apply stretch to pre-computed world coords
+    points = preWorldCoords.map(w => ({ x: w.x * stretchX, y: w.y * stretchY }));
+  } else {
+    if (coords.length < 2) return;
+    points = coords.map(c => {
+      const w = itmToWorld(c[0], c[1], refPoint, coordScale);
+      return { x: w.x * stretchX, y: w.y * stretchY };
+    });
+  }
+  if (points.length < 2) return;
 
-  // Convert all coordinates
-  const points = coords.map(c => {
-    const w = itmToWorld(c[0], c[1], refPoint, coordScale);
-    return { x: w.x * stretchX, y: w.y * stretchY };
-  });
-
-  // Quick bounding-box cull
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  for (const p of points) {
-    if (p.x < minX) minX = p.x;
-    if (p.y < minY) minY = p.y;
-    if (p.x > maxX) maxX = p.x;
-    if (p.y > maxY) maxY = p.y;
+  // Quick bounding-box cull (use pre-computed bbox with stretch if available)
+  let minX, minY, maxX, maxY;
+  if (preBBox) {
+    minX = preBBox.minX * stretchX;
+    minY = preBBox.minY * stretchY;
+    maxX = preBBox.maxX * stretchX;
+    maxY = preBBox.maxY * stretchY;
+  } else {
+    minX = Infinity; minY = Infinity; maxX = -Infinity; maxY = -Infinity;
+    for (const p of points) {
+      if (p.x < minX) minX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y > maxY) maxY = p.y;
+    }
   }
   if (maxX < visMinX || minX > visMaxX || maxY < visMinY || minY > visMaxY) return;
 
@@ -579,22 +722,45 @@ function drawDirectionArrows(ctx, points, style, viewScale) {
 /**
  * Draw a polygon feature (exterior ring + holes)
  */
-function drawPolygon(ctx, rings, properties, style, refPoint, coordScale, stretchX, stretchY, viewScale, visMinX, visMinY, visMaxX, visMaxY, labelsToDraw) {
-  if (!rings || rings.length === 0) return;
-
-  // Convert exterior ring
-  const exterior = rings[0].map(c => {
-    const w = itmToWorld(c[0], c[1], refPoint, coordScale);
-    return { x: w.x * stretchX, y: w.y * stretchY };
-  });
+function drawPolygon(ctx, rings, properties, style, refPoint, coordScale, stretchX, stretchY, viewScale, visMinX, visMinY, visMaxX, visMaxY, labelsToDraw, preWorldRings, preBBox) {
+  // Build stretched rings from pre-computed world coords or compute from raw ITM
+  let exterior;
+  let holeRings;
+  if (preWorldRings) {
+    exterior = preWorldRings[0].map(w => ({ x: w.x * stretchX, y: w.y * stretchY }));
+    holeRings = preWorldRings.slice(1).map(ring =>
+      ring.map(w => ({ x: w.x * stretchX, y: w.y * stretchY }))
+    );
+  } else {
+    if (!rings || rings.length === 0) return;
+    exterior = rings[0].map(c => {
+      const w = itmToWorld(c[0], c[1], refPoint, coordScale);
+      return { x: w.x * stretchX, y: w.y * stretchY };
+    });
+    holeRings = [];
+    for (let h = 1; h < rings.length; h++) {
+      holeRings.push(rings[h].map(c => {
+        const w = itmToWorld(c[0], c[1], refPoint, coordScale);
+        return { x: w.x * stretchX, y: w.y * stretchY };
+      }));
+    }
+  }
 
   // Quick bounding-box cull
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  for (const p of exterior) {
-    if (p.x < minX) minX = p.x;
-    if (p.y < minY) minY = p.y;
-    if (p.x > maxX) maxX = p.x;
-    if (p.y > maxY) maxY = p.y;
+  let minX, minY, maxX, maxY;
+  if (preBBox) {
+    minX = preBBox.minX * stretchX;
+    minY = preBBox.minY * stretchY;
+    maxX = preBBox.maxX * stretchX;
+    maxY = preBBox.maxY * stretchY;
+  } else {
+    minX = Infinity; minY = Infinity; maxX = -Infinity; maxY = -Infinity;
+    for (const p of exterior) {
+      if (p.x < minX) minX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y > maxY) maxY = p.y;
+    }
   }
   if (maxX < visMinX || minX > visMaxX || maxY < visMinY || minY > visMaxY) return;
 
@@ -607,11 +773,7 @@ function drawPolygon(ctx, rings, properties, style, refPoint, coordScale, stretc
   ctx.closePath();
 
   // Holes (interior rings)
-  for (let h = 1; h < rings.length; h++) {
-    const hole = rings[h].map(c => {
-      const w = itmToWorld(c[0], c[1], refPoint, coordScale);
-      return { x: w.x * stretchX, y: w.y * stretchY };
-    });
+  for (const hole of holeRings) {
     ctx.moveTo(hole[0].x, hole[0].y);
     for (let i = 1; i < hole.length; i++) {
       ctx.lineTo(hole[i].x, hole[i].y);
