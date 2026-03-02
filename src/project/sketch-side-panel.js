@@ -360,6 +360,10 @@ function renderIssuesView() {
       icon = 'last_page';
       typeText = t('projects.canvas.notLastManhole') || 'Not last manhole';
       nodeLabel = `#${issue.nodeId}`;
+    } else if (issue.type === 'merge_candidate') {
+      icon = 'call_merge';
+      typeText = `${t('projects.canvas.mergeCandidate') || 'Merge suggestion'} (#${issue.mergeNodeId}, ${issue.distanceM}m)`;
+      nodeLabel = `#${issue.nodeId}`;
     } else if (issue.type === 'negative_gradient') {
       icon = 'trending_down';
       typeText = `${t('projects.canvas.negativeGradient') || 'Negative gradient'} (${issue.gradient}m)`;

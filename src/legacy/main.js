@@ -5804,7 +5804,15 @@ function renderDetails() {
               btn.className = 'btn-fix-suggestion';
               btn.innerHTML = `<span class="material-icons">${fix.icon}</span> ${escapeHtml(t(fix.labelKey))}`;
               btn.addEventListener('click', () => {
-                fix.apply();
+                const result = fix.apply();
+                if (result === false) return; // cancelled or failed
+                _nodeMapDirty = true;
+                computeNodeTypes();
+                updateIncompleteEdgeTracker();
+                if (selectedNode && !nodes.find(n => n === selectedNode)) {
+                  selectedNode = null;
+                  selectedEdge = null;
+                }
                 saveToStorage();
                 scheduleDraw();
                 renderDetails();
@@ -6234,7 +6242,15 @@ function renderDetails() {
               btn.className = 'btn-fix-suggestion';
               btn.innerHTML = `<span class="material-icons">${fix.icon}</span> ${escapeHtml(t(fix.labelKey))}`;
               btn.addEventListener('click', () => {
-                fix.apply();
+                const result = fix.apply();
+                if (result === false) return;
+                _nodeMapDirty = true;
+                computeNodeTypes();
+                updateIncompleteEdgeTracker();
+                if (selectedEdge && !edges.find(e => e === selectedEdge)) {
+                  selectedEdge = null;
+                  selectedNode = null;
+                }
                 saveToStorage();
                 scheduleDraw();
                 renderDetails();

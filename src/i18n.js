@@ -246,6 +246,7 @@ export const i18n = {
       exitApp: 'לצאת מהאפליקציה?',
       undoNodeWithData: 'לשוחה זו יש מדידה מדויקת (Fixed/Device Float). לבטל בכל זאת?',
       undoEdgeWithData: 'לקו זה יש מדידות (כניסה/יציאה). לבטל בכל זאת?',
+      mergeNodes: 'למזג תא #{0} עם תא #{1}? (מרחק: {2}מ\')\nשני התאים ימחקו והקווים שלהם יחוברו.',
     },
     alerts: {
       pickDate: 'נא לבחור תאריך לשירטוט החדש.',
@@ -473,6 +474,7 @@ export const i18n = {
         missingPipeData: 'חסר נתוני צנרת',
         longPipe: 'צינור ארוך',
         notLastManhole: 'לא תא אחרון',
+        mergeCandidate: 'הצעת מיזוג',
         negativeGradient: 'שיפוע שלילי',
         goToIssue: 'עבור לבעיה',
         centerBetween: 'מרכז ביניהם',
@@ -704,6 +706,7 @@ export const i18n = {
       setLockedHouse: 'סמן כבית נעול',
       addMeasurement: 'הוסף מדידה',
       swapMeasurements: 'החלף מדידות כיוון',
+      mergeNodes: 'מזג תאי ביקורת סמוכים',
       applied: 'תיקון יושם',
     },
     elementIssues: {
@@ -713,6 +716,7 @@ export const i18n = {
       missingMeasurementSide: 'חסרה מדידת {0}',
       longEdge: 'צינור ארוך ({0}מ\')',
       notLastManhole: 'לא תא ביקורת אחרון',
+      mergeCandidate: 'ניתן למזג עם תא #{0} ({1}מ\')',
       negativeGradient: 'שיפוע שלילי ({0}מ\')',
       tail: 'יציאה',
       head: 'כניסה',
@@ -964,6 +968,7 @@ export const i18n = {
       exitApp: 'Exit the app?',
       undoNodeWithData: 'This node has a precise measurement (Fixed/Device Float). Undo anyway?',
       undoEdgeWithData: 'This edge has measurements (in/out). Undo anyway?',
+      mergeNodes: 'Merge node #{0} with #{1}? (distance: {2}m)\nBoth nodes will be deleted and their edges connected.',
     },
     alerts: {
       pickDate: 'Please select a date for the new sketch.',
@@ -1191,6 +1196,7 @@ export const i18n = {
         missingPipeData: 'Missing pipe data',
         longPipe: 'Long pipe',
         notLastManhole: 'Not last manhole',
+        mergeCandidate: 'Merge suggestion',
         negativeGradient: 'Negative gradient',
         goToIssue: 'Go to issue',
         centerBetween: 'Center between',
@@ -1422,6 +1428,7 @@ export const i18n = {
       setLockedHouse: 'Mark as Locked House',
       addMeasurement: 'Add Measurement',
       swapMeasurements: 'Swap Measurements',
+      mergeNodes: 'Merge nearby manholes',
       applied: 'Fix applied',
     },
     elementIssues: {
@@ -1431,6 +1438,7 @@ export const i18n = {
       missingMeasurementSide: 'Missing {0} measurement',
       longEdge: 'Long pipe ({0}m)',
       notLastManhole: 'Not last manhole',
+      mergeCandidate: 'Can merge with #{0} ({1}m)',
       negativeGradient: 'Negative gradient ({0}m)',
       tail: 'outflow',
       head: 'inflow',
