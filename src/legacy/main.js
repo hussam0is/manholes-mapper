@@ -3191,6 +3191,9 @@ async function loadProjectCanvas(projectId) {
     // align correctly on the canvas relative to each other
     repositionAllProjectSketchNodes(sketches);
 
+    // Load GIS reference layers for the project so they appear in project canvas mode
+    loadProjectReferenceLayers(projectId);
+
     showSketchSidePanel();
     scheduleDraw();
 
