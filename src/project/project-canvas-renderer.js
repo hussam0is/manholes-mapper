@@ -4,11 +4,25 @@
  * Called from draw() in main.js when in project-canvas mode.
  * Draws edges then nodes for each visible background sketch,
  * skipping labels to reduce visual clutter.
+ *
+ * Also draws the merge-mode overlay: nearby nodes from other sketches
+ * rendered with a distinctive amber highlight, plus dashed connector lines
+ * between detected duplicate pairs.
  */
 
 import { COLORS, NODE_RADIUS } from '../state/constants.js';
+import { isMergeModeEnabled, getNearbyNodes, getCrossMergeIssues } from './merge-mode.js';
 
 const BG_ALPHA = 0.35;
+
+// Merge mode visual constants
+const MERGE_NODE_FILL = 'rgba(251, 146, 60, 0.55)';    // amber-400 semi-transparent
+const MERGE_NODE_STROKE = '#f59e0b';                    // amber-500 solid
+const MERGE_NODE_STROKE_WIDTH_FACTOR = 2.5;             // thicker stroke than BG nodes
+const MERGE_DUP_FILL = 'rgba(239, 68, 68, 0.65)';      // red for confirmed duplicates
+const MERGE_DUP_STROKE = '#dc2626';
+const MERGE_CONNECTOR_COLOR = 'rgba(239, 68, 68, 0.7)'; // red dashed line for dup pairs
+const MERGE_CONNECTOR_NEARBY = 'rgba(251, 146, 60, 0.4)'; // amber dashed for nearby
 
 /**
  * Draw all background sketches onto the canvas context.
@@ -197,6 +211,169 @@ export function drawBackgroundSketches(ctx, sketches, opts) {
         ctx.textBaseline = 'middle';
         ctx.fillText(String(node.id), sx, sy);
       }
+    }
+  }
+
+  ctx.restore();
+}
+
+/**
+ * Draw the merge-mode overlay.
+ *
+ * Renders nearby nodes from other sketches in an amber highlight above the
+ * background sketches but below the active sketch. Also draws dashed connector
+ * lines between detected duplicate pairs.
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {object[]} activeNodes - nodes from the currently active sketch
+ * @param {object} opts - same shape as drawBackgroundSketches opts
+ */
+export function drawMergeModeOverlay(ctx, activeNodes, opts) {
+  if (!isMergeModeEnabled()) return;
+
+  const nearbyNodes = getNearbyNodes();
+  const crossIssues = getCrossMergeIssues();
+  if (nearbyNodes.length === 0) return;
+
+  const {
+    sizeScale = 1,
+    viewScale = 1,
+    viewStretchX = 1,
+    viewStretchY = 1,
+    visMinX = -Infinity,
+    visMinY = -Infinity,
+    visMaxX = Infinity,
+    visMaxY = Infinity,
+  } = opts;
+
+  const nodeRadius = NODE_RADIUS * sizeScale / viewScale;
+
+  // Build a Set of nearby node IDs that are confirmed duplicates for quick lookup
+  /** @type {Set<string>} key = `${sketchId}:${nodeId}` */
+  const dupKeys = new Set(
+    crossIssues.map(i => `${i.nearbySketchId}:${i.nearbyNodeId}`)
+  );
+
+  // Build active node world-coordinate lookup by ID
+  const activeNodeMap = new Map();
+  for (const n of activeNodes) activeNodeMap.set(String(n.id), n);
+
+  ctx.save();
+
+  // ── 1. Draw connector lines (dashed) ─────────────────────────────────────
+  ctx.setLineDash([4 / viewScale, 4 / viewScale]);
+
+  // Nearby-only connectors (amber, faint): connect each nearby node to the
+  // closest active node visually so the user can see why it was pulled in.
+  // We only draw these for non-duplicate pairs (duplicates get their own line).
+  const dupActiveIds = new Set(crossIssues.map(i => `${i.nearbySketchId}:${i.nearbyNodeId}`));
+
+  for (const nearby of nearbyNodes) {
+    const key = `${nearby.sketchId}:${nearby.node.id}`;
+    if (dupActiveIds.has(key)) continue; // skip, handled in dup connectors below
+
+    const sx = nearby.node.x * viewStretchX;
+    const sy = nearby.node.y * viewStretchY;
+    if (sx + nodeRadius < visMinX || sx - nodeRadius > visMaxX ||
+        sy + nodeRadius < visMinY || sy - nodeRadius > visMaxY) continue;
+
+    // Find closest active node
+    let closest = null;
+    let closestDist = Infinity;
+    for (const an of activeNodes) {
+      const d = Math.sqrt((nearby.node.x - an.x) ** 2 + (nearby.node.y - an.y) ** 2);
+      if (d < closestDist) { closestDist = d; closest = an; }
+    }
+    if (!closest) continue;
+
+    const ax = closest.x * viewStretchX;
+    const ay = closest.y * viewStretchY;
+
+    ctx.strokeStyle = MERGE_CONNECTOR_NEARBY;
+    ctx.lineWidth = 1 / viewScale;
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.lineTo(ax, ay);
+    ctx.stroke();
+  }
+
+  // Duplicate connectors (red, prominent)
+  for (const issue of crossIssues) {
+    const activeNode = activeNodeMap.get(String(issue.activeNodeId));
+    if (!activeNode) continue;
+
+    const ax = activeNode.x * viewStretchX;
+    const ay = activeNode.y * viewStretchY;
+
+    // Nearby node world coords
+    const nearby = nearbyNodes.find(
+      n => n.sketchId === issue.nearbySketchId && String(n.node.id) === String(issue.nearbyNodeId)
+    );
+    if (!nearby) continue;
+
+    const nx = nearby.node.x * viewStretchX;
+    const ny = nearby.node.y * viewStretchY;
+
+    ctx.strokeStyle = MERGE_CONNECTOR_COLOR;
+    ctx.lineWidth = 2 / viewScale;
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(nx, ny);
+    ctx.stroke();
+  }
+
+  ctx.setLineDash([]); // reset dash
+
+  // ── 2. Draw nearby nodes ──────────────────────────────────────────────────
+  for (const nearby of nearbyNodes) {
+    const sx = nearby.node.x * viewStretchX;
+    const sy = nearby.node.y * viewStretchY;
+
+    if (sx + nodeRadius < visMinX || sx - nodeRadius > visMaxX ||
+        sy + nodeRadius < visMinY || sy - nodeRadius > visMaxY) continue;
+
+    const key = `${nearby.sketchId}:${nearby.node.id}`;
+    const isDuplicate = dupKeys.has(key);
+
+    // Draw a slightly larger pulsing ring behind the node to attract attention
+    const ringR = nodeRadius * 1.6;
+    const ringAlpha = isDuplicate ? 0.5 : 0.3;
+    const ringColor = isDuplicate ? MERGE_DUP_STROKE : MERGE_NODE_STROKE;
+    ctx.beginPath();
+    ctx.arc(sx, sy, ringR, 0, Math.PI * 2);
+    ctx.strokeStyle = ringColor;
+    ctx.globalAlpha = ringAlpha;
+    ctx.lineWidth = 1.5 / viewScale;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // Node body
+    ctx.beginPath();
+    ctx.arc(sx, sy, nodeRadius, 0, Math.PI * 2);
+    ctx.fillStyle = isDuplicate ? MERGE_DUP_FILL : MERGE_NODE_FILL;
+    ctx.fill();
+    ctx.strokeStyle = isDuplicate ? MERGE_DUP_STROKE : MERGE_NODE_STROKE;
+    ctx.lineWidth = MERGE_NODE_STROKE_WIDTH_FACTOR / viewScale;
+    ctx.stroke();
+
+    // Node ID label
+    if (nearby.node.id != null) {
+      const fontSize = Math.round(11 * sizeScale / viewScale);
+      ctx.fillStyle = isDuplicate ? '#7f1d1d' : '#78350f'; // dark red / dark amber
+      ctx.font = `bold ${fontSize}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(String(nearby.node.id), sx, sy);
+    }
+
+    // Sketch name label below the node (only when not too zoomed out)
+    if (viewScale > 0.3) {
+      const labelFontSize = Math.round(9 * sizeScale / viewScale);
+      ctx.font = `${labelFontSize}px Arial`;
+      ctx.fillStyle = isDuplicate ? MERGE_DUP_STROKE : MERGE_NODE_STROKE;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText(nearby.sketchName.slice(0, 12), sx, sy + nodeRadius + 2 / viewScale);
     }
   }
 

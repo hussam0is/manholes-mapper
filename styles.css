@@ -10515,6 +10515,139 @@ button:focus-visible,
   font-size: 20px;
 }
 
+/* ── Merge mode button (in sketch list row) ────────────────────────── */
+.sketch-side-panel__merge-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-alt, #f1f5f9);
+  color: var(--color-text-secondary, #475569);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 10px;
+  padding: 2px 5px;
+  cursor: pointer;
+  min-width: 36px;
+  min-height: 36px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.sketch-side-panel__merge-btn:hover {
+  background: #fef3c7; /* amber-100 */
+  color: #d97706;      /* amber-600 */
+  border-color: #f59e0b;
+}
+
+.sketch-side-panel__merge-btn.active {
+  background: #fbbf24; /* amber-400 */
+  color: #78350f;      /* amber-900 */
+  border-color: #f59e0b;
+}
+
+.sketch-side-panel__merge-btn .material-icons {
+  font-size: 15px;
+}
+
+/* ── Merge mode sub-panel ──────────────────────────────────────────── */
+.sketch-side-panel__merge-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 12px;
+  color: var(--color-text-secondary, #475569);
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  background: #fffbeb; /* amber-50 */
+}
+
+@media (prefers-color-scheme: dark) {
+  .sketch-side-panel__merge-info {
+    background: rgba(251, 191, 36, 0.1);
+  }
+}
+
+.sketch-side-panel__merge-info-count {
+  margin-inline-start: auto;
+  font-weight: 600;
+  color: var(--color-danger, #ef4444);
+}
+
+.sketch-side-panel__merge-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary, #475569);
+  background: var(--color-surface-alt, #f1f5f9);
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  border-top: 1px solid var(--color-border, #e2e8f0);
+  margin-top: 2px;
+}
+
+.sketch-side-panel__merge-group .material-icons {
+  font-size: 14px;
+  color: var(--color-accent, #2563eb);
+}
+
+.sketch-side-panel__merge-group-count {
+  margin-inline-start: auto;
+  background: var(--color-danger-light, #fee2e2);
+  color: var(--color-danger, #ef4444);
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+.sketch-side-panel__merge-row {
+  border-bottom: 1px solid var(--color-border-light, #f1f5f9);
+}
+
+.sketch-side-panel__merge-icon .material-icons {
+  color: var(--color-danger, #ef4444);
+}
+
+.sketch-side-panel__merge-pair {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.sketch-side-panel__merge-pair-label {
+  font-weight: 600;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.sketch-side-panel__merge-pair-dist {
+  font-size: 11px;
+  color: var(--color-text-muted, #64748b);
+}
+
+.sketch-side-panel__merge-apply-btn {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fef3c7;  /* amber-100 */
+  color: #d97706;       /* amber-600 */
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.sketch-side-panel__merge-apply-btn:hover {
+  background: #f59e0b;
+  color: #fff;
+}
+
+.sketch-side-panel__merge-apply-btn .material-icons {
+  font-size: 20px;
+}
+
 .sketch-side-panel-toggle {
   position: absolute;
   bottom: 88px;

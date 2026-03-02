@@ -139,7 +139,7 @@ import {
   onProjectCanvasChange,
   refreshActiveSketchData,
 } from '../project/project-canvas-state.js';
-import { drawBackgroundSketches } from '../project/project-canvas-renderer.js';
+import { drawBackgroundSketches, drawMergeModeOverlay } from '../project/project-canvas-renderer.js';
 import { initSketchSidePanel, showSketchSidePanel, hideSketchSidePanel } from '../project/sketch-side-panel.js';
 
 /**
@@ -516,6 +516,11 @@ let fallIconReady = false;
 // Fast node lookup map – rebuilt lazily when nodes array changes
 let nodeMap = new Map(); // Map<String(id), node>
 let _nodeMapDirty = true; // Set true when nodes array is mutated
+
+// Issue indicator sets — computed once per frame when dirty, used by drawNode/drawEdge
+let _issueNodeIds = new Set(); // Set<String(nodeId)> — nodes with active issues
+let _issueEdgeIds = new Set(); // Set<String(edgeId)> — edges with active issues
+let _issueSetsDirty = true;   // Recompute when data changes
 
 // --- Draw-loop performance caches ---
 
@@ -1863,6 +1868,7 @@ function saveToStorage() {
 
   // Capture current state references (these are lightweight)
   markEdgeLabelCacheDirty(); // edge/node data changed — invalidate label layout cache
+  _issueSetsDirty = true;    // recompute issue indicators on next draw
   const currentNodes = nodes;
   const currentEdges = edges;
   const currentNextNodeId = nextNodeId;
@@ -2839,6 +2845,27 @@ window.__setViewState = function (scale, tx, ty) {
 
 window.__getStretch = function () {
   return { x: viewStretchX, y: viewStretchY };
+};
+
+// Expose programmatic node/edge selection for issue navigation
+window.__selectNodeById = function (nodeId) {
+  const node = nodes.find(n => String(n.id) === String(nodeId));
+  if (!node) return false;
+  selectedNode = node;
+  selectedEdge = null;
+  renderDetails();
+  scheduleDraw();
+  return true;
+};
+
+window.__selectEdgeById = function (edgeId) {
+  const edge = edges.find(e => String(e.id) === String(edgeId));
+  if (!edge) return false;
+  selectedEdge = edge;
+  selectedNode = null;
+  renderDetails();
+  scheduleDraw();
+  return true;
 };
 
 // Expose project canvas module on window for draw()/pointerDown() integration
@@ -4253,6 +4280,21 @@ function draw() {
       nodeMap.set(String(nodes[i].id), nodes[i]);
     }
     _nodeMapDirty = false;
+    // Invalidate issue cache when node map changes
+    _issueSetsDirty = true;
+  }
+
+  // Recompute issue sets for persistent canvas indicators.
+  // Throttled: only recalculate when nodes/edges change (_issueSetsDirty flag).
+  if (_issueSetsDirty && typeof window.__computeSketchIssues === 'function') {
+    const { issues } = window.__computeSketchIssues(nodes, edges);
+    _issueNodeIds.clear();
+    _issueEdgeIds.clear();
+    for (const issue of issues) {
+      if (issue.nodeId != null) _issueNodeIds.add(String(issue.nodeId));
+      if (issue.edgeId != null) _issueEdgeIds.add(String(issue.edgeId));
+    }
+    _issueSetsDirty = false;
   }
 
   // Clear canvas
@@ -4312,13 +4354,16 @@ function draw() {
 
   // Draw background sketches in project-canvas mode (before active sketch)
   if (window.__projectCanvas?.isProjectCanvasMode()) {
-    drawBackgroundSketches(ctx, window.__projectCanvas.getBackgroundSketches(), {
+    const drawOpts = {
       sizeScale,
       viewScale: sizeVS,
       viewStretchX,
       viewStretchY,
       visMinX, visMinY, visMaxX, visMaxY,
-    });
+    };
+    drawBackgroundSketches(ctx, window.__projectCanvas.getBackgroundSketches(), drawOpts);
+    // Draw merge-mode overlay (nearby nodes from other sketches) above background
+    drawMergeModeOverlay(ctx, nodes, drawOpts);
   }
 
   // Draw edges first (positions will be stretched, shapes won't)
@@ -4781,6 +4826,41 @@ function drawEdge(edge) {
       ctx.stroke();
       ctx.restore();
     }
+
+    // Persistent issue indicator: red dashed overlay + warning badge on edges with issues.
+    // LOD: skip when zoomed out far (overlay would be invisible).
+    if (_issueEdgeIds.has(String(edge.id)) && edge !== selectedEdge && sizeVS < 3) {
+      ctx.save();
+      // Red dashed overlay along the edge
+      ctx.strokeStyle = 'rgba(239, 68, 68, 0.55)';
+      ctx.lineWidth = 4 / sizeVS;
+      ctx.setLineDash([6 / sizeVS, 4 / sizeVS]);
+      ctx.beginPath();
+      ctx.moveTo(tx1, ty1);
+      ctx.lineTo(tx2, ty2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Small warning badge at edge midpoint
+      const midX = (tx1 + tx2) / 2;
+      const midY = (ty1 + ty2) / 2;
+      const badgeR = 5 / sizeVS;
+      ctx.beginPath();
+      ctx.arc(midX, midY, badgeR, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.88)';
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1 / sizeVS;
+      ctx.stroke();
+
+      // White "!" in badge
+      ctx.font = `bold ${badgeR * 1.3}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#fff';
+      ctx.fillText('!', midX, midY + badgeR * 0.06);
+      ctx.restore();
+    }
   } else {
     // Fallback for edges missing a node — use the feature function with stretched copies
     const stretchedTail = stretchedNode(tailNode);
@@ -5108,6 +5188,35 @@ function drawNode(node) {
   // For Home nodes with directConnection badge, draw it on top
   if (node.nodeType === 'Home' && node.directConnection) {
     drawDirectConnectionBadge(stretchedX, stretchedY, radius);
+  }
+
+  // Persistent issue indicator: red warning badge on nodes that have active issues.
+  // LOD: skip when zoomed out far (badge would be < 4px on screen).
+  if (_issueNodeIds.has(String(node.id)) && sizeVS < 3) {
+    const badgeRadius = radius * 0.38;
+    const badgeOffsetX = radius * 0.75;
+    const badgeOffsetY = -radius * 0.75;
+    const bx = stretchedX + badgeOffsetX;
+    const by = stretchedY + badgeOffsetY;
+
+    // Red circle background
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(bx, by, badgeRadius, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(239, 68, 68, 0.92)';
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.2 / sizeVS;
+    ctx.stroke();
+
+    // White "!" exclamation mark
+    const bangSize = badgeRadius * 1.2;
+    ctx.font = `bold ${bangSize}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff';
+    ctx.fillText('!', bx, by + badgeRadius * 0.08);
+    ctx.restore();
   }
 
   // Return label data for deferred rendering (smart positioning)
@@ -5815,14 +5924,69 @@ function renderDetails() {
                 }
                 saveToStorage();
                 scheduleDraw();
-                renderDetails();
-                if (window.showToast) window.showToast(t('fixes.applied'));
+                // Refresh nav state and auto-advance to next issue
+                if (window.__issueNav) {
+                  window.__issueNav.refreshIssues(nodes, edges);
+                  const nav = window.__issueNav.getNavState();
+                  if (nav.total > 0) {
+                    const nextIssue = window.__issueNav.goToNextIssue();
+                    if (nextIssue) {
+                      // Select the node/edge at the next issue
+                      if (nextIssue.nodeId != null) {
+                        window.__selectNodeById?.(nextIssue.nodeId);
+                      } else if (nextIssue.edgeId != null) {
+                        window.__selectEdgeById?.(nextIssue.edgeId);
+                      }
+                      if (window.showToast) window.showToast(t('fixes.autoAdvanced'));
+                    }
+                  } else {
+                    renderDetails();
+                    if (window.showToast) window.showToast(t('fixes.allResolved'));
+                  }
+                } else {
+                  renderDetails();
+                  if (window.showToast) window.showToast(t('fixes.applied'));
+                }
               });
               fixSection.appendChild(btn);
             }
           }
           if (fixSection.querySelectorAll('.btn-fix-suggestion').length > 0) {
             container.appendChild(fixSection);
+          }
+        }
+
+        // ── Issue navigation bar (prev / counter / next) ──
+        if (window.__issueNav) {
+          const nav = window.__issueNav.getNavState();
+          if (nav.total > 0) {
+            const navBar = document.createElement('div');
+            navBar.className = 'issue-nav-bar';
+            const counterText = t('fixes.issueCounter', nav.currentIndex + 1, nav.total);
+            navBar.innerHTML = `
+              <button class="issue-nav-bar__btn issue-nav-bar__prev" title="${escapeHtml(t('fixes.prevIssue'))}">
+                <span class="material-icons">navigate_before</span>
+              </button>
+              <span class="issue-nav-bar__counter">${escapeHtml(counterText)}</span>
+              <button class="issue-nav-bar__btn issue-nav-bar__next" title="${escapeHtml(t('fixes.nextIssue'))}">
+                <span class="material-icons">navigate_next</span>
+              </button>
+            `;
+            navBar.querySelector('.issue-nav-bar__prev').addEventListener('click', () => {
+              const issue = window.__issueNav.goToPrevIssue();
+              if (issue) {
+                if (issue.nodeId != null) window.__selectNodeById?.(issue.nodeId);
+                else if (issue.edgeId != null) window.__selectEdgeById?.(issue.edgeId);
+              }
+            });
+            navBar.querySelector('.issue-nav-bar__next').addEventListener('click', () => {
+              const issue = window.__issueNav.goToNextIssue();
+              if (issue) {
+                if (issue.nodeId != null) window.__selectNodeById?.(issue.nodeId);
+                else if (issue.edgeId != null) window.__selectEdgeById?.(issue.edgeId);
+              }
+            });
+            container.appendChild(navBar);
           }
         }
       }
@@ -6253,8 +6417,28 @@ function renderDetails() {
                 }
                 saveToStorage();
                 scheduleDraw();
-                renderDetails();
-                if (window.showToast) window.showToast(t('fixes.applied'));
+                // Refresh nav state and auto-advance to next issue
+                if (window.__issueNav) {
+                  window.__issueNav.refreshIssues(nodes, edges);
+                  const nav = window.__issueNav.getNavState();
+                  if (nav.total > 0) {
+                    const nextIssue = window.__issueNav.goToNextIssue();
+                    if (nextIssue) {
+                      if (nextIssue.nodeId != null) {
+                        window.__selectNodeById?.(nextIssue.nodeId);
+                      } else if (nextIssue.edgeId != null) {
+                        window.__selectEdgeById?.(nextIssue.edgeId);
+                      }
+                      if (window.showToast) window.showToast(t('fixes.autoAdvanced'));
+                    }
+                  } else {
+                    renderDetails();
+                    if (window.showToast) window.showToast(t('fixes.allResolved'));
+                  }
+                } else {
+                  renderDetails();
+                  if (window.showToast) window.showToast(t('fixes.applied'));
+                }
               });
               fixSection.appendChild(btn);
             }
@@ -6264,6 +6448,44 @@ function renderDetails() {
               container.insertBefore(fixSection, actionsDiv);
             } else {
               container.appendChild(fixSection);
+            }
+          }
+        }
+
+        // ── Issue navigation bar for edge panel (prev / counter / next) ──
+        if (window.__issueNav) {
+          const nav = window.__issueNav.getNavState();
+          if (nav.total > 0) {
+            const navBar = document.createElement('div');
+            navBar.className = 'issue-nav-bar';
+            const counterText = t('fixes.issueCounter', nav.currentIndex + 1, nav.total);
+            navBar.innerHTML = `
+              <button class="issue-nav-bar__btn issue-nav-bar__prev" title="${escapeHtml(t('fixes.prevIssue'))}">
+                <span class="material-icons">navigate_before</span>
+              </button>
+              <span class="issue-nav-bar__counter">${escapeHtml(counterText)}</span>
+              <button class="issue-nav-bar__btn issue-nav-bar__next" title="${escapeHtml(t('fixes.nextIssue'))}">
+                <span class="material-icons">navigate_next</span>
+              </button>
+            `;
+            navBar.querySelector('.issue-nav-bar__prev').addEventListener('click', () => {
+              const issue = window.__issueNav.goToPrevIssue();
+              if (issue) {
+                if (issue.nodeId != null) window.__selectNodeById?.(issue.nodeId);
+                else if (issue.edgeId != null) window.__selectEdgeById?.(issue.edgeId);
+              }
+            });
+            navBar.querySelector('.issue-nav-bar__next').addEventListener('click', () => {
+              const issue = window.__issueNav.goToNextIssue();
+              if (issue) {
+                if (issue.nodeId != null) window.__selectNodeById?.(issue.nodeId);
+                else if (issue.edgeId != null) window.__selectEdgeById?.(issue.edgeId);
+              }
+            });
+            if (actionsDiv) {
+              container.insertBefore(navBar, actionsDiv);
+            } else {
+              container.appendChild(navBar);
             }
           }
         }
