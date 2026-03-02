@@ -5715,34 +5715,74 @@ function renderDetails() {
         });
       }
     } catch (_) { }
-    // ── Fix suggestions for selected node ──
-    if (typeof window.__computeSketchIssues === 'function' && typeof window.__getFixSuggestions === 'function') {
+    // ── Element issues for selected node ──
+    if (typeof window.__computeSketchIssues === 'function') {
       const { issues } = window.__computeSketchIssues(nodes, edges);
       const nodeIssues = issues.filter(i => String(i.nodeId) === String(node.id));
       if (nodeIssues.length > 0) {
-        const fixSection = document.createElement('div');
-        fixSection.className = 'details-section fix-suggestions-section';
-        fixSection.innerHTML = `<div class="details-section-title"><span class="material-icons" style="font-size:16px;color:var(--color-warning,#eab308);vertical-align:middle">lightbulb</span> ${escapeHtml(t('fixes.title'))}</div>`;
+        // Issues display section
+        const issuesSection = document.createElement('div');
+        issuesSection.className = 'details-section element-issues-section';
+        issuesSection.innerHTML = `<div class="details-section-title"><span class="material-icons" style="font-size:16px;color:var(--color-danger,#ef4444);vertical-align:middle">warning</span> ${escapeHtml(t('elementIssues.title'))} (${nodeIssues.length})</div>`;
 
         for (const issue of nodeIssues) {
-          const suggestions = window.__getFixSuggestions(issue, nodes, edges);
-          for (const fix of suggestions) {
-            if (fix.navigateTo) continue; // skip navigation-only fixes in this context
-            const btn = document.createElement('button');
-            btn.className = 'btn-fix-suggestion';
-            btn.innerHTML = `<span class="material-icons">${fix.icon}</span> ${escapeHtml(t(fix.labelKey))}`;
-            btn.addEventListener('click', () => {
-              fix.apply();
-              saveToStorage();
-              scheduleDraw();
-              renderDetails();
-              if (window.showToast) window.showToast(t('fixes.applied'));
-            });
-            fixSection.appendChild(btn);
+          const issueEl = document.createElement('div');
+          issueEl.className = 'element-issue-item';
+          let issueIcon = 'warning';
+          let issueText = '';
+          if (issue.type === 'missing_coords') {
+            issueIcon = 'location_off';
+            issueText = t('elementIssues.missingCoords');
+          } else if (issue.type === 'missing_measurement') {
+            issueIcon = 'rule';
+            const sideLabel = issue.side === 'tail' ? t('elementIssues.tail') : t('elementIssues.head');
+            issueText = t('elementIssues.missingMeasurementSide', sideLabel);
+          } else if (issue.type === 'long_edge') {
+            issueIcon = 'straighten';
+            issueText = t('elementIssues.longEdge', issue.lengthM || '');
+          } else if (issue.type === 'not_last_manhole') {
+            issueIcon = 'last_page';
+            issueText = t('elementIssues.notLastManhole');
+          } else if (issue.type === 'negative_gradient') {
+            issueIcon = 'trending_down';
+            issueText = t('elementIssues.negativeGradient', issue.gradient || '');
           }
+          issueEl.innerHTML = `<span class="material-icons">${issueIcon}</span><span class="element-issue-item__text">${escapeHtml(issueText)}</span>`;
+          issueEl.addEventListener('click', () => {
+            if (window.__issueHighlight) {
+              window.__issueHighlight.start(issue.worldX, issue.worldY, 2000);
+            }
+          });
+          issuesSection.appendChild(issueEl);
         }
-        if (fixSection.querySelectorAll('.btn-fix-suggestion').length > 0) {
-          container.appendChild(fixSection);
+        container.appendChild(issuesSection);
+
+        // Fix suggestions section (below issues)
+        if (typeof window.__getFixSuggestions === 'function') {
+          const fixSection = document.createElement('div');
+          fixSection.className = 'details-section fix-suggestions-section';
+          fixSection.innerHTML = `<div class="details-section-title"><span class="material-icons" style="font-size:16px;color:var(--color-warning,#eab308);vertical-align:middle">lightbulb</span> ${escapeHtml(t('fixes.title'))}</div>`;
+
+          for (const issue of nodeIssues) {
+            const suggestions = window.__getFixSuggestions(issue, nodes, edges);
+            for (const fix of suggestions) {
+              if (fix.navigateTo) continue; // skip navigation-only fixes in this context
+              const btn = document.createElement('button');
+              btn.className = 'btn-fix-suggestion';
+              btn.innerHTML = `<span class="material-icons">${fix.icon}</span> ${escapeHtml(t(fix.labelKey))}`;
+              btn.addEventListener('click', () => {
+                fix.apply();
+                saveToStorage();
+                scheduleDraw();
+                renderDetails();
+                if (window.showToast) window.showToast(t('fixes.applied'));
+              });
+              fixSection.appendChild(btn);
+            }
+          }
+          if (fixSection.querySelectorAll('.btn-fix-suggestion').length > 0) {
+            container.appendChild(fixSection);
+          }
         }
       }
     }
@@ -6079,39 +6119,83 @@ function renderDetails() {
     `;
     detailsContainer.appendChild(container);
 
-    // ── Fix suggestions for selected edge ──
-    if (typeof window.__computeSketchIssues === 'function' && typeof window.__getFixSuggestions === 'function') {
+    // ── Element issues + fix suggestions for selected edge ──
+    if (typeof window.__computeSketchIssues === 'function') {
       const { issues } = window.__computeSketchIssues(nodes, edges);
       const edgeIssues = issues.filter(i => i.edgeId === edge.id);
       if (edgeIssues.length > 0) {
-        const fixSection = document.createElement('div');
-        fixSection.className = 'details-section fix-suggestions-section';
-        fixSection.innerHTML = `<div class="details-section-title"><span class="material-icons" style="font-size:16px;color:var(--color-warning,#eab308);vertical-align:middle">lightbulb</span> ${escapeHtml(t('fixes.title'))}</div>`;
+        const actionsDiv = container.querySelector('.details-actions');
+
+        // Issues display section
+        const issuesSection = document.createElement('div');
+        issuesSection.className = 'details-section element-issues-section';
+        issuesSection.innerHTML = `<div class="details-section-title"><span class="material-icons" style="font-size:16px;color:var(--color-danger,#ef4444);vertical-align:middle">warning</span> ${escapeHtml(t('elementIssues.title'))} (${edgeIssues.length})</div>`;
 
         for (const issue of edgeIssues) {
-          const suggestions = window.__getFixSuggestions(issue, nodes, edges);
-          for (const fix of suggestions) {
-            if (fix.navigateTo) continue;
-            const btn = document.createElement('button');
-            btn.className = 'btn-fix-suggestion';
-            btn.innerHTML = `<span class="material-icons">${fix.icon}</span> ${escapeHtml(t(fix.labelKey))}`;
-            btn.addEventListener('click', () => {
-              fix.apply();
-              saveToStorage();
-              scheduleDraw();
-              renderDetails();
-              if (window.showToast) window.showToast(t('fixes.applied'));
-            });
-            fixSection.appendChild(btn);
+          const issueEl = document.createElement('div');
+          issueEl.className = 'element-issue-item';
+          let issueIcon = 'warning';
+          let issueText = '';
+          if (issue.type === 'missing_measurement') {
+            issueIcon = 'rule';
+            const sideLabel = issue.side === 'tail' ? t('elementIssues.tail') : t('elementIssues.head');
+            issueText = t('elementIssues.missingMeasurementSide', sideLabel);
+          } else if (issue.type === 'long_edge') {
+            issueIcon = 'straighten';
+            issueText = t('elementIssues.longEdge', issue.lengthM || '');
+          } else if (issue.type === 'negative_gradient') {
+            issueIcon = 'trending_down';
+            issueText = t('elementIssues.negativeGradient', issue.gradient || '');
+          } else if (issue.type === 'missing_coords') {
+            issueIcon = 'location_off';
+            issueText = t('elementIssues.missingCoords');
+          } else if (issue.type === 'not_last_manhole') {
+            issueIcon = 'last_page';
+            issueText = t('elementIssues.notLastManhole');
           }
+          issueEl.innerHTML = `<span class="material-icons">${issueIcon}</span><span class="element-issue-item__text">${escapeHtml(issueText)}</span>`;
+          issueEl.addEventListener('click', () => {
+            if (window.__issueHighlight) {
+              window.__issueHighlight.start(issue.worldX, issue.worldY, 2000);
+            }
+          });
+          issuesSection.appendChild(issueEl);
         }
-        if (fixSection.querySelectorAll('.btn-fix-suggestion').length > 0) {
-          // Insert fix suggestions before the delete button actions div
-          const actionsDiv = container.querySelector('.details-actions');
-          if (actionsDiv) {
-            container.insertBefore(fixSection, actionsDiv);
-          } else {
-            container.appendChild(fixSection);
+        if (actionsDiv) {
+          container.insertBefore(issuesSection, actionsDiv);
+        } else {
+          container.appendChild(issuesSection);
+        }
+
+        // Fix suggestions section (below issues)
+        if (typeof window.__getFixSuggestions === 'function') {
+          const fixSection = document.createElement('div');
+          fixSection.className = 'details-section fix-suggestions-section';
+          fixSection.innerHTML = `<div class="details-section-title"><span class="material-icons" style="font-size:16px;color:var(--color-warning,#eab308);vertical-align:middle">lightbulb</span> ${escapeHtml(t('fixes.title'))}</div>`;
+
+          for (const issue of edgeIssues) {
+            const suggestions = window.__getFixSuggestions(issue, nodes, edges);
+            for (const fix of suggestions) {
+              if (fix.navigateTo) continue;
+              const btn = document.createElement('button');
+              btn.className = 'btn-fix-suggestion';
+              btn.innerHTML = `<span class="material-icons">${fix.icon}</span> ${escapeHtml(t(fix.labelKey))}`;
+              btn.addEventListener('click', () => {
+                fix.apply();
+                saveToStorage();
+                scheduleDraw();
+                renderDetails();
+                if (window.showToast) window.showToast(t('fixes.applied'));
+              });
+              fixSection.appendChild(btn);
+            }
+          }
+          if (fixSection.querySelectorAll('.btn-fix-suggestion').length > 0) {
+            if (actionsDiv) {
+              container.insertBefore(fixSection, actionsDiv);
+            } else {
+              container.appendChild(fixSection);
+            }
           }
         }
       }

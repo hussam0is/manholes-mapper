@@ -2566,6 +2566,62 @@ canvas {
   }
 }
 
+/* ── Element Issues (node/edge detail panel) ── */
+.element-issues-section {
+  border-top: 1px solid var(--color-border);
+  padding: var(--space-2, 8px) 0;
+  margin-top: var(--space-2, 8px);
+}
+.element-issues-section .details-section-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: var(--space-2, 8px);
+  color: var(--color-text-secondary);
+}
+.element-issue-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  margin-bottom: 4px;
+  background: var(--color-danger-bg, #fef2f2);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 8px;
+  color: var(--color-text);
+  font-size: 0.82rem;
+  text-align: start;
+  min-height: 40px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.element-issue-item:hover,
+.element-issue-item:active {
+  background: var(--color-danger-light, #fee2e2);
+}
+.element-issue-item .material-icons {
+  font-size: 18px;
+  color: var(--color-danger, #ef4444);
+  flex-shrink: 0;
+}
+.element-issue-item__text {
+  flex: 1;
+  min-width: 0;
+}
+@media (prefers-color-scheme: dark) {
+  .element-issue-item {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.25);
+  }
+  .element-issue-item:hover,
+  .element-issue-item:active {
+    background: rgba(239, 68, 68, 0.16);
+  }
+}
+
 .field select#edgeDiameterSelect,
 .field select[id^="edgeDiameterSelect_"] {
   width: 100%;
