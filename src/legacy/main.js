@@ -5791,6 +5791,26 @@ function renderDetails() {
     deleteButtonWrapper.className = 'details-actions';
     deleteButtonWrapper.innerHTML = `<button id="deleteNodeBtn" class="btn btn-danger btn-full">${t('labels.deleteNode')}</button>`;
     container.appendChild(deleteButtonWrapper);
+
+    // ── Measurement metadata (below delete button, bottom of panel) ──
+    if (node.measuredAt || node.measuredBy) {
+      const metaSection = document.createElement('div');
+      metaSection.className = 'details-section measurement-metadata';
+      let metaHtml = '';
+      if (node.measuredAt) {
+        const dateStr = new Date(node.measuredAt).toLocaleString(
+          currentLang === 'he' ? 'he-IL' : 'en-US',
+          { dateStyle: 'short', timeStyle: 'short' }
+        );
+        metaHtml += `<div class="measurement-meta-row"><span class="material-icons">schedule</span><span>${escapeHtml(t('labels.measuredAt'))}: ${escapeHtml(dateStr)}</span></div>`;
+      }
+      if (node.measuredBy) {
+        metaHtml += `<div class="measurement-meta-row"><span class="material-icons">person</span><span>${escapeHtml(t('labels.measuredBy'))}: ${escapeHtml(node.measuredBy)}</span></div>`;
+      }
+      metaSection.innerHTML = metaHtml;
+      container.appendChild(metaSection);
+    }
+
     detailsContainer.appendChild(container);
     // ID rename listener
     const idInput = container.querySelector('#idInput');
@@ -10351,6 +10371,10 @@ function handleGnssPointCapture(captureData) {
     node.gnssFixQuality = captureData.position.fixQuality;
     node.gnssHdop = captureData.position.hdop;
     node.measure_precision = captureData.position.accuracy || null;
+    // Measurement metadata
+    node.measuredAt = captureData.capturedAt || Date.now();
+    const authUser = window.authGuard?.getAuthState?.()?.user;
+    node.measuredBy = authUser?.name || authUser?.email || null;
   }
 
   // Create edge if requested
@@ -10453,6 +10477,10 @@ function gpsQuickCapture() {
   node.gnssFixQuality = position.fixQuality;
   node.gnssHdop = position.hdop;
   node.measure_precision = position.accuracy || null;
+  // Measurement metadata
+  node.measuredAt = Date.now();
+  const qcAuthUser = window.authGuard?.getAuthState?.()?.user;
+  node.measuredBy = qcAuthUser?.name || qcAuthUser?.email || null;
   coordinatesMap.set(String(node.id), {
     x: itm.x,
     y: itm.y,
@@ -10691,6 +10719,10 @@ function handleTSC3PointReceived(pointName, coords, isNew, nodeType) {
   node.surveyZ = coords.elevation;
   node.measure_precision = 0.02; // TSC3 RTK default precision (meters)
   node.gnssFixQuality = 4; // TSC3 delivers RTK Fixed coordinates
+  // Measurement metadata
+  node.measuredAt = Date.now();
+  const tscAuthUser = window.authGuard?.getAuthState?.()?.user;
+  node.measuredBy = tscAuthUser?.name || tscAuthUser?.email || null;
 
   // Update coordinatesMap
   coordinatesMap.set(String(pointName), {

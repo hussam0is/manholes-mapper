@@ -2496,6 +2496,26 @@ canvas {
   padding: 0.5rem 0;
 }
 
+/* ── Measurement metadata (bottom of node panel) ── */
+.measurement-metadata {
+  background: transparent;
+  border: none;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0;
+}
+.measurement-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-muted, #6b7280);
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+.measurement-meta-row .material-icons {
+  font-size: 14px;
+  opacity: 0.6;
+}
+
 .details-actions {
   position: sticky;
   bottom: 0;
