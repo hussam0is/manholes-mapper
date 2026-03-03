@@ -2,8 +2,10 @@
   "mcpServers": {
     "playwright": {
       "type": "stdio",
-      "command": "npx",
+      "command": "cmd",
       "args": [
+        "/c",
+        "npx",
         "-y",
         "@playwright/mcp@latest"
       ],
@@ -11,8 +13,10 @@
     },
     "postgres": {
       "type": "stdio",
-      "command": "npx",
+      "command": "cmd",
       "args": [
+        "/c",
+        "npx",
         "-y",
         "@modelcontextprotocol/server-postgres",
         "${POSTGRES_URL}"
@@ -21,8 +25,10 @@
     },
     "vercel": {
       "type": "stdio",
-      "command": "npx",
+      "command": "cmd",
       "args": [
+        "/c",
+        "npx",
         "-y",
         "@mistertk/vercel-mcp@latest"
       ],
@@ -43,8 +49,10 @@
     },
     "clickup": {
       "type": "stdio",
-      "command": "npx",
+      "command": "cmd",
       "args": [
+        "/c",
+        "npx",
         "-y",
         "clickup-mcp-server"
       ],
