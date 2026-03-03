@@ -323,8 +323,7 @@ ${COLORS.cyan}╔═════════════════════
     process.exit(1);
   }
   if (!process.env.ANTHROPIC_API_KEY) {
-    log('ERROR', 'ANTHROPIC_API_KEY not set in .env.local');
-    process.exit(1);
+    log('INFO', 'No ANTHROPIC_API_KEY — using Claude Code OAuth session');
   }
 
   log('INFO', `Poll interval: ${POLL_INTERVAL_MS / 1000}s | Max turns: ${MAX_TURNS} | Max budget: $${MAX_BUDGET}`);
