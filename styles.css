@@ -2539,6 +2539,16 @@ canvas {
   padding: 0.5rem 0;
 }
 
+/* Lock toggle for manual-coordinate nodes */
+.lock-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  user-select: none;
+}
+
 /* ── Measurement metadata (bottom of node panel) ── */
 .measurement-metadata {
   background: transparent;
