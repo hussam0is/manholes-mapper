@@ -5539,6 +5539,38 @@ function drawNode(node) {
     ctx.restore();
   }
 
+  // Position lock indicator: small lock badge on nodes with locked manual coordinates.
+  // LOD: skip when zoomed out far (badge would be < 4px on screen).
+  if (node.positionLocked && node.manual_x != null && node.manual_y != null && sizeVS < 3) {
+    const lockSize = radius * 0.4;
+    const lx = stretchedX + radius * 0.7;
+    const ly = stretchedY + radius * 0.7;
+
+    ctx.save();
+    // Blue circle background
+    ctx.beginPath();
+    ctx.arc(lx, ly, lockSize, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(37, 99, 235, 0.9)'; // blue-600
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.2 / sizeVS;
+    ctx.stroke();
+
+    // Draw a small lock shape
+    const s = lockSize * 0.5;
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.2 / sizeVS;
+    ctx.lineCap = 'round';
+    // Lock shackle (U shape at top)
+    ctx.beginPath();
+    ctx.arc(lx, ly - s * 0.25, s * 0.4, Math.PI, 0);
+    ctx.stroke();
+    // Lock body (filled rect)
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(lx - s * 0.55, ly - s * 0.15, s * 1.1, s * 0.85);
+    ctx.restore();
+  }
+
   // Return label data for deferred rendering (smart positioning)
   const fontSize = Math.round(16 * sizeScale / sizeVS);
   let labelText = String(node.id);
@@ -5931,6 +5963,17 @@ function renderDetails() {
           if (node.manual_x != null || node.manual_y != null) {
             if (node.manual_x != null) fields += `<div class="field"><label>${t('labels.manualX')}</label><div class="field-value-readonly">${node.manual_x.toFixed(3)}</div></div>`;
             if (node.manual_y != null) fields += `<div class="field"><label>${t('labels.manualY')}</label><div class="field-value-readonly">${node.manual_y.toFixed(3)}</div></div>`;
+            // Lock toggle for manual-coordinate nodes (not RTK — those are always locked)
+            if (node.manual_x != null && node.manual_y != null) {
+              const isLocked = !!node.positionLocked;
+              fields += `<div class="field col-span-2">
+                <label class="lock-toggle-label">
+                  <input id="positionLockToggle" type="checkbox" ${isLocked ? 'checked' : ''}/>
+                  <span class="material-icons" style="font-size:16px;vertical-align:middle;margin-inline-end:4px">${isLocked ? 'lock' : 'lock_open'}</span>
+                  ${t('labels.lockPosition')}
+                </label>
+              </div>`;
+            }
           }
           return `<div class="details-section">
             <div class="details-section-title">${t('labels.surveyData')}</div>
@@ -6392,6 +6435,17 @@ function renderDetails() {
         node.directConnection = !!e.target.checked;
         updateNodeTimestamp(node);
         // Keep the same ID regardless of direct connection status
+        saveToStorage();
+        scheduleDraw();
+        renderDetails();
+      });
+    }
+    // Position lock toggle for manual-coordinate nodes
+    const positionLockToggle = container.querySelector('#positionLockToggle');
+    if (positionLockToggle) {
+      positionLockToggle.addEventListener('change', (e) => {
+        node.positionLocked = !!e.target.checked;
+        updateNodeTimestamp(node);
         saveToStorage();
         scheduleDraw();
         renderDetails();
@@ -7382,6 +7436,11 @@ function pointerMove(x, y) {
       selectedNode.surveyY != null &&
       (selectedNode.gnssFixQuality === 4 || selectedNode.gnssFixQuality === 5)
     ) {
+      isDragging = false;
+      return;
+    }
+    // Lock nodes with manual coordinates when user has toggled positionLocked
+    if (selectedNode.positionLocked && selectedNode.manual_x != null && selectedNode.manual_y != null) {
       isDragging = false;
       return;
     }
