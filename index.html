@@ -758,6 +758,33 @@
       <button id="sketchSidePanelToggle" class="btn btn-icon canvas-fab sketch-side-panel-toggle" title="Toggle sketches panel" aria-label="Toggle sketches panel" style="display:none;">
         <span class="material-icons" aria-hidden="true">layers</span>
       </button>
+      <!-- Node Issue List Panel -->
+      <div id="nodeIssuePanel" class="node-issue-panel" style="display:none;">
+        <div class="node-issue-panel__header">
+          <span class="material-icons">report_problem</span>
+          <span class="node-issue-panel__title" data-i18n="nodeIssues.issueListTitle">Issue List</span>
+          <span class="node-issue-panel__count"></span>
+          <button class="node-issue-panel__close" title="Close" aria-label="Close panel">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        <div class="node-issue-panel__sort-bar">
+          <button class="node-issue-panel__sort-btn node-issue-panel__sort-btn--active" data-sort="node">
+            <span class="material-icons" style="font-size:16px">tag</span>
+            <span data-i18n="nodeIssues.sortByNode">Sort by node</span>
+          </button>
+          <button class="node-issue-panel__sort-btn" data-sort="location">
+            <span class="material-icons" style="font-size:16px">my_location</span>
+            <span data-i18n="nodeIssues.sortByLocation">Sort by location</span>
+          </button>
+        </div>
+        <div class="node-issue-panel__list"></div>
+      </div>
+      <!-- Node Issue Panel Toggle -->
+      <button id="nodeIssuePanelToggle" class="btn btn-icon canvas-fab node-issue-panel-toggle" title="Issues" aria-label="Toggle issues panel" style="display:none;">
+        <span class="material-icons" aria-hidden="true">report_problem</span>
+        <span class="node-issue-panel-toggle__badge" style="display:none;"></span>
+      </button>
       <!-- Toggle button for floating keyboard (shown when numeric input is focused on mobile) -->
       <button id="toggleFloatingKeyboard" class="toggle-floating-keyboard" style="display:none;" aria-label="Toggle numeric keyboard">
         <span class="material-icons" aria-hidden="true">dialpad</span>

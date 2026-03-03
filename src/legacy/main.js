@@ -2872,6 +2872,9 @@ window.__getStretch = function () {
   return { x: viewStretchX, y: viewStretchY };
 };
 
+// Expose sketch nodes array for the node issue panel
+window.__getSketchNodes = function () { return nodes; };
+
 // Expose programmatic node/edge selection for issue navigation
 window.__selectNodeById = function (nodeId) {
   const node = nodes.find(n => String(n.id) === String(nodeId));
@@ -4552,6 +4555,10 @@ function draw() {
       if (issue.edgeId != null) _issueEdgeIds.add(String(issue.edgeId));
     }
     _issueSetsDirty = false;
+    // Update node issue panel badge when issues are recomputed
+    if (window.__nodeIssuePanel?.updateIssuePanelBadge) {
+      window.__nodeIssuePanel.updateIssuePanelBadge(nodes);
+    }
   }
 
   // Clear canvas
