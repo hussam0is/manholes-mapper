@@ -5539,6 +5539,36 @@ function drawNode(node) {
     ctx.restore();
   }
 
+  // Admin-created issue indicator: orange wrench badge on the left side.
+  // Only shows for nodes with admin-assigned issues (node.issue exists and is active).
+  if (node.issue && node.issue.status !== 'resolved' && sizeVS < 3) {
+    const aiBadgeRadius = radius * 0.38;
+    const aiBadgeOffsetX = -radius * 0.75;
+    const aiBadgeOffsetY = -radius * 0.75;
+    const aibx = stretchedX + aiBadgeOffsetX;
+    const aiby = stretchedY + aiBadgeOffsetY;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(aibx, aiby, aiBadgeRadius, 0, Math.PI * 2);
+    ctx.fillStyle = node.issue.status === 'fix_submitted'
+      ? 'rgba(234, 179, 8, 0.92)' // yellow for pending review
+      : 'rgba(249, 115, 22, 0.92)'; // orange for open
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.2 / sizeVS;
+    ctx.stroke();
+
+    // White wrench icon character
+    const aiSize = aiBadgeRadius * 1.1;
+    ctx.font = `bold ${aiSize}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff';
+    ctx.fillText('\u2692', aibx, aiby + aiBadgeRadius * 0.05); // ⚒ hammer and pick
+    ctx.restore();
+  }
+
   // Return label data for deferred rendering (smart positioning)
   const fontSize = Math.round(16 * sizeScale / sizeVS);
   let labelText = String(node.id);
@@ -6311,6 +6341,222 @@ function renderDetails() {
         }
       }
     }
+    // ── Admin Node Issue Section ──
+    if (window.__nodeIssueTracker) {
+      const tracker = window.__nodeIssueTracker;
+      const userRole = window.permissionsService?.getUserRole?.();
+      const isAdminUser = userRole?.isAdmin === true;
+      const hasIssue = tracker.hasActiveIssue(node);
+      const issueSection = document.createElement('div');
+      issueSection.className = 'details-section node-issue-section';
+
+      if (hasIssue) {
+        // Show existing issue
+        const issue = node.issue;
+        const statusKey = issue.status === 'open' ? 'statusOpen'
+          : issue.status === 'fix_submitted' ? 'statusFixSubmitted' : 'statusResolved';
+        const statusClass = issue.status === 'open' ? 'issue-status--open'
+          : issue.status === 'fix_submitted' ? 'issue-status--pending' : 'issue-status--resolved';
+        const createdDate = new Date(issue.createdAt).toLocaleDateString(
+          currentLang === 'he' ? 'he-IL' : 'en-US', { dateStyle: 'short' }
+        );
+
+        let issueHtml = `
+          <div class="details-section-title">
+            <span class="material-icons" style="font-size:16px;color:var(--color-danger,#ef4444);vertical-align:middle">report_problem</span>
+            ${escapeHtml(t('nodeIssues.title'))}
+          </div>
+          <div class="node-issue-card">
+            <div class="node-issue-status ${statusClass}">
+              <span class="material-icons" style="font-size:14px">${issue.status === 'open' ? 'error_outline' : issue.status === 'fix_submitted' ? 'hourglass_top' : 'check_circle'}</span>
+              ${escapeHtml(t('nodeIssues.' + statusKey))}
+            </div>
+            <div class="node-issue-description">${escapeHtml(issue.description)}</div>
+            <div class="node-issue-meta">
+              <span class="material-icons" style="font-size:13px">person</span> ${escapeHtml(issue.createdBy)}
+              <span class="material-icons" style="font-size:13px;margin-inline-start:8px">schedule</span> ${escapeHtml(createdDate)}
+            </div>`;
+
+        // Show fix details if fix was submitted
+        if (issue.status === 'fix_submitted' && issue.fix) {
+          const fixDate = new Date(issue.fix.submittedAt).toLocaleDateString(
+            currentLang === 'he' ? 'he-IL' : 'en-US', { dateStyle: 'short' }
+          );
+          issueHtml += `
+            <div class="node-issue-fix-details">
+              <div class="node-issue-fix-label">${escapeHtml(t('nodeIssues.fixDescription'))}</div>
+              <div class="node-issue-fix-text">${escapeHtml(issue.fix.description)}</div>
+              <div class="node-issue-meta">
+                <span class="material-icons" style="font-size:13px">build</span> ${escapeHtml(issue.fix.submittedBy)}
+                <span class="material-icons" style="font-size:13px;margin-inline-start:8px">schedule</span> ${escapeHtml(fixDate)}
+              </div>
+            </div>`;
+        }
+
+        issueHtml += `</div>`;
+
+        // Action buttons based on role and status
+        if (issue.status === 'open' && !isAdminUser) {
+          // User can submit a fix
+          issueHtml += `
+            <div class="node-issue-fix-form" id="issueFixForm" style="display:none">
+              <textarea id="issueFixDescription" rows="2" class="node-issue-textarea" placeholder="${escapeHtml(t('nodeIssues.fixPlaceholder'))}" dir="auto"></textarea>
+              <div class="node-issue-actions">
+                <button id="issueSubmitFixBtn" class="btn btn-primary btn-sm">${escapeHtml(t('nodeIssues.submitFix'))}</button>
+                <button id="issueCancelFixBtn" class="btn btn-secondary btn-sm">${escapeHtml(t('nodeIssues.cancelFix'))}</button>
+              </div>
+            </div>
+            <button id="issueFixBtn" class="btn btn-success btn-full node-issue-fix-btn">
+              <span class="material-icons" style="font-size:18px;vertical-align:middle">build</span>
+              ${escapeHtml(t('nodeIssues.fixButton'))}
+            </button>`;
+        }
+
+        if (issue.status === 'fix_submitted' && isAdminUser) {
+          // Admin can confirm or reject fix
+          issueHtml += `
+            <div class="node-issue-actions node-issue-review-actions">
+              <button id="issueConfirmFixBtn" class="btn btn-success btn-sm">
+                <span class="material-icons" style="font-size:16px;vertical-align:middle">check</span>
+                ${escapeHtml(t('nodeIssues.confirmFix'))}
+              </button>
+              <button id="issueRejectFixBtn" class="btn btn-danger btn-sm">
+                <span class="material-icons" style="font-size:16px;vertical-align:middle">close</span>
+                ${escapeHtml(t('nodeIssues.rejectFix'))}
+              </button>
+            </div>`;
+        }
+
+        if (isAdminUser && issue.status !== 'resolved') {
+          // Admin can remove the issue
+          issueHtml += `
+            <button id="issueRemoveBtn" class="btn btn-link btn-sm node-issue-remove-btn">
+              <span class="material-icons" style="font-size:14px;vertical-align:middle">delete_outline</span>
+              ${escapeHtml(t('nodeIssues.removeIssue'))}
+            </button>`;
+        }
+
+        issueSection.innerHTML = issueHtml;
+        container.appendChild(issueSection);
+
+        // Attach event listeners
+        const fixBtn = issueSection.querySelector('#issueFixBtn');
+        const fixForm = issueSection.querySelector('#issueFixForm');
+        const submitFixBtn = issueSection.querySelector('#issueSubmitFixBtn');
+        const cancelFixBtn = issueSection.querySelector('#issueCancelFixBtn');
+        const confirmFixBtn = issueSection.querySelector('#issueConfirmFixBtn');
+        const rejectFixBtn = issueSection.querySelector('#issueRejectFixBtn');
+        const removeBtn = issueSection.querySelector('#issueRemoveBtn');
+
+        if (fixBtn && fixForm) {
+          fixBtn.addEventListener('click', () => {
+            fixForm.style.display = '';
+            fixBtn.style.display = 'none';
+          });
+        }
+        if (cancelFixBtn && fixBtn && fixForm) {
+          cancelFixBtn.addEventListener('click', () => {
+            fixForm.style.display = 'none';
+            fixBtn.style.display = '';
+          });
+        }
+        if (submitFixBtn) {
+          submitFixBtn.addEventListener('click', () => {
+            const desc = issueSection.querySelector('#issueFixDescription')?.value?.trim();
+            if (!desc) return;
+            const username = getCurrentUsername();
+            tracker.submitFix(node, desc, username);
+            _issueSetsDirty = true;
+            saveToStorage();
+            scheduleDraw();
+            renderDetails(); // re-render to show updated status
+            if (window.showToast) window.showToast(t('nodeIssues.fixSubmitted'));
+          });
+        }
+        if (confirmFixBtn) {
+          confirmFixBtn.addEventListener('click', () => {
+            const username = getCurrentUsername();
+            tracker.confirmFix(node, username);
+            _issueSetsDirty = true;
+            saveToStorage();
+            scheduleDraw();
+            renderDetails();
+            if (window.showToast) window.showToast(t('nodeIssues.fixConfirmed'));
+          });
+        }
+        if (rejectFixBtn) {
+          rejectFixBtn.addEventListener('click', () => {
+            tracker.rejectFix(node);
+            _issueSetsDirty = true;
+            saveToStorage();
+            scheduleDraw();
+            renderDetails();
+            if (window.showToast) window.showToast(t('nodeIssues.fixRejected'));
+          });
+        }
+        if (removeBtn) {
+          removeBtn.addEventListener('click', () => {
+            tracker.removeIssueFromNode(node);
+            _issueSetsDirty = true;
+            saveToStorage();
+            scheduleDraw();
+            renderDetails();
+            if (window.showToast) window.showToast(t('nodeIssues.issueRemoved'));
+          });
+        }
+      } else if (isAdminUser) {
+        // Admin can add an issue to this node
+        issueSection.innerHTML = `
+          <div class="details-section-title">
+            <span class="material-icons" style="font-size:16px;color:var(--color-warning,#eab308);vertical-align:middle">add_circle_outline</span>
+            ${escapeHtml(t('nodeIssues.title'))}
+          </div>
+          <div class="node-issue-add-form" id="issueAddForm" style="display:none">
+            <textarea id="issueAddDescription" rows="2" class="node-issue-textarea" placeholder="${escapeHtml(t('nodeIssues.descriptionPlaceholder'))}" dir="auto"></textarea>
+            <div class="node-issue-actions">
+              <button id="issueSubmitAddBtn" class="btn btn-primary btn-sm">${escapeHtml(t('nodeIssues.submitIssue'))}</button>
+              <button id="issueCancelAddBtn" class="btn btn-secondary btn-sm">${escapeHtml(t('nodeIssues.cancelIssue'))}</button>
+            </div>
+          </div>
+          <button id="issueAddBtn" class="btn btn-outline btn-full node-issue-add-btn">
+            <span class="material-icons" style="font-size:18px;vertical-align:middle">add_circle_outline</span>
+            ${escapeHtml(t('nodeIssues.addIssue'))}
+          </button>`;
+        container.appendChild(issueSection);
+
+        const addBtn = issueSection.querySelector('#issueAddBtn');
+        const addForm = issueSection.querySelector('#issueAddForm');
+        const submitAddBtn = issueSection.querySelector('#issueSubmitAddBtn');
+        const cancelAddBtn = issueSection.querySelector('#issueCancelAddBtn');
+
+        if (addBtn && addForm) {
+          addBtn.addEventListener('click', () => {
+            addForm.style.display = '';
+            addBtn.style.display = 'none';
+          });
+        }
+        if (cancelAddBtn && addBtn && addForm) {
+          cancelAddBtn.addEventListener('click', () => {
+            addForm.style.display = 'none';
+            addBtn.style.display = '';
+          });
+        }
+        if (submitAddBtn) {
+          submitAddBtn.addEventListener('click', () => {
+            const desc = issueSection.querySelector('#issueAddDescription')?.value?.trim();
+            if (!desc) return;
+            const username = getCurrentUsername();
+            tracker.addIssueToNode(node, desc, username);
+            _issueSetsDirty = true;
+            saveToStorage();
+            scheduleDraw();
+            renderDetails();
+            if (window.showToast) window.showToast(t('nodeIssues.issueAdded'));
+          });
+        }
+      }
+    }
+
     // Add delete button at the bottom (after connected lines if present)
     const deleteButtonWrapper = document.createElement('div');
     deleteButtonWrapper.className = 'details-actions';
