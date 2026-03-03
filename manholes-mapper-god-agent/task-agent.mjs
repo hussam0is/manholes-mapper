@@ -28,6 +28,7 @@ import { ClickUpPoller } from './clickup-poller.mjs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const STATE_FILE = path.join(__dirname, 'task-agent-state.json');
+const LOG_FILE = path.join(__dirname, 'task-agent.log');
 
 // ── Load env vars from .env.local ──────────────────────────────────────────
 function loadEnv() {
@@ -67,7 +68,9 @@ function timestamp() {
 function log(level, msg) {
   const colors = { INFO: COLORS.green, WARN: COLORS.yellow, ERROR: COLORS.red, TASK: COLORS.cyan, SDK: COLORS.magenta };
   const color = colors[level] || COLORS.reset;
+  const line = `[${timestamp()}] [${level}] ${msg}`;
   console.log(`${COLORS.dim}[${timestamp()}]${COLORS.reset} ${color}[${level}]${COLORS.reset} ${msg}`);
+  try { fs.appendFileSync(LOG_FILE, line + '\n'); } catch {}
 }
 
 // ── State persistence ──────────────────────────────────────────────────────

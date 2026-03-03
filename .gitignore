@@ -54,3 +54,4 @@ current_app_design/
 
 # Task agent runtime state
 manholes-mapper-god-agent/task-agent-state.json
+manholes-mapper-god-agent/task-agent.log
