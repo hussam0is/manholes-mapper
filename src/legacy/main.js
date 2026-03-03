@@ -5443,14 +5443,50 @@ function drawEdgeLabels(edge) {
       const lengthFontSize = Math.round(12 * sizeScale / sizeVS);
       ctx.font = `${lengthFontSize}px Arial`;
       ctx.textBaseline = 'middle';
-      
+
+      // Draw gradient background behind length label
+      const labelX = px + perpX;
+      const labelY = py + perpY;
+      const metrics = ctx.measureText(lengthText);
+      const padH = 4 / sizeVS;  // horizontal padding
+      const padV = 3 / sizeVS;  // vertical padding
+      const bgW = metrics.width + padH * 2;
+      const bgH = lengthFontSize + padV * 2;
+      const bgX = labelX - bgW / 2;
+      const bgY = labelY - bgH / 2;
+      const bgR = 3 / sizeVS;   // corner radius
+      // Radial gradient: opaque center fading to transparent edges
+      const grad = ctx.createRadialGradient(
+        labelX, labelY, 0,
+        labelX, labelY, Math.max(bgW, bgH) * 0.7
+      );
+      const _dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const bgColor = _dark ? '15,23,42' : '255,255,255'; // slate-900 / white
+      grad.addColorStop(0, `rgba(${bgColor},0.85)`);
+      grad.addColorStop(0.6, `rgba(${bgColor},0.5)`);
+      grad.addColorStop(1, `rgba(${bgColor},0)`);
+      ctx.fillStyle = grad;
+      // Rounded rect
+      ctx.beginPath();
+      ctx.moveTo(bgX + bgR, bgY);
+      ctx.lineTo(bgX + bgW - bgR, bgY);
+      ctx.quadraticCurveTo(bgX + bgW, bgY, bgX + bgW, bgY + bgR);
+      ctx.lineTo(bgX + bgW, bgY + bgH - bgR);
+      ctx.quadraticCurveTo(bgX + bgW, bgY + bgH, bgX + bgW - bgR, bgY + bgH);
+      ctx.lineTo(bgX + bgR, bgY + bgH);
+      ctx.quadraticCurveTo(bgX, bgY + bgH, bgX, bgY + bgH - bgR);
+      ctx.lineTo(bgX, bgY + bgR);
+      ctx.quadraticCurveTo(bgX, bgY, bgX + bgR, bgY);
+      ctx.closePath();
+      ctx.fill();
+
       // Use a distinct color for length labels
       ctx.strokeStyle = COLORS.edge.labelStroke;
       ctx.fillStyle = '#0369a1'; // sky-700 for length labels
       ctx.lineWidth = 3 / sizeVS;
 
-      ctx.strokeText(lengthText, px + perpX, py + perpY);
-      ctx.fillText(lengthText, px + perpX, py + perpY);
+      ctx.strokeText(lengthText, labelX, labelY);
+      ctx.fillText(lengthText, labelX, labelY);
 
       // Reset font for other labels
       ctx.font = `${fontSize}px Arial`;
