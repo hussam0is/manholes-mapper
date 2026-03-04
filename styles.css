@@ -179,6 +179,7 @@ body {
   margin: 0;
   /* Use Inter for a modern look with sensible fallbacks */
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.5;
   background: var(--color-bg);
   color: var(--color-text);
   display: flex;
