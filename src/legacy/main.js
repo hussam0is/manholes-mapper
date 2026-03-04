@@ -458,6 +458,7 @@ const VIEW_STRETCH_KEY = STORAGE_KEYS.viewStretch;
 let sizeScale = 0.9;
 let autoSizeEnabled = true; // When true, node/edge sizes stay constant on screen during zoom
 let sizeVS = 1; // Computed divisor: viewScale when autoSize is on, 1 when off
+let _isHeatmapFrame = false; // Cached once per draw() frame
 const MIN_SIZE_SCALE = 0.5;
 const MAX_SIZE_SCALE = 10.0;
 const SIZE_SCALE_STEP = 0.2; // 20% increments
@@ -4554,6 +4555,9 @@ function draw() {
     _issueSetsDirty = false;
   }
 
+  // Cache heatmap state once per frame
+  _isHeatmapFrame = document.body.classList.contains('heatmap-active');
+
   // Clear canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.save();
@@ -5088,9 +5092,17 @@ function drawEdge(edge) {
   // Inline edge drawing to avoid creating options object and stretched node objects per edge.
   // This replaces drawEdgeFeature(ctx, edge, stretchedTail, stretchedHead, {...}) with direct calls.
   if (tailNode && headNode) {
-    const resolvedColor = edge === selectedEdge
-      ? (COLORS?.edge?.selected || '#7c3aed')
-      : (EDGE_TYPE_COLORS?.[edge.edge_type] || '#555');
+    let resolvedColor;
+    if (edge === selectedEdge) {
+      resolvedColor = COLORS?.edge?.selected || '#7c3aed';
+    } else if (_isHeatmapFrame) {
+      // Heatmap: blue if both measurements filled, gray if missing
+      const hasBoth = edge.tail_measurement && String(edge.tail_measurement).trim() !== '' &&
+                       edge.head_measurement && String(edge.head_measurement).trim() !== '';
+      resolvedColor = hasBoth ? '#3b82f6' : '#9ca3af';
+    } else {
+      resolvedColor = EDGE_TYPE_COLORS?.[edge.edge_type] || '#555';
+    }
     ctx.strokeStyle = resolvedColor;
     ctx.lineWidth = 2 / sizeVS;
     ctx.beginPath();
@@ -5532,12 +5544,33 @@ function drawNode(node) {
   // Check if this node is selected (compare by ID since we're using stretched copies)
   const isSelected = selectedNode && String(selectedNode.id) === String(node.id);
 
+  // Compute heatmap override color when heatmap mode active
+  let heatmapColor = null;
+  if (_isHeatmapFrame && !isSelected) {
+    const isHome = node.nodeType === 'Home';
+    const isForLater = node.nodeType === 'ForLater' || node.nodeType === 'למדידה מאוחרת';
+    if (isHome || isForLater) {
+      heatmapColor = null; // Skip heatmap for Home/ForLater nodes
+    } else {
+      const hasIssue = _issueNodeIds.has(String(node.id));
+      const missingCoords = node.surveyX == null || node.surveyY == null;
+      if (hasIssue || missingCoords) {
+        heatmapColor = '#ef4444'; // Red: issues or missing coords
+      } else if (!node.material || !node.coverDiameter || !node.access) {
+        heatmapColor = '#f59e0b'; // Orange: missing optional fields
+      } else {
+        heatmapColor = '#22c55e'; // Green: all complete
+      }
+    }
+  }
+
   // Draw the node icon using the new icon system with coordinate options
   const coordinateOptions = {
     showCoordinateStatus: coordinatesEnabled,
     coordinatesMap: coordinatesMap,
     isSelected: isSelected,
-    viewScale: sizeVS
+    viewScale: sizeVS,
+    heatmapColor: heatmapColor
   };
   drawNodeIcon(ctx, stretchedN, radius, COLORS, isSelected ? stretchedN : null, coordinateOptions);
 

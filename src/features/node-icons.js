@@ -341,7 +341,7 @@ export function drawCoordinateStatusIndicator(ctx, x, y, radius, hasSurveyCoords
  */
 export function drawNodeIcon(ctx, node, radius, colors, selectedNode, options = {}) {
   const isSelected = node === selectedNode;
-  const { showCoordinateStatus = false, coordinatesMap = null, viewScale = 1 } = options;
+  const { showCoordinateStatus = false, coordinatesMap = null, viewScale = 1, heatmapColor = null } = options;
 
   // Determine fill color based on node state
   let fillColor;
@@ -364,7 +364,12 @@ export function drawNodeIcon(ctx, node, radius, colors, selectedNode, options = 
   } else {
     fillColor = node.type === 'type2' ? colors.node.fillMissing : colors.node.fillDefault;
   }
-  
+
+  // Heatmap override: use data-completeness color when active
+  if (heatmapColor) {
+    fillColor = heatmapColor;
+  }
+
   // LOD: when zoomed out very far (node would be < ~6px on screen), draw a simple filled circle
   // instead of detailed icons with multiple paths, bezier curves, and clipping.
   // viewScale here is sizeVS (the auto-size divisor), so larger = more zoomed out.
