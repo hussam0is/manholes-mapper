@@ -409,6 +409,11 @@ let dragStartNodeState = null; // { id, x, y, surveyX, surveyY } captured at dra
 // Long-press context menu state
 let longPressTimer = null;
 const LONG_PRESS_MS = 600;
+// Animation state for node/edge creation
+const _animatingNodes = new Map(); // nodeId -> startTime
+const _animatingEdges = new Map(); // edgeId -> startTime
+const ANIM_NODE_DURATION = 150; // ms
+const ANIM_EDGE_DURATION = 200; // ms
 // Current interaction mode: 'node' to create nodes, 'edge' to create edges
 let currentMode = 'node';
 let pendingEdgeTail = null;
@@ -3497,6 +3502,10 @@ function createNode(x, y) {
   pushUndo({ type: 'nodeCreate', nodeId: node.id });
   saveToStorage();
   updateCanvasEmptyState();
+  // Trigger placement animation + haptic feedback
+  _animatingNodes.set(String(node.id), performance.now());
+  navigator.vibrate?.(10);
+  scheduleDraw();
   return node;
 }
 
@@ -3556,6 +3565,10 @@ function createEdge(tailId, headId, options = {}) {
   computeNodeTypes();
   pushUndo({ type: 'edgeCreate', edgeId: edge.id });
   saveToStorage();
+  // Trigger snap animation + haptic feedback
+  _animatingEdges.set(edge.id, performance.now());
+  navigator.vibrate?.(10);
+  scheduleDraw();
   return edge;
 }
 
@@ -4925,6 +4938,11 @@ function draw() {
   // Draw issue highlight animation (pulsing ring at issue location)
   drawIssueHighlight(ctx, viewScale, viewStretchX, viewStretchY, viewTranslate);
 
+  // Schedule another frame if animations are still running
+  if (_animatingNodes.size > 0 || _animatingEdges.size > 0) {
+    requestAnimationFrame(scheduleDraw);
+  }
+
   ctx.restore();
   
   // Draw map attribution in screen space (after restore)
@@ -5104,7 +5122,19 @@ function drawEdge(edge) {
       resolvedColor = EDGE_TYPE_COLORS?.[edge.edge_type] || '#555';
     }
     ctx.strokeStyle = resolvedColor;
-    ctx.lineWidth = 2 / sizeVS;
+    let edgeLW = 2 / sizeVS;
+    // Snap animation: pulse lineWidth over ANIM_EDGE_DURATION ms
+    const edgeAnimStart = _animatingEdges.get(edge.id);
+    if (edgeAnimStart != null) {
+      const elapsed = performance.now() - edgeAnimStart;
+      if (elapsed < ANIM_EDGE_DURATION) {
+        const t = elapsed / ANIM_EDGE_DURATION;
+        edgeLW *= 1 + Math.sin(t * Math.PI);
+      } else {
+        _animatingEdges.delete(edge.id);
+      }
+    }
+    ctx.lineWidth = edgeLW;
     ctx.beginPath();
     ctx.moveTo(tx1, ty1);
     ctx.lineTo(tx2, ty2);
@@ -5532,7 +5562,18 @@ function drawEdgeLabels(edge) {
 }
 
 function drawNode(node) {
-  const radius = NODE_RADIUS * sizeScale / sizeVS;
+  let radius = NODE_RADIUS * sizeScale / sizeVS;
+  // Placement animation: scale pulse over ANIM_NODE_DURATION ms
+  const animStart = _animatingNodes.get(String(node.id));
+  if (animStart != null) {
+    const elapsed = performance.now() - animStart;
+    if (elapsed < ANIM_NODE_DURATION) {
+      const t = elapsed / ANIM_NODE_DURATION;
+      radius *= 1 + 0.1 * Math.sin(t * Math.PI);
+    } else {
+      _animatingNodes.delete(String(node.id));
+    }
+  }
 
   // Inline stretch to avoid object allocation (stretchedNode creates a spread copy).
   // We need stretched x/y for drawing but also pass to drawNodeIcon which reads other node props.
