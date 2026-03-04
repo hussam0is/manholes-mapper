@@ -84,6 +84,22 @@ Phone-debug MCP provides: `cdp_*` tools (evaluate, screenshot, console, network)
 | **manholes-mapper-phone-user** | `manholes-mapper-phone-user.md` (10KB) | Field worker using PWA on Android. ADB commands, screen layout (1080x2280), user workflows (login, draw, GPS, export). |
 | **manholes-mapper-user-tester** | `manholes-mapper-user-tester.md` (5KB) | QA via Playwright + Postgres. 5-phase testing workflow: observe, functional, security, data integrity, edge cases. |
 | **mock-tsc3-controller** | `mock-tsc3-controller.md` (5KB) | Control mock TSC3 WebSocket server. HTTP API at localhost:3001 for sending survey points in ITM coordinates. |
+| **init** | `init.md` | Session health check & auto-fix. Runs git status, lint, tests, build, SW version, dependency audit in parallel, then reports and auto-fixes critical issues. |
+| **manholes-clickup** | `manholes-clickup.md` | Manage ClickUp tasks/subtasks for the project. Uses ClickUp MCP tools. List ID: `901815260471`. |
+| **design-audit-loop** | `design-audit-loop.md` | Senior product designer running continuous design improvement loop. Captures screenshots, audits UX, delegates fixes to codesmith-engineer agents, verifies, iterates. Playwright MCP singleton — one browser agent at a time. |
+
+### Spawnable Agent Types
+
+Agents launched via the `Agent` tool with `subagent_type` parameter. Use `model: "opus"` for all spawned agents.
+
+| Agent Type | Purpose |
+|------------|---------|
+| **general-purpose** | Multi-step research, code search, complex autonomous tasks. Has access to all tools. |
+| **Explore** | Fast codebase exploration — find files by pattern, search code for keywords, answer structural questions. Thoroughness levels: quick/medium/very thorough. Read-only (no edits). |
+| **Plan** | Software architect — designs implementation plans, identifies critical files, considers trade-offs. Read-only (no edits). |
+| **code-reviewer** | Comprehensive code review for quality, structure, performance, maintainability. Use after writing/modifying code. |
+| **codesmith-engineer** | Full-stack engineering — deep codebase understanding, multi-file implementations, performance optimization, ML integration, CI/CD. Has all tools. |
+| **design-audit-loop-agent** | Autonomous design audit: researches app via Playwright, captures screenshots, audits UX, delegates fixes, verifies, iterates. Has Playwright MCP tools. |
 
 ### Settings (`.claude/settings.local.json`)
 
