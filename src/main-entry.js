@@ -42,6 +42,7 @@ import {
 import { getFixSuggestions } from './project/fix-suggestions.js';
 import { computeSketchIssues } from './project/sketch-issues.js';
 import './project/issue-nav-state.js'; // registers window.__issueNav
+import { initCockpit } from './cockpit/cockpit.js';
 
 // Initialize Vercel Speed Insights only when deployed on Vercel (production)
 // The /_vercel/speed-insights/script.js endpoint only exists on Vercel's platform
@@ -262,6 +263,9 @@ if (typeof window !== 'undefined') {
 
     // Initialize My Location button
     initMyLocationUI();
+
+    // Initialize Cockpit layout (landscape-first three-zone layout)
+    initCockpit();
   });
 }
 
