@@ -148,6 +148,20 @@
   --header-h-mobile: 48px;
 }
 
+/* Z-INDEX STACKING ORDER:
+   16  = Canvas FAB, Take Measure, toggle-floating-keyboard
+   40  = Drawer (mobile bottom sheet / side panel)
+   140 = Edge legend, Street View pegman
+   145 = Survey connection badge
+   150 = Canvas toolbar, Sketch side panel, Layers config btn
+   200 = Header (desktop) / 1050 (mobile)
+   1001 = Precision Measure overlay
+   1055 = Mobile menu backdrop (menu.css)
+   1060 = Mobile menu (menu.css)
+   2000 = 3D overlay
+   9999 = Floating keyboard
+*/
+
 /* Utility classes */
 .visually-hidden {
   position: absolute !important;
@@ -418,7 +432,7 @@ header h1 {
   }
   
   .sketch-name-display::before {
-    color: #60a5fa;
+    color: var(--color-accent);
   }
   
   .sketch-name-display-mobile {
@@ -428,7 +442,7 @@ header h1 {
   }
   
   .sketch-name-display-mobile::before {
-    color: #60a5fa;
+    color: var(--color-accent);
   }
 }
 
@@ -1083,7 +1097,7 @@ header select.btn {
 }
 
 header select.btn option {
-  color: #0f172a;
+  color: var(--color-text);
 }
 
 .btn-danger {
@@ -2044,7 +2058,7 @@ canvas {
 /* Keep .canvas-fab for elements still using it (e.g. sketchSidePanelToggle) */
 .canvas-fab {
   position: absolute;
-  right: 12px;
+  inset-inline-end: 12px; /* RTL-safe */
   bottom: 12px;
   z-index: 16;
   background: var(--color-primary);
@@ -3070,17 +3084,17 @@ canvas {
   bottom: -5px;
   right: -5px;
   font-size: 14px !important;
-  background: white;
+  background: var(--color-surface);
   border-radius: 50%;
   line-height: 1;
 }
 
 .wizard-check--filled {
-  color: #22c55e;
+  color: var(--color-success, #22c55e);
 }
 
 .wizard-check--empty {
-  color: #d1d5db;
+  color: var(--color-border-strong, #d1d5db);
   font-size: 12px !important;
 }
 
@@ -6505,7 +6519,7 @@ select.invalid:focus {
     font-size: 12px;
     padding: 3px 6px;
     gap: 6px;
-    max-width: calc(100vw - 70px); /* leave room for the canvas toolbar on the opposite side */
+    max-width: calc(100vw - 90px); /* toolbar (44px) + margins + edges + gap */
     flex-wrap: wrap;
   }
 
@@ -6556,6 +6570,16 @@ select.invalid:focus {
     min-height: var(--touch-target-min);
     font-size: 16px;
     /* Prevents zoom on iOS */
+  }
+
+  /* Mobile: survey badge below edge legend (legend top:8px, ~24px tall) */
+  .survey-connection-badge {
+    top: 36px;
+  }
+
+  /* Mobile: pegman below survey badge */
+  .street-view-pegman {
+    top: 68px;
   }
 }
 
@@ -6844,7 +6868,7 @@ select.invalid:focus {
   }
 
   .btn {
-    background: var(--color-bg);
+    background: var(--color-surface-alt);
     color: var(--color-text);
     border-color: var(--color-border);
   }
@@ -6857,8 +6881,8 @@ select.invalid:focus {
 
   .btn-ghost {
     background: rgba(255, 255, 255, 0.08);
-    color: #fff;
-    border-color: rgba(255, 255, 255, 0.16);
+    color: var(--color-text);
+    border-color: rgba(255, 255, 255, 0.2);
   }
 
   #canvasContainer {
@@ -6964,13 +6988,13 @@ select.invalid:focus {
   input[type="number"],
   textarea,
   select {
-    background: var(--color-bg);
+    background: var(--color-surface-alt);
     border-color: var(--color-border);
     color: var(--color-text);
   }
 
   select.btn {
-    background: var(--color-bg);
+    background: var(--color-surface-alt);
     color: var(--color-text);
     border-color: var(--color-border);
   }
@@ -7171,6 +7195,16 @@ select.invalid:focus {
 
   .soft-blue-header .segmented .btn:hover {
     background: var(--color-surface-alt);
+  }
+
+  .soft-blue-header .search-input {
+    background: var(--color-surface-alt);
+    color: var(--color-text);
+    border-color: var(--color-border);
+  }
+
+  .soft-blue-header .search-input::placeholder {
+    color: var(--color-muted);
   }
 
   .soft-blue-header .search-input:focus {
@@ -8231,6 +8265,17 @@ select.invalid:focus {
     background: rgba(255, 255, 255, 0.1);
   }
   .home-panel-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  /* Global dark mode scrollbar styling */
+  ::-webkit-scrollbar-track {
+    background: var(--color-surface);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+  }
+  ::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.2);
   }
 }
@@ -14038,7 +14083,7 @@ body.admin-screen #canvasFabToggle {
 }
 
 .page-error {
-  color: #ef4444;
+  color: var(--color-danger, #ef4444);
   padding: 20px;
   text-align: center;
 }
