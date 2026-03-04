@@ -32,6 +32,10 @@
     {
       "source": "/api/features/:path*",
       "destination": "/api/features"
+    },
+    {
+      "source": "/api/stats/:path*",
+      "destination": "/api/stats"
     }
   ],
   "headers": [

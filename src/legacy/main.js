@@ -1128,7 +1128,11 @@ function handleRoute() {
   const isProjects = (hash === '#/projects');
   const isLogin = (hash === '#/login');
   const isSignup = (hash === '#/signup');
-  const projectMatch = hash.match(/^#\/project\/(.+)$/);
+  const isProfile = (hash === '#/profile');
+  const isLeaderboard = (hash === '#/leaderboard');
+  // Must check /stats BEFORE generic project match to avoid capturing stats as project ID
+  const projectStatsMatch = hash.match(/^#\/project\/([^/]+)\/stats$/);
+  const projectMatch = projectStatsMatch ? null : hash.match(/^#\/project\/([^/]+)$/);
 
   // Get auth state if available
   const authState = window.authGuard?.getAuthState?.() || { isLoaded: false, isSignedIn: false };
@@ -1171,8 +1175,19 @@ function handleRoute() {
   hideLoginPanel();
   updateUserButtonVisibility(authState.isSignedIn);
 
+  // Hide page panels when navigating away from them
+  if (!isProfile) {
+    import('../pages/profile-page.js').then(m => m.hideProfilePage()).catch(() => {});
+  }
+  if (!isLeaderboard) {
+    import('../pages/leaderboard-page.js').then(m => m.hideLeaderboardPage()).catch(() => {});
+  }
+  if (!projectStatsMatch) {
+    import('../pages/project-stats-page.js').then(m => m.hideProjectStatsPage()).catch(() => {});
+  }
+
   // Leave project-canvas mode when navigating away from #/project/:id
-  if (!projectMatch && isProjectCanvasMode()) {
+  if (!projectMatch && !projectStatsMatch && isProjectCanvasMode()) {
     // Sync project sketches back to localStorage so the home view is up to date
     syncProjectSketchesToLibrary();
     clearProjectCanvas();
@@ -1191,6 +1206,27 @@ function handleRoute() {
     try { closeAdminModal(); } catch (_) { }
     try { closeAdminScreen(); } catch (_) { }
     try { openProjectsScreen(); } catch (_) { }
+  } else if (isProfile) {
+    // Handle #/profile route
+    try { document.body.classList.remove('admin-screen'); } catch (_) { }
+    try { closeAdminScreen(); } catch (_) { }
+    try { closeProjectsScreen(); } catch (_) { }
+    hideHome(true);
+    import('../pages/profile-page.js').then(m => m.renderProfilePage()).catch(e => console.error('[Profile]', e));
+  } else if (isLeaderboard) {
+    // Handle #/leaderboard route
+    try { document.body.classList.remove('admin-screen'); } catch (_) { }
+    try { closeAdminScreen(); } catch (_) { }
+    try { closeProjectsScreen(); } catch (_) { }
+    hideHome(true);
+    import('../pages/leaderboard-page.js').then(m => m.renderLeaderboardPage()).catch(e => console.error('[Leaderboard]', e));
+  } else if (projectStatsMatch) {
+    // Handle #/project/:id/stats route
+    try { document.body.classList.remove('admin-screen'); } catch (_) { }
+    try { closeAdminScreen(); } catch (_) { }
+    try { closeProjectsScreen(); } catch (_) { }
+    hideHome(true);
+    import('../pages/project-stats-page.js').then(m => m.renderProjectStatsPage(projectStatsMatch[1])).catch(e => console.error('[ProjectStats]', e));
   } else if (projectMatch) {
     // Handle #/project/:id route — load project canvas
     try { document.body.classList.remove('admin-screen'); } catch (_) { }
