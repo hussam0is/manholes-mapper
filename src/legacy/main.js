@@ -469,6 +469,7 @@ const VIEW_STRETCH_KEY = STORAGE_KEYS.viewStretch;
 let sizeScale = 0.9;
 let autoSizeEnabled = true; // When true, node/edge sizes stay constant on screen during zoom
 let sizeVS = 1; // Computed divisor: viewScale when autoSize is on, 1 when off
+let _contrastMul = 1.0; // High-contrast multiplier: 1.5 in dark mode, 1.0 otherwise. Set per draw() frame.
 let _isHeatmapFrame = false; // Cached once per draw() frame
 const MIN_SIZE_SCALE = 0.5;
 const MAX_SIZE_SCALE = 10.0;
@@ -4680,7 +4681,7 @@ function draw() {
   sizeVS = autoSizeEnabled ? viewScale : 1;
 
   // High-contrast mode: thicker lines and larger labels in dark mode
-  const _contrastMul = (window.CONSTS && window.CONSTS.isDarkMode()) ? 1.5 : 1.0;
+  _contrastMul = (window.CONSTS && window.CONSTS.isDarkMode()) ? 1.5 : 1.0;
 
   // Rebuild fast node lookup map only when nodes changed
   if (_nodeMapDirty) {
