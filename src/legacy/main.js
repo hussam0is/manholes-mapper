@@ -2572,6 +2572,91 @@ if (window.syncService?.onSyncStateChange) {
   });
 }
 
+/**
+ * Render the Mission Control dashboard header with greeting, streak, and stats.
+ */
+function renderMissionControlHeader() {
+  // Remove previous header if exists
+  const existing = document.getElementById('missionControlHeader');
+  if (existing) existing.remove();
+
+  const header = document.createElement('div');
+  header.id = 'missionControlHeader';
+  header.className = 'mission-control-header';
+
+  // Time-based greeting
+  const hour = new Date().getHours();
+  let greetingKey = 'home.goodMorning';
+  if (hour >= 12 && hour < 17) greetingKey = 'home.goodAfternoon';
+  else if (hour >= 17) greetingKey = 'home.goodEvening';
+  const userName = window.authGuard?.getAuthState?.()?.name || '';
+  const greeting = userName ? `${t(greetingKey)}, ${escapeHtml(userName)}` : t(greetingKey);
+
+  // Streak
+  const streak = parseInt(localStorage.getItem('cockpit_streak') || '0', 10);
+  const streakBadge = streak > 0 ? `<span class="mc-streak"><span class="material-icons">local_fire_department</span>${streak}</span>` : '';
+
+  // Session stats
+  const sessionStats = window.__getSessionStats?.() || {};
+  const nodesPlaced = sessionStats.nodesPlaced || 0;
+  const edgesDrawn = sessionStats.edgesDrawn || 0;
+
+  // Active sketch card
+  const lib = getLibrary();
+  const activeSketch = lib.length > 0 ? lib.sort((a, b) => {
+    const aTime = new Date(a.updatedAt || a.createdAt || 0).getTime();
+    const bTime = new Date(b.updatedAt || b.createdAt || 0).getTime();
+    return bTime - aTime;
+  })[0] : null;
+
+  let activeSketchHtml = '';
+  if (activeSketch) {
+    const name = escapeHtml(activeSketch.name || activeSketch.id || '');
+    activeSketchHtml = `
+      <div class="mc-active-sketch">
+        <div class="mc-active-sketch__label">${t('home.activeSketch')}</div>
+        <div class="mc-active-sketch__name">${name}</div>
+        <button class="mc-active-sketch__continue" data-sketch-id="${escapeHtml(String(activeSketch.id))}">
+          <span class="material-icons">play_arrow</span> ${t('home.continue')}
+        </button>
+      </div>`;
+  }
+
+  header.innerHTML = `
+    <div class="mc-greeting">${greeting} ${streakBadge}</div>
+    <div class="mc-stats-row">
+      <div class="mc-stats-card">
+        <span class="material-icons">radio_button_unchecked</span>
+        <span class="mc-stats-card__value">+${nodesPlaced}</span>
+        <span class="mc-stats-card__label">${t('cockpit.nodes')}</span>
+      </div>
+      <div class="mc-stats-card">
+        <span class="material-icons">timeline</span>
+        <span class="mc-stats-card__value">+${edgesDrawn}</span>
+        <span class="mc-stats-card__label">${t('cockpit.edges')}</span>
+      </div>
+    </div>
+    ${activeSketchHtml}
+  `;
+
+  // Insert at top of home panel body (before sketch list)
+  if (homePanel) {
+    const body = homePanel.querySelector('.home-panel-body') || sketchListEl?.parentElement;
+    if (body) {
+      body.insertBefore(header, body.firstChild);
+    }
+  }
+
+  // Wire continue button
+  const continueBtn = header.querySelector('.mc-active-sketch__continue');
+  if (continueBtn) {
+    continueBtn.addEventListener('click', () => {
+      const sketchId = continueBtn.dataset.sketchId;
+      if (sketchId) loadSketchFromLibrary(sketchId);
+    });
+  }
+}
+
 // Track the current sketch tab (personal or organization)
 let currentSketchTab = 'personal';
 // Track which home mode is active: 'projects' or 'sketches'
@@ -2601,11 +2686,14 @@ function renderHome() {
   homePanel.classList.remove('panel-closing');
   homePanel.style.display = 'flex';
 
+  // Mission Control dashboard header
+  renderMissionControlHeader();
+
   // Update sync status
   if (window.syncService?.getSyncState) {
     updateSyncStatusUI(window.syncService.getSyncState());
   }
-  
+
   // Check if user is admin to show organization tab
   const userRole = window.permissionsService?.getUserRole?.();
   const isAdminUser = userRole?.isAdmin === true;
