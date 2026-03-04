@@ -5771,6 +5771,59 @@ const WIZARD_CLOSED_MAINT = new Set([3, 4, 5, 13]);
 // Maintenance codes where there's no cover (skip material/diameter)
 const WIZARD_NO_COVER_MAINT = new Set([10]);
 
+/**
+ * Check if a node has incomplete wizard tabs (any visible tab not filled).
+ */
+function isNodeIncomplete(node) {
+  if (node.nodeType === 'Home' || node.nodeType === 'ForLater' || node.nodeType === 'למדידה מאוחרת') return false;
+  const visibleTabs = wizardGetVisibleTabs(node);
+  return visibleTabs.some(key => !wizardIsFieldFilled(node, key));
+}
+
+/**
+ * Find the next incomplete node after the given node.
+ * Priority: BFS through connected nodes first, then by ID order.
+ */
+function findNextIncompleteNode(currentNode) {
+  // BFS through connected nodes
+  const visited = new Set([String(currentNode.id)]);
+  const queue = [currentNode];
+  while (queue.length > 0) {
+    const n = queue.shift();
+    // Find neighbors
+    for (const edge of edges) {
+      let neighborId = null;
+      if (String(edge.tail) === String(n.id) && edge.head != null) neighborId = String(edge.head);
+      else if (String(edge.head) === String(n.id) && edge.tail != null) neighborId = String(edge.tail);
+      if (neighborId && !visited.has(neighborId)) {
+        visited.add(neighborId);
+        const neighbor = nodeMap.get(neighborId);
+        if (neighbor) {
+          if (isNodeIncomplete(neighbor)) return neighbor;
+          queue.push(neighbor);
+        }
+      }
+    }
+  }
+  // Fallback: any incomplete node by order
+  for (const node of nodes) {
+    if (String(node.id) === String(currentNode.id)) continue;
+    if (isNodeIncomplete(node)) return node;
+  }
+  return null;
+}
+
+/**
+ * Center the viewport on a given node.
+ */
+function centerOnNode(node) {
+  const canvasW = canvas.width / (window.devicePixelRatio || 1);
+  const canvasH = canvas.height / (window.devicePixelRatio || 1);
+  const tx = canvasW / 2 - viewScale * viewStretchX * node.x;
+  const ty = canvasH / 2 - viewScale * viewStretchY * node.y;
+  window.__setViewState?.(viewScale, tx, ty);
+}
+
 function wizardIsRTKFixed(node) {
   const inMap = typeof coordinatesMap !== 'undefined' && coordinatesMap && coordinatesMap.has(String(node.id));
   return node.gnssFixQuality === 4 ||
@@ -6494,6 +6547,26 @@ function renderDetails() {
       metaSection.innerHTML = metaHtml;
       container.appendChild(metaSection);
     }
+
+    // Save & Next button
+    const saveNextBtn = document.createElement('button');
+    saveNextBtn.className = 'save-next-btn';
+    saveNextBtn.innerHTML = `<span class="material-icons">skip_next</span> ${escapeHtml(t('labels.saveAndNext'))}`;
+    saveNextBtn.addEventListener('click', () => {
+      saveToStorage();
+      const next = findNextIncompleteNode(node);
+      if (next) {
+        selectedNode = next;
+        selectedEdge = null;
+        __wizardActiveTab = null;
+        centerOnNode(next);
+        renderDetails();
+        scheduleDraw();
+      } else {
+        showToast(t('toasts.allNodesComplete'));
+      }
+    });
+    container.appendChild(saveNextBtn);
 
     detailsContainer.appendChild(container);
     // ID rename listener

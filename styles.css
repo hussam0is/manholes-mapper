@@ -3101,6 +3101,32 @@ textarea.wizard-field-input {
   min-height: 72px;
 }
 
+.save-next-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 16px;
+  margin-top: 12px;
+  background: var(--color-accent, #2563eb);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.save-next-btn:hover {
+  opacity: 0.9;
+}
+
+.save-next-btn .material-icons {
+  font-size: 18px;
+}
+
 @media (prefers-color-scheme: dark) {
   .wizard-accuracy-badge {
     background: #1B5E20;
