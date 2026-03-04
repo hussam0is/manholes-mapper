@@ -2099,6 +2099,192 @@ canvas {
   50% { opacity: 0.25; transform: scale(1.08); }
 }
 
+/* ============================
+   Precision Measure Overlay
+   ============================ */
+.pm-overlay {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 1001;
+  background: var(--color-surface, #fff);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.25);
+  padding: 16px;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.pm-overlay--visible {
+  transform: translateY(0);
+}
+.pm-overlay__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.pm-overlay__title {
+  font-weight: 600;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text, #111);
+}
+.pm-overlay__spinner {
+  font-size: 20px;
+  animation: pm-spin 1.5s linear infinite;
+  color: var(--color-primary, #3b82f6);
+}
+@keyframes pm-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.pm-overlay__close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  color: var(--color-muted, #6b7280);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
+}
+.pm-overlay__close:hover { background: var(--color-hover, rgba(0,0,0,0.06)); }
+
+/* Fix status row */
+.pm-overlay__fix-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.pm-overlay__fix-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #fff;
+  background: #6b7280;
+  white-space: nowrap;
+}
+.pm-overlay__fix-detail {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.8rem;
+  color: var(--color-muted, #6b7280);
+}
+
+/* Criterion rows */
+.pm-overlay__criterion {
+  margin-bottom: 10px;
+}
+.pm-overlay__criterion-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: var(--color-muted, #6b7280);
+  margin-bottom: 4px;
+}
+.pm-overlay__bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-border, #e5e7eb);
+  overflow: hidden;
+}
+.pm-overlay__bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: #f59e0b;
+  transition: width 0.4s ease, background 0.3s ease;
+  min-width: 2px;
+}
+.pm-overlay__bar-fill--met {
+  background: #22c55e;
+}
+
+/* Footer buttons */
+.pm-overlay__footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+}
+.pm-overlay__btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  min-height: 44px;
+}
+.pm-overlay__btn:active { transform: scale(0.97); }
+.pm-overlay__btn--cancel {
+  background: var(--color-border, #e5e7eb);
+  color: var(--color-text, #111);
+}
+.pm-overlay__btn--cancel:hover { background: var(--color-hover, #d1d5db); }
+.pm-overlay__btn--accept {
+  background: var(--color-primary, #3b82f6);
+  color: #fff;
+}
+.pm-overlay__btn--accept:hover { background: #2563eb; }
+.pm-overlay__btn .material-icons { font-size: 18px; }
+
+/* Auto-stored flash */
+.pm-overlay--auto-stored {
+  animation: pm-flash 0.5s ease;
+}
+.pm-overlay--auto-stored .pm-overlay__spinner {
+  animation: none;
+  color: #22c55e;
+}
+@keyframes pm-flash {
+  0%, 100% { background: var(--color-surface, #fff); }
+  40% { background: rgba(34, 197, 94, 0.12); }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .pm-overlay {
+    background: var(--color-surface-alt, #1e293b);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+  }
+  .pm-overlay__bar {
+    background: var(--color-border, #334155);
+  }
+  .pm-overlay__btn--cancel {
+    background: var(--color-border, #334155);
+    color: var(--color-text-bright, #f1f5f9);
+  }
+  @keyframes pm-flash {
+    0%, 100% { background: var(--color-surface-alt, #1e293b); }
+    40% { background: rgba(34, 197, 94, 0.15); }
+  }
+}
+
+/* Responsive: smaller on narrow screens */
+@media (max-width: 640px) {
+  .pm-overlay { padding: 12px; }
+  .pm-overlay__footer { gap: 8px; }
+  .pm-overlay__btn { padding: 8px 12px; font-size: 0.85rem; }
+}
+
 /* Incomplete edge tracker - shows count of dangling edges */
 .incomplete-tracker {
   position: absolute;

@@ -16,7 +16,8 @@ export const ConnectionType = {
   BLUETOOTH: 'bluetooth',
   WIFI: 'wifi',
   MOCK: 'mock',
-  BROWSER: 'browser'
+  BROWSER: 'browser',
+  TMM: 'tmm'
 };
 
 /**
@@ -55,7 +56,16 @@ class GNSSStateManager {
       speed: null,
       course: null,
       timestamp: null,
-      isValid: false
+      isValid: false,
+      // Extended fields (populated by TMM adapter, null for others)
+      accuracy: null,
+      hrms: null,
+      vrms: null,
+      diffAge: null,
+      diffStatus: null,
+      vdop: null,
+      pdop: null,
+      receiverModel: null
     };
 
     // Captured survey points

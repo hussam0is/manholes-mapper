@@ -11028,21 +11028,28 @@ function setLiveMeasureMode(enabled) {
       syncCoordinatesToggleUI();
     }
 
-    // Start browser geolocation → gnssState bridge
-    const started = startBrowserLocationAdapter();
-    if (!started) {
-      showToast(t('location.notSupported') || 'Location not supported');
-      liveMeasureEnabled = false;
-      gnssState.setLiveMeasureEnabled(false);
-      syncLiveMeasureToggleUI();
-      return;
+    // Skip browser adapter when TMM (or another managed adapter) is already connected
+    const connType = gnssState.connectionType;
+    if (connType !== 'tmm' && connType !== 'bluetooth' && connType !== 'wifi' && connType !== 'mock') {
+      // Start browser geolocation → gnssState bridge
+      const started = startBrowserLocationAdapter();
+      if (!started) {
+        showToast(t('location.notSupported') || 'Location not supported');
+        liveMeasureEnabled = false;
+        gnssState.setLiveMeasureEnabled(false);
+        syncLiveMeasureToggleUI();
+        return;
+      }
     }
 
     liveMeasureEnabled = true;
     gnssState.setLiveMeasureEnabled(true);
   } else {
-    // Stop browser geolocation adapter
-    stopBrowserLocationAdapter();
+    // Stop browser adapter only if it was the active one
+    const connType = gnssState.connectionType;
+    if (!connType || connType === 'browser') {
+      stopBrowserLocationAdapter();
+    }
     liveMeasureEnabled = false;
     gnssState.setLiveMeasureEnabled(false);
     _liveMeasureFirstFixDone = false; // Allow auto-center on next enable
@@ -11208,36 +11215,53 @@ function vibrateForFixQuality(fixQuality) {
 }
 
 /**
- * GPS Quick Capture — create a node at the current GPS position with one tap.
- * Node type follows the current drawing mode. Auto-chains an edge from the
- * previously captured node.
+ * GPS Quick Capture — create a node at the current GPS position.
+ * Delegates to precision-gated measurement flow when available,
+ * otherwise falls back to instant capture.
  */
 function gpsQuickCapture() {
-  // 1. Get current position
   const position = gnssState.getPosition();
   if (!position || !position.isValid) {
     showToast(t('gpsCapture.noFix') || 'No GPS fix available');
     return;
   }
 
-  // 2. Get reference point for coordinate conversion
+  // Use precision-gated flow if the orchestrator is wired up
+  if (typeof window.__startPrecisionMeasure === 'function') {
+    window.__startPrecisionMeasure();
+    return;
+  }
+
+  // Fallback: instant capture (legacy behavior)
+  createNodeFromMeasurement({ position });
+}
+
+/**
+ * Create a node from a measurement result (used by both instant capture
+ * and precision-gated flow).
+ * @param {object} result - { position: { lat, lon, alt, fixQuality, fixLabel, hdop, satellites, accuracy, hrms, vrms } }
+ */
+function createNodeFromMeasurement(result) {
+  const position = result.position;
+
+  // 1. Get reference point for coordinate conversion
   const referencePoint = getMapReferencePoint();
   if (!referencePoint) {
     showToast(t('location.enableCoordinatesFirst') || 'Enable coordinates first');
     return;
   }
 
-  // 3. Convert GPS → canvas world coords
+  // 2. Convert GPS → canvas world coords
   const canvasPos = gnssToCanvas(position, referencePoint, coordinateScale);
   if (!canvasPos) {
     showToast(t('gpsCapture.conversionError') || 'Could not convert GPS position');
     return;
   }
 
-  // 4. Create node at the canvas position (gets auto-numbered ID, admin defaults)
+  // 3. Create node at the canvas position (gets auto-numbered ID, admin defaults)
   const node = createNode(canvasPos.x, canvasPos.y);
 
-  // 5. Set nodeType based on current drawing mode
+  // 4. Set nodeType based on current drawing mode
   if (currentMode === 'home') {
     node.nodeType = 'Home';
   } else if (currentMode === 'drainage') {
@@ -11246,7 +11270,7 @@ function gpsQuickCapture() {
     node.nodeType = 'Manhole';
   }
 
-  // 6. Store survey coordinates
+  // 5. Store survey coordinates
   const itm = wgs84ToItm(position.lat, position.lon);
   node.hasCoordinates = true;
   node._hidden = false;
@@ -11255,7 +11279,7 @@ function gpsQuickCapture() {
   node.surveyZ = position.alt || 0;
   node.gnssFixQuality = position.fixQuality;
   node.gnssHdop = position.hdop;
-  node.measure_precision = position.accuracy || null;
+  node.measure_precision = position.hrms || position.accuracy || null;
   // Measurement metadata
   node.measuredAt = Date.now();
   const qcAuthUser = window.authGuard?.getAuthState?.()?.user;
@@ -11267,7 +11291,7 @@ function gpsQuickCapture() {
   });
   saveCoordinatesToStorage(coordinatesMap);
 
-  // 7. Auto-create edge from previously captured node (chain pattern)
+  // 6. Auto-create edge from previously captured node (chain pattern)
   const lastId = gnssState.lastCapturedNodeId;
   if (lastId != null) {
     const prevNode = nodes.find(n => String(n.id) === String(lastId));
@@ -11276,20 +11300,20 @@ function gpsQuickCapture() {
     }
   }
 
-  // 8. Update gnss state
+  // 7. Update gnss state
   gnssState.capturePoint(node.id, {
     itm,
     fixQuality: position.fixQuality,
     hdop: position.hdop
   });
 
-  // 9. Position node correctly if coordinate mode is on (keep current view — don't recenter)
+  // 8. Position node correctly if coordinate mode is on (keep current view — don't recenter)
   applyCoordinatesIfEnabled({ recenter: false });
 
-  // 10. Vibrate based on fix quality
+  // 9. Vibrate based on fix quality
   vibrateForFixQuality(position.fixQuality);
 
-  // 11. Select node, show toast, save, redraw (reset wizard so RTK badge shows)
+  // 10. Select node, show toast, save, redraw (reset wizard so RTK badge shows)
   __wizardActiveTab = null;
   selectedNode = node;
   selectedEdge = null;
@@ -11304,6 +11328,9 @@ function gpsQuickCapture() {
   saveToStorage();
   scheduleDraw();
 }
+
+// Expose for precision-measure orchestrator in main-entry.js
+window.__createNodeFromMeasurement = createNodeFromMeasurement;
 
 /**
  * Get the next available edge ID
@@ -11589,6 +11616,19 @@ menuEvents.on('connectSurveyWebSocket', () => {
 
 menuEvents.on('disconnectSurvey', async () => {
   await tsc3Connection.disconnect();
+});
+
+// TMM (Trimble Mobile Manager) connection handler
+menuEvents.on('connectTMM', async () => {
+  showToast(t('tmm.connecting') || 'Connecting to TMM...');
+  const success = await gnssConnection.connectTMM();
+  if (success) {
+    // Auto-enable Live Measure when TMM connects
+    setLiveMeasureMode(true);
+    showToast(t('tmm.connected') || 'TMM Connected');
+  } else {
+    showToast(t('tmm.portNotFound') || 'TMM server not found. Make sure TMM is running.');
+  }
 });
 
 // ── Emergency save on page unload ─────────────────────────────────────────
