@@ -59,6 +59,10 @@
       "env": {
         "CLICKUP_API_TOKEN": "${CLICKUP_API_TOKEN}"
       }
+    },
+    "figma": {
+      "type": "http",
+      "url": "https://mcp.figma.com/mcp"
     }
   }
 }
