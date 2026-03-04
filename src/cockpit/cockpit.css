@@ -431,6 +431,27 @@ body.cockpit-mode #main {
   color: #22c55e;
 }
 
+/* TSC3 survey controller button */
+.action-rail__btn--tsc3 {
+  position: relative;
+}
+
+.action-rail__tsc3-indicator {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #6b7280;
+  transition: background 0.2s ease;
+}
+
+.action-rail__tsc3-indicator.connected {
+  background: #22c55e;
+  box-shadow: 0 0 4px rgba(34, 197, 94, 0.6);
+}
+
 /* Collapse Zone A toggle */
 .action-rail__btn--collapse .material-icons {
   transition: transform 0.25s ease;

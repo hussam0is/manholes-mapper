@@ -31,6 +31,26 @@ export function initActionRail() {
     });
   }
 
+  // ── TSC3 Survey Controller ──────────────────────────────
+  const tsc3Btn = document.getElementById('railTsc3Btn');
+  if (tsc3Btn) {
+    tsc3Btn.addEventListener('click', async () => {
+      const { openDevicePickerDialog } = await import('../survey/device-picker-dialog.js');
+      openDevicePickerDialog();
+    });
+  }
+
+  // Listen for TSC3 connection state
+  const tsc3Indicator = document.getElementById('tsc3Indicator');
+  if (tsc3Indicator && window.menuEvents) {
+    window.menuEvents.on('tsc3:connected', () => {
+      tsc3Indicator.classList.add('connected');
+    });
+    window.menuEvents.on('tsc3:disconnected', () => {
+      tsc3Indicator.classList.remove('connected');
+    });
+  }
+
   // ── Undo/Redo ───────────────────────────────────────────
   const undoBtn = document.getElementById('railUndoBtn');
   const redoBtn = document.getElementById('railRedoBtn');

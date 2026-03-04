@@ -128,6 +128,12 @@ function buildCockpitDOM() {
         <span class="material-icons">gps_fixed</span>
       </button>
 
+      <!-- TSC3 Survey Controller -->
+      <button class="action-rail__btn action-rail__btn--tsc3" id="railTsc3Btn" title="TSC3 Controller" aria-label="Connect TSC3 survey controller">
+        <span class="material-icons">precision_manufacturing</span>
+        <span class="action-rail__tsc3-indicator" id="tsc3Indicator"></span>
+      </button>
+
       <div class="action-rail__divider"></div>
 
       <!-- Undo/Redo -->
