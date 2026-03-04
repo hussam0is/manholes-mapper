@@ -13750,3 +13750,26 @@ body.admin-screen #canvasFabToggle {
 
 /* ---- Fixes list ---- */
 .ap-fixes-list { display: flex; flex-direction: column; gap: 0.625rem; }
+
+/* ===== Dark Mode Theme Attribute ===== */
+/* When data-theme="dark" is set explicitly (not via media query), apply dark colors */
+[data-theme="dark"] {
+  --color-surface: #0f172a;
+  --color-surface-alt: #1e293b;
+  --color-text: #e2e8f0;
+  --color-text-bright: #f1f5f9;
+  --color-text-muted: #94a3b8;
+  --color-border: #334155;
+  --color-accent: #3b82f6;
+  --color-primary-strong: #60a5fa;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] #canvasContainer {
+  background: #0f172a;
+}
+
+/* ===== Reduced Blue Light Filter ===== */
+body.reduce-blue-light #canvasContainer canvas {
+  filter: sepia(20%) saturate(80%);
+}

@@ -16,6 +16,7 @@ import { injectSpeedInsights } from '@vercel/speed-insights';
 import { i18n as I18N_DICT, createTranslator, isRTL as i18nIsRTL } from './i18n.js';
 import { syncHeaderHeightVar, syncAppHeightVar } from './dom/dom-utils.js';
 import * as CONSTS from './state/constants.js';
+import { applyDarkMode, isReducedBlueLightEnabled } from './state/constants.js';
 import { attachFloatingKeyboard } from './utils/floating-keyboard.js';
 import { initResizableDrawer } from './utils/resizable-drawer.js';
 import { initCanvasFabToolbar } from './canvas-fab-toolbar.js';
@@ -252,6 +253,12 @@ import './legacy/main.js';
 // This will only activate on mobile/touch devices
 if (typeof window !== 'undefined') {
   window.addEventListener('DOMContentLoaded', () => {
+    // Apply dark mode preference and blue light filter on load
+    applyDarkMode();
+    if (isReducedBlueLightEnabled()) {
+      document.body.classList.add('reduce-blue-light');
+    }
+
     attachFloatingKeyboard();
     initResizableDrawer();
     initCanvasFabToolbar();

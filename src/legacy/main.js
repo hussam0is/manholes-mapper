@@ -4556,6 +4556,9 @@ function draw() {
   // When autoSize is enabled, divide sizes by viewScale for constant screen-pixel size
   sizeVS = autoSizeEnabled ? viewScale : 1;
 
+  // High-contrast mode: thicker lines and larger labels in dark mode
+  const _contrastMul = (window.CONSTS && window.CONSTS.isDarkMode()) ? 1.5 : 1.0;
+
   // Rebuild fast node lookup map only when nodes changed
   if (_nodeMapDirty) {
     nodeMap.clear();
@@ -5134,7 +5137,7 @@ function drawEdge(edge) {
       resolvedColor = EDGE_TYPE_COLORS?.[edge.edge_type] || '#555';
     }
     ctx.strokeStyle = resolvedColor;
-    let edgeLW = 2 / sizeVS;
+    let edgeLW = (2 * _contrastMul) / sizeVS;
     // Snap animation: pulse lineWidth over ANIM_EDGE_DURATION ms
     const edgeAnimStart = _animatingEdges.get(edge.id);
     if (edgeAnimStart != null) {

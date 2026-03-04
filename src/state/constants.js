@@ -3,9 +3,61 @@
 
 export const NODE_RADIUS = 20;
 
-// Detect if user prefers dark mode
+/**
+ * Get the user's dark mode preference.
+ * Values: 'system' (default), 'light', 'dark', 'auto' (time-based)
+ */
+export function getDarkModePreference() {
+  return localStorage.getItem('dark_mode_preference') || 'system';
+}
+
+/**
+ * Set dark mode preference and apply it to the document.
+ */
+export function setDarkModePreference(pref) {
+  localStorage.setItem('dark_mode_preference', pref);
+  applyDarkMode();
+}
+
+/**
+ * Apply the dark mode preference to the document.
+ */
+export function applyDarkMode() {
+  const dark = isDarkMode();
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+}
+
+/**
+ * Detect if dark mode is active based on preference.
+ */
 export function isDarkMode() {
-  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const pref = getDarkModePreference();
+  switch (pref) {
+    case 'light': return false;
+    case 'dark': return true;
+    case 'auto': {
+      const hour = new Date().getHours();
+      return hour < 6 || hour >= 19;
+    }
+    case 'system':
+    default:
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+}
+
+/**
+ * Check if reduced blue light is enabled.
+ */
+export function isReducedBlueLightEnabled() {
+  return localStorage.getItem('reduce_blue_light') === 'true';
+}
+
+/**
+ * Toggle reduced blue light filter.
+ */
+export function setReducedBlueLight(enabled) {
+  localStorage.setItem('reduce_blue_light', String(enabled));
+  document.body.classList.toggle('reduce-blue-light', enabled);
 }
 
 // Light mode colors
