@@ -50,7 +50,6 @@ export async function renderProjectStatsPage(projectId) {
     let totalNodes = 0;
     let totalEdges = 0;
     let totalKm = 0;
-    let totalIssues = 0;
     const perSketch = [];
 
     for (const sketch of sketches) {

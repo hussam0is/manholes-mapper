@@ -907,7 +907,7 @@ export const i18n = {
       admin: 'מנהל',
       showAll: 'הצג הכל',
     },
-    home: {
+    homeScreen: {
       goodMorning: 'בוקר טוב',
       goodAfternoon: 'צהריים טובים',
       goodEvening: 'ערב טוב',
@@ -1854,7 +1854,7 @@ export const i18n = {
       admin: 'Admin',
       showAll: 'Show all',
     },
-    home: {
+    homeScreen: {
       goodMorning: 'Good morning',
       goodAfternoon: 'Good afternoon',
       goodEvening: 'Good evening',

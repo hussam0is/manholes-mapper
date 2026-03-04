@@ -2650,10 +2650,10 @@ function renderMissionControlHeader() {
     const name = escapeHtml(activeSketch.name || activeSketch.id || '');
     activeSketchHtml = `
       <div class="mc-active-sketch">
-        <div class="mc-active-sketch__label">${t('home.activeSketch')}</div>
+        <div class="mc-active-sketch__label">${t('homeScreen.activeSketch')}</div>
         <div class="mc-active-sketch__name">${name}</div>
         <button class="mc-active-sketch__continue" data-sketch-id="${escapeHtml(String(activeSketch.id))}">
-          <span class="material-icons">play_arrow</span> ${t('home.continue')}
+          <span class="material-icons">play_arrow</span> ${t('homeScreen.continue')}
         </button>
       </div>`;
   }
