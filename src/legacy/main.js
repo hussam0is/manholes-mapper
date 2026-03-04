@@ -5768,7 +5768,7 @@ function buildWizardTabsHTML(node, activeKey, visibleTabs) {
     return `<button class="${cls}" data-wizard-tab="${key}" title="${label}"
               style="--tab-color:${def.color};--tab-bg:${def.bg}">
       <span class="material-icons">${def.icon}</span>
-      ${filled && !isActive ? '<span class="wizard-check material-icons">check_circle</span>' : ''}
+      <span class="wizard-check material-icons ${filled ? 'wizard-check--filled' : 'wizard-check--empty'}">${filled ? 'check_circle' : 'radio_button_unchecked'}</span>
     </button>`;
   }).join('');
 }

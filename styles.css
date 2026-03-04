@@ -3042,10 +3042,18 @@ canvas {
   bottom: -5px;
   right: -5px;
   font-size: 14px !important;
-  color: var(--tab-color);
   background: white;
   border-radius: 50%;
   line-height: 1;
+}
+
+.wizard-check--filled {
+  color: #22c55e;
+}
+
+.wizard-check--empty {
+  color: #d1d5db;
+  font-size: 12px !important;
 }
 
 .wizard-tab:hover:not(.wizard-tab--active) {
