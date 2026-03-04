@@ -868,9 +868,8 @@ function initCollapsibleMobileMenuGroups(menuEl) {
     if (toggleBtn) {
       toggleBtn.setAttribute('aria-expanded', String(!collapsed));
     }
-    if (chevron) {
-      chevron.textContent = collapsed ? 'expand_more' : 'expand_less';
-    }
+    // Chevron rotation is handled by CSS transform via the
+    // .mobile-menu__group--collapsed class — no icon text swap needed.
   }
 
   // Apply initial state and wire click handlers

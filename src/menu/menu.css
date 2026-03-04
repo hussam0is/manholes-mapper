@@ -1322,13 +1322,16 @@
   -webkit-overflow-scrolling: touch;
 }
 
-/* Mobile menu groups */
+/* Mobile menu groups — subtle card backgrounds for visual grouping */
 .mobile-menu__group {
   padding: 0.5rem 0;
+  margin: 4px 8px;
+  background: var(--color-bg, #f8fafc);
+  border-radius: 12px;
 }
 
 .mobile-menu__group + .mobile-menu__group {
-  border-top: 1px solid var(--menu-border);
+  border-top: none;
 }
 
 .mobile-menu__group-header {
@@ -1359,17 +1362,27 @@
 
 .mobile-menu__group-toggle:hover,
 .mobile-menu__group-toggle:focus-visible {
-  background: var(--color-bg, #f8fafc);
+  background: rgba(37, 99, 235, 0.06);
   outline: none;
 }
 
-/* Chevron icon in collapsible group header */
+/* Chevron icon — rotates via CSS transform on expand/collapse */
 .mobile-menu__group-chevron {
   font-size: 1.1rem;
   color: var(--color-muted, #64748b);
   flex-shrink: 0;
   opacity: 0.75;
-  transition: transform 0.25s ease;
+  margin-inline-start: auto;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Rotate chevron when collapsed (expand_less icon flips to point down) */
+.mobile-menu__group--collapsed .mobile-menu__group-chevron {
+  transform: rotate(-180deg);
+}
+
+[dir="rtl"] .mobile-menu__group--collapsed .mobile-menu__group-chevron {
+  transform: rotate(180deg);
 }
 
 /* Collapsible group content */
@@ -1387,8 +1400,9 @@
 }
 
 .mobile-menu__group-icon {
-  font-size: 0.9375rem;
-  opacity: 0.7;
+  font-size: 1rem;
+  color: var(--color-primary, #2563eb);
+  opacity: 0.85;
 }
 
 .mobile-menu__group-label {
@@ -1429,12 +1443,16 @@ p.mobile-menu__group-label {
 }
 
 .mobile-menu__btn:hover {
-  background: var(--color-bg, #f8fafc);
+  background: rgba(37, 99, 235, 0.06);
+}
+
+.mobile-menu__btn:active {
+  background: rgba(37, 99, 235, 0.12);
 }
 
 .mobile-menu__btn .material-icons {
   font-size: 1.25rem;
-  color: var(--color-muted, #64748b);
+  color: var(--color-primary, #2563eb);
   flex-shrink: 0;
 }
 
@@ -1491,7 +1509,7 @@ p.mobile-menu__group-label {
 
 .mobile-menu__search .material-icons {
   font-size: 1.25rem;
-  color: var(--color-muted, #64748b);
+  color: var(--color-primary, #2563eb);
 }
 
 .mobile-menu__search-input {
@@ -1543,8 +1561,18 @@ p.mobile-menu__group-label {
   
   font-size: 0.9375rem;
   color: var(--color-text, #0f172a);
-  
+  border-radius: 8px;
+
   cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.mobile-menu__toggle:hover {
+  background: rgba(37, 99, 235, 0.06);
+}
+
+.mobile-menu__toggle .material-icons {
+  color: var(--color-primary, #2563eb);
 }
 
 .mobile-menu__toggle input[type="checkbox"] {
@@ -1567,7 +1595,7 @@ p.mobile-menu__group-label {
 
 .mobile-menu__scale .material-icons {
   font-size: 1.25rem;
-  color: var(--color-muted, #64748b);
+  color: var(--color-primary, #2563eb);
 }
 
 .mobile-menu__scale-adjuster {
@@ -1621,7 +1649,7 @@ p.mobile-menu__group-label {
 
 .mobile-menu__select-row .material-icons {
   font-size: 1.25rem;
-  color: var(--color-muted, #64748b);
+  color: var(--color-primary, #2563eb);
 }
 
 .mobile-menu__inline-select {
@@ -1727,19 +1755,32 @@ body.mobile-menu-open {
     color: var(--color-text, #e2e8f0);
   }
 
+  /* Group card background — dark mode */
+  .mobile-menu__group {
+    background: rgba(255, 255, 255, 0.04);
+  }
+
   /* Collapsible group toggle — dark mode */
   .mobile-menu__group-toggle:hover,
   .mobile-menu__group-toggle:focus-visible {
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(96, 165, 250, 0.1);
   }
 
   .mobile-menu__group-chevron {
     color: var(--color-muted, #94a3b8);
   }
 
+  .mobile-menu__group-icon {
+    color: var(--color-accent, #60a5fa);
+  }
+
   .mobile-menu__search {
     background: rgba(255, 255, 255, 0.05);
     border-color: var(--color-border, #475569);
+  }
+
+  .mobile-menu__search .material-icons {
+    color: var(--color-accent, #60a5fa);
   }
 
   .mobile-menu__search-input {
@@ -1748,7 +1789,31 @@ body.mobile-menu-open {
 
   .mobile-menu__btn:hover,
   .menu-dropdown__item:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(96, 165, 250, 0.1);
+  }
+
+  .mobile-menu__btn:active {
+    background: rgba(96, 165, 250, 0.18);
+  }
+
+  .mobile-menu__btn .material-icons {
+    color: var(--color-accent, #60a5fa);
+  }
+
+  .mobile-menu__toggle:hover {
+    background: rgba(96, 165, 250, 0.1);
+  }
+
+  .mobile-menu__toggle .material-icons {
+    color: var(--color-accent, #60a5fa);
+  }
+
+  .mobile-menu__scale .material-icons {
+    color: var(--color-accent, #60a5fa);
+  }
+
+  .mobile-menu__select-row .material-icons {
+    color: var(--color-accent, #60a5fa);
   }
 
   /* Issue #8: Missing dark mode overrides for additional components */
