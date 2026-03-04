@@ -6834,7 +6834,6 @@ select.invalid:focus {
     --color-error-text: #fca5a5;
     --shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
     --color-text-secondary: #94a3b8;
-    --color-surface-hover: #1e293b;
     --color-border-strong: #475569;
     --color-primary-light: #1e3a5f;
     --color-primary-bg: #0f2744;
@@ -6925,12 +6924,12 @@ select.invalid:focus {
 
   #mobileMenu .btn:hover,
   .mobile-menu__btn:hover {
-    background: var(--color-surface-alt);
+    background: rgba(96, 165, 250, 0.1);
   }
 
   #mobileMenu .btn:active,
   .mobile-menu__btn:active {
-    background: var(--color-surface-hover);
+    background: rgba(96, 165, 250, 0.18);
   }
 
   #mobileMenu .btn .material-icons,
@@ -6945,7 +6944,7 @@ select.invalid:focus {
 
   #mobileMenu label:hover,
   .mobile-menu__toggle:hover {
-    background: var(--color-surface-alt);
+    background: rgba(96, 165, 250, 0.1);
   }
 
   #mobileMenu select,
