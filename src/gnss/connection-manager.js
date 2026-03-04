@@ -7,6 +7,7 @@
 import { BluetoothAdapter } from './bluetooth-adapter.js';
 import { WifiAdapter } from './wifi-adapter.js';
 import { MockGNSSAdapter } from './mock-adapter.js';
+import { TMMAdapter } from './tmm-adapter.js';
 import { gnssState, ConnectionState, ConnectionType } from './gnss-state.js';
 
 /**
@@ -18,6 +19,7 @@ class GNSSConnectionManager {
     this.bluetoothAdapter = new BluetoothAdapter();
     this.wifiAdapter = new WifiAdapter();
     this.mockAdapter = new MockGNSSAdapter();
+    this.tmmAdapter = new TMMAdapter();
     this.activeAdapter = null;
     this.activeType = null;
 
@@ -25,6 +27,7 @@ class GNSSConnectionManager {
     this.setupAdapterCallbacks(this.bluetoothAdapter, ConnectionType.BLUETOOTH);
     this.setupAdapterCallbacks(this.wifiAdapter, ConnectionType.WIFI);
     this.setupAdapterCallbacks(this.mockAdapter, ConnectionType.MOCK);
+    this.setupAdapterCallbacks(this.tmmAdapter, ConnectionType.TMM);
   }
 
   /**
@@ -136,6 +139,52 @@ class GNSSConnectionManager {
   }
 
   /**
+   * Connect to TMM (Trimble Mobile Manager) running on the same device
+   * @param {number} [httpPort] - TMM HTTP API port for WebSocket discovery. Omit to auto-discover.
+   * @returns {Promise<boolean>}
+   */
+  async connectTMM(httpPort) {
+    await this.disconnect();
+
+    gnssState.setConnectionState(ConnectionState.CONNECTING, {
+      type: ConnectionType.TMM
+    });
+
+    const success = await this.tmmAdapter.connect(httpPort);
+
+    if (!success) {
+      gnssState.setConnectionState(ConnectionState.ERROR, {
+        error: 'TMM connection failed'
+      });
+    }
+
+    return success;
+  }
+
+  /**
+   * Connect to TMM directly using a known WebSocket port (skips HTTP discovery)
+   * @param {number} wsPort - WebSocket port
+   * @returns {Promise<boolean>}
+   */
+  async connectTMMDirect(wsPort) {
+    await this.disconnect();
+
+    gnssState.setConnectionState(ConnectionState.CONNECTING, {
+      type: ConnectionType.TMM
+    });
+
+    const success = this.tmmAdapter.connectDirect(wsPort);
+
+    if (!success) {
+      gnssState.setConnectionState(ConnectionState.ERROR, {
+        error: 'TMM connection failed'
+      });
+    }
+
+    return success;
+  }
+
+  /**
    * Connect using mock adapter (for development)
    * @returns {Promise<boolean>}
    */
@@ -170,6 +219,9 @@ class GNSSConnectionManager {
     }
     if (this.mockAdapter.getIsConnected()) {
       this.mockAdapter.disconnect();
+    }
+    if (this.tmmAdapter.getIsConnected()) {
+      this.tmmAdapter.disconnect();
     }
 
     // Only fire DISCONNECTED if not already set by adapter callback

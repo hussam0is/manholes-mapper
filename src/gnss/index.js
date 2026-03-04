@@ -35,6 +35,14 @@ export {
 export { BluetoothAdapter } from './bluetooth-adapter.js';
 export { WifiAdapter } from './wifi-adapter.js';
 export { MockGNSSAdapter } from './mock-adapter.js';
+export { TMMAdapter, translateTMMPosition } from './tmm-adapter.js';
+
+// Precision-gated measurement
+export { PrecisionMeasurement, DEFAULT_MEASURE_CONFIG } from './precision-measure.js';
+export {
+  initPrecisionMeasureOverlay,
+  showPrecisionOverlay
+} from './precision-measure-overlay.js';
 
 /**
  * Initialize the GNSS module

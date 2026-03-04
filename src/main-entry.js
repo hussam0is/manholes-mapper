@@ -30,7 +30,10 @@ import {
   gnssState,
   isBrowserLocationActive,
   FIX_COLORS,
-  resetMarkerEntrance
+  resetMarkerEntrance,
+  initPrecisionMeasureOverlay,
+  showPrecisionOverlay,
+  PrecisionMeasurement
 } from './gnss/index.js';
 import {
   requestLocationPermission,
@@ -254,7 +257,9 @@ if (typeof window !== 'undefined') {
     
     // Initialize GNSS module
     initGnssModule();
-    
+    initPrecisionMeasureOverlay();
+    initPrecisionMeasureOrchestrator();
+
     // Initialize My Location button
     initMyLocationUI();
   });
@@ -334,6 +339,56 @@ function initMyLocationUI() {
   // Expose GNSS connection for legacy code
   window.gnssConnection = gnssConnection;
   window.gnssState = gnssState;
+}
+
+/**
+ * Initialize the precision-gated measurement orchestrator.
+ * Wires window.__startPrecisionMeasure which is called by gpsQuickCapture()
+ * in legacy/main.js when the Take Measure FAB is tapped.
+ */
+function initPrecisionMeasureOrchestrator() {
+  window.__startPrecisionMeasure = function () {
+    const position = gnssState.getPosition();
+    if (!position || !position.isValid) {
+      if (window.showToast) window.showToast('No GPS fix available');
+      return;
+    }
+
+    const measurement = new PrecisionMeasurement();
+
+    const overlay = showPrecisionOverlay({
+      onCancel: () => { handle.cancel(); },
+      onAcceptEarly: () => { handle.acceptEarly(); }
+    });
+
+    measurement.onProgress = (stats) => {
+      overlay.update(stats);
+    };
+
+    measurement.onAutoStore = (result) => {
+      overlay.showAutoStored();
+      navigator.vibrate?.([50, 30, 50]);
+      setTimeout(() => {
+        overlay.close();
+        if (typeof window.__createNodeFromMeasurement === 'function') {
+          window.__createNodeFromMeasurement(result);
+        }
+      }, 400);
+    };
+
+    const handle = measurement.start();
+
+    handle.promise.then((result) => {
+      if (result.reason === 'early_accept' || result.reason === 'max_epochs') {
+        overlay.close();
+        if (typeof window.__createNodeFromMeasurement === 'function') {
+          window.__createNodeFromMeasurement(result);
+        }
+      }
+    }).catch(() => {
+      overlay.close();
+    });
+  };
 }
 
 /**
