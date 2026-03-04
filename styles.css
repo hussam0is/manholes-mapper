@@ -298,6 +298,21 @@ header h1 {
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  position: relative;
+  padding-inline-end: 0.75rem; /* space for the separator */
+}
+/* Vertical separator after brand/logo on desktop */
+#brand::after {
+  content: '';
+  position: absolute;
+  inset-inline-end: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 60%;
+  background: var(--color-border);
+  opacity: 0.7;
+  pointer-events: none;
 }
 
 /* Sketch name display in header - Desktop version */
@@ -513,6 +528,21 @@ header #controls .toolbar-group {
   border: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.12), 0 1px 6px rgba(2, 6, 23, 0.12);
   backdrop-filter: blur(6px) saturate(150%);
+  position: relative; /* anchor for separator pseudo-element */
+}
+
+/* Subtle vertical dividers between toolbar groups */
+header #controls .toolbar-group:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  inset-inline-end: calc(-0.3rem - 0.5px); /* center in the 0.6rem gap */
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 60%;
+  background: var(--color-border);
+  opacity: 0.7;
+  pointer-events: none;
 }
 
 header #controls .toolbar-group .btn {
@@ -6521,7 +6551,10 @@ select.invalid:focus {
   #controls {
     display: none;
   }
-
+  /* Hide brand separator on mobile (controls bar is hidden) */
+  #brand::after {
+    display: none;
+  }
   /* Show the mobile menu toggle button on small screens */
   #mobileMenuBtn {
     display: inline-flex;
