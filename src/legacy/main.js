@@ -409,6 +409,12 @@ let dragStartNodeState = null; // { id, x, y, surveyX, surveyY } captured at dra
 // Long-press context menu state
 let longPressTimer = null;
 const LONG_PRESS_MS = 600;
+// Long-press edge creation state
+let _longPressEdgeTail = null; // node captured by long-press for one-handed edge mode
+// Double-tap detection for context menu
+let _lastTapNodeId = null;
+let _lastTapTime = 0;
+const DOUBLE_TAP_MS = 300;
 // Animation state for node/edge creation
 const _animatingNodes = new Map(); // nodeId -> startTime
 const _animatingEdges = new Map(); // edgeId -> startTime
@@ -7885,7 +7891,20 @@ canvas.addEventListener('touchstart', (e) => {
           dragStartNodeState = { id: nodeAt.id, oldX: nodeAt.x, oldY: nodeAt.y, oldSurveyX: nodeAt.surveyX, oldSurveyY: nodeAt.surveyY };
           touchAddPending = false;
           touchAddPoint = null;
-          // Start long-press timer for context menu (only in non-read-only mode)
+          // Double-tap detection for context menu
+          const now = performance.now();
+          if (!window.__sketchReadOnly && String(nodeAt.id) === _lastTapNodeId && (now - _lastTapTime) < DOUBLE_TAP_MS) {
+            _lastTapNodeId = null;
+            _lastTapTime = 0;
+            showNodeContextMenu(nodeAt, x, y);
+            touchAddPending = false;
+            touchAddPoint = null;
+            isDragging = false;
+            return;
+          }
+          _lastTapNodeId = String(nodeAt.id);
+          _lastTapTime = now;
+          // Start long-press timer for one-handed edge mode (only in non-read-only mode)
           clearLongPressTimer();
           if (!window.__sketchReadOnly) {
             const lpNode = nodeAt;
@@ -7896,7 +7915,13 @@ canvas.addEventListener('touchstart', (e) => {
               // Cancel drag so the node doesn't move
               isDragging = false;
               pendingDetailsForSelectedNode = false;
-              showNodeContextMenu(lpNode, lpX, lpY);
+              // One-handed edge mode: long-press sets edge tail for drag-to-connect
+              _longPressEdgeTail = lpNode;
+              pendingEdgeTail = lpNode;
+              pendingEdgePreview = { x: lpX, y: lpY };
+              navigator.vibrate?.(30);
+              showToast(t('toasts.longPressEdge'));
+              scheduleDraw();
             }, LONG_PRESS_MS);
           }
           // Defer opening details until release if no drag movement occurred
@@ -7958,8 +7983,14 @@ canvas.addEventListener('touchmove', (e) => {
       const touch = e.touches[0];
       const x = touch.clientX - rect.left;
       const y = touch.clientY - rect.top;
+      // Update edge preview for long-press drag (one-handed edge mode)
+      if (_longPressEdgeTail) {
+        const world = screenToWorld(x, y);
+        pendingEdgePreview = { x: world.x, y: world.y };
+        scheduleDraw();
+      }
       // Update edge preview while selecting target in edge mode (touch)
-      if (currentMode === 'edge' && (pendingEdgeTail || pendingEdgeStartPosition)) {
+      else if (currentMode === 'edge' && (pendingEdgeTail || pendingEdgeStartPosition)) {
         const world = screenToWorld(x, y);
         pendingEdgePreview = { x: world.x, y: world.y };
         scheduleDraw();
@@ -8015,6 +8046,32 @@ canvas.addEventListener('touchend', (e) => {
     isPinching = false;
     pinchStartDistance = null;
     pinchStartScale = null;
+  }
+  // Handle one-handed edge mode: long-press drag released
+  if (_longPressEdgeTail && e.touches.length === 0 && e.changedTouches.length > 0) {
+    const touch = e.changedTouches[0];
+    const rect = canvas.getBoundingClientRect();
+    const dropX = touch.clientX - rect.left;
+    const dropY = touch.clientY - rect.top;
+    const world = screenToWorld(dropX, dropY);
+    const targetNode = findNodeAtWithExpansion(world.x, world.y, TOUCH_SELECT_EXPANSION);
+    if (targetNode && String(targetNode.id) !== String(_longPressEdgeTail.id)) {
+      const created = createEdge(_longPressEdgeTail.id, targetNode.id);
+      if (created) {
+        showToast(t('toasts.edgeCreated'));
+      } else {
+        showToast(t('toasts.edgeExists'));
+      }
+    }
+    _longPressEdgeTail = null;
+    pendingEdgeTail = null;
+    pendingEdgePreview = null;
+    touchAddPending = false;
+    touchAddPoint = null;
+    touchPanCandidate = false;
+    isDragging = false;
+    scheduleDraw();
+    return;
   }
   // Finalize dangling endpoint drag on touch end
   if (isDraggingDanglingEnd && draggingDanglingEdge && e.touches.length === 0) {
