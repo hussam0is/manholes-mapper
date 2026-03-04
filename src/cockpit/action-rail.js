@@ -97,6 +97,15 @@ export function initActionRail() {
     document.getElementById('zoomToFitBtn')?.click();
   });
 
+  // ── Progressive disclosure: hide gated features ─────────
+  const isVisible = window.__isFeatureVisible || (() => true);
+  if (!isVisible('heatmap')) {
+    document.getElementById('railHeatmapBtn')?.style.setProperty('display', 'none');
+  }
+  if (!isVisible('tsc3')) {
+    document.getElementById('railTsc3Btn')?.style.setProperty('display', 'none');
+  }
+
   // ── Heat map toggle ─────────────────────────────────────
   const heatmapBtn = document.getElementById('railHeatmapBtn');
   if (heatmapBtn) {

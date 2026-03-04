@@ -17,6 +17,7 @@ import { i18n as I18N_DICT, createTranslator, isRTL as i18nIsRTL } from './i18n.
 import { syncHeaderHeightVar, syncAppHeightVar } from './dom/dom-utils.js';
 import * as CONSTS from './state/constants.js';
 import { applyDarkMode, isReducedBlueLightEnabled } from './state/constants.js';
+import { initSkillLevel, isFeatureVisible } from './state/skill-level.js';
 import { attachFloatingKeyboard } from './utils/floating-keyboard.js';
 import { initResizableDrawer } from './utils/resizable-drawer.js';
 import { initCanvasFabToolbar } from './canvas-fab-toolbar.js';
@@ -243,6 +244,7 @@ if (typeof window !== 'undefined') {
   window.__computeSketchIssues = computeSketchIssues;
   window.__showMeasurementRail = showMeasurementRail;
   window.__hideMeasurementRail = hideMeasurementRail;
+  window.__isFeatureVisible = isFeatureVisible;
 }
 
 // This preserves current behavior by importing the legacy script as a side-effect.
@@ -258,6 +260,9 @@ if (typeof window !== 'undefined') {
     if (isReducedBlueLightEnabled()) {
       document.body.classList.add('reduce-blue-light');
     }
+
+    // Initialize skill level for progressive disclosure
+    initSkillLevel();
 
     attachFloatingKeyboard();
     initResizableDrawer();
