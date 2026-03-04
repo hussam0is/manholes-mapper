@@ -668,14 +668,11 @@
     <!-- Layout: left = canvas workspace; right = details sidebar -->
     <div id="canvasContainer">
       <canvas id="graphCanvas" role="img" aria-label="Sketch drawing canvas"></canvas>
-      <!-- Empty state overlay — shown when canvas has no nodes/edges -->
-      <div id="canvasEmptyState" class="canvas-empty-state" style="display:none;" aria-live="polite">
-        <div class="canvas-empty-state__card">
-          <span class="material-icons canvas-empty-state__icon" aria-hidden="true">radio_button_unchecked</span>
-          <h3 class="canvas-empty-state__heading" data-i18n="emptyState.heading">התחל לצייר את הרשת שלך</h3>
-          <p class="canvas-empty-state__instruction" data-i18n="emptyState.instruction">לחץ על כלי השוחה בסרגל הכלים, ואז לחץ על הקנבס כדי להניח את הנקודה הראשונה</p>
-          <button type="button" class="canvas-empty-state__dismiss" data-i18n="emptyState.dismiss" aria-label="Dismiss hint">הבנתי</button>
-        </div>
+      <!-- Empty canvas onboarding hint (shown when no nodes exist) -->
+      <div id="canvasEmptyState" class="canvas-empty-state canvas-empty-state--hidden" aria-live="polite">
+        <span class="material-icons canvas-empty-state__icon" aria-hidden="true">touch_app</span>
+        <p class="canvas-empty-state__title" data-i18n="canvas.empty.title">התחל לשרטט</p>
+        <p class="canvas-empty-state__subtitle" data-i18n="canvas.empty.subtitle">הקש על הקנבס כדי להוסיף שוחה</p>
       </div>
       <div class="canvas-toolbar" role="toolbar" aria-label="Drawing tools">
         <div class="segmented" id="modeGroup" role="group" aria-label="Drawing tools">

@@ -232,6 +232,12 @@ export const i18n = {
       instruction: 'לחץ על כלי השוחה \u26AA בסרגל הכלים, ואז לחץ על הקנבס כדי להניח את הנקודה הראשונה',
       dismiss: 'הבנתי',
     },
+    canvas: {
+      empty: {
+        title: 'התחל לשרטט',
+        subtitle: 'הקש על הקנבס כדי להוסיף שוחה',
+      },
+    },
     renamed: 'שם עודכן',
     undo: {
       title: 'ביטול פעולה אחרונה',
@@ -1180,6 +1186,12 @@ export const i18n = {
       heading: 'Start drawing your network',
       instruction: 'Tap the manhole tool \u26AA on the toolbar, then tap the canvas to place your first node',
       dismiss: 'Got it',
+    },
+    canvas: {
+      empty: {
+        title: 'Start Drawing',
+        subtitle: 'Tap the canvas to add a manhole',
+      },
     },
     renamed: 'Renamed',
     undo: {

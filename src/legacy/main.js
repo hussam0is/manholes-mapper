@@ -3556,7 +3556,6 @@ function newSketch(date, projectId = null, inputFlowConfig = null) {
   nodes = [];
   _nodeMapDirty = true;
   edges = [];
-  _emptyStateDismissed = false; // reset so empty-state overlay can show again
   clearUndoStack();
   markEdgeLabelCacheDirty(); // sketch cleared
   nextNodeId = 1;
@@ -5857,22 +5856,26 @@ function drawDirectConnectionBadge(cx, cy, radius) {
 }
 
 /**
- * Show/hide the canvas empty-state overlay based on sketch contents.
- * Visible when: no nodes AND no edges AND canvas is visible (home panel closed,
+ * Show/hide the canvas empty-state onboarding hint based on sketch contents.
+ * Visible when: no nodes AND canvas is visible (home panel closed,
  * not in project-canvas mode, start panel closed, login panel hidden).
+ * Uses CSS opacity transition for a subtle fade effect.
  */
-let _emptyStateDismissed = false;
 function updateCanvasEmptyState() {
   const el = document.getElementById('canvasEmptyState');
   if (!el) return;
-  const isEmpty = nodes.length === 0 && edges.length === 0;
+  const isEmpty = nodes.length === 0;
   const homePanelVisible = homePanel && homePanel.style.display !== 'none';
   const startPanelVisible = startPanel && startPanel.style.display !== 'none';
   const loginPanelEl = document.getElementById('loginPanel');
   const loginVisible = loginPanelEl && loginPanelEl.style.display !== 'none';
   const inProjectCanvas = typeof isProjectCanvasMode === 'function' && isProjectCanvasMode();
-  const shouldShow = isEmpty && !_emptyStateDismissed && !homePanelVisible && !startPanelVisible && !loginVisible && !inProjectCanvas;
-  el.style.display = shouldShow ? 'flex' : 'none';
+  const shouldShow = isEmpty && !homePanelVisible && !startPanelVisible && !loginVisible && !inProjectCanvas;
+  if (shouldShow) {
+    el.classList.remove('canvas-empty-state--hidden');
+  } else {
+    el.classList.add('canvas-empty-state--hidden');
+  }
 }
 
 /**
@@ -8783,14 +8786,6 @@ const homePanelCloseBtn = document.getElementById('homePanelCloseBtn');
 if (homePanelCloseBtn) {
   homePanelCloseBtn.addEventListener('click', () => {
     hideHome();
-    updateCanvasEmptyState();
-  });
-}
-// Dismiss button for canvas empty-state overlay
-const emptyStateDismissBtn = document.querySelector('.canvas-empty-state__dismiss');
-if (emptyStateDismissBtn) {
-  emptyStateDismissBtn.addEventListener('click', () => {
-    _emptyStateDismissed = true;
     updateCanvasEmptyState();
   });
 }
