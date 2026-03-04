@@ -2884,6 +2884,12 @@ window.__getStretch = function () {
   return { x: viewStretchX, y: viewStretchY };
 };
 
+window.__getViewState = function () {
+  return { scale: viewScale, tx: viewTranslate.x, ty: viewTranslate.y };
+};
+
+window.__nodeMap = nodeMap;
+
 // Expose programmatic node/edge selection for issue navigation
 window.__selectNodeById = function (nodeId) {
   const node = nodes.find(n => String(n.id) === String(nodeId));
@@ -5914,6 +5920,12 @@ function buildWizardFieldHTML(node, activeKey, ruleResults, opts) {
  */
 function renderDetails() {
   detailsContainer.innerHTML = '';
+  // Show/hide measurement rail for edge selection
+  if (selectedEdge && typeof window.__showMeasurementRail === 'function') {
+    window.__showMeasurementRail(selectedEdge);
+  } else if (typeof window.__hideMeasurementRail === 'function') {
+    window.__hideMeasurementRail();
+  }
   // Dynamic sidebar title: show element type + ID instead of generic "Details"
   if (sidebarTitleEl) {
     if (selectedNode) {

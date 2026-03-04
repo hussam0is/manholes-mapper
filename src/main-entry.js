@@ -43,6 +43,7 @@ import { getFixSuggestions } from './project/fix-suggestions.js';
 import { computeSketchIssues } from './project/sketch-issues.js';
 import './project/issue-nav-state.js'; // registers window.__issueNav
 import { initCockpit } from './cockpit/cockpit.js';
+import { showMeasurementRail, hideMeasurementRail } from './features/measurement-rail.js';
 
 // Initialize Vercel Speed Insights only when deployed on Vercel (production)
 // The /_vercel/speed-insights/script.js endpoint only exists on Vercel's platform
@@ -239,6 +240,8 @@ if (typeof window !== 'undefined') {
   // Expose fix-suggestions engine for legacy/canvas code
   window.__getFixSuggestions = getFixSuggestions;
   window.__computeSketchIssues = computeSketchIssues;
+  window.__showMeasurementRail = showMeasurementRail;
+  window.__hideMeasurementRail = hideMeasurementRail;
 }
 
 // This preserves current behavior by importing the legacy script as a side-effect.

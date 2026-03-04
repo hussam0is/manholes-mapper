@@ -3127,6 +3127,42 @@ textarea.wizard-field-input {
   font-size: 18px;
 }
 
+/* Measurement Rail — Floating depth inputs on selected edges */
+.measurement-rail {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.measurement-rail__input {
+  position: absolute;
+  pointer-events: auto;
+  width: 70px;
+  padding: 4px 6px;
+  font-size: 13px;
+  border: 2px solid var(--color-accent, #2563eb);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.95);
+  text-align: center;
+  outline: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.measurement-rail__input:focus {
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.25);
+}
+
+@media (prefers-color-scheme: dark) {
+  .measurement-rail__input {
+    background: rgba(30, 41, 59, 0.95);
+    color: #f1f5f9;
+    border-color: #7c3aed;
+  }
+}
+
 @media (prefers-color-scheme: dark) {
   .wizard-accuracy-badge {
     background: #1B5E20;
