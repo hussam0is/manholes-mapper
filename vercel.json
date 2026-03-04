@@ -6,6 +6,22 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/api/users/:id",
+      "destination": "/api/users?id=:id"
+    },
+    {
+      "source": "/api/organizations/:id",
+      "destination": "/api/organizations?id=:id"
+    },
+    {
+      "source": "/api/projects/:id",
+      "destination": "/api/projects?id=:id"
+    },
+    {
+      "source": "/api/sketches/:id",
+      "destination": "/api/sketches?id=:id"
+    },
+    {
       "source": "/api/auth/:path*",
       "destination": "/api/auth"
     },

@@ -198,9 +198,9 @@ describe('System Integration Tests — Backend Connectivity', () => {
       const { verifyAuth } = await import('../../api/_lib/auth.js');
       (verifyAuth as any).mockResolvedValue({ userId: TEST_USER_ID, error: null, user: { name: 'systest', email: TEST_USER_EMAIL } });
 
-      const { default: handler } = await import('../../api/sketches/[id].js');
+      const { default: handler } = await import('../../api/sketches/index.js');
       const res = mockRes();
-      await handler({ method: 'GET', url: `/api/sketches/${sketchId}`, headers: {} } as any, res);
+      await handler({ method: 'GET', url: `/api/sketches/${sketchId}`, query: { id: sketchId }, headers: {} } as any, res);
 
       expect(res.status).toHaveBeenCalledWith(200);
       const data = jsonBody(res);
@@ -235,9 +235,9 @@ describe('System Integration Tests — Backend Connectivity', () => {
         edges: updatedEdges,
       });
 
-      const { default: handler } = await import('../../api/sketches/[id].js');
+      const { default: handler } = await import('../../api/sketches/index.js');
       const res = mockRes();
-      await handler({ method: 'PUT', url: `/api/sketches/${sketchId}`, headers: {} } as any, res);
+      await handler({ method: 'PUT', url: `/api/sketches/${sketchId}`, query: { id: sketchId }, headers: {} } as any, res);
 
       expect(res.status).toHaveBeenCalledWith(200);
       const data = jsonBody(res);
@@ -300,9 +300,9 @@ describe('System Integration Tests — Backend Connectivity', () => {
       const { verifyAuth } = await import('../../api/_lib/auth.js');
       (verifyAuth as any).mockResolvedValue({ userId: TEST_USER_ID, error: null });
 
-      const { default: handler } = await import('../../api/sketches/[id].js');
+      const { default: handler } = await import('../../api/sketches/index.js');
       const res = mockRes();
-      await handler({ method: 'DELETE', url: `/api/sketches/${idToDelete}`, headers: {} } as any, res);
+      await handler({ method: 'DELETE', url: `/api/sketches/${idToDelete}`, query: { id: idToDelete }, headers: {} } as any, res);
 
       expect(res.status).toHaveBeenCalledWith(200);
 
@@ -348,7 +348,7 @@ describe('System Integration Tests — Backend Connectivity', () => {
       const { verifyAuth } = await import('../../api/_lib/auth.js');
       (verifyAuth as any).mockResolvedValue({ userId: TEST_USER_ID, error: null });
 
-      const { default: handler } = await import('../../api/projects/[id].js');
+      const { default: handler } = await import('../../api/projects/index.js');
       const res = mockRes();
       await handler({
         method: 'GET',
@@ -382,7 +382,7 @@ describe('System Integration Tests — Backend Connectivity', () => {
       const { verifyAuth } = await import('../../api/_lib/auth.js');
       (verifyAuth as any).mockResolvedValue({ userId: TEST_USER_ID, error: null });
 
-      const { default: handler } = await import('../../api/projects/[id].js');
+      const { default: handler } = await import('../../api/projects/index.js');
       const res = mockRes();
       await handler({
         method: 'GET',
@@ -408,9 +408,9 @@ describe('System Integration Tests — Backend Connectivity', () => {
         projectId: testProjectId,
       });
 
-      const { default: handler } = await import('../../api/sketches/[id].js');
+      const { default: handler } = await import('../../api/sketches/index.js');
       const res = mockRes();
-      await handler({ method: 'PUT', url: `/api/sketches/${sketchId}`, headers: {} } as any, res);
+      await handler({ method: 'PUT', url: `/api/sketches/${sketchId}`, query: { id: sketchId }, headers: {} } as any, res);
 
       expect(res.status).toHaveBeenCalledWith(200);
       const data = jsonBody(res);
@@ -425,7 +425,7 @@ describe('System Integration Tests — Backend Connectivity', () => {
       const { verifyAuth } = await import('../../api/_lib/auth.js');
       (verifyAuth as any).mockResolvedValue({ userId: TEST_USER_ID, error: null });
 
-      const { default: handler } = await import('../../api/projects/[id].js');
+      const { default: handler } = await import('../../api/projects/index.js');
       const res = mockRes();
       await handler({
         method: 'GET',
@@ -445,7 +445,7 @@ describe('System Integration Tests — Backend Connectivity', () => {
       const { verifyAuth } = await import('../../api/_lib/auth.js');
       (verifyAuth as any).mockResolvedValue({ userId: TEST_USER_ID, error: null });
 
-      const { default: handler } = await import('../../api/projects/[id].js');
+      const { default: handler } = await import('../../api/projects/index.js');
       const res = mockRes();
       await handler({
         method: 'GET',
@@ -492,9 +492,9 @@ describe('System Integration Tests — Backend Connectivity', () => {
       const { verifyAuth } = await import('../../api/_lib/auth.js');
       (verifyAuth as any).mockResolvedValue({ userId: OTHER_USER_ID, error: null, user: { name: 'other', email: OTHER_USER_EMAIL } });
 
-      const { default: handler } = await import('../../api/sketches/[id].js');
+      const { default: handler } = await import('../../api/sketches/index.js');
       const res = mockRes();
-      await handler({ method: 'GET', url: `/api/sketches/${sketchId}`, headers: {} } as any, res);
+      await handler({ method: 'GET', url: `/api/sketches/${sketchId}`, query: { id: sketchId }, headers: {} } as any, res);
 
       expect(res.status).toHaveBeenCalledWith(404);
     });
@@ -506,9 +506,9 @@ describe('System Integration Tests — Backend Connectivity', () => {
       (verifyAuth as any).mockResolvedValue({ userId: OTHER_USER_ID, error: null });
       (parseBody as any).mockResolvedValue({ name: 'Hacked', nodes: [], edges: [] });
 
-      const { default: handler } = await import('../../api/sketches/[id].js');
+      const { default: handler } = await import('../../api/sketches/index.js');
       const res = mockRes();
-      await handler({ method: 'PUT', url: `/api/sketches/${sketchId}`, headers: {} } as any, res);
+      await handler({ method: 'PUT', url: `/api/sketches/${sketchId}`, query: { id: sketchId }, headers: {} } as any, res);
 
       expect(res.status).toHaveBeenCalledWith(404);
     });
@@ -519,9 +519,9 @@ describe('System Integration Tests — Backend Connectivity', () => {
       const { verifyAuth } = await import('../../api/_lib/auth.js');
       (verifyAuth as any).mockResolvedValue({ userId: OTHER_USER_ID, error: null });
 
-      const { default: handler } = await import('../../api/sketches/[id].js');
+      const { default: handler } = await import('../../api/sketches/index.js');
       const res = mockRes();
-      await handler({ method: 'DELETE', url: `/api/sketches/${sketchId}`, headers: {} } as any, res);
+      await handler({ method: 'DELETE', url: `/api/sketches/${sketchId}`, query: { id: sketchId }, headers: {} } as any, res);
 
       expect(res.status).toHaveBeenCalledWith(404);
     });
@@ -554,9 +554,9 @@ describe('System Integration Tests — Backend Connectivity', () => {
       const { verifyAuth } = await import('../../api/_lib/auth.js');
       (verifyAuth as any).mockResolvedValue({ userId: TEST_USER_ID, error: null, user: { name: 'systest', email: TEST_USER_EMAIL } });
 
-      const { default: handler } = await import('../../api/sketches/[id].js');
+      const { default: handler } = await import('../../api/sketches/index.js');
       const res = mockRes();
-      await handler({ method: 'GET', url: `/api/sketches/${sketchId}`, headers: {} } as any, res);
+      await handler({ method: 'GET', url: `/api/sketches/${sketchId}`, query: { id: sketchId }, headers: {} } as any, res);
 
       expect(res.status).toHaveBeenCalledWith(200);
       const data = jsonBody(res);
@@ -614,9 +614,9 @@ describe('System Integration Tests — Backend Connectivity', () => {
       const { verifyAuth } = await import('../../api/_lib/auth.js');
       (verifyAuth as any).mockResolvedValue({ userId: TEST_USER_ID, error: null, user: { name: 'systest', email: TEST_USER_EMAIL } });
 
-      const { default: handler } = await import('../../api/sketches/[id].js');
+      const { default: handler } = await import('../../api/sketches/index.js');
       const res = mockRes();
-      await handler({ method: 'GET', url: `/api/sketches/${sketchId}`, headers: {} } as any, res);
+      await handler({ method: 'GET', url: `/api/sketches/${sketchId}`, query: { id: sketchId }, headers: {} } as any, res);
 
       expect(res.status).toHaveBeenCalledWith(200);
       const data = jsonBody(res);
@@ -647,9 +647,9 @@ describe('System Integration Tests — Backend Connectivity', () => {
       const { verifyAuth } = await import('../../api/_lib/auth.js');
       (verifyAuth as any).mockResolvedValue({ userId: TEST_USER_ID, error: null });
 
-      const { default: handler } = await import('../../api/sketches/[id].js');
+      const { default: handler } = await import('../../api/sketches/index.js');
       const res = mockRes();
-      await handler({ method: 'GET', url: '/api/sketches/not-a-uuid', headers: {} } as any, res);
+      await handler({ method: 'GET', url: '/api/sketches/not-a-uuid', query: { id: 'not-a-uuid' }, headers: {} } as any, res);
 
       expect(res.status).toHaveBeenCalledWith(400);
     });
@@ -659,9 +659,9 @@ describe('System Integration Tests — Backend Connectivity', () => {
       const { verifyAuth } = await import('../../api/_lib/auth.js');
       (verifyAuth as any).mockResolvedValue({ userId: TEST_USER_ID, error: null, user: { name: 'systest', email: TEST_USER_EMAIL } });
 
-      const { default: handler } = await import('../../api/sketches/[id].js');
+      const { default: handler } = await import('../../api/sketches/index.js');
       const res = mockRes();
-      await handler({ method: 'GET', url: `/api/sketches/${fakeId}`, headers: {} } as any, res);
+      await handler({ method: 'GET', url: `/api/sketches/${fakeId}`, query: { id: fakeId }, headers: {} } as any, res);
 
       expect(res.status).toHaveBeenCalledWith(404);
     });
@@ -670,7 +670,7 @@ describe('System Integration Tests — Backend Connectivity', () => {
       const { verifyAuth } = await import('../../api/_lib/auth.js');
       (verifyAuth as any).mockResolvedValue({ userId: TEST_USER_ID, error: null });
 
-      const { default: handler } = await import('../../api/projects/[id].js');
+      const { default: handler } = await import('../../api/projects/index.js');
       const res = mockRes();
       await handler({
         method: 'GET',
@@ -686,7 +686,7 @@ describe('System Integration Tests — Backend Connectivity', () => {
       const { verifyAuth } = await import('../../api/_lib/auth.js');
       (verifyAuth as any).mockResolvedValue({ userId: TEST_USER_ID, error: null });
 
-      const { default: handler } = await import('../../api/projects/[id].js');
+      const { default: handler } = await import('../../api/projects/index.js');
       const res = mockRes();
       await handler({
         method: 'GET',

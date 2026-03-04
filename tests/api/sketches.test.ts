@@ -149,9 +149,9 @@ describe('Sketches API Integration Tests', () => {
       (verifyAuth as any).mockResolvedValue({ userId: TEST_USER_ID, error: null });
       (parseBody as any).mockResolvedValue({ ...validSketch, name: 'Updated Name' });
 
-      const { default: handler } = await import('../../api/sketches/[id].js');
+      const { default: handler } = await import('../../api/sketches/index.js');
       const res = mockRes();
-      await handler({ method: 'PUT', url: `/api/sketches/${testSketchId}`, headers: {} } as any, res);
+      await handler({ method: 'PUT', url: `/api/sketches/${testSketchId}`, query: { id: testSketchId }, headers: {} } as any, res);
 
       expect(res.status).toHaveBeenCalledWith(200);
       const data = res.json.mock.calls[0][0];
@@ -168,9 +168,9 @@ describe('Sketches API Integration Tests', () => {
       (verifyAuth as any).mockResolvedValue({ userId: TEST_USER_ID, error: null });
       (parseBody as any).mockResolvedValue(validSketch);
 
-      const { default: handler } = await import('../../api/sketches/[id].js');
+      const { default: handler } = await import('../../api/sketches/index.js');
       const res = mockRes();
-      await handler({ method: 'PUT', url: `/api/sketches/${fakeId}`, headers: {} } as any, res);
+      await handler({ method: 'PUT', url: `/api/sketches/${fakeId}`, query: { id: fakeId }, headers: {} } as any, res);
 
       expect(res.status).toHaveBeenCalledWith(404);
     });
@@ -180,9 +180,9 @@ describe('Sketches API Integration Tests', () => {
       (verifyAuth as any).mockResolvedValue({ userId: OTHER_USER_ID, error: null });
       (parseBody as any).mockResolvedValue({ ...validSketch, name: 'Hacked Name' });
 
-      const { default: handler } = await import('../../api/sketches/[id].js');
+      const { default: handler } = await import('../../api/sketches/index.js');
       const res = mockRes();
-      await handler({ method: 'PUT', url: `/api/sketches/${testSketchId}`, headers: {} } as any, res);
+      await handler({ method: 'PUT', url: `/api/sketches/${testSketchId}`, query: { id: testSketchId }, headers: {} } as any, res);
 
       expect(res.status).toHaveBeenCalledWith(404); // updateSketch returns null if not found for user
     });
@@ -199,9 +199,9 @@ describe('Sketches API Integration Tests', () => {
       `;
       const idToDelete = result.rows[0].id;
 
-      const { default: handler } = await import('../../api/sketches/[id].js');
+      const { default: handler } = await import('../../api/sketches/index.js');
       const res = mockRes();
-      await handler({ method: 'DELETE', url: `/api/sketches/${idToDelete}`, headers: {} } as any, res);
+      await handler({ method: 'DELETE', url: `/api/sketches/${idToDelete}`, query: { id: idToDelete }, headers: {} } as any, res);
 
       expect(res.status).toHaveBeenCalledWith(200);
 
@@ -215,9 +215,9 @@ describe('Sketches API Integration Tests', () => {
       const { verifyAuth } = await import('../../api/_lib/auth.js');
       (verifyAuth as any).mockResolvedValue({ userId: TEST_USER_ID, error: null });
 
-      const { default: handler } = await import('../../api/sketches/[id].js');
+      const { default: handler } = await import('../../api/sketches/index.js');
       const res = mockRes();
-      await handler({ method: 'DELETE', url: `/api/sketches/${fakeId}`, headers: {} } as any, res);
+      await handler({ method: 'DELETE', url: `/api/sketches/${fakeId}`, query: { id: fakeId }, headers: {} } as any, res);
 
       expect(res.status).toHaveBeenCalledWith(404);
     });
