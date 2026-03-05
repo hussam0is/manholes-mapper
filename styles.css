@@ -4147,7 +4147,7 @@ input.floating-keyboard-active {
   border-radius: 4px;
   background: var(--color-primary-light, #e3f2fd);
   color: var(--color-primary, #2196f3);
-  margin-left: 0.4rem;
+  margin-inline-start: 0.4rem;
 }
 
 .layer-card-actions {
@@ -10923,8 +10923,8 @@ button:focus-visible,
   border-radius: 10px;
   padding: 2px 5px;
   cursor: pointer;
-  min-width: 36px;
-  min-height: 36px;
+  min-width: 44px;
+  min-height: 44px;
   transition: background 0.15s, color 0.15s;
 }
 
@@ -11125,8 +11125,8 @@ button:focus-visible,
   border-radius: 10px;
   padding: 2px 5px;
   cursor: pointer;
-  min-width: 36px;
-  min-height: 36px;
+  min-width: 44px;
+  min-height: 44px;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
