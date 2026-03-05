@@ -1,66 +1,149 @@
 # Manholes Mapper PWA
 
-A professional Progressive Web Application (PWA) for infrastructure mapping and field data collection. Built for offline-first operations with real-time canvas-based visualization.
+A professional, high-performance Progressive Web Application (PWA) for infrastructure mapping and field data collection. Built for offline-first operations with real-time canvas-based visualization and GIS-ready data export.
 
 ## Overview
 
-Manholes Mapper is a lightweight, high-performance web application designed for field workers to capture and manage infrastructure network data. The application supports offline operations, bilingual interfaces (Hebrew/English), and seamless data export for GIS integration.
+Manholes Mapper is a lightweight yet powerful tool designed for field workers to capture, manage, and visualize infrastructure network data (manholes, home connections, and drainage systems). It operates seamlessly without internet connectivity, providing a desktop-class editing experience on mobile and tablet devices.
 
 ## Key Features
 
-- **Canvas-based Graph Editor**: Interactive node-edge network visualization
-- **Offline-First Architecture**: Full functionality without internet connectivity using IndexedDB
-- **Progressive Web App**: Installable on mobile and desktop devices
-- **Bilingual Support**: Hebrew (RTL) and English (LTR) interfaces
-- **Data Export**: CSV export for ArcGIS integration, JSON export for backup/sharing
-- **Mobile Optimized**: Touch gestures, responsive design, and mobile-friendly input methods
-- **Real-time Autosave**: Automatic data persistence to prevent data loss
+- **Interactive Canvas Editor**: High-performance HTML5 Canvas rendering for node-edge network visualization.
+- **Map Layer Integration**: Background map tiles (Esri World Imagery / Esri World Street Map) with Israel TM Grid (ITM) coordinate alignment for GIS-accurate positioning.
+- **Multi-Node Modes**: Specialized support for different infrastructure types:
+  - **Manholes**: Standard network nodes.
+  - **Home Nodes**: Residential/Building connections.
+  - **Drainage Nodes**: Stormwater and surface water nodes.
+- **Offline-First Architecture**: Full functionality without internet using a hybrid IndexedDB and localStorage persistence layer.
+- **Advanced Admin Configuration**:
+  - Customize field visibility for CSV exports.
+  - Set default values for new nodes and edges.
+  - Manage selectable option lists (materials, diameters, status) with code mappings.
+  - Export/Import administrative settings as JSON.
+- **Mobile Optimized**:
+  - **Floating Numeric Keyboard**: Custom on-screen dialpad for efficient numeric entry on touch devices.
+  - **Resizable Details Drawer**: Swipeable and resizable sidebar for viewing and editing entity details.
+  - **Mobile Action Menu**: Context-aware overflow menu for small screens.
+  - **Touch Gestures**: Support for pinch-to-zoom and pan.
+- **Data Integrity & Export**:
+  - **Real-time Autosave**: Automatic background persistence to prevent data loss.
+  - **GIS Integration**: Export nodes and edges separately as CSV files optimized for ArcGIS.
+  - **Backup & Sharing**: Export/Import entire sketches as JSON.
+- **Reference Layers**: GIS data overlays for sections, survey manholes, survey pipes (with direction arrows), streets, and addresses.
+- **Google Street View**: Drag-and-drop pegman widget to open Street View at any canvas location.
+- **Multi-Tenancy**: Organizations, projects, and role-based access control (user / admin / super_admin).
+- **Sketch Locking**: Collaborative editing with 30-minute lock expiration and admin force-unlock.
+- **Intelligent Input Flow**: Context-aware form rules that hide, disable, or reset fields based on business logic.
+- **Feature Flags**: Per-user and per-organization feature toggles (CSV export, sketch export, admin settings, etc.).
+- **Bilingual Support**: Full Hebrew (RTL) and English (LTR) localization.
+- **Navigation & Search**:
+  - Hash-based routing for quick switching between workspace and settings.
+  - Top-bar search to instantly locate nodes by ID or address.
+  - Command menu for quick action access.
+  - Recenter view and edge legend for better orientation.
 
 ## Technology Stack
 
-- **Frontend**: Vanilla JavaScript (ES Modules)
-- **Build Tool**: Vite 7.x
-- **Rendering**: HTML5 Canvas API
-- **Storage**: IndexedDB with localStorage fallback
-- **Offline**: Service Worker with caching strategies
-- **Code Quality**: ESLint, Prettier
-- **Languages**: TypeScript (configuration only)
+- **Frontend**: Vanilla JavaScript (ES Modules) with a progressive migration to **React 19**.
+- **Styling**: **Tailwind CSS 4.x** for modern, responsive layouts.
+- **Build Tool**: **Vite 7.x** with stable output filenames for service worker compatibility.
+- **Rendering**: HTML5 Canvas API for the graph engine.
+- **Storage**: IndexedDB for durable storage, mirrored with localStorage for synchronous access.
+- **Offline**: Service Worker for asset caching and offline fallback.
+- **Authentication**: **Better Auth** for user authentication and session management with Neon Postgres.
+
+## Authentication (Better Auth)
+
+This project uses [Better Auth](https://better-auth.com) for user authentication, providing secure sign-in, sign-up, and session management backed by Neon Postgres.
+
+### Better Auth Integration
+
+| Component | Package | Purpose |
+| :--- | :--- | :--- |
+| Auth Library | `better-auth` | Core authentication library |
+| Client SDK | `better-auth/client` | Client-side authentication |
+| Database | `@neondatabase/serverless` | Neon Postgres for session storage |
+
+### Environment Variables
+
+| Variable | Location | Description |
+| :--- | :--- | :--- |
+| `BETTER_AUTH_SECRET` | Vercel Environment | Secret key for signing sessions |
+| `POSTGRES_URL` | Vercel Environment | Neon Postgres connection string |
+| `BETTER_AUTH_URL` | Vercel Environment | Base URL for auth endpoints (optional) |
+
+### Setup Instructions
+
+1. **Configure Database**: Ensure your Neon Postgres database is connected via Vercel Storage.
+2. **Set Secret Key**: Add `BETTER_AUTH_SECRET` to your Vercel project's environment variables:
+   ```bash
+   BETTER_AUTH_SECRET=your-secure-random-secret-here
+   ```
+3. **Database Tables**: Better Auth will automatically create the required tables (`user`, `session`, `account`, `verification`).
+
+### Authentication Features
+
+- **Hash-based Routing**: Sign-in (`#/login`) and sign-up (`#/signup`) use hash routing for PWA compatibility.
+- **Session Persistence**: Cookie-based session management with 7-day expiration.
+- **API Session Verification**: Backend routes verify sessions using Better Auth's session API.
+- **User Button**: Integrated user menu for profile management and sign-out.
 
 ## Project Structure
 
 ```
-manholes-mapper-pwa-app-updated/
+manholes-mapper/
 ├── src/                    # Application source code
-│   ├── admin/              # Admin configuration UI
-│   ├── db.js               # IndexedDB operations
-│   ├── dom/                # DOM utilities
-│   ├── features/           # Canvas rendering and drawing
-│   ├── graph/              # Graph data structures and utilities
-│   ├── i18n.js             # Internationalization
-│   ├── legacy/             # Legacy monolithic code (being modularized)
+│   ├── admin/              # Admin panel, settings, projects, input flow
+│   ├── auth/               # Better Auth client, provider, guard, permissions
+│   ├── db.js               # IndexedDB database definition
+│   ├── dom/                # DOM manipulation utilities
+│   ├── features/           # Rendering engine and drawing primitives
+│   ├── gnss/               # GNSS/Live Measure module
+│   │   ├── bluetooth-adapter.js   # Bluetooth SPP connection
+│   │   ├── wifi-adapter.js        # WiFi TCP connection
+│   │   ├── mock-adapter.js        # Mock for development
+│   │   ├── nmea-parser.js         # NMEA sentence parsing
+│   │   ├── gnss-state.js          # State management
+│   │   ├── gnss-marker.js         # Canvas marker rendering
+│   │   ├── point-capture-dialog.js # Point capture UI
+│   │   └── connection-manager.js  # Unified connection interface
+│   ├── graph/              # Graph data structures and ID utilities
+│   ├── i18n.js             # Internationalization system (Hebrew/English)
+│   ├── legacy/             # Core logic (being modularized)
 │   ├── main-entry.js       # Application entry point
-│   ├── serviceWorker/      # Service worker registration
-│   ├── state/              # State management and constants
-│   └── utils/              # Utility functions (CSV, geometry, etc.)
-├── public/                 # Static assets
-│   ├── service-worker.js   # Service worker
-│   ├── manifest.json       # PWA manifest
-│   ├── offline.html        # Offline fallback page
-│   └── *.png               # App icons and images
+│   ├── map/                # Map tiles, projections, reference layers, Street View
+│   ├── menu/               # Responsive menu system, command palette, action bar
+│   ├── serviceWorker/      # SW registration and lifecycle
+│   ├── state/              # Global state, constants, and persistence logic
+│   └── utils/              # Shared utilities (CSV, Geometry, Coordinates, UI)
+├── api/                    # Vercel serverless API routes
+│   ├── auth/               # Better Auth endpoints
+│   ├── features/           # Feature flags CRUD
+│   ├── layers/             # GIS reference layer data
+│   ├── organizations/      # Organization management
+│   ├── projects/           # Project CRUD
+│   ├── sketches/           # Sketch CRUD and locking
+│   ├── users/              # User management
+│   ├── user-role/          # Role and permissions
+│   └── _lib/               # Shared backend (db, auth, validators, rate-limit)
+├── lib/                    # Better Auth server configuration
+├── android/                # Capacitor Android project
+├── public/                 # Static assets and PWA manifest
+├── tests/                  # Vitest unit/integration + Playwright E2E tests
 ├── dist/                   # Production build output
-├── index.html              # Main HTML template
-├── styles.css              # Application styles
-├── vite.config.ts          # Vite configuration
-└── package.json            # Project dependencies
-
+├── index.html              # Main entry HTML
+├── styles.css              # Global styles and Tailwind directives
+├── capacitor.config.ts     # Capacitor configuration
+├── vite.config.ts          # Vite & Build configuration
+└── package.json            # Dependencies and scripts
 ```
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 16.x or higher
-- npm 7.x or higher
+- Node.js 24.x or higher
+- npm 10.x or higher
 
 ### Installation
 
@@ -74,8 +157,6 @@ npm install
 ```bash
 # Start development server
 npm run dev
-
-# The application will be available at http://localhost:5173
 ```
 
 ### Building for Production
@@ -88,91 +169,198 @@ npm run build
 npm run preview
 ```
 
-### Code Quality
+## Keyboard Shortcuts
 
-```bash
-# Run linter
-npm run lint
-
-# Fix linting issues automatically
-npm run lint:fix
-
-# Format code with Prettier
-npm run format
-```
+| Key | Action |
+| :--- | :--- |
+| `N` | Switch to Node mode |
+| `E` | Switch to Edge mode |
+| `+` / `=` | Zoom In |
+| `-` | Zoom Out |
+| `0` | Reset Zoom |
+| `Esc` | Cancel action or clear selection |
+| `Delete` / `Backspace` | Delete selected item |
 
 ## Deployment
 
-The application is built with a relative base path (`./`) for flexible deployment options:
+### Vercel (Production)
 
-1. Build the application: `npm run build`
-2. Deploy the `dist/` directory to your hosting platform
-3. Ensure HTTPS is enabled for service worker functionality
-4. The app will automatically register the service worker and enable offline mode
+This project is deployed on **Vercel** with automatic deployments from Git.
 
-### Deployment Platforms
+#### Project Configuration
 
-Compatible with:
-- GitHub Pages
-- Netlify
-- Vercel
-- AWS S3 + CloudFront
-- Azure Static Web Apps
-- Any static hosting service
+| Setting | Value |
+| :--- | :--- |
+| **Project Name** | `manholes-mapper` |
+| **Framework** | Vite |
+| **Node Version** | 24.x |
+| **Build Command** | `vite build` |
+| **Output Directory** | `dist` |
 
-## PWA Features
+#### Production URLs
 
-- **Installable**: Add to home screen on mobile devices
-- **Offline Support**: Full functionality without internet
-- **Auto-updates**: Service worker automatically updates the application
-- **Responsive**: Adapts to all screen sizes and orientations
-- **Performance**: Optimized caching strategies for fast load times
+| Environment | URL |
+| :--- | :--- |
+| **Production** | https://manholes-mapper.vercel.app |
+| **Preview (dev branch)** | https://manholes-mapper-git-dev-hussam0is-projects.vercel.app |
+
+#### Deployment Process
+
+1. **Automatic Deployments**: Push to `master` branch triggers production deployment; push to `dev` triggers preview deployment.
+2. **Manual Deployment**: Use Vercel CLI or dashboard to trigger deployments.
+
+```bash
+# Install Vercel CLI (if needed)
+npm i -g vercel
+
+# Deploy to preview
+vercel
+
+# Deploy to production
+vercel --prod
+```
+
+#### Vercel Configuration (`vercel.json`)
+
+```json
+{
+  "framework": "vite",
+  "devCommand": "vite --port $PORT",
+  "buildCommand": "vite build",
+  "outputDirectory": "dist"
+}
+```
+
+### Alternative Deployment
+
+The application is built with a relative base path (`./`) for flexible deployment to other platforms:
+
+1. Build: `npm run build`
+2. Deploy the `dist/` directory to any static host (GitHub Pages, Netlify, etc.).
+3. **Note**: HTTPS is required for Service Worker functionality.
 
 ## Data Management
 
-### Export Formats
+### Map Layer Integration
 
-- **CSV Export**: Node and edge data for ArcGIS/Excel analysis
-- **JSON Export**: Complete sketch backup with coordinates for import/sharing
+The application supports background map tiles with accurate coordinate alignment using the **Israel TM Grid (ITM)** projection system (EPSG:2039).
 
-### Storage
+**Features:**
+- Survey-grade coordinate transformations using proj4
+- Background tiles from Esri World Imagery and Esri World Street Map (OpenStreetMap fallback)
+- Automatic alignment of ITM coordinates with map imagery
+- Support for orthophoto and street map views
 
-- **Primary**: IndexedDB for offline-first persistence
-- **Fallback**: localStorage for compatibility
-- **Auto-save**: Configurable automatic saving
+**Usage:**
+1. Import ITM coordinates from CSV: `point_id,x,y,z`
+2. Enable map layer from the menu
+3. Map tiles automatically align with node positions
 
-## Browser Support
+**Documentation:**
+- [Complete Map Coordinate Guide](MAP_COORDINATES.md)
+- [Debugging Map Issues](MAP_DEBUGGING.md)
+- [Map Layer Fixes Summary](MAP_LAYER_FIXES.md)
 
-- Chrome/Edge 90+
-- Safari 14+
-- Firefox 88+
-- Mobile browsers with service worker support
+**Coordinate System:**
+- Primary: Israel TM Grid (EPSG:2039)
+- Valid range: X: 100,000-300,000m, Y: 350,000-800,000m
+- Accuracy: <1 meter with proj4 transformations
 
-## Development Notes
+### ArcGIS Integration
+CSV exports are designed to be imported directly into ArcGIS:
+- **Nodes CSV**: Includes coordinates, types, and custom attributes.
+- **Edges CSV**: Includes connectivity (from/to) and measurements.
 
-- Service worker only functions in production builds or over HTTPS
-- The `src/legacy/main.js` file is being progressively modularized
-- Build outputs stable filenames (`main.js`, `styles.css`) for service worker cache compatibility
-- Use the health check endpoint at `/health/` for monitoring
+### Health Monitoring
+A health check page is available at `/health/` to verify system status and PWA health.
 
-## Architecture
+## GNSS Integration (Live Measure Mode)
 
-The application follows a modular architecture with clear separation of concerns:
+The application supports live GNSS coordinate capture from Trimble R780/R780-2 receivers for survey-grade positioning.
 
-- **State Management**: Centralized in `src/state/`
-- **Data Layer**: IndexedDB operations in `src/db.js`
-- **Rendering**: Canvas rendering logic in `src/features/`
-- **Internationalization**: Translation system in `src/i18n.js`
-- **Utilities**: Reusable functions in `src/utils/`
+### Overview
 
-## Contributing
+Live Measure mode enables:
+- Real-time GNSS position display on the sketch canvas
+- Survey point capture and assignment to nodes
+- Automatic edge creation between captured points
+- RTK fix quality and accuracy indicators
 
-When adding new features:
-1. Follow the existing code style (ESLint/Prettier)
-2. Add translations for both Hebrew and English
-3. Update relevant documentation
-4. Test offline functionality
-5. Ensure mobile compatibility
+### Supported Connection Methods
+
+| Method | Platform | Description |
+| :--- | :--- | :--- |
+| Bluetooth SPP | Android | Bluetooth Classic Serial Port Profile connection |
+| WiFi TCP | Android | TCP connection over R780's WiFi hotspot |
+
+**Note**: The GNSS features require building as a native Android app using Capacitor, as browsers cannot access Bluetooth SPP or raw TCP sockets.
+
+### Trimble R780 Configuration
+
+1. **Enable NMEA Output**: Configure the R780 to output NMEA sentences (GGA and RMC at minimum).
+2. **Bluetooth Pairing**: Pair the R780 with your Android device in system Bluetooth settings.
+3. **WiFi Mode**: Alternatively, connect your device to the R780's WiFi hotspot (default IP: 192.168.1.10, port: 5017).
+
+### Building the Android App
+
+```bash
+# Build the web assets
+npm run build
+
+# Sync with Android platform
+npm run build:android
+
+# Open in Android Studio
+npm run open:android
+```
+
+### Installing Capacitor Plugins
+
+For Bluetooth SPP support:
+```bash
+npm install @niceprogrammer/capacitor-bluetooth-serial
+npx cap sync android
+```
+
+For WiFi TCP support:
+```bash
+npm install capacitor-tcp-socket
+npx cap sync android
+```
+
+### Using Live Measure Mode
+
+1. **Enable Live Measure**: Tap the GPS icon in the canvas toolbar.
+2. **Connect to R780**: Tap "Connect to R780" and select your paired device (or enter WiFi IP).
+3. **Monitor Position**: The status pill shows fix quality, satellite count, and HDOP.
+4. **Capture Points**: 
+   - Position yourself at a manhole.
+   - Tap "Capture Point".
+   - Select the node to assign coordinates to.
+   - Optionally create an edge from the previous point.
+5. **Verify**: Captured coordinates are stored and the node is repositioned on the canvas.
+
+### GNSS Status Indicators
+
+| Fix Quality | Color | Description |
+| :--- | :--- | :--- |
+| No Fix | Red | No GNSS fix available |
+| GPS | Amber | Standalone GPS fix |
+| DGPS | Amber | Differential GPS fix |
+| RTK Float | Blue | RTK float solution |
+| RTK Fixed | Green | RTK fixed solution (highest accuracy) |
+
+### Development Testing
+
+In web browser mode (without Capacitor), the app uses a mock GNSS adapter for testing:
+
+```javascript
+// Connect to mock GNSS
+await window.gnssConnection.connectMock();
+
+// Simulate movement
+window.gnssConnection.setMockPosition(32.0853, 34.7818);
+```
 
 ## License
 
@@ -180,5 +368,4 @@ Proprietary - All rights reserved
 
 ---
 
-**Built with modern web technologies for professional infrastructure mapping**
-
+**Built with modern web technologies for professional infrastructure mapping.**

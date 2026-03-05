@@ -6,7 +6,7 @@
 export function initResizableDrawer() {
   const sidebar = document.getElementById('sidebar');
   const dragHandle = document.querySelector('.sidebar-drag-handle');
-  
+
   if (!sidebar || !dragHandle) return;
 
   let isResizing = false;
@@ -15,11 +15,21 @@ export function initResizableDrawer() {
   const minHeight = 150; // Minimum height in pixels
   const maxHeightVh = 85; // Maximum height as percentage of viewport
 
+  /** Detect landscape side-panel mode (drawer becomes a side panel, not a bottom sheet) */
+  function isLandscapeSidePanel() {
+    return window.innerHeight <= 450
+      && window.innerWidth <= 900
+      && window.matchMedia('(orientation: landscape)').matches;
+  }
+
   function getMaxHeight() {
     return (window.innerHeight * maxHeightVh) / 100;
   }
 
   function startResize(e) {
+    // In landscape side-panel mode, resizing is disabled (CSS hides the handle,
+    // but guard here in case the event fires before repaint)
+    if (isLandscapeSidePanel()) return;
     isResizing = true;
     startY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
     
@@ -72,24 +82,50 @@ export function initResizableDrawer() {
 
   function stopResize() {
     if (!isResizing) return;
-    
+
     isResizing = false;
-    
+
     // Re-enable transitions
     sidebar.style.transition = '';
-    
+
     // Remove resizing class
     sidebar.classList.remove('resizing');
-    
+
     // Re-enable text selection
     document.body.style.userSelect = '';
-    
+
+    // Snap behavior: close if below 30%, snap to default if below 50%
+    const currentHeight = sidebar.offsetHeight;
+    const defaultHeight = window.innerWidth <= 600
+      ? (window.innerHeight * 0.4)  // 40vh default on mobile
+      : 400;
+    if (currentHeight < defaultHeight * 0.3) {
+      // Snap-to-close: user dragged below 30% of default
+      sidebar.classList.remove('open');
+      document.body.classList.remove('drawer-open');
+      sidebar.style.height = '';
+      sidebar.style.maxHeight = '';
+      updateDrawerHeightVariable(0);
+      return;
+    }
+    if (currentHeight < defaultHeight * 0.5) {
+      // Snap-to-default: user dragged between 30%-50%, restore default height
+      const snapHeight = defaultHeight;
+      sidebar.style.height = `${snapHeight}px`;
+      if (window.innerWidth <= 600) {
+        sidebar.style.maxHeight = `${snapHeight}px`;
+      }
+      updateDrawerHeightVariable(snapHeight);
+      try { localStorage.setItem('sidebarHeight', snapHeight.toString()); } catch (_e) { /* ignore */ }
+      return;
+    }
+
     // Store the height preference in localStorage and update CSS variable
     try {
       const height = sidebar.offsetHeight;
       localStorage.setItem('sidebarHeight', height.toString());
       updateDrawerHeightVariable(height);
-    } catch (e) {
+    } catch (_e) {
       // Ignore localStorage errors
     }
   }
@@ -117,7 +153,7 @@ export function initResizableDrawer() {
         updateDrawerHeightVariable(height);
       }
     }
-  } catch (e) {
+  } catch (_e) {
     // Ignore localStorage errors
   }
   
@@ -131,6 +167,12 @@ export function initResizableDrawer() {
     mutations.forEach((mutation) => {
       if (mutation.attributeName === 'class') {
         if (sidebar.classList.contains('open')) {
+          // In landscape side-panel mode, clear any bottom-sheet height overrides
+          if (isLandscapeSidePanel()) {
+            sidebar.style.height = '';
+            sidebar.style.maxHeight = '';
+            return;
+          }
           // Restore saved height when opening
           try {
             const savedHeight = localStorage.getItem('sidebarHeight');
@@ -151,7 +193,7 @@ export function initResizableDrawer() {
                 updateDrawerHeightVariable(sidebar.offsetHeight);
               }, 50);
             }
-          } catch (e) {
+          } catch (_e) {
             // Ignore localStorage errors
             setTimeout(() => {
               updateDrawerHeightVariable(sidebar.offsetHeight);
@@ -169,9 +211,16 @@ export function initResizableDrawer() {
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(() => {
+      // In landscape side-panel mode, clear bottom-sheet inline height
+      if (isLandscapeSidePanel()) {
+        sidebar.style.height = '';
+        sidebar.style.maxHeight = '';
+        return;
+      }
+
       const currentHeight = sidebar.offsetHeight;
       const maxHeight = getMaxHeight();
-      
+
       if (currentHeight > maxHeight) {
         sidebar.style.height = `${maxHeight}px`;
         if (window.innerWidth <= 600) {

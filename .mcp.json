@@ -1,0 +1,68 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@playwright/mcp@latest"
+      ],
+      "env": {}
+    },
+    "postgres": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "${POSTGRES_URL}"
+      ],
+      "env": {}
+    },
+    "vercel": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@mistertk/vercel-mcp@latest"
+      ],
+      "env": {
+        "VERCEL_API_KEY": "${VERCEL_API_KEY}"
+      }
+    },
+    "phone-debug": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "service/cdp-mcp/src/index.js"
+      ],
+      "env": {
+        "CDP_HOST": "localhost",
+        "CDP_PORT": "9222"
+      }
+    },
+    "clickup": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "clickup-mcp-server"
+      ],
+      "env": {
+        "CLICKUP_API_TOKEN": "${CLICKUP_API_TOKEN}"
+      }
+    },
+    "figma": {
+      "type": "http",
+      "url": "https://mcp.figma.com/mcp"
+    }
+  }
+}

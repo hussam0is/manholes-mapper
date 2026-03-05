@@ -3,9 +3,61 @@
 
 export const NODE_RADIUS = 20;
 
-// Detect if user prefers dark mode
+/**
+ * Get the user's dark mode preference.
+ * Values: 'system' (default), 'light', 'dark', 'auto' (time-based)
+ */
+export function getDarkModePreference() {
+  return localStorage.getItem('dark_mode_preference') || 'system';
+}
+
+/**
+ * Set dark mode preference and apply it to the document.
+ */
+export function setDarkModePreference(pref) {
+  localStorage.setItem('dark_mode_preference', pref);
+  applyDarkMode();
+}
+
+/**
+ * Apply the dark mode preference to the document.
+ */
+export function applyDarkMode() {
+  const dark = isDarkMode();
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+}
+
+/**
+ * Detect if dark mode is active based on preference.
+ */
 export function isDarkMode() {
-  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const pref = getDarkModePreference();
+  switch (pref) {
+    case 'light': return false;
+    case 'dark': return true;
+    case 'auto': {
+      const hour = new Date().getHours();
+      return hour < 6 || hour >= 19;
+    }
+    case 'system':
+    default:
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+}
+
+/**
+ * Check if reduced blue light is enabled.
+ */
+export function isReducedBlueLightEnabled() {
+  return localStorage.getItem('reduce_blue_light') === 'true';
+}
+
+/**
+ * Toggle reduced blue light filter.
+ */
+export function setReducedBlueLight(enabled) {
+  localStorage.setItem('reduce_blue_light', String(enabled));
+  document.body.classList.toggle('reduce-blue-light', enabled);
 }
 
 // Light mode colors
@@ -24,6 +76,9 @@ const COLORS_LIGHT = {
     houseDoor: '#6d4c41',     // brown-700 (house door)
     badgeBg: '#16a34a',       // green-600 (connection badge)
     badgeIcon: '#ffffff',     // white (badge icon)
+    fillForLater: '#a855f7',  // purple-500 (for later node)
+    fillForLaterSelected: '#d8b4fe', // purple-300 (for later selected)
+    forLaterStroke: '#7c3aed', // violet-600 (for later stroke)
   },
   edge: {
     typePrimary: '#2563eb',   // blue-600
@@ -62,6 +117,9 @@ const COLORS_DARK = {
     houseDoor: '#3e2723',     // brown-900 (darkest house door for dark mode)
     badgeBg: '#22c55e',       // green-500 (brighter badge for dark mode)
     badgeIcon: '#f0fdf4',     // green-50 (light badge icon for dark mode)
+    fillForLater: '#c084fc',  // purple-400 (for later node - brighter for dark mode)
+    fillForLaterSelected: '#e9d5ff', // purple-200 (for later selected - brighter)
+    forLaterStroke: '#a78bfa', // violet-400 (for later stroke - lighter for dark mode)
   },
   edge: {
     typePrimary: '#60a5fa',   // blue-400 (lighter for dark mode)
@@ -93,6 +151,9 @@ export const COLORS = new Proxy({}, {
 });
 
 export const NODE_TYPES = ['type1', 'type2'];
+
+// Node type categories for the app (Manhole, Home, Drainage, Covered, ForLater)
+export const NODE_TYPE_CATEGORIES = ['Manhole', 'Home', 'Drainage', 'Covered', 'ForLater'];
 
 export const NODE_MATERIAL_OPTIONS = [
   { code: 0, label: 'לא ידוע' },
@@ -203,3 +264,144 @@ export const EDGE_ENGINEERING_STATUS = [
   { code: 3, label: 'מתוכנן' },
   { code: 4, label: 'מבוטל' },
 ];
+
+// ============================================
+// Input Flow Configuration
+// ============================================
+
+/**
+ * Input Flow Action Types:
+ * - nullify: Set field value to NULL/empty
+ * - disable: Hide field from input form
+ * - require: Make field mandatory
+ * - bulk_reset: Reset multiple fields to their defaults
+ * - fill_value: Set field to a specific value from its options
+ */
+export const INPUT_FLOW_ACTION_TYPES = ['nullify', 'disable', 'require', 'bulk_reset', 'fill_value'];
+
+/**
+ * Input Flow Operators for trigger conditions
+ */
+export const INPUT_FLOW_OPERATORS = [
+  { value: 'equals', label: 'שווה ל' },
+  { value: 'not_equals', label: 'שונה מ' },
+  { value: 'empty', label: 'ריק' },
+  { value: 'not_empty', label: 'לא ריק' },
+];
+
+/**
+ * Available fields for node input flow rules
+ */
+export const NODE_INPUT_FLOW_FIELDS = [
+  { key: 'accuracy_level', label: 'רמת דיוק', type: 'select', options: NODE_ACCURACY_OPTIONS },
+  { key: 'maintenance_status', label: 'סטטוס תחזוקה', type: 'select', options: NODE_MAINTENANCE_OPTIONS },
+  { key: 'cover_diameter', label: 'קוטר מכסה', type: 'text' },
+  { key: 'material', label: 'חומר מכסה', type: 'select', options: NODE_MATERIAL_OPTIONS },
+  { key: 'access', label: 'אמצעי גישה', type: 'select', options: NODE_ACCESS_OPTIONS },
+  { key: 'engineering_status', label: 'סטטוס הנדסי', type: 'select', options: NODE_ENGINEERING_STATUS },
+  { key: 'notes', label: 'הערות', type: 'text' },
+];
+
+/**
+ * Available fields for edge input flow rules
+ */
+export const EDGE_INPUT_FLOW_FIELDS = [
+  { key: 'edge_type', label: 'סוג קו', type: 'select', options: EDGE_TYPE_OPTIONS },
+  { key: 'material', label: 'חומר', type: 'select', options: EDGE_MATERIAL_OPTIONS },
+  { key: 'line_diameter', label: 'קוטר קו', type: 'select', options: EDGE_LINE_DIAMETERS.map(d => ({ code: d, label: d })) },
+  { key: 'engineering_status', label: 'סטטוס הנדסי', type: 'select', options: EDGE_ENGINEERING_STATUS },
+  { key: 'fall_depth', label: 'עומק נפילה', type: 'text' },
+  { key: 'tail_measurement', label: 'מדידת זנב', type: 'text' },
+  { key: 'head_measurement', label: 'מדידת ראש', type: 'text' },
+];
+
+/**
+ * Default Input Flow Configuration with predefined rules
+ * This is used as the starting template for new projects
+ */
+export const DEFAULT_INPUT_FLOW_CONFIG = {
+  version: '1.0',
+  nodes: {
+    rules: [
+      {
+        id: 'schematic_bulk_reset',
+        name: 'סכימטית - איפוס שדות',
+        description: 'כאשר רמת הדיוק היא סכימטית, מאפסים את כל השדות האחרים',
+        enabled: true,
+        trigger: {
+          field: 'accuracy_level',
+          operator: 'equals',
+          value: 1  // סכימטית
+        },
+        actions: [
+          { type: 'bulk_reset', fields: ['maintenance_status', 'cover_diameter', 'material', 'access'] }
+        ]
+      },
+      {
+        id: 'cannot_open_nullify',
+        name: 'לא ניתן לפתיחה - ביטול שדות',
+        description: 'כאשר לא ניתן לפתוח את השוחה, מבטלים חלק מהשדות',
+        enabled: true,
+        trigger: {
+          field: 'maintenance_status',
+          operator: 'equals',
+          value: 3  // לא ניתן לפתיחה
+        },
+        actions: [
+          { type: 'nullify', field: 'cover_diameter' },
+          { type: 'disable', field: 'access' },
+          { type: 'disable', field: 'material' }
+        ]
+      },
+      {
+        id: 'covered_manhole_disable',
+        name: 'שוחה מכוסה - ביטול שדות',
+        description: 'כאשר השוחה מכוסה, מבטלים חלק מהשדות',
+        enabled: true,
+        trigger: {
+          field: 'maintenance_status',
+          operator: 'equals',
+          value: 4  // שוחה מכוסה
+        },
+        actions: [
+          { type: 'nullify', field: 'cover_diameter' },
+          { type: 'disable', field: 'access' },
+          { type: 'disable', field: 'material' }
+        ]
+      },
+      {
+        id: 'sewage_no_access',
+        name: 'שוחת ביוב ללא גישה',
+        description: 'כאשר זו שוחת ביוב ללא גישה, מבטלים חלק מהשדות',
+        enabled: true,
+        trigger: {
+          field: 'maintenance_status',
+          operator: 'equals',
+          value: 5  // שוחת ביוב - ללא גישה
+        },
+        actions: [
+          { type: 'nullify', field: 'cover_diameter' },
+          { type: 'disable', field: 'access' }
+        ]
+      }
+    ]
+  },
+  edges: {
+    rules: [
+      {
+        id: 'drainage_line_defaults',
+        name: 'קו סניקה - ברירות מחדל',
+        description: 'כאשר סוג הקו הוא קו סניקה, מחילים ברירות מחדל',
+        enabled: true,
+        trigger: {
+          field: 'edge_type',
+          operator: 'equals',
+          value: 4802  // קו סניקה
+        },
+        actions: [
+          { type: 'nullify', field: 'fall_depth' }
+        ]
+      }
+    ]
+  }
+};

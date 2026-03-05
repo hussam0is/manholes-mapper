@@ -16,7 +16,7 @@
 // the network was unavailable and there was no cached response, causing
 // offline pages to break.  Increasing the version here forces browsers
 // to pick up the updated logic.
-const APP_VERSION = 'v12';
+const APP_VERSION = 'v109';
 const PRECACHE = 'graph-sketch-shell-' + APP_VERSION;
 const RUNTIME = 'graph-sketch-runtime-' + APP_VERSION;
 
@@ -39,6 +39,7 @@ const PRECACHE_ASSETS = [
   OFFLINE_URL,
   withBase('manifest.json'),
   withBase('styles.css'),
+  withBase('fonts/material-icons.woff2'),
   withBase('app_icon.png'),
   withBase('health/index.html')
 ];
@@ -106,6 +107,10 @@ self.addEventListener('fetch', (event) => {
   // to third‑party domains) fall through untouched.  Note that Google Font
   // requests are handled separately above.
   if (url.origin !== self.location.origin) return;
+
+  // Skip API requests - let the browser handle them directly so we get
+  // proper error messages and avoid returning HTML fallbacks for JSON requests.
+  if (url.pathname.startsWith(withBase('api/'))) return;
 
   // Use a network‑first strategy for navigation requests (e.g. HTML documents).
   // If the network is unavailable the cached page is served.  If the

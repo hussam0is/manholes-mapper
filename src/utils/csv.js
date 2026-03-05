@@ -62,7 +62,7 @@ function codeFor(scope, key, value, adminConfig) {
   return String(value);
 }
 
-function labelFor(scope, key, value, adminConfig) {
+function _labelFor(scope, key, value, adminConfig) {
   if (value == null || value === '') return '';
   const options = getOptionsFor(scope, key, adminConfig);
   const byCode = options.find(o => String(o.code) === String(value));
@@ -71,13 +71,32 @@ function labelFor(scope, key, value, adminConfig) {
   return byLabel ? String(byLabel.label) : String(value);
 }
 
+/**
+ * Quote a value for CSV export, with protection against formula injection.
+ * 
+ * SECURITY: Spreadsheet applications (Excel, Google Sheets) can execute formulas
+ * when cells start with =, +, -, @, \t, or \r. To prevent injection attacks,
+ * we prefix such values with a single quote which displays as literal text.
+ * 
+ * @param {any} value - The value to quote
+ * @returns {string} - Properly quoted and sanitized CSV value
+ */
 export function csvQuote(value) {
   const s = value == null ? '' : String(value);
   const normalized = s.replace(/\r?\n/g, ' ');
-  return '"' + normalized.replace(/"/g, '""') + '"';
+  
+  // SECURITY: Prevent CSV formula injection
+  // If the value starts with a formula-triggering character, prefix with single quote
+  const formulaPrefixes = ['=', '+', '-', '@', '\t', '\r'];
+  let safe = normalized;
+  if (formulaPrefixes.some(p => normalized.startsWith(p))) {
+    safe = "'" + normalized;  // Single quote prevents formula interpretation in spreadsheets
+  }
+  
+  return '"' + safe.replace(/"/g, '""') + '"';
 }
 
-export function exportNodesCsv(nodes, adminConfig, t) {
+export function exportNodesCsv(nodes, adminConfig, _t) {
   const include = adminConfig.nodes?.include || {};
   const headers = [];
   const rowFor = (n) => {
@@ -96,7 +115,18 @@ export function exportNodesCsv(nodes, adminConfig, t) {
     if (include.accuracy_level) row.push(csvQuote(codeFor('nodes', 'accuracy_level', n.accuracyLevel, adminConfig)));
     // engineering_status removed from node export
     if (include.maintenance_status) row.push(csvQuote(codeFor('nodes', 'maintenance_status', n.maintenanceStatus, adminConfig)));
-    // Custom fields removed
+    if (include.survey_x) row.push(csvQuote(n.surveyX != null ? n.surveyX.toFixed(3) : ''));
+    if (include.survey_y) row.push(csvQuote(n.surveyY != null ? n.surveyY.toFixed(3) : ''));
+    if (include.terrain_level) row.push(csvQuote(n.surveyZ != null ? n.surveyZ.toFixed(3) : ''));
+    if (include.measure_precision) row.push(csvQuote(n.measure_precision != null ? n.measure_precision.toFixed(3) : ''));
+    if (include.fix_type) {
+      const fixLabel = n.gnssFixQuality === 4 ? 'Fixed' :
+        n.gnssFixQuality === 5 ? 'Device Float' :
+        'Manual Float';
+      row.push(csvQuote(fixLabel));
+    }
+    if (include.manual_x) row.push(csvQuote(n.manual_x != null ? n.manual_x.toFixed(3) : ''));
+    if (include.manual_y) row.push(csvQuote(n.manual_y != null ? n.manual_y.toFixed(3) : ''));
     return row.join(',');
   };
   if (include.id) headers.push('ID');
@@ -106,21 +136,26 @@ export function exportNodesCsv(nodes, adminConfig, t) {
   if (include.cover_diameter) headers.push('Cover diameter');
   if (include.access) headers.push('Access');
   if (include.accuracy_level) headers.push('Accuracy Level');
-  // engineering_status removed from node headers
   if (include.maintenance_status) headers.push('Maintenance status');
-  // Custom fields removed
+  if (include.survey_x) headers.push('Survey_X');
+  if (include.survey_y) headers.push('Survey_Y');
+  if (include.terrain_level) headers.push('TL');
+  if (include.measure_precision) headers.push('Precision');
+  if (include.fix_type) headers.push('Fix_Type');
+  if (include.manual_x) headers.push('Manual_X');
+  if (include.manual_y) headers.push('Manual_Y');
   const lines = [headers.map(csvQuote).join(',')];
   for (const n of nodes) lines.push(rowFor(n));
   return lines.join('\n');
 }
 
-export function exportEdgesCsv(edges, adminConfig, t) {
+export function exportEdgesCsv(edges, adminConfig, _t) {
   const include = adminConfig.edges?.include || {};
   const headers = [];
   const rowFor = (e) => {
     const row = [];
-    if (include.from_node) row.push(csvQuote(e.tail));
-    if (include.to_node) row.push(csvQuote(e.head));
+    if (include.from_node) row.push(csvQuote(e.tail || ''));
+    if (include.to_node) row.push(csvQuote(e.head || '')); // head can be null for dangling edges
     if (include.tail_measurement) row.push(csvQuote(e.tail_measurement || ''));
     if (include.head_measurement) row.push(csvQuote(e.head_measurement || ''));
     if (include.fall_depth) row.push(csvQuote(e.fall_depth || ''));

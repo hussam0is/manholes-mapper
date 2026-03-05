@@ -1,19 +1,118 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#2563eb" />
-  <title>Offline • Manhole Mapper (ממפה שוחות)</title>
+  <title>Offline - Manhole Mapper</title>
   <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* Inline critical styles in case styles.css is not cached */
+    .offline-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding: 1rem;
+      background: var(--color-bg, #f8fafc);
+      color: var(--color-text, #0f172a);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    .offline-card {
+      text-align: center;
+      max-width: 520px;
+      padding: 2rem;
+      border-radius: 16px;
+      background: var(--color-surface, #ffffff);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+    }
+    .offline-icon {
+      font-size: 3rem;
+      color: var(--color-warning, #f59e0b);
+      margin-bottom: 0.75rem;
+    }
+    .offline-title {
+      margin: 0 0 0.5rem 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+    .offline-desc {
+      margin: 0 0 0.75rem 0;
+      color: var(--color-muted, #64748b);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+    .offline-retry-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      padding: 0.75rem 1.5rem;
+      min-height: 44px;
+      border: none;
+      border-radius: 12px;
+      background: var(--color-primary, #2563eb);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .offline-retry-btn:hover,
+    .offline-retry-btn:active {
+      background: var(--color-primary-hover, #1d4ed8);
+    }
+    .offline-retry-btn .material-icons {
+      font-size: 1.25rem;
+    }
+    /* Dark mode */
+    @media (prefers-color-scheme: dark) {
+      .offline-container {
+        background: var(--color-bg, #0b1220);
+        color: var(--color-text, #e2e8f0);
+      }
+      .offline-card {
+        background: var(--color-surface, #0f172a);
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+      }
+    }
+    /* LTR override for English */
+    [dir="ltr"] .offline-title,
+    [dir="ltr"] .offline-desc {
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
-  <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:var(--color-bg);color:var(--color-text);">
-    <div class="panel" style="text-align:center;max-width:520px;">
-      <h1 style="margin:0 0 0.5rem 0;">You’re offline</h1>
-      <p style="margin:0 0 0.75rem 0;color:var(--color-muted);">The app couldn’t reach the network. You can continue working if you already opened the app before going offline.</p>
-      <p style="margin:0;color:var(--color-muted);">Please check your connection and try again.</p>
+  <div class="offline-container">
+    <div class="offline-card">
+      <div class="offline-icon material-icons">cloud_off</div>
+      <!-- Hebrew (default) -->
+      <h1 class="offline-title" id="offlineTitle">אין חיבור לרשת</h1>
+      <p class="offline-desc" id="offlineDesc">האפליקציה לא הצליחה להתחבר לרשת. אם כבר פתחת את האפליקציה לפני כן, תוכל להמשיך לעבוד במצב לא מקוון.</p>
+      <p class="offline-desc" id="offlineHint">בדוק את החיבור שלך ונסה שוב.</p>
+      <button class="offline-retry-btn" onclick="location.reload()" id="offlineRetryBtn">
+        <span class="material-icons">refresh</span>
+        <span id="offlineRetryText">נסה שוב</span>
+      </button>
     </div>
   </div>
-  </body>
+  <script>
+    // Auto-detect language from localStorage or browser
+    (function() {
+      try {
+        var lang = localStorage.getItem('appLanguage') || (navigator.language || '').slice(0, 2);
+        if (lang === 'en') {
+          document.documentElement.lang = 'en';
+          document.documentElement.dir = 'ltr';
+          document.getElementById('offlineTitle').textContent = "You're offline";
+          document.getElementById('offlineDesc').textContent = "The app couldn't reach the network. You can continue working if you already opened the app before going offline.";
+          document.getElementById('offlineHint').textContent = 'Please check your connection and try again.';
+          document.getElementById('offlineRetryText').textContent = 'Try Again';
+        }
+      } catch(e) { /* ignore - keep Hebrew default */ }
+    })();
+  </script>
+</body>
 </html>

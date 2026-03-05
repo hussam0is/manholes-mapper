@@ -1,0 +1,91 @@
+{
+  "extractedAt": "2026-02-06T18:45:17.693907",
+  "layers": [
+    {
+      "file": "c:\\Users\\hussam\\Documents\\manholes-mapper\\scripts\\geojson_output\\sections.geojson",
+      "name": "מנות",
+      "layer_type": "sections",
+      "style": {
+        "strokeColor": "rgba(0, 100, 200, 0.6)",
+        "fillColor": "rgba(0, 100, 200, 0.08)",
+        "lineWidth": 2,
+        "lineDash": [
+          8,
+          4
+        ],
+        "labelField": "name",
+        "labelColor": "#0064c8",
+        "labelFontSize": 11
+      },
+      "feature_count": 15,
+      "size_mb": 0.04
+    },
+    {
+      "file": "c:\\Users\\hussam\\Documents\\manholes-mapper\\scripts\\geojson_output\\survey_manholes.geojson",
+      "name": "שוחות סקר נכסים",
+      "layer_type": "survey_manholes",
+      "style": {
+        "strokeColor": "rgba(180, 60, 20, 0.7)",
+        "fillColor": "rgba(180, 60, 20, 0.5)",
+        "pointRadius": 4,
+        "pointShape": "square",
+        "labelField": "OBJECTID",
+        "labelColor": "#b43c14",
+        "labelFontSize": 9
+      },
+      "feature_count": 13898,
+      "size_mb": 11.3
+    },
+    {
+      "file": "c:\\Users\\hussam\\Documents\\manholes-mapper\\scripts\\geojson_output\\survey_pipes.geojson",
+      "name": "קווי סקר נכסים",
+      "layer_type": "survey_pipes",
+      "style": {
+        "strokeColor": "rgba(60, 140, 60, 0.7)",
+        "fillColor": "rgba(60, 140, 60, 0.2)",
+        "lineWidth": 2.5,
+        "lineDash": [],
+        "labelField": null,
+        "labelColor": "#3c8c3c",
+        "labelFontSize": 9
+      },
+      "feature_count": 20698,
+      "size_mb": 16.35
+    },
+    {
+      "file": "c:\\Users\\hussam\\Documents\\manholes-mapper\\scripts\\geojson_output\\streets.geojson",
+      "name": "רחובות",
+      "layer_type": "streets",
+      "style": {
+        "strokeColor": "rgba(100, 100, 100, 0.5)",
+        "fillColor": "rgba(100, 100, 100, 0.05)",
+        "lineWidth": 1.5,
+        "lineDash": [
+          4,
+          2
+        ],
+        "labelField": "ST_NAME",
+        "labelColor": "#555",
+        "labelFontSize": 10
+      },
+      "feature_count": 2047,
+      "size_mb": 2.31
+    },
+    {
+      "file": "c:\\Users\\hussam\\Documents\\manholes-mapper\\scripts\\geojson_output\\addresses.geojson",
+      "name": "כתובות",
+      "layer_type": "addresses",
+      "style": {
+        "strokeColor": "rgba(150, 80, 150, 0.6)",
+        "fillColor": "rgba(150, 80, 150, 0.4)",
+        "pointRadius": 3,
+        "pointShape": "circle",
+        "labelField": "HOUSE_NUM",
+        "labelColor": "#965096",
+        "labelFontSize": 8
+      },
+      "feature_count": 3391,
+      "size_mb": 2.27
+    }
+  ]
+}

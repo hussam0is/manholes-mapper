@@ -16,14 +16,32 @@
  */
 
 const DB_NAME = 'graphSketchDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // Version 2: Added backups store
+
+// Cached IDBDatabase handle — reused across calls to avoid leaking connections.
+// Each openDb() previously created a new handle that was never closed, leading to
+// unbounded connection growth over long field sessions.
+let _cachedDb = null;
 
 /**
  * Open the IndexedDB database and upgrade schema if necessary.
+ * Returns a cached connection when available to prevent connection leaks.
  *
  * @returns {Promise<IDBDatabase>}
  */
 export function openDb() {
+  // Return the cached handle if it is still usable
+  if (_cachedDb) {
+    try {
+      // Accessing objectStoreNames throws if the db was force-closed
+      if (_cachedDb.objectStoreNames.length >= 0) {
+        return Promise.resolve(_cachedDb);
+      }
+    } catch {
+      _cachedDb = null;
+    }
+  }
+
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onupgradeneeded = (event) => {
@@ -40,9 +58,23 @@ export function openDb() {
       if (!db.objectStoreNames.contains('syncQueue')) {
         db.createObjectStore('syncQueue', { autoIncrement: true });
       }
+      // Create backups store for 3-hour automatic backups and daily backups
+      if (!db.objectStoreNames.contains('backups')) {
+        const backupsStore = db.createObjectStore('backups', { keyPath: 'id' });
+        backupsStore.createIndex('type', 'type', { unique: false });
+        backupsStore.createIndex('timestamp', 'timestamp', { unique: false });
+      }
     };
     request.onsuccess = () => {
-      resolve(request.result);
+      const db = request.result;
+      // If another tab triggers a version upgrade, close gracefully and
+      // invalidate the cache so the next call opens a fresh connection.
+      db.onversionchange = () => {
+        db.close();
+        _cachedDb = null;
+      };
+      _cachedDb = db;
+      resolve(db);
     };
     request.onerror = () => {
       reject(request.error);
@@ -195,5 +227,97 @@ export async function drainSyncQueue() {
       resolve(req.result || []);
     };
     req.onerror = () => reject(req.error);
+  });
+}
+
+// ============================================
+// Backup Functions
+// ============================================
+
+/**
+ * Save a backup of the current sketch.
+ * @param {object} backup - Backup object with id, type ('hourly'|'daily'), timestamp, sketchData
+ * @returns {Promise<void>}
+ */
+export async function saveBackup(backup) {
+  if (!backup || !backup.id) throw new Error('saveBackup requires a backup with an id');
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('backups', 'readwrite');
+    tx.objectStore('backups').put(backup);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+/**
+ * Get all backups, optionally filtered by type.
+ * @param {string} [type] - Optional filter: 'hourly' or 'daily'
+ * @returns {Promise<any[]>}
+ */
+export async function getBackups(type = null) {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('backups', 'readonly');
+    const store = tx.objectStore('backups');
+    let req;
+    if (type) {
+      const index = store.index('type');
+      req = index.getAll(type);
+    } else {
+      req = store.getAll();
+    }
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+/**
+ * Delete a specific backup by id.
+ * @param {string} id
+ * @returns {Promise<void>}
+ */
+export async function deleteBackup(id) {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('backups', 'readwrite');
+    tx.objectStore('backups').delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+/**
+ * Clear all backups of a specific type.
+ * @param {string} type - 'hourly' or 'daily'
+ * @returns {Promise<number>} Number of backups deleted
+ */
+export async function clearBackupsByType(type) {
+  const backups = await getBackups(type);
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('backups', 'readwrite');
+    const store = tx.objectStore('backups');
+    let deletedCount = 0;
+    for (const backup of backups) {
+      store.delete(backup.id);
+      deletedCount++;
+    }
+    tx.oncomplete = () => resolve(deletedCount);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+/**
+ * Clear all backups (both hourly and daily).
+ * @returns {Promise<void>}
+ */
+export async function clearAllBackups() {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('backups', 'readwrite');
+    tx.objectStore('backups').clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
   });
 }

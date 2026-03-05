@@ -31,14 +31,24 @@
       });
     })
     .catch((err) => {
-      console.error('Service worker registration failed:', err);
+      console.error('[SW] Service worker registration failed:', err.message);
     });
 
   let reloaded = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (reloaded) return;
     reloaded = true;
-    window.location.reload();
+    // Show a brief "App updated" toast before reloading so the user
+    // understands why the page is refreshing.
+    if (typeof window.showToast === 'function') {
+      const msg = typeof window.t === 'function'
+        ? window.t('toasts.appUpdated')
+        : 'App updated';
+      window.showToast(msg, 1500);
+      setTimeout(() => window.location.reload(), 800);
+    } else {
+      window.location.reload();
+    }
   });
 })();
 

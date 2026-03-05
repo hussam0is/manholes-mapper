@@ -42,3 +42,16 @@ lerna-debug.log*
 # Empty legacy directory (can be manually deleted)
 manholes/
 
+.vercel
+.env*.local
+
+# Claude Code local config and session state
+.claude/
+scripts/session-watchdog.sh
+
+# App design reference screenshots (local only)
+current_app_design/
+
+# Task agent runtime state
+manholes-mapper-god-agent/task-agent-state.json
+manholes-mapper-god-agent/task-agent.log
