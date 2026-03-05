@@ -10783,11 +10783,12 @@ button:focus-visible,
 }
 
 .sketch-side-panel__info {
-  flex: 1;
-  min-width: 0;
+  flex: 1 1 auto;
+  min-width: 60px;
   display: flex;
   align-items: center;
   gap: 6px;
+  overflow: hidden;
 }
 
 .sketch-side-panel__name {
@@ -10835,8 +10836,7 @@ button:focus-visible,
   flex-wrap: wrap;
   gap: 3px 6px;
   margin-inline-start: auto;
-  flex-shrink: 1;
-  min-width: 0;
+  flex-shrink: 0;
   justify-content: flex-end;
 }
 
@@ -11368,8 +11368,8 @@ button:focus-visible,
   }
 
   .sketch-side-panel__info {
-    flex: 1 1 50%;
-    min-width: 0;
+    flex: 1 1 auto;
+    min-width: 40px;
   }
 
   .sketch-side-panel__name {
@@ -11378,16 +11378,11 @@ button:focus-visible,
 
   .sketch-side-panel__stats {
     font-size: 0.6rem;
-    gap: 3px;
-    flex-shrink: 1;
-    min-width: 0;
-    overflow: hidden;
+    gap: 2px;
   }
 
   .sketch-side-panel__km {
     font-size: 0.6rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   .sketch-side-panel__issues-btn {
