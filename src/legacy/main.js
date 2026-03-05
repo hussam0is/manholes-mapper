@@ -2623,9 +2623,9 @@ function renderMissionControlHeader() {
 
   // Time-based greeting
   const hour = new Date().getHours();
-  let greetingKey = 'home.goodMorning';
-  if (hour >= 12 && hour < 17) greetingKey = 'home.goodAfternoon';
-  else if (hour >= 17) greetingKey = 'home.goodEvening';
+  let greetingKey = 'homeScreen.goodMorning';
+  if (hour >= 12 && hour < 17) greetingKey = 'homeScreen.goodAfternoon';
+  else if (hour >= 17) greetingKey = 'homeScreen.goodEvening';
   const userName = window.authGuard?.getAuthState?.()?.name || '';
   const greeting = userName ? `${t(greetingKey)}, ${escapeHtml(userName)}` : t(greetingKey);
 

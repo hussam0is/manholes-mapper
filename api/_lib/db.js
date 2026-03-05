@@ -147,34 +147,37 @@ async function initializeDatabase() {
   `;
 
   await sql`
-    DROP TRIGGER IF EXISTS update_sketches_updated_at ON sketches
-  `;
-  await sql`
-    CREATE TRIGGER update_sketches_updated_at
-        BEFORE UPDATE ON sketches
-        FOR EACH ROW
-        EXECUTE FUNCTION update_updated_at_column()
+    DO $$ BEGIN
+      DROP TRIGGER IF EXISTS update_sketches_updated_at ON sketches;
+      CREATE TRIGGER update_sketches_updated_at
+          BEFORE UPDATE ON sketches
+          FOR EACH ROW
+          EXECUTE FUNCTION update_updated_at_column();
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END $$
   `;
 
   await sql`
-    DROP TRIGGER IF EXISTS update_users_updated_at ON users
-  `;
-  await sql`
-    CREATE TRIGGER update_users_updated_at
-        BEFORE UPDATE ON users
-        FOR EACH ROW
-        EXECUTE FUNCTION update_updated_at_column()
+    DO $$ BEGIN
+      DROP TRIGGER IF EXISTS update_users_updated_at ON users;
+      CREATE TRIGGER update_users_updated_at
+          BEFORE UPDATE ON users
+          FOR EACH ROW
+          EXECUTE FUNCTION update_updated_at_column();
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END $$
   `;
 
   // Trigger for projects updated_at
   await sql`
-    DROP TRIGGER IF EXISTS update_projects_updated_at ON projects
-  `;
-  await sql`
-    CREATE TRIGGER update_projects_updated_at
-        BEFORE UPDATE ON projects
-        FOR EACH ROW
-        EXECUTE FUNCTION update_updated_at_column()
+    DO $$ BEGIN
+      DROP TRIGGER IF EXISTS update_projects_updated_at ON projects;
+      CREATE TRIGGER update_projects_updated_at
+          BEFORE UPDATE ON projects
+          FOR EACH ROW
+          EXECUTE FUNCTION update_updated_at_column();
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END $$
   `;
 
   // Project reference layers table
