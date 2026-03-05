@@ -298,6 +298,44 @@ body.cockpit-mode #main {
   font-size: 14px;
 }
 
+/* Expandable issue detail list */
+.intel-health__issue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 120px;
+  overflow-y: auto;
+  font-size: 10px;
+}
+
+.intel-health__issue-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 4px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  transition: background 0.15s;
+}
+
+.intel-health__issue-item:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.intel-health__issue-item .material-icons {
+  font-size: 12px;
+  color: var(--color-warning);
+  flex-shrink: 0;
+}
+
+.intel-health__issue-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ── Sync Status ───────────────────────────────────────────── */
 .intel-sync {
   flex-direction: row;

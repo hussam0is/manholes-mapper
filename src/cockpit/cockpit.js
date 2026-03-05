@@ -66,6 +66,7 @@ function buildCockpitDOM() {
           <span class="material-icons">warning_amber</span>
           <span id="issueCount">0</span>
         </div>
+        <div class="intel-health__issue-list" id="healthIssueList" style="display:none;"></div>
       </div>
 
       <!-- Sync Status -->

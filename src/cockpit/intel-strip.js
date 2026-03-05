@@ -29,10 +29,20 @@ export function initIntelStrip() {
     });
   }
 
-  // Issue count click cycles through issues and navigates canvas
+  // Issue count click: first click expands list, subsequent clicks cycle through issues
   const issuesEl = document.getElementById('healthIssues');
+  const issueListEl = document.getElementById('healthIssueList');
   if (issuesEl) {
     issuesEl.addEventListener('click', () => {
+      // Toggle issue list visibility
+      if (issueListEl) {
+        const isHidden = issueListEl.style.display === 'none';
+        issueListEl.style.display = isHidden ? '' : 'none';
+        if (isHidden) {
+          populateIssueList(issueListEl);
+        }
+      }
+      // Also navigate to next issue on canvas
       if (window.__issueNav?.goToNextIssue) {
         window.__issueNav.goToNextIssue();
       }
@@ -225,6 +235,56 @@ function updateSyncStatus(state) {
       pending.style.display = 'none';
     }
   }
+}
+
+/**
+ * Populate the expandable issue detail list
+ */
+function populateIssueList(listEl) {
+  if (!listEl) return;
+  const navState = window.__issueNav?.getNavState?.();
+  const issues = navState?.issues || [];
+  const t = window.t || (k => k);
+
+  if (issues.length === 0) {
+    listEl.innerHTML = '';
+    listEl.style.display = 'none';
+    return;
+  }
+
+  const issueTypeIcons = {
+    missingCoords: 'location_off',
+    missingMeasurement: 'straighten',
+    negativeGradient: 'trending_down',
+  };
+
+  const issueTypeLabels = {
+    missingCoords: t('elementIssues.missingCoords') || 'Missing coordinates',
+    missingMeasurement: t('elementIssues.missingMeasurement') || 'Missing measurement',
+    negativeGradient: 'Negative gradient',
+  };
+
+  listEl.innerHTML = issues.map((issue, i) => {
+    const icon = issueTypeIcons[issue.type] || 'warning_amber';
+    const label = issueTypeLabels[issue.type] || issue.type;
+    const target = issue.nodeLabel || issue.edgeLabel || `#${i + 1}`;
+    return `<div class="intel-health__issue-item" data-index="${i}">
+      <span class="material-icons">${icon}</span>
+      <span class="intel-health__issue-text">${window.escapeHtml ? window.escapeHtml(target) : target}: ${window.escapeHtml ? window.escapeHtml(label) : label}</span>
+    </div>`;
+  }).join('');
+
+  // Click individual issue to navigate to it
+  listEl.querySelectorAll('.intel-health__issue-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = parseInt(item.dataset.index, 10);
+      if (window.__issueNav?.setCurrentIndex) {
+        window.__issueNav.setCurrentIndex(idx);
+        window.__issueNav.navigateToCurrentIssue?.();
+      }
+    });
+  });
 }
 
 /**
