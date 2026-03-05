@@ -175,7 +175,15 @@ function updateEdgeTimestamp(edge) {
 
 // DOM references
 const canvas = document.getElementById('graphCanvas');
+if (!canvas) {
+  console.error('Fatal: #graphCanvas element not found in the DOM. The app cannot start without it.');
+  throw new Error('Canvas element #graphCanvas not found');
+}
 const ctx = canvas.getContext('2d');
+if (!ctx) {
+  console.error('Fatal: Could not get 2D rendering context from canvas.');
+  throw new Error('Canvas 2D context unavailable');
+}
 const newSketchBtn = document.getElementById('newSketchBtn');
 const homeBtn = document.getElementById('homeBtn');
 const nodeModeBtn = document.getElementById('nodeModeBtn');
