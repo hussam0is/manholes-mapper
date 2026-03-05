@@ -1123,7 +1123,17 @@ function updateUserButtonVisibility(isSignedIn) {
 }
 
 // Simple hash routing for admin screen and login
+let _routePending = false;
 function handleRoute() {
+  // Debounce: coalesce rapid calls (auth changes, hashchange, init) into one frame
+  if (_routePending) return;
+  _routePending = true;
+  requestAnimationFrame(() => {
+    _routePending = false;
+    _handleRouteImpl();
+  });
+}
+function _handleRouteImpl() {
   const hash = location.hash || '#/';
   const isAdmin = (hash === '#/admin');
   const isProjects = (hash === '#/projects');
