@@ -3089,7 +3089,7 @@ canvas {
 .wizard-check {
   position: absolute;
   bottom: -5px;
-  right: -5px;
+  inset-inline-end: -5px;
   font-size: 14px !important;
   background: var(--color-surface);
   border-radius: 50%;
@@ -4393,7 +4393,7 @@ input.floating-keyboard-active {
 .input-flow-rules-container {
   flex: 1;
   overflow-y: auto;
-  padding-right: 0.5rem;
+  padding-inline-end: 0.5rem;
 }
 
 .input-flow-empty {
