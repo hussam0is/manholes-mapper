@@ -2633,10 +2633,14 @@ function renderMissionControlHeader() {
   const streak = parseInt(localStorage.getItem('cockpit_streak') || '0', 10);
   const streakBadge = streak > 0 ? `<span class="mc-streak"><span class="material-icons">local_fire_department</span>${streak}</span>` : '';
 
-  // Session stats
+  // Session stats (delta during current session)
   const sessionStats = window.__getSessionStats?.() || {};
   const nodesPlaced = sessionStats.nodesPlaced || 0;
   const edgesDrawn = sessionStats.edgesDrawn || 0;
+
+  // Current sketch totals
+  const totalNodes = (nodes || []).length;
+  const totalEdges = (edges || []).length;
 
   // Active sketch card
   const lib = getLibrary();
@@ -2664,12 +2668,12 @@ function renderMissionControlHeader() {
     <div class="mc-stats-row">
       <div class="mc-stats-card">
         <span class="material-icons">radio_button_unchecked</span>
-        <span class="mc-stats-card__value">+${nodesPlaced}</span>
+        <span class="mc-stats-card__value">${totalNodes}${nodesPlaced > 0 ? `<span class="mc-stats-card__delta">+${nodesPlaced}</span>` : ''}</span>
         <span class="mc-stats-card__label">${t('cockpit.nodes')}</span>
       </div>
       <div class="mc-stats-card">
         <span class="material-icons">timeline</span>
-        <span class="mc-stats-card__value">+${edgesDrawn}</span>
+        <span class="mc-stats-card__value">${totalEdges}${edgesDrawn > 0 ? `<span class="mc-stats-card__delta">+${edgesDrawn}</span>` : ''}</span>
         <span class="mc-stats-card__label">${t('cockpit.edges')}</span>
       </div>
     </div>
