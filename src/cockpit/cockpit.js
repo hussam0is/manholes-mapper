@@ -176,38 +176,39 @@ function buildCockpitDOM() {
         <span class="material-icons">chevron_right</span>
       </button>
 
-      <!-- More menu popup -->
-      <div class="action-rail__more-menu" id="railMoreMenu">
-        <button class="action-rail__more-item" data-action="save">
-          <span class="material-icons">save</span>
-          <span data-i18n="save">Save</span>
-        </button>
-        <button class="action-rail__more-item" data-action="exportSketch">
-          <span class="material-icons">download</span>
-          <span data-i18n="exportSketch">Export Sketch</span>
-        </button>
-        <button class="action-rail__more-item" data-action="exportNodes">
-          <span class="material-icons">donut_large</span>
-          <span data-i18n="exportNodes">Export Nodes</span>
-        </button>
-        <button class="action-rail__more-item" data-action="exportEdges">
-          <span class="material-icons">call_split</span>
-          <span data-i18n="exportEdges">Export Edges</span>
-        </button>
-        <button class="action-rail__more-item" data-action="mySketches">
-          <span class="material-icons">description</span>
-          <span data-i18n="mySketches">My Sketches</span>
-        </button>
-        <button class="action-rail__more-item" data-action="admin">
-          <span class="material-icons">tune</span>
-          <span data-i18n="admin.manage">Admin</span>
-        </button>
-        <button class="action-rail__more-item" data-action="languageChange">
-          <span class="material-icons">language</span>
-          <span>EN / עב</span>
-        </button>
-      </div>
     </nav>
+
+    <!-- More menu popup (outside action-rail to avoid overflow clipping) -->
+    <div class="action-rail__more-menu" id="railMoreMenu">
+      <button class="action-rail__more-item" data-action="save">
+        <span class="material-icons">save</span>
+        <span data-i18n="save">Save</span>
+      </button>
+      <button class="action-rail__more-item" data-action="exportSketch">
+        <span class="material-icons">download</span>
+        <span data-i18n="exportSketch">Export Sketch</span>
+      </button>
+      <button class="action-rail__more-item" data-action="exportNodes">
+        <span class="material-icons">donut_large</span>
+        <span data-i18n="exportNodes">Export Nodes</span>
+      </button>
+      <button class="action-rail__more-item" data-action="exportEdges">
+        <span class="material-icons">call_split</span>
+        <span data-i18n="exportEdges">Export Edges</span>
+      </button>
+      <button class="action-rail__more-item" data-action="mySketches">
+        <span class="material-icons">description</span>
+        <span data-i18n="mySketches">My Sketches</span>
+      </button>
+      <button class="action-rail__more-item" data-action="admin">
+        <span class="material-icons">tune</span>
+        <span data-i18n="admin.manage">Admin</span>
+      </button>
+      <button class="action-rail__more-item" data-action="languageChange">
+        <span class="material-icons">language</span>
+        <span>EN / עב</span>
+      </button>
+    </div>
 
     <!-- Bottom progress bar -->
     <div class="cockpit__progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">

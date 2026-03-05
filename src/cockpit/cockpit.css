@@ -476,11 +476,11 @@ body.cockpit-mode.zone-a-collapsed .action-rail__btn--collapse .material-icons {
   background: #7c3aed;
 }
 
-/* More menu */
+/* More menu (sits outside action-rail to avoid overflow clipping) */
 .action-rail__more-menu {
-  position: absolute;
-  inset-inline-end: 56px;
-  bottom: 0;
+  position: fixed;
+  bottom: 8px;
+  inset-inline-end: 64px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
@@ -489,6 +489,7 @@ body.cockpit-mode.zone-a-collapsed .action-rail__btn--collapse .material-icons {
   display: none;
   min-width: 160px;
   z-index: 200;
+  pointer-events: auto;
 }
 
 .action-rail__more-menu.open {
