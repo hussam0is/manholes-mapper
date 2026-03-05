@@ -16,7 +16,7 @@ body.cockpit-mode .cockpit {
   width: 100%;
   position: absolute;
   inset: 0;
-  z-index: 100;
+  z-index: 160; /* above layers-config-btn (150) and pegman (140) so intel strip covers them */
   background: transparent;
   pointer-events: none;
 }
