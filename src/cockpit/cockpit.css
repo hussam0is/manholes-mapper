@@ -26,8 +26,12 @@ body.cockpit-mode .cockpit > * {
   pointer-events: auto;
 }
 
-/* When cockpit is active, hide original header and toolbar */
+/* When cockpit is active, hide original header, toolbar, and recall handle */
 body.cockpit-mode > header {
+  display: none !important;
+}
+
+body.cockpit-mode .header-recall-handle {
   display: none !important;
 }
 
