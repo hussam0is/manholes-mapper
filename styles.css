@@ -13529,6 +13529,7 @@ body.cockpit-mode #edgeLegend {
 .ap-hub-tabs .tab {
   white-space: nowrap;
   min-width: 56px;
+  min-height: 44px;
   flex: 1 0 auto;
   padding: 0.625rem 0.75rem;
   font-size: 0.8rem;
