@@ -10740,7 +10740,8 @@ button:focus-visible,
 .sketch-side-panel__item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 4px 8px;
   padding: 8px 10px;
   border-radius: 8px;
   cursor: pointer;
@@ -10831,9 +10832,12 @@ button:focus-visible,
 .sketch-side-panel__stats {
   display: flex;
   align-items: center;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 3px 6px;
   margin-inline-start: auto;
-  flex-shrink: 0;
+  flex-shrink: 1;
+  min-width: 0;
+  justify-content: flex-end;
 }
 
 .sketch-side-panel__km {
@@ -11358,8 +11362,14 @@ button:focus-visible,
 
   .sketch-side-panel__item {
     padding: 0.25rem 0.35rem;
-    gap: 3px;
-    min-height: 36px;
+    gap: 2px 3px;
+    min-height: 32px;
+    flex-wrap: wrap;
+  }
+
+  .sketch-side-panel__info {
+    flex: 1 1 50%;
+    min-width: 0;
   }
 
   .sketch-side-panel__name {
@@ -11369,17 +11379,37 @@ button:focus-visible,
   .sketch-side-panel__stats {
     font-size: 0.6rem;
     gap: 3px;
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .sketch-side-panel__km {
+    font-size: 0.6rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .sketch-side-panel__issues-btn {
     font-size: 0.6rem;
     padding: 0.15rem 0.35rem;
-    min-height: 28px;
+    min-height: 24px;
+  }
+
+  .sketch-side-panel__issues-btn .material-icons {
+    font-size: 11px;
   }
 
   .sketch-side-panel__totals {
     padding: 0.25rem 0.4rem;
     font-size: 0.65rem;
+    flex-wrap: wrap;
+    gap: 2px 6px;
+  }
+
+  .sketch-side-panel__totals-breakdown {
+    font-size: 0.6rem;
+    gap: 3px;
   }
 
   .sketch-side-panel-toggle {

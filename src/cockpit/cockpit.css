@@ -185,6 +185,9 @@ body.cockpit-mode #main {
   font-size: var(--text-xs);
   font-weight: var(--font-semibold);
   color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .intel-gps__accuracy {
@@ -274,6 +277,10 @@ body.cockpit-mode #main {
   color: var(--color-text-secondary);
   text-align: center;
   line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .intel-health__issues {
@@ -361,6 +368,9 @@ body.cockpit-mode #main {
 .intel-sync__label {
   font-size: 11px;
   color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .intel-sync__pending {
@@ -679,6 +689,47 @@ body.cockpit-mode.heatmap-active #canvasContainer {
 @media (orientation: landscape) and (max-height: 400px) {
   body.cockpit-mode .cockpit {
     --cockpit-zone-a: 120px;
+  }
+
+  .completion-ring {
+    width: 48px;
+    height: 48px;
+    margin: 2px auto;
+  }
+
+  .completion-ring__text {
+    font-size: 11px;
+  }
+
+  .intel-health__stats {
+    font-size: 9px;
+  }
+
+  .intel-card {
+    padding: 4px 6px;
+    gap: 3px;
+  }
+
+  .intel-card__header {
+    font-size: 9px;
+  }
+
+  .intel-gps__accuracy,
+  .intel-gps__satellites {
+    font-size: 9px;
+  }
+
+  .intel-sync {
+    padding: 4px 6px;
+    gap: 4px;
+  }
+
+  .intel-sync__icon {
+    font-size: 14px !important;
+  }
+
+  .intel-sync__label {
+    font-size: 9px;
   }
 }
 
