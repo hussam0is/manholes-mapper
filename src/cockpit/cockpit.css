@@ -17,7 +17,13 @@ body.cockpit-mode .cockpit {
   position: absolute;
   inset: 0;
   z-index: 100;
-  background: var(--color-surface);
+  background: transparent;
+  pointer-events: none;
+}
+
+/* Cockpit children must remain interactive */
+body.cockpit-mode .cockpit > * {
+  pointer-events: auto;
 }
 
 /* When cockpit is active, hide original header and toolbar */
