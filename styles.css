@@ -2898,7 +2898,7 @@ canvas {
   color: var(--color-text);
   font-size: 0.82rem;
   text-align: start;
-  min-height: 40px;
+  min-height: 44px;
   cursor: pointer;
   transition: background 0.15s;
 }
@@ -2914,6 +2914,9 @@ canvas {
 .element-issue-item__text {
   flex: 1;
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 @media (prefers-color-scheme: dark) {
   .element-issue-item {
@@ -4983,7 +4986,7 @@ input:checked + .slider:before {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  margin-left: auto;
+  margin-inline-start: auto;
 }
 
 .scale-btn {
@@ -5044,7 +5047,7 @@ input:checked + .slider:before {
 }
 
 .mobile-scale-controls .scale-adjuster {
-  margin-left: auto;
+  margin-inline-start: auto;
 }
 
 .mobile-scale-controls .scale-btn {
@@ -13188,6 +13191,11 @@ body.admin-screen .canvas-toolbar,
 body.admin-screen #edgeLegend,
 body.admin-screen .canvas-fab-toolbar,
 body.admin-screen #canvasFabToggle {
+  display: none !important;
+}
+
+/* Hide edge legend in cockpit mode (action rail replaces it) */
+body.cockpit-mode #edgeLegend {
   display: none !important;
 }
 
