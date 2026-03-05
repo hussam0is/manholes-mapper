@@ -271,6 +271,21 @@ export function updateCockpit() {
   const completion = computeSketchCompletion();
   updateIntelStrip(completion);
   updateProgressBar(completion.percentage);
+
+  // Keep issue navigation context in sync with current sketch data
+  if (window.__issueNav?.setIssueContext && completion.issueCount > 0) {
+    try {
+      const data = window.__getActiveSketchData?.();
+      if (data?.nodes && data?.edges) {
+        const currentState = window.__issueNav.getNavState?.();
+        const sketchId = data.id || data.name || 'current';
+        // Only re-init if sketch changed or issues not loaded
+        if (currentState?.sketchId !== sketchId || currentState?.total === 0) {
+          window.__issueNav.setIssueContext(sketchId, data.nodes, data.edges);
+        }
+      }
+    } catch { /* ignore */ }
+  }
 }
 
 /**

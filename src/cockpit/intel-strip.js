@@ -29,13 +29,12 @@ export function initIntelStrip() {
     });
   }
 
-  // Issue count click cycles through issues
+  // Issue count click cycles through issues and navigates canvas
   const issuesEl = document.getElementById('healthIssues');
   if (issuesEl) {
     issuesEl.addEventListener('click', () => {
-      // Trigger issue navigation if available
-      if (window.__issueNav?.next) {
-        window.__issueNav.next();
+      if (window.__issueNav?.goToNextIssue) {
+        window.__issueNav.goToNextIssue();
       }
     });
   }
