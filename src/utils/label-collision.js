@@ -235,19 +235,15 @@ export function processLabels(ctx, labels, allNodes, edgeLabels = []) {
   
   for (const label of labels) {
     // Get nearby nodes (within reasonable distance)
-    // Use distance-squared comparison to avoid expensive sqrt per node
     const searchRadius = label.nodeRadius * 5;
-    const searchRadiusSq = searchRadius * searchRadius;
-    const nearbyNodes = [];
-    for (let j = 0; j < allNodes.length; j++) {
-      const node = allNodes[j];
-      const dx = node.x - label.nodeX;
-      const dy = node.y - label.nodeY;
-      const distSq = dx * dx + dy * dy;
-      if (distSq < searchRadiusSq && distSq > 0.01) {
-        nearbyNodes.push(node); // reuse existing object, no allocation
-      }
-    }
+    const nearbyNodes = allNodes
+      .filter(node => {
+        const dx = node.x - label.nodeX;
+        const dy = node.y - label.nodeY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        return dist < searchRadius && dist > 0.1; // Exclude the label's own node
+      })
+      .map(node => ({ x: node.x, y: node.y, radius: node.radius }));
     
     // Combine placed bounds with edge label bounds
     const allBounds = [...placedBounds, ...edgeLabelBounds];

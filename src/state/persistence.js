@@ -3,21 +3,6 @@
 
 import { loadCurrentSketch, getAllSketches, saveCurrentSketch, saveSketch, deleteSketch } from '../db.js';
 
-/** Canonical localStorage key names used throughout the app. */
-export const STORAGE_KEYS = {
-  sketch: 'graphSketch',
-  library: 'graphSketch.library',
-  autosave: 'graphSketch.autosave',
-  sizeScale: 'graphSketch.sizeScale',
-  lang: 'graphSketch.lang',
-  adminConfig: 'graphSketch.adminConfig.v1',
-  fieldHistory: 'graphSketch.fieldHistory',
-  coordinateScale: 'graphSketch.coordinateScale.v1',
-  viewStretch: 'graphSketch.viewStretch.v1',
-  tsc3WsAddress: 'graphSketch.tsc3.wsAddress',
-  autoSize: 'graphSketch.autoSize',
-};
-
 export async function restoreFromIndexedDbIfNeeded() {
   try {
     const [current, library] = await Promise.all([
@@ -26,20 +11,20 @@ export async function restoreFromIndexedDbIfNeeded() {
     ]);
 
     try {
-      if (!localStorage.getItem(STORAGE_KEYS.sketch) && current) {
-        localStorage.setItem(STORAGE_KEYS.sketch, JSON.stringify(current));
+      if (!localStorage.getItem('graphSketch') && current) {
+        localStorage.setItem('graphSketch', JSON.stringify(current));
       }
     } catch (_) {}
 
     try {
-      const existing = localStorage.getItem(STORAGE_KEYS.library);
+      const existing = localStorage.getItem('graphSketch.library');
       const hasExisting = existing && existing.length > 2;
       if (!hasExisting && Array.isArray(library) && library.length > 0) {
-        localStorage.setItem(STORAGE_KEYS.library, JSON.stringify(library));
+        localStorage.setItem('graphSketch.library', JSON.stringify(library));
       }
     } catch (_) {}
   } catch (err) {
-    console.warn('[State] restoreFromIndexedDbIfNeeded failed', err.message);
+    console.warn('restoreFromIndexedDbIfNeeded failed', err);
   }
 }
 

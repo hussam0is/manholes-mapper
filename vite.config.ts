@@ -1,67 +1,56 @@
 import { defineConfig } from 'vite'
 import { existsSync } from 'node:fs'
-import react from '@vitejs/plugin-react'
 
 const hasLocalCerts = existsSync('./manholes-mapper.local+5.pem') && existsSync('./manholes-mapper.local+5-key.pem')
 
 export default defineConfig({
-  plugins: [
-    react(),
-  ],
-  base: '/', 
+  // Use a relative base so that the built index.html references JS/CSS using
+  // relative URLs.  This makes it possible to serve the app from a file
+  // system or arbitrary path (including on mobile devices) without broken
+  // absolute paths like "/assets/*.js".
+  base: './',
+  // Customise the Rollup output so that entry points and CSS use stable file
+  // names instead of hashed names.  The service worker expects to find
+  // `main.js` and `styles.css` at runtime.  Other assets can still be
+  // fingerprinted and will be cached by the runtime caching strategy.
   build: {
     rollupOptions: {
       output: {
+        // The main entry file will be emitted as `main.js` in the output
         entryFileNames: 'main.js',
+        // CSS emitted by Vite is placed into a single file called styles.css
+        // rather than using a hash.  This ensures the service worker can
+        // precache the stylesheet reliably.
         assetFileNames: (assetInfo) => {
           if (assetInfo.name && assetInfo.name.endsWith('.css')) {
             return 'styles.css';
           }
+          // Place other assets into the `assets` directory with their original
+          // names (Vite will append a content hash automatically).
           return 'assets/[name][extname]';
-        },
-        manualChunks: (id) => {
-          if (id.includes('node_modules')) {
-            if (id.includes('three')) {
-              return 'three-vendor';
-            }
-            if (id.includes('better-auth')) {
-              return 'auth';
-            }
-            if (id.includes('react') || id.includes('scheduler')) {
-              return 'react-vendor';
-            }
-            // Separate proj4 (~44KB minified) — only needed by projections.js
-            if (id.includes('proj4') || id.includes('mgrs') || id.includes('wkt-parser')) {
-              return 'proj4-vendor';
-            }
-            return 'vendor';
-          }
-          // Lazy-loaded admin modules get their own chunk
-          if (id.includes('/admin/admin-settings') || id.includes('/admin/projects-settings') || id.includes('/admin/input-flow-settings')) {
-            return 'admin';
-          }
         },
       },
     },
-    chunkSizeWarningLimit: 1000,
   },
   server: {
-    // When running under vercel dev, let Vercel control the port
-    // Otherwise default to 5173 for standalone vite dev
-    port: process.env.PORT ? parseInt(process.env.PORT) : 5173,
-    host: '127.0.0.1',
-    // Use local certs if available (from mkcert)
+    host: true,        // binds to 0.0.0.0
     https: hasLocalCerts ? {
       cert: './manholes-mapper.local+5.pem',
       key: './manholes-mapper.local+5-key.pem',
+    } : false,
+    // Use custom HMR settings only when running with local HTTPS
+    hmr: hasLocalCerts ? {
+      protocol: 'wss',
+      host: 'manholes-mapper.local',
+      port: 5173,
     } : undefined,
-    // Disable HMR when running through vercel dev (Vercel doesn't proxy WebSockets)
-    // You'll need to manually refresh after code changes when using `npm start`
-    // Use `npm run dev` for HMR if you don't need API routes
-    hmr: process.env.PORT ? false : undefined,
   },
   preview: {
     host: true,
+    https: hasLocalCerts ? {
+      cert: './manholes-mapper.local+5.pem',
+      key: './manholes-mapper.local+5-key.pem',
+    } : false
   }
 })
 

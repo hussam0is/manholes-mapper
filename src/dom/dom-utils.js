@@ -10,47 +10,9 @@ export function commitIdInputIfFocused() {
       idEl.dispatchEvent(new Event('change', { bubbles: true }));
       if (typeof idEl.blur === 'function') idEl.blur();
     }
-  } catch (_err) {}
+  } catch (_) {}
 }
 
-
-/**
- * Sync CSS variable --app-height with the actual viewport height.
- * This fixes issues on Android devices (e.g., Samsung Note 10) where 100dvh
- * doesn't calculate correctly, causing the canvas to appear only in half the screen.
- * Uses visualViewport API when available for more accurate measurements.
- */
-export function syncAppHeightVar() {
-  try {
-    const setAppHeight = () => {
-      // Use visualViewport height if available (more accurate on mobile)
-      // Otherwise fall back to window.innerHeight
-      const vh = window.visualViewport?.height ?? window.innerHeight;
-      const newVal = `${vh}px`;
-      // Only write when value actually changes to avoid unnecessary style mutations
-      if (document.documentElement.style.getPropertyValue('--app-height') !== newVal) {
-        document.documentElement.style.setProperty('--app-height', newVal);
-      }
-    };
-    
-    // Set initial value
-    setAppHeight();
-    
-    // Listen for viewport changes
-    if (window.visualViewport) {
-      // visualViewport fires resize when keyboard opens/closes, orientation changes, etc.
-      window.visualViewport.addEventListener('resize', setAppHeight);
-    }
-    // Also listen for regular resize events as a fallback
-    window.addEventListener('resize', setAppHeight);
-    // Handle orientation changes specifically (some Android browsers need this)
-    window.addEventListener('orientationchange', () => {
-      // Delay slightly to allow the browser to finish orientation transition
-      setTimeout(setAppHeight, 100);
-      setTimeout(setAppHeight, 300);
-    });
-  } catch (_err) {}
-}
 
 /**
  * Sync CSS variable --header-h with the actual header height, so overlays
@@ -90,6 +52,6 @@ export function syncHeaderHeightVar() {
     } else {
       window.addEventListener('resize', setVar);
     }
-  } catch (_err) {}
+  } catch (_) {}
 }
 
