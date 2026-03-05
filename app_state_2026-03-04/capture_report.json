@@ -1,0 +1,43 @@
+{
+  "url": "https://manholes-mapper-git-dev-hussam0is-projects.vercel.app",
+  "timestamp": "2026-03-04T14:29:58.547Z",
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 403 ()",
+    "Provider's accounts list is empty.",
+    "[GSI_LOGGER]: FedCM get() rejects with NetworkError: Error retrieving a token.",
+    "Failed to load resource: the server responded with a status of 429 ()",
+    "Access to fetch at 'https://cdn1.vercel.com/vercel4.svg' from origin 'https://vercel.com' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "Failed to load resource: net::ERR_FAILED",
+    "Access to fetch at 'https://cdn1.vercel.com/vercel2.svg' from origin 'https://vercel.com' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "Failed to load resource: net::ERR_FAILED"
+  ],
+  "networkErrors": [
+    "GET https://manholes-mapper-git-dev-hussam0is-projects.vercel.app/.well-known/vercel-user-meta - net::ERR_ABORTED",
+    "GET https://manholes-mapper-git-dev-hussam0is-projects.vercel.app/.well-known/vercel-user-meta - net::ERR_ABORTED",
+    "GET https://manholes-mapper-git-dev-hussam0is-projects.vercel.app/.well-known/vercel-user-meta - net::ERR_ABORTED",
+    "GET https://manholes-mapper-git-dev-hussam0is-projects.vercel.app/.well-known/vercel-user-meta - net::ERR_ABORTED",
+    "GET https://manholes-mapper-git-dev-hussam0is-projects.vercel.app/.well-known/vercel-user-meta - net::ERR_ABORTED",
+    "GET https://manholes-mapper-git-dev-hussam0is-projects.vercel.app/.well-known/vercel-user-meta - net::ERR_ABORTED",
+    "GET https://manholes-mapper-git-dev-hussam0is-projects.vercel.app/.well-known/vercel-user-meta - net::ERR_ABORTED",
+    "GET https://cdn1.vercel.com/vercel4.svg - net::ERR_FAILED",
+    "GET https://cdn1.vercel.com/vercel2.svg - net::ERR_FAILED"
+  ],
+  "screenshots": [
+    "15_vercel_initial.png",
+    "16_A_login_filled.png",
+    "17_A_post_login.png",
+    "18_A_home_panel.png",
+    "19_B_canvas_desktop.png",
+    "20_B_desktop_menu.png",
+    "21_C_projects_desktop.png",
+    "22_D_admin_desktop.png",
+    "23_F_english_canvas.png",
+    "24_F_dark_mode.png",
+    "25_E_mobile_login.png",
+    "26_E_mobile_post_login.png",
+    "27_E_mobile_canvas.png",
+    "28_E_mobile_menu.png",
+    "29_E_mobile_home.png"
+  ]
+}

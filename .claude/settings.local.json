@@ -42,12 +42,17 @@
       "Bash(npm install:*)",
       "Bash(npm run test:run:*)",
       "Bash(git status:*)",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "Bash(npx vercel dev --listen http://127.0.0.1:3000)",
+      "Bash(npx vercel login)",
+      "Bash(npx vercel whoami)",
+      "Bash(netstat -ano)",
+      "WebFetch(domain:manholes-mapper-git-dev-hussam0is-projects.vercel.app)",
+      "WebFetch(domain:manholes-mapper.vercel.app)",
+      "Bash(git status -u)",
+      "Bash(git add api/_lib/db.js src/legacy/main.js)",
+      "Bash(git push origin dev)"
     ]
-  },
-  "hooks": {
-    "PreToolUse": [],
-    "PostToolUse": []
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
@@ -55,5 +60,9 @@
     "postgres",
     "vercel",
     "clickup"
-  ]
+  ],
+  "hooks": {
+    "PreToolUse": [],
+    "PostToolUse": []
+  }
 }
