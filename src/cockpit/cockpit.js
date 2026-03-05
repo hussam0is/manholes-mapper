@@ -108,28 +108,28 @@ function buildCockpitDOM() {
     <!-- Zone C: Action Rail -->
     <nav class="action-rail" id="actionRail" role="toolbar" aria-label="Drawing tools">
       <!-- Mode buttons -->
-      <button class="action-rail__btn action-rail__btn--mode" data-mode="node" title="Node mode (N)" aria-label="Node mode" aria-pressed="false">
+      <button class="action-rail__btn action-rail__btn--mode" data-mode="node" data-i18n-title="cockpit.tooltipNodeMode" aria-pressed="false">
         <span class="material-icons">radio_button_unchecked</span>
       </button>
-      <button class="action-rail__btn action-rail__btn--mode" data-mode="edge" title="Edge mode (E)" aria-label="Edge mode" aria-pressed="false">
+      <button class="action-rail__btn action-rail__btn--mode" data-mode="edge" data-i18n-title="cockpit.tooltipEdgeMode" aria-pressed="false">
         <span class="material-icons">timeline</span>
       </button>
-      <button class="action-rail__btn action-rail__btn--mode" data-mode="home" title="Home node" aria-label="Home node mode" aria-pressed="false">
+      <button class="action-rail__btn action-rail__btn--mode" data-mode="home" data-i18n-title="cockpit.tooltipHomeNode" aria-pressed="false">
         <span class="material-icons">home</span>
       </button>
-      <button class="action-rail__btn action-rail__btn--mode" data-mode="drainage" title="Drainage node" aria-label="Drainage mode" aria-pressed="false">
+      <button class="action-rail__btn action-rail__btn--mode" data-mode="drainage" data-i18n-title="cockpit.tooltipDrainage" aria-pressed="false">
         <span class="material-icons">water_drop</span>
       </button>
 
       <div class="action-rail__divider"></div>
 
       <!-- GPS Capture -->
-      <button class="action-rail__btn action-rail__btn--gps" id="railGpsBtn" title="GPS Capture" aria-label="Capture GPS position">
+      <button class="action-rail__btn action-rail__btn--gps" id="railGpsBtn" data-i18n-title="cockpit.tooltipGps">
         <span class="material-icons">gps_fixed</span>
       </button>
 
       <!-- TSC3 Survey Controller -->
-      <button class="action-rail__btn action-rail__btn--tsc3" id="railTsc3Btn" title="TSC3 Controller" aria-label="Connect TSC3 survey controller">
+      <button class="action-rail__btn action-rail__btn--tsc3" id="railTsc3Btn" data-i18n-title="cockpit.tooltipTsc3">
         <span class="material-icons">precision_manufacturing</span>
         <span class="action-rail__tsc3-indicator" id="tsc3Indicator"></span>
       </button>
@@ -137,42 +137,42 @@ function buildCockpitDOM() {
       <div class="action-rail__divider"></div>
 
       <!-- Undo/Redo -->
-      <button class="action-rail__btn" id="railUndoBtn" title="Undo" aria-label="Undo" disabled>
+      <button class="action-rail__btn" id="railUndoBtn" data-i18n-title="cockpit.tooltipUndo" disabled>
         <span class="material-icons">undo</span>
       </button>
-      <button class="action-rail__btn" id="railRedoBtn" title="Redo" aria-label="Redo" disabled>
+      <button class="action-rail__btn" id="railRedoBtn" data-i18n-title="cockpit.tooltipRedo" disabled>
         <span class="material-icons">redo</span>
       </button>
 
       <div class="action-rail__divider"></div>
 
       <!-- Zoom -->
-      <button class="action-rail__btn" id="railZoomInBtn" title="Zoom in (+)" aria-label="Zoom in">
+      <button class="action-rail__btn" id="railZoomInBtn" data-i18n-title="cockpit.tooltipZoomIn">
         <span class="material-icons">add</span>
       </button>
-      <button class="action-rail__btn" id="railZoomOutBtn" title="Zoom out (-)" aria-label="Zoom out">
+      <button class="action-rail__btn" id="railZoomOutBtn" data-i18n-title="cockpit.tooltipZoomOut">
         <span class="material-icons">remove</span>
       </button>
-      <button class="action-rail__btn" id="railFitBtn" title="Fit to screen (0)" aria-label="Fit to screen">
+      <button class="action-rail__btn" id="railFitBtn" data-i18n-title="cockpit.tooltipFit">
         <span class="material-icons">fit_screen</span>
       </button>
 
       <div class="action-rail__spacer"></div>
 
       <!-- Heat map toggle -->
-      <button class="action-rail__btn action-rail__btn--heatmap" id="railHeatmapBtn" title="Heat map view" aria-label="Toggle heat map" aria-pressed="false">
+      <button class="action-rail__btn action-rail__btn--heatmap" id="railHeatmapBtn" data-i18n-title="cockpit.tooltipHeatmap" aria-pressed="false">
         <span class="material-icons">thermostat</span>
       </button>
 
       <div class="action-rail__divider"></div>
 
       <!-- More menu -->
-      <button class="action-rail__btn" id="railMoreBtn" title="More options" aria-label="More options" aria-expanded="false">
+      <button class="action-rail__btn" id="railMoreBtn" data-i18n-title="cockpit.tooltipMore" aria-expanded="false">
         <span class="material-icons">more_vert</span>
       </button>
 
       <!-- Collapse Zone A toggle -->
-      <button class="action-rail__btn action-rail__btn--collapse" id="railCollapseBtn" title="Toggle panel" aria-label="Toggle intel panel">
+      <button class="action-rail__btn action-rail__btn--collapse" id="railCollapseBtn" data-i18n-title="cockpit.tooltipCollapse">
         <span class="material-icons">chevron_right</span>
       </button>
 
@@ -238,6 +238,15 @@ function activate() {
       const translated = window.t(key);
       if (translated && translated !== key) {
         el.textContent = translated;
+      }
+    });
+    // Apply i18n tooltips (title + aria-label)
+    cockpitEl.querySelectorAll('[data-i18n-title]').forEach(el => {
+      const key = el.getAttribute('data-i18n-title');
+      const translated = window.t(key);
+      if (translated && translated !== key) {
+        el.title = translated;
+        el.setAttribute('aria-label', translated);
       }
     });
   }
