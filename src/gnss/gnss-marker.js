@@ -22,12 +22,22 @@ const FIX_COLORS = {
 let entranceProgress = 0;
 let markerVisible = false;
 
+// Cached gradient parameters to avoid recreating identical gradients every frame
+let _cachedAccGrad = null;
+let _cachedAccGradKey = '';
+let _cachedGlowGrad = null;
+let _cachedGlowGradKey = '';
+
 /**
  * Reset entrance animation (call when marker first appears)
  */
 export function resetMarkerEntrance() {
   entranceProgress = 0;
   markerVisible = false;
+  _cachedAccGrad = null;
+  _cachedAccGradKey = '';
+  _cachedGlowGrad = null;
+  _cachedGlowGradKey = '';
 }
 
 /**
@@ -113,15 +123,19 @@ export function drawGnssMarker(ctx, position, referencePoint, coordinateScale, v
       const breathFactor = 1 + Math.sin(pulsePhase) * 0.02;
       const radius = Math.min(baseRadius * breathFactor * ease, MAX_SCREEN_RADIUS_PX);
 
-      // Radial gradient fill — fades from center to edge
-      const gradient = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, radius);
-      gradient.addColorStop(0, `${markerColor}18`);   // ~9% opacity center
-      gradient.addColorStop(0.6, `${markerColor}10`);  // ~6% mid
-      gradient.addColorStop(1, `${markerColor}28`);    // ~16% at edge
+      // Cache the radial gradient — only recreate when center/radius/color changes
+      const accKey = `${Math.round(screenX)}:${Math.round(screenY)}:${Math.round(radius)}:${markerColor}`;
+      if (accKey !== _cachedAccGradKey) {
+        _cachedAccGrad = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, radius);
+        _cachedAccGrad.addColorStop(0, `${markerColor}18`);
+        _cachedAccGrad.addColorStop(0.6, `${markerColor}10`);
+        _cachedAccGrad.addColorStop(1, `${markerColor}28`);
+        _cachedAccGradKey = accKey;
+      }
 
       ctx.beginPath();
       ctx.arc(screenX, screenY, radius, 0, Math.PI * 2);
-      ctx.fillStyle = gradient;
+      ctx.fillStyle = _cachedAccGrad;
       ctx.fill();
 
       // Animated dashed border
@@ -147,12 +161,17 @@ export function drawGnssMarker(ctx, position, referencePoint, coordinateScale, v
 
   // --- 3. Soft glow halo ---
   const glowSize = (18 + Math.sin(pulsePhase) * 3) * ease;
-  const glowGradient = ctx.createRadialGradient(screenX, screenY, 4, screenX, screenY, glowSize);
-  glowGradient.addColorStop(0, `${markerColor}35`);  // ~21% center
-  glowGradient.addColorStop(1, `${markerColor}00`);  // transparent edge
+  // Cache glow gradient — only recreate when center/size/color changes
+  const glowKey = `${Math.round(screenX)}:${Math.round(screenY)}:${Math.round(glowSize)}:${markerColor}`;
+  if (glowKey !== _cachedGlowGradKey) {
+    _cachedGlowGrad = ctx.createRadialGradient(screenX, screenY, 4, screenX, screenY, glowSize);
+    _cachedGlowGrad.addColorStop(0, `${markerColor}35`);
+    _cachedGlowGrad.addColorStop(1, `${markerColor}00`);
+    _cachedGlowGradKey = glowKey;
+  }
   ctx.beginPath();
   ctx.arc(screenX, screenY, glowSize, 0, Math.PI * 2);
-  ctx.fillStyle = glowGradient;
+  ctx.fillStyle = _cachedGlowGrad;
   ctx.fill();
 
   // --- 4. Main marker dot ---

@@ -5277,7 +5277,8 @@ function drawEdge(edge) {
     ctx.strokeStyle = resolvedColor;
     let edgeLW = (2 * _contrastMul) / sizeVS;
     // Snap animation: pulse lineWidth over ANIM_EDGE_DURATION ms
-    const edgeAnimStart = _animatingEdges.get(edge.id);
+    // Skip Map lookup entirely when no animations are running (common case)
+    const edgeAnimStart = _animatingEdges.size > 0 ? _animatingEdges.get(edge.id) : undefined;
     if (edgeAnimStart != null) {
       const elapsed = performance.now() - edgeAnimStart;
       if (elapsed < ANIM_EDGE_DURATION) {
@@ -5717,7 +5718,8 @@ function drawEdgeLabels(edge) {
 function drawNode(node) {
   let radius = NODE_RADIUS * sizeScale / sizeVS;
   // Placement animation: scale pulse over ANIM_NODE_DURATION ms
-  const animStart = _animatingNodes.get(String(node.id));
+  // Skip Map lookup entirely when no animations are running (common case)
+  const animStart = _animatingNodes.size > 0 ? _animatingNodes.get(String(node.id)) : undefined;
   if (animStart != null) {
     const elapsed = performance.now() - animStart;
     if (elapsed < ANIM_NODE_DURATION) {
