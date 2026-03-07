@@ -210,6 +210,45 @@ async function initializeDatabase() {
         FOR EACH ROW
         EXECUTE FUNCTION update_updated_at_column()
   `;
+
+  // Issue comments table — stores comments on Issue-type nodes
+  await sql`
+    CREATE TABLE IF NOT EXISTS issue_comments (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      sketch_id UUID NOT NULL,
+      node_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      username TEXT,
+      content TEXT NOT NULL,
+      is_close_action BOOLEAN DEFAULT false,
+      is_reopen_action BOOLEAN DEFAULT false,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_issue_comments_sketch_node
+    ON issue_comments(sketch_id, node_id)
+  `;
+
+  // Issue notifications table — tracks unread notifications per user
+  await sql`
+    CREATE TABLE IF NOT EXISTS issue_notifications (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id TEXT NOT NULL,
+      sketch_id UUID NOT NULL,
+      node_id TEXT NOT NULL,
+      comment_id UUID REFERENCES issue_comments(id) ON DELETE CASCADE,
+      type TEXT NOT NULL,
+      read BOOLEAN DEFAULT false,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_issue_notifications_user
+    ON issue_notifications(user_id, read, created_at DESC)
+  `;
 }
 
 /**
@@ -1220,4 +1259,137 @@ export async function deleteProjectLayer(layerId) {
     RETURNING id
   `;
   return result.rows.length > 0;
+}
+
+// ============================================
+// Issue Comment Functions
+// ============================================
+
+/**
+ * Get comments for an issue node
+ */
+export async function getIssueComments(sketchId, nodeId, { limit = 100, offset = 0 } = {}) {
+  const result = await sql`
+    SELECT id, sketch_id, node_id, user_id, username, content,
+           is_close_action, is_reopen_action, created_at
+    FROM issue_comments
+    WHERE sketch_id = ${sketchId} AND node_id = ${nodeId}
+    ORDER BY created_at ASC
+    LIMIT ${limit} OFFSET ${offset}
+  `;
+  return result.rows;
+}
+
+/**
+ * Add a comment to an issue node
+ */
+export async function addIssueComment(sketchId, nodeId, userId, username, content, { isCloseAction = false, isReopenAction = false } = {}) {
+  const result = await sql`
+    INSERT INTO issue_comments (sketch_id, node_id, user_id, username, content, is_close_action, is_reopen_action)
+    VALUES (${sketchId}, ${nodeId}, ${userId}, ${username}, ${content}, ${isCloseAction}, ${isReopenAction})
+    RETURNING id, sketch_id, node_id, user_id, username, content, is_close_action, is_reopen_action, created_at
+  `;
+  return result.rows[0];
+}
+
+/**
+ * Get all unique participants (users who commented) on an issue
+ */
+export async function getIssueParticipants(sketchId, nodeId) {
+  const result = await sql`
+    SELECT DISTINCT user_id, username
+    FROM issue_comments
+    WHERE sketch_id = ${sketchId} AND node_id = ${nodeId}
+  `;
+  return result.rows;
+}
+
+// ============================================
+// Issue Notification Functions
+// ============================================
+
+/**
+ * Create notifications for all participants of an issue (except the commenter)
+ */
+export async function createIssueNotifications(sketchId, nodeId, commentId, excludeUserId, type) {
+  const participants = await getIssueParticipants(sketchId, nodeId);
+  const toNotify = participants.filter(p => p.user_id !== excludeUserId);
+
+  for (const p of toNotify) {
+    await sql`
+      INSERT INTO issue_notifications (user_id, sketch_id, node_id, comment_id, type)
+      VALUES (${p.user_id}, ${sketchId}, ${nodeId}, ${commentId}, ${type})
+    `;
+  }
+  return toNotify.length;
+}
+
+/**
+ * Get unread notifications for a user
+ */
+export async function getUnreadNotifications(userId, { limit = 50 } = {}) {
+  const result = await sql`
+    SELECT n.id, n.sketch_id, n.node_id, n.comment_id, n.type, n.created_at,
+           c.content as comment_content, c.username as commenter_username,
+           s.name as sketch_name
+    FROM issue_notifications n
+    LEFT JOIN issue_comments c ON n.comment_id = c.id
+    LEFT JOIN sketches s ON n.sketch_id = s.id
+    WHERE n.user_id = ${userId} AND n.read = false
+    ORDER BY n.created_at DESC
+    LIMIT ${limit}
+  `;
+  return result.rows;
+}
+
+/**
+ * Get count of unread notifications for a user
+ */
+export async function getUnreadNotificationCount(userId) {
+  const result = await sql`
+    SELECT COUNT(*) as count
+    FROM issue_notifications
+    WHERE user_id = ${userId} AND read = false
+  `;
+  return parseInt(result.rows[0].count, 10);
+}
+
+/**
+ * Mark notifications as read
+ */
+export async function markNotificationsRead(userId, notificationIds) {
+  if (!notificationIds || notificationIds.length === 0) return 0;
+  const result = await sql`
+    UPDATE issue_notifications
+    SET read = true
+    WHERE user_id = ${userId} AND id = ANY(${notificationIds}::uuid[])
+    RETURNING id
+  `;
+  return result.rows.length;
+}
+
+/**
+ * Mark all notifications as read for a user
+ */
+export async function markAllNotificationsRead(userId) {
+  const result = await sql`
+    UPDATE issue_notifications
+    SET read = true
+    WHERE user_id = ${userId} AND read = false
+    RETURNING id
+  `;
+  return result.rows.length;
+}
+
+/**
+ * Mark notifications for a specific issue as read
+ */
+export async function markIssueNotificationsRead(userId, sketchId, nodeId) {
+  const result = await sql`
+    UPDATE issue_notifications
+    SET read = true
+    WHERE user_id = ${userId} AND sketch_id = ${sketchId} AND node_id = ${nodeId} AND read = false
+    RETURNING id
+  `;
+  return result.rows.length;
 }

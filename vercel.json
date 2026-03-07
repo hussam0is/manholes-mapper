@@ -36,6 +36,14 @@
     {
       "source": "/api/stats/:path*",
       "destination": "/api/stats"
+    },
+    {
+      "source": "/api/issue-comments/:path*",
+      "destination": "/api/issue-comments"
+    },
+    {
+      "source": "/api/notifications/:path*",
+      "destination": "/api/notifications"
     }
   ],
   "headers": [

@@ -79,6 +79,9 @@ const COLORS_LIGHT = {
     fillForLater: '#a855f7',  // purple-500 (for later node)
     fillForLaterSelected: '#d8b4fe', // purple-300 (for later selected)
     forLaterStroke: '#7c3aed', // violet-600 (for later stroke)
+    fillIssue: '#ef4444',     // red-500 (issue node)
+    fillIssueSelected: '#fca5a5', // red-300 (issue selected)
+    issueStroke: '#dc2626',   // red-600 (issue stroke)
   },
   edge: {
     typePrimary: '#2563eb',   // blue-600
@@ -120,6 +123,9 @@ const COLORS_DARK = {
     fillForLater: '#c084fc',  // purple-400 (for later node - brighter for dark mode)
     fillForLaterSelected: '#e9d5ff', // purple-200 (for later selected - brighter)
     forLaterStroke: '#a78bfa', // violet-400 (for later stroke - lighter for dark mode)
+    fillIssue: '#f87171',     // red-400 (issue node - brighter for dark mode)
+    fillIssueSelected: '#fecaca', // red-200 (issue selected - brighter)
+    issueStroke: '#f87171',   // red-400 (issue stroke - lighter for dark mode)
   },
   edge: {
     typePrimary: '#60a5fa',   // blue-400 (lighter for dark mode)
@@ -152,8 +158,8 @@ export const COLORS = new Proxy({}, {
 
 export const NODE_TYPES = ['type1', 'type2'];
 
-// Node type categories for the app (Manhole, Home, Drainage, Covered, ForLater)
-export const NODE_TYPE_CATEGORIES = ['Manhole', 'Home', 'Drainage', 'Covered', 'ForLater'];
+// Node type categories for the app (Manhole, Home, Drainage, Covered, ForLater, Issue)
+export const NODE_TYPE_CATEGORIES = ['Manhole', 'Home', 'Drainage', 'Covered', 'ForLater', 'Issue'];
 
 export const NODE_MATERIAL_OPTIONS = [
   { code: 0, label: 'לא ידוע' },

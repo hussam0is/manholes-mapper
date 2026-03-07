@@ -197,6 +197,8 @@ export function drawNode(ctx, node, options) {
     fillColor = node.type === 'type2' ? colors.node.fillMissing : colors.node.fillDrainageComplete;
   } else if (node.nodeType === 'Covered' || node.nodeType === 'שוחה מכוסה') {
     fillColor = colors.node.fillBlocked;
+  } else if (node.nodeType === 'Issue') {
+    fillColor = node === selectedNode ? (colors.node.fillIssueSelected || colors.node.fillSelected) : (colors.node.fillIssue || '#ef4444');
   } else {
     fillColor = node.type === 'type2' ? colors.node.fillMissing : colors.node.fillDefault;
   }
