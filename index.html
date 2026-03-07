@@ -278,6 +278,11 @@
           <option value="he">עברית</option>
           <option value="en">English</option>
         </select>
+        <div id="notificationBell" class="notification-bell menu-btn menu-btn--ghost menu-btn--icon-only" title="Notifications" aria-label="Notifications" style="display:none;">
+          <span class="material-icons">notifications</span>
+          <span id="notificationBadge" class="notification-badge" style="display:none;">0</span>
+          <div id="notificationDropdown" class="notification-dropdown"></div>
+        </div>
         <button id="helpBtn" class="menu-btn menu-btn--ghost menu-btn--icon-only" title="" aria-label="Help" data-action="help" data-i18n-title="help" data-i18n-aria-label="help">
           <span class="material-icons">help_outline</span>
         </button>
@@ -683,6 +688,7 @@
           <button id="nodeModeBtn" class="btn" title="" aria-label="Manhole mode" aria-pressed="false" data-i18n-title="modeNode" data-i18n-aria-label="modeNode"></button>
           <button id="homeNodeModeBtn" class="btn" title="" aria-label="Home node mode" aria-pressed="false" data-i18n-title="modeHome" data-i18n-aria-label="modeHome"></button>
           <button id="drainageNodeModeBtn" class="btn" title="" aria-label="Drainage mode" aria-pressed="false" data-i18n-title="modeDrainage" data-i18n-aria-label="modeDrainage"></button>
+          <button id="issueNodeModeBtn" class="btn" title="" aria-label="Issue mode" aria-pressed="false" data-i18n-title="modeIssue" data-i18n-aria-label="modeIssue"></button>
           <button id="edgeModeBtn" class="btn" title="" aria-label="Edge/line mode" aria-pressed="false" data-i18n-title="modeEdge" data-i18n-aria-label="modeEdge"></button>
           <div class="canvas-toolbar-divider" role="separator" aria-hidden="true"></div>
           <button id="undoBtn" class="btn undo-btn" title="" aria-label="Undo last action" disabled data-i18n-title="undo.title" data-i18n-aria-label="undo.title">

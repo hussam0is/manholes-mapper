@@ -23,6 +23,7 @@ import { initResizableDrawer } from './utils/resizable-drawer.js';
 import { initCanvasFabToolbar } from './canvas-fab-toolbar.js';
 import { onAuthStateChange, getAuthState, updateAuthState, guardRoute, redirectIfAuthenticated, refreshSession } from './auth/auth-guard.js';
 import { initSyncService } from './auth/sync-service.js';
+import { initNotificationBell, destroyNotificationBell } from './notifications/notification-bell.js';
 import { authClient, signOutUser, getCurrentSession } from './auth/auth-client.js';
 import { initPermissionsService, getUserRole } from './auth/permissions.js';
 import { menuEvents, setupEventDelegation } from './menu/menu-events.js';
@@ -225,6 +226,14 @@ if (typeof window !== 'undefined') {
 if (typeof window !== 'undefined') {
   initSyncService();
   initPermissionsService();
+  // Initialize notification bell (polls for unread issue notifications)
+  onAuthStateChange((state) => {
+    if (state.isAuthenticated) {
+      initNotificationBell();
+    } else {
+      destroyNotificationBell();
+    }
+  });
 }
 
 // Provide a translator globally for legacy code if not yet present

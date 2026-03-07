@@ -181,6 +181,7 @@ const homeBtn = document.getElementById('homeBtn');
 const nodeModeBtn = document.getElementById('nodeModeBtn');
 const homeNodeModeBtn = document.getElementById('homeNodeModeBtn');
 const drainageNodeModeBtn = document.getElementById('drainageNodeModeBtn');
+const issueNodeModeBtn = document.getElementById('issueNodeModeBtn');
 const edgeModeBtn = document.getElementById('edgeModeBtn');
 const undoBtn = document.getElementById('undoBtn');
 const redoBtn = document.getElementById('redoBtn');
@@ -1629,6 +1630,9 @@ function applyLangToStaticUI() {
   if (drainageNodeModeBtn) {
     drainageNodeModeBtn.innerHTML = '<span class="material-icons" aria-hidden="true">water_drop</span>';
   }
+  if (issueNodeModeBtn) {
+    issueNodeModeBtn.innerHTML = '<span class="material-icons" aria-hidden="true">report_problem</span>';
+  }
   if (edgeModeBtn) {
     edgeModeBtn.innerHTML = '<span class="material-icons" aria-hidden="true">timeline</span>';
   }
@@ -1763,6 +1767,10 @@ function normalizeLegacySketch(nodes, edges) {
       node.nodeType = 'Covered';
     } else if (nt === 'קולטן' || nt === 'Drainage' || nt === 'D') {
       node.nodeType = 'Drainage';
+    } else if (nt === 'Issue' || nt === 'בעיה') {
+      node.nodeType = 'Issue';
+    } else if (nt === 'ForLater' || nt === 'למדידה מאוחרת') {
+      node.nodeType = 'ForLater';
     } else {
       node.nodeType = 'Manhole';
     }
@@ -5745,8 +5753,9 @@ function drawNode(node) {
   if (_isHeatmapFrame && !isSelected) {
     const isHome = node.nodeType === 'Home';
     const isForLater = node.nodeType === 'ForLater' || node.nodeType === 'למדידה מאוחרת';
-    if (isHome || isForLater) {
-      heatmapColor = null; // Skip heatmap for Home/ForLater nodes
+    const isIssue = node.nodeType === 'Issue';
+    if (isHome || isForLater || isIssue) {
+      heatmapColor = null; // Skip heatmap for Home/ForLater/Issue nodes
     } else {
       const hasIssue = _issueNodeIds.has(String(node.id));
       const missingCoords = node.surveyX == null || node.surveyY == null;
@@ -5928,7 +5937,7 @@ const WIZARD_NO_COVER_MAINT = new Set([10]);
  * Check if a node has incomplete wizard tabs (any visible tab not filled).
  */
 function isNodeIncomplete(node) {
-  if (node.nodeType === 'Home' || node.nodeType === 'ForLater' || node.nodeType === 'למדידה מאוחרת') return false;
+  if (node.nodeType === 'Home' || node.nodeType === 'ForLater' || node.nodeType === 'למדידה מאוחרת' || node.nodeType === 'Issue') return false;
   const visibleTabs = wizardGetVisibleTabs(node);
   return visibleTabs.some(key => !wizardIsFieldFilled(node, key));
 }
@@ -6062,6 +6071,74 @@ function buildWizardFieldHTML(node, activeKey, ruleResults, opts) {
 }
 
 /**
+ * Load issue comments from the API and render them into the comments list.
+ */
+async function _loadIssueComments(node) {
+  const listEl = document.getElementById('issueCommentsList');
+  if (!listEl || !currentSketchId) {
+    if (listEl) listEl.innerHTML = `<div class="issue-comments-empty">${t('issue.noComments')}</div>`;
+    return;
+  }
+  try {
+    const resp = await fetch(`/api/issue-comments?sketchId=${encodeURIComponent(currentSketchId)}&nodeId=${encodeURIComponent(node.id)}`);
+    if (!resp.ok) throw new Error('Failed to load comments');
+    const data = await resp.json();
+    const comments = data.comments || [];
+    if (comments.length === 0) {
+      listEl.innerHTML = `<div class="issue-comments-empty">${t('issue.noComments')}</div>`;
+      return;
+    }
+    listEl.innerHTML = comments.map(c => {
+      const date = new Date(c.created_at);
+      const timeStr = date.toLocaleString(currentLang === 'he' ? 'he-IL' : 'en-US', { dateStyle: 'short', timeStyle: 'short' });
+      const isAction = c.is_close_action || c.is_reopen_action;
+      const actionClass = isAction ? ' issue-comment-action' : '';
+      const icon = c.is_close_action ? 'check_circle' : c.is_reopen_action ? 'refresh' : '';
+      return `<div class="issue-comment${actionClass}">
+        ${icon ? `<span class="material-icons issue-comment-action-icon">${icon}</span>` : ''}
+        <div class="issue-comment-header">
+          <span class="issue-comment-author">${escapeHtml(c.username || 'Unknown')}</span>
+          <span class="issue-comment-time">${timeStr}</span>
+        </div>
+        <div class="issue-comment-content">${escapeHtml(c.content)}</div>
+      </div>`;
+    }).join('');
+    // Scroll to bottom
+    listEl.scrollTop = listEl.scrollHeight;
+  } catch (err) {
+    console.error('[Issue Comments] Load failed:', err);
+    listEl.innerHTML = `<div class="issue-comments-empty">${t('issue.loadError')}</div>`;
+  }
+}
+
+/**
+ * Send an issue comment to the API and reload the comment list.
+ */
+async function _sendIssueComment(node, inputEl, isCloseAction, isReopenAction) {
+  const content = inputEl.value?.trim();
+  if (!content || !currentSketchId) return;
+  inputEl.value = '';
+  try {
+    const resp = await fetch('/api/issue-comments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sketchId: currentSketchId,
+        nodeId: node.id,
+        content,
+        isCloseAction: !!isCloseAction,
+        isReopenAction: !!isReopenAction,
+      }),
+    });
+    if (!resp.ok) throw new Error('Failed to send comment');
+    await _loadIssueComments(node);
+  } catch (err) {
+    console.error('[Issue Comments] Send failed:', err);
+    showToast(t('issue.sendError'));
+  }
+}
+
+/**
  * Render the right-hand details panel based on the current selection.
  * Supports editing node id, note, material and edge type/material/measurements.
  */
@@ -6188,7 +6265,81 @@ function renderDetails() {
       .join('');
 
     // Node type options: A (default), B (house), C (grey)
-    if (node.nodeType === 'Home') {
+    if (node.nodeType === 'Issue') {
+      const issueStatus = node.issueStatus || 'open';
+      const isOpen = issueStatus === 'open';
+      const statusBadgeClass = isOpen ? 'chip chip-warn' : 'chip chip-ok';
+      const statusLabel = isOpen ? t('issue.statusOpen') : t('issue.statusClosed');
+      const toggleLabel = isOpen ? t('issue.closeIssue') : t('issue.reopenIssue');
+      const toggleIcon = isOpen ? 'check_circle' : 'refresh';
+
+      container.innerHTML = `
+        <div class="details-section">
+          <div class="field">
+            <label for="idInput">${t('labels.nodeId')}</label>
+            <input id="idInput" type="text" value="${escapeHtml(node.id)}" dir="auto" />
+          </div>
+        </div>
+        <div class="details-section">
+          <div class="issue-status-row">
+            <div class="${statusBadgeClass}">${statusLabel}</div>
+          </div>
+          <div class="field">
+            <label for="noteInput">${t('issue.description')}</label>
+            <textarea id="noteInput" rows="3" placeholder="${t('issue.descriptionPlaceholder')}" dir="auto">${escapeHtml(node.note || '')}</textarea>
+          </div>
+        </div>
+        <div class="details-section issue-comments-section">
+          <div class="details-section-title">${t('issue.comments')}</div>
+          <div id="issueCommentsList" class="issue-comments-list">
+            <div class="issue-comments-loading">${t('issue.loadingComments')}</div>
+          </div>
+          <div class="issue-comment-input-row">
+            <textarea id="issueCommentInput" rows="2" placeholder="${t('issue.commentPlaceholder')}" dir="auto"></textarea>
+            <button id="issueCommentSendBtn" class="btn btn-primary issue-comment-send" title="${t('issue.send')}">
+              <span class="material-icons">send</span>
+            </button>
+          </div>
+          <div class="issue-actions-row">
+            <button id="issueToggleBtn" class="btn ${isOpen ? 'btn-danger' : 'btn-success'} issue-toggle-btn">
+              <span class="material-icons">${toggleIcon}</span>
+              <span>${toggleLabel}</span>
+            </button>
+          </div>
+        </div>
+      `;
+
+      // Load comments from API
+      _loadIssueComments(node);
+
+      // Attach listeners for comment send
+      const sendBtn = container.querySelector('#issueCommentSendBtn');
+      const commentInput = container.querySelector('#issueCommentInput');
+      if (sendBtn && commentInput) {
+        sendBtn.addEventListener('click', () => _sendIssueComment(node, commentInput, false, false));
+        commentInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            _sendIssueComment(node, commentInput, false, false);
+          }
+        });
+      }
+
+      // Close/reopen toggle
+      const toggleBtn = container.querySelector('#issueToggleBtn');
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+          const wasOpen = (node.issueStatus || 'open') === 'open';
+          node.issueStatus = wasOpen ? 'closed' : 'open';
+          saveToStorage();
+          // Send a system comment for the status change
+          const statusInput = { value: wasOpen ? t('issue.closedByUser') : t('issue.reopenedByUser') };
+          _sendIssueComment(node, statusInput, wasOpen, !wasOpen);
+          scheduleDraw();
+          renderDetails();
+        });
+      }
+    } else if (node.nodeType === 'Home') {
       const dcText = t('labels.directConnection');
       container.innerHTML = `
         <div class="details-section">
@@ -6734,7 +6885,7 @@ function renderDetails() {
       const raw = e.target.value.trim();
       const oldId = String(node.id);
       if (!raw || raw === oldId) return;
-      if (node.nodeType !== 'Home' && !/^\d+$/.test(raw)) {
+      if (node.nodeType !== 'Home' && node.nodeType !== 'Issue' && !/^\d+$/.test(raw)) {
         showToast(t('alerts.nodeIdUnique'), 'error');
         idInput.value = oldId;
         return;
@@ -6745,7 +6896,7 @@ function renderDetails() {
         return;
       }
       renameNodeIdInternal(oldId, raw);
-      if (node.nodeType !== 'Home') {
+      if (node.nodeType !== 'Home' && node.nodeType !== 'Issue') {
         const used = collectUsedNumericIds();
         let nextCandidate = 1;
         while (used.has(nextCandidate)) nextCandidate += 1;
@@ -7755,6 +7906,18 @@ function pointerDown(x, y) {
     created.nodeType = 'Drainage';
     // Do not enter edit mode or open details; Node mode is for placement only
     scheduleDraw();
+  } else if (currentMode === 'issue') {
+    const created = createNode(world.x, world.y);
+    created.nodeType = 'Issue';
+    created.issueStatus = 'open';
+    created.issueComments = [];
+    selectedNode = created;
+    draw();
+    renderDetails();
+    setTimeout(() => {
+      const firstInput = detailsContainer.querySelector('textarea, input:not([type="checkbox"])');
+      if (firstInput) firstInput.focus();
+    }, 0);
   }
 }
 
@@ -8532,6 +8695,7 @@ if (nodeModeBtn) {
     nodeModeBtn.classList.add('active');
     if (homeNodeModeBtn) homeNodeModeBtn.classList.remove('active');
     if (drainageNodeModeBtn) drainageNodeModeBtn.classList.remove('active');
+    if (issueNodeModeBtn) issueNodeModeBtn.classList.remove('active');
     if (edgeModeBtn) edgeModeBtn.classList.remove('active');
     pendingEdgeTail = null;
     pendingEdgePreview = null;
@@ -8549,6 +8713,7 @@ if (homeNodeModeBtn) {
     homeNodeModeBtn.classList.add('active');
     if (nodeModeBtn) nodeModeBtn.classList.remove('active');
     if (drainageNodeModeBtn) drainageNodeModeBtn.classList.remove('active');
+    if (issueNodeModeBtn) issueNodeModeBtn.classList.remove('active');
     if (edgeModeBtn) edgeModeBtn.classList.remove('active');
     pendingEdgeTail = null;
     pendingEdgePreview = null;
@@ -8566,6 +8731,7 @@ if (drainageNodeModeBtn) {
     drainageNodeModeBtn.classList.add('active');
     if (nodeModeBtn) nodeModeBtn.classList.remove('active');
     if (homeNodeModeBtn) homeNodeModeBtn.classList.remove('active');
+    if (issueNodeModeBtn) issueNodeModeBtn.classList.remove('active');
     if (edgeModeBtn) edgeModeBtn.classList.remove('active');
     pendingEdgeTail = null;
     pendingEdgePreview = null;
@@ -8576,6 +8742,24 @@ if (drainageNodeModeBtn) {
     showToast(t('drainage'));
   });
 }
+if (issueNodeModeBtn) {
+  issueNodeModeBtn.addEventListener('click', () => {
+    commitIdInputIfFocused();
+    currentMode = 'issue';
+    issueNodeModeBtn.classList.add('active');
+    if (nodeModeBtn) nodeModeBtn.classList.remove('active');
+    if (homeNodeModeBtn) homeNodeModeBtn.classList.remove('active');
+    if (drainageNodeModeBtn) drainageNodeModeBtn.classList.remove('active');
+    if (edgeModeBtn) edgeModeBtn.classList.remove('active');
+    pendingEdgeTail = null;
+    pendingEdgePreview = null;
+    pendingEdgeStartPosition = null;
+    selectedNode = null;
+    selectedEdge = null;
+    renderDetails();
+    showToast(t('toasts.issueMode'));
+  });
+}
 if (edgeModeBtn) {
   edgeModeBtn.addEventListener('click', () => {
     commitIdInputIfFocused();
@@ -8584,6 +8768,7 @@ if (edgeModeBtn) {
     if (nodeModeBtn) nodeModeBtn.classList.remove('active');
     if (homeNodeModeBtn) homeNodeModeBtn.classList.remove('active');
     if (drainageNodeModeBtn) drainageNodeModeBtn.classList.remove('active');
+    if (issueNodeModeBtn) issueNodeModeBtn.classList.remove('active');
     pendingEdgeTail = null;
     pendingEdgePreview = null;
     pendingEdgeStartPosition = null;

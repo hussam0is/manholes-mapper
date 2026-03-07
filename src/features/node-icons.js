@@ -243,6 +243,50 @@ export function drawForLaterIcon(ctx, x, y, radius, colors, isSelected, fillColo
 }
 
 /**
+ * Draw an issue icon - circle with exclamation mark (!)
+ * Indicates a reported issue that needs attention from field workers
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} x - Center x coordinate
+ * @param {number} y - Center y coordinate
+ * @param {number} radius - Node radius
+ * @param {Object} colors - Color palette
+ * @param {boolean} isSelected - Whether the node is selected
+ * @param {string} fillColor - Fill color for the node
+ */
+export function drawIssueIcon(ctx, x, y, radius, colors, isSelected, fillColor, viewScale = 1) {
+  ctx.save();
+
+  // Draw outer circle
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.fillStyle = fillColor;
+  ctx.fill();
+  ctx.strokeStyle = colors.node.issueStroke || '#dc2626';
+  ctx.lineWidth = 2.5 / viewScale;
+  ctx.stroke();
+
+  // Draw exclamation mark (!) inside
+  const iconColor = isSelected ? '#ffffff' : 'rgba(255, 255, 255, 0.95)';
+  const lineH = radius * 0.55;
+  const lineW = radius * 0.18;
+  const dotR = radius * 0.12;
+  const topY = y - lineH * 0.55;
+
+  // Exclamation line
+  ctx.fillStyle = iconColor;
+  ctx.beginPath();
+  ctx.roundRect(x - lineW / 2, topY, lineW, lineH, lineW / 2);
+  ctx.fill();
+
+  // Exclamation dot
+  ctx.beginPath();
+  ctx.arc(x, topY + lineH + dotR * 2.2, dotR, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+/**
  * Draw a coordinate status indicator on a node
  * - Green square with white checkmark (✓) when Fixed (gnssFixQuality === 4)
  * - Yellow square with white checkmark (✓) when Device Float (gnssFixQuality === 5)
@@ -341,13 +385,17 @@ export function drawNodeIcon(ctx, node, radius, colors, selectedNode, options = 
   // Determine fill color based on node state
   let fillColor;
   if (isSelected) {
-    if (node.nodeType === 'ForLater' || node.nodeType === 'למדידה מאוחרת') {
+    if (node.nodeType === 'Issue') {
+      fillColor = colors.node.fillIssueSelected || colors.node.fillSelected;
+    } else if (node.nodeType === 'ForLater' || node.nodeType === 'למדידה מאוחרת') {
       fillColor = colors.node.fillForLaterSelected || colors.node.fillSelected;
     } else if (node.nodeType !== 'Home' && node.type === 'type2') {
       fillColor = colors.node.fillSelectedMissing;
     } else {
       fillColor = colors.node.fillSelected;
     }
+  } else if (node.nodeType === 'Issue') {
+    fillColor = colors.node.fillIssue || '#ef4444';
   } else if (node.nodeType === 'ForLater' || node.nodeType === 'למדידה מאוחרת') {
     fillColor = colors.node.fillForLater || '#a855f7';
   } else if (node.nodeType === 'Home') {
@@ -390,7 +438,9 @@ export function drawNodeIcon(ctx, node, radius, colors, selectedNode, options = 
     }
   } else {
     // Dispatch to appropriate icon drawer (detailed)
-    if (node.nodeType === 'ForLater' || node.nodeType === 'למדידה מאוחרת') {
+    if (node.nodeType === 'Issue') {
+      drawIssueIcon(ctx, node.x, node.y, radius, colors, isSelected, fillColor, viewScale);
+    } else if (node.nodeType === 'ForLater' || node.nodeType === 'למדידה מאוחרת') {
       drawForLaterIcon(ctx, node.x, node.y, radius, colors, isSelected, fillColor, viewScale);
     } else if (node.nodeType === 'Home') {
       drawHomeIcon(ctx, node.x, node.y, radius, colors, isSelected, fillColor, viewScale);
