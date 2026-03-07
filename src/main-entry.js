@@ -770,6 +770,13 @@ function initMobileMenuBehavior() {
     }
   });
 
+  // Close mobile menu on hash navigation (e.g. programmatic route changes, back button)
+  window.addEventListener('hashchange', () => {
+    if (isMobileMenuOpen) {
+      closeMobileMenu();
+    }
+  });
+
   // Close after clicking action buttons
   mobileMenu.addEventListener('click', (e) => {
     const btn = e.target.closest('.mobile-menu__btn');
