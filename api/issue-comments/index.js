@@ -14,6 +14,7 @@ import {
   getIssueComments,
   addIssueComment,
   createIssueNotifications,
+  createMentionNotifications,
   getOrCreateUser,
   markIssueNotificationsRead,
 } from '../_lib/db.js';
@@ -62,7 +63,7 @@ export default async function handler(req, res) {
 
     if (req.method === 'POST') {
       const body = await parseBody(request);
-      const { sketchId, nodeId, content, isCloseAction, isReopenAction } = body;
+      const { sketchId, nodeId, content, isCloseAction, isReopenAction, mentionedUserIds } = body;
 
       if (!sketchId || !validateUUID(sketchId)) {
         return res.status(400).json({ error: 'Valid sketchId is required' });
@@ -93,6 +94,11 @@ export default async function handler(req, res) {
       // Create notifications for all participants except the commenter
       const notificationType = isCloseAction ? 'issue_closed' : isReopenAction ? 'issue_reopened' : 'new_comment';
       await createIssueNotifications(sketchId, nodeId, comment.id, userId, notificationType);
+
+      // Create mention notifications for explicitly @mentioned users (who aren't already participants)
+      if (Array.isArray(mentionedUserIds) && mentionedUserIds.length > 0) {
+        await createMentionNotifications(sketchId, nodeId, comment.id, userId, mentionedUserIds);
+      }
 
       return res.status(201).json({ comment });
     }
