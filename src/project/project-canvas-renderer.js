@@ -15,6 +15,10 @@ import { isMergeModeEnabled, getNearbyNodes, getCrossMergeIssues } from './merge
 
 const BG_ALPHA = 0.35;
 
+// Cache node Maps for background sketches to avoid rebuilding per frame.
+// WeakMap keyed by sketch object → Map<nodeId, node>
+const _bgNodeMapCache = new WeakMap();
+
 // Merge mode visual constants
 const MERGE_NODE_FILL = 'rgba(251, 146, 60, 0.55)';    // amber-400 semi-transparent
 const MERGE_NODE_STROKE = '#f59e0b';                    // amber-500 solid
@@ -63,9 +67,14 @@ export function drawBackgroundSketches(ctx, sketches, opts) {
     const edges = sketch.edges || [];
     if (nodes.length === 0 && edges.length === 0) continue;
 
-    // Build temporary node lookup
-    const nMap = new Map();
-    for (const n of nodes) nMap.set(String(n.id), n);
+    // Reuse cached node lookup Map when sketch object hasn't changed (avoids
+    // rebuilding Map(nodes) on every frame for each background sketch).
+    let nMap = _bgNodeMapCache.get(sketch);
+    if (!nMap || nMap.size !== nodes.length) {
+      nMap = new Map();
+      for (const n of nodes) nMap.set(String(n.id), n);
+      _bgNodeMapCache.set(sketch, nMap);
+    }
 
     // ── Draw edges (batched by color group) ─────────────────────────
     // Collect visible edge segments into color buckets, then draw each bucket
@@ -268,6 +277,14 @@ export function drawMergeModeOverlay(ctx, activeNodes, opts) {
   // We only draw these for non-duplicate pairs (duplicates get their own line).
   const dupActiveIds = new Set(crossIssues.map(i => `${i.nearbySketchId}:${i.nearbyNodeId}`));
 
+  // Pre-compute active node positions once for closest-node search (avoids O(N) per nearby node)
+  const _activeXs = new Float64Array(activeNodes.length);
+  const _activeYs = new Float64Array(activeNodes.length);
+  for (let i = 0; i < activeNodes.length; i++) {
+    _activeXs[i] = activeNodes[i].x;
+    _activeYs[i] = activeNodes[i].y;
+  }
+
   for (const nearby of nearbyNodes) {
     const key = `${nearby.sketchId}:${nearby.node.id}`;
     if (dupActiveIds.has(key)) continue; // skip, handled in dup connectors below
@@ -277,12 +294,15 @@ export function drawMergeModeOverlay(ctx, activeNodes, opts) {
     if (sx + nodeRadius < visMinX || sx - nodeRadius > visMaxX ||
         sy + nodeRadius < visMinY || sy - nodeRadius > visMaxY) continue;
 
-    // Find closest active node
+    // Find closest active node using distance-squared (avoids sqrt per comparison)
     let closest = null;
-    let closestDist = Infinity;
-    for (const an of activeNodes) {
-      const d = Math.sqrt((nearby.node.x - an.x) ** 2 + (nearby.node.y - an.y) ** 2);
-      if (d < closestDist) { closestDist = d; closest = an; }
+    let closestDistSq = Infinity;
+    const nx = nearby.node.x, ny = nearby.node.y;
+    for (let i = 0; i < activeNodes.length; i++) {
+      const dx = nx - _activeXs[i];
+      const dy = ny - _activeYs[i];
+      const distSq = dx * dx + dy * dy;
+      if (distSq < closestDistSq) { closestDistSq = distSq; closest = activeNodes[i]; }
     }
     if (!closest) continue;
 

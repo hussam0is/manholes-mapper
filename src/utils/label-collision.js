@@ -21,11 +21,12 @@
  * @returns {{width: number, height: number}}
  */
 export function getTextDimensions(ctx, text, fontSize, padding = 4) {
-  ctx.save();
+  // Set font directly without save/restore — callers always set their own font
+  // after calling this. Avoiding save/restore eliminates canvas state stack
+  // operations which are expensive when called hundreds of times per frame.
   ctx.font = `${fontSize}px Arial`;
   const metrics = ctx.measureText(text);
-  ctx.restore();
-  
+
   return {
     width: metrics.width + padding * 2,
     height: fontSize + padding * 2
@@ -132,17 +133,18 @@ export function findOptimalLabelPosition(
   nodeRadius,
   fontSize,
   existingLabels = [],
-  nearbyNodes = []
+  nearbyNodes = [],
+  extraBounds = []
 ) {
   const dimensions = getTextDimensions(ctx, text, fontSize);
-  
+
   let bestPosition = null;
   let minOverlaps = Infinity;
-  
+
   for (const position of LABEL_POSITIONS) {
     const labelX = nodeX + position.dx * nodeRadius;
     const labelY = nodeY + position.dy * nodeRadius;
-    
+
     const bounds = getLabelBounds(
       labelX,
       labelY,
@@ -151,24 +153,31 @@ export function findOptimalLabelPosition(
       position.align,
       position.baseline
     );
-    
+
     // Count overlaps
     let overlaps = 0;
-    
+
     // Check overlap with existing labels
-    for (const existingLabel of existingLabels) {
-      if (rectanglesOverlap(bounds, existingLabel)) {
+    for (let i = 0; i < existingLabels.length; i++) {
+      if (rectanglesOverlap(bounds, existingLabels[i])) {
         overlaps++;
       }
     }
-    
+
+    // Check overlap with extra bounds (edge labels) — separate array to avoid spreading
+    for (let i = 0; i < extraBounds.length; i++) {
+      if (rectanglesOverlap(bounds, extraBounds[i])) {
+        overlaps++;
+      }
+    }
+
     // Check overlap with nearby nodes
     for (const node of nearbyNodes) {
       if (rectangleOverlapsCircle(bounds, node)) {
         overlaps++;
       }
     }
-    
+
     // If no overlaps, use this position immediately
     if (overlaps === 0) {
       return {
@@ -179,7 +188,7 @@ export function findOptimalLabelPosition(
         bounds
       };
     }
-    
+
     // Track the position with minimum overlaps
     if (overlaps < minOverlaps) {
       minOverlaps = overlaps;
@@ -248,10 +257,9 @@ export function processLabels(ctx, labels, allNodes, edgeLabels = []) {
         nearbyNodes.push(node); // reuse existing object, no allocation
       }
     }
-    
-    // Combine placed bounds with edge label bounds
-    const allBounds = [...placedBounds, ...edgeLabelBounds];
-    
+
+    // Pass both bound arrays without spreading — avoids O(N²) allocations
+    // as placedBounds grows with each label iteration.
     const position = findOptimalLabelPosition(
       ctx,
       label.text,
@@ -259,8 +267,9 @@ export function processLabels(ctx, labels, allNodes, edgeLabels = []) {
       label.nodeY,
       label.nodeRadius,
       label.fontSize,
-      allBounds,
-      nearbyNodes
+      placedBounds,
+      nearbyNodes,
+      edgeLabelBounds
     );
     
     positionedLabels.push({

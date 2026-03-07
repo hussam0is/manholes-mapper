@@ -33,18 +33,13 @@ export function drawManholeIcon(ctx, x, y, radius, colors, isSelected, fillColor
   ctx.lineWidth = 1.5 / viewScale;
   ctx.stroke();
 
-  // Draw crosshatch pattern inside
+  // Draw crosshatch pattern inside — batch both lines into one path
   ctx.strokeStyle = isSelected ? '#ffffff' : 'rgba(0, 0, 0, 0.15)';
   ctx.lineWidth = 1 / viewScale;
-  
-  // Horizontal line
+
   ctx.beginPath();
   ctx.moveTo(x - innerRadius * 0.7, y);
   ctx.lineTo(x + innerRadius * 0.7, y);
-  ctx.stroke();
-  
-  // Vertical line
-  ctx.beginPath();
   ctx.moveTo(x, y - innerRadius * 0.7);
   ctx.lineTo(x, y + innerRadius * 0.7);
   ctx.stroke();
@@ -129,20 +124,20 @@ export function drawCoveredIcon(ctx, x, y, radius, colors, isSelected, fillColor
   ctx.arc(x, y, radius - 2 / viewScale, 0, Math.PI * 2);
   ctx.clip();
 
-  // Draw diagonal stripes
+  // Draw diagonal stripes — batch into a single path to reduce draw calls
   ctx.strokeStyle = isSelected ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.3)';
   ctx.lineWidth = 2 / viewScale;
-  
+
   const stripeCount = 6;
   const spacing = (radius * 2) / stripeCount;
-  
+
+  ctx.beginPath();
   for (let i = -stripeCount; i <= stripeCount; i++) {
-    ctx.beginPath();
     ctx.moveTo(x - radius + i * spacing, y - radius);
     ctx.lineTo(x + radius + i * spacing, y + radius);
-    ctx.stroke();
   }
-  
+  ctx.stroke();
+
   ctx.restore();
 }
 
@@ -373,8 +368,9 @@ export function drawNodeIcon(ctx, node, radius, colors, selectedNode, options = 
   // LOD: when zoomed out very far (node would be < ~6px on screen), draw a simple filled circle
   // instead of detailed icons with multiple paths, bezier curves, and clipping.
   // viewScale here is sizeVS (the auto-size divisor), so larger = more zoomed out.
+  // No save/restore needed — we only set fillStyle/strokeStyle/lineWidth which the caller
+  // doesn't rely on being preserved (draw() sets them fresh per element).
   if (viewScale > 3) {
-    ctx.save();
     const isDrainage = node.nodeType === 'Drainage' || node.nodeType === 'קולטן';
     if (isDrainage) {
       const w = radius * 1.8, h = radius * 1.3;
@@ -392,7 +388,6 @@ export function drawNodeIcon(ctx, node, radius, colors, selectedNode, options = 
       ctx.lineWidth = 2 / viewScale;
       ctx.stroke();
     }
-    ctx.restore();
   } else {
     // Dispatch to appropriate icon drawer (detailed)
     if (node.nodeType === 'ForLater' || node.nodeType === 'למדידה מאוחרת') {
