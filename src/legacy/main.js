@@ -10970,11 +10970,12 @@ function renderRefLayerToggles() {
   if (desktopSection) desktopSection.style.display = '';
   if (mobileSection) mobileSection.style.display = '';
   
-  // Build layer toggle HTML
+  // Build layer toggle HTML — SECURITY FIX: escape server-sourced layer name/id
+  const esc = typeof window.escapeHtml === 'function' ? window.escapeHtml : (s) => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   const buildToggleHtml = (prefix) => layers.map(l => `
-    <label class="ref-layer-toggle" title="${l.name} (${l.featureCount} features)">
-      <input type="checkbox" data-layer-id="${l.id}" ${l.visible ? 'checked' : ''} class="${prefix}-ref-layer-cb" />
-      <span class="ref-layer-name">${l.name}</span>
+    <label class="ref-layer-toggle" title="${esc(l.name)} (${l.featureCount} features)">
+      <input type="checkbox" data-layer-id="${esc(l.id)}" ${l.visible ? 'checked' : ''} class="${prefix}-ref-layer-cb" />
+      <span class="ref-layer-name">${esc(l.name)}</span>
       <span class="ref-layer-count">(${l.featureCount})</span>
     </label>
   `).join('');

@@ -12,7 +12,7 @@ let statsEl = null;
  */
 export async function renderProjectStatsPage(projectId) {
   const t = window.t || ((k) => k);
-  const esc = window.escapeHtml || ((s) => s);
+  const esc = window.escapeHtml || ((s) => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'));
 
   const canvasContainer = document.getElementById('canvasContainer');
   if (canvasContainer) canvasContainer.style.display = 'none';
