@@ -352,8 +352,28 @@ async function handleSingleSketch(req, res, request, sketchId) {
         return res.status(400).json({ error: 'Action is required (lock, unlock, refresh, forceUnlock)' });
       }
 
-      // Get user info
+      // Get user info and verify access to sketch
       const username = authUser?.name || authUser?.email || userId;
+      const userRecord = await getOrCreateUser(userId, { username: authUser?.name, email: authUser?.email });
+      const userRole = userRecord?.role || 'user';
+      const userOrgId = userRecord?.organization_id;
+
+      // SECURITY FIX: Verify user has access to this sketch before lock operations
+      if (action !== 'forceUnlock') {
+        let hasAccess = false;
+        if (userRole === 'super_admin') {
+          hasAccess = true;
+        } else if (userRole === 'admin' && userOrgId) {
+          const sketch = await getSketchByIdAdmin(sketchId);
+          hasAccess = sketch && sketch.owner_organization_id === userOrgId;
+        } else {
+          const sketch = await getSketchById(sketchId, userId);
+          hasAccess = !!sketch;
+        }
+        if (!hasAccess) {
+          return res.status(404).json({ error: 'Sketch not found' });
+        }
+      }
 
       switch (action) {
         case 'lock': {
@@ -390,12 +410,15 @@ async function handleSingleSketch(req, res, request, sketchId) {
         }
 
         case 'forceUnlock': {
-          // Only allow admins to force unlock
-          const userRecord = await getOrCreateUser(userId, { username: authUser?.name, email: authUser?.email });
-          const userRole = userRecord?.role || 'user';
-
           if (userRole !== 'admin' && userRole !== 'super_admin') {
             return res.status(403).json({ error: 'Only admins can force unlock sketches' });
+          }
+          // SECURITY FIX: Verify admin has access to this sketch's organization
+          if (userRole === 'admin' && userOrgId) {
+            const sketch = await getSketchByIdAdmin(sketchId);
+            if (!sketch || sketch.owner_organization_id !== userOrgId) {
+              return res.status(404).json({ error: 'Sketch not found' });
+            }
           }
 
           const result = await forceReleaseSketchLock(sketchId);

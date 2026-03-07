@@ -7,26 +7,32 @@
  */
 
 import { handleCors } from '../_lib/cors.js';
-import { verifyAuth } from '../_lib/auth.js';
-import { ensureDb, sql } from '../_lib/db.js';
+import { verifyAuth, parseBody } from '../_lib/auth.js';
+import { ensureDb, sql, getOrCreateUser } from '../_lib/db.js';
 import { validateUUID } from '../_lib/validators.js';
 import { applyRateLimit } from '../_lib/rate-limit.js';
+import { handleApiError } from '../_lib/error-handler.js';
 
 export const config = { runtime: 'nodejs' };
 
 export default async function handler(req, res) {
   if (handleCors(req, res)) return;
 
-  // Rate limiting
-  const rlResult = applyRateLimit(req);
-  if (!rlResult.allowed) {
-    return res.status(429).json({ error: 'Too many requests' });
+  // Polyfill for helper functions that expect Web API Request
+  const request = req;
+  if (!request.headers.get) {
+    request.headers.get = (name) => req.headers[name.toLowerCase()];
   }
 
-  // Verify auth
-  const session = await verifyAuth(req);
-  if (!session) {
-    return res.status(401).json({ error: 'Unauthorized' });
+  // Rate limiting — SECURITY FIX: pass both req and res
+  if (applyRateLimit(req, res)) {
+    return;
+  }
+
+  // Verify auth — SECURITY FIX: check error field, not truthiness
+  const { userId, error: authError, user: authUser } = await verifyAuth(request);
+  if (authError) {
+    return res.status(401).json({ error: authError });
   }
 
   await ensureDb();
@@ -37,29 +43,60 @@ export default async function handler(req, res) {
   const subPath = pathParts[2] || url.searchParams.get('type') || '';
 
   if (subPath === 'leaderboard' && req.method === 'GET') {
-    return handleLeaderboard(req, res, url);
+    // Get user record for org-scoped access
+    const userRecord = await getOrCreateUser(userId, {
+      username: authUser?.name, email: authUser?.email,
+    });
+    return handleLeaderboard(req, res, url, userId, userRecord);
   }
 
   return res.status(404).json({ error: 'Not found' });
 }
 
-async function handleLeaderboard(req, res, url) {
+async function handleLeaderboard(req, res, url, userId, userRecord) {
   const projectId = url.searchParams.get('projectId');
+  const userRole = userRecord?.role || 'user';
+  const userOrgId = userRecord?.organization_id;
 
   let sketches;
   if (projectId) {
     if (!validateUUID(projectId)) {
       return res.status(400).json({ error: 'Invalid projectId' });
     }
+    // SECURITY FIX: Verify user has access to this project's organization
+    if (userRole !== 'super_admin') {
+      const projectResult = await sql`
+        SELECT organization_id FROM projects WHERE id = ${projectId}
+      `;
+      const project = projectResult.rows?.[0];
+      if (!project) {
+        return res.status(404).json({ error: 'Project not found' });
+      }
+      if (project.organization_id !== userOrgId) {
+        return res.status(403).json({ error: 'Access denied to this project' });
+      }
+    }
     const result = await sql`
       SELECT nodes FROM sketches WHERE project_id = ${projectId}
     `;
     sketches = result.rows || result;
   } else {
-    // All sketches (limited for performance)
-    const result = await sql`
-      SELECT nodes FROM sketches LIMIT 100
-    `;
+    // SECURITY FIX: Scope to user's organization instead of all sketches
+    let result;
+    if (userRole === 'super_admin') {
+      result = await sql`SELECT nodes FROM sketches LIMIT 100`;
+    } else if (userOrgId) {
+      result = await sql`
+        SELECT s.nodes FROM sketches s
+        JOIN users u ON s.user_id = u.id
+        WHERE u.organization_id = ${userOrgId}
+        LIMIT 100
+      `;
+    } else {
+      result = await sql`
+        SELECT nodes FROM sketches WHERE user_id = ${userId} LIMIT 100
+      `;
+    }
     sketches = result.rows || result;
   }
 

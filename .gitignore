@@ -49,6 +49,9 @@ manholes/
 .claude/
 scripts/session-watchdog.sh
 
+# Shell scripts with credentials (must never be committed)
+update-vercel-env.sh
+
 # App design reference screenshots (local only)
 current_app_design/
 
