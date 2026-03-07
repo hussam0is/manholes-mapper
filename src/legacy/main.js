@@ -5298,7 +5298,8 @@ function drawEdge(edge) {
   if (tailNode && headNode) {
     let resolvedColor;
     if (edge === selectedEdge) {
-      resolvedColor = COLORS?.edge?.selected || '#7c3aed';
+      // Use diameter color if available, fall back to edge-type color, then purple
+      resolvedColor = diameterToColor(edge.line_diameter) || EDGE_TYPE_COLORS?.[edge.edge_type] || COLORS?.edge?.selected || '#7c3aed';
     } else if (_isHeatmapFrame) {
       // Heatmap: blue if both measurements filled, gray if missing
       const hasBoth = edge.tail_measurement && String(edge.tail_measurement).trim() !== '' &&
@@ -5326,6 +5327,26 @@ function drawEdge(edge) {
       }
     }
     ctx.lineWidth = edgeLW;
+    // Selected edge: draw glow/shine behind the edge
+    if (edge === selectedEdge) {
+      ctx.save();
+      ctx.strokeStyle = resolvedColor;
+      ctx.globalAlpha = 0.3;
+      ctx.lineWidth = edgeLW * 4;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(tx1, ty1);
+      ctx.lineTo(tx2, ty2);
+      ctx.stroke();
+      ctx.globalAlpha = 0.5;
+      ctx.lineWidth = edgeLW * 2.2;
+      ctx.beginPath();
+      ctx.moveTo(tx1, ty1);
+      ctx.lineTo(tx2, ty2);
+      ctx.stroke();
+      ctx.restore();
+      ctx.strokeStyle = resolvedColor;
+    }
     ctx.beginPath();
     ctx.moveTo(tx1, ty1);
     ctx.lineTo(tx2, ty2);
