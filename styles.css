@@ -64,6 +64,9 @@
   /* Contrast text on colored backgrounds */
   --color-text-on-primary: #ffffff;
 
+  /* Brand accent (title gradient highlight) */
+  --color-brand-accent: #80d6f9;       /* sky-300 */
+
   /* Street View (Google pegman yellow) */
   --color-streetview: #f9ab00;
   --color-streetview-hover: #e69500;
@@ -250,14 +253,14 @@ header h1 {
   letter-spacing: 0.2px;
   line-height: 1.25;
   position: relative;
-  background: linear-gradient(90deg, #0f172a 0%, #80d6f9 42%, #80d6f9 58%, #0f172a 100%);
+  background: linear-gradient(90deg, var(--color-text) 0%, var(--color-brand-accent) 42%, var(--color-brand-accent) 58%, var(--color-text) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
 .soft-blue-header #appTitle {
-  background: linear-gradient(90deg, #0f172a 0%, #80d6f9 42%, #80d6f9 58%, #0f172a 100%);
+  background: linear-gradient(90deg, var(--color-text) 0%, var(--color-brand-accent) 42%, var(--color-brand-accent) 58%, var(--color-text) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -271,7 +274,7 @@ header h1 {
   width: 46%;
   height: 3px;
   border-radius: 2px;
-  background: linear-gradient(90deg, #80d6f9, #80d6f9);
+  background: var(--color-brand-accent);
   opacity: 0.9;
 }
 
@@ -299,7 +302,7 @@ header h1 {
 
 @media (prefers-color-scheme: dark) {
   #appTitle {
-    background: linear-gradient(90deg, var(--color-text) 0%, #80d6f9 42%, #80d6f9 58%, var(--color-text) 100%);
+    background: linear-gradient(90deg, var(--color-text) 0%, var(--color-brand-accent) 42%, var(--color-brand-accent) 58%, var(--color-text) 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -3779,6 +3782,9 @@ input.floating-keyboard-active {
 }
 
 /* .admin-modal-wrapper and .admin-screen-wrapper inherit from #adminModal and #adminScreen */
+.admin-screen-wrapper {
+  animation: pageFadeIn 0.2s ease-out;
+}
 
 /* ============================================
    Projects Management Screen Styles
@@ -14064,6 +14070,12 @@ body.admin-screen #canvasFabToggle {
   z-index: 100;
   background: var(--color-surface);
   overflow-y: auto;
+  animation: pageFadeIn 0.2s ease-out;
+}
+
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .page-panel__header {
