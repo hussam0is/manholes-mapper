@@ -6103,6 +6103,169 @@ function buildWizardFieldHTML(node, activeKey, ruleResults, opts) {
   `;
 }
 
+// ============================================
+// @Mention autocomplete for issue comments
+// ============================================
+let _mentionCache = null;
+let _mentionCachePromise = null;
+
+async function _fetchOrgMembers() {
+  if (_mentionCache) return _mentionCache;
+  if (_mentionCachePromise) return _mentionCachePromise;
+  _mentionCachePromise = (async () => {
+    try {
+      const resp = await fetch('/api/org-members');
+      if (!resp.ok) return [];
+      const data = await resp.json();
+      _mentionCache = data.members || [];
+      return _mentionCache;
+    } catch {
+      return [];
+    } finally {
+      _mentionCachePromise = null;
+    }
+  })();
+  return _mentionCachePromise;
+}
+
+/**
+ * Attach @mention autocomplete to a textarea.
+ * Shows a dropdown when the user types @ followed by characters.
+ */
+function _attachMentionAutocomplete(textarea) {
+  let dropdown = null;
+  let mentionStart = -1;
+  let selectedIndex = 0;
+  let filteredMembers = [];
+
+  function removeDropdown() {
+    if (dropdown) {
+      dropdown.remove();
+      dropdown = null;
+    }
+    mentionStart = -1;
+    selectedIndex = 0;
+    filteredMembers = [];
+  }
+
+  function insertMention(member) {
+    const value = textarea.value;
+    const before = value.substring(0, mentionStart);
+    const after = value.substring(textarea.selectionStart);
+    const mention = `@${member.username} `;
+    textarea.value = before + mention + after;
+    const cursorPos = mentionStart + mention.length;
+    textarea.setSelectionRange(cursorPos, cursorPos);
+    textarea.focus();
+    removeDropdown();
+  }
+
+  function renderDropdown(members) {
+    filteredMembers = members;
+    if (members.length === 0) {
+      removeDropdown();
+      return;
+    }
+    if (!dropdown) {
+      dropdown = document.createElement('div');
+      dropdown.className = 'mention-dropdown';
+      // Position relative to the textarea's parent
+      const inputRow = textarea.closest('.issue-comment-input-row');
+      if (inputRow) {
+        inputRow.style.position = 'relative';
+        inputRow.appendChild(dropdown);
+      } else {
+        textarea.parentElement.style.position = 'relative';
+        textarea.parentElement.appendChild(dropdown);
+      }
+    }
+    selectedIndex = Math.min(selectedIndex, members.length - 1);
+    dropdown.innerHTML = members.map((m, i) => {
+      const activeClass = i === selectedIndex ? ' mention-item-active' : '';
+      return `<div class="mention-item${activeClass}" data-index="${i}">
+        <span class="mention-item-name">${escapeHtml(m.username)}</span>
+        ${m.email ? `<span class="mention-item-email">${escapeHtml(m.email)}</span>` : ''}
+      </div>`;
+    }).join('');
+
+    // Click handlers
+    dropdown.querySelectorAll('.mention-item').forEach(el => {
+      el.addEventListener('mousedown', (e) => {
+        e.preventDefault(); // Prevent textarea blur
+        const idx = parseInt(el.dataset.index, 10);
+        insertMention(filteredMembers[idx]);
+      });
+    });
+  }
+
+  async function handleInput() {
+    const cursorPos = textarea.selectionStart;
+    const text = textarea.value.substring(0, cursorPos);
+    // Find the last @ that could be a mention trigger (preceded by start or whitespace)
+    const lastAt = text.lastIndexOf('@');
+    if (lastAt < 0 || (lastAt > 0 && !/\s/.test(text[lastAt - 1]))) {
+      removeDropdown();
+      return;
+    }
+    const query = text.substring(lastAt + 1);
+    // If query contains whitespace, it's not an active mention
+    if (/\s/.test(query)) {
+      removeDropdown();
+      return;
+    }
+    mentionStart = lastAt;
+    const members = await _fetchOrgMembers();
+    const lowerQuery = query.toLowerCase();
+    const filtered = members.filter(m =>
+      m.username.toLowerCase().includes(lowerQuery) ||
+      (m.email && m.email.toLowerCase().includes(lowerQuery))
+    ).slice(0, 6);
+    renderDropdown(filtered);
+  }
+
+  textarea.addEventListener('input', handleInput);
+
+  textarea.addEventListener('keydown', (e) => {
+    if (!dropdown || filteredMembers.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      selectedIndex = (selectedIndex + 1) % filteredMembers.length;
+      renderDropdown(filteredMembers);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      selectedIndex = (selectedIndex - 1 + filteredMembers.length) % filteredMembers.length;
+      renderDropdown(filteredMembers);
+    } else if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      e.stopPropagation();
+      insertMention(filteredMembers[selectedIndex]);
+    } else if (e.key === 'Escape') {
+      removeDropdown();
+    }
+  });
+
+  textarea.addEventListener('blur', () => {
+    // Delay to allow click events on dropdown items
+    setTimeout(removeDropdown, 200);
+  });
+}
+
+/**
+ * Extract @mentioned usernames from comment text and resolve to user IDs.
+ */
+function _extractMentionedUserIds(text) {
+  if (!_mentionCache) return [];
+  const mentionPattern = /@(\S+)/g;
+  const ids = [];
+  let match;
+  while ((match = mentionPattern.exec(text)) !== null) {
+    const username = match[1];
+    const member = _mentionCache.find(m => m.username === username);
+    if (member) ids.push(member.id);
+  }
+  return [...new Set(ids)];
+}
+
 /**
  * Load issue comments from the API and render them into the comments list.
  */
@@ -6133,7 +6296,7 @@ async function _loadIssueComments(node) {
           <span class="issue-comment-author">${escapeHtml(c.username || 'Unknown')}</span>
           <span class="issue-comment-time">${timeStr}</span>
         </div>
-        <div class="issue-comment-content">${escapeHtml(c.content)}</div>
+        <div class="issue-comment-content">${escapeHtml(c.content).replace(/@(\S+)/g, '<span class="mention-highlight">@$1</span>')}</div>
       </div>`;
     }).join('');
     // Scroll to bottom
@@ -6150,6 +6313,7 @@ async function _loadIssueComments(node) {
 async function _sendIssueComment(node, inputEl, isCloseAction, isReopenAction) {
   const content = inputEl.value?.trim();
   if (!content || !currentSketchId) return;
+  const mentionedUserIds = _extractMentionedUserIds(content);
   inputEl.value = '';
   try {
     const resp = await fetch('/api/issue-comments', {
@@ -6161,6 +6325,7 @@ async function _sendIssueComment(node, inputEl, isCloseAction, isReopenAction) {
         content,
         isCloseAction: !!isCloseAction,
         isReopenAction: !!isReopenAction,
+        mentionedUserIds,
       }),
     });
     if (!resp.ok) throw new Error('Failed to send comment');
@@ -6350,8 +6515,13 @@ function renderDetails() {
       const commentInput = container.querySelector('#issueCommentInput');
       if (sendBtn && commentInput) {
         sendBtn.addEventListener('click', () => _sendIssueComment(node, commentInput, false, false));
+        // Attach @mention autocomplete
+        _attachMentionAutocomplete(commentInput);
         commentInput.addEventListener('keydown', (e) => {
           if (e.key === 'Enter' && !e.shiftKey) {
+            // Don't send if mention dropdown is open (it handles Enter itself)
+            const mentionDropdown = commentInput.closest('.issue-comment-input-row')?.querySelector('.mention-dropdown');
+            if (mentionDropdown) return;
             e.preventDefault();
             _sendIssueComment(node, commentInput, false, false);
           }

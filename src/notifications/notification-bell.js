@@ -128,7 +128,8 @@ function renderNotifications(notifications) {
     const timeStr = date.toLocaleString(lang, { dateStyle: 'short', timeStyle: 'short' });
     const typeLabel = n.type === 'issue_closed' ? t('issue.issueClosed')
       : n.type === 'issue_reopened' ? t('issue.issueReopened')
-        : t('issue.newComment');
+        : n.type === 'mention' ? t('issue.mentioned')
+          : t('issue.newComment');
     const sketchName = n.sketch_name || '';
     const preview = n.comment_content ? n.comment_content.slice(0, 60) : '';
 

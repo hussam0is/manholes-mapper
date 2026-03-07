@@ -1325,6 +1325,29 @@ export async function createIssueNotifications(sketchId, nodeId, commentId, excl
 }
 
 /**
+ * Create notifications for @mentioned users who are not already participants
+ */
+export async function createMentionNotifications(sketchId, nodeId, commentId, excludeUserId, mentionedUserIds) {
+  if (!mentionedUserIds || mentionedUserIds.length === 0) return 0;
+  // Get existing participants so we don't double-notify
+  const participants = await getIssueParticipants(sketchId, nodeId);
+  const participantIds = new Set(participants.map(p => p.user_id));
+  // Also exclude the commenter
+  participantIds.add(excludeUserId);
+
+  let count = 0;
+  for (const uid of mentionedUserIds) {
+    if (participantIds.has(uid)) continue; // Already notified via participant notifications
+    await sql`
+      INSERT INTO issue_notifications (user_id, sketch_id, node_id, comment_id, type)
+      VALUES (${uid}, ${sketchId}, ${nodeId}, ${commentId}, 'mention')
+    `;
+    count++;
+  }
+  return count;
+}
+
+/**
  * Get unread notifications for a user
  */
 export async function getUnreadNotifications(userId, { limit = 50 } = {}) {
