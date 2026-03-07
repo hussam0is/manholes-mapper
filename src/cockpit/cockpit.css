@@ -604,7 +604,7 @@ body.cockpit-mode.mode-gps #canvasContainer {
   align-items: center;
   gap: 10px;
   box-shadow: var(--shadow-lg);
-  z-index: 9999;
+  z-index: 1400; /* above modals (1000-1200), below floating-keyboard (1500) */
   transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   max-width: 90vw;
 }
