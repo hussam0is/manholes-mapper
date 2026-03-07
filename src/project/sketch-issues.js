@@ -104,13 +104,15 @@ export function computeSketchIssues(nodes, edges) {
 
   const issues = [];
 
-  // 1. Missing coordinates — skip schematic nodes and home connections
+  // 1. Missing coordinates — skip schematic nodes, home connections, and locked nodes
   for (const node of nodes) {
     if (node.surveyX == null || node.surveyY == null) {
       // Schematic nodes intentionally lack precise coords
       if (node.accuracyLevel === SCHEMATIC_ACCURACY) continue;
       // Home connections don't require RTK coords
       if (node.nodeType === 'Home') continue;
+      // Position-locked nodes have been intentionally placed (manual coordinates)
+      if (node.positionLocked) continue;
       issues.push({
         type: 'missing_coords',
         nodeId: node.id,
