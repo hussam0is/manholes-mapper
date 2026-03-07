@@ -6620,10 +6620,15 @@ function renderDetails() {
         ${(() => {
           const hasSurvey = node.surveyX != null || node.surveyY != null || node.surveyZ != null || node.measure_precision != null;
           if (!hasSurvey && node.manual_x == null && node.manual_y == null) {
-            // No survey data at all — show a single compact message
+            // No survey data at all — show a single compact message + timestamps
+            const _fmtDateEmpty = (v) => new Date(v).toLocaleString(currentLang === 'he' ? 'he-IL' : 'en-US', { dateStyle: 'short', timeStyle: 'short' });
+            let tsFields = '';
+            if (node.createdAt) tsFields += `<div class="field col-span-2"><label>${t('labels.createdAt')}</label><div class="field-value-readonly">${escapeHtml(_fmtDateEmpty(node.createdAt))}</div></div>`;
+            if (node.measuredAt) tsFields += `<div class="field col-span-2"><label>${t('labels.measuredAt')}</label><div class="field-value-readonly">${escapeHtml(_fmtDateEmpty(node.measuredAt))}</div></div>`;
             return `<div class="details-section">
               <div class="details-section-title">${t('labels.surveyData')}</div>
               <div class="survey-empty-message">${t('labels.noSurveyData')}</div>
+              ${tsFields ? `<div class="details-grid two-col">${tsFields}</div>` : ''}
             </div>`;
           }
           // Has some survey data — show only fields that have values
@@ -6641,6 +6646,14 @@ function renderDetails() {
             const cls = fq === 4 ? '4' : fq === 5 ? '5' : '6';
             const fixLabel = fq === 4 ? t('labels.fixFixed') : fq === 5 ? t('labels.fixDeviceFloat') : t('labels.fixManualFloat');
             fields += `<div class="field col-span-2"><label>${t('labels.fixType')}</label><div class="field-value-readonly survey-fix-badge fix-${cls}">${fixLabel}</div></div>`;
+          }
+          // Timestamps: createdAt and measuredAt
+          const _fmtDate = (v) => new Date(v).toLocaleString(currentLang === 'he' ? 'he-IL' : 'en-US', { dateStyle: 'short', timeStyle: 'short' });
+          if (node.createdAt) {
+            fields += `<div class="field col-span-2"><label>${t('labels.createdAt')}</label><div class="field-value-readonly">${escapeHtml(_fmtDate(node.createdAt))}</div></div>`;
+          }
+          if (node.measuredAt) {
+            fields += `<div class="field col-span-2"><label>${t('labels.measuredAt')}</label><div class="field-value-readonly">${escapeHtml(_fmtDate(node.measuredAt))}</div></div>`;
           }
           if (node.manual_x != null || node.manual_y != null) {
             if (node.manual_x != null) fields += `<div class="field"><label>${t('labels.manualX')}</label><div class="field-value-readonly">${node.manual_x.toFixed(3)}</div></div>`;
@@ -7043,20 +7056,11 @@ function renderDetails() {
     container.appendChild(deleteButtonWrapper);
 
     // ── Measurement metadata (below delete button, bottom of panel) ──
-    if (node.measuredAt || node.measuredBy) {
+    if (node.measuredBy) {
       const metaSection = document.createElement('div');
       metaSection.className = 'details-section measurement-metadata';
       let metaHtml = '';
-      if (node.measuredAt) {
-        const dateStr = new Date(node.measuredAt).toLocaleString(
-          currentLang === 'he' ? 'he-IL' : 'en-US',
-          { dateStyle: 'short', timeStyle: 'short' }
-        );
-        metaHtml += `<div class="measurement-meta-row"><span class="material-icons">schedule</span><span>${escapeHtml(t('labels.measuredAt'))}: ${escapeHtml(dateStr)}</span></div>`;
-      }
-      if (node.measuredBy) {
-        metaHtml += `<div class="measurement-meta-row"><span class="material-icons">person</span><span>${escapeHtml(t('labels.measuredBy'))}: ${escapeHtml(node.measuredBy)}</span></div>`;
-      }
+      metaHtml += `<div class="measurement-meta-row"><span class="material-icons">person</span><span>${escapeHtml(t('labels.measuredBy'))}: ${escapeHtml(node.measuredBy)}</span></div>`;
       metaSection.innerHTML = metaHtml;
       container.appendChild(metaSection);
     }
