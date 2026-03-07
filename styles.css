@@ -902,7 +902,7 @@ header .btn-primary:hover {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.3);
-  z-index: 219; /* Just below the menu */
+  z-index: 1055; /* Just below the mobile menu (1060) */
   backdrop-filter: blur(2px);
   animation: backdropFadeIn 0.15s ease-out;
 }
@@ -1338,7 +1338,7 @@ select.btn:focus-visible {
 /* ── Long-press context menu ──────────────────────────────────── */
 .canvas-context-menu {
   position: fixed;
-  z-index: 9999;
+  z-index: 1600; /* above floating-keyboard (1500) */
   background: var(--color-surface, #fff);
   border-radius: 8px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
@@ -2194,8 +2194,8 @@ canvas {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 36px;
-  min-height: 36px;
+  min-width: 44px;
+  min-height: 44px;
 }
 .pm-overlay__close:hover { background: var(--color-hover, rgba(0,0,0,0.06)); }
 
@@ -2476,7 +2476,7 @@ canvas {
     transition: transform 260ms cubic-bezier(.2, .8, .2, 1);
     will-change: transform;
     backface-visibility: hidden;
-    z-index: 40;
+    z-index: 160; /* above canvas-toolbar (150), below header (200) */
     /* On mobile, always use flex layout — transform handles visibility */
     display: flex;
   }
@@ -6599,7 +6599,7 @@ select.invalid:focus {
   border: none;
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25), 0 0 0 1px var(--color-border);
-  z-index: 9999;
+  z-index: 1500; /* above modals (1000-1200) but below survey dialogs (10000) */
   min-width: 200px;
   min-height: 260px;
   max-width: 90vw;
@@ -10656,7 +10656,7 @@ button:focus-visible,
   background: var(--color-surface, #fff);
   border-inline-start: 1px solid var(--color-border, #e2e8f0);
   box-shadow: -2px 0 8px rgba(0, 0, 0, 0.08);
-  z-index: 150; /* above edge-legend (140) */
+  z-index: 160; /* above edge-legend (140) and canvas-toolbar (150) */
   display: flex;
   flex-direction: column;
   transform: translateX(100%);
@@ -11355,8 +11355,8 @@ button:focus-visible,
   }
 
   .sketch-side-panel__close {
-    min-width: 36px;
-    min-height: 36px;
+    min-width: 44px;
+    min-height: 44px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -11419,8 +11419,8 @@ button:focus-visible,
 
   /* Recenter button in item row */
   .sketch-side-panel__recenter-btn {
-    min-width: 32px;
-    min-height: 32px;
+    min-width: 44px;
+    min-height: 44px;
     padding: 2px 4px;
   }
 
@@ -11430,8 +11430,8 @@ button:focus-visible,
 
   /* Visibility toggle */
   .sketch-side-panel__eye {
-    min-width: 32px;
-    min-height: 32px;
+    min-width: 44px;
+    min-height: 44px;
     padding: 4px;
     display: inline-flex;
     align-items: center;
