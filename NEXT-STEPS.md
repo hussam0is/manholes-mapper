@@ -7,13 +7,13 @@ Major theme: **Cockpit/gamification UX overhaul** with landscape-first layout, m
 
 ---
 
-## P0 — Critical Bugs (Fix Immediately)
+## P0 — Critical Bugs ~~(Fix Immediately)~~ RESOLVED
 
-1. **`_contrastMul` ReferenceError in project canvas mode** — `const` declared inside `draw()` but referenced in `drawEdge()` outside its scope. Crashes all edge rendering in project canvas. *(src/legacy/main.js:4684,5264)*
+1. ~~**`_contrastMul` ReferenceError**~~ — Already fixed in prior commits (now module-level `let` at line 473).
 
-2. **i18n greeting key mismatch** — Code uses `t('home.goodMorning')` but dictionary has `homeScreen.goodMorning`. Users see raw key strings. *(src/legacy/main.js:2625-2627, src/i18n.js)*
+2. ~~**i18n greeting key mismatch**~~ — Already fixed (code correctly uses `homeScreen.*` keys).
 
-3. **Desktop header missing at 1280px viewport** — Responsive breakpoint hides header between 1280-1440px widths. Desktop users lose access to export, import, coordinates, and menu actions.
+3. ~~**Desktop header missing at 1280px**~~ — Already fixed (landscape auto-hide correctly guarded by `innerHeight <= 450`).
 
 ---
 
@@ -49,9 +49,9 @@ Major theme: **Cockpit/gamification UX overhaul** with landscape-first layout, m
    - Missing API route: `/api/issue-comments`
    - Missing cockpit directory in key directories
 
-9. **Replace 19+ silent `catch (_) {}` handlers** with at least `console.debug` logging. Locations: `backup-manager.js:200`, `merge-mode.js:255`, `project-canvas-state.js:271`, `admin-panel.js:114,259,303`, `register-sw.js:14,16,19`, `main-entry.js:853,870`.
+9. ~~**Replace silent catch handlers**~~ — DONE: Added `console.warn` to 11 listener/data-handling catch blocks. Remaining ~30 are legitimately silent (localStorage quota, DOM detection, WS close).
 
-10. **Remove debug logging** — 3 coordinate import debug statements in `coordinates.js:464-592` and `main.js:9726` should be removed.
+10. ~~**Remove debug logging**~~ — DONE: Removed coordinate import debug statements from `coordinates.js` and `main.js`.
 
 11. **Audit `three.js` dependency** — `three` (v0.183.1) is in production dependencies. If only experimental/planned, move to devDependencies or remove to avoid bundle bloat.
 
@@ -83,6 +83,6 @@ Major theme: **Cockpit/gamification UX overhaul** with landscape-first layout, m
 | Tests | ~490 |
 | Untested source files | 30+ |
 | Open design issues | 23 |
-| Silent error catches | 19+ |
+| Silent error catches | 11 fixed, ~30 legitimately silent |
 | Skipped tests | 0 (good) |
 | Commented-out code | Minimal (good) |
