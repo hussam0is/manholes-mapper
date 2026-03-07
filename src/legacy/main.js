@@ -8343,7 +8343,7 @@ canvas.addEventListener('touchstart', (e) => {
           }
           // Background: candidate for panning or tap-to-add on release
           touchPanCandidate = true;
-          touchAddPending = (currentMode === 'node' || currentMode === 'home' || currentMode === 'drainage');
+          touchAddPending = (currentMode === 'node' || currentMode === 'home' || currentMode === 'drainage' || currentMode === 'issue');
           touchAddPoint = { x, y };
         }
       }
@@ -8478,7 +8478,7 @@ canvas.addEventListener('touchend', (e) => {
   }
   if (e.touches.length === 0) {
     // If a tap-to-add is pending and didn't move much, create node/edge now
-    if (touchAddPending && touchAddPoint && (currentMode === 'node' || currentMode === 'home' || currentMode === 'drainage' || currentMode === 'edge') && !isDragging) {
+    if (touchAddPending && touchAddPoint && (currentMode === 'node' || currentMode === 'home' || currentMode === 'drainage' || currentMode === 'issue' || currentMode === 'edge') && !isDragging) {
       if (currentMode === 'edge') {
         pointerDown(touchAddPoint.x, touchAddPoint.y);
       } else {
@@ -8505,6 +8505,16 @@ canvas.addEventListener('touchend', (e) => {
           } else if (currentMode === 'drainage' && created) {
             // Keep numeric ID for drainage (like manholes)
             created.nodeType = 'Drainage';
+          } else if (currentMode === 'issue' && created) {
+            created.nodeType = 'Issue';
+            created.issueStatus = 'open';
+            created.issueComments = [];
+            selectedNode = created;
+            renderDetails();
+            setTimeout(() => {
+              const firstInput = detailsContainer.querySelector('textarea, input:not([type="checkbox"])');
+              if (firstInput) firstInput.focus();
+            }, 0);
           }
           scheduleDraw();
         }
