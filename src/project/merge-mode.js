@@ -252,6 +252,6 @@ function _compute(activeNodes, otherSketches) {
 
 function _notify() {
   for (const fn of _listeners) {
-    try { fn(); } catch (_) { /* ignore */ }
+    try { fn(); } catch (e) { console.warn('[MergeMode] Listener error:', e); }
   }
 }
