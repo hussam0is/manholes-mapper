@@ -725,6 +725,31 @@ function saveFieldHistory(history) {
   }
 }
 
+// Map pipe diameter (mm) to a color on a blue→cyan→green→yellow→red gradient.
+// Returns null when no diameter is set so the caller falls back to edge-type color.
+function diameterToColor(lineDiameter) {
+  const d = parseFloat(lineDiameter);
+  if (!(d > 0)) return null;
+  // Normalize 0–2000 mm to 0–1
+  const t = Math.min(d, 2000) / 2000;
+  // Five-stop gradient: blue(0) → cyan(0.25) → green(0.5) → yellow(0.75) → red(1)
+  let r, g, b;
+  if (t < 0.25) {
+    const s = t / 0.25;
+    r = 0; g = Math.round(180 * s); b = Math.round(220 - 40 * s);
+  } else if (t < 0.5) {
+    const s = (t - 0.25) / 0.25;
+    r = 0; g = Math.round(180 + 20 * s); b = Math.round(180 - 180 * s);
+  } else if (t < 0.75) {
+    const s = (t - 0.5) / 0.25;
+    r = Math.round(230 * s); g = 200; b = 0;
+  } else {
+    const s = (t - 0.75) / 0.25;
+    r = 230; g = Math.round(200 - 200 * s); b = 0;
+  }
+  return `rgb(${r},${g},${b})`;
+}
+
 // Track a field value selection - increment usage count
 function trackFieldUsage(scope, fieldName, value) {
   if (value === null || value === undefined || value === '') return;
@@ -5272,10 +5297,14 @@ function drawEdge(edge) {
                        edge.head_measurement && String(edge.head_measurement).trim() !== '';
       resolvedColor = hasBoth ? '#3b82f6' : '#9ca3af';
     } else {
-      resolvedColor = EDGE_TYPE_COLORS?.[edge.edge_type] || '#555';
+      // Use diameter-based color when diameter is set, otherwise fall back to edge type
+      resolvedColor = diameterToColor(edge.line_diameter) || EDGE_TYPE_COLORS?.[edge.edge_type] || '#555';
     }
     ctx.strokeStyle = resolvedColor;
-    let edgeLW = (2 * _contrastMul) / sizeVS;
+    // Scale line width by pipe diameter: 1.5px (no diameter / small) to 6px (2000mm)
+    const diam = parseFloat(edge.line_diameter);
+    const baseLW = (diam > 0) ? 1.5 + Math.min(diam, 2000) / 2000 * 4.5 : 2;
+    let edgeLW = (baseLW * _contrastMul) / sizeVS;
     // Snap animation: pulse lineWidth over ANIM_EDGE_DURATION ms
     // Skip Map lookup entirely when no animations are running (common case)
     const edgeAnimStart = _animatingEdges.size > 0 ? _animatingEdges.get(edge.id) : undefined;
@@ -5463,10 +5492,14 @@ function drawDanglingEdgeLocal(edge, connectedNode, type = 'outbound') {
   }
   
   ctx.save();
-  
+
   // Use grey color for dangling edges
   const solidColor = isSelected ? '#6b7280' : '#9ca3af'; // grey-500 / grey-400
-  
+
+  // Scale line width by pipe diameter (same formula as regular edges)
+  const dangDiam = parseFloat(edge.line_diameter);
+  const dangBaseLW = (dangDiam > 0) ? 1.5 + Math.min(dangDiam, 2000) / 2000 * 4.5 : 2;
+
   // Calculate the total length and determine where to start/end dashing
   const dx = endX - startX;
   const dy = endY - startY;
@@ -5482,7 +5515,7 @@ function drawDanglingEdgeLocal(edge, connectedNode, type = 'outbound') {
     
     // Draw solid portion
     ctx.strokeStyle = solidColor;
-    ctx.lineWidth = 2 / sizeVS;
+    ctx.lineWidth = dangBaseLW / sizeVS;
     ctx.beginPath();
     ctx.moveTo(startX, startY);
     ctx.lineTo(dashStartX, dashStartY);
@@ -5505,7 +5538,7 @@ function drawDanglingEdgeLocal(edge, connectedNode, type = 'outbound') {
     // Draw dashed portion (at start)
     ctx.setLineDash([4 / sizeVS, 4 / sizeVS]);
     ctx.strokeStyle = isSelected ? '#9ca3af' : '#d1d5db';
-    ctx.lineWidth = 2 / sizeVS;
+    ctx.lineWidth = dangBaseLW / sizeVS;
     ctx.beginPath();
     ctx.moveTo(startX, startY);
     ctx.lineTo(dashEndX, dashEndY);
@@ -7016,6 +7049,15 @@ function renderDetails() {
           </div>` : ''}
         </div>
       </div>
+
+      ${adminConfig.edges.include.line_diameter ? `
+      <div class="details-section" style="padding:4px 12px">
+        <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--color-text-secondary,#888)">
+          <span>10</span>
+          <div style="flex:1;height:8px;border-radius:4px;background:linear-gradient(to right,rgb(0,0,220),rgb(0,180,180),rgb(0,200,0),rgb(230,200,0),rgb(230,0,0))"></div>
+          <span>2000 mm</span>
+        </div>
+      </div>` : ''}
 
       ${(adminConfig.edges.include.fall_depth || adminConfig.edges.include.fall_position) ? `
       <div class="details-section">
