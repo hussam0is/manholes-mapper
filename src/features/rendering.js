@@ -132,11 +132,25 @@ export function drawEdge(ctx, edge, tailNode, headNode, options) {
   const { color, selectedColor, edgeTypeColors, highlightedHalfEdge, colors, viewScale = 1 } = options;
   const x1 = tailNode.x, y1 = tailNode.y, x2 = headNode.x, y2 = headNode.y;
   ctx.save();
+  // Diameter-based color: blue→cyan→green→yellow→red gradient
+  const _diam = parseFloat(edge.line_diameter);
+  let _diamColor = null;
+  if (_diam > 0) {
+    const _t = Math.min(_diam, 2000) / 2000;
+    let _r, _g, _b;
+    if (_t < 0.25) { const s = _t / 0.25; _r = 0; _g = Math.round(180 * s); _b = Math.round(220 - 40 * s); }
+    else if (_t < 0.5) { const s = (_t - 0.25) / 0.25; _r = 0; _g = Math.round(180 + 20 * s); _b = Math.round(180 - 180 * s); }
+    else if (_t < 0.75) { const s = (_t - 0.5) / 0.25; _r = Math.round(230 * s); _g = 200; _b = 0; }
+    else { const s = (_t - 0.75) / 0.25; _r = 230; _g = Math.round(200 - 200 * s); _b = 0; }
+    _diamColor = `rgb(${_r},${_g},${_b})`;
+  }
   const resolvedColor = color || (edge === options.selectedEdge
     ? (selectedColor || (colors?.edge?.selected || '#7c3aed'))
-    : (edgeTypeColors?.[edge.edge_type] || '#555'));
+    : (_diamColor || edgeTypeColors?.[edge.edge_type] || '#555'));
   ctx.strokeStyle = resolvedColor;
-  ctx.lineWidth = 2 / viewScale;
+  // Scale line width by pipe diameter: 1.5px (small) to 6px (2000mm), default 2px
+  const edgeDiam = parseFloat(edge.line_diameter);
+  ctx.lineWidth = ((edgeDiam > 0) ? 1.5 + Math.min(edgeDiam, 2000) / 2000 * 4.5 : 2) / viewScale;
   ctx.beginPath();
   ctx.moveTo(x1, y1);
   ctx.lineTo(x2, y2);
