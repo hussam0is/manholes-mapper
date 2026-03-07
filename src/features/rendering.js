@@ -144,13 +144,35 @@ export function drawEdge(ctx, edge, tailNode, headNode, options) {
     else { const s = (_t - 0.75) / 0.25; _r = 230; _g = Math.round(200 - 200 * s); _b = 0; }
     _diamColor = `rgb(${_r},${_g},${_b})`;
   }
-  const resolvedColor = color || (edge === options.selectedEdge
-    ? (selectedColor || (colors?.edge?.selected || '#7c3aed'))
+  const isSelected = edge === options.selectedEdge;
+  const resolvedColor = color || (isSelected
+    ? (_diamColor || edgeTypeColors?.[edge.edge_type] || selectedColor || (colors?.edge?.selected || '#7c3aed'))
     : (_diamColor || edgeTypeColors?.[edge.edge_type] || '#555'));
   ctx.strokeStyle = resolvedColor;
   // Scale line width by pipe diameter: 1.5px (small) to 6px (2000mm), default 2px
   const edgeDiam = parseFloat(edge.line_diameter);
-  ctx.lineWidth = ((edgeDiam > 0) ? 1.5 + Math.min(edgeDiam, 2000) / 2000 * 4.5 : 2) / viewScale;
+  const edgeLW = ((edgeDiam > 0) ? 1.5 + Math.min(edgeDiam, 2000) / 2000 * 4.5 : 2) / viewScale;
+  ctx.lineWidth = edgeLW;
+  // Selected edge: draw glow/shine behind the edge
+  if (isSelected) {
+    ctx.save();
+    ctx.strokeStyle = resolvedColor;
+    ctx.globalAlpha = 0.3;
+    ctx.lineWidth = edgeLW * 4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.globalAlpha = 0.5;
+    ctx.lineWidth = edgeLW * 2.2;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.restore();
+    ctx.strokeStyle = resolvedColor;
+  }
   ctx.beginPath();
   ctx.moveTo(x1, y1);
   ctx.lineTo(x2, y2);
