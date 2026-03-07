@@ -113,7 +113,7 @@ Allowed operations include: npm scripts, git commands, node execution, curl, Ver
 
 ### Entry Point Flow
 
-`index.html` → `src/main-entry.js` (ES module) → initializes CSS imports, i18n, auth, GNSS, menu system → loads `src/legacy/main.js` (core app logic, ~8300 lines).
+`index.html` → `src/main-entry.js` (ES module) → initializes CSS imports, i18n, auth, GNSS, menu system → loads `src/legacy/main.js` (core app logic, ~12300 lines).
 
 **Critical load order:** `src/capacitor-api-proxy.js` must load before any `fetch()` calls (proxies API for Android native app).
 
@@ -140,6 +140,9 @@ CSS is imported via JS (`import '../styles.css'`) for Vite dev/build compatibili
 - **`src/main-entry.js`** — App entry (~634 lines): auth, i18n, GNSS, menu init, mobile menu, floating keyboard, drawer, FAB toolbar
 - **`src/capacitor-api-proxy.js`** — API proxy for Capacitor native (redirects `/api/*` to production)
 - **`src/canvas-fab-toolbar.js`** — Floating action button speed dial
+- **`src/cockpit/`** — Gamification/mission-control dashboard: `cockpit.js` (~18KB: landscape-first layout, health card, stats), `action-rail.js` (~6KB: contextual action buttons), `completion-engine.js` (~7KB: sketch completeness scoring), `intel-strip.js` (~14KB: smart suggestions), `quick-wins.js` (~10KB: actionable improvement tasks), `session-tracker.js` (~13KB: work session timing and streaks)
+- **`src/three-d/`** — 3D sketch visualization (Three.js, dynamically imported): `three-d-view.js` (main overlay with OrbitControls, CSS2D labels), `three-d-scene.js` (scene builder — nodes as spheres, edges as tubes), `three-d-materials.js` (edge-type color materials), `three-d-camera-framing.js` (initial camera position), `three-d-fps-controls.js` (WASD + mouse FPS navigation), `three-d-joystick.js` (virtual joystick for mobile), `three-d-miniature.js` (miniature/diorama mode), `three-d-issues.js` (3D issue highlighting)
+- **`src/pages/`** — Hash-routed full-page views: `profile-page.js` (user profile with stats), `leaderboard-page.js` (org-wide leaderboard), `project-stats-page.js` (per-project analytics)
 
 ### API Routes (`api/`)
 
@@ -159,6 +162,9 @@ All routes require Better Auth session. Rate limited: 100 req/min (20 for auth).
 | `/api/user-role` | GET | Current user's role, permissions, features. Auto-creates user record. |
 | `/api/features/:targetType/:targetId` | GET, PUT | Feature flags per user/org |
 | `/api/layers`, `/api/layers/[id]` | GET, POST, PUT, DELETE | Project GeoJSON layers (admin) |
+| `/api/issue-comments` | GET, POST | Issue node comments, close/reopen, notifications |
+| `/api/notifications` | GET, POST | Unread notifications (GET with `?count=true` for count), mark read |
+| `/api/stats/leaderboard` | GET | Accuracy leaderboard per project (`?projectId=UUID`) |
 
 **API library (`api/_lib/`):**
 - `auth.js` — `verifyAuth()`, `parseBody()` (15MB limit), header/cookie helpers
