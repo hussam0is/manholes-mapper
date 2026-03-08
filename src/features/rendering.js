@@ -9,6 +9,14 @@ import { COLORS } from '../state/constants.js';
 export function renderEdgeLegend(legendEl, edgeTypeColors) {
   if (!legendEl) return;
 
+  // In cockpit mode the legend is replaced by the intel strip — keep it hidden.
+  if (document.body.classList.contains('cockpit-mode')) {
+    legendEl.style.display = 'none';
+    return;
+  }
+  // Restore display if we're leaving cockpit mode
+  legendEl.style.removeProperty('display');
+
   // window.t may not be available yet during early module initialization
   // (main-entry.js sets it after all static imports run). Schedule a deferred
   // re-render so the legend always shows translated text once i18n is ready.

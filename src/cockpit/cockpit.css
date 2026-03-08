@@ -47,6 +47,12 @@ body.cockpit-mode .take-measure-fab {
   display: none !important;
 }
 
+/* Edge legend is replaced by the intel strip in cockpit mode */
+body.cockpit-mode #edgeLegend,
+body.cockpit-mode .edge-legend {
+  display: none !important;
+}
+
 /* Stretch canvas container to fill Zone B */
 body.cockpit-mode #canvasContainer {
   margin: 0;

@@ -25,6 +25,12 @@ export function getApiBaseUrl() {
 }
 
 if (isCapacitorNative()) {
+  // Mark platform on <html> for CSS perf optimizations (e.g. disable backdrop-filter)
+  try {
+    const platform = Capacitor.getPlatform(); // 'android' | 'ios' | 'web'
+    document.documentElement.classList.add(`platform-${platform}`);
+  } catch { /* ignore */ }
+
   const originalFetch = window.fetch.bind(window);
 
   window.fetch = function (input, init) {

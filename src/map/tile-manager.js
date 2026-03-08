@@ -61,16 +61,20 @@ function getCacheKey(x, y, z, type) {
 }
 
 /**
- * Evict oldest tiles from cache until under byte limit
+ * Evict oldest tiles from cache until under byte limit.
+ * Uses a partial scan instead of full sort — O(n) vs O(n log n).
  */
 function evictOldTiles() {
   if (totalCacheBytes <= MAX_CACHE_BYTES) return;
-  
-  const entries = Array.from(tileCache.entries())
-    .sort((a, b) => a[1].timestamp - b[1].timestamp);
-  
-  for (const [key, entry] of entries) {
-    if (totalCacheBytes <= MAX_CACHE_BYTES) break;
+
+  // Target: evict ~25% of cache to avoid frequent re-evictions
+  const target = MAX_CACHE_BYTES * 0.75;
+
+  // Find oldest entries by iterating once (Map preserves insertion order,
+  // but we update timestamps on access, so just grab the first ~25% of entries
+  // which are the least-recently-inserted and likely least-recently-used)
+  for (const [key, entry] of tileCache) {
+    if (totalCacheBytes <= target) break;
     totalCacheBytes -= entry.bytes;
     tileCache.delete(key);
   }
