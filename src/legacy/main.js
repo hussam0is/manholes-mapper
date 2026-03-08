@@ -141,6 +141,10 @@ import {
 } from '../project/project-canvas-state.js';
 import { drawBackgroundSketches, drawMergeModeOverlay } from '../project/project-canvas-renderer.js';
 import { initSketchSidePanel, showSketchSidePanel, hideSketchSidePanel } from '../project/sketch-side-panel.js';
+import { SpatialGrid, buildNodeGrid, buildEdgeGrid } from '../utils/spatial-grid.js';
+import { renderCache } from '../utils/render-cache.js';
+import { renderPerf } from '../utils/render-perf.js';
+import { progressiveRenderer } from '../utils/progressive-renderer.js';
 
 /**
  * Get the current username from authentication or return a default
@@ -569,6 +573,18 @@ let _edgeLabelCacheViewScale = NaN;
 function markEdgeLabelCacheDirty() {
   _edgeLabelDataCache = null;
 }
+// ── Spatial grid caches ──────────────────────────────────────────────────
+// Grid-based spatial index for fast viewport culling. Rebuilt lazily when
+// nodes/edges change (tracked by the same _nodeMapDirty flag).
+let _nodeGrid = null;   // SpatialGrid<node>
+let _edgeGrid = null;   // SpatialGrid<edge>
+let _spatialGridDirty = true;
+// Data version counter — incremented on every structural data change.
+// Used to invalidate off-screen canvas caches.
+let _dataVersion = 0;
+// Grid rendering cache version — incremented when grid visual params change
+let _gridCacheVersion = 0;
+
 // Coordinate system state
 let coordinatesMap = new Map(); // Map<nodeId, {x, y, z}>
 let coordinatesEnabled = true; // Whether to show coordinate indicators and use coordinate positions
@@ -1931,7 +1947,7 @@ function loadFromStorage() {
     const parsed = JSON.parse(data);
     if (!parsed || !parsed.nodes || !parsed.edges) return false;
     nodes = parsed.nodes;
-    _nodeMapDirty = true;
+    _nodeMapDirty = true; _spatialGridDirty = true; _dataVersion++;
     edges = parsed.edges;
     clearUndoStack();
     markEdgeLabelCacheDirty(); // new sketch data loaded
@@ -2324,7 +2340,7 @@ async function loadFromLibrary(sketchId) {
     }
   }
   nodes = sketchData.nodes || [];
-  _nodeMapDirty = true;
+  _nodeMapDirty = true; _spatialGridDirty = true; _dataVersion++;
   edges = sketchData.edges || [];
   clearUndoStack();
   markEdgeLabelCacheDirty(); // sketch record loaded
@@ -3016,7 +3032,7 @@ window.__getSelection = function () {
  */
 window.__setActiveSketchData = function (data) {
   nodes = data.nodes || [];
-  _nodeMapDirty = true;
+  _nodeMapDirty = true; _spatialGridDirty = true; _dataVersion++;
   edges = data.edges || [];
   clearUndoStack();
   nextNodeId = data.nextNodeId || 1;
@@ -3041,6 +3057,9 @@ window.__setActiveSketchData = function (data) {
 
 window.__scheduleDraw = function () { scheduleDraw(); };
 window.__saveToStorage = function () { saveToStorage(); };
+// Expose render performance monitor for console debugging
+// Usage: window.__renderPerf.showOverlay() to see on-screen FPS counter
+window.__renderPerfMonitor = renderPerf;
 window.__getMutableSketchData = function () {
   return { nodes, edges };
 };
@@ -3602,7 +3621,7 @@ async function handleChangeProject(sketchId) {
  */
 function newSketch(date, projectId = null, inputFlowConfig = null) {
   nodes = [];
-  _nodeMapDirty = true;
+  _nodeMapDirty = true; _spatialGridDirty = true; _dataVersion++;
   edges = [];
   clearUndoStack();
   markEdgeLabelCacheDirty(); // sketch cleared
@@ -3672,7 +3691,7 @@ function createNode(x, y) {
     });
   }
   nodes.push(node);
-  _nodeMapDirty = true;
+  _nodeMapDirty = true; _spatialGridDirty = true; _dataVersion++;
 
   // Check for nearby dangling edges and auto-connect
   const nearbyDangling = findDanglingEdgeNear(x, y);
@@ -4069,7 +4088,7 @@ function deleteNodeShared(node, pushToUndo = true) {
 
   // Remove the node
   nodes = nodes.filter(n => n !== node);
-  _nodeMapDirty = true;
+  _nodeMapDirty = true; _spatialGridDirty = true; _dataVersion++;
 
   if (pushToUndo) {
     // Push undo action with all info needed to restore
@@ -4171,7 +4190,7 @@ function performUndo() {
     // Remove node and connected edges
     const removedEdgeIds = new Set(connectedEdges.map(e => e.id));
     nodes = nodes.filter(n => n !== node);
-    _nodeMapDirty = true;
+    _nodeMapDirty = true; _spatialGridDirty = true; _dataVersion++;
     edges = edges.filter(e => !removedEdgeIds.has(e.id));
     undoStack.pop();
     // Clean stale edge undo entries from the stack
@@ -4241,7 +4260,7 @@ function performUndo() {
   } else if (action.type === 'nodeDelete') {
     // Restore the deleted node
     nodes.push(deepCopyObj(action.node));
-    _nodeMapDirty = true;
+    _nodeMapDirty = true; _spatialGridDirty = true; _dataVersion++;
     // Restore fully removed edges
     for (const edgeCopy of action.removedEdges) {
       edges.push(deepCopyObj(edgeCopy));
@@ -4335,7 +4354,7 @@ function performRedo() {
   if (action.type === 'nodeRestore') {
     // Redo of "undo nodeCreate" — restore the node and edges
     nodes.push(deepCopyObj(action.node));
-    _nodeMapDirty = true;
+    _nodeMapDirty = true; _spatialGridDirty = true; _dataVersion++;
     for (const edgeCopy of action.edges) {
       edges.push(deepCopyObj(edgeCopy));
     }
@@ -4404,7 +4423,7 @@ function performRedo() {
     }
 
     nodes = nodes.filter(n => n !== node);
-    _nodeMapDirty = true;
+    _nodeMapDirty = true; _spatialGridDirty = true; _dataVersion++;
     // Push the nodeDelete action back onto undo
     pushUndoDirect(deepCopyObj(action));
     if (selectedNode && String(selectedNode.id) === nodeIdStr) {
@@ -4724,6 +4743,8 @@ function finalizeDanglingEndpointDrag() {
  * Redraw the entire scene (edges first, then nodes).
  */
 function draw() {
+  renderPerf.frameStart();
+
   // When autoSize is enabled, divide sizes by viewScale for constant screen-pixel size
   sizeVS = autoSizeEnabled ? viewScale : 1;
 
@@ -4812,6 +4833,14 @@ function draw() {
   const visMaxX = (canvasLogicalW - viewTranslate.x) / viewScale + cullMargin;
   const visMaxY = (canvasLogicalH - viewTranslate.y) / viewScale + cullMargin;
 
+  // Rebuild spatial grids when data changes (lazy, amortized)
+  const nodeRadius = NODE_RADIUS * sizeScale / sizeVS;
+  if (_spatialGridDirty || !_nodeGrid) {
+    _nodeGrid = buildNodeGrid(nodes, nodeRadius, viewStretchX, viewStretchY);
+    _edgeGrid = buildEdgeGrid(edges, nodeMap, viewStretchX, viewStretchY);
+    _spatialGridDirty = false;
+  }
+
   // Draw background sketches in project-canvas mode (before active sketch)
   if (window.__projectCanvas?.isProjectCanvasMode()) {
     const drawOpts = {
@@ -4826,15 +4855,20 @@ function draw() {
     drawMergeModeOverlay(ctx, nodes, drawOpts);
   }
 
-  // Draw edges first (positions will be stretched, shapes won't)
-  for (let i = 0; i < edges.length; i++) {
-    const edge = edges[i];
-    // Quick cull for normal (non-dangling) edges
+  // Draw edges — use spatial grid for fast culling when dataset is large
+  const _useGridCull = edges.length > 200 && _edgeGrid;
+  const _visibleEdges = _useGridCull
+    ? _edgeGrid.queryArray(visMinX, visMinY, visMaxX, visMaxY)
+    : edges;
+  let _edgesDrawn = 0;
+  for (let i = 0; i < _visibleEdges.length; i++) {
+    const edge = _visibleEdges[i];
     const tn = edge.tail != null ? nodeMap.get(String(edge.tail)) : null;
     const hn = edge.head != null ? nodeMap.get(String(edge.head)) : null;
     // Skip edges where either endpoint is hidden
     if ((tn && tn._hidden) || (hn && hn._hidden)) continue;
-    if (tn && hn) {
+    // For linear scan path (small datasets), still do viewport cull
+    if (!_useGridCull && tn && hn) {
       const sx1 = tn.x * viewStretchX, sy1 = tn.y * viewStretchY;
       const sx2 = hn.x * viewStretchX, sy2 = hn.y * viewStretchY;
       const eMinX = Math.min(sx1, sx2), eMaxX = Math.max(sx1, sx2);
@@ -4842,6 +4876,7 @@ function draw() {
       if (eMaxX < visMinX || eMinX > visMaxX || eMaxY < visMinY || eMinY > visMaxY) continue;
     }
     drawEdge(edge);
+    _edgesDrawn++;
   }
   // Draw a rubber-band preview when creating an edge
   if (currentMode === 'edge' && pendingEdgePreview) {
@@ -4928,18 +4963,27 @@ function draw() {
   // Draw nodes on top and collect label data
   const labelData = [];
   const nodeData = [];
-  const nodeRadius = NODE_RADIUS * sizeScale / sizeVS;
+  // nodeRadius already declared above (spatial grid section)
 
-  for (let i = 0; i < nodes.length; i++) {
-    const node = nodes[i];
+  // Use spatial grid for node culling on large datasets
+  const _useNodeGrid = nodes.length > 200 && _nodeGrid;
+  const _visibleNodes = _useNodeGrid
+    ? _nodeGrid.queryArray(visMinX, visMinY, visMaxX, visMaxY)
+    : nodes;
+  let _nodesDrawn = 0;
+
+  for (let i = 0; i < _visibleNodes.length; i++) {
+    const node = _visibleNodes[i];
     // Skip hidden nodes (no coordinates — not yet measured)
     if (node._hidden) continue;
-    // Viewport cull: skip nodes entirely outside the visible area
     const sx = node.x * viewStretchX;
     const sy = node.y * viewStretchY;
-    if (sx + nodeRadius < visMinX || sx - nodeRadius > visMaxX ||
-        sy + nodeRadius < visMinY || sy - nodeRadius > visMaxY) {
-      continue;
+    // For linear scan path (small datasets), still do viewport cull
+    if (!_useNodeGrid) {
+      if (sx + nodeRadius < visMinX || sx - nodeRadius > visMaxX ||
+          sy + nodeRadius < visMinY || sy - nodeRadius > visMaxY) {
+        continue;
+      }
     }
     const label = drawNode(node);
     if (label) {
@@ -4947,7 +4991,14 @@ function draw() {
     }
     // Collect node data for collision detection (use stretched positions)
     nodeData.push({ x: sx, y: sy, radius: nodeRadius });
+    _nodesDrawn++;
   }
+
+  // Record performance stats
+  renderPerf.record('visibleNodes', _nodesDrawn);
+  renderPerf.record('visibleEdges', _edgesDrawn);
+  renderPerf.record('totalNodes', nodes.length);
+  renderPerf.record('totalEdges', edges.length);
 
   // Collect edge label data for collision detection — cached, rebuilt only when edges change.
   // The cache (_edgeLabelDataCache) is invalidated by markEdgeLabelCacheDirty(), which is
@@ -5087,16 +5138,22 @@ function draw() {
     // Check effective font size: skip entirely when labels would be < 4px on screen
     const _elf = Math.round(14 * sizeScale / sizeVS) * viewScale;
     if (viewScale >= 0.3 && _elf >= 4) {
-      for (let i = 0; i < edges.length; i++) {
-        const edge = edges[i];
-        // Quick viewport cull for edge labels (same as edge drawing)
-        const tn = edge.tail != null ? nodeMap.get(String(edge.tail)) : null;
-        const hn = edge.head != null ? nodeMap.get(String(edge.head)) : null;
-        if (tn && hn) {
-          const sx1 = tn.x * viewStretchX, sy1 = tn.y * viewStretchY;
-          const sx2 = hn.x * viewStretchX, sy2 = hn.y * viewStretchY;
-          if (Math.max(sx1, sx2) < visMinX || Math.min(sx1, sx2) > visMaxX ||
-              Math.max(sy1, sy2) < visMinY || Math.min(sy1, sy2) > visMaxY) continue;
+      // Use spatial grid for edge label culling on large datasets
+      const _edgeLabelSource = _useGridCull
+        ? _visibleEdges  // Already viewport-filtered by spatial grid
+        : edges;
+      for (let i = 0; i < _edgeLabelSource.length; i++) {
+        const edge = _edgeLabelSource[i];
+        // For linear scan path (small datasets), still do viewport cull
+        if (!_useGridCull) {
+          const tn = edge.tail != null ? nodeMap.get(String(edge.tail)) : null;
+          const hn = edge.head != null ? nodeMap.get(String(edge.head)) : null;
+          if (tn && hn) {
+            const sx1 = tn.x * viewStretchX, sy1 = tn.y * viewStretchY;
+            const sx2 = hn.x * viewStretchX, sy2 = hn.y * viewStretchY;
+            if (Math.max(sx1, sx2) < visMinX || Math.min(sx1, sx2) > visMaxX ||
+                Math.max(sy1, sy2) < visMinY || Math.min(sy1, sy2) > visMaxY) continue;
+          }
         }
         drawEdgeLabels(edge);
       }
@@ -5141,6 +5198,7 @@ function draw() {
   // Update incomplete edge tracker (throttled)
   scheduleIncompleteEdgeUpdate();
   // Note: updateCanvasEmptyState() moved out of draw() — called on state changes only
+  renderPerf.frameEnd();
 }
 
 // Throttled DOM updates – avoid running inside every draw frame
@@ -6994,7 +7052,7 @@ function renderDetails() {
               btn.addEventListener('click', () => {
                 const result = fix.apply();
                 if (result === false) return; // cancelled or failed
-                _nodeMapDirty = true;
+                _nodeMapDirty = true; _spatialGridDirty = true; _dataVersion++;
                 computeNodeTypes();
                 updateIncompleteEdgeTracker();
                 if (selectedNode && !nodes.find(n => n === selectedNode)) {
@@ -7518,7 +7576,7 @@ function renderDetails() {
               btn.addEventListener('click', () => {
                 const result = fix.apply();
                 if (result === false) return;
-                _nodeMapDirty = true;
+                _nodeMapDirty = true; _spatialGridDirty = true; _dataVersion++;
                 computeNodeTypes();
                 updateIncompleteEdgeTracker();
                 if (selectedEdge && !edges.find(e => e === selectedEdge)) {
@@ -9186,7 +9244,7 @@ if (importSketchBtn && importSketchFile) {
 
       // Load the imported sketch
       nodes = importedSketch.nodes;
-      _nodeMapDirty = true;
+      _nodeMapDirty = true; _spatialGridDirty = true; _dataVersion++;
       edges = importedSketch.edges;
       nextNodeId = importedSketch.nextNodeId;
       creationDate = importedSketch.creationDate;
@@ -10085,7 +10143,7 @@ function applyCoordinatesIfEnabled(options = {}) {
   // Apply coordinates to matching nodes using logical (CSS) dimensions and current scale
   const result = applyCoordinatesToNodes(nodes, coordinatesMap, logicalWidth, logicalHeight, coordinateScale);
   nodes = result.updatedNodes;
-  _nodeMapDirty = true;
+  _nodeMapDirty = true; _spatialGridDirty = true; _dataVersion++;
 
   // Log results for debugging
   console.debug(`[Coordinates] Applied: ${result.matchedCount} matched, ${result.unmatchedCount} unmatched`);
@@ -10094,7 +10152,7 @@ function applyCoordinatesIfEnabled(options = {}) {
   // Pass original positions to calculate distance ratios
   if (result.unmatchedCount > 0 && result.matchedCount > 0) {
     nodes = approximateUncoordinatedNodePositions(nodes, edges, originalNodePositions);
-    _nodeMapDirty = true;
+    _nodeMapDirty = true; _spatialGridDirty = true; _dataVersion++;
   }
   
   // Handle view adjustment based on options
@@ -11922,7 +11980,7 @@ function handleGnssPointCapture(captureData) {
       hasCoordinates: true
     };
     nodes.push(newNode);
-    _nodeMapDirty = true;
+    _nodeMapDirty = true; _spatialGridDirty = true; _dataVersion++;
     targetNodeId = newId;
   }
   
