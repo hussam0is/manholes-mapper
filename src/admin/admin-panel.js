@@ -30,6 +30,7 @@ const TABS = [
   { id: 'orgs',      icon: 'business',      i18nKey: 'adminPanel.tabs.orgs',      roles: ['super_admin'] },
   { id: 'features',  icon: 'toggle_on',     i18nKey: 'adminPanel.tabs.features',  roles: ['super_admin'] },
   { id: 'fixes',     icon: 'build',         i18nKey: 'adminPanel.tabs.fixes',     roles: ['super_admin'] },
+  { id: 'statistics', icon: 'bar_chart',    i18nKey: 'adminPanel.tabs.statistics', roles: ['admin', 'super_admin'] },
 ];
 
 export class AdminPanel {
@@ -167,6 +168,9 @@ export class AdminPanel {
           break;
         case 'fixes':
           await this._loadFixesTab(panel);
+          break;
+        case 'statistics':
+          await this._loadStatisticsTab(panel);
           break;
         default:
           panel.innerHTML = '';
@@ -387,6 +391,24 @@ export class AdminPanel {
       showToast: this.showToast,
     });
     this._tabInstances.fixes = instance;
+    await instance.render();
+  }
+
+  async _loadStatisticsTab(panel) {
+    const { AdminStatistics } = await import('./admin-statistics.js');
+
+    panel.innerHTML = '';
+    const inner = document.createElement('div');
+    inner.className = 'ap-tab-inner';
+    panel.appendChild(inner);
+
+    const instance = new AdminStatistics({
+      container: inner,
+      t: this.t,
+      showToast: this.showToast,
+      currentUser: this._currentUser,
+    });
+    this._tabInstances.statistics = instance;
     await instance.render();
   }
 
