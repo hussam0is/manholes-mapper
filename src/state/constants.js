@@ -144,7 +144,7 @@ const COLORS_DARK = {
     fallIconText: '#e0f2fe',  // sky-100 (fallback icon text for dark mode)
   },
   grid: {
-    stroke: 'rgba(255, 255, 255, 0.1)', // semi-transparent white for dark mode
+    stroke: 'rgba(255, 255, 255, 0.18)', // semi-transparent white for dark mode — raised from 0.1 for visibility
   }
 };
 
