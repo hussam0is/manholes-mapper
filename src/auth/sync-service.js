@@ -94,7 +94,7 @@ export function onSyncStateChange(callback) {
  */
 function notifySyncStateChange() {
   syncStateListeners.forEach(cb => {
-    try { cb({ ...syncState }); } catch (_err) {}
+    try { cb({ ...syncState }); } catch (e) { console.warn('[SyncService] Listener error:', e); }
   });
 }
 
@@ -1016,12 +1016,12 @@ export async function processSyncQueue() {
 
             // Remove old local-ID entry from IndexedDB
             if (oldQueueId && oldQueueId !== cloudSketch.id) {
-              try { await deleteSketchFromIdb(oldQueueId); } catch (_e) {}
+              try { await deleteSketchFromIdb(oldQueueId); } catch (e) { console.warn('[SyncService] Failed to delete old IDB entry:', e); }
             }
 
             // Notify main.js of the ID change
             if (typeof window !== 'undefined' && typeof window.__onSketchIdChanged === 'function') {
-              try { window.__onSketchIdChanged(oldQueueId, cloudSketch.id); } catch (_e) {}
+              try { window.__onSketchIdChanged(oldQueueId, cloudSketch.id); } catch (e) { console.warn('[SyncService] onSketchIdChanged error:', e); }
             }
 
             // Track updated_at for optimistic locking

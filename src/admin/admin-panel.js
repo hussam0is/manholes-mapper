@@ -304,7 +304,7 @@ export class AdminPanel {
       a.click();
       a.remove();
       this.showToast(this.t('admin.exportSuccess'));
-    } catch (_) { /* ignore */ }
+    } catch (e) { console.warn('[AdminPanel] Export failed:', e); }
   }
 
   async _loadProjectsTab(panel) {

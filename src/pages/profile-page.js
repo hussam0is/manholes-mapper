@@ -53,7 +53,7 @@ export function renderProfilePage() {
       totalNodes += (sketch.nodes || []).length;
       totalEdges += (sketch.edges || []).length;
     }
-  } catch (_) { /* ignore */ }
+  } catch (e) { console.warn('[Profile] Failed to load sketch stats:', e); }
 
   // Feature flags
   const features = authState.features || [];

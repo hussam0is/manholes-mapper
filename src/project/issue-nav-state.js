@@ -162,7 +162,7 @@ export function onNavStateChange(listener) {
 function _notify() {
   const state = getNavState();
   for (const fn of _listeners) {
-    try { fn(state); } catch (_) { /* ignore */ }
+    try { fn(state); } catch (e) { console.warn('[IssueNavState] Listener error:', e); }
   }
 }
 

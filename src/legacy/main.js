@@ -9957,39 +9957,7 @@ async function handleCoordinatesImport(file) {
       showToast(t('coordinates.noCoordinatesFound'));
       return;
     }
-    
-    // Debug: Log imported coordinates
-    console.debug('[Coordinates] === IMPORT DEBUG ===');
-    console.debug('[Coordinates] Imported coordinates count:', newCoordinates.size);
-    console.debug('[Coordinates] Sample coordinates (first 5):');
-    let count = 0;
-    for (const [pointId, coords] of newCoordinates.entries()) {
-      if (count++ < 5) {
-        console.debug(`[Coordinates]   Point ID "${pointId}":`, coords);
-      }
-    }
-    
-    // Debug: Log current node IDs
-    console.debug('[Coordinates] Current node IDs in sketch:', nodes.map(n => `"${n.id}" (type: ${typeof n.id})`).slice(0, 10));
-    
-    // Check for matches
-    const matchingIds = [];
-    const nonMatchingNodeIds = [];
-    nodes.forEach(node => {
-      const nodeIdStr = String(node.id);
-      if (newCoordinates.has(nodeIdStr)) {
-        matchingIds.push(nodeIdStr);
-      } else {
-        nonMatchingNodeIds.push(nodeIdStr);
-      }
-    });
-    console.debug('[Coordinates] Matching node IDs:', matchingIds.length, matchingIds.slice(0, 10));
-    console.debug('[Coordinates] Non-matching node IDs:', nonMatchingNodeIds.length, nonMatchingNodeIds.slice(0, 10));
-    
-    // Check if any coordinate point_ids match node IDs
-    const coordPointIds = Array.from(newCoordinates.keys());
-    console.debug('[Coordinates] Coordinate point_ids (first 10):', coordPointIds.slice(0, 10));
-    
+
     // Geographic compatibility check: if existing coordinatesMap has data,
     // compare centroids. If new file is from a different project area (>1500m away),
     // ask the user whether to replace or merge to avoid coordinate pollution.

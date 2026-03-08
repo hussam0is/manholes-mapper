@@ -197,7 +197,7 @@ export function onBackupCreated(callback) {
  */
 function notifyBackupCreated(backup) {
   backupListeners.forEach(cb => {
-    try { cb(backup); } catch (_) {}
+    try { cb(backup); } catch (e) { console.warn('[Backup] Listener error:', e); }
   });
 }
 

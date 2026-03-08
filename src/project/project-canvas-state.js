@@ -268,7 +268,7 @@ export function refreshActiveSketchData() {
 
 function _notify(changeType) {
   for (const fn of listeners) {
-    try { fn(changeType); } catch (_) { /* ignore */ }
+    try { fn(changeType); } catch (e) { console.warn('[ProjectCanvas] Listener error:', e); }
   }
 }
 

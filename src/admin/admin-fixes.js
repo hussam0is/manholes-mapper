@@ -137,7 +137,7 @@ export class AdminFixes {
               nodes = sJson.nodes || [];
               edges = sJson.edges || [];
             }
-          } catch (_) { /* skip */ }
+          } catch (e) { console.warn('[AdminFixes] Failed to fetch sketch data:', e); }
         }
 
         const { issues } = computeSketchIssues(nodes, edges);
