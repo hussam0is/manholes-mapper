@@ -1,5 +1,5 @@
 // Rendering helpers that can be called from legacy code
-import { COLORS } from '../state/constants.js';
+import { COLORS, NODE_RADIUS } from '../state/constants.js';
 
 /**
  * Render the edge type legend into the provided container element.
@@ -187,15 +187,18 @@ export function drawEdge(ctx, edge, tailNode, headNode, options) {
   ctx.stroke();
   const angle = Math.atan2(y2 - y1, x2 - x1);
   const arrowLength = 10 / viewScale;
+  const nodeR = NODE_RADIUS / viewScale;
+  const tipX = x2 - nodeR * Math.cos(angle);
+  const tipY = y2 - nodeR * Math.sin(angle);
   ctx.beginPath();
-  ctx.moveTo(x2, y2);
+  ctx.moveTo(tipX, tipY);
   ctx.lineTo(
-    x2 - arrowLength * Math.cos(angle - Math.PI / 6),
-    y2 - arrowLength * Math.sin(angle - Math.PI / 6)
+    tipX - arrowLength * Math.cos(angle - Math.PI / 6),
+    tipY - arrowLength * Math.sin(angle - Math.PI / 6)
   );
   ctx.lineTo(
-    x2 - arrowLength * Math.cos(angle + Math.PI / 6),
-    y2 - arrowLength * Math.sin(angle + Math.PI / 6)
+    tipX - arrowLength * Math.cos(angle + Math.PI / 6),
+    tipY - arrowLength * Math.sin(angle + Math.PI / 6)
   );
   ctx.closePath();
   ctx.fillStyle = resolvedColor;

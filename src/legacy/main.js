@@ -5409,12 +5409,15 @@ function drawEdge(edge) {
     ctx.moveTo(tx1, ty1);
     ctx.lineTo(tx2, ty2);
     ctx.stroke();
-    // Arrowhead at head
+    // Arrowhead at head — offset tip to node border so it's not hidden by the node circle
     const arrowLength = 10 / sizeVS;
+    const nodeR = NODE_RADIUS * sizeScale / sizeVS;
+    const tipX = tx2 - nodeR * Math.cos(angle);
+    const tipY = ty2 - nodeR * Math.sin(angle);
     ctx.beginPath();
-    ctx.moveTo(tx2, ty2);
-    ctx.lineTo(tx2 - arrowLength * Math.cos(angle - Math.PI / 6), ty2 - arrowLength * Math.sin(angle - Math.PI / 6));
-    ctx.lineTo(tx2 - arrowLength * Math.cos(angle + Math.PI / 6), ty2 - arrowLength * Math.sin(angle + Math.PI / 6));
+    ctx.moveTo(tipX, tipY);
+    ctx.lineTo(tipX - arrowLength * Math.cos(angle - Math.PI / 6), tipY - arrowLength * Math.sin(angle - Math.PI / 6));
+    ctx.lineTo(tipX - arrowLength * Math.cos(angle + Math.PI / 6), tipY - arrowLength * Math.sin(angle + Math.PI / 6));
     ctx.closePath();
     ctx.fillStyle = resolvedColor;
     ctx.fill();
