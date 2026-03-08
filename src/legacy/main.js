@@ -7061,24 +7061,15 @@ function renderDetails() {
                 }
                 saveToStorage();
                 scheduleDraw();
-                // Refresh nav state and auto-advance to next issue
+                // Refresh nav state and stay on current node
                 if (window.__issueNav) {
                   window.__issueNav.refreshIssues(nodes, edges);
                   const nav = window.__issueNav.getNavState();
-                  if (nav.total > 0) {
-                    const nextIssue = window.__issueNav.goToNextIssue();
-                    if (nextIssue) {
-                      // Select the node/edge at the next issue
-                      if (nextIssue.nodeId != null) {
-                        window.__selectNodeById?.(nextIssue.nodeId);
-                      } else if (nextIssue.edgeId != null) {
-                        window.__selectEdgeById?.(nextIssue.edgeId);
-                      }
-                      if (window.showToast) window.showToast(t('fixes.autoAdvanced'));
-                    }
-                  } else {
-                    renderDetails();
+                  renderDetails();
+                  if (nav.total === 0) {
                     if (window.showToast) window.showToast(t('fixes.allResolved'));
+                  } else {
+                    if (window.showToast) window.showToast(t('fixes.applied'));
                   }
                 } else {
                   renderDetails();
@@ -7585,23 +7576,15 @@ function renderDetails() {
                 }
                 saveToStorage();
                 scheduleDraw();
-                // Refresh nav state and auto-advance to next issue
+                // Refresh nav state and stay on current edge
                 if (window.__issueNav) {
                   window.__issueNav.refreshIssues(nodes, edges);
                   const nav = window.__issueNav.getNavState();
-                  if (nav.total > 0) {
-                    const nextIssue = window.__issueNav.goToNextIssue();
-                    if (nextIssue) {
-                      if (nextIssue.nodeId != null) {
-                        window.__selectNodeById?.(nextIssue.nodeId);
-                      } else if (nextIssue.edgeId != null) {
-                        window.__selectEdgeById?.(nextIssue.edgeId);
-                      }
-                      if (window.showToast) window.showToast(t('fixes.autoAdvanced'));
-                    }
-                  } else {
-                    renderDetails();
+                  renderDetails();
+                  if (nav.total === 0) {
                     if (window.showToast) window.showToast(t('fixes.allResolved'));
+                  } else {
+                    if (window.showToast) window.showToast(t('fixes.applied'));
                   }
                 } else {
                   renderDetails();
