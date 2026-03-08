@@ -174,10 +174,10 @@ describe('Tile Coordinate System', () => {
     it('should select higher zoom for detailed view', () => {
       const pixelsPerMeter = 10; // More detailed
       const zoom = calculateZoomLevel(pixelsPerMeter);
-      
-      // Higher scale should give higher zoom
+
+      // Higher scale should give higher zoom (extended to z=21 for Esri imagery)
       expect(zoom).toBeGreaterThanOrEqual(17);
-      expect(zoom).toBeLessThanOrEqual(19);
+      expect(zoom).toBeLessThanOrEqual(21);
     });
 
     it('should select lower zoom for overview', () => {

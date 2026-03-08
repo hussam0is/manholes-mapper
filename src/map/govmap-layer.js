@@ -13,7 +13,8 @@ import {
   calculateTilesInBounds,
   calculateViewBoundsItm,
   calculateZoomLevel,
-  tileToLatLon
+  tileToLatLon,
+  findParentTile
 } from './tile-manager.js';
 import {
   wgs84ToItm as projectWgs84ToItm,
@@ -229,24 +230,34 @@ export async function drawMapTiles(ctx, canvasWidth, canvasHeight, viewTranslate
   
   // Get visible tiles
   const tiles = calculateVisibleTiles(viewBounds, zoom);
-  
+
+  // Use high quality image smoothing for better aerial photo rendering
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+
   // Draw each tile
   for (const tile of tiles) {
     const { x, y, z } = tile;
-    
-    // Get or load tile
+
+    // Get or load tile — fall back to parent tile as placeholder
     let tileImage = getTileFromCache(x, y, z, currentMapType);
-    
+    let parentInfo = null;
+
     if (!tileImage) {
-      // Start loading, will draw on next frame
+      // Try to find a cached parent tile to draw as placeholder
+      parentInfo = findParentTile(x, y, z, currentMapType);
+
+      // Start loading the actual tile
       loadTile(x, y, z, currentMapType).then((img) => {
         if (img && onTilesLoaded) {
           onTilesLoaded();
         }
       });
-      continue;
+
+      // Skip if no parent fallback either
+      if (!parentInfo) continue;
     }
-    
+
     // Look up or compute ITM corners for this tile (cached to avoid per-frame proj4)
     const tileCacheKey = `${z}/${x}/${y}`;
     let tileItm = _tileItmCache.get(tileCacheKey);
@@ -266,24 +277,33 @@ export async function drawMapTiles(ctx, canvasWidth, canvasHeight, viewTranslate
 
     const tileWidthMeters = tileItm.widthMeters;
     const tileHeightMeters = tileItm.heightMeters;
-    
+
     // Convert ITM to canvas coordinates using reference point
     // These are in WORLD coordinates (before view transform)
     const worldX = referencePoint.canvas.x + (tileItm.tlX - referencePoint.itm.x) * coordinateScale;
     const worldY = referencePoint.canvas.y - (tileItm.tlY - referencePoint.itm.y) * coordinateScale;
-    
+
     // Calculate tile size in world coordinates
     const worldWidth = tileWidthMeters * coordinateScale;
     const worldHeight = tileHeightMeters * coordinateScale;
-    
-    // Draw the tile (context is already transformed, so use world coordinates)
-    ctx.drawImage(
-      tileImage,
-      worldX,
-      worldY,
-      worldWidth,
-      worldHeight
-    );
+
+    if (tileImage) {
+      // Draw the full tile (context is already transformed, so use world coordinates)
+      ctx.drawImage(
+        tileImage,
+        worldX,
+        worldY,
+        worldWidth,
+        worldHeight
+      );
+    } else {
+      // Draw the parent tile sub-region as placeholder (blurry but visible)
+      ctx.drawImage(
+        parentInfo.image,
+        parentInfo.sx, parentInfo.sy, parentInfo.sw, parentInfo.sh,
+        worldX, worldY, worldWidth, worldHeight
+      );
+    }
   }
 }
 
@@ -441,8 +461,8 @@ export function precacheTilesForMeasurementBounds(itmBounds, paddingMeters = 50,
     minY: itmBounds.minY - pad,
     maxY: itmBounds.maxY + pad
   };
-  // Precache at zoom levels typically used for surveying (16–18)
-  const zooms = [16, 17, 18];
+  // Precache at zoom levels typically used for surveying (16–19)
+  const zooms = [16, 17, 18, 19];
   const type = currentMapType;
   const maxTilesPerZoom = 3000;
   const scheduled = [];

@@ -35,7 +35,7 @@ const _MAX_LATITUDE = 85.051128779806604; // Web Mercator limit
 // Resolution (meters per pixel) for each zoom level in Web Mercator
 // Formula: (2 * PI * EARTH_RADIUS) / (TILE_SIZE * 2^zoom)
 const WEB_MERCATOR_RESOLUTIONS = [];
-for (let z = 0; z <= 20; z++) {
+for (let z = 0; z <= 23; z++) {
   WEB_MERCATOR_RESOLUTIONS[z] = (2 * Math.PI * EARTH_RADIUS) / (TILE_SIZE * Math.pow(2, z));
 }
 
@@ -255,9 +255,9 @@ export function calculateZoomLevel(pixelsPerMeter) {
   let bestZoom = 17; // Default to a reasonable zoom
   let bestDiff = Infinity;
 
-  // Allow zoom 5-19 so zoomed-out views use coarser tiles instead of
-  // hitting tile-count limits and clipping the right side.
-  for (let z = 5; z <= 19; z++) {
+  // Allow zoom 5-21 for higher quality aerial imagery.
+  // Esri World Imagery supports zoom 20-21 in Israel and most urban areas.
+  for (let z = 5; z <= 21; z++) {
     const diff = Math.abs(GOVMAP_RESOLUTIONS[z] - targetResolution);
     if (diff < bestDiff) {
       bestDiff = diff;
@@ -416,6 +416,39 @@ export function markTileLoadPending(x, y, z, type, promise) {
 }
 
 /**
+ * Find a cached parent tile that covers the given tile coordinates.
+ * Walks up the zoom pyramid (up to maxLevelsUp) and returns the sub-region
+ * of the parent tile that corresponds to the requested child tile.
+ * @param {number} x - Child tile X
+ * @param {number} y - Child tile Y
+ * @param {number} z - Child tile zoom level
+ * @param {string} type - Tile type
+ * @param {number} [maxLevelsUp=4] - How many zoom levels to search upward
+ * @returns {{image: HTMLImageElement, sx: number, sy: number, sw: number, sh: number}|null}
+ */
+export function findParentTile(x, y, z, type, maxLevelsUp = 4) {
+  for (let dz = 1; dz <= maxLevelsUp && (z - dz) >= 0; dz++) {
+    const pz = z - dz;
+    const scale = 1 << dz; // 2^dz
+    const px = x >> dz;
+    const py = y >> dz;
+    const img = getTileFromCache(px, py, pz, type);
+    if (img) {
+      const relX = x - px * scale;
+      const relY = y - py * scale;
+      return {
+        image: img,
+        sx: (relX / scale) * TILE_SIZE,
+        sy: (relY / scale) * TILE_SIZE,
+        sw: TILE_SIZE / scale,
+        sh: TILE_SIZE / scale
+      };
+    }
+  }
+  return null;
+}
+
+/**
  * Clear all cached tiles
  */
 export function clearTileCache() {
@@ -437,5 +470,5 @@ export function getCacheStats() {
   };
 }
 
-// Export constants for external use (latLonToTile and tileToLatLon are already exported above)
+// Export constants for external use (latLonToTile, tileToLatLon, findParentTile are already exported above)
 export { TILE_SIZE, GOVMAP_RESOLUTIONS, GOVMAP_ORIGIN };
