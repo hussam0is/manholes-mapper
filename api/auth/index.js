@@ -16,23 +16,58 @@ export const config = {
 };
 
 /**
- * Read the full request body from a Node.js IncomingMessage as a Buffer.
- * On Vercel's Rust runtime, the body stream may behave differently,
- * so we buffer everything first.
+ * Get the request body, handling Vercel's Rust runtime quirks.
+ * Vercel may pre-consume the body stream and expose it via a patched
+ * req.body getter. Try multiple methods to read the body.
  */
-function collectBody(req) {
+async function getBody(req) {
+  // Method 1: Try Vercel's req.body getter (may throw or return parsed object)
+  try {
+    const body = req.body;
+    if (body !== undefined && body !== null) {
+      // If already parsed as object, stringify it for the Web Request
+      if (typeof body === 'object') {
+        return JSON.stringify(body);
+      }
+      return String(body);
+    }
+  } catch {
+    // Getter threw (e.g., "Invalid JSON") — try other methods
+  }
+
+  // Method 2: Read from stream (works in standard Node.js, may not on Vercel)
   return new Promise((resolve, reject) => {
     const chunks = [];
+    let resolved = false;
+
+    // Timeout after 3 seconds in case stream events never fire
+    const timer = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        resolve(chunks.length > 0 ? Buffer.concat(chunks).toString('utf8') : '');
+      }
+    }, 3000);
+
     req.on('data', (chunk) => chunks.push(chunk));
-    req.on('end', () => resolve(Buffer.concat(chunks)));
-    req.on('error', reject);
+    req.on('end', () => {
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(timer);
+        resolve(chunks.length > 0 ? Buffer.concat(chunks).toString('utf8') : '');
+      }
+    });
+    req.on('error', (err) => {
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(timer);
+        reject(err);
+      }
+    });
   });
 }
 
 /**
  * Convert Node.js IncomingMessage to a Web API Request.
- * Reads the body into a buffer first to avoid Vercel's patched body getter
- * which throws "Invalid JSON".
  */
 async function toWebRequest(req) {
   const protocol = req.headers['x-forwarded-proto'] || 'https';
@@ -53,9 +88,10 @@ async function toWebRequest(req) {
   const hasBody = req.method !== 'GET' && req.method !== 'HEAD';
   let body = undefined;
   if (hasBody) {
-    body = await collectBody(req);
-    // Only include non-empty bodies
-    if (body.length === 0) body = undefined;
+    const rawBody = await getBody(req);
+    if (rawBody && rawBody.length > 0) {
+      body = rawBody;
+    }
   }
 
   return new Request(url, {
@@ -73,7 +109,6 @@ async function writeWebResponse(webResponse, res) {
 
   for (const [key, value] of webResponse.headers.entries()) {
     if (key.toLowerCase() === 'set-cookie') {
-      // Handle multiple Set-Cookie headers
       const cookies = webResponse.headers.getSetCookie
         ? webResponse.headers.getSetCookie()
         : [value];
@@ -95,7 +130,7 @@ async function writeWebResponse(webResponse, res) {
 }
 
 export default async function authHandler(req, res) {
-  console.debug('[Auth API] Request:', req.method, req.url);
+  console.log('[Auth API] Request:', req.method, req.url);
 
   if (handleCors(req, res)) return;
 
@@ -107,13 +142,17 @@ export default async function authHandler(req, res) {
 
   try {
     const webRequest = await toWebRequest(req);
+    console.log('[Auth API] Web Request URL:', webRequest.url, 'Method:', webRequest.method);
     const webResponse = await auth.handler(webRequest);
+    console.log('[Auth API] Response status:', webResponse.status);
     await writeWebResponse(webResponse, res);
   } catch (error) {
     console.error('[Auth API] Error:', error.message || error);
+    console.error('[Auth API] Stack:', error.stack);
     if (!res.headersSent) {
       return res.status(500).json({
         error: sanitizeErrorMessage(error),
+        _debug: error.message,
       });
     }
   }
