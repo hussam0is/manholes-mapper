@@ -44,7 +44,7 @@ export async function loadProjectSketches(projectId) {
   console.time('[PERF] loadProjectSketches:parseJSON');
   const { sketches } = await res.json();
   console.timeEnd('[PERF] loadProjectSketches:parseJSON');
-  console.log(`[PERF] loadProjectSketches: received ${sketches.length} sketches, response size ~${JSON.stringify(sketches).length} chars`);
+  console.log(`[PERF] loadProjectSketches: received ${sketches.length} sketches`);
 
   projectSketches.clear();
   hiddenSketches.clear();

@@ -3459,8 +3459,23 @@ function repositionAllProjectSketchNodes(sketches) {
  * Enter project-canvas mode: load all sketches for a project onto the canvas.
  */
 async function loadProjectCanvas(projectId) {
+  // Long Task observer — detects ANY >50ms main-thread block
+  let _longTaskObserver;
+  if (typeof PerformanceObserver !== 'undefined') {
+    try {
+      _longTaskObserver = new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          console.warn(`[PERF] 🔴 LONG TASK detected: ${entry.duration.toFixed(0)}ms at ${entry.startTime.toFixed(0)}ms`, entry);
+        }
+      });
+      _longTaskObserver.observe({ type: 'longtask', buffered: false });
+    } catch (_) { /* longtask not supported */ }
+  }
+
   try {
+    const _t0 = performance.now();
     console.time('[PERF] loadProjectCanvas TOTAL');
+    console.log(`[PERF] ▶ loadProjectCanvas START at ${_t0.toFixed(0)}ms since page load`);
     hideHome(true); // Immediate hide to prevent sync-service race condition
     showToast(t('projects.canvas.loading') || 'Loading project sketches...');
 
@@ -3499,6 +3514,17 @@ async function loadProjectCanvas(projectId) {
 
     scheduleDraw();
     console.timeEnd('[PERF] loadProjectCanvas TOTAL');
+    console.log(`[PERF] ■ loadProjectCanvas END at ${performance.now().toFixed(0)}ms since page load (wall: ${(performance.now() - _t0).toFixed(0)}ms)`);
+
+    // Detect if main thread stays blocked after we return
+    const _tReturn = performance.now();
+    setTimeout(() => {
+      const delay = performance.now() - _tReturn;
+      console.log(`[PERF] ⚠ setTimeout(0) fired after ${delay.toFixed(0)}ms — if >100ms, main thread was blocked`);
+    }, 0);
+
+    // Stop long task observer after 5s
+    if (_longTaskObserver) setTimeout(() => { _longTaskObserver.disconnect(); console.log('[PERF] Long task observer stopped'); }, 5000);
 
     showToast(`${sketches.length} ${t('projects.canvas.sketches') || 'sketches loaded'}`);
   } catch (err) {
