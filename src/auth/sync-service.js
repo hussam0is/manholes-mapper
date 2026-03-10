@@ -131,7 +131,6 @@ async function apiRequest(endpoint, options = {}) {
 
   const headers = {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`,
     ...options.headers,
   };
 
