@@ -28,6 +28,10 @@ const withBase = (path) => {
   return SCOPE_PATH + path.replace(/^\//, '');
 };
 
+// Maximum number of entries allowed in the runtime cache.  When exceeded
+// the oldest entries (first in the Cache API key list) are evicted.
+const MAX_RUNTIME_CACHE_ITEMS = 100;
+
 const OFFLINE_URL = withBase('offline.html');
 // Note: We precache a small set of core assets that are guaranteed to exist at build time.
 // The build output will fingerprint most JS and CSS assets into the /assets/ directory. Those
@@ -43,6 +47,20 @@ const PRECACHE_ASSETS = [
   withBase('app_icon.png'),
   withBase('health/index.html')
 ];
+
+/**
+ * Trim a cache to at most `maxItems` entries by evicting the oldest keys
+ * (those returned first by `cache.keys()`).  Returns a promise so callers
+ * can pass it to `event.waitUntil()`.
+ */
+async function trimCache(cacheName, maxItems) {
+  const cache = await caches.open(cacheName);
+  const keys = await cache.keys();
+  if (keys.length > maxItems) {
+    const excess = keys.length - maxItems;
+    await Promise.all(keys.slice(0, excess).map((key) => cache.delete(key)));
+  }
+}
 
 self.addEventListener('install', (event) => {
   // Precache the application shell and offline page
@@ -90,7 +108,9 @@ self.addEventListener('fetch', (event) => {
         try {
           const response = await fetch(request);
           const responseClone = response.clone();
-          caches.open(RUNTIME).then((cache) => cache.put(request, responseClone));
+          event.waitUntil(
+            caches.open(RUNTIME).then((cache) => cache.put(request, responseClone)).then(() => trimCache(RUNTIME, MAX_RUNTIME_CACHE_ITEMS))
+          );
           return response;
         } catch (_) {
           // Provide a safe empty fallback so respondWith never resolves undefined.
@@ -128,7 +148,9 @@ self.addEventListener('fetch', (event) => {
           // Update runtime cache with the fresh response.  Cloning is
           // necessary because the response can only be consumed once.
           const copy = response.clone();
-          caches.open(RUNTIME).then((cache) => cache.put(request, copy));
+          event.waitUntil(
+            caches.open(RUNTIME).then((cache) => cache.put(request, copy)).then(() => trimCache(RUNTIME, MAX_RUNTIME_CACHE_ITEMS))
+          );
           return response;
         } catch (_) {
           // Attempt to return the exact page from cache
@@ -183,7 +205,9 @@ self.addEventListener('fetch', (event) => {
         try {
           const response = await fetch(request);
           const responseClone = response.clone();
-          caches.open(RUNTIME).then((cache) => cache.put(request, responseClone));
+          event.waitUntil(
+            caches.open(RUNTIME).then((cache) => cache.put(request, responseClone)).then(() => trimCache(RUNTIME, MAX_RUNTIME_CACHE_ITEMS))
+          );
           return response;
         } catch (_) {
           // When offline and the file isn’t cached yet, fall back to the offline page rather than
@@ -211,7 +235,9 @@ self.addEventListener('fetch', (event) => {
         const fetchAndCache = fetch(request)
           .then((response) => {
             const responseClone = response.clone();
-            caches.open(RUNTIME).then((cache) => cache.put(request, responseClone));
+            caches.open(RUNTIME).then((cache) =>
+              cache.put(request, responseClone).then(() => trimCache(RUNTIME, MAX_RUNTIME_CACHE_ITEMS))
+            );
             return response;
           })
           .catch(() => null);
