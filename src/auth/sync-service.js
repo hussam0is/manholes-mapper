@@ -72,12 +72,13 @@ const API_BASE = '';
 // Flag to track if API is available (set to false after first failure in dev)
 let apiAvailable = true;
 
-// Optimistic locking: tracks the `updated_at` timestamp that the server returned
-// for each sketch on the last successful fetch or save. Used as `clientUpdatedAt`
+// Optimistic locking: tracks the integer `version` counter that the server returned
+// for each sketch on the last successful fetch or save. Used as `clientVersion`
 // in PUT requests so the server can detect if another process (e.g. a DB fix script)
-// has updated the sketch since we last synced.
-// Key: sketchId (UUID), Value: ISO timestamp string
-const lastKnownServerUpdatedAt = new Map();
+// has updated the sketch since we last synced. Integer comparison is deterministic
+// and immune to clock/precision issues unlike the old timestamp-based approach.
+// Key: sketchId (UUID), Value: integer version number
+const lastKnownServerVersion = new Map();
 
 /**
  * Subscribe to sync state changes
@@ -331,8 +332,8 @@ export async function syncFromCloud() {
     for (const cloudSketch of cloudSketches) {
       await saveSketchToIdb(cloudSketch);
       // Track server version for optimistic locking
-      if (cloudSketch.id && cloudSketch.updatedAt) {
-        lastKnownServerUpdatedAt.set(cloudSketch.id, cloudSketch.updatedAt);
+      if (cloudSketch.id && cloudSketch.version != null) {
+        lastKnownServerVersion.set(cloudSketch.id, cloudSketch.version);
       }
     }
     
@@ -706,7 +707,8 @@ export async function syncSketchToCloud(sketch) {
     });
     
     if (isCloudSketch) {
-      // Update existing sketch — include clientUpdatedAt for optimistic locking
+      // Update existing sketch — include clientVersion for deterministic optimistic locking
+      const knownVersion = lastKnownServerVersion.get(sketch.id);
       const putPayload = {
         name: sketch.name,
         creationDate: sketch.creationDate,
@@ -715,19 +717,19 @@ export async function syncSketchToCloud(sketch) {
         adminConfig: sketch.adminConfig,
         lastEditedBy: sketch.lastEditedBy,
         projectId: sketch.projectId,
-        clientUpdatedAt: lastKnownServerUpdatedAt.get(sketch.id) ?? sketch.updatedAt ?? null,
+        clientVersion: knownVersion != null ? knownVersion : null,
       };
 
       let result = await updateSketchInCloud(sketch.id, putPayload);
 
       if (result?._conflict) {
         // Server has a newer version (e.g. direct DB coordinate fix). Retry once
-        // using the server's current updatedAt so our local changes still land.
-        const serverUpdatedAt = result.currentSketch?.updatedAt;
-        console.warn(`[Sync] Version conflict for sketch ${sketch.id} — server updated_at=${serverUpdatedAt}. Retrying with fresh version.`);
+        // using the server's current version so our local changes still land.
+        const serverVersion = result.currentSketch?.version;
+        console.warn(`[Sync] Version conflict for sketch ${sketch.id} — server v${serverVersion ?? '?'}. Retrying with fresh version.`);
         result = await updateSketchInCloud(sketch.id, {
           ...putPayload,
-          clientUpdatedAt: serverUpdatedAt ?? null,
+          clientVersion: serverVersion != null ? serverVersion : null,
         });
         if (result?._conflict) {
           console.error(`[Sync] Conflict retry also failed for sketch ${sketch.id} — giving up for this cycle.`);
@@ -735,9 +737,9 @@ export async function syncSketchToCloud(sketch) {
         }
       }
 
-      // Track the server's new updated_at for the next save
-      if (result && !result._conflict && result.updatedAt) {
-        lastKnownServerUpdatedAt.set(sketch.id, result.updatedAt);
+      // Track the server's new version for the next save
+      if (result && !result._conflict && result.version != null) {
+        lastKnownServerVersion.set(sketch.id, result.version);
       }
     } else {
       // Create new sketch in cloud
@@ -804,9 +806,9 @@ export async function syncSketchToCloud(sketch) {
         }
       }
 
-      // Track the server's updated_at for the new sketch
-      if (cloudSketch.updatedAt) {
-        lastKnownServerUpdatedAt.set(cloudSketch.id, cloudSketch.updatedAt);
+      // Track the server's version for the new sketch
+      if (cloudSketch.version != null) {
+        lastKnownServerVersion.set(cloudSketch.id, cloudSketch.version);
       }
     }
 
@@ -976,6 +978,7 @@ export async function processSyncQueue() {
         if (op.type === 'UPDATE') {
           const isCloudSketch = isValidCloudUUID(op.data.id);
           if (isCloudSketch) {
+            const knownVersion = lastKnownServerVersion.get(op.data.id);
             const queuePayload = {
               name: op.data.name,
               creationDate: op.data.creationDate,
@@ -984,22 +987,22 @@ export async function processSyncQueue() {
               adminConfig: op.data.adminConfig,
               lastEditedBy: op.data.lastEditedBy,
               projectId: op.data.projectId,
-              clientUpdatedAt: lastKnownServerUpdatedAt.get(op.data.id) ?? op.data.updatedAt ?? null,
+              clientVersion: knownVersion != null ? knownVersion : null,
             };
 
             let queueResult = await updateSketchInCloud(op.data.id, queuePayload);
 
             if (queueResult?._conflict) {
-              const serverUpdatedAt = queueResult.currentSketch?.updatedAt;
-              console.warn(`[Sync] Queue conflict for sketch ${op.data.id} — retrying with server version ${serverUpdatedAt}.`);
+              const serverVersion = queueResult.currentSketch?.version;
+              console.warn(`[Sync] Queue conflict for sketch ${op.data.id} — retrying with server v${serverVersion ?? '?'}.`);
               queueResult = await updateSketchInCloud(op.data.id, {
                 ...queuePayload,
-                clientUpdatedAt: serverUpdatedAt ?? null,
+                clientVersion: serverVersion != null ? serverVersion : null,
               });
             }
 
-            if (queueResult && !queueResult._conflict && queueResult.updatedAt) {
-              lastKnownServerUpdatedAt.set(op.data.id, queueResult.updatedAt);
+            if (queueResult && !queueResult._conflict && queueResult.version != null) {
+              lastKnownServerVersion.set(op.data.id, queueResult.version);
             }
           } else {
             const oldQueueId = op.data.id;
@@ -1027,9 +1030,9 @@ export async function processSyncQueue() {
               try { window.__onSketchIdChanged(oldQueueId, cloudSketch.id); } catch (e) { console.warn('[SyncService] onSketchIdChanged error:', e); }
             }
 
-            // Track updated_at for optimistic locking
-            if (cloudSketch.updatedAt) {
-              lastKnownServerUpdatedAt.set(cloudSketch.id, cloudSketch.updatedAt);
+            // Track version for optimistic locking
+            if (cloudSketch.version != null) {
+              lastKnownServerVersion.set(cloudSketch.id, cloudSketch.version);
             }
           }
         } else if (op.type === 'DELETE') {

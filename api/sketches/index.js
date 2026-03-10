@@ -122,6 +122,7 @@ export default async function handler(req, res) {
         lastEditedBy: row.last_edited_by,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
+        version: row.version ?? 0,
         projectId: row.project_id,
         // Include owner info for admin views
         ownerId: row.user_id,
@@ -231,6 +232,7 @@ export default async function handler(req, res) {
         lastEditedBy: sketch.last_edited_by,
         createdAt: sketch.created_at,
         updatedAt: sketch.updated_at,
+        version: sketch.version ?? 0,
         nodes: sketch.nodes || [],
         edges: sketch.edges || [],
         adminConfig: sketch.admin_config || {},
@@ -320,6 +322,7 @@ async function handleSingleSketch(req, res, request, sketchId) {
         lastEditedBy: sketch.last_edited_by,
         createdAt: sketch.created_at,
         updatedAt: sketch.updated_at,
+        version: sketch.version ?? 0,
         nodes: sketch.nodes || [],
         edges: sketch.edges || [],
         adminConfig: sketch.admin_config || {},
@@ -488,6 +491,7 @@ async function handleSingleSketch(req, res, request, sketchId) {
         projectId: body.projectId,
         snapshotInputFlowConfig: snapshotInputFlowConfig,
         clientUpdatedAt: body.clientUpdatedAt || null,
+        clientVersion: body.clientVersion != null ? body.clientVersion : null,
       });
 
       if (!updated) {
@@ -519,13 +523,14 @@ async function handleSingleSketch(req, res, request, sketchId) {
           lastEditedBy: current.last_edited_by,
           createdAt: current.created_at,
           updatedAt: current.updated_at,
+          version: current.version ?? 0,
           nodes: current.nodes || [],
           edges: current.edges || [],
           adminConfig: current.admin_config || {},
           projectId: current.project_id,
           snapshotInputFlowConfig: current.snapshot_input_flow_config || {},
         };
-        console.warn(`[API /api/sketches/${sketchId}] Version conflict: client had ${body.clientUpdatedAt}, DB has ${current.updated_at}`);
+        console.warn(`[API /api/sketches/${sketchId}] Version conflict: client had v${body.clientVersion ?? 'none'} (updatedAt=${body.clientUpdatedAt}), DB has v${current.version ?? 0} (updatedAt=${current.updated_at})`);
         return res.status(409).json({
           error: 'Sketch was updated by another process. Retry with the current version.',
           currentSketch: currentTransformed,
@@ -540,6 +545,7 @@ async function handleSingleSketch(req, res, request, sketchId) {
         lastEditedBy: updated.last_edited_by,
         createdAt: updated.created_at,
         updatedAt: updated.updated_at,
+        version: updated.version ?? 0,
         nodes: updated.nodes || [],
         edges: updated.edges || [],
         adminConfig: updated.admin_config || {},
@@ -547,7 +553,7 @@ async function handleSingleSketch(req, res, request, sketchId) {
         snapshotInputFlowConfig: updated.snapshot_input_flow_config || {},
       };
 
-      console.debug(`[API /api/sketches/${sketchId}] Updated sketch`);
+      console.debug(`[API /api/sketches/${sketchId}] Updated sketch (v${transformed.version})`);
       return res.status(200).json({ sketch: transformed });
     }
 
