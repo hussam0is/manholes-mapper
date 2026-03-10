@@ -207,7 +207,7 @@ function buildCockpitDOM() {
       </button>
       <button class="action-rail__more-item" data-action="languageChange">
         <span class="material-icons">language</span>
-        <span>EN / עב</span>
+        <span data-i18n="cockpit.languageToggle">EN / HE</span>
       </button>
     </div>
 
@@ -353,6 +353,14 @@ export function initCockpit() {
           const translated = window.t(key);
           if (translated && translated !== key) {
             el.textContent = translated;
+          }
+        });
+        cockpitEl.querySelectorAll('[data-i18n-title]').forEach(el => {
+          const key = el.getAttribute('data-i18n-title');
+          const translated = window.t(key);
+          if (translated && translated !== key) {
+            el.title = translated;
+            el.setAttribute('aria-label', translated);
           }
         });
       }

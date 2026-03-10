@@ -93,13 +93,15 @@ function updateGPS(gnssState) {
     return;
   }
 
-  // Fix quality mapping
+  const t = window.t || (k => k);
+
+  // Fix quality mapping — use gnssMarker i18n keys
   const fixMap = {
-    4: { cls: 'rtk-fixed', label: 'RTK Fixed' },
-    5: { cls: 'rtk-float', label: 'RTK Float' },
-    2: { cls: 'dgps', label: 'DGPS' },
-    1: { cls: 'gps', label: 'GPS' },
-    0: { cls: 'no-fix', label: 'No Fix' }
+    4: { cls: 'rtk-fixed', label: t('gnssMarker.fixRtkFixed') || 'RTK Fixed' },
+    5: { cls: 'rtk-float', label: t('gnssMarker.fixRtkFloat') || 'RTK Float' },
+    2: { cls: 'dgps', label: t('gnssMarker.fixDgps') || 'DGPS' },
+    1: { cls: 'gps', label: t('gnssMarker.fixGps') || 'GPS' },
+    0: { cls: 'no-fix', label: t('gnssMarker.noFix') || 'No Fix' }
   };
 
   const fix = fixMap[pos.fixQuality] || fixMap[0];
@@ -261,7 +263,7 @@ function populateIssueList(listEl) {
   const issueTypeLabels = {
     missingCoords: t('elementIssues.missingCoords') || 'Missing coordinates',
     missingMeasurement: t('elementIssues.missingMeasurement') || 'Missing measurement',
-    negativeGradient: 'Negative gradient',
+    negativeGradient: t('elementIssues.negativeGradient') || 'Negative gradient',
   };
 
   listEl.innerHTML = issues.map((issue, i) => {

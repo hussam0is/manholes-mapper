@@ -909,6 +909,7 @@ export const i18n = {
       tooltipHeatmap: 'מפת חום',
       tooltipMore: 'אפשרויות נוספות',
       tooltipCollapse: 'הצג/הסתר פאנל',
+      languageToggle: 'EN / עב',
       quickWin: {
         rtkReady: 'RTK Fixed — מוכן למדידה',
         sketchComplete: 'שרטוט הושלם — אפס בעיות',
@@ -1925,6 +1926,7 @@ export const i18n = {
       tooltipHeatmap: 'Heat map',
       tooltipMore: 'More options',
       tooltipCollapse: 'Toggle panel',
+      languageToggle: 'EN / HE',
       quickWin: {
         rtkReady: 'RTK Fixed — ready to survey',
         sketchComplete: 'Sketch complete — zero issues',
