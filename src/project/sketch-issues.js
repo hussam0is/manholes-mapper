@@ -202,6 +202,7 @@ export function computeSketchIssues(nodes, edges) {
   }
 
   // 4b. Merge candidate — nearby stubs in different connected components
+  console.time('[PERF] computeIssues:mergeCandidate');
   const components = findConnectedComponents(nodes, edges);
 
   // Pre-compute edge counts and measurement flags per node (O(E) instead of O(N*E))
@@ -278,6 +279,8 @@ export function computeSketchIssues(nodes, edges) {
       if (bestNlmIdx !== -1) issues.splice(bestNlmIdx, 1);
     }
   }
+
+  console.timeEnd('[PERF] computeIssues:mergeCandidate');
 
   // 5. Negative gradient — pipe where head is deeper than tail (uphill flow)
   for (const edge of edges) {

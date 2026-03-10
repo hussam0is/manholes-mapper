@@ -2182,7 +2182,10 @@ function syncProjectSketchesToLibrary() {
     const projectSketchList = getAllSketches(); // from project-canvas-state
     if (!projectSketchList || projectSketchList.length === 0) return;
 
+    console.time('[PERF] syncLib:getLibrary');
     const lib = getLibrary();
+    console.timeEnd('[PERF] syncLib:getLibrary');
+    console.log(`[PERF] syncLib: ${projectSketchList.length} project sketches, ${lib.length} library entries`);
     let changed = false;
 
     for (const ps of projectSketchList) {
@@ -2233,7 +2236,9 @@ function syncProjectSketchesToLibrary() {
     }
 
     if (changed) {
+      console.time('[PERF] syncLib:setLibrary');
       setLibrary(lib);
+      console.timeEnd('[PERF] syncLib:setLibrary');
     }
   } catch (err) {
     console.warn('[App] Failed to sync project sketches to library:', err);
@@ -3031,6 +3036,7 @@ window.__getSelection = function () {
  * Load a sketch into the main globals (used by project-canvas-state).
  */
 window.__setActiveSketchData = function (data) {
+  console.time('[PERF] __setActiveSketchData');
   nodes = data.nodes || [];
   _nodeMapDirty = true; _spatialGridDirty = true; _dataVersion++;
   edges = data.edges || [];
@@ -3047,12 +3053,15 @@ window.__setActiveSketchData = function (data) {
   pendingEdgeTail = null;
   pendingEdgePreview = null;
   pendingEdgeStartPosition = null;
+  console.time('[PERF] __setActiveSketchData:updateUI');
   updateSketchNameDisplay();
   computeNodeTypes();
   autoRepositionFromEmbeddedCoords();
   renderDetails();
   updateCanvasEmptyState();
+  console.timeEnd('[PERF] __setActiveSketchData:updateUI');
   scheduleDraw();
+  console.timeEnd('[PERF] __setActiveSketchData');
 };
 
 window.__scheduleDraw = function () { scheduleDraw(); };
@@ -3263,6 +3272,7 @@ async function renderProjectsHome() {
  * positions relative to each other on the canvas.
  */
 function repositionAllProjectSketchNodes(sketches) {
+  console.time('[PERF] reposition:extractCoords');
   // 1. First pass: extract ITM coords from all nodes across all sketches
   const allCoordinated = []; // [{node, surveyX, surveyY}]
   for (const sketch of sketches) {
@@ -3273,6 +3283,8 @@ function repositionAllProjectSketchNodes(sketches) {
       }
     }
   }
+  console.timeEnd('[PERF] reposition:extractCoords');
+  console.log(`[PERF] reposition: ${allCoordinated.length} coordinated nodes out of ${sketches.reduce((s, sk) => s + (sk.nodes?.length || 0), 0)} total`);
 
   if (allCoordinated.length === 0) return;
 
@@ -3295,6 +3307,7 @@ function repositionAllProjectSketchNodes(sketches) {
   console.debug(`[ProjectCanvas] Repositioning ${sketches.length} sketches, ${allCoordinated.length} coordinated nodes`);
 
   // 3. Reposition each sketch's nodes
+  console.time('[PERF] reposition:repositionNodes');
   let firstReferencePoint = null;
   for (const sketch of sketches) {
     const sketchNodes = sketch.nodes || [];
@@ -3378,7 +3391,10 @@ function repositionAllProjectSketchNodes(sketches) {
     }
   }
 
+  console.timeEnd('[PERF] reposition:repositionNodes');
+
   // 4. Update active sketch state (geoNodePositions, coordinatesMap, etc.)
+  console.time('[PERF] reposition:updateState');
   for (const node of nodes) {
     geoNodePositions.set(String(node.id), { x: node.x, y: node.y });
     if (node.hasCoordinates && node.surveyX != null && node.surveyY != null) {
@@ -3400,8 +3416,11 @@ function repositionAllProjectSketchNodes(sketches) {
     setStreetViewVisible(true);
   }
 
+  console.timeEnd('[PERF] reposition:updateState');
+
   // Zoom to fit ALL project nodes (not just active sketch)
   requestAnimationFrame(() => {
+    console.time('[PERF] reposition:zoomToFit');
     const allNodes = [];
     for (const sketch of sketches) {
       for (const n of (sketch.nodes || [])) {
@@ -3410,7 +3429,7 @@ function repositionAllProjectSketchNodes(sketches) {
         }
       }
     }
-    if (allNodes.length < 2) { zoomToFit(); return; }
+    if (allNodes.length < 2) { zoomToFit(); console.timeEnd('[PERF] reposition:zoomToFit'); return; }
 
     let mnX = Infinity, mnY = Infinity, mxX = -Infinity, mxY = -Infinity;
     for (const n of allNodes) {
@@ -3431,6 +3450,7 @@ function repositionAllProjectSketchNodes(sketches) {
     viewScale = newScale;
     viewTranslate.x = rect.width / 2 - viewScale * viewStretchX * cx;
     viewTranslate.y = rect.height / 2 - viewScale * viewStretchY * cy;
+    console.timeEnd('[PERF] reposition:zoomToFit');
     scheduleDraw();
   });
 }
@@ -3440,30 +3460,45 @@ function repositionAllProjectSketchNodes(sketches) {
  */
 async function loadProjectCanvas(projectId) {
   try {
+    console.time('[PERF] loadProjectCanvas TOTAL');
     hideHome(true); // Immediate hide to prevent sync-service race condition
     showToast(t('projects.canvas.loading') || 'Loading project sketches...');
 
+    console.time('[PERF] loadProjectSketches (API fetch)');
     const sketches = await loadProjectSketches(projectId);
+    console.timeEnd('[PERF] loadProjectSketches (API fetch)');
+    console.log(`[PERF] Loaded ${sketches.length} sketches, total nodes: ${sketches.reduce((s, sk) => s + (sk.nodes?.length || 0), 0)}, total edges: ${sketches.reduce((s, sk) => s + (sk.edges?.length || 0), 0)}`);
 
     if (sketches.length === 0) {
       showToast(t('projects.homepage.empty') || 'No sketches in this project', 'warning');
       location.hash = '#/';
+      console.timeEnd('[PERF] loadProjectCanvas TOTAL');
       return;
     }
 
     // Sync the freshly fetched project sketches into the localStorage library
     // so the home view stays in sync with the project data
+    console.time('[PERF] syncProjectSketchesToLibrary');
     syncProjectSketchesToLibrary();
+    console.timeEnd('[PERF] syncProjectSketchesToLibrary');
 
     // Reposition ALL sketch nodes using global ITM bounds so all sketches
     // align correctly on the canvas relative to each other
+    console.time('[PERF] repositionAllProjectSketchNodes');
     repositionAllProjectSketchNodes(sketches);
+    console.timeEnd('[PERF] repositionAllProjectSketchNodes');
 
     // Load GIS reference layers for the project so they appear in project canvas mode
+    console.time('[PERF] loadProjectReferenceLayers');
     loadProjectReferenceLayers(projectId);
+    console.timeEnd('[PERF] loadProjectReferenceLayers');
 
+    console.time('[PERF] showSketchSidePanel');
     showSketchSidePanel();
+    console.timeEnd('[PERF] showSketchSidePanel');
+
     scheduleDraw();
+    console.timeEnd('[PERF] loadProjectCanvas TOTAL');
 
     showToast(`${sketches.length} ${t('projects.canvas.sketches') || 'sketches loaded'}`);
   } catch (err) {
@@ -4742,7 +4777,11 @@ function finalizeDanglingEndpointDrag() {
 /**
  * Redraw the entire scene (edges first, then nodes).
  */
+let _perfDrawFrameCount = 0;
 function draw() {
+  const _perfLogThisFrame = _perfDrawFrameCount < 5;
+  if (_perfLogThisFrame) console.time(`[PERF] draw() frame #${_perfDrawFrameCount}`);
+  _perfDrawFrameCount++;
   renderPerf.frameStart();
 
   // When autoSize is enabled, divide sizes by viewScale for constant screen-pixel size
@@ -4765,6 +4804,7 @@ function draw() {
   // Recompute issue sets for persistent canvas indicators.
   // Throttled: only recalculate when nodes/edges change (_issueSetsDirty flag).
   if (_issueSetsDirty && typeof window.__computeSketchIssues === 'function') {
+    console.time('[PERF] draw:computeSketchIssues');
     const { issues } = window.__computeSketchIssues(nodes, edges);
     _issueNodeIds.clear();
     _issueEdgeIds.clear();
@@ -4773,6 +4813,7 @@ function draw() {
       if (issue.edgeId != null) _issueEdgeIds.add(String(issue.edgeId));
     }
     _issueSetsDirty = false;
+    console.timeEnd('[PERF] draw:computeSketchIssues');
   }
 
   // Cache heatmap state once per frame
@@ -4850,7 +4891,9 @@ function draw() {
       viewStretchY,
       visMinX, visMinY, visMaxX, visMaxY,
     };
+    console.time('[PERF] draw:backgroundSketches');
     drawBackgroundSketches(ctx, window.__projectCanvas.getBackgroundSketches(), drawOpts);
+    console.timeEnd('[PERF] draw:backgroundSketches');
     // Draw merge-mode overlay (nearby nodes from other sketches) above background
     drawMergeModeOverlay(ctx, nodes, drawOpts);
   }
@@ -5199,6 +5242,7 @@ function draw() {
   scheduleIncompleteEdgeUpdate();
   // Note: updateCanvasEmptyState() moved out of draw() — called on state changes only
   renderPerf.frameEnd();
+  if (_perfLogThisFrame) console.timeEnd(`[PERF] draw() frame #${_perfDrawFrameCount - 1}`);
 }
 
 // Throttled DOM updates – avoid running inside every draw frame

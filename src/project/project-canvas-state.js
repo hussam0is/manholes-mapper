@@ -35,9 +35,15 @@ const listeners = new Set();
  * Sets the first sketch as active.
  */
 export async function loadProjectSketches(projectId) {
+  console.time('[PERF] loadProjectSketches:fetch');
   const res = await fetch(`/api/projects/${projectId}?fullSketches=true`);
   if (!res.ok) throw new Error(`Failed to load project sketches: ${res.status}`);
+  console.timeEnd('[PERF] loadProjectSketches:fetch');
+
+  console.time('[PERF] loadProjectSketches:parseJSON');
   const { sketches } = await res.json();
+  console.timeEnd('[PERF] loadProjectSketches:parseJSON');
+  console.log(`[PERF] loadProjectSketches: received ${sketches.length} sketches, response size ~${JSON.stringify(sketches).length} chars`);
 
   projectSketches.clear();
   hiddenSketches.clear();
@@ -50,6 +56,7 @@ export async function loadProjectSketches(projectId) {
 
   // Activate the first sketch (or null if empty project)
   if (sketches.length > 0) {
+    console.time('[PERF] loadProjectSketches:setActive');
     activeSketchId = sketches[0].id;
     const first = sketches[0];
     window.__setActiveSketchData?.({
@@ -62,11 +69,14 @@ export async function loadProjectSketches(projectId) {
       adminConfig: first.adminConfig || {},
       inputFlowConfig: first.snapshotInputFlowConfig || {},
     });
+    console.timeEnd('[PERF] loadProjectSketches:setActive');
   } else {
     activeSketchId = null;
   }
 
+  console.time('[PERF] loadProjectSketches:notify');
   _notify();
+  console.timeEnd('[PERF] loadProjectSketches:notify');
   return sketches;
 }
 
