@@ -2182,10 +2182,10 @@ function syncProjectSketchesToLibrary() {
     const projectSketchList = getAllSketches(); // from project-canvas-state
     if (!projectSketchList || projectSketchList.length === 0) return;
 
-    console.time('[PERF] syncLib:getLibrary');
+    if (_perfDebug) console.time('[PERF] syncLib:getLibrary');
     const lib = getLibrary();
-    console.timeEnd('[PERF] syncLib:getLibrary');
-    console.log(`[PERF] syncLib: ${projectSketchList.length} project sketches, ${lib.length} library entries`);
+    if (_perfDebug) console.timeEnd('[PERF] syncLib:getLibrary');
+    if (_perfDebug) console.log(`[PERF] syncLib: ${projectSketchList.length} project sketches, ${lib.length} library entries`);
     let changed = false;
 
     for (const ps of projectSketchList) {
@@ -2236,9 +2236,9 @@ function syncProjectSketchesToLibrary() {
     }
 
     if (changed) {
-      console.time('[PERF] syncLib:setLibrary');
+      if (_perfDebug) console.time('[PERF] syncLib:setLibrary');
       setLibrary(lib);
-      console.timeEnd('[PERF] syncLib:setLibrary');
+      if (_perfDebug) console.timeEnd('[PERF] syncLib:setLibrary');
     }
   } catch (err) {
     console.warn('[App] Failed to sync project sketches to library:', err);
@@ -3036,7 +3036,7 @@ window.__getSelection = function () {
  * Load a sketch into the main globals (used by project-canvas-state).
  */
 window.__setActiveSketchData = function (data) {
-  console.time('[PERF] __setActiveSketchData');
+  if (_perfDebug) console.time('[PERF] __setActiveSketchData');
   nodes = data.nodes || [];
   _nodeMapDirty = true; _spatialGridDirty = true; _dataVersion++;
   edges = data.edges || [];
@@ -3053,15 +3053,15 @@ window.__setActiveSketchData = function (data) {
   pendingEdgeTail = null;
   pendingEdgePreview = null;
   pendingEdgeStartPosition = null;
-  console.time('[PERF] __setActiveSketchData:updateUI');
+  if (_perfDebug) console.time('[PERF] __setActiveSketchData:updateUI');
   updateSketchNameDisplay();
   computeNodeTypes();
   autoRepositionFromEmbeddedCoords();
   renderDetails();
   updateCanvasEmptyState();
-  console.timeEnd('[PERF] __setActiveSketchData:updateUI');
+  if (_perfDebug) console.timeEnd('[PERF] __setActiveSketchData:updateUI');
   scheduleDraw();
-  console.timeEnd('[PERF] __setActiveSketchData');
+  if (_perfDebug) console.timeEnd('[PERF] __setActiveSketchData');
 };
 
 window.__scheduleDraw = function () { scheduleDraw(); };
@@ -3272,7 +3272,7 @@ async function renderProjectsHome() {
  * positions relative to each other on the canvas.
  */
 function repositionAllProjectSketchNodes(sketches) {
-  console.time('[PERF] reposition:extractCoords');
+  if (_perfDebug) console.time('[PERF] reposition:extractCoords');
   // 1. First pass: extract ITM coords from all nodes across all sketches
   const allCoordinated = []; // [{node, surveyX, surveyY}]
   for (const sketch of sketches) {
@@ -3283,8 +3283,8 @@ function repositionAllProjectSketchNodes(sketches) {
       }
     }
   }
-  console.timeEnd('[PERF] reposition:extractCoords');
-  console.log(`[PERF] reposition: ${allCoordinated.length} coordinated nodes out of ${sketches.reduce((s, sk) => s + (sk.nodes?.length || 0), 0)} total`);
+  if (_perfDebug) console.timeEnd('[PERF] reposition:extractCoords');
+  if (_perfDebug) console.log(`[PERF] reposition: ${allCoordinated.length} coordinated nodes out of ${sketches.reduce((s, sk) => s + (sk.nodes?.length || 0), 0)} total`);
 
   if (allCoordinated.length === 0) return;
 
@@ -3307,7 +3307,7 @@ function repositionAllProjectSketchNodes(sketches) {
   console.debug(`[ProjectCanvas] Repositioning ${sketches.length} sketches, ${allCoordinated.length} coordinated nodes`);
 
   // 3. Reposition each sketch's nodes
-  console.time('[PERF] reposition:repositionNodes');
+  if (_perfDebug) console.time('[PERF] reposition:repositionNodes');
   let firstReferencePoint = null;
   for (const sketch of sketches) {
     const sketchNodes = sketch.nodes || [];
@@ -3391,10 +3391,10 @@ function repositionAllProjectSketchNodes(sketches) {
     }
   }
 
-  console.timeEnd('[PERF] reposition:repositionNodes');
+  if (_perfDebug) console.timeEnd('[PERF] reposition:repositionNodes');
 
   // 4. Update active sketch state (geoNodePositions, coordinatesMap, etc.)
-  console.time('[PERF] reposition:updateState');
+  if (_perfDebug) console.time('[PERF] reposition:updateState');
   for (const node of nodes) {
     geoNodePositions.set(String(node.id), { x: node.x, y: node.y });
     if (node.hasCoordinates && node.surveyX != null && node.surveyY != null) {
@@ -3416,11 +3416,11 @@ function repositionAllProjectSketchNodes(sketches) {
     setStreetViewVisible(true);
   }
 
-  console.timeEnd('[PERF] reposition:updateState');
+  if (_perfDebug) console.timeEnd('[PERF] reposition:updateState');
 
   // Zoom to fit ALL project nodes (not just active sketch)
   requestAnimationFrame(() => {
-    console.time('[PERF] reposition:zoomToFit');
+    if (_perfDebug) console.time('[PERF] reposition:zoomToFit');
     const allNodes = [];
     for (const sketch of sketches) {
       for (const n of (sketch.nodes || [])) {
@@ -3429,7 +3429,7 @@ function repositionAllProjectSketchNodes(sketches) {
         }
       }
     }
-    if (allNodes.length < 2) { zoomToFit(); console.timeEnd('[PERF] reposition:zoomToFit'); return; }
+    if (allNodes.length < 2) { zoomToFit(); if (_perfDebug) console.timeEnd('[PERF] reposition:zoomToFit'); return; }
 
     let mnX = Infinity, mnY = Infinity, mxX = -Infinity, mxY = -Infinity;
     for (const n of allNodes) {
@@ -3450,7 +3450,7 @@ function repositionAllProjectSketchNodes(sketches) {
     viewScale = newScale;
     viewTranslate.x = rect.width / 2 - viewScale * viewStretchX * cx;
     viewTranslate.y = rect.height / 2 - viewScale * viewStretchY * cy;
-    console.timeEnd('[PERF] reposition:zoomToFit');
+    if (_perfDebug) console.timeEnd('[PERF] reposition:zoomToFit');
     scheduleDraw();
   });
 }
@@ -3459,13 +3459,13 @@ function repositionAllProjectSketchNodes(sketches) {
  * Enter project-canvas mode: load all sketches for a project onto the canvas.
  */
 async function loadProjectCanvas(projectId) {
-  // Long Task observer — detects ANY >50ms main-thread block
+  // Long Task observer — detects ANY >50ms main-thread block (debug only)
   let _longTaskObserver;
-  if (typeof PerformanceObserver !== 'undefined') {
+  if (_perfDebug && typeof PerformanceObserver !== 'undefined') {
     try {
       _longTaskObserver = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          console.warn(`[PERF] 🔴 LONG TASK detected: ${entry.duration.toFixed(0)}ms at ${entry.startTime.toFixed(0)}ms`, entry);
+          console.warn(`[PERF] LONG TASK detected: ${entry.duration.toFixed(0)}ms at ${entry.startTime.toFixed(0)}ms`, entry);
         }
       });
       _longTaskObserver.observe({ type: 'longtask', buffered: false });
@@ -3474,51 +3474,51 @@ async function loadProjectCanvas(projectId) {
 
   try {
     const _t0 = performance.now();
-    console.time('[PERF] loadProjectCanvas TOTAL');
-    console.log(`[PERF] ▶ loadProjectCanvas START at ${_t0.toFixed(0)}ms since page load`);
+    if (_perfDebug) console.time('[PERF] loadProjectCanvas TOTAL');
+    if (_perfDebug) console.log(`[PERF] ▶ loadProjectCanvas START at ${_t0.toFixed(0)}ms since page load`);
     hideHome(true); // Immediate hide to prevent sync-service race condition
     showToast(t('projects.canvas.loading') || 'Loading project sketches...');
 
-    console.time('[PERF] loadProjectSketches (API fetch)');
+    if (_perfDebug) console.time('[PERF] loadProjectSketches (API fetch)');
     const sketches = await loadProjectSketches(projectId);
-    console.timeEnd('[PERF] loadProjectSketches (API fetch)');
-    console.log(`[PERF] Loaded ${sketches.length} sketches, total nodes: ${sketches.reduce((s, sk) => s + (sk.nodes?.length || 0), 0)}, total edges: ${sketches.reduce((s, sk) => s + (sk.edges?.length || 0), 0)}`);
+    if (_perfDebug) console.timeEnd('[PERF] loadProjectSketches (API fetch)');
+    if (_perfDebug) console.log(`[PERF] Loaded ${sketches.length} sketches, total nodes: ${sketches.reduce((s, sk) => s + (sk.nodes?.length || 0), 0)}, total edges: ${sketches.reduce((s, sk) => s + (sk.edges?.length || 0), 0)}`);
 
     if (sketches.length === 0) {
       showToast(t('projects.homepage.empty') || 'No sketches in this project', 'warning');
       location.hash = '#/';
-      console.timeEnd('[PERF] loadProjectCanvas TOTAL');
+      if (_perfDebug) console.timeEnd('[PERF] loadProjectCanvas TOTAL');
       return;
     }
 
     // Sync the freshly fetched project sketches into the localStorage library
     // so the home view stays in sync with the project data
-    console.time('[PERF] syncProjectSketchesToLibrary');
+    if (_perfDebug) console.time('[PERF] syncProjectSketchesToLibrary');
     syncProjectSketchesToLibrary();
-    console.timeEnd('[PERF] syncProjectSketchesToLibrary');
+    if (_perfDebug) console.timeEnd('[PERF] syncProjectSketchesToLibrary');
 
     // Reposition ALL sketch nodes using global ITM bounds so all sketches
     // align correctly on the canvas relative to each other
-    console.time('[PERF] repositionAllProjectSketchNodes');
+    if (_perfDebug) console.time('[PERF] repositionAllProjectSketchNodes');
     repositionAllProjectSketchNodes(sketches);
-    console.timeEnd('[PERF] repositionAllProjectSketchNodes');
+    if (_perfDebug) console.timeEnd('[PERF] repositionAllProjectSketchNodes');
 
     // Load GIS reference layers for the project so they appear in project canvas mode
-    console.time('[PERF] loadProjectReferenceLayers');
+    if (_perfDebug) console.time('[PERF] loadProjectReferenceLayers');
     loadProjectReferenceLayers(projectId);
-    console.timeEnd('[PERF] loadProjectReferenceLayers');
+    if (_perfDebug) console.timeEnd('[PERF] loadProjectReferenceLayers');
 
-    console.time('[PERF] showSketchSidePanel');
+    if (_perfDebug) console.time('[PERF] showSketchSidePanel');
     showSketchSidePanel();
-    console.timeEnd('[PERF] showSketchSidePanel');
+    if (_perfDebug) console.timeEnd('[PERF] showSketchSidePanel');
 
     scheduleDraw();
-    console.timeEnd('[PERF] loadProjectCanvas TOTAL');
-    console.log(`[PERF] ■ loadProjectCanvas END at ${performance.now().toFixed(0)}ms since page load (wall: ${(performance.now() - _t0).toFixed(0)}ms)`);
+    if (_perfDebug) console.timeEnd('[PERF] loadProjectCanvas TOTAL');
+    if (_perfDebug) console.log(`[PERF] ■ loadProjectCanvas END at ${performance.now().toFixed(0)}ms since page load (wall: ${(performance.now() - _t0).toFixed(0)}ms)`);
 
     // Detect if main thread stays blocked after we return
     const _tReturn = performance.now();
-    setTimeout(() => {
+    if (_perfDebug) setTimeout(() => {
       const delay = performance.now() - _tReturn;
       console.log(`[PERF] ⚠ setTimeout(0) fired after ${delay.toFixed(0)}ms — if >100ms, main thread was blocked`);
     }, 0);
@@ -4803,9 +4803,15 @@ function finalizeDanglingEndpointDrag() {
 /**
  * Redraw the entire scene (edges first, then nodes).
  */
+// Performance debug flag — toggle from console: window.__perfDebug = true
+let _perfDebug = false;
+Object.defineProperty(window, '__perfDebug', {
+  get() { return _perfDebug; },
+  set(v) { _perfDebug = !!v; _perfDrawFrameCount = 0; },
+});
 let _perfDrawFrameCount = 0;
 function draw() {
-  const _perfLogThisFrame = _perfDrawFrameCount < 5;
+  const _perfLogThisFrame = _perfDebug && _perfDrawFrameCount < 5;
   if (_perfLogThisFrame) console.time(`[PERF] draw() frame #${_perfDrawFrameCount}`);
   _perfDrawFrameCount++;
   renderPerf.frameStart();
@@ -4830,7 +4836,7 @@ function draw() {
   // Recompute issue sets for persistent canvas indicators.
   // Throttled: only recalculate when nodes/edges change (_issueSetsDirty flag).
   if (_issueSetsDirty && typeof window.__computeSketchIssues === 'function') {
-    console.time('[PERF] draw:computeSketchIssues');
+    if (_perfLogThisFrame) console.time('[PERF] draw:computeSketchIssues');
     const { issues } = window.__computeSketchIssues(nodes, edges);
     _issueNodeIds.clear();
     _issueEdgeIds.clear();
@@ -4839,7 +4845,7 @@ function draw() {
       if (issue.edgeId != null) _issueEdgeIds.add(String(issue.edgeId));
     }
     _issueSetsDirty = false;
-    console.timeEnd('[PERF] draw:computeSketchIssues');
+    if (_perfLogThisFrame) console.timeEnd('[PERF] draw:computeSketchIssues');
   }
 
   // Cache heatmap state once per frame
@@ -4917,9 +4923,9 @@ function draw() {
       viewStretchY,
       visMinX, visMinY, visMaxX, visMaxY,
     };
-    console.time('[PERF] draw:backgroundSketches');
+    if (_perfLogThisFrame) console.time('[PERF] draw:backgroundSketches');
     drawBackgroundSketches(ctx, window.__projectCanvas.getBackgroundSketches(), drawOpts);
-    console.timeEnd('[PERF] draw:backgroundSketches');
+    if (_perfLogThisFrame) console.timeEnd('[PERF] draw:backgroundSketches');
     // Draw merge-mode overlay (nearby nodes from other sketches) above background
     drawMergeModeOverlay(ctx, nodes, drawOpts);
   }
