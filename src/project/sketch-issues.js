@@ -203,29 +203,52 @@ export function computeSketchIssues(nodes, edges) {
 
   // 4b. Merge candidate — nearby stubs in different connected components
   const components = findConnectedComponents(nodes, edges);
+
+  // Pre-compute edge counts and measurement flags per node (O(E) instead of O(N*E))
+  const edgeCountMap = new Map();
+  const hasMeasurementMap = new Map();
+  for (const e of edges) {
+    const t = String(e.tail);
+    const h = String(e.head);
+    edgeCountMap.set(t, (edgeCountMap.get(t) || 0) + 1);
+    edgeCountMap.set(h, (edgeCountMap.get(h) || 0) + 1);
+    if (e.tail_measurement || e.tail_measurement === 0) hasMeasurementMap.set(t, true);
+    if (e.head_measurement || e.head_measurement === 0) hasMeasurementMap.set(h, true);
+  }
+
+  // Collect eligible stub nodes (degree=1, no measurements, not Home)
+  const stubNodes = [];
+  for (const node of nodes) {
+    if (node.nodeType === 'Home') continue;
+    const id = String(node.id);
+    if (edgeCountMap.get(id) !== 1) continue;
+    if (hasMeasurementMap.has(id)) continue;
+    stubNodes.push(node);
+  }
+
   const notLastManholeIssues = issues.filter(i => i.type === 'not_last_manhole');
-  const mergedNodeIds = new Set(); // track nodes already paired
+  const nlmNodeIds = new Set(notLastManholeIssues.map(i => String(i.nodeId)));
+  const mergedNodeIds = new Set();
+
   for (const nlm of notLastManholeIssues) {
     const nodeA = nodeMap.get(String(nlm.nodeId));
     if (!nodeA) continue;
-    if (countNodeEdges(nodeA.id, edges) !== 1) continue;
-    if (!nodeHasNoMeasurements(nodeA.id, edges)) continue;
-    const compA = components.get(String(nodeA.id));
+    const idA = String(nodeA.id);
+    if (edgeCountMap.get(idA) !== 1) continue;
+    if (hasMeasurementMap.has(idA)) continue;
+    const compA = components.get(idA);
 
-    // Get nodeA position in meters (surveyX/Y if available, else canvas/50)
     const aX = nodeA.surveyX != null ? nodeA.surveyX : (nodeA.x || 0) / 50;
     const aY = nodeA.surveyY != null ? nodeA.surveyY : (nodeA.y || 0) / 50;
 
     let bestNode = null;
     let bestDist = Infinity;
 
-    for (const nodeB of nodes) {
+    for (const nodeB of stubNodes) {
       if (nodeB === nodeA) continue;
-      if (nodeB.nodeType === 'Home') continue;
-      if (mergedNodeIds.has(String(nodeB.id))) continue;
-      if (components.get(String(nodeB.id)) === compA) continue;
-      if (countNodeEdges(nodeB.id, edges) !== 1) continue;
-      if (!nodeHasNoMeasurements(nodeB.id, edges)) continue;
+      const idB = String(nodeB.id);
+      if (mergedNodeIds.has(idB)) continue;
+      if (components.get(idB) === compA) continue;
 
       const bX = nodeB.surveyX != null ? nodeB.surveyX : (nodeB.x || 0) / 50;
       const bY = nodeB.surveyY != null ? nodeB.surveyY : (nodeB.y || 0) / 50;
@@ -238,9 +261,8 @@ export function computeSketchIssues(nodes, edges) {
     }
 
     if (bestNode) {
-      mergedNodeIds.add(String(nodeA.id));
+      mergedNodeIds.add(idA);
       mergedNodeIds.add(String(bestNode.id));
-      // Replace the not_last_manhole issue with a merge_candidate
       const idx = issues.indexOf(nlm);
       issues[idx] = {
         type: 'merge_candidate',
@@ -252,7 +274,6 @@ export function computeSketchIssues(nodes, edges) {
         mergeWorldX: bestNode.x || 0,
         mergeWorldY: bestNode.y || 0,
       };
-      // Also remove any not_last_manhole issue for bestNode (if it exists)
       const bestNlmIdx = issues.findIndex(i => i.type === 'not_last_manhole' && String(i.nodeId) === String(bestNode.id));
       if (bestNlmIdx !== -1) issues.splice(bestNlmIdx, 1);
     }

@@ -45,6 +45,8 @@ let _unsubNav = null;
 
 /** Cached per-sketch stats (recomputed on render) */
 let _sketchStats = new Map();
+/** Cache keys to detect actual data changes (avoids recomputing all issues on every render) */
+let _sketchCacheKeys = new Map();
 
 /**
  * Initialize the side panel. Call once after DOM is ready.
@@ -122,6 +124,8 @@ export function hideSketchSidePanel() {
   panelEl.classList.remove('open');
   _currentView = 'list';
   _issuesSketchId = null;
+  _sketchStats.clear();
+  _sketchCacheKeys.clear();
   // Disable merge mode — clear overlay and state
   if (isMergeModeEnabled()) {
     setMergeMode(false);
@@ -169,13 +173,18 @@ function renderListView() {
   const countEl = panelEl?.querySelector('.sketch-side-panel__count');
   if (countEl) countEl.textContent = `(${sketches.length})`;
 
-  // Compute stats for all sketches
-  _sketchStats.clear();
+  // Compute stats for sketches (with cache to avoid redundant recomputation)
   const allStats = [];
   for (const sketch of sketches) {
-    const result = computeSketchIssues(sketch.nodes || [], sketch.edges || []);
-    _sketchStats.set(sketch.id, result);
-    allStats.push(result.stats);
+    const nodesArr = sketch.nodes || [];
+    const edgesArr = sketch.edges || [];
+    const cacheKey = `${nodesArr.length}:${edgesArr.length}:${sketch.updatedAt || ''}`;
+    if (_sketchCacheKeys.get(sketch.id) !== cacheKey || !_sketchStats.has(sketch.id)) {
+      const result = computeSketchIssues(nodesArr, edgesArr);
+      _sketchStats.set(sketch.id, result);
+      _sketchCacheKeys.set(sketch.id, cacheKey);
+    }
+    allStats.push(_sketchStats.get(sketch.id).stats);
   }
   const totals = computeProjectTotals(allStats);
 
