@@ -65,7 +65,7 @@ export function handleCors(req, res) {
 
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie, x-csrf-token');
     res.status(204).end();
     return true;
   }

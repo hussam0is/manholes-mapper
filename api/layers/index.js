@@ -12,6 +12,7 @@
  */
 
 import { handleCors } from '../_lib/cors.js';
+import { verifyCsrf } from '../_lib/csrf.js';
 import { verifyAuth, parseBody } from '../_lib/auth.js';
 import {
   ensureDb,
@@ -62,6 +63,7 @@ export default async function handler(req, res) {
   console.debug(`[API /api/layers${layerId ? '/' + layerId : ''}] ${req.method} request started. Path segments:`, pathSegments);
 
   if (handleCors(req, res)) return;
+  if (verifyCsrf(req, res)) return;
 
   if (applyRateLimit(req, res)) return;
 

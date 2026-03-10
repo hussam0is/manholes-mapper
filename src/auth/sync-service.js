@@ -185,6 +185,19 @@ const API_BASE = '';
 // Flag to track if API is available (set to false after first failure in dev)
 let apiAvailable = true;
 
+/**
+ * Read the csrf_token cookie set by the server (double-submit cookie pattern).
+ * Returns the token string, or null if the cookie is not present.
+ */
+function getCsrfCookie() {
+  try {
+    const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]*)/);
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
+}
+
 // Optimistic locking: tracks the integer `version` counter that the server returned
 // for each sketch on the last successful fetch or save. Used as `clientVersion`
 // in PUT requests so the server can detect if another process (e.g. a DB fix script)
@@ -248,6 +261,15 @@ async function apiRequest(endpoint, options = {}) {
     ...options.headers,
   };
 
+  // Attach CSRF token for mutating requests (double-submit cookie pattern)
+  const method = (options.method || 'GET').toUpperCase();
+  if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
+    const csrfToken = getCsrfCookie();
+    if (csrfToken) {
+      headers['x-csrf-token'] = csrfToken;
+    }
+  }
+
   const url = `${API_BASE}${endpoint}`;
   
   // Add a timeout to prevent hanging requests
@@ -273,6 +295,16 @@ async function apiRequest(endpoint, options = {}) {
     }
 
     if (!response.ok) {
+      // CSRF bootstrap: server set the csrf_token cookie but rejected this
+      // request because no header was sent yet. Retry once with the new cookie.
+      if (response.status === 403 && !options._csrfRetried) {
+        const body403 = await response.json().catch(() => ({}));
+        if (body403.error && body403.error.includes('CSRF')) {
+          console.debug('[Sync] CSRF token bootstrapped, retrying request');
+          return apiRequest(endpoint, { ...options, _csrfRetried: true });
+        }
+      }
+
       // Allow callers to handle 409 Conflict themselves (optimistic locking)
       if (response.status === 409 && options.bypassThrowOnConflict) {
         return response;

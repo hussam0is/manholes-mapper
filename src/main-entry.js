@@ -2,6 +2,8 @@
 
 // Capacitor API proxy must load before any fetch() calls (auth, sync, etc.)
 import './capacitor-api-proxy.js';
+// CSRF double-submit cookie: wraps fetch() to attach x-csrf-token header
+import './auth/csrf.js';
 
 // Import CSS via JS so Vite handles it correctly in both dev and build modes
 import '../styles.css';

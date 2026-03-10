@@ -9,6 +9,7 @@
  */
 
 import { handleCors } from '../_lib/cors.js';
+import { verifyCsrf } from '../_lib/csrf.js';
 import { verifyAuth, parseBody } from '../_lib/auth.js';
 import {
   ensureDb,
@@ -24,6 +25,7 @@ export const config = { runtime: 'nodejs' };
 
 export default async function handler(req, res) {
   if (handleCors(req, res)) return;
+  if (verifyCsrf(req, res)) return;
 
   const request = req;
   if (!request.headers.get) {
