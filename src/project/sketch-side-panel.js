@@ -31,6 +31,21 @@ import { setMergeMode, isMergeModeEnabled, getCrossMergeIssues, onMergeModeChang
 /** Escape HTML special characters to prevent XSS */
 const esc = (str) => (typeof window.escapeHtml === 'function' ? window.escapeHtml(str) : String(str || ''));
 
+/** Format sketch display name — name > date > shortened ID (never raw sk_ IDs) */
+function formatSketchName(sketch) {
+  if (sketch.name && sketch.name.trim()) return sketch.name;
+  try {
+    const d = new Date(sketch.createdAt || sketch.creationDate);
+    const lang = document.documentElement.lang || 'he';
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-GB', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+      });
+    }
+  } catch (_) {}
+  return sketch.id ? sketch.id.replace('sk_', '#') : 'Sketch';
+}
+
 let panelEl = null;
 let listEl = null;
 let _unsub = null;
@@ -207,7 +222,7 @@ function renderListView() {
     item.dataset.sketchId = sketch.id;
 
     const nodeCount = (sketch.nodes || []).length;
-    const displayName = (sketch.name && sketch.name.trim()) || sketch.id.slice(-6);
+    const displayName = formatSketchName(sketch);
     const sketchData = _sketchStats.get(sketch.id);
     const km = sketchData ? sketchData.stats.totalKm.toFixed(2) : '0.00';
     const issues = sketchData ? sketchData.stats.issueCount : 0;
@@ -377,7 +392,7 @@ function renderIssuesView() {
   const existingTotals = panelEl?.querySelector('.sketch-side-panel__totals');
   if (existingTotals) existingTotals.remove();
 
-  const displayName = (sketch.name && sketch.name.trim()) || sketch.id.slice(-6);
+  const displayName = formatSketchName(sketch);
   const { issues, stats } = computeSketchIssues(sketch.nodes || [], sketch.edges || []);
 
   // Set the issue navigation context so prev/next buttons in the detail panel work

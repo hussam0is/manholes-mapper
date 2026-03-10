@@ -2716,7 +2716,7 @@ function renderMissionControlHeader() {
 
   let activeSketchHtml = '';
   if (activeSketch) {
-    const name = escapeHtml(activeSketch.name || activeSketch.id || '');
+    const name = escapeHtml(formatSketchDisplayName(activeSketch));
     activeSketchHtml = `
       <div class="mc-active-sketch">
         <div class="mc-active-sketch__label">${t('homeScreen.activeSketch')}</div>
@@ -2891,18 +2891,7 @@ function renderHome() {
       const item = document.createElement('div');
       const isCurrentSketch = rec.id === currentSketchId;
       item.className = `sketch-card${isCurrentSketch ? ' sketch-card-active' : ''}`;
-      const displayName = rec.name && String(rec.name).trim().length > 0 ? rec.name : null;
-      const dateStr = rec.creationDate || rec.createdAt;
-      let formattedDate = '';
-      if (dateStr) {
-        const d = new Date(dateStr);
-        if (!isNaN(d.getTime())) {
-          formattedDate = d.toLocaleDateString(currentLang === 'he' ? 'he-IL' : 'en-GB');
-        } else {
-          formattedDate = dateStr;
-        }
-      }
-      const title = displayName || t('listTitle', rec.id.slice(-6), formattedDate);
+      const title = formatSketchDisplayName(rec);
       const nodeCount = rec.nodeCount ?? (rec.nodes || []).length;
       const edgeCount = rec.edgeCount ?? (rec.edges || []).length;
       
@@ -3237,7 +3226,7 @@ async function renderProjectsHome() {
       const card = document.createElement('div');
       card.className = 'sketch-card project-card';
       const safeProjectId = escapeHtml(project.id);
-      const safeProjectName = escapeHtml(project.name || project.id);
+      const safeProjectName = escapeHtml(project.name || (t('projects.homepage.untitledProject') || 'Untitled Project'));
       const safeProjectDescription = project.description ? escapeHtml(project.description) : '';
       card.innerHTML = `
         <div class="sketch-card-header">

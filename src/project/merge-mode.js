@@ -64,6 +64,21 @@ let _crossMergeIssues = [];
 /** Listeners notified when merge-mode state changes */
 const _listeners = new Set();
 
+/** Format sketch display name — name > date > shortened ID (never raw sk_ IDs) */
+function _formatName(sketch) {
+  if (sketch.name && sketch.name.trim()) return sketch.name;
+  try {
+    const d = new Date(sketch.createdAt || sketch.creationDate);
+    const lang = document.documentElement.lang || 'he';
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-GB', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+      });
+    }
+  } catch (_) {}
+  return sketch.id ? sketch.id.replace('sk_', '#') : 'Sketch';
+}
+
 // ── Public API ────────────────────────────────────────────────────────────
 
 /**
@@ -216,7 +231,7 @@ function _compute(activeNodes, otherSketches) {
       _nearbyNodes.push({
         node,
         sketchId: sketch.id,
-        sketchName: sketch.name || sketch.id.slice(-6),
+        sketchName: _formatName(sketch),
         itmX: itm.x,
         itmY: itm.y,
       });
@@ -237,7 +252,7 @@ function _compute(activeNodes, otherSketches) {
             activeSketchId: null, // filled in by the caller (sketch-side-panel)
             nearbyNodeId: node.id,
             nearbySketchId: sketch.id,
-            nearbySketchName: sketch.name || sketch.id.slice(-6),
+            nearbySketchName: _formatName(sketch),
             distanceM: Math.round(minDistToActive * 10) / 10,
             worldX: closestActive.x || 0,
             worldY: closestActive.y || 0,

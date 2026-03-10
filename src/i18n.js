@@ -574,6 +574,7 @@ export const i18n = {
         subtitle: 'בחר פרויקט לעבודה',
         empty: 'אין שרטוטים בפרויקט זה',
         openProject: 'פתח פרויקט',
+        untitledProject: 'פרויקט ללא שם',
       },
       canvas: {
         sketches: 'שרטוטים',
@@ -1591,6 +1592,7 @@ export const i18n = {
         subtitle: 'Select a project to work on',
         empty: 'No sketches in this project',
         openProject: 'Open Project',
+        untitledProject: 'Untitled Project',
       },
       canvas: {
         sketches: 'Sketches',
