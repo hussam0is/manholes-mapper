@@ -44,19 +44,21 @@ export class NMEAParser {
   /**
    * Process incoming data (may be partial lines)
    * @param {string} data - Raw NMEA data chunk
+   * @param {object} [options] - Parse options
+   * @param {boolean} [options.lenientChecksum=false] - Accept sentences without checksum
    */
-  processData(data) {
+  processData(data, options = {}) {
     this.buffer += data;
-    
+
     // Process complete lines
     const lines = this.buffer.split(/\r?\n/);
-    
+
     // Keep the last incomplete line in the buffer
     this.buffer = lines.pop() || '';
-    
+
     for (const line of lines) {
       if (line.startsWith('$')) {
-        this.parseSentence(line.trim());
+        this.parseSentence(line.trim(), options);
       }
     }
   }
@@ -64,11 +66,13 @@ export class NMEAParser {
   /**
    * Parse a complete NMEA sentence
    * @param {string} sentence - Complete NMEA sentence
+   * @param {object} [options] - Parse options
+   * @param {boolean} [options.lenientChecksum=false] - Accept sentences without checksum
    * @returns {boolean} True if sentence was valid and parsed
    */
-  parseSentence(sentence) {
-    // Validate checksum if present
-    if (!this.validateChecksum(sentence)) {
+  parseSentence(sentence, options = {}) {
+    // Validate checksum
+    if (!this.validateChecksum(sentence, options)) {
       console.warn('[GNSS] NMEA checksum failed:', sentence);
       return false;
     }
@@ -92,14 +96,17 @@ export class NMEAParser {
    * Validate NMEA checksum
    * Checksum is XOR of all characters between $ and *
    * @param {string} sentence - Complete NMEA sentence with checksum
-   * @returns {boolean} True if checksum is valid or not present
+   * @param {object} [options] - Validation options
+   * @param {boolean} [options.lenientChecksum=false] - Accept sentences without checksum
+   * @returns {boolean} True if checksum is valid
    */
-  validateChecksum(sentence) {
+  validateChecksum(sentence, options = {}) {
+    const { lenientChecksum = false } = options;
     const asteriskIndex = sentence.indexOf('*');
-    
-    // No checksum present - consider valid
+
+    // No checksum present - reject by default (corrupted sentence)
     if (asteriskIndex === -1) {
-      return true;
+      return lenientChecksum;
     }
 
     const data = sentence.substring(1, asteriskIndex);

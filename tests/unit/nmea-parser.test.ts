@@ -59,8 +59,28 @@ describe('NMEAParser', () => {
     it('should reject sentence with invalid checksum', () => {
       const sentence = '$GPGGA,123519,4807.038,N,01131.000,E,1,08,0.9,545.4,M,47.0,M,,*00';
       const result = parser.parseSentence(sentence);
-      
+
       expect(result).toBe(false);
+    });
+
+    it('should reject sentence without checksum by default', () => {
+      const sentence = '$GPGGA,123519,4807.038,N,01131.000,E,1,08,0.9,545.4,M,47.0,M,,';
+      const result = parser.parseSentence(sentence);
+
+      expect(result).toBe(false);
+      expect(parser.getState().isValid).toBe(false);
+    });
+
+    it('should accept sentence without checksum when lenientChecksum is true', () => {
+      const sentence = '$GPGGA,123519,4807.038,N,01131.000,E,1,08,0.9,545.4,M,47.0,M,,';
+      const result = parser.parseSentence(sentence, { lenientChecksum: true });
+
+      expect(result).toBe(true);
+      const state = parser.getState();
+      expect(state.lat).toBeCloseTo(48.1173);
+      expect(state.lon).toBeCloseTo(11.5166);
+      expect(state.fixQuality).toBe(1);
+      expect(state.isValid).toBe(true);
     });
   });
 
