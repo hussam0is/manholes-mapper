@@ -65,6 +65,119 @@ function isValidCloudUUID(id) {
   return typeof id === 'string' && UUID_RE.test(id);
 }
 
+/**
+ * Compare local and server sketch data to determine if a real structural
+ * conflict exists (different nodes/edges) or only metadata differs.
+ *
+ * @param {Object} local  - Local sketch payload (the data we tried to PUT)
+ * @param {Object} server - Server sketch returned in the 409 response
+ * @returns {{ hasConflict: boolean, localNodeCount?: number, serverNodeCount?: number, localEdgeCount?: number, serverEdgeCount?: number }}
+ */
+export function compareSketchData(local, server) {
+  const localNodes = local.nodes || [];
+  const serverNodes = server.nodes || [];
+  const localEdges = local.edges || [];
+  const serverEdges = server.edges || [];
+
+  // Quick length check
+  if (localNodes.length !== serverNodes.length || localEdges.length !== serverEdges.length) {
+    return {
+      hasConflict: true,
+      localNodeCount: localNodes.length,
+      serverNodeCount: serverNodes.length,
+      localEdgeCount: localEdges.length,
+      serverEdgeCount: serverEdges.length,
+    };
+  }
+
+  // Deep comparison of node key fields (id, x, y, surveyX, surveyY, type)
+  for (let i = 0; i < localNodes.length; i++) {
+    const ln = localNodes[i];
+    const sn = serverNodes[i];
+    if (
+      ln.id !== sn.id ||
+      ln.x !== sn.x ||
+      ln.y !== sn.y ||
+      ln.surveyX !== sn.surveyX ||
+      ln.surveyY !== sn.surveyY ||
+      ln.type !== sn.type
+    ) {
+      return {
+        hasConflict: true,
+        localNodeCount: localNodes.length,
+        serverNodeCount: serverNodes.length,
+        localEdgeCount: localEdges.length,
+        serverEdgeCount: serverEdges.length,
+      };
+    }
+  }
+
+  // Deep comparison of edge key fields (id, from, to, length, type)
+  for (let i = 0; i < localEdges.length; i++) {
+    const le = localEdges[i];
+    const se = serverEdges[i];
+    if (
+      le.id !== se.id ||
+      le.from !== se.from ||
+      le.to !== se.to ||
+      le.length !== se.length ||
+      le.type !== se.type
+    ) {
+      return {
+        hasConflict: true,
+        localNodeCount: localNodes.length,
+        serverNodeCount: serverNodes.length,
+        localEdgeCount: localEdges.length,
+        serverEdgeCount: serverEdges.length,
+      };
+    }
+  }
+
+  // Only metadata differs — no structural conflict
+  return { hasConflict: false };
+}
+
+/**
+ * Save a conflict backup to localStorage so the user can recover their local
+ * changes if needed. Keeps at most 5 backups (oldest are evicted).
+ *
+ * @param {string} sketchId
+ * @param {Object} localData - The local sketch payload that was overridden
+ * @param {string} sketchName - Human-readable sketch name for the toast
+ */
+function saveConflictBackup(sketchId, localData, sketchName) {
+  if (typeof window === 'undefined' || !window.localStorage) return;
+
+  const MAX_BACKUPS = 5;
+  const key = `conflict_backup_${sketchId}_${Date.now()}`;
+  try {
+    window.localStorage.setItem(key, JSON.stringify({
+      sketchId,
+      sketchName,
+      savedAt: new Date().toISOString(),
+      data: localData,
+    }));
+
+    // Evict oldest backups if we exceed the limit
+    const allKeys = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const k = window.localStorage.key(i);
+      if (k && k.startsWith('conflict_backup_')) {
+        allKeys.push(k);
+      }
+    }
+    if (allKeys.length > MAX_BACKUPS) {
+      allKeys.sort(); // Chronological — timestamp is at the end
+      const toRemove = allKeys.slice(0, allKeys.length - MAX_BACKUPS);
+      for (const old of toRemove) {
+        window.localStorage.removeItem(old);
+      }
+    }
+  } catch (err) {
+    console.warn('[Sync] Failed to save conflict backup:', err);
+  }
+}
+
 // API base URL - in development without vercel dev, API won't be available
 // In production or with vercel dev, API is same-origin
 const API_BASE = '';
@@ -723,16 +836,90 @@ export async function syncSketchToCloud(sketch) {
       let result = await updateSketchInCloud(sketch.id, putPayload);
 
       if (result?._conflict) {
-        // Server has a newer version (e.g. direct DB coordinate fix). Retry once
-        // using the server's current version so our local changes still land.
-        const serverVersion = result.currentSketch?.version;
-        console.warn(`[Sync] Version conflict for sketch ${sketch.id} — server v${serverVersion ?? '?'}. Retrying with fresh version.`);
-        result = await updateSketchInCloud(sketch.id, {
-          ...putPayload,
-          clientVersion: serverVersion != null ? serverVersion : null,
-        });
-        if (result?._conflict) {
-          console.error(`[Sync] Conflict retry also failed for sketch ${sketch.id} — giving up for this cycle.`);
+        const serverSketch = result.currentSketch;
+        const serverVersion = serverSketch?.version;
+        console.warn(`[Sync] Version conflict for sketch ${sketch.id} — server v${serverVersion ?? '?'}, local v${knownVersion ?? '?'}.`);
+
+        if (serverSketch) {
+          const comparison = compareSketchData(putPayload, serverSketch);
+
+          if (!comparison.hasConflict) {
+            // Only metadata differs — auto-merge: take server nodes/edges, keep local metadata
+            console.debug(`[Sync] Conflict is metadata-only for sketch ${sketch.id} — auto-merging.`);
+            result = await updateSketchInCloud(sketch.id, {
+              ...putPayload,
+              nodes: serverSketch.nodes,
+              edges: serverSketch.edges,
+              clientVersion: serverVersion != null ? serverVersion : null,
+            });
+            if (result?._conflict) {
+              console.error(`[Sync] Auto-merge retry also failed for sketch ${sketch.id} — giving up for this cycle.`);
+              result = null;
+            }
+          } else {
+            // Structural conflict — nodes/edges differ.
+            // Save local version as backup, accept server version.
+            console.warn(
+              `[Sync] Structural conflict for sketch ${sketch.id}: ` +
+              `local ${comparison.localNodeCount} nodes / ${comparison.localEdgeCount} edges vs ` +
+              `server ${comparison.serverNodeCount} nodes / ${comparison.serverEdgeCount} edges. ` +
+              `Accepting server version and backing up local changes.`
+            );
+
+            saveConflictBackup(sketch.id, putPayload, sketch.name || sketch.id);
+
+            // Accept the server version into local storage
+            const serverData = {
+              ...sketch,
+              nodes: serverSketch.nodes || [],
+              edges: serverSketch.edges || [],
+              adminConfig: serverSketch.adminConfig || sketch.adminConfig || {},
+              updatedAt: serverSketch.updatedAt,
+            };
+            await saveSketchToIdb(serverData);
+
+            // Update legacy localStorage
+            if (typeof window !== 'undefined' && window.localStorage) {
+              try {
+                const raw = window.localStorage.getItem('graphSketch.library');
+                if (raw) {
+                  const lib = JSON.parse(raw);
+                  if (Array.isArray(lib)) {
+                    const idx = lib.findIndex(s => s.id === sketch.id);
+                    if (idx >= 0) {
+                      lib[idx] = { ...lib[idx], ...serverData };
+                      window.localStorage.setItem('graphSketch.library', JSON.stringify(lib));
+                      if (typeof window.invalidateLibraryCache === 'function') {
+                        window.invalidateLibraryCache();
+                      }
+                    }
+                  }
+                }
+              } catch (err) {
+                console.warn('[Sync] Failed to update localStorage after conflict resolution:', err);
+              }
+            }
+
+            // Notify user
+            const displayName = sketch.name || sketch.id;
+            if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
+              window.showToast(
+                typeof window.t === 'function'
+                  ? window.t('auth.conflictDetected', displayName)
+                  : `Sync conflict detected for sketch '${displayName}'. Your local changes were saved as a backup.`
+              );
+            }
+
+            // Track the server version so the next save uses it
+            if (serverVersion != null) {
+              lastKnownServerVersion.set(sketch.id, serverVersion);
+            }
+            // Don't set result — we intentionally did NOT push local data
+            result = null;
+          }
+        } else {
+          // No server sketch data in 409 response — cannot compare. Give up for this cycle.
+          console.error(`[Sync] Conflict for sketch ${sketch.id} but no server data returned — giving up.`);
           result = null;
         }
       }
@@ -993,12 +1180,54 @@ export async function processSyncQueue() {
             let queueResult = await updateSketchInCloud(op.data.id, queuePayload);
 
             if (queueResult?._conflict) {
-              const serverVersion = queueResult.currentSketch?.version;
-              console.warn(`[Sync] Queue conflict for sketch ${op.data.id} — retrying with server v${serverVersion ?? '?'}.`);
-              queueResult = await updateSketchInCloud(op.data.id, {
-                ...queuePayload,
-                clientVersion: serverVersion != null ? serverVersion : null,
-              });
+              const serverSketch = queueResult.currentSketch;
+              const serverVersion = serverSketch?.version;
+              console.warn(`[Sync] Queue conflict for sketch ${op.data.id} — server v${serverVersion ?? '?'}.`);
+
+              if (serverSketch) {
+                const comparison = compareSketchData(queuePayload, serverSketch);
+
+                if (!comparison.hasConflict) {
+                  // Metadata-only — auto-merge
+                  console.debug(`[Sync] Queue conflict is metadata-only for ${op.data.id} — auto-merging.`);
+                  queueResult = await updateSketchInCloud(op.data.id, {
+                    ...queuePayload,
+                    nodes: serverSketch.nodes,
+                    edges: serverSketch.edges,
+                    clientVersion: serverVersion != null ? serverVersion : null,
+                  });
+                } else {
+                  // Structural conflict — backup local, accept server
+                  console.warn(`[Sync] Structural queue conflict for ${op.data.id}. Accepting server version.`);
+                  saveConflictBackup(op.data.id, queuePayload, op.data.name || op.data.id);
+
+                  await saveSketchToIdb({
+                    ...op.data,
+                    nodes: serverSketch.nodes || [],
+                    edges: serverSketch.edges || [],
+                    adminConfig: serverSketch.adminConfig || op.data.adminConfig || {},
+                    updatedAt: serverSketch.updatedAt,
+                  });
+
+                  const displayName = op.data.name || op.data.id;
+                  if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
+                    window.showToast(
+                      typeof window.t === 'function'
+                        ? window.t('auth.conflictDetected', displayName)
+                        : `Sync conflict detected for sketch '${displayName}'. Your local changes were saved as a backup.`
+                    );
+                  }
+
+                  if (serverVersion != null) {
+                    lastKnownServerVersion.set(op.data.id, serverVersion);
+                  }
+                  // Treat as resolved — don't retry
+                  queueResult = null;
+                }
+              } else {
+                console.error(`[Sync] Queue conflict for ${op.data.id} but no server data — skipping.`);
+                queueResult = null;
+              }
             }
 
             if (queueResult && !queueResult._conflict && queueResult.version != null) {

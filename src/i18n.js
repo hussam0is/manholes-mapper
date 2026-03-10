@@ -128,6 +128,7 @@ export const i18n = {
       pendingChanges: (n) => `${n} שינויים ממתינים לסנכרון`,
       syncError: 'שגיאת סנכרון',
       syncNow: 'סנכרן עכשיו',
+      conflictDetected: (name) => `זוהה קונפליקט סנכרון בסקיצה '${name}'. השינויים המקומיים שלך נשמרו כגיבוי.`,
       // Auth form strings
       signIn: 'התחבר',
       signUp: 'הרשם',
@@ -1148,6 +1149,7 @@ export const i18n = {
       pendingChanges: (n) => `${n} changes pending`,
       syncError: 'Sync error',
       syncNow: 'Sync now',
+      conflictDetected: (name) => `Sync conflict detected for sketch '${name}'. Your local changes were saved as a backup.`,
       // Auth form strings
       signIn: 'Sign In',
       signUp: 'Sign Up',

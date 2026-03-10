@@ -1,12 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { 
-  syncFromCloud, 
-  syncSketchToCloud, 
+import {
+  syncFromCloud,
+  syncSketchToCloud,
   debouncedSyncToCloud,
   processSyncQueue,
   getSyncState,
   deduplicateSketches,
-  cleanupDuplicateSketches
+  cleanupDuplicateSketches,
+  compareSketchData,
 } from '../src/auth/sync-service.js';
 import * as db from '../src/db.js';
 import * as authGuard from '../src/auth/auth-guard.js';
@@ -371,12 +372,198 @@ describe('Sync Service Unit Tests', () => {
         { id: uuid2, name: 'B', creationDate: '2023-02-01', nodes: [{ id: 2 }], edges: [] },
         { id: 'sk_b1', name: 'B', creationDate: '2023-02-01', nodes: [{ id: 2 }], edges: [] },
       ];
-      
+
       const result = deduplicateSketches(sketches);
-      
+
       expect(result.deduplicated.length).toBe(2);
       expect(result.removedCount).toBe(3);
       expect(result.deduplicated.map(s => s.id).sort()).toEqual([uuid1, uuid2].sort());
+    });
+  });
+
+  describe('compareSketchData', () => {
+    it('should return hasConflict: false when nodes and edges are identical', () => {
+      const local = {
+        nodes: [{ id: 1, x: 100, y: 200, surveyX: 245000, surveyY: 740000, type: 'manhole' }],
+        edges: [{ id: 1, from: 1, to: 2, length: 10, type: 'pipe' }],
+      };
+      const server = {
+        nodes: [{ id: 1, x: 100, y: 200, surveyX: 245000, surveyY: 740000, type: 'manhole' }],
+        edges: [{ id: 1, from: 1, to: 2, length: 10, type: 'pipe' }],
+      };
+      const result = compareSketchData(local, server);
+      expect(result.hasConflict).toBe(false);
+    });
+
+    it('should return hasConflict: false when only metadata differs', () => {
+      const nodes = [{ id: 1, x: 100, y: 200, type: 'manhole' }];
+      const edges = [{ id: 1, from: 1, to: 2, length: 5, type: 'pipe' }];
+      const local = { name: 'Local Name', nodes, edges };
+      const server = { name: 'Server Name', nodes, edges };
+      const result = compareSketchData(local, server);
+      expect(result.hasConflict).toBe(false);
+    });
+
+    it('should detect conflict when node counts differ', () => {
+      const local = {
+        nodes: [{ id: 1, x: 100, y: 200 }],
+        edges: [],
+      };
+      const server = {
+        nodes: [{ id: 1, x: 100, y: 200 }, { id: 2, x: 300, y: 400 }],
+        edges: [],
+      };
+      const result = compareSketchData(local, server);
+      expect(result.hasConflict).toBe(true);
+      expect(result.localNodeCount).toBe(1);
+      expect(result.serverNodeCount).toBe(2);
+    });
+
+    it('should detect conflict when edge counts differ', () => {
+      const local = { nodes: [], edges: [] };
+      const server = { nodes: [], edges: [{ id: 1, from: 1, to: 2, length: 5, type: 'pipe' }] };
+      const result = compareSketchData(local, server);
+      expect(result.hasConflict).toBe(true);
+      expect(result.localEdgeCount).toBe(0);
+      expect(result.serverEdgeCount).toBe(1);
+    });
+
+    it('should detect conflict when node coordinates differ', () => {
+      const local = {
+        nodes: [{ id: 1, x: 100, y: 200, surveyX: 245000, surveyY: 740000 }],
+        edges: [],
+      };
+      const server = {
+        nodes: [{ id: 1, x: 100, y: 200, surveyX: 245050, surveyY: 740050 }],
+        edges: [],
+      };
+      const result = compareSketchData(local, server);
+      expect(result.hasConflict).toBe(true);
+    });
+
+    it('should detect conflict when node types differ', () => {
+      const local = { nodes: [{ id: 1, x: 0, y: 0, type: 'manhole' }], edges: [] };
+      const server = { nodes: [{ id: 1, x: 0, y: 0, type: 'valve' }], edges: [] };
+      const result = compareSketchData(local, server);
+      expect(result.hasConflict).toBe(true);
+    });
+
+    it('should detect conflict when edge key fields differ', () => {
+      const local = { nodes: [], edges: [{ id: 1, from: 1, to: 2, length: 10, type: 'pipe' }] };
+      const server = { nodes: [], edges: [{ id: 1, from: 1, to: 3, length: 10, type: 'pipe' }] };
+      const result = compareSketchData(local, server);
+      expect(result.hasConflict).toBe(true);
+    });
+
+    it('should handle empty nodes/edges arrays', () => {
+      const result = compareSketchData({ nodes: [], edges: [] }, { nodes: [], edges: [] });
+      expect(result.hasConflict).toBe(false);
+    });
+
+    it('should handle missing nodes/edges (undefined)', () => {
+      const result = compareSketchData({}, {});
+      expect(result.hasConflict).toBe(false);
+    });
+  });
+
+  describe('Structural Conflict Resolution', () => {
+    it('should save backup and accept server version on structural conflict', async () => {
+      const uuid = '12345678-1234-1234-1234-123456789abc';
+      const localSketch = {
+        id: uuid,
+        name: 'My Sketch',
+        nodes: [{ id: 1, x: 100, y: 200 }],
+        edges: [],
+      };
+      const serverSketch = {
+        id: uuid,
+        name: 'My Sketch',
+        version: 5,
+        nodes: [{ id: 1, x: 100, y: 200 }, { id: 2, x: 300, y: 400 }],
+        edges: [{ id: 1, from: 1, to: 2 }],
+        adminConfig: {},
+        updatedAt: '2026-03-01T00:00:00Z',
+      };
+
+      // First call: PUT returns 409 with server data (structural conflict)
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 409,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ error: 'Version conflict', currentSketch: serverSketch }),
+      });
+
+      // Mock showToast so we can verify it was called
+      window.showToast = vi.fn();
+
+      await syncSketchToCloud(localSketch);
+
+      // Should save the server version to IDB (accepting server data)
+      expect(db.saveSketch).toHaveBeenCalledWith(expect.objectContaining({
+        id: uuid,
+        nodes: serverSketch.nodes,
+        edges: serverSketch.edges,
+      }));
+
+      // Should notify the user
+      expect(window.showToast).toHaveBeenCalledTimes(1);
+      expect(window.showToast).toHaveBeenCalledWith(expect.stringContaining('My Sketch'));
+
+      // Should have saved a conflict backup in localStorage
+      const backupKeys = [];
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const k = window.localStorage.key(i);
+        if (k && k.startsWith('conflict_backup_')) backupKeys.push(k);
+      }
+      expect(backupKeys.length).toBeGreaterThanOrEqual(1);
+
+      // Clean up
+      for (const k of backupKeys) window.localStorage.removeItem(k);
+      delete (window as any).showToast;
+    });
+
+    it('should auto-merge metadata-only conflict without notifying user', async () => {
+      const uuid = '12345678-1234-1234-1234-123456789def';
+      const nodes = [{ id: 1, x: 100, y: 200, type: 'manhole' }];
+      const edges: any[] = [];
+      const localSketch = { id: uuid, name: 'Local Name', nodes, edges };
+      const serverSketch = {
+        id: uuid,
+        name: 'Server Name',
+        version: 3,
+        nodes,
+        edges,
+        adminConfig: {},
+        updatedAt: '2026-03-01T00:00:00Z',
+      };
+
+      // First call: 409 with server data (metadata-only conflict)
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 409,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ error: 'Version conflict', currentSketch: serverSketch }),
+      });
+
+      // Second call: auto-merge retry succeeds
+      const mergedResult = { ...serverSketch, name: 'Local Name', version: 4 };
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ sketch: mergedResult }),
+      });
+
+      window.showToast = vi.fn();
+
+      await syncSketchToCloud(localSketch);
+
+      // Should NOT notify user (metadata-only conflict is auto-merged)
+      expect(window.showToast).not.toHaveBeenCalled();
+
+      // Should have made 2 fetch calls (original + auto-merge retry)
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+
+      delete (window as any).showToast;
     });
   });
 });
