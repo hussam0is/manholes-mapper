@@ -657,16 +657,54 @@ body.cockpit-mode.heatmap-active #canvasContainer {
   }
 
   .intel-card {
-    background: var(--color-surface);
-    /* Use slightly brighter border in dark mode so card edges are visible */
-    border-color: rgba(255, 255, 255, 0.1);
-    border-bottom-color: rgba(255, 255, 255, 0.15);
+    background: var(--color-surface-alt);
+    border-color: var(--color-border-strong);
+    border-bottom-color: var(--color-border-strong);
   }
 
   .intel-card__header {
-    /* Slightly brighter separator line inside card in dark mode */
-    border-bottom-color: rgba(255, 255, 255, 0.1);
-    color: rgba(226, 232, 240, 0.7); /* --color-text at 70% for secondary feel */
+    border-bottom-color: var(--color-border);
+    color: var(--color-text-bright);
+  }
+
+  .intel-card__header .material-icons {
+    color: var(--color-text);
+  }
+
+  .completion-ring__text {
+    color: var(--color-text-bright);
+  }
+
+  .completion-ring__bg {
+    stroke: var(--color-border-strong);
+  }
+
+  .intel-gps__label {
+    color: var(--color-text-bright);
+  }
+
+  .intel-gps__accuracy {
+    color: var(--color-text);
+  }
+
+  .intel-gps__satellites {
+    color: var(--color-text-secondary);
+  }
+
+  .intel-sync__label {
+    color: var(--color-text);
+  }
+
+  .intel-session__row {
+    color: var(--color-text);
+  }
+
+  .intel-session__value {
+    color: var(--color-text-bright);
+  }
+
+  .intel-health__stats {
+    color: var(--color-text);
   }
 
   .action-rail {
@@ -674,13 +712,13 @@ body.cockpit-mode.heatmap-active #canvasContainer {
   }
 
   .action-rail__more-menu {
-    background: var(--color-surface);
-    border-color: var(--color-border);
+    background: var(--color-surface-alt);
+    border-color: var(--color-border-strong);
   }
 
   .quick-win-toast {
-    background: var(--color-surface);
-    border-color: var(--color-border);
+    background: var(--color-surface-alt);
+    border-color: var(--color-border-strong);
   }
 }
 
