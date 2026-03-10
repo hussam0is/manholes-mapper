@@ -195,29 +195,38 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Stale‑while‑revalidate for other same‑origin GET requests.  We respond
-  // immediately with whatever is in the cache, if present, and kick off
-  // a network fetch to update the cache.  If there is no cached response
-  // and the network is unavailable we fall back to the offline page so
-  // that broken requests don’t crash the app.
-// a network fetch to update the cache.  If there is no cached response
-  // and the network is unavailable we fall back to the offline page so
-  // that broken requests don’t crash the app.
-  if (request.method === 'GET') {
+  // Stale‑while‑revalidate for other same‑origin GET requests.  Return the
+  // cached response immediately when available (for speed) and update the
+  // cache in the background (for freshness).  When there is no cached
+  // response we await the network fetch and return the fresh result.  If
+  // both cache and network are unavailable we fall back to the offline page.
+  if (request.method === ‘GET’) {
     event.respondWith(
       (async () => {
         const cached = await caches.match(request);
-        try {
-          const response = await fetch(request);
-          // Clone the response *before* potentially consuming its body
-          const responseClone = response.clone();
-          caches.open(RUNTIME).then((cache) => cache.put(request, responseClone));
-          return cached || response; // Now safe to return the original response
-        } catch (_) {
-          // When offline and there is no cached response for a non-navigation GET, return the offline page
-          // instead of an empty 504.  This helps avoid broken behaviour when JS/CSS requests miss the cache.
-          return cached || (await caches.match(OFFLINE_URL));
+
+        // Background fetch: update the cache regardless of whether we had a
+        // cache hit.  We intentionally do NOT await this when returning the
+        // cached response — that is the "while‑revalidate" part.
+        const fetchAndCache = fetch(request)
+          .then((response) => {
+            const responseClone = response.clone();
+            caches.open(RUNTIME).then((cache) => cache.put(request, responseClone));
+            return response;
+          })
+          .catch(() => null);
+
+        if (cached) {
+          // Cache hit — return immediately, network updates in the background
+          return cached;
         }
+
+        // No cache hit — must wait for the network response
+        const response = await fetchAndCache;
+        if (response) return response;
+
+        // Both cache and network failed — serve offline page
+        return caches.match(OFFLINE_URL);
       })()
     );
     return;
