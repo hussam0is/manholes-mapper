@@ -54,8 +54,11 @@ export default async function authHandler(req, res) {
           // Timeout fallback
           setTimeout(() => resolve(chunks.length ? Buffer.concat(chunks).toString('utf8') : ''), 3000);
         });
+        console.log('[Auth API] Raw body from stream:', JSON.stringify(rawBody));
+        console.log('[Auth API] Raw body length:', rawBody.length);
+        console.log('[Auth API] Raw body bytes:', Buffer.from(rawBody).slice(0, 100).toString('hex'));
         Object.defineProperty(req, 'body', {
-          value: rawBody ? JSON.parse(rawBody) : undefined,
+          value: rawBody || undefined,
           writable: true,
           configurable: true,
         });
