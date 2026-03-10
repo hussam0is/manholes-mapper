@@ -2,8 +2,9 @@
  * Renders background sketches on the canvas at reduced opacity.
  *
  * Called from draw() in main.js when in project-canvas mode.
- * Draws edges then nodes for each visible background sketch,
- * skipping labels to reduce visual clutter.
+ * Uses offscreen canvas cache — background sketches are drawn once in
+ * world-space to a buffer, then blitted via drawImage() each frame.
+ * Only re-rendered when zoom/stretch/visibility changes (not on pan).
  *
  * Also draws the merge-mode overlay: nearby nodes from other sketches
  * rendered with a distinctive amber highlight, plus dashed connector lines
@@ -28,47 +29,113 @@ const MERGE_DUP_STROKE = '#dc2626';
 const MERGE_CONNECTOR_COLOR = 'rgba(239, 68, 68, 0.7)'; // red dashed line for dup pairs
 const MERGE_CONNECTOR_NEARBY = 'rgba(251, 146, 60, 0.4)'; // amber dashed for nearby
 
-/**
- * Draw all background sketches onto the canvas context.
- *
- * @param {CanvasRenderingContext2D} ctx
- * @param {Array<object>} sketches - array of sketch data objects
- * @param {object} opts
- * @param {number} opts.sizeScale
- * @param {number} opts.viewScale
- * @param {number} opts.viewStretchX
- * @param {number} opts.viewStretchY
- * @param {number} opts.visMinX - culling bounds
- * @param {number} opts.visMinY
- * @param {number} opts.visMaxX
- * @param {number} opts.visMaxY
- */
-export function drawBackgroundSketches(ctx, sketches, opts) {
-  if (!sketches || sketches.length === 0) return;
+// ── Offscreen canvas cache ──────────────────────────────────────────────────
+// Background sketches are rendered to an offscreen canvas in world-space
+// (the same coordinate system as the main canvas after translate+scale).
+// Only re-rendered when zoom/data/visibility changes — panning is free.
+let _offCanvas = null;
+let _offCtx = null;
+let _cacheKey = '';
+// World-space bounding box of the offscreen canvas content
+let _offWorldMinX = 0;
+let _offWorldMinY = 0;
 
+/**
+ * Invalidate the background cache so next draw re-renders.
+ * Call this when sketch visibility/data changes.
+ */
+export function invalidateBackgroundCache() {
+  _cacheKey = '';
+}
+
+/**
+ * Build cache key — invalidate when zoom, stretch, data, or sketch set changes.
+ * Pan (viewTranslate) is NOT included — that's the whole point of caching.
+ */
+function _buildCacheKey(sketches, opts) {
+  let totalNodes = 0;
+  let ids = '';
+  for (const s of sketches) {
+    totalNodes += (s.nodes?.length || 0);
+    ids += s.id.slice(-4);
+  }
+  return `${ids}|${totalNodes}|${opts.viewScale}|${opts.viewStretchX}|${opts.viewStretchY}|${opts.sizeScale}`;
+}
+
+/**
+ * Render all background sketches to the offscreen canvas in world-space.
+ * No culling — we render everything so panning doesn't invalidate the cache.
+ */
+function _renderToOffscreen(sketches, opts) {
   const {
     sizeScale = 1,
     viewScale = 1,
     viewStretchX = 1,
     viewStretchY = 1,
-    visMinX = -Infinity,
-    visMinY = -Infinity,
-    visMaxX = Infinity,
-    visMaxY = Infinity,
   } = opts;
 
-  const nodeRadius = NODE_RADIUS * sizeScale / viewScale;
+  // 1. Compute world-space bounding box of all background nodes
+  let wMinX = Infinity, wMinY = Infinity, wMaxX = -Infinity, wMaxY = -Infinity;
+  for (const sketch of sketches) {
+    for (const node of (sketch.nodes || [])) {
+      const sx = node.x * viewStretchX;
+      const sy = node.y * viewStretchY;
+      if (sx < wMinX) wMinX = sx;
+      if (sy < wMinY) wMinY = sy;
+      if (sx > wMaxX) wMaxX = sx;
+      if (sy > wMaxY) wMaxY = sy;
+    }
+  }
+  if (wMinX > wMaxX) return; // no nodes
 
+  const nodeRadius = NODE_RADIUS * sizeScale / viewScale;
+  // Add padding for node radius + arrow overshoot
+  const pad = nodeRadius * 2 + 20 / viewScale;
+  wMinX -= pad;
+  wMinY -= pad;
+  wMaxX += pad;
+  wMaxY += pad;
+
+  // 2. Compute pixel dimensions of offscreen canvas (world range × viewScale)
+  // Cap at a reasonable max to avoid huge allocations
+  const MAX_DIM = 4096;
+  const pxW = Math.min(MAX_DIM, Math.ceil((wMaxX - wMinX) * viewScale));
+  const pxH = Math.min(MAX_DIM, Math.ceil((wMaxY - wMinY) * viewScale));
+  if (pxW <= 0 || pxH <= 0) return;
+
+  // Actual scale might be reduced if we hit MAX_DIM
+  const actualScaleX = pxW / (wMaxX - wMinX);
+  const actualScaleY = pxH / (wMaxY - wMinY);
+
+  // 3. Create/resize offscreen canvas
+  if (!_offCanvas) {
+    _offCanvas = (typeof OffscreenCanvas !== 'undefined')
+      ? new OffscreenCanvas(pxW, pxH)
+      : document.createElement('canvas');
+    _offCtx = _offCanvas.getContext('2d');
+  }
+  _offCanvas.width = pxW;
+  _offCanvas.height = pxH;
+  _offWorldMinX = wMinX;
+  _offWorldMinY = wMinY;
+
+  const ctx = _offCtx;
+  ctx.clearRect(0, 0, pxW, pxH);
+
+  // 4. Set up transform: world-space → pixel-space
   ctx.save();
+  ctx.scale(actualScaleX, actualScaleY);
+  ctx.translate(-wMinX, -wMinY);
+
   ctx.globalAlpha = BG_ALPHA;
+
+  const arrowLen = 8 / viewScale;
 
   for (const sketch of sketches) {
     const nodes = sketch.nodes || [];
     const edges = sketch.edges || [];
     if (nodes.length === 0 && edges.length === 0) continue;
 
-    // Reuse cached node lookup Map when sketch object hasn't changed (avoids
-    // rebuilding Map(nodes) on every frame for each background sketch).
     let nMap = _bgNodeMapCache.get(sketch);
     if (!nMap || nMap.size !== nodes.length) {
       nMap = new Map();
@@ -77,14 +144,11 @@ export function drawBackgroundSketches(ctx, sketches, opts) {
     }
 
     // ── Draw edges (batched by color group) ─────────────────────────
-    // Collect visible edge segments into color buckets, then draw each bucket
-    // with a single beginPath/stroke + fill instead of per-edge draw calls.
     const colorPrimary = COLORS.edge.typePrimary;
     const colorDrainage = COLORS.edge.typeDrainage;
     const colorSecondary = COLORS.edge.typeSecondary;
     const lineBuckets = { primary: [], drainage: [], secondary: [] };
     const arrowBuckets = { primary: [], drainage: [], secondary: [] };
-    const arrowLen = 8 / viewScale;
 
     for (const edge of edges) {
       const tn = edge.tail != null ? nMap.get(String(edge.tail)) : null;
@@ -111,19 +175,12 @@ export function drawBackgroundSketches(ctx, sketches, opts) {
         continue;
       }
 
-      // Cull off-screen edges
-      const eMinX = Math.min(x1, x2), eMaxX = Math.max(x1, x2);
-      const eMinY = Math.min(y1, y2), eMaxY = Math.max(y1, y2);
-      if (eMaxX < visMinX || eMinX > visMaxX || eMaxY < visMinY || eMinY > visMaxY) continue;
-
-      // Determine color bucket
       const edgeType = edge.pipeType || edge.lineType || 'primary';
       const bucket = edgeType === 'secondary' ? 'secondary'
         : edgeType === 'drainage' ? 'drainage' : 'primary';
 
       lineBuckets[bucket].push(x1, y1, x2, y2);
 
-      // Precompute arrow vertices
       const angle = Math.atan2(y2 - y1, x2 - x1);
       const cosA1 = Math.cos(angle - Math.PI / 6), sinA1 = Math.sin(angle - Math.PI / 6);
       const cosA2 = Math.cos(angle + Math.PI / 6), sinA2 = Math.sin(angle + Math.PI / 6);
@@ -143,7 +200,6 @@ export function drawBackgroundSketches(ctx, sketches, opts) {
       if (lines.length === 0) continue;
       const color = bucketColors[bi];
 
-      // Batch stroke all lines in one path
       ctx.strokeStyle = color;
       ctx.beginPath();
       for (let li = 0; li < lines.length; li += 4) {
@@ -152,7 +208,6 @@ export function drawBackgroundSketches(ctx, sketches, opts) {
       }
       ctx.stroke();
 
-      // Batch fill all arrow triangles in one path
       ctx.fillStyle = color;
       ctx.beginPath();
       for (let ai = 0; ai < arrows.length; ai += 6) {
@@ -169,15 +224,10 @@ export function drawBackgroundSketches(ctx, sketches, opts) {
       const sx = node.x * viewStretchX;
       const sy = node.y * viewStretchY;
 
-      // Cull off-screen nodes
-      if (sx + nodeRadius < visMinX || sx - nodeRadius > visMaxX ||
-          sy + nodeRadius < visMinY || sy - nodeRadius > visMaxY) continue;
-
       const isDrainage = node.nodeType === 'Drainage' || node.nodeType === 'קולטן';
       const isHome = node.nodeType === 'Home' || node.nodeType === 'בית';
 
       if (isDrainage) {
-        // Draw drainage as rectangle
         const w = nodeRadius * 1.8;
         const h = nodeRadius * 1.3;
         ctx.fillStyle = COLORS.node.fillDrainageComplete || '#0ea5e9';
@@ -186,7 +236,6 @@ export function drawBackgroundSketches(ctx, sketches, opts) {
         ctx.fillRect(sx - w / 2, sy - h / 2, w, h);
         ctx.strokeRect(sx - w / 2, sy - h / 2, w, h);
       } else if (isHome) {
-        // Draw home as simple triangle-topped house shape
         ctx.fillStyle = COLORS.node.houseBody || '#d7ccc8';
         ctx.strokeStyle = COLORS.node.stroke;
         ctx.lineWidth = 1.5 / viewScale;
@@ -201,7 +250,6 @@ export function drawBackgroundSketches(ctx, sketches, opts) {
         ctx.fill();
         ctx.stroke();
       } else {
-        // Draw normal node as circle
         ctx.beginPath();
         ctx.arc(sx, sy, nodeRadius, 0, Math.PI * 2);
         ctx.fillStyle = COLORS.node.fillDefault;
@@ -211,7 +259,6 @@ export function drawBackgroundSketches(ctx, sketches, opts) {
         ctx.stroke();
       }
 
-      // Draw node ID label (small, no collision avoidance)
       if (node.id != null) {
         const fontSize = Math.round(11 * sizeScale / viewScale);
         ctx.fillStyle = COLORS.node.label;
@@ -224,6 +271,38 @@ export function drawBackgroundSketches(ctx, sketches, opts) {
   }
 
   ctx.restore();
+}
+
+/**
+ * Draw all background sketches onto the canvas context.
+ * Uses offscreen canvas cache — re-renders only when zoom/stretch/data changes.
+ * Panning is free (just blits the cached image at the right position).
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {Array<object>} sketches - array of sketch data objects
+ * @param {object} opts
+ */
+export function drawBackgroundSketches(ctx, sketches, opts) {
+  if (!sketches || sketches.length === 0) return;
+
+  const newKey = _buildCacheKey(sketches, opts);
+
+  if (newKey !== _cacheKey) {
+    console.time('[PERF] draw:bgCache MISS (re-render offscreen)');
+    _renderToOffscreen(sketches, opts);
+    _cacheKey = newKey;
+    console.timeEnd('[PERF] draw:bgCache MISS (re-render offscreen)');
+  }
+
+  // Blit the offscreen canvas. The main canvas context already has
+  // translate(viewTranslate) + scale(viewScale) applied, so we draw at
+  // the world-space origin of the offscreen buffer.
+  if (_offCanvas && _offCanvas.width > 0 && _offCanvas.height > 0) {
+    const worldW = _offCanvas.width / (opts.viewScale || 1);
+    const worldH = _offCanvas.height / (opts.viewScale || 1);
+    // drawImage(source, dx, dy, dw, dh) — draw at world coords, scaled to world size
+    ctx.drawImage(_offCanvas, _offWorldMinX, _offWorldMinY, worldW, worldH);
+  }
 }
 
 /**
@@ -257,13 +336,11 @@ export function drawMergeModeOverlay(ctx, activeNodes, opts) {
 
   const nodeRadius = NODE_RADIUS * sizeScale / viewScale;
 
-  // Build a Set of nearby node IDs that are confirmed duplicates for quick lookup
   /** @type {Set<string>} key = `${sketchId}:${nodeId}` */
   const dupKeys = new Set(
     crossIssues.map(i => `${i.nearbySketchId}:${i.nearbyNodeId}`)
   );
 
-  // Build active node world-coordinate lookup by ID
   const activeNodeMap = new Map();
   for (const n of activeNodes) activeNodeMap.set(String(n.id), n);
 
@@ -272,12 +349,8 @@ export function drawMergeModeOverlay(ctx, activeNodes, opts) {
   // ── 1. Draw connector lines (dashed) ─────────────────────────────────────
   ctx.setLineDash([4 / viewScale, 4 / viewScale]);
 
-  // Nearby-only connectors (amber, faint): connect each nearby node to the
-  // closest active node visually so the user can see why it was pulled in.
-  // We only draw these for non-duplicate pairs (duplicates get their own line).
   const dupActiveIds = new Set(crossIssues.map(i => `${i.nearbySketchId}:${i.nearbyNodeId}`));
 
-  // Pre-compute active node positions once for closest-node search (avoids O(N) per nearby node)
   const _activeXs = new Float64Array(activeNodes.length);
   const _activeYs = new Float64Array(activeNodes.length);
   for (let i = 0; i < activeNodes.length; i++) {
@@ -287,14 +360,13 @@ export function drawMergeModeOverlay(ctx, activeNodes, opts) {
 
   for (const nearby of nearbyNodes) {
     const key = `${nearby.sketchId}:${nearby.node.id}`;
-    if (dupActiveIds.has(key)) continue; // skip, handled in dup connectors below
+    if (dupActiveIds.has(key)) continue;
 
     const sx = nearby.node.x * viewStretchX;
     const sy = nearby.node.y * viewStretchY;
     if (sx + nodeRadius < visMinX || sx - nodeRadius > visMaxX ||
         sy + nodeRadius < visMinY || sy - nodeRadius > visMaxY) continue;
 
-    // Find closest active node using distance-squared (avoids sqrt per comparison)
     let closest = null;
     let closestDistSq = Infinity;
     const nx = nearby.node.x, ny = nearby.node.y;
@@ -317,7 +389,6 @@ export function drawMergeModeOverlay(ctx, activeNodes, opts) {
     ctx.stroke();
   }
 
-  // Duplicate connectors (red, prominent)
   for (const issue of crossIssues) {
     const activeNode = activeNodeMap.get(String(issue.activeNodeId));
     if (!activeNode) continue;
@@ -325,7 +396,6 @@ export function drawMergeModeOverlay(ctx, activeNodes, opts) {
     const ax = activeNode.x * viewStretchX;
     const ay = activeNode.y * viewStretchY;
 
-    // Nearby node world coords
     const nearby = nearbyNodes.find(
       n => n.sketchId === issue.nearbySketchId && String(n.node.id) === String(issue.nearbyNodeId)
     );
@@ -342,7 +412,7 @@ export function drawMergeModeOverlay(ctx, activeNodes, opts) {
     ctx.stroke();
   }
 
-  ctx.setLineDash([]); // reset dash
+  ctx.setLineDash([]);
 
   // ── 2. Draw nearby nodes ──────────────────────────────────────────────────
   for (const nearby of nearbyNodes) {
@@ -355,7 +425,6 @@ export function drawMergeModeOverlay(ctx, activeNodes, opts) {
     const key = `${nearby.sketchId}:${nearby.node.id}`;
     const isDuplicate = dupKeys.has(key);
 
-    // Draw a slightly larger pulsing ring behind the node to attract attention
     const ringR = nodeRadius * 1.6;
     const ringAlpha = isDuplicate ? 0.5 : 0.3;
     const ringColor = isDuplicate ? MERGE_DUP_STROKE : MERGE_NODE_STROKE;
@@ -367,7 +436,6 @@ export function drawMergeModeOverlay(ctx, activeNodes, opts) {
     ctx.stroke();
     ctx.globalAlpha = 1;
 
-    // Node body
     ctx.beginPath();
     ctx.arc(sx, sy, nodeRadius, 0, Math.PI * 2);
     ctx.fillStyle = isDuplicate ? MERGE_DUP_FILL : MERGE_NODE_FILL;
@@ -376,17 +444,15 @@ export function drawMergeModeOverlay(ctx, activeNodes, opts) {
     ctx.lineWidth = MERGE_NODE_STROKE_WIDTH_FACTOR / viewScale;
     ctx.stroke();
 
-    // Node ID label
     if (nearby.node.id != null) {
       const fontSize = Math.round(11 * sizeScale / viewScale);
-      ctx.fillStyle = isDuplicate ? '#7f1d1d' : '#78350f'; // dark red / dark amber
+      ctx.fillStyle = isDuplicate ? '#7f1d1d' : '#78350f';
       ctx.font = `bold ${fontSize}px Arial`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(String(nearby.node.id), sx, sy);
     }
 
-    // Sketch name label below the node (only when not too zoomed out)
     if (viewScale > 0.3) {
       const labelFontSize = Math.round(9 * sizeScale / viewScale);
       ctx.font = `${labelFontSize}px Arial`;

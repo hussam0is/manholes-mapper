@@ -139,7 +139,7 @@ import {
   onProjectCanvasChange,
   refreshActiveSketchData,
 } from '../project/project-canvas-state.js';
-import { drawBackgroundSketches, drawMergeModeOverlay } from '../project/project-canvas-renderer.js';
+import { drawBackgroundSketches, drawMergeModeOverlay, invalidateBackgroundCache } from '../project/project-canvas-renderer.js';
 import { initSketchSidePanel, showSketchSidePanel, hideSketchSidePanel } from '../project/sketch-side-panel.js';
 import { SpatialGrid, buildNodeGrid, buildEdgeGrid } from '../utils/spatial-grid.js';
 import { renderCache } from '../utils/render-cache.js';

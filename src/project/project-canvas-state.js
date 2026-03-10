@@ -7,6 +7,7 @@
  */
 
 import { NODE_RADIUS } from '../state/constants.js';
+import { invalidateBackgroundCache } from './project-canvas-renderer.js';
 
 /** @type {(key: string, ...args: any[]) => string} */
 const t = (key, ...args) => (typeof window.t === 'function' ? window.t(key, ...args) : key);
@@ -117,6 +118,7 @@ export function setSketchVisibility(sketchId, visible) {
   } else {
     hiddenSketches.add(sketchId);
   }
+  invalidateBackgroundCache();
   _notify();
   window.__scheduleDraw?.();
 }
@@ -152,6 +154,8 @@ export function switchActiveSketch(sketchId) {
     adminConfig: target.adminConfig || {},
     inputFlowConfig: target.snapshotInputFlowConfig || {},
   });
+
+  invalidateBackgroundCache();
 
   // Unhide if it was hidden
   hiddenSketches.delete(sketchId);
