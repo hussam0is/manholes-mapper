@@ -494,6 +494,18 @@ async function handleSingleSketch(req, res, request, sketchId) {
         return res.status(404).json({ error: 'Sketch not found' });
       }
 
+      // Atomic lock conflict: another user acquired the lock between our check and update
+      if (updated.lockConflict) {
+        console.warn(`[API /api/sketches/${sketchId}] Update blocked atomically - locked by ${updated.lockedBy}`);
+        return res.status(409).json({
+          error: 'Sketch is locked by another user',
+          lock: {
+            lockedBy: updated.lockedBy,
+            lockExpiresAt: updated.lockExpiresAt,
+          }
+        });
+      }
+
       // Optimistic-lock conflict: another process updated the sketch since the client
       // last fetched it (e.g. a direct DB coordinate fix). Return 409 with current data
       // so the client can refresh its local updatedAt and retry.

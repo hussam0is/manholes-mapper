@@ -570,20 +570,30 @@ export async function updateSketch(sketchId, userId, updates) {
       updated_at = NOW()
     WHERE id = ${sketchId} AND user_id = ${userId}
       AND (${clientUpdatedAt}::timestamptz IS NULL OR date_trunc('milliseconds', updated_at) = date_trunc('milliseconds', ${clientUpdatedAt}::timestamptz))
+      AND (locked_by IS NULL OR locked_by = ${userId} OR lock_expires_at <= NOW())
     RETURNING id, name, creation_date, nodes, edges, admin_config, created_by, last_edited_by,
               project_id, snapshot_input_flow_config, created_at, updated_at
   `;
 
-  if (result.rows.length === 0 && clientUpdatedAt !== null) {
-    // No rows updated with version check — determine if conflict or not-found
+  if (result.rows.length === 0) {
+    // No rows updated — determine the cause: lock conflict, version conflict, or not-found
     const current = await sql`
       SELECT id, name, creation_date, nodes, edges, admin_config, created_by, last_edited_by,
-             project_id, snapshot_input_flow_config, created_at, updated_at
+             project_id, snapshot_input_flow_config, created_at, updated_at,
+             locked_by, lock_expires_at
       FROM sketches
       WHERE id = ${sketchId} AND user_id = ${userId}
     `;
     if (current.rows.length > 0) {
-      return { conflict: true, current: current.rows[0] };
+      const row = current.rows[0];
+      // Check if the failure was due to an active lock by another user
+      if (row.locked_by && row.locked_by !== userId && new Date(row.lock_expires_at) > new Date()) {
+        return { lockConflict: true, lockedBy: row.locked_by, lockExpiresAt: row.lock_expires_at };
+      }
+      // Otherwise it's a version conflict (clientUpdatedAt mismatch)
+      if (clientUpdatedAt !== null) {
+        return { conflict: true, current: row };
+      }
     }
   }
 
