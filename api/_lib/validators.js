@@ -11,6 +11,25 @@ const MAX_STRING_LENGTH = 1000;
 const MAX_NOTE_LENGTH = 5000;
 const MAX_NAME_LENGTH = 200;
 
+// Prototype pollution dangerous keys
+const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
+/**
+ * Recursively check an object for prototype pollution keys
+ * @param {any} obj - Object to check
+ * @returns {boolean} - true if dangerous keys found
+ */
+export function hasPrototypePollutionKeys(obj) {
+  if (typeof obj !== 'object' || obj === null) return false;
+  for (const key of Object.keys(obj)) {
+    if (DANGEROUS_KEYS.has(key)) return true;
+    if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
+      if (hasPrototypePollutionKeys(obj[key])) return true;
+    }
+  }
+  return false;
+}
+
 // Valid role values
 export const VALID_ROLES = ['user', 'admin', 'super_admin'];
 
@@ -139,6 +158,8 @@ export function validateSketchInput(body) {
   if (body.adminConfig !== undefined) {
     if (typeof body.adminConfig !== 'object' || body.adminConfig === null || Array.isArray(body.adminConfig)) {
       errors.push('adminConfig must be an object');
+    } else if (hasPrototypePollutionKeys(body.adminConfig)) {
+      errors.push('adminConfig contains forbidden keys (__proto__, constructor, prototype)');
     }
   }
 

@@ -12,6 +12,7 @@ import {
   validateUserUpdateInput,
   validateFeaturesInput,
   validateUUID,
+  hasPrototypePollutionKeys,
 } from '../api/_lib/validators.js';
 import { sanitizeErrorMessage, parseBody } from '../api/_lib/auth.js';
 
@@ -68,9 +69,40 @@ describe('Security: Input Validation', () => {
 
     it('should reject prototype pollution attempt in adminConfig', () => {
       const errors = validateSketchInput({
-        adminConfig: { __proto__: { isAdmin: true } },
+        adminConfig: { ['__proto__']: { isAdmin: true } },
       });
-      // adminConfig is a valid object
+      expect(errors).not.toBeNull();
+      expect(errors).toContain('adminConfig contains forbidden keys (__proto__, constructor, prototype)');
+    });
+
+    it('should reject nested prototype pollution in adminConfig', () => {
+      const errors = validateSketchInput({
+        adminConfig: { settings: { nested: { ['__proto__']: { isAdmin: true } } } },
+      });
+      expect(errors).not.toBeNull();
+      expect(errors).toContain('adminConfig contains forbidden keys (__proto__, constructor, prototype)');
+    });
+
+    it('should reject constructor key in adminConfig', () => {
+      const errors = validateSketchInput({
+        adminConfig: { constructor: { prototype: { isAdmin: true } } },
+      });
+      expect(errors).not.toBeNull();
+      expect(errors).toContain('adminConfig contains forbidden keys (__proto__, constructor, prototype)');
+    });
+
+    it('should reject prototype key in adminConfig', () => {
+      const errors = validateSketchInput({
+        adminConfig: { prototype: { toString: () => 'hacked' } },
+      });
+      expect(errors).not.toBeNull();
+      expect(errors).toContain('adminConfig contains forbidden keys (__proto__, constructor, prototype)');
+    });
+
+    it('should allow clean adminConfig objects', () => {
+      const errors = validateSketchInput({
+        adminConfig: { theme: 'dark', maxNodes: 100, nested: { key: 'value' } },
+      });
       expect(errors).toBeNull();
     });
 
