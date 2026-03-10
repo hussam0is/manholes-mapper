@@ -20,31 +20,36 @@ export const config = {
 const betterAuthHandler = toNodeHandler(auth);
 
 export default async function authHandler(req, res) {
-  // Workaround: Vercel's Rust runtime patches IncomingMessage.prototype.body
-  // with a getter that throws "Invalid JSON" when better-call accesses it.
-  // Shadow the getter with undefined so better-call falls through to
-  // reading the raw Node.js stream via get_raw_body() instead.
-  Object.defineProperty(req, 'body', {
-    value: undefined,
-    writable: true,
-    configurable: true,
-  });
-
-  if (handleCors(req, res)) return;
-
-  const isSignOut = req.url?.includes('/sign-out');
-
-  if (!isSignOut && applyRateLimit(req, res, MAX_REQUESTS_AUTH)) {
-    return;
-  }
-
   try {
+    // Workaround: Vercel's Rust runtime patches IncomingMessage with a body
+    // getter that throws "Invalid JSON" when better-call accesses it.
+    // Shadow it with undefined so better-call reads the raw stream instead.
+    try {
+      Object.defineProperty(req, 'body', {
+        value: undefined,
+        writable: true,
+        configurable: true,
+      });
+    } catch {
+      // If we can't override (non-configurable), try assignment
+      try { req.body = undefined; } catch { /* ignore */ }
+    }
+
+    if (handleCors(req, res)) return;
+
+    const isSignOut = req.url?.includes('/sign-out');
+    if (!isSignOut && applyRateLimit(req, res, MAX_REQUESTS_AUTH)) {
+      return;
+    }
+
     return await betterAuthHandler(req, res);
   } catch (error) {
     console.error('[Auth API] Error:', error.message || error);
+    console.error('[Auth API] Stack:', error.stack);
     if (!res.headersSent) {
       return res.status(500).json({
         error: sanitizeErrorMessage(error),
+        _debug: error.message,
       });
     }
   }
