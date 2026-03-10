@@ -16,6 +16,7 @@ import {
   deleteSketch as deleteSketchFromIdb,
   enqueueSyncOperation,
   drainSyncQueue,
+  removeSyncQueueItem,
 } from '../db.js';
 
 // Sync state
@@ -941,15 +942,18 @@ export async function processSyncQueue() {
 
   // Filter out operations for legacy non-UUID sketch IDs — these would
   // cause 400 errors from the API. The sketches themselves are preserved
-  // locally; we just discard their cloud sync requests.
-  const operations = allOperations.filter(op => {
+  // locally; we just remove their cloud sync requests from the queue.
+  const operations = [];
+  for (const op of allOperations) {
     const opSketchId = op.type === 'DELETE' ? op.sketchId : op.data?.id;
     if (opSketchId && !isValidCloudUUID(opSketchId)) {
       console.warn(`[Sync] Discarding queued ${op.type} for legacy sketch ID "${opSketchId}"`);
-      return false;
+      // Remove legacy items from the queue so they don't accumulate
+      try { await removeSyncQueueItem(op._queueKey); } catch (e) { /* ignore */ }
+      continue;
     }
-    return true;
-  });
+    operations.push(op);
+  }
 
   if (operations.length === 0) {
     console.debug('[Sync] All queued operations were for legacy IDs — nothing to sync');
@@ -965,7 +969,7 @@ export async function processSyncQueue() {
   isSyncInProgress = true;
   updateSyncState({ isSyncing: true });
 
-  let failedOps = [];
+  let failedCount = 0;
 
   try {
     for (const op of operations) {
@@ -1032,21 +1036,20 @@ export async function processSyncQueue() {
         } else if (op.type === 'DELETE') {
           await deleteSketchFromCloud(op.sketchId);
         }
+
+        // Success — remove this operation from the queue
+        await removeSyncQueueItem(op._queueKey);
       } catch (error) {
         console.error('[Sync] Failed to process queued operation:', op, error);
-        failedOps.push(op);
+        // Leave the operation in the queue — it will be retried next sync cycle
+        failedCount++;
       }
-    }
-
-    // Re-queue failed operations
-    for (const op of failedOps) {
-      await enqueueSyncOperation(op);
     }
 
     updateSyncState({
       isSyncing: false,
       lastSyncTime: new Date(),
-      pendingChanges: failedOps.length,
+      pendingChanges: failedCount,
     });
   } finally {
     isSyncInProgress = false;

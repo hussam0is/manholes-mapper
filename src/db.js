@@ -210,23 +210,49 @@ export async function enqueueSyncOperation(op) {
 }
 
 /**
- * Retrieve and clear all queued sync operations. The array is returned in
- * insertion order. Callers should attempt to process these operations and
- * re‑enqueue on failure.
+ * Retrieve all queued sync operations without removing them.
+ * Each returned item includes a `_queueKey` property set to its IDB
+ * auto-increment key so callers can remove individual items after
+ * successful processing via `removeSyncQueueItem()`.
  *
  * @returns {Promise<any[]>}
  */
 export async function drainSyncQueue() {
   const db = await openDb();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction('syncQueue', 'readwrite');
+    const tx = db.transaction('syncQueue', 'readonly');
     const store = tx.objectStore('syncQueue');
-    const req = store.getAll();
-    req.onsuccess = () => {
-      store.clear();
-      resolve(req.result || []);
+    const items = [];
+    const cursorReq = store.openCursor();
+    cursorReq.onsuccess = () => {
+      const cursor = cursorReq.result;
+      if (cursor) {
+        const item = cursor.value;
+        item._queueKey = cursor.key;
+        items.push(item);
+        cursor.continue();
+      } else {
+        resolve(items);
+      }
     };
-    req.onerror = () => reject(req.error);
+    cursorReq.onerror = () => reject(cursorReq.error);
+  });
+}
+
+/**
+ * Remove a single sync queue item by its IDB key.
+ * Called after an operation has been successfully processed.
+ *
+ * @param {IDBValidKey} key  The auto-increment key (_queueKey) of the item to remove.
+ * @returns {Promise<void>}
+ */
+export async function removeSyncQueueItem(key) {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('syncQueue', 'readwrite');
+    tx.objectStore('syncQueue').delete(key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
   });
 }
 

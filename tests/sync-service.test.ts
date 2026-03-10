@@ -20,6 +20,7 @@ vi.mock('../src/db.js', () => ({
   saveCurrentSketch: vi.fn(),
   enqueueSyncOperation: vi.fn(),
   drainSyncQueue: vi.fn(),
+  removeSyncQueueItem: vi.fn(),
 }));
 
 vi.mock('../src/auth/auth-guard.js', () => ({
@@ -64,6 +65,9 @@ describe('Sync Service Unit Tests', () => {
       headers: { get: () => 'application/json' },
       json: async () => ({ sketches: [] }),
     });
+
+    // removeSyncQueueItem should resolve successfully by default
+    (db.removeSyncQueueItem as any).mockResolvedValue(undefined);
   });
 
   describe('syncFromCloud', () => {
@@ -211,43 +215,54 @@ describe('Sync Service Unit Tests', () => {
       const uuid1 = '12345678-1234-1234-1234-123456789011';
       const uuid2 = '12345678-1234-1234-1234-123456789012';
       const queuedOps = [
-        { type: 'UPDATE', data: { id: uuid1, name: 'Queued Update' } },
-        { type: 'DELETE', sketchId: uuid2 }
+        { type: 'UPDATE', data: { id: uuid1, name: 'Queued Update' }, _queueKey: 1 },
+        { type: 'DELETE', sketchId: uuid2, _queueKey: 2 }
       ];
       (db.drainSyncQueue as any).mockResolvedValue(queuedOps);
-      
+
       await processSyncQueue();
 
       expect(global.fetch).toHaveBeenCalledWith(`/api/sketches/${uuid1}`, expect.objectContaining({ method: 'PUT' }));
       expect(global.fetch).toHaveBeenCalledWith(`/api/sketches/${uuid2}`, expect.objectContaining({ method: 'DELETE' }));
       expect(db.drainSyncQueue).toHaveBeenCalled();
+      // Each successfully processed item should be removed individually
+      expect(db.removeSyncQueueItem).toHaveBeenCalledWith(1);
+      expect(db.removeSyncQueueItem).toHaveBeenCalledWith(2);
     });
 
-    it('should re-queue failed operations', async () => {
+    it('should leave failed operations in the queue for retry', async () => {
       const uuid1 = '12345678-1234-1234-1234-123456789011';
-      const queuedOps = [{ type: 'UPDATE', data: { id: uuid1, name: 'Failed' } }];
+      const queuedOps = [{ type: 'UPDATE', data: { id: uuid1, name: 'Failed' }, _queueKey: 1 }];
       (db.drainSyncQueue as any).mockResolvedValue(queuedOps);
       (global.fetch as any).mockRejectedValue(new Error('API Down'));
 
       await processSyncQueue();
 
-      expect(db.enqueueSyncOperation).toHaveBeenCalledWith(queuedOps[0]);
+      // Failed ops should NOT be re-enqueued — they remain in the queue
+      expect(db.enqueueSyncOperation).not.toHaveBeenCalled();
+      // And should NOT be removed from the queue
+      expect(db.removeSyncQueueItem).not.toHaveBeenCalledWith(1);
     });
 
-    it('should filter out legacy IDs from queued operations', async () => {
+    it('should filter out legacy IDs from queued operations and remove them from queue', async () => {
       const uuid1 = '12345678-1234-1234-1234-123456789011';
       const queuedOps = [
-        { type: 'UPDATE', data: { id: 'sk_legacy', name: 'Legacy Queued' } },
-        { type: 'DELETE', sketchId: 'sk_old' },
-        { type: 'UPDATE', data: { id: uuid1, name: 'Valid Queued' } },
+        { type: 'UPDATE', data: { id: 'sk_legacy', name: 'Legacy Queued' }, _queueKey: 1 },
+        { type: 'DELETE', sketchId: 'sk_old', _queueKey: 2 },
+        { type: 'UPDATE', data: { id: uuid1, name: 'Valid Queued' }, _queueKey: 3 },
       ];
       (db.drainSyncQueue as any).mockResolvedValue(queuedOps);
 
       await processSyncQueue();
 
-      // Only the valid UUID operation should be processed
+      // Only the valid UUID operation should be processed via fetch
       expect(global.fetch).toHaveBeenCalledTimes(1);
       expect(global.fetch).toHaveBeenCalledWith(`/api/sketches/${uuid1}`, expect.objectContaining({ method: 'PUT' }));
+      // Legacy items should be removed from the queue so they don't accumulate
+      expect(db.removeSyncQueueItem).toHaveBeenCalledWith(1);
+      expect(db.removeSyncQueueItem).toHaveBeenCalledWith(2);
+      // Valid item should also be removed after successful processing
+      expect(db.removeSyncQueueItem).toHaveBeenCalledWith(3);
     });
   });
 
