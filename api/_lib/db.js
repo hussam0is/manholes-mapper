@@ -252,6 +252,21 @@ async function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_issue_notifications_user
     ON issue_notifications(user_id, read, created_at DESC)
   `;
+
+  // Rate limit log table — database-backed rate limiting across serverless instances
+  await sql`
+    CREATE TABLE IF NOT EXISTS rate_limit_log (
+      id SERIAL PRIMARY KEY,
+      ip TEXT NOT NULL,
+      endpoint TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_rate_limit_ip_time
+    ON rate_limit_log(ip, created_at)
+  `;
 }
 
 /**
