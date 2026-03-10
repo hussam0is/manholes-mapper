@@ -252,6 +252,7 @@ async function handleSingleProject(req, res, request, projectId) {
           lastEditedBy: s.last_edited_by,
           createdAt: s.created_at,
           updatedAt: s.updated_at,
+          version: s.version ?? 0,
         }));
         return res.status(200).json({ sketches, pagination: { limit, offset, count: sketches.length } });
       }
@@ -279,6 +280,7 @@ async function handleSingleProject(req, res, request, projectId) {
           lastEditedBy: s.last_edited_by,
           createdAt: s.created_at,
           updatedAt: s.updated_at,
+          version: s.version ?? 0,
         }));
         response.sketchPagination = { limit: sketchLimit, offset: sketchOffset, count: sketches.length };
       }

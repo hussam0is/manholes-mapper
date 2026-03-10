@@ -71,6 +71,9 @@ async function initializeDatabase() {
   await sql`ALTER TABLE sketches ADD COLUMN IF NOT EXISTS locked_at TIMESTAMPTZ`;
   await sql`ALTER TABLE sketches ADD COLUMN IF NOT EXISTS lock_expires_at TIMESTAMPTZ`;
 
+  // Migration: Add integer version counter for deterministic optimistic locking
+  await sql`ALTER TABLE sketches ADD COLUMN IF NOT EXISTS version INTEGER DEFAULT 0`;
+
   await sql`
     CREATE INDEX IF NOT EXISTS idx_sketches_user_id ON sketches(user_id)
   `;
@@ -283,7 +286,7 @@ export async function ensureDb() {
 export async function getSketchesByUser(userId, { limit = 50, offset = 0 } = {}) {
   const result = await sql`
     SELECT id, name, creation_date, nodes, edges, admin_config, created_by, last_edited_by,
-           project_id, snapshot_input_flow_config, created_at, updated_at
+           project_id, snapshot_input_flow_config, created_at, updated_at, version
     FROM sketches
     WHERE user_id = ${userId}
     ORDER BY updated_at DESC
@@ -298,7 +301,7 @@ export async function getSketchesByUser(userId, { limit = 50, offset = 0 } = {})
 export async function getSketchesMetaByUser(userId, { limit = 50, offset = 0 } = {}) {
   const result = await sql`
     SELECT id, name, creation_date, created_by, last_edited_by,
-           project_id, created_at, updated_at,
+           project_id, created_at, updated_at, version,
            COALESCE(jsonb_array_length(nodes), 0) AS node_count,
            COALESCE(jsonb_array_length(edges), 0) AS edge_count
     FROM sketches
@@ -315,7 +318,7 @@ export async function getSketchesMetaByUser(userId, { limit = 50, offset = 0 } =
 export async function getSketchById(sketchId, userId) {
   const result = await sql`
     SELECT id, user_id, name, creation_date, nodes, edges, admin_config, created_by, last_edited_by,
-           project_id, snapshot_input_flow_config, created_at, updated_at
+           project_id, snapshot_input_flow_config, created_at, updated_at, version
     FROM sketches
     WHERE id = ${sketchId} AND user_id = ${userId}
   `;
@@ -328,9 +331,9 @@ export async function getSketchById(sketchId, userId) {
  */
 export async function getSketchByIdAdmin(sketchId) {
   const result = await sql`
-    SELECT s.id, s.user_id, s.name, s.creation_date, s.nodes, s.edges, s.admin_config, 
-           s.created_by, s.last_edited_by, s.project_id, s.snapshot_input_flow_config, 
-           s.created_at, s.updated_at,
+    SELECT s.id, s.user_id, s.name, s.creation_date, s.nodes, s.edges, s.admin_config,
+           s.created_by, s.last_edited_by, s.project_id, s.snapshot_input_flow_config,
+           s.created_at, s.updated_at, s.version,
            u.username as owner_username, u.email as owner_email, u.organization_id as owner_organization_id
     FROM sketches s
     LEFT JOIN users u ON s.user_id = u.id
@@ -522,10 +525,10 @@ export async function createSketch(userId, sketch) {
       ${projectId || null},
       ${JSON.stringify(snapshotInputFlowConfig || {})}::jsonb
     )
-    RETURNING id, name, creation_date, nodes, edges, admin_config, created_by, last_edited_by, 
-              project_id, snapshot_input_flow_config, created_at, updated_at
+    RETURNING id, name, creation_date, nodes, edges, admin_config, created_by, last_edited_by,
+              project_id, snapshot_input_flow_config, created_at, updated_at, version
   `;
-  
+
   return result.rows[0];
 }
 
@@ -536,14 +539,20 @@ export async function createSketch(userId, sketch) {
  * Fields absent from `updates` (undefined) keep their current DB value.
  * This allows explicitly setting project_id to NULL to un-assign a sketch from a project.
  *
- * Optimistic locking: if `clientUpdatedAt` is provided, the update only succeeds
- * when the DB's `updated_at` matches. If there is a mismatch, returns
- * `{ conflict: true, current: <current row> }` instead of the updated row.
- * If `clientUpdatedAt` is omitted (null/undefined), no version check is applied
- * (backward-compatible behaviour).
+ * Optimistic locking (two strategies, checked in order):
  *
- * IMPORTANT for direct DB scripts: always include `updated_at = NOW()` in any
- * manual UPDATE so the version guard detects the change.
+ * 1. **Integer version counter** (preferred): if `clientVersion` is provided (a number),
+ *    the update only succeeds when the DB's `version` matches. On success the version
+ *    is incremented atomically. Deterministic — immune to clock/precision issues.
+ *
+ * 2. **Timestamp comparison** (legacy fallback): if `clientVersion` is absent but
+ *    `clientUpdatedAt` is provided, the update uses the old timestamp-based check.
+ *    Kept for backward compatibility with older clients.
+ *
+ * If neither is provided, no version check is applied (backward-compatible behaviour).
+ *
+ * IMPORTANT for direct DB scripts: always include `version = COALESCE(version,0) + 1`
+ * (and `updated_at = NOW()`) in any manual UPDATE so the version guard detects the change.
  */
 export async function updateSketch(sketchId, userId, updates) {
   const {
@@ -552,9 +561,16 @@ export async function updateSketch(sketchId, userId, updates) {
     clientUpdatedAt = null,
   } = updates;
 
+  // clientVersion: integer version counter (preferred over timestamp)
+  const clientVersion = updates.clientVersion != null ? Number(updates.clientVersion) : null;
+
   // Only update project_id when explicitly provided (not undefined)
   const projectIdProvided = updates.projectId !== undefined;
   const projectId = updates.projectId ?? null;
+
+  // Determine which optimistic lock strategy to use
+  const useVersionLock = clientVersion !== null && !Number.isNaN(clientVersion);
+  const useTimestampLock = !useVersionLock && clientUpdatedAt !== null;
 
   const result = await sql`
     UPDATE sketches
@@ -567,19 +583,26 @@ export async function updateSketch(sketchId, userId, updates) {
       last_edited_by = COALESCE(${lastEditedBy}, last_edited_by),
       project_id = CASE WHEN ${projectIdProvided}::boolean THEN ${projectId} ELSE project_id END,
       snapshot_input_flow_config = COALESCE(${snapshotInputFlowConfig != null ? JSON.stringify(snapshotInputFlowConfig) : null}::jsonb, snapshot_input_flow_config),
+      version = COALESCE(version, 0) + 1,
       updated_at = NOW()
     WHERE id = ${sketchId} AND user_id = ${userId}
-      AND (${clientUpdatedAt}::timestamptz IS NULL OR date_trunc('milliseconds', updated_at) = date_trunc('milliseconds', ${clientUpdatedAt}::timestamptz))
+      AND (
+        CASE
+          WHEN ${useVersionLock}::boolean THEN COALESCE(version, 0) = ${clientVersion ?? 0}
+          WHEN ${useTimestampLock}::boolean THEN date_trunc('milliseconds', updated_at) = date_trunc('milliseconds', ${clientUpdatedAt}::timestamptz)
+          ELSE true
+        END
+      )
       AND (locked_by IS NULL OR locked_by = ${userId} OR lock_expires_at <= NOW())
     RETURNING id, name, creation_date, nodes, edges, admin_config, created_by, last_edited_by,
-              project_id, snapshot_input_flow_config, created_at, updated_at
+              project_id, snapshot_input_flow_config, created_at, updated_at, version
   `;
 
   if (result.rows.length === 0) {
     // No rows updated — determine the cause: lock conflict, version conflict, or not-found
     const current = await sql`
       SELECT id, name, creation_date, nodes, edges, admin_config, created_by, last_edited_by,
-             project_id, snapshot_input_flow_config, created_at, updated_at,
+             project_id, snapshot_input_flow_config, created_at, updated_at, version,
              locked_by, lock_expires_at
       FROM sketches
       WHERE id = ${sketchId} AND user_id = ${userId}
@@ -590,8 +613,8 @@ export async function updateSketch(sketchId, userId, updates) {
       if (row.locked_by && row.locked_by !== userId && new Date(row.lock_expires_at) > new Date()) {
         return { lockConflict: true, lockedBy: row.locked_by, lockExpiresAt: row.lock_expires_at };
       }
-      // Otherwise it's a version conflict (clientUpdatedAt mismatch)
-      if (clientUpdatedAt !== null) {
+      // Otherwise it's a version conflict (clientVersion or clientUpdatedAt mismatch)
+      if (useVersionLock || useTimestampLock) {
         return { conflict: true, current: row };
       }
     }
@@ -955,7 +978,7 @@ export async function duplicateProject(projectId, newName) {
 export async function getSketchesByProject(projectId, { limit = 50, offset = 0 } = {}) {
   const result = await sql`
     SELECT id, user_id, name, creation_date, nodes, edges, admin_config, created_by, last_edited_by,
-           project_id, snapshot_input_flow_config, created_at, updated_at
+           project_id, snapshot_input_flow_config, created_at, updated_at, version
     FROM sketches
     WHERE project_id = ${projectId}
     ORDER BY updated_at DESC
@@ -970,7 +993,7 @@ export async function getSketchesByProject(projectId, { limit = 50, offset = 0 }
 export async function getSketchesMetaByProject(projectId, { limit = 50, offset = 0 } = {}) {
   const result = await sql`
     SELECT id, user_id, name, creation_date, created_by, last_edited_by,
-           project_id, created_at, updated_at,
+           project_id, created_at, updated_at, version,
            COALESCE(jsonb_array_length(nodes), 0) AS node_count,
            COALESCE(jsonb_array_length(edges), 0) AS edge_count
     FROM sketches
@@ -989,7 +1012,7 @@ export async function getAllSketches({ limit = 50, offset = 0 } = {}) {
   const result = await sql`
     SELECT s.id, s.user_id, s.name, s.creation_date, s.nodes, s.edges, s.admin_config,
            s.created_by, s.last_edited_by, s.project_id, s.snapshot_input_flow_config,
-           s.created_at, s.updated_at,
+           s.created_at, s.updated_at, s.version,
            u.username as owner_username, u.email as owner_email
     FROM sketches s
     LEFT JOIN users u ON s.user_id = u.id
@@ -1006,7 +1029,7 @@ export async function getAllSketches({ limit = 50, offset = 0 } = {}) {
 export async function getAllSketchesMeta({ limit = 50, offset = 0 } = {}) {
   const result = await sql`
     SELECT s.id, s.user_id, s.name, s.creation_date, s.created_by, s.last_edited_by,
-           s.project_id, s.created_at, s.updated_at,
+           s.project_id, s.created_at, s.updated_at, s.version,
            u.username as owner_username, u.email as owner_email,
            COALESCE(jsonb_array_length(s.nodes), 0) AS node_count,
            COALESCE(jsonb_array_length(s.edges), 0) AS edge_count
@@ -1026,7 +1049,7 @@ export async function getSketchesByOrganization(organizationId, { limit = 50, of
   const result = await sql`
     SELECT s.id, s.user_id, s.name, s.creation_date, s.nodes, s.edges, s.admin_config,
            s.created_by, s.last_edited_by, s.project_id, s.snapshot_input_flow_config,
-           s.created_at, s.updated_at,
+           s.created_at, s.updated_at, s.version,
            u.username as owner_username, u.email as owner_email
     FROM sketches s
     INNER JOIN users u ON s.user_id = u.id
@@ -1044,7 +1067,7 @@ export async function getSketchesByOrganization(organizationId, { limit = 50, of
 export async function getSketchesMetaByOrganization(organizationId, { limit = 50, offset = 0 } = {}) {
   const result = await sql`
     SELECT s.id, s.user_id, s.name, s.creation_date, s.created_by, s.last_edited_by,
-           s.project_id, s.created_at, s.updated_at,
+           s.project_id, s.created_at, s.updated_at, s.version,
            u.username as owner_username, u.email as owner_email,
            COALESCE(jsonb_array_length(s.nodes), 0) AS node_count,
            COALESCE(jsonb_array_length(s.edges), 0) AS edge_count
