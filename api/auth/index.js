@@ -16,11 +16,25 @@ export const config = {
 };
 
 /**
- * Convert Node.js IncomingMessage to a Web API Request.
- * Avoids Vercel's patched req.body getter which can throw "Invalid JSON"
- * by reading the raw stream directly.
+ * Read the full request body from a Node.js IncomingMessage as a Buffer.
+ * On Vercel's Rust runtime, the body stream may behave differently,
+ * so we buffer everything first.
  */
-function toWebRequest(req) {
+function collectBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    req.on('data', (chunk) => chunks.push(chunk));
+    req.on('end', () => resolve(Buffer.concat(chunks)));
+    req.on('error', reject);
+  });
+}
+
+/**
+ * Convert Node.js IncomingMessage to a Web API Request.
+ * Reads the body into a buffer first to avoid Vercel's patched body getter
+ * which throws "Invalid JSON".
+ */
+async function toWebRequest(req) {
   const protocol = req.headers['x-forwarded-proto'] || 'https';
   const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost';
   const url = `${protocol}://${host}${req.url}`;
@@ -37,27 +51,17 @@ function toWebRequest(req) {
   }
 
   const hasBody = req.method !== 'GET' && req.method !== 'HEAD';
+  let body = undefined;
+  if (hasBody) {
+    body = await collectBody(req);
+    // Only include non-empty bodies
+    if (body.length === 0) body = undefined;
+  }
 
   return new Request(url, {
     method: req.method,
     headers,
-    body: hasBody ? readStream(req) : undefined,
-    duplex: hasBody ? 'half' : undefined,
-  });
-}
-
-/**
- * Read a Node.js readable stream into a ReadableStream.
- */
-function readStream(nodeStream) {
-  return new ReadableStream({
-    start(controller) {
-      nodeStream.on('data', (chunk) => {
-        controller.enqueue(typeof chunk === 'string' ? new TextEncoder().encode(chunk) : chunk);
-      });
-      nodeStream.on('end', () => controller.close());
-      nodeStream.on('error', (err) => controller.error(err));
-    },
+    body,
   });
 }
 
@@ -66,11 +70,10 @@ function readStream(nodeStream) {
  */
 async function writeWebResponse(webResponse, res) {
   res.statusCode = webResponse.status;
-  res.statusMessage = webResponse.statusText;
 
   for (const [key, value] of webResponse.headers.entries()) {
-    // Handle multiple Set-Cookie headers
     if (key.toLowerCase() === 'set-cookie') {
+      // Handle multiple Set-Cookie headers
       const cookies = webResponse.headers.getSetCookie
         ? webResponse.headers.getSetCookie()
         : [value];
@@ -96,23 +99,22 @@ export default async function authHandler(req, res) {
 
   if (handleCors(req, res)) return;
 
-  // Sign-out is exempt from rate limiting — users must always be able to terminate their session
   const isSignOut = req.url?.includes('/sign-out');
 
-  // All other auth endpoints get stricter rate limiting (20 req/min) to prevent brute-force
   if (!isSignOut && applyRateLimit(req, res, MAX_REQUESTS_AUTH)) {
     return;
   }
 
   try {
-    // Convert to Web Request to bypass Vercel's patched body getter
-    const webRequest = toWebRequest(req);
+    const webRequest = await toWebRequest(req);
     const webResponse = await auth.handler(webRequest);
     await writeWebResponse(webResponse, res);
   } catch (error) {
     console.error('[Auth API] Error:', error.message || error);
-    return res.status(500).json({
-      error: sanitizeErrorMessage(error),
-    });
+    if (!res.headersSent) {
+      return res.status(500).json({
+        error: sanitizeErrorMessage(error),
+      });
+    }
   }
 }
