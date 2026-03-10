@@ -1219,6 +1219,19 @@ select.btn:focus-visible {
   flex-shrink: 0;
 }
 
+/* ── Node-type flyout (mobile grouping) ─────────────────────────
+   On desktop the trigger is hidden and the 4 node-type buttons
+   display inline as before.  On mobile (<=600px) the trigger is
+   shown and the buttons live inside a pop-out flyout panel.  */
+
+/* Desktop: hide the flyout trigger, show node buttons normally */
+.node-type-flyout-trigger {
+  display: none;
+}
+.node-type-flyout {
+  display: contents; /* children participate in parent flex layout */
+}
+
 .canvas-toolbar .segmented .btn {
   color: var(--color-text-secondary, #475569);
   border: none;
@@ -1299,6 +1312,27 @@ select.btn:focus-visible {
   .my-location-btn:hover {
     background: rgba(37, 99, 235, 0.2);
     color: #93c5fd;
+  }
+
+  /* Dark-mode flyout panel */
+  .node-type-flyout {
+    background: rgba(30, 41, 59, 0.95);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  }
+
+  .node-type-flyout .btn {
+    color: #94a3b8;
+  }
+
+  .node-type-flyout .btn:hover {
+    background: rgba(37, 99, 235, 0.2);
+    color: #93c5fd;
+  }
+
+  .node-type-flyout .btn.active {
+    background: var(--color-primary, #2563eb);
+    color: #ffffff;
   }
 }
 
@@ -2386,6 +2420,8 @@ canvas {
 /* Show sidebar only when a node or edge is selected */
 #sidebar.open {
   display: flex;
+  /* Ensure sidebar appears above the cockpit overlay (z-index: 160) on desktop */
+  z-index: 170;
 }
 
 /* Compact spacing for details inside the sidebar */
@@ -6479,6 +6515,116 @@ select.invalid:focus {
   .canvas-toolbar {
     top: 8px;
     inset-inline-end: 8px;
+  }
+
+  /* ── Node-type flyout (mobile) ───────────────────────────────
+     Collapses 4 node-type buttons into one trigger + flyout. */
+
+  /* Allow flyout to overflow beyond the segmented container */
+  .canvas-toolbar .segmented#modeGroup {
+    overflow: visible;
+    position: relative;
+  }
+
+  .node-type-flyout-trigger {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    position: relative;
+  }
+
+  /* Chevron indicator on flyout trigger */
+  .node-type-flyout-trigger::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    inset-inline-end: 4px;
+    width: 0;
+    height: 0;
+    border-inline-start: 3px solid transparent;
+    border-inline-end: 3px solid transparent;
+    border-top: 3px solid currentColor;
+    opacity: 0.5;
+  }
+
+  /* Active indicator on trigger — shows colored dot when a node type is active */
+  .node-type-flyout-trigger.has-active-type::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    inset-inline-end: 4px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-primary, #2563eb);
+  }
+
+  .node-type-flyout {
+    display: none;
+    position: absolute;
+    top: 0;
+    /* Position flyout to the left of the toolbar (or right in RTL) */
+    inset-inline-end: calc(100% + 6px);
+    flex-direction: column;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid var(--color-border, #e5e7eb);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    border-radius: var(--radius-lg, 12px);
+    backdrop-filter: blur(12px) saturate(1.4);
+    -webkit-backdrop-filter: blur(12px) saturate(1.4);
+    overflow: hidden;
+    z-index: 160;
+    padding: 2px 0;
+    animation: flyout-in 0.15s ease-out;
+  }
+
+  .node-type-flyout.open {
+    display: flex;
+  }
+
+  @keyframes flyout-in {
+    from { opacity: 0; transform: scale(0.92) translateX(4px); }
+    to   { opacity: 1; transform: scale(1)    translateX(0); }
+  }
+
+  @keyframes flyout-in-rtl {
+    from { opacity: 0; transform: scale(0.92) translateX(-4px); }
+    to   { opacity: 1; transform: scale(1)    translateX(0); }
+  }
+
+  [dir="rtl"] .node-type-flyout {
+    animation-name: flyout-in-rtl;
+  }
+
+  .node-type-flyout .btn {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-secondary, #475569);
+    border: none;
+    background: transparent;
+    transition: background 0.15s ease, color 0.15s ease;
+    border-radius: 0;
+    padding: 0.4rem;
+  }
+
+  .node-type-flyout .btn:hover {
+    background: var(--color-primary-light, #dbeafe);
+    color: var(--color-primary, #2563eb);
+  }
+
+  .node-type-flyout .btn.active {
+    background: var(--color-primary, #2563eb);
+    color: #ffffff;
+  }
+
+  .node-type-flyout .btn .material-icons {
+    font-size: 20px;
+    color: inherit;
   }
 
   .canvas-fab-toolbar {
@@ -12770,6 +12916,14 @@ button:focus-visible,
 
   .canvas-toolbar .segmented#modeGroup .btn .material-icons {
     font-size: 20px;
+  }
+
+  /* In landscape, always show all node buttons inline — no flyout */
+  .node-type-flyout-trigger {
+    display: none !important;
+  }
+  .node-type-flyout {
+    display: contents !important;
   }
 
   /* Edge legend below toolbar row, follows header via --header-h.

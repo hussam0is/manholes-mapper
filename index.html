@@ -685,10 +685,16 @@
             <span class="material-icons" aria-hidden="true">my_location</span>
           </button>
           <div class="canvas-toolbar-divider" role="separator" aria-hidden="true"></div>
-          <button id="nodeModeBtn" class="btn" title="" aria-label="Manhole mode" aria-pressed="false" data-i18n-title="modeNode" data-i18n-aria-label="modeNode"></button>
-          <button id="homeNodeModeBtn" class="btn" title="" aria-label="Home node mode" aria-pressed="false" data-i18n-title="modeHome" data-i18n-aria-label="modeHome"></button>
-          <button id="drainageNodeModeBtn" class="btn" title="" aria-label="Drainage mode" aria-pressed="false" data-i18n-title="modeDrainage" data-i18n-aria-label="modeDrainage"></button>
-          <button id="issueNodeModeBtn" class="btn" title="" aria-label="Issue mode" aria-pressed="false" data-i18n-title="modeIssue" data-i18n-aria-label="modeIssue"></button>
+          <!-- Mobile node-type flyout: single trigger button that expands to show all node types -->
+          <button id="nodeTypeFlyoutBtn" class="btn node-type-flyout-trigger" title="" aria-label="Node type" aria-haspopup="true" aria-expanded="false">
+            <span class="material-icons" aria-hidden="true">radio_button_unchecked</span>
+          </button>
+          <div id="nodeTypeFlyout" class="node-type-flyout" role="group" aria-label="Node types">
+            <button id="nodeModeBtn" class="btn" title="" aria-label="Manhole mode" aria-pressed="false" data-i18n-title="modeNode" data-i18n-aria-label="modeNode"></button>
+            <button id="homeNodeModeBtn" class="btn" title="" aria-label="Home node mode" aria-pressed="false" data-i18n-title="modeHome" data-i18n-aria-label="modeHome"></button>
+            <button id="drainageNodeModeBtn" class="btn" title="" aria-label="Drainage mode" aria-pressed="false" data-i18n-title="modeDrainage" data-i18n-aria-label="modeDrainage"></button>
+            <button id="issueNodeModeBtn" class="btn" title="" aria-label="Issue mode" aria-pressed="false" data-i18n-title="modeIssue" data-i18n-aria-label="modeIssue"></button>
+          </div>
           <button id="edgeModeBtn" class="btn" title="" aria-label="Edge/line mode" aria-pressed="false" data-i18n-title="modeEdge" data-i18n-aria-label="modeEdge"></button>
           <div class="canvas-toolbar-divider" role="separator" aria-hidden="true"></div>
           <button id="undoBtn" class="btn undo-btn" title="" aria-label="Undo last action" disabled data-i18n-title="undo.title" data-i18n-aria-label="undo.title">

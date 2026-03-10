@@ -187,6 +187,8 @@ const homeNodeModeBtn = document.getElementById('homeNodeModeBtn');
 const drainageNodeModeBtn = document.getElementById('drainageNodeModeBtn');
 const issueNodeModeBtn = document.getElementById('issueNodeModeBtn');
 const edgeModeBtn = document.getElementById('edgeModeBtn');
+const nodeTypeFlyoutBtn = document.getElementById('nodeTypeFlyoutBtn');
+const nodeTypeFlyout = document.getElementById('nodeTypeFlyout');
 const undoBtn = document.getElementById('undoBtn');
 const redoBtn = document.getElementById('redoBtn');
 const threeDViewBtn = document.getElementById('threeDViewBtn');
@@ -8974,6 +8976,7 @@ if (newSketchBtn) newSketchBtn.addEventListener('click', async () => {
   if (homeNodeModeBtn) homeNodeModeBtn.classList.remove('active');
   if (drainageNodeModeBtn) drainageNodeModeBtn.classList.remove('active');
   if (edgeModeBtn) edgeModeBtn.classList.remove('active');
+  syncFlyoutIcon();
   selectedNode = null;
   selectedEdge = null;
   renderDetails();
@@ -9026,6 +9029,7 @@ startBtn.addEventListener('click', () => {
   if (homeNodeModeBtn) homeNodeModeBtn.classList.remove('active');
   if (drainageNodeModeBtn) drainageNodeModeBtn.classList.remove('active');
   if (edgeModeBtn) edgeModeBtn.classList.remove('active');
+  syncFlyoutIcon();
   selectedNode = null;
   selectedEdge = null;
   startPanel.style.display = 'none';
@@ -9134,6 +9138,72 @@ if (edgeModeBtn) {
     showToast(t('toasts.edgeMode'));
   });
 }
+// ── Node-type flyout (mobile) ──────────────────────────────────
+// On mobile, 4 node-type buttons collapse into a single trigger
+// that opens a flyout panel.  Selecting a type closes the flyout
+// and updates the trigger icon to reflect the active type.
+const NODE_TYPE_ICONS = {
+  node:     'radio_button_unchecked',
+  home:     'home',
+  drainage: 'water_drop',
+  issue:    'report_problem',
+};
+
+// Safe to call at any time — no-ops if flyout elements are absent.
+function syncFlyoutIcon() {
+  if (!nodeTypeFlyoutBtn) return;
+  const iconEl = nodeTypeFlyoutBtn.querySelector('.material-icons');
+  if (!iconEl) return;
+  const isNodeType = ['node', 'home', 'drainage', 'issue'].includes(currentMode);
+  iconEl.textContent = isNodeType
+    ? (NODE_TYPE_ICONS[currentMode] || 'radio_button_unchecked')
+    : 'radio_button_unchecked';
+  nodeTypeFlyoutBtn.classList.toggle('has-active-type', isNodeType);
+  nodeTypeFlyoutBtn.classList.toggle('active', isNodeType);
+}
+
+function closeFlyout() {
+  if (!nodeTypeFlyout || !nodeTypeFlyoutBtn) return;
+  nodeTypeFlyout.classList.remove('open');
+  nodeTypeFlyoutBtn.setAttribute('aria-expanded', 'false');
+}
+
+if (nodeTypeFlyoutBtn && nodeTypeFlyout) {
+  function toggleFlyout() {
+    const isOpen = nodeTypeFlyout.classList.toggle('open');
+    nodeTypeFlyoutBtn.setAttribute('aria-expanded', String(isOpen));
+  }
+
+  nodeTypeFlyoutBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleFlyout();
+  });
+
+  // Close flyout when a node-type button is clicked
+  [nodeModeBtn, homeNodeModeBtn, drainageNodeModeBtn, issueNodeModeBtn].forEach(btn => {
+    if (btn) btn.addEventListener('click', () => {
+      closeFlyout();
+      syncFlyoutIcon();
+    });
+  });
+
+  // Close flyout when edge mode or any non-node-type is chosen
+  if (edgeModeBtn) edgeModeBtn.addEventListener('click', () => {
+    closeFlyout();
+    syncFlyoutIcon();
+  });
+
+  // Close flyout on outside tap
+  document.addEventListener('click', (e) => {
+    if (!nodeTypeFlyout.classList.contains('open')) return;
+    if (nodeTypeFlyoutBtn.contains(e.target) || nodeTypeFlyout.contains(e.target)) return;
+    closeFlyout();
+  });
+
+  // Initial sync
+  syncFlyoutIcon();
+}
+
 // Undo button
 if (undoBtn) {
   undoBtn.addEventListener('click', () => {
@@ -11846,6 +11916,7 @@ async function init() {
   if (drainageNodeModeBtn) drainageNodeModeBtn.classList.remove('active');
   if (edgeModeBtn) edgeModeBtn.classList.remove('active');
   if (editModeBtn) editModeBtn.classList.remove('active');
+  syncFlyoutIcon();
   resizeCanvas();
   renderDetails();
 }
