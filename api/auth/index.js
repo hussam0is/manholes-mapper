@@ -36,8 +36,12 @@ export default async function authHandler(req, res) {
     return await betterAuthHandler(req, res);
   } catch (error) {
     console.error('[Auth API] Error:', error.message || error);
+    console.error('[Auth API] Stack:', error.stack);
+    // Temporarily expose error details for debugging (revert after fixing)
     return res.status(500).json({
       error: sanitizeErrorMessage(error),
+      _debug: error.message,
+      _stack: (error.stack || '').split('\n').slice(0, 5),
     });
   }
 }
