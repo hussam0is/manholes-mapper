@@ -607,9 +607,24 @@ body.cockpit-mode.zone-a-collapsed .action-rail__btn--collapse .material-icons {
   box-shadow: var(--shadow-lg);
   padding: 4px;
   display: none;
-  min-width: 160px;
+  width: 260px;
+  max-width: 280px;
+  max-height: 70vh;
+  overflow-y: auto;
+  overflow-x: hidden;
   z-index: 1100;  /* Above header (200/1050) so menu is always visible */
   pointer-events: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.action-rail__more-menu::-webkit-scrollbar {
+  width: 4px;
+}
+
+.action-rail__more-menu::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 2px;
 }
 
 .action-rail__more-menu.open {
@@ -623,11 +638,12 @@ body.cockpit-mode.zone-a-collapsed .action-rail__btn--collapse .material-icons {
   }
 }
 
+/* ── More menu items ─────────────────────────────────────── */
 .action-rail__more-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 7px 12px;
   font-size: var(--text-sm);
   color: var(--color-text);
   border: none;
@@ -636,6 +652,7 @@ body.cockpit-mode.zone-a-collapsed .action-rail__btn--collapse .material-icons {
   cursor: pointer;
   border-radius: var(--radius-sm);
   white-space: nowrap;
+  text-align: start;
 }
 
 .action-rail__more-item:hover {
@@ -645,6 +662,7 @@ body.cockpit-mode.zone-a-collapsed .action-rail__btn--collapse .material-icons {
 .action-rail__more-item .material-icons {
   font-size: 18px;
   color: var(--color-muted);
+  flex-shrink: 0;
 }
 
 /* Primary action — Save gets visual emphasis */
@@ -666,12 +684,208 @@ body.cockpit-mode.zone-a-collapsed .action-rail__btn--collapse .material-icons {
   color: var(--color-text-secondary);
 }
 
+/* Success action — e.g. Finish Workday */
+.action-rail__more-item--success {
+  color: var(--color-success);
+}
+
+.action-rail__more-item--success .material-icons {
+  color: var(--color-success);
+}
+
 /* Menu group dividers */
 .action-rail__more-divider {
   border: none;
   height: 1px;
   background: var(--color-border);
   margin: 4px 8px;
+}
+
+/* ── Collapsible groups ──────────────────────────────────── */
+.action-rail__more-group {
+  margin: 2px 0;
+}
+
+.action-rail__more-group-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  text-align: start;
+}
+
+.action-rail__more-group-header:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.action-rail__more-group-header .material-icons {
+  font-size: 16px;
+  color: var(--color-muted);
+  flex-shrink: 0;
+}
+
+.action-rail__more-chevron {
+  margin-inline-start: auto;
+  font-size: 16px !important;
+  transition: transform 0.2s ease;
+}
+
+.action-rail__more-group-items {
+  padding-inline-start: 4px;
+}
+
+/* ── Toggle rows (checkbox + label) ──────────────────────── */
+.action-rail__more-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+.action-rail__more-toggle:hover {
+  background: var(--color-surface-hover);
+}
+
+.action-rail__more-toggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+  flex-shrink: 0;
+  order: -1;
+}
+
+.action-rail__more-toggle .material-icons {
+  font-size: 18px;
+  color: var(--color-muted);
+  flex-shrink: 0;
+}
+
+/* ── Scale/stretch adjuster rows ─────────────────────────── */
+.action-rail__more-scale-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.action-rail__more-scale-row .material-icons {
+  font-size: 16px;
+  color: var(--color-muted);
+  flex-shrink: 0;
+}
+
+.action-rail__more-scale-adjuster {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-inline-start: auto;
+}
+
+.action-rail__more-scale-btn {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0;
+}
+
+.action-rail__more-scale-btn:hover {
+  background: var(--color-surface-hover);
+}
+
+.action-rail__more-scale-btn:active {
+  background: var(--color-primary-light);
+}
+
+.action-rail__more-scale-value {
+  min-width: 40px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Select row (e.g. map type) ──────────────────────────── */
+.action-rail__more-select-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.action-rail__more-select-row .material-icons {
+  font-size: 16px;
+  color: var(--color-muted);
+  flex-shrink: 0;
+}
+
+.action-rail__more-inline-select {
+  margin-inline-start: auto;
+  padding: 3px 6px;
+  font-size: 11px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  max-width: 100px;
+}
+
+/* ── Search input ────────────────────────────────────────── */
+.action-rail__more-search {
+  padding: 4px 12px 4px;
+}
+
+.action-rail__more-search-input {
+  width: 100%;
+  padding: 6px 10px;
+  font-size: 13px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  outline: none;
+}
+
+.action-rail__more-search-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.action-rail__more-search-input::placeholder {
+  color: var(--color-text-tertiary);
 }
 
 /* ── More menu open — dim competing bottom elements ──────────── */
@@ -819,6 +1033,52 @@ body.cockpit-mode.heatmap-active #canvasContainer {
 
   .action-rail__more-divider {
     background: var(--color-border-strong);
+  }
+
+  .action-rail__more-group-header {
+    color: var(--color-text);
+  }
+
+  .action-rail__more-group-header .material-icons {
+    color: var(--color-text-secondary);
+  }
+
+  .action-rail__more-scale-btn {
+    background: var(--color-surface-alt);
+    border-color: var(--color-border-strong);
+    color: var(--color-text-bright);
+  }
+
+  .action-rail__more-scale-btn:hover {
+    background: var(--color-surface);
+  }
+
+  .action-rail__more-scale-value {
+    color: var(--color-text-bright);
+  }
+
+  .action-rail__more-inline-select {
+    background: var(--color-surface-alt);
+    border-color: var(--color-border-strong);
+    color: var(--color-text-bright);
+  }
+
+  .action-rail__more-search-input {
+    background: var(--color-surface);
+    border-color: var(--color-border-strong);
+    color: var(--color-text-bright);
+  }
+
+  .action-rail__more-toggle {
+    color: var(--color-text);
+  }
+
+  .action-rail__more-scale-row {
+    color: var(--color-text);
+  }
+
+  .action-rail__more-select-row {
+    color: var(--color-text);
   }
 
   .quick-win-toast {

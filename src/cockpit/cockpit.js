@@ -171,6 +171,11 @@ function buildCockpitDOM() {
 
       <div class="action-rail__spacer"></div>
 
+      <!-- 3D View -->
+      <button class="action-rail__btn action-rail__btn--3d" id="rail3DBtn" data-i18n-title="threeD.title">
+        <span class="material-icons">view_in_ar</span>
+      </button>
+
       <!-- Heat map toggle -->
       <button class="action-rail__btn action-rail__btn--heatmap" id="railHeatmapBtn" data-i18n-title="cockpit.tooltipHeatmap" aria-pressed="false">
         <span class="material-icons">thermostat</span>
@@ -192,32 +197,223 @@ function buildCockpitDOM() {
 
     <!-- More menu popup (outside action-rail to avoid overflow clipping) -->
     <div class="action-rail__more-menu" id="railMoreMenu">
+      <!-- Quick actions at top -->
       <button class="action-rail__more-item action-rail__more-item--primary" data-action="save">
         <span class="material-icons">save</span>
         <span data-i18n="save">Save</span>
       </button>
-      <button class="action-rail__more-item" data-action="exportSketch">
-        <span class="material-icons">download</span>
-        <span data-i18n="exportSketch">Export Sketch</span>
-      </button>
-      <button class="action-rail__more-item" data-action="exportNodes">
-        <span class="material-icons">donut_large</span>
-        <span data-i18n="exportNodes">Export Nodes</span>
-      </button>
-      <button class="action-rail__more-item" data-action="exportEdges">
-        <span class="material-icons">call_split</span>
-        <span data-i18n="exportEdges">Export Edges</span>
-      </button>
-      <hr class="action-rail__more-divider">
       <button class="action-rail__more-item" data-action="mySketches">
         <span class="material-icons">description</span>
         <span data-i18n="mySketches">My Sketches</span>
       </button>
-      <button class="action-rail__more-item" data-action="admin">
-        <span class="material-icons">tune</span>
-        <span data-i18n="admin.manage">Admin</span>
-      </button>
+
       <hr class="action-rail__more-divider">
+
+      <!-- Search group -->
+      <div class="action-rail__more-group" data-more-group="search">
+        <button class="action-rail__more-group-header" data-more-group-toggle="search" type="button" aria-expanded="false">
+          <span class="material-icons">search</span>
+          <span data-i18n="menuGroupSearch">Search</span>
+          <span class="material-icons action-rail__more-chevron">expand_more</span>
+        </button>
+        <div class="action-rail__more-group-items" data-more-group-items="search" style="display:none">
+          <div class="action-rail__more-search">
+            <input id="railSearchNodeInput" type="text" placeholder="Search nodes" class="action-rail__more-search-input" data-i18n-placeholder="searchNode" />
+          </div>
+        </div>
+      </div>
+
+      <!-- View group -->
+      <div class="action-rail__more-group" data-more-group="view">
+        <button class="action-rail__more-group-header" data-more-group-toggle="view" type="button" aria-expanded="false">
+          <span class="material-icons">visibility</span>
+          <span data-i18n="menuGroupView">Element Size</span>
+          <span class="material-icons action-rail__more-chevron">expand_more</span>
+        </button>
+        <div class="action-rail__more-group-items" data-more-group-items="view" style="display:none">
+          <button class="action-rail__more-item" data-action="sizeDecrease">
+            <span class="material-icons">remove_circle_outline</span>
+            <span data-i18n="sizeDecrease">Decrease Size</span>
+          </button>
+          <button class="action-rail__more-item" data-action="sizeIncrease">
+            <span class="material-icons">add_circle_outline</span>
+            <span data-i18n="sizeIncrease">Increase Size</span>
+          </button>
+          <button class="action-rail__more-item" data-action="autoSize">
+            <span class="material-icons">fit_screen</span>
+            <span data-i18n="autoSize">Auto Size</span>
+          </button>
+          <button class="action-rail__more-item" data-action="threeDView">
+            <span class="material-icons">view_in_ar</span>
+            <span data-i18n="threeD.title">3D View</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Sketch & Export group -->
+      <div class="action-rail__more-group" data-more-group="sketchExport">
+        <button class="action-rail__more-group-header" data-more-group-toggle="sketchExport" type="button" aria-expanded="false">
+          <span class="material-icons">description</span>
+          <span data-i18n="menuGroup.sketchExport">Sketch & Export</span>
+          <span class="material-icons action-rail__more-chevron">expand_more</span>
+        </button>
+        <div class="action-rail__more-group-items" data-more-group-items="sketchExport" style="display:none">
+          <button class="action-rail__more-item" data-action="exportSketch">
+            <span class="material-icons">download</span>
+            <span data-i18n="exportSketch">Export Sketch</span>
+          </button>
+          <button class="action-rail__more-item" data-action="importSketch">
+            <span class="material-icons">upload</span>
+            <span data-i18n="importSketch">Import Sketch</span>
+          </button>
+          <button class="action-rail__more-item" data-action="exportNodes">
+            <span class="material-icons">donut_large</span>
+            <span data-i18n="exportNodes">Export Nodes</span>
+          </button>
+          <button class="action-rail__more-item" data-action="exportEdges">
+            <span class="material-icons">call_split</span>
+            <span data-i18n="exportEdges">Export Edges</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Location & Map group -->
+      <div class="action-rail__more-group" data-more-group="locationMap">
+        <button class="action-rail__more-group-header" data-more-group-toggle="locationMap" type="button" aria-expanded="false">
+          <span class="material-icons">location_on</span>
+          <span data-i18n="menuGroup.locationMap">Location & Map</span>
+          <span class="material-icons action-rail__more-chevron">expand_more</span>
+        </button>
+        <div class="action-rail__more-group-items" data-more-group-items="locationMap" style="display:none">
+          <button class="action-rail__more-item" data-action="importCoordinates">
+            <span class="material-icons">place</span>
+            <span data-i18n="coordinates.import">Import Coordinates</span>
+          </button>
+          <label class="action-rail__more-toggle">
+            <input type="checkbox" id="railCoordinatesToggle" data-action="toggleCoordinates" />
+            <span class="material-icons">my_location</span>
+            <span data-i18n="coordinates.enable">Coordinates</span>
+          </label>
+          <div class="action-rail__more-scale-row">
+            <span class="material-icons">straighten</span>
+            <span data-i18n="coordinates.scale">Scale:</span>
+            <div class="action-rail__more-scale-adjuster">
+              <button class="action-rail__more-scale-btn" data-action="scaleDecrease">−</button>
+              <span id="railScaleValueDisplay" class="action-rail__more-scale-value">1:100</span>
+              <button class="action-rail__more-scale-btn" data-action="scaleIncrease">+</button>
+            </div>
+          </div>
+          <div class="action-rail__more-scale-row">
+            <span class="material-icons">swap_horiz</span>
+            <span data-i18n="stretch.horizontal">X Stretch:</span>
+            <div class="action-rail__more-scale-adjuster">
+              <button class="action-rail__more-scale-btn" data-action="stretchXDecrease">−</button>
+              <span id="railStretchXValueDisplay" class="action-rail__more-scale-value">1.0</span>
+              <button class="action-rail__more-scale-btn" data-action="stretchXIncrease">+</button>
+            </div>
+          </div>
+          <div class="action-rail__more-scale-row">
+            <span class="material-icons">swap_vert</span>
+            <span data-i18n="stretch.vertical">Y Stretch:</span>
+            <div class="action-rail__more-scale-adjuster">
+              <button class="action-rail__more-scale-btn" data-action="stretchYDecrease">−</button>
+              <span id="railStretchYValueDisplay" class="action-rail__more-scale-value">1.0</span>
+              <button class="action-rail__more-scale-btn" data-action="stretchYIncrease">+</button>
+            </div>
+          </div>
+          <button class="action-rail__more-item" data-action="resetStretch">
+            <span class="material-icons">refresh</span>
+            <span data-i18n="stretch.reset">Reset Stretch</span>
+          </button>
+          <label class="action-rail__more-toggle">
+            <input type="checkbox" id="railMapLayerToggle" data-action="toggleMapLayer" />
+            <span class="material-icons">layers</span>
+            <span data-i18n="mapLayer.enable">Map Layer</span>
+          </label>
+          <div class="action-rail__more-select-row">
+            <span class="material-icons">terrain</span>
+            <span data-i18n="map.type">Map type:</span>
+            <select id="railMapTypeSelect" class="action-rail__more-inline-select" aria-label="Map type">
+              <option value="orthophoto" data-i18n="map.orthophoto">Orthophoto</option>
+              <option value="street" data-i18n="map.street">Street</option>
+            </select>
+          </div>
+          <div id="railRefLayersSection" style="display:none">
+            <label class="action-rail__more-toggle">
+              <input type="checkbox" id="railRefLayersToggle" checked data-action="toggleRefLayers" />
+              <span class="material-icons">layers</span>
+              <span data-i18n="refLayers.enable">Reference Layers</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Measurement group -->
+      <div class="action-rail__more-group" data-more-group="measurement">
+        <button class="action-rail__more-group-header" data-more-group-toggle="measurement" type="button" aria-expanded="false">
+          <span class="material-icons">satellite_alt</span>
+          <span data-i18n="menuGroup.measurement">Measurement</span>
+          <span class="material-icons action-rail__more-chevron">expand_more</span>
+        </button>
+        <div class="action-rail__more-group-items" data-more-group-items="measurement" style="display:none">
+          <label class="action-rail__more-toggle">
+            <input type="checkbox" id="railLiveMeasureToggle" data-action="toggleLiveMeasure" />
+            <span class="material-icons">gps_fixed</span>
+            <span data-i18n="liveMeasure.enable">Live Measure</span>
+          </label>
+          <button class="action-rail__more-item" data-action="connectTMM">
+            <span class="material-icons">settings_remote</span>
+            <span data-i18n="tmm.connect">Connect TMM</span>
+          </button>
+          <button class="action-rail__more-item" data-action="connectSurveyBluetooth">
+            <span class="material-icons">bluetooth</span>
+            <span data-i18n="survey.connectBluetooth">Bluetooth</span>
+          </button>
+          <button class="action-rail__more-item" data-action="connectSurveyWebSocket">
+            <span class="material-icons">wifi</span>
+            <span data-i18n="survey.connectWebSocket">WebSocket</span>
+          </button>
+          <button class="action-rail__more-item" data-action="disconnectSurvey">
+            <span class="material-icons">bluetooth_disabled</span>
+            <span data-i18n="survey.disconnect">Disconnect</span>
+          </button>
+          <button class="action-rail__more-item action-rail__more-item--success" data-action="finishWorkday">
+            <span class="material-icons">done_all</span>
+            <span data-i18n="finishWorkday.button">Finish Workday</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Settings group -->
+      <div class="action-rail__more-group" data-more-group="settings">
+        <button class="action-rail__more-group-header" data-more-group-toggle="settings" type="button" aria-expanded="false">
+          <span class="material-icons">settings</span>
+          <span data-i18n="menuGroupSettings">Settings</span>
+          <span class="material-icons action-rail__more-chevron">expand_more</span>
+        </button>
+        <div class="action-rail__more-group-items" data-more-group-items="settings" style="display:none">
+          <label class="action-rail__more-toggle">
+            <input type="checkbox" id="railAutosaveToggle" data-action="toggleAutosave" />
+            <span data-i18n="autosave">Autosave</span>
+          </label>
+          <button class="action-rail__more-item" data-action="help">
+            <span class="material-icons">help_outline</span>
+            <span data-i18n="help">Help</span>
+          </button>
+          <button class="action-rail__more-item" data-action="admin">
+            <span class="material-icons">tune</span>
+            <span data-i18n="admin.manage">Admin</span>
+          </button>
+          <button class="action-rail__more-item" data-action="projects">
+            <span class="material-icons">folder_open</span>
+            <span data-i18n="projects.title">Projects</span>
+          </button>
+        </div>
+      </div>
+
+      <hr class="action-rail__more-divider">
+
+      <!-- Language toggle at bottom -->
       <button class="action-rail__more-item action-rail__more-item--secondary" data-action="languageChange">
         <span class="material-icons">language</span>
         <span data-i18n="cockpit.languageToggle">EN / HE</span>
