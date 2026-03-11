@@ -14,7 +14,7 @@
 import { COLORS, NODE_RADIUS } from '../state/constants.js';
 import { isMergeModeEnabled, getNearbyNodes, getCrossMergeIssues } from './merge-mode.js';
 
-const BG_ALPHA = 0.35;
+const BG_ALPHA = 0.5;
 const BG_ALPHA_SELECTED = 0.85;
 
 // Cache node Maps for background sketches to avoid rebuilding per frame.
@@ -40,6 +40,8 @@ let _cacheKey = '';
 // World-space bounding box of the offscreen canvas content
 let _offWorldMinX = 0;
 let _offWorldMinY = 0;
+let _offWorldW = 0;
+let _offWorldH = 0;
 
 /**
  * Invalidate the background cache so next draw re-renders.
@@ -63,9 +65,12 @@ function _buildCacheKey(sketches, opts) {
     // Include selection state in cache key so alpha changes trigger re-render
     if (selectedIds && selectedIds.has(s.id)) ids += 'S';
   }
-  // Quantize viewScale to 1 decimal place: the background cache is only
-  // invalidated when zoom changes by 10%+ steps, not every pixel of scroll.
-  const qScale = Math.round(opts.viewScale * 10) / 10;
+  // Quantize viewScale with adaptive precision: finer granularity at small zoom levels
+  // so that zooming within the 0–0.1 range still invalidates the cache.
+  const vs = opts.viewScale;
+  const qScale = vs < 0.1
+    ? Math.round(vs * 1000) / 1000   // 3 decimal places for tiny zoom
+    : Math.round(vs * 10) / 10;      // 1 decimal place for normal zoom
   return `${ids}|${totalNodes}|${qScale}|${opts.viewStretchX}|${opts.viewStretchY}|${opts.sizeScale}`;
 }
 
@@ -126,6 +131,8 @@ function _renderToOffscreen(sketches, opts) {
   _offCanvas.height = pxH;
   _offWorldMinX = wMinX;
   _offWorldMinY = wMinY;
+  _offWorldW = wMaxX - wMinX;
+  _offWorldH = wMaxY - wMinY;
 
   const ctx = _offCtx;
   ctx.clearRect(0, 0, pxW, pxH);
@@ -307,10 +314,8 @@ export function drawBackgroundSketches(ctx, sketches, opts) {
   // translate(viewTranslate) + scale(viewScale) applied, so we draw at
   // the world-space origin of the offscreen buffer.
   if (_offCanvas && _offCanvas.width > 0 && _offCanvas.height > 0) {
-    const worldW = _offCanvas.width / (opts.viewScale || 1);
-    const worldH = _offCanvas.height / (opts.viewScale || 1);
-    // drawImage(source, dx, dy, dw, dh) — draw at world coords, scaled to world size
-    ctx.drawImage(_offCanvas, _offWorldMinX, _offWorldMinY, worldW, worldH);
+    // Use stored world dimensions — correct even when MAX_DIM caps the offscreen canvas
+    ctx.drawImage(_offCanvas, _offWorldMinX, _offWorldMinY, _offWorldW, _offWorldH);
   }
 }
 

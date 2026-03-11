@@ -24,6 +24,7 @@ import {
   selectAllSketches,
   areAllSketchesSelected,
   toggleMultiSelect,
+  refreshActiveSketchData,
 } from './project-canvas-state.js';
 
 import { computeSketchIssues, computeProjectTotals } from './sketch-issues.js';
@@ -969,6 +970,8 @@ The nearby node will be removed and its connections will be transferred to the a
  * @returns {{ sketchCount: number, totalNodes: number } | null}
  */
 function _zoomToFitAllSketches() {
+  // Sync active sketch canvas data back to the map so bounding box is accurate
+  refreshActiveSketchData();
   const sketches = getAllSketches();
   if (sketches.length === 0) return null;
 
@@ -1014,7 +1017,8 @@ function _zoomToFitAllSketches() {
   const padding = 0.7;
   const scaleX = dx > 0 ? (rect.width * padding) / dx : 10;
   const scaleY = dy > 0 ? (rect.height * padding) / dy : 10;
-  const targetScale = Math.min(scaleX, scaleY);
+  const MIN_SCALE = 0.005;
+  const targetScale = Math.max(MIN_SCALE, Math.min(scaleX, scaleY));
 
   console.log(`[ViewAll] targetScale=${targetScale.toFixed(4)}, dx=${dx.toFixed(0)}, dy=${dy.toFixed(0)}, canvas=${rect.width}x${rect.height}`);
 
