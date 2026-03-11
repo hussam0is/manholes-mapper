@@ -118,6 +118,12 @@ function PasswordField({ id, value, onChange, placeholder, disabled, autoComplet
 /**
  * Language toggle for login/signup pages.
  * Works both when the main app menu is loaded and on the bare login page.
+ *
+ * TODO: The language toggle location is inconsistent across the app:
+ *   - Login/Signup: bottom of auth card (here)
+ *   - Desktop canvas: buried in the "More" dropdown menu (#langSelect)
+ *   - Mobile canvas: buried in mobile slide-out menu (#mobileLangSelect)
+ * Consider adding a persistent globe icon in the header for quick access.
  */
 function LanguageToggle() {
   const [, setTick] = useState(0);
