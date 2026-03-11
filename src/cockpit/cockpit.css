@@ -50,6 +50,7 @@ body.cockpit-mode .header-recall-handle {
 body.cockpit-mode .canvas-toolbar {
   position: fixed;
   z-index: 175;
+  top: calc(var(--header-h, 36px) + 50px);
 }
 
 body.cockpit-mode .canvas-fab-toolbar {
