@@ -9470,6 +9470,64 @@ html[dir="rtl"] .sketch-tab {
   flex-direction: row-reverse;
 }
 
+/* ── Home mode tabs (Projects | My Sketches) ── */
+.home-mode-tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 1rem;
+  background: var(--color-primary-light, #dbeafe);
+  border-bottom: 2px solid var(--color-border);
+}
+
+.home-mode-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary, #475569);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+}
+
+.home-mode-tab:hover {
+  color: var(--color-text);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.home-mode-tab.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  background: var(--color-surface);
+}
+
+.home-mode-tab .material-icons {
+  font-size: 1.125rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .home-mode-tabs {
+    background: var(--color-surface-alt, #1e293b);
+  }
+  .home-mode-tab:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  .home-mode-tab.active {
+    background: var(--color-surface);
+  }
+}
+
+html[dir="rtl"] .home-mode-tab {
+  flex-direction: row-reverse;
+}
+
 /* Hide main content when login panel is shown */
 body.show-login header,
 body.show-login #main,

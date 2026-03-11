@@ -67,6 +67,21 @@ function PasswordField({ id, value, onChange, placeholder, disabled, autoComplet
     setVisible(v => !v);
   }, []);
 
+  const handleInvalid = useCallback((e) => {
+    const input = e.target;
+    if (input.validity.valueMissing) {
+      input.setCustomValidity(tt('validation.required'));
+    } else if (input.validity.tooShort && minLength) {
+      input.setCustomValidity(tt('validation.minLength', minLength));
+    } else {
+      input.setCustomValidity('');
+    }
+  }, [minLength]);
+
+  const handleInput = useCallback((e) => {
+    e.target.setCustomValidity('');
+  }, []);
+
   return (
     <div className="auth-form-field">
       <label htmlFor={id}>{label}</label>
@@ -76,6 +91,8 @@ function PasswordField({ id, value, onChange, placeholder, disabled, autoComplet
           id={id}
           value={value}
           onChange={onChange}
+          onInvalid={handleInvalid}
+          onInput={handleInput}
           placeholder={placeholder}
           required
           disabled={disabled}
@@ -101,6 +118,12 @@ function PasswordField({ id, value, onChange, placeholder, disabled, autoComplet
 /**
  * Language toggle for login/signup pages.
  * Works both when the main app menu is loaded and on the bare login page.
+ *
+ * TODO: The language toggle location is inconsistent across the app:
+ *   - Login/Signup: bottom of auth card (here)
+ *   - Desktop canvas: buried in the "More" dropdown menu (#langSelect)
+ *   - Mobile canvas: buried in mobile slide-out menu (#mobileLangSelect)
+ * Consider adding a persistent globe icon in the header for quick access.
  */
 function LanguageToggle() {
   const [, setTick] = useState(0);
@@ -212,6 +235,13 @@ function SignInForm({ onSuccess, signUpUrl = '#/signup' }) {
             id="email"
             value={email}
             onChange={(e) => { setEmail(e.target.value); if (error) setError(''); }}
+            onInvalid={(e) => {
+              const input = e.target;
+              if (input.validity.valueMissing) input.setCustomValidity(tt('validation.required'));
+              else if (input.validity.typeMismatch) input.setCustomValidity(tt('validation.email'));
+              else input.setCustomValidity('');
+            }}
+            onInput={(e) => e.target.setCustomValidity('')}
             placeholder={tt('auth.emailPlaceholder')}
             required
             disabled={loading}
@@ -333,6 +363,11 @@ function SignUpForm({ onSuccess, signInUrl = '#/login' }) {
             id="name"
             value={name}
             onChange={(e) => { setName(e.target.value); if (error) setError(''); }}
+            onInvalid={(e) => {
+              if (e.target.validity.valueMissing) e.target.setCustomValidity(tt('validation.required'));
+              else e.target.setCustomValidity('');
+            }}
+            onInput={(e) => e.target.setCustomValidity('')}
             placeholder={tt('auth.namePlaceholder')}
             required
             disabled={loading}
@@ -347,6 +382,13 @@ function SignUpForm({ onSuccess, signInUrl = '#/login' }) {
             id="signup-email"
             value={email}
             onChange={(e) => { setEmail(e.target.value); if (error) setError(''); }}
+            onInvalid={(e) => {
+              const input = e.target;
+              if (input.validity.valueMissing) input.setCustomValidity(tt('validation.required'));
+              else if (input.validity.typeMismatch) input.setCustomValidity(tt('validation.email'));
+              else input.setCustomValidity('');
+            }}
+            onInput={(e) => e.target.setCustomValidity('')}
             placeholder={tt('auth.emailPlaceholder')}
             required
             disabled={loading}

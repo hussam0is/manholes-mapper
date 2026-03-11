@@ -934,6 +934,16 @@ function closeAdminModal() {
 async function openAdminScreen() {
   if (!adminScreen || !adminScreenContent) return;
 
+  // Show admin screen and hide main content IMMEDIATELY so the user
+  // doesn't see canvas/project data while the admin module loads.
+  if (adminScreenTitleEl) {
+    const titleText = adminScreenTitleEl.querySelector('.admin-title-text');
+    if (titleText) titleText.textContent = t('adminPanel.tabs.settings');
+  }
+  if (mainEl) mainEl.style.display = 'none';
+  adminScreen.style.display = 'block';
+  applyLangToStaticUI();
+
   // Lazy-load AdminPanel hub (admin-only module)
   const { AdminPanel } = await import('../admin/admin-panel.js');
 
@@ -963,14 +973,6 @@ async function openAdminScreen() {
   if (prevTab) {
     try { adminSettingsScreen.setActiveTab(prevTab); } catch (_) { }
   }
-
-  if (adminScreenTitleEl) {
-    const titleText = adminScreenTitleEl.querySelector('.admin-title-text');
-    if (titleText) titleText.textContent = t('adminPanel.tabs.settings');
-  }
-  if (mainEl) mainEl.style.display = 'none';
-  adminScreen.style.display = 'block';
-  applyLangToStaticUI();
 }
 
 function closeAdminScreen() {
@@ -1254,8 +1256,9 @@ function _handleRouteImpl() {
   if (isAdmin) {
     try { document.body.classList.add('admin-screen'); } catch (_) { }
     try { closeAdminModal(); } catch (_) { }
-    try { openAdminScreen(); } catch (_) { }
     try { closeProjectsScreen(); } catch (_) { }
+    hideHome(true);
+    openAdminScreen().catch(e => console.error('[Admin] Failed to open admin screen:', e));
   } else if (isProjects) {
     // Handle projects route
     try { document.body.classList.add('admin-screen'); } catch (_) { }
@@ -2786,9 +2789,26 @@ function renderHome() {
   // Restore close button
   const closeBtn = document.getElementById('homePanelCloseBtn');
   if (closeBtn) closeBtn.style.display = '';
-  // Restore footer
+  // Restore footer with "New Sketch" button (renderProjectsHome may have hidden it)
   const footer = homePanel.querySelector('.home-panel-footer');
-  if (footer) footer.style.display = '';
+  if (footer) {
+    footer.style.display = '';
+    footer.innerHTML = `
+      <button id="createFromHomeBtn" class="home-panel-new-btn">
+        <span class="material-icons">add_circle</span>
+        <span>${t('createFromHome')}</span>
+      </button>`;
+    const createBtn = footer.querySelector('#createFromHomeBtn');
+    if (createBtn) {
+      createBtn.addEventListener('click', () => {
+        hideHome(true);
+        startPanel.style.display = 'flex';
+      });
+    }
+  }
+
+  // Render top-level mode tabs (Projects | My Sketches) for quick switching
+  renderHomeModeTabs('sketches');
 
   startPanel.style.display = 'none';
   homePanel.classList.remove('panel-closing');
@@ -3144,6 +3164,46 @@ function hideHome(immediate) {
 // ── Projects Homepage & Project Canvas ────────────────────────────────────
 
 /**
+ * Render the home mode tab bar (Projects | My Sketches).
+ * Inserts/updates a tab strip at the top of the home panel content area,
+ * right after the header, so the user can quickly switch between views.
+ * @param {'projects'|'sketches'} activeMode
+ */
+function renderHomeModeTabs(activeMode) {
+  if (!homePanel) return;
+  let tabBar = homePanel.querySelector('.home-mode-tabs');
+  if (!tabBar) {
+    tabBar = document.createElement('div');
+    tabBar.className = 'home-mode-tabs';
+    tabBar.setAttribute('role', 'tablist');
+    // Insert after header (before sync bar or sketch tabs)
+    const header = homePanel.querySelector('.home-panel-header');
+    if (header && header.nextSibling) {
+      header.parentNode.insertBefore(tabBar, header.nextSibling);
+    } else {
+      homePanel.querySelector('.panel')?.prepend(tabBar);
+    }
+  }
+  tabBar.innerHTML = `
+    <button class="home-mode-tab${activeMode === 'projects' ? ' active' : ''}" data-home-mode="projects" role="tab" aria-selected="${activeMode === 'projects'}">
+      <span class="material-icons" aria-hidden="true">dashboard</span>
+      <span>${t('projectsTitle')}</span>
+    </button>
+    <button class="home-mode-tab${activeMode === 'sketches' ? ' active' : ''}" data-home-mode="sketches" role="tab" aria-selected="${activeMode === 'sketches'}">
+      <span class="material-icons" aria-hidden="true">folder_open</span>
+      <span>${t('homeTitle')}</span>
+    </button>`;
+  // Attach click handlers (always re-attach since innerHTML was replaced)
+  tabBar.querySelectorAll('.home-mode-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mode = btn.getAttribute('data-home-mode');
+      if (mode === 'projects') renderProjectsHome();
+      else renderHome();
+    });
+  });
+}
+
+/**
  * Render the projects homepage in the homePanel container.
  * Shows organization projects as cards. Falls back to old sketch list
  * if user has no org or fetch fails.
@@ -3183,22 +3243,12 @@ async function renderProjectsHome() {
   const closeBtn = document.getElementById('homePanelCloseBtn');
   if (closeBtn) closeBtn.style.display = '';
 
-  // Show footer with "View My Sketches" button
+  // Render top-level mode tabs (Projects | My Sketches) for quick switching
+  renderHomeModeTabs('projects');
+
+  // Hide footer in projects mode (mode tabs replace the old footer button)
   const footer = homePanel.querySelector('.home-panel-footer');
-  if (footer) {
-    footer.style.display = '';
-    footer.innerHTML = `
-      <button id="viewMySketchesBtn" class="home-panel-new-btn home-panel-sketches-btn">
-        <span class="material-icons">folder_open</span>
-        <span>${t('homeTitle')}</span>
-      </button>`;
-    const viewSketchesBtn = footer.querySelector('#viewMySketchesBtn');
-    if (viewSketchesBtn) {
-      viewSketchesBtn.addEventListener('click', () => {
-        renderHome();
-      });
-    }
-  }
+  if (footer) footer.style.display = 'none';
 
   // Hide sketch tabs
   const sketchTabs = document.getElementById('sketchTabs');
