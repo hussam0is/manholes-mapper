@@ -10,6 +10,8 @@ const STREAK_KEY = 'cockpit_streak';
 let sessionStart = 0;
 let nodesAtStart = 0;
 let edgesAtStart = 0;
+let currentNodeCount = 0;
+let currentEdgeCount = 0;
 let timerInterval = null;
 let initialized = false;
 
@@ -23,18 +25,42 @@ export function initSessionTracker() {
 
   sessionStart = Date.now();
 
-  // Capture initial counts
+  // Capture initial counts using lightweight accessor
   try {
-    const data = window.__getActiveSketchData?.();
-    if (data) {
-      nodesAtStart = data.nodes?.length || 0;
-      edgesAtStart = data.edges?.length || 0;
+    const stats = window.__getSketchStats?.();
+    if (stats) {
+      nodesAtStart = stats.nodeCount || 0;
+      edgesAtStart = stats.edgeCount || 0;
+      currentNodeCount = nodesAtStart;
+      currentEdgeCount = edgesAtStart;
+    } else {
+      // Fallback for tests without __getSketchStats
+      const data = window.__getActiveSketchData?.();
+      if (data) {
+        nodesAtStart = data.nodes?.length || 0;
+        edgesAtStart = data.edges?.length || 0;
+        currentNodeCount = nodesAtStart;
+        currentEdgeCount = edgesAtStart;
+      }
     }
   } catch {
     // ignore
   }
 
-  // Start timer display
+  // Update counts on sketch changes (event-driven, not polled)
+  try {
+    window.menuEvents?.on('sketch:changed', () => {
+      try {
+        const stats = window.__getSketchStats?.();
+        if (stats) {
+          currentNodeCount = stats.nodeCount || 0;
+          currentEdgeCount = stats.edgeCount || 0;
+        }
+      } catch { /* ignore */ }
+    });
+  } catch { /* ignore */ }
+
+  // Start timer display — only updates duration text and cached counts
   timerInterval = setInterval(updateSessionDisplay, 1000);
 
   // Load and update streak
@@ -45,9 +71,13 @@ export function initSessionTracker() {
 }
 
 /**
- * Update the session duration and stats display
+ * Update the session duration and stats display.
+ * Uses cached node/edge counts (updated via sketch:changed event)
+ * instead of calling __getActiveSketchData every second.
  */
 function updateSessionDisplay() {
+  if (document.hidden) return; // Skip when tab is backgrounded
+
   const durationEl = document.getElementById('sessionDuration');
   const nodesEl = document.getElementById('sessionNodes');
   const edgesEl = document.getElementById('sessionEdges');
@@ -67,24 +97,31 @@ function updateSessionDisplay() {
     microTimer.textContent = formatted;
   }
 
-  // Count current nodes/edges vs start
-  try {
-    const data = window.__getActiveSketchData?.();
-    if (data) {
-      const currentNodes = data.nodes?.length || 0;
-      const currentEdges = data.edges?.length || 0;
+  // Use cached counts (updated event-driven via sketch:changed).
+  // Fallback: if menuEvents is unavailable (e.g. tests), refresh counts from lightweight accessor.
+  if (!window.menuEvents) {
+    try {
+      const stats = window.__getSketchStats?.();
+      if (stats) {
+        currentNodeCount = stats.nodeCount || 0;
+        currentEdgeCount = stats.edgeCount || 0;
+      } else {
+        const data = window.__getActiveSketchData?.();
+        if (data) {
+          currentNodeCount = data.nodes?.length || 0;
+          currentEdgeCount = data.edges?.length || 0;
+        }
+      }
+    } catch { /* ignore */ }
+  }
 
-      if (nodesEl) {
-        const diff = currentNodes - nodesAtStart;
-        nodesEl.textContent = diff >= 0 ? `+${diff}` : String(diff);
-      }
-      if (edgesEl) {
-        const diff = currentEdges - edgesAtStart;
-        edgesEl.textContent = diff >= 0 ? `+${diff}` : String(diff);
-      }
-    }
-  } catch {
-    // ignore
+  if (nodesEl) {
+    const diff = currentNodeCount - nodesAtStart;
+    nodesEl.textContent = diff >= 0 ? `+${diff}` : String(diff);
+  }
+  if (edgesEl) {
+    const diff = currentEdgeCount - edgesAtStart;
+    edgesEl.textContent = diff >= 0 ? `+${diff}` : String(diff);
   }
 }
 
@@ -193,10 +230,17 @@ export function getSessionStats() {
   let edgesDrawn = 0;
 
   try {
-    const data = window.__getActiveSketchData?.();
-    if (data) {
-      nodesPlaced = (data.nodes?.length || 0) - nodesAtStart;
-      edgesDrawn = (data.edges?.length || 0) - edgesAtStart;
+    const stats = window.__getSketchStats?.();
+    if (stats) {
+      nodesPlaced = (stats.nodeCount || 0) - nodesAtStart;
+      edgesDrawn = (stats.edgeCount || 0) - edgesAtStart;
+    } else {
+      // Fallback for tests without __getSketchStats
+      const data = window.__getActiveSketchData?.();
+      if (data) {
+        nodesPlaced = (data.nodes?.length || 0) - nodesAtStart;
+        edgesDrawn = (data.edges?.length || 0) - edgesAtStart;
+      }
     }
   } catch {
     // ignore

@@ -33,6 +33,9 @@ describe('Session Tracker', () => {
     localStorage.clear();
     mockDOM();
     (window as any).__getActiveSketchData = undefined;
+    (window as any).__getSketchStats = undefined;
+    // Mock document.hidden to false so timer callbacks execute in test environment
+    Object.defineProperty(document, 'hidden', { value: false, writable: true, configurable: true });
   });
 
   afterEach(() => {

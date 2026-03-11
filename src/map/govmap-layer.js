@@ -442,9 +442,25 @@ export function loadMapSettings() {
   }
 }
 
+// ── Precache state for cancellation ────────────────────────────
+let _precacheAbortController = null;
+let _precacheInProgress = false;
+
+/**
+ * Cancel any in-flight tile precache batch.
+ */
+export function cancelTilePrecache() {
+  if (_precacheAbortController) {
+    _precacheAbortController.abort();
+    _precacheAbortController = null;
+  }
+  _precacheInProgress = false;
+}
+
 /**
  * Precache map tiles for the polygon/extent that surrounds measurements (ITM bounds).
  * Loads tiles in the background so they are already in cache when the user views the area.
+ * Cancels any previous in-flight batch before starting a new one.
  * @param {object} itmBounds - Bounds in ITM {minX, maxX, minY, maxY}
  * @param {number} [paddingMeters=50] - Extra margin in meters around the bounds
  * @param {Function} [onProgress] - Optional callback (loaded, total, zoom) for progress
@@ -454,6 +470,14 @@ export function precacheTilesForMeasurementBounds(itmBounds, paddingMeters = 50,
       typeof itmBounds.minY !== 'number' || typeof itmBounds.maxY !== 'number') {
     return;
   }
+
+  // Cancel previous batch if still running
+  cancelTilePrecache();
+
+  _precacheInProgress = true;
+  _precacheAbortController = new AbortController();
+  const signal = _precacheAbortController.signal;
+
   const pad = paddingMeters;
   const bounds = {
     minX: itmBounds.minX - pad,
@@ -461,10 +485,10 @@ export function precacheTilesForMeasurementBounds(itmBounds, paddingMeters = 50,
     minY: itmBounds.minY - pad,
     maxY: itmBounds.maxY + pad
   };
-  // Precache at zoom levels typically used for surveying (16–19)
-  const zooms = [16, 17, 18, 19];
+  // Precache at zoom levels 17-18 (most useful for surveying, reduced from 4 to 2 levels)
+  const zooms = [17, 18];
   const type = currentMapType;
-  const maxTilesPerZoom = 3000;
+  const maxTilesPerZoom = 500;
   const scheduled = [];
   for (const z of zooms) {
     const tiles = calculateTilesInBounds(bounds, z, maxTilesPerZoom, 1);
@@ -480,15 +504,22 @@ export function precacheTilesForMeasurementBounds(itmBounds, paddingMeters = 50,
   let index = 0;
   function runNext() {
     while (running < concurrency && index < scheduled.length) {
+      if (signal.aborted) {
+        _precacheInProgress = false;
+        return;
+      }
       const t = scheduled[index++];
       running++;
       loadTile(t.x, t.y, t.z, type).then(() => {
         loaded++;
-        if (onProgress) onProgress(loaded, scheduled.length, t.z);
+        if (onProgress && !signal.aborted) onProgress(loaded, scheduled.length, t.z);
       }).finally(() => {
         running--;
-        runNext();
+        if (!signal.aborted) runNext();
       });
+    }
+    if (running === 0) {
+      _precacheInProgress = false;
     }
   }
   runNext();

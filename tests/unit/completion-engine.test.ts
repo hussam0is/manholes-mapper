@@ -5,7 +5,7 @@
  * a weighted completion score across 4 dimensions.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { computeSketchCompletion } from '../../src/cockpit/completion-engine.js';
+import { computeSketchCompletion, invalidateCompletionCache } from '../../src/cockpit/completion-engine.js';
 
 // Helper to create a mock node
 function makeNode(overrides: Record<string, unknown> = {}) {
@@ -40,6 +40,8 @@ function mockSketchData(nodes: unknown[], edges: unknown[]) {
 describe('computeSketchCompletion', () => {
   beforeEach(() => {
     (window as any).__getActiveSketchData = undefined;
+    (window as any).__getSketchStats = undefined;
+    invalidateCompletionCache(); // Clear cached results between tests
   });
 
   afterEach(() => {

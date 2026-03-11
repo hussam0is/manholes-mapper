@@ -7,7 +7,7 @@
  */
 
 import './cockpit.css';
-import { initIntelStrip, updateIntelStrip } from './intel-strip.js';
+import { initIntelStrip, updateIntelStrip, destroyIntelStrip } from './intel-strip.js';
 import { initActionRail } from './action-rail.js';
 import { initSessionTracker } from './session-tracker.js';
 import { initQuickWins } from './quick-wins.js';
@@ -16,6 +16,7 @@ import { computeSketchCompletion } from './completion-engine.js';
 let cockpitEl = null;
 let isActive = false;
 let orientationQuery = null;
+let _updateDebounceTimer = null;
 
 /**
  * Build the cockpit DOM structure and inject it into #canvasContainer
@@ -592,12 +593,16 @@ function deactivate() {
   if (!isActive) return;
   isActive = false;
   document.body.classList.remove('cockpit-mode');
+  // Stop intel strip timers (e.g. 3s GPS stale check) when cockpit is not visible
+  destroyIntelStrip();
 }
 
 /**
  * Update all cockpit displays
  */
 export function updateCockpit() {
+  if (document.hidden) return; // Skip when tab is backgrounded
+
   const completion = computeSketchCompletion();
 
   // Always update micro-cockpit (visible in portrait mobile)
@@ -611,17 +616,30 @@ export function updateCockpit() {
   // Keep issue navigation context in sync with current sketch data
   if (window.__issueNav?.setIssueContext && completion.issueCount > 0) {
     try {
-      const data = window.__getActiveSketchData?.();
-      if (data?.nodes && data?.edges) {
+      // Use __getSketchStats for direct references (no copy needed for read-only nav context)
+      const stats = window.__getSketchStats?.();
+      if (stats?.nodes && stats?.edges) {
         const currentState = window.__issueNav.getNavState?.();
-        const sketchId = data.id || data.name || 'current';
+        const sketchId = stats.sketchId || stats.sketchName || 'current';
         // Only re-init if sketch changed or issues not loaded
         if (currentState?.sketchId !== sketchId || currentState?.total === 0) {
-          window.__issueNav.setIssueContext(sketchId, data.nodes, data.edges);
+          window.__issueNav.setIssueContext(sketchId, stats.nodes, stats.edges);
         }
       }
     } catch { /* ignore */ }
   }
+}
+
+/**
+ * Debounced updateCockpit — coalesces rapid sketch:changed events
+ * into at most one update per 500ms.
+ */
+function debouncedUpdateCockpit() {
+  if (_updateDebounceTimer) return;
+  _updateDebounceTimer = setTimeout(() => {
+    _updateDebounceTimer = null;
+    updateCockpit();
+  }, 500);
 }
 
 /**
@@ -671,11 +689,9 @@ export function initCockpit() {
   // Check initial state
   handleOrientation(orientationQuery);
 
-  // Re-compute on sketch changes
+  // Re-compute on sketch changes (debounced to avoid rapid-fire updates)
   if (window.menuEvents) {
-    window.menuEvents.on('sketch:changed', () => {
-      requestAnimationFrame(updateCockpit);
-    });
+    window.menuEvents.on('sketch:changed', debouncedUpdateCockpit);
     window.menuEvents.on('translations:updated', () => {
       if (cockpitEl && window.t) {
         cockpitEl.querySelectorAll('[data-i18n]').forEach(el => {
@@ -697,10 +713,10 @@ export function initCockpit() {
     });
   }
 
-  // Periodic update for session timer, GPS, and micro-cockpit
+  // Safety-net periodic update (5s instead of 2s — most updates are event-driven now)
   setInterval(() => {
     updateCockpit();
-  }, 2000);
+  }, 5000);
 }
 
 /**

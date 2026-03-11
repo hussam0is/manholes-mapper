@@ -35,8 +35,12 @@ function drawTerritoryOverlay(ctx, viewScale, viewTranslate, stretchX, stretchY)
 
   let nodes;
   try {
-    const data = window.__getActiveSketchData?.();
-    nodes = data?.nodes;
+    const stats = window.__getSketchStats?.();
+    nodes = stats?.nodes;
+    if (!nodes) {
+      const data = window.__getActiveSketchData?.();
+      nodes = data?.nodes;
+    }
   } catch {
     return;
   }

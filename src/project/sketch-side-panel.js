@@ -90,7 +90,7 @@ export function initSketchSidePanel() {
 
   // Subscribe to project canvas state changes
   _unsub = onProjectCanvasChange((changeType) => {
-    console.log(`[PERF] onProjectCanvasChange triggered (changeType=${changeType})`);
+    // changeType logged in dev only
     if (changeType !== 'data') {
       _currentView = 'list';
       _issuesSketchId = null;
@@ -169,8 +169,6 @@ function render() {
  */
 function renderListView() {
   if (!listEl) return;
-  console.time('[PERF] renderListView TOTAL');
-
   const sketches = getAllSketches();
 
   // Remove any existing totals footer before re-rendering
@@ -191,7 +189,6 @@ function renderListView() {
   if (countEl) countEl.textContent = `(${sketches.length})`;
 
   // Compute stats for sketches (with cache to avoid redundant recomputation)
-  console.time('[PERF] renderListView:computeIssues');
   const allStats = [];
   let cacheHits = 0, cacheMisses = 0;
   for (const sketch of sketches) {
@@ -199,9 +196,7 @@ function renderListView() {
     const edgesArr = sketch.edges || [];
     const cacheKey = `${nodesArr.length}:${edgesArr.length}:${sketch.updatedAt || ''}`;
     if (_sketchCacheKeys.get(sketch.id) !== cacheKey || !_sketchStats.has(sketch.id)) {
-      console.time(`[PERF] computeSketchIssues(${sketch.name || sketch.id.slice(-6)}: ${nodesArr.length}n/${edgesArr.length}e)`);
       const result = computeSketchIssues(nodesArr, edgesArr);
-      console.timeEnd(`[PERF] computeSketchIssues(${sketch.name || sketch.id.slice(-6)}: ${nodesArr.length}n/${edgesArr.length}e)`);
       _sketchStats.set(sketch.id, result);
       _sketchCacheKeys.set(sketch.id, cacheKey);
       cacheMisses++;
@@ -210,8 +205,6 @@ function renderListView() {
     }
     allStats.push(_sketchStats.get(sketch.id).stats);
   }
-  console.timeEnd('[PERF] renderListView:computeIssues');
-  console.log(`[PERF] renderListView: ${cacheHits} cache hits, ${cacheMisses} cache misses`);
   const totals = computeProjectTotals(allStats);
 
   listEl.innerHTML = '';
@@ -378,7 +371,6 @@ function renderListView() {
   `;
   // Insert after listEl (inside panelEl)
   listEl.parentNode.insertBefore(totalsEl, listEl.nextSibling);
-  console.timeEnd('[PERF] renderListView TOTAL');
 }
 
 /**

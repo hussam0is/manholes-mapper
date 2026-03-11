@@ -315,17 +315,45 @@ function wireLeftPanelSync() {
 let sessionStart = Date.now();
 let nodesAtStart = 0;
 let edgesAtStart = 0;
+let _fcCurrentNodeCount = 0;
+let _fcCurrentEdgeCount = 0;
 
 function startLeftPanelSessionTimer() {
   try {
-    const data = window.__getActiveSketchData?.();
-    if (data) {
-      nodesAtStart = data.nodes?.length || 0;
-      edgesAtStart = data.edges?.length || 0;
+    const stats = window.__getSketchStats?.();
+    if (stats) {
+      nodesAtStart = stats.nodeCount || 0;
+      edgesAtStart = stats.edgeCount || 0;
+      _fcCurrentNodeCount = nodesAtStart;
+      _fcCurrentEdgeCount = edgesAtStart;
+    } else {
+      // Fallback for environments without __getSketchStats
+      const data = window.__getActiveSketchData?.();
+      if (data) {
+        nodesAtStart = data.nodes?.length || 0;
+        edgesAtStart = data.edges?.length || 0;
+        _fcCurrentNodeCount = nodesAtStart;
+        _fcCurrentEdgeCount = edgesAtStart;
+      }
     }
   } catch { /* ignore */ }
 
+  // Update counts event-driven instead of polling every second
+  try {
+    window.menuEvents?.on('sketch:changed', () => {
+      try {
+        const stats = window.__getSketchStats?.();
+        if (stats) {
+          _fcCurrentNodeCount = stats.nodeCount || 0;
+          _fcCurrentEdgeCount = stats.edgeCount || 0;
+        }
+      } catch { /* ignore */ }
+    });
+  } catch { /* ignore */ }
+
   setInterval(() => {
+    if (document.hidden) return; // Skip when tab is backgrounded
+
     const dEl = document.getElementById('fcIntelSessionDuration');
     const nEl = document.getElementById('fcIntelSessionNodes');
     const eEl = document.getElementById('fcIntelSessionEdges');
@@ -337,13 +365,9 @@ function startLeftPanelSessionTimer() {
       dEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
     }
 
-    try {
-      const data = window.__getActiveSketchData?.();
-      if (data) {
-        if (nEl) nEl.textContent = `+${Math.max(0, (data.nodes?.length || 0) - nodesAtStart)}`;
-        if (eEl) eEl.textContent = `+${Math.max(0, (data.edges?.length || 0) - edgesAtStart)}`;
-      }
-    } catch { /* ignore */ }
+    // Use cached counts (updated event-driven via sketch:changed)
+    if (nEl) nEl.textContent = `+${Math.max(0, _fcCurrentNodeCount - nodesAtStart)}`;
+    if (eEl) eEl.textContent = `+${Math.max(0, _fcCurrentEdgeCount - edgesAtStart)}`;
   }, 1000);
 
   // Streak
@@ -392,6 +416,9 @@ function updateStreak() {
 }
 
 function updateLeftPanelCompletion() {
+  if (document.hidden) return; // Skip when tab is backgrounded
+  if (!document.body.classList.contains('fc-mode')) return; // Skip when FC mode is off
+
   const completion = computeSketchCompletion();
   const valEl = document.getElementById('fcIntelHealthValue');
   const subEl = document.getElementById('fcIntelHealthSub');

@@ -337,6 +337,7 @@ function wireUndoSync() {
 
 function updateFC() {
   if (!isFCMode()) return;
+  if (document.hidden) return; // Skip when tab is backgrounded
 
   const completion = computeSketchCompletion();
 

@@ -195,6 +195,7 @@ function updateCondensedSyncIcon(state) {
  * Check if GPS position is stale (>3s without update)
  */
 function checkGpsStale() {
+  if (document.hidden) return; // Skip when tab is backgrounded
   if (lastPositionTime === 0) return;
   const card = document.getElementById('intelGps');
   if (!card) return;

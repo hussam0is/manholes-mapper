@@ -9,13 +9,46 @@
  *   10% — All optional fields filled (material, diameter, access)
  */
 
+// ── Completion cache with dirty-flag invalidation ───────────────────────
+let _cachedCompletion = null;
+let _completionDirty = true;
+
+// Listen for sketch changes to invalidate cache
+try {
+  // Defer listener setup to allow menuEvents to initialize first
+  const _setupDirtyListener = () => {
+    if (window.menuEvents) {
+      window.menuEvents.on('sketch:changed', () => { _completionDirty = true; });
+    } else {
+      // Retry once after a tick if menuEvents isn't ready yet
+      setTimeout(() => {
+        window.menuEvents?.on('sketch:changed', () => { _completionDirty = true; });
+      }, 0);
+    }
+  };
+  _setupDirtyListener();
+} catch { /* ignore */ }
+
+/**
+ * Mark completion cache as dirty (for external callers that know data changed).
+ */
+export function invalidateCompletionCache() {
+  _completionDirty = true;
+}
+
 /**
  * Compute completion metrics for the current sketch.
- * Reads from the global sketch state (nodes[], edges[]) via window globals.
+ * Results are cached and only recomputed when sketch data changes
+ * (signaled by the 'sketch:changed' event setting the dirty flag).
  *
  * @returns {{ percentage: number, coordsPct: number, measurePct: number, issuesPct: number, fieldsPct: number, nodeCount: number, edgeCount: number, totalKm: number, issueCount: number }}
  */
 export function computeSketchCompletion() {
+  // Return cached result if data hasn't changed
+  if (!_completionDirty && _cachedCompletion) {
+    return _cachedCompletion;
+  }
+
   const result = {
     percentage: 0,
     coordsPct: 0,
@@ -29,14 +62,22 @@ export function computeSketchCompletion() {
   };
 
   // Access sketch data from window globals (set by legacy/main.js)
+  // Use __getSketchStats for direct references (no array copy) when available
   let nodes = [];
   let edges = [];
 
   try {
-    const data = window.__getActiveSketchData?.();
-    if (data) {
-      nodes = data.nodes || [];
-      edges = data.edges || [];
+    const stats = window.__getSketchStats?.();
+    if (stats) {
+      nodes = stats.nodes || [];
+      edges = stats.edges || [];
+    } else {
+      // Fallback for tests and environments without __getSketchStats
+      const data = window.__getActiveSketchData?.();
+      if (data) {
+        nodes = data.nodes || [];
+        edges = data.edges || [];
+      }
     }
   } catch {
     return result;
@@ -146,6 +187,10 @@ export function computeSketchCompletion() {
 
   // Clamp to 0-100
   result.percentage = Math.max(0, Math.min(100, result.percentage));
+
+  // Cache result and clear dirty flag
+  _cachedCompletion = result;
+  _completionDirty = false;
 
   return result;
 }

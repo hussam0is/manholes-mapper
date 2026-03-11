@@ -94,7 +94,8 @@ import {
   saveMapSettings,
   loadMapSettings,
   wgs84ToItm,
-  precacheTilesForMeasurementBounds
+  precacheTilesForMeasurementBounds,
+  cancelTilePrecache
 } from '../map/govmap-layer.js';
 import {
   calculateCenterOnUser
@@ -3033,6 +3034,23 @@ window.__getActiveSketchData = function () {
     projectId: currentProjectId,
     inputFlowConfig: currentInputFlowConfig,
     creationDate,
+  };
+};
+
+/**
+ * Lightweight sketch stats accessor — returns counts and direct references
+ * WITHOUT copying arrays. Callers MUST NOT mutate the returned arrays.
+ * Use this for timer-based polling (cockpit, session tracker, FC panels).
+ * Use __getActiveSketchData() when you need safe copies (e.g. sketch switching).
+ */
+window.__getSketchStats = function () {
+  return {
+    nodeCount: nodes.length,
+    edgeCount: edges.length,
+    sketchName: currentSketchName,
+    sketchId: currentSketchId,
+    nodes: nodes,    // direct reference — read-only contract
+    edges: edges,    // direct reference — read-only contract
   };
 };
 
@@ -10564,8 +10582,10 @@ function getMeasurementBoundsItm() {
 
 /**
  * Start precaching map tiles for the measurement extent so tiles are ready when viewing.
+ * Cancels any previous in-flight batch before starting a new one.
  */
 function startMeasurementTilesPrecache() {
+  cancelTilePrecache(); // Cancel previous batch
   const bounds = getMeasurementBoundsItm();
   if (bounds) precacheTilesForMeasurementBounds(bounds);
 }
