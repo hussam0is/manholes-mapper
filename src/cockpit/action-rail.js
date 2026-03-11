@@ -163,13 +163,40 @@ export function initActionRail() {
       }
     });
 
-    // Handle more menu actions
+    // Handle more menu actions — delegate to original toolbar buttons
+    // or emit the correct menuEvents event name (not the literal 'action')
     moreMenu.querySelectorAll('.action-rail__more-item').forEach(item => {
-      item.addEventListener('click', () => {
+      item.addEventListener('click', (e) => {
         const action = item.dataset.action;
-        if (action && window.menuEvents) {
-          window.menuEvents.emit('action', action);
+        if (!action) return;
+
+        // Map cockpit actions to original toolbar button IDs
+        const buttonDelegationMap = {
+          save: 'saveBtn',
+          exportSketch: 'exportSketchBtn',
+          exportNodes: 'exportNodesBtn',
+          exportEdges: 'exportEdgesBtn',
+          admin: 'adminBtn',
+          mySketches: 'mySketchesBtn',
+        };
+
+        const delegateId = buttonDelegationMap[action];
+        if (delegateId) {
+          // Delegate to the original toolbar button (preserves legacy handlers)
+          document.getElementById(delegateId)?.click();
+        } else if (action === 'languageChange') {
+          // Toggle language by cycling the original lang select
+          const langSelect = document.getElementById('langSelect') || document.getElementById('mobileLangSelect');
+          if (langSelect) {
+            const newVal = langSelect.value === 'he' ? 'en' : 'he';
+            langSelect.value = newVal;
+            langSelect.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        } else if (window.menuEvents) {
+          // For actions with menuEvents listeners (mySketches, admin, etc.)
+          window.menuEvents.emit(action, { element: item, originalEvent: e });
         }
+
         // Close menu
         moreMenuOpen = false;
         moreMenu.classList.remove('open');
