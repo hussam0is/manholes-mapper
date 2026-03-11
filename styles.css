@@ -7017,6 +7017,8 @@ select.invalid:focus {
     --color-border-strong: #475569;
     --color-primary-light: #1e3a5f;
     --color-primary-bg: #0f2744;
+    --color-warning: #fbbf24;            /* amber-400 — brighter for dark bg */
+    --color-warning-light: rgba(251, 191, 36, 0.15);
   }
 
   header {
@@ -14862,6 +14864,8 @@ body.cockpit-mode #edgeLegend {
   --color-error-bg: #450a0a;
   --color-error-border: #7f1d1d;
   --color-error-text: #fca5a5;
+  --color-warning: #fbbf24;
+  --color-warning-light: rgba(251, 191, 36, 0.15);
   --shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 

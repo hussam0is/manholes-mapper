@@ -108,6 +108,17 @@ function buildCockpitDOM() {
 
     <!-- Zone C: Action Rail -->
     <nav class="action-rail" id="actionRail" role="toolbar" aria-label="Drawing tools">
+      <!-- Condensed status (visible only when Zone A is collapsed) -->
+      <div class="action-rail__status-condensed" id="railStatusCondensed">
+        <span class="action-rail__status-dot" id="railGpsDot"></span>
+        <span class="action-rail__status-icon" id="railSyncIcon">
+          <span class="material-icons">cloud_done</span>
+        </span>
+        <span class="action-rail__status-health" id="railHealthPct">0%</span>
+      </div>
+
+      <div class="action-rail__divider"></div>
+
       <!-- Mode buttons -->
       <button class="action-rail__btn action-rail__btn--mode" data-mode="node" data-i18n-title="cockpit.tooltipNodeMode" aria-pressed="false">
         <span class="material-icons">radio_button_unchecked</span>
@@ -181,7 +192,7 @@ function buildCockpitDOM() {
 
     <!-- More menu popup (outside action-rail to avoid overflow clipping) -->
     <div class="action-rail__more-menu" id="railMoreMenu">
-      <button class="action-rail__more-item" data-action="save">
+      <button class="action-rail__more-item action-rail__more-item--primary" data-action="save">
         <span class="material-icons">save</span>
         <span data-i18n="save">Save</span>
       </button>
@@ -197,6 +208,7 @@ function buildCockpitDOM() {
         <span class="material-icons">call_split</span>
         <span data-i18n="exportEdges">Export Edges</span>
       </button>
+      <hr class="action-rail__more-divider">
       <button class="action-rail__more-item" data-action="mySketches">
         <span class="material-icons">description</span>
         <span data-i18n="mySketches">My Sketches</span>
@@ -205,7 +217,8 @@ function buildCockpitDOM() {
         <span class="material-icons">tune</span>
         <span data-i18n="admin.manage">Admin</span>
       </button>
-      <button class="action-rail__more-item" data-action="languageChange">
+      <hr class="action-rail__more-divider">
+      <button class="action-rail__more-item action-rail__more-item--secondary" data-action="languageChange">
         <span class="material-icons">language</span>
         <span data-i18n="cockpit.languageToggle">EN / HE</span>
       </button>
@@ -221,6 +234,119 @@ function buildCockpitDOM() {
   const main = document.getElementById('main');
   if (main) {
     main.insertBefore(cockpitEl, main.firstChild);
+  }
+
+  // Build micro-cockpit strip for mobile portrait mode
+  buildMicroCockpit();
+}
+
+/**
+ * Build the micro-cockpit strip for mobile portrait mode.
+ * A thin bar below the header showing GPS, sync, and health indicators.
+ */
+function buildMicroCockpit() {
+  const strip = document.createElement('div');
+  strip.className = 'micro-cockpit';
+  strip.id = 'microCockpit';
+  strip.setAttribute('role', 'status');
+  strip.setAttribute('aria-label', 'Survey status');
+  strip.innerHTML = `
+    <span class="micro-cockpit__gps" id="microGpsDot" title="GPS"></span>
+    <span class="micro-cockpit__sync" id="microSyncIcon">
+      <span class="material-icons">cloud_done</span>
+    </span>
+    <span class="micro-cockpit__health" id="microHealthPct">0%</span>
+    <span class="micro-cockpit__timer" id="microSessionTimer">0:00</span>
+  `;
+
+  // Insert after <header>, before #main
+  const header = document.querySelector('header.app-header');
+  if (header && header.parentNode) {
+    header.parentNode.insertBefore(strip, header.nextSibling);
+  }
+
+  // Wire up GPS updates
+  const gnssState = window.__gnssState;
+  if (gnssState) {
+    gnssState.on('position', () => updateMicroGps(gnssState));
+    gnssState.on('connection', () => updateMicroGps(gnssState));
+  }
+
+  // Wire up sync updates
+  if (window.menuEvents) {
+    window.menuEvents.on('sync:stateChange', (state) => updateMicroSync(state));
+  }
+}
+
+/**
+ * Update micro-cockpit GPS dot
+ */
+function updateMicroGps(gnssState) {
+  const dot = document.getElementById('microGpsDot');
+  if (!dot) return;
+
+  const pos = gnssState?.position;
+  const connected = gnssState?.connectionState === 'connected';
+
+  dot.className = 'micro-cockpit__gps';
+
+  if (!connected || !pos?.isValid) {
+    dot.classList.add('micro-cockpit__gps--no-fix');
+    return;
+  }
+
+  const fixClsMap = {
+    4: 'micro-cockpit__gps--rtk-fixed',
+    5: 'micro-cockpit__gps--rtk-float',
+    2: 'micro-cockpit__gps--dgps',
+    1: 'micro-cockpit__gps--gps',
+    0: 'micro-cockpit__gps--no-fix',
+  };
+
+  dot.classList.add(fixClsMap[pos.fixQuality] || fixClsMap[0]);
+}
+
+/**
+ * Update micro-cockpit sync icon
+ */
+function updateMicroSync(state) {
+  const iconEl = document.getElementById('microSyncIcon');
+  if (!iconEl) return;
+
+  const iconSpan = iconEl.querySelector('.material-icons');
+  iconEl.className = 'micro-cockpit__sync';
+
+  if (state?.isSyncing) {
+    iconEl.classList.add('micro-cockpit__sync--syncing');
+    if (iconSpan) iconSpan.textContent = 'sync';
+  } else if (state?.isOnline === false) {
+    iconEl.classList.add('micro-cockpit__sync--offline');
+    if (iconSpan) iconSpan.textContent = 'cloud_off';
+  } else if (state?.error) {
+    iconEl.classList.add('micro-cockpit__sync--error');
+    if (iconSpan) iconSpan.textContent = 'cloud_off';
+  } else {
+    if (iconSpan) iconSpan.textContent = 'cloud_done';
+  }
+}
+
+/**
+ * Update micro-cockpit health and timer from completion data
+ */
+function updateMicroCockpit(completion) {
+  const healthEl = document.getElementById('microHealthPct');
+  if (healthEl) {
+    healthEl.textContent = `${completion.percentage}%`;
+
+    // Color-code by level
+    healthEl.className = 'micro-cockpit__health';
+    if (completion.percentage >= 85) {
+      healthEl.classList.add('micro-cockpit__health--good');
+    } else if (completion.percentage >= 30) {
+      healthEl.classList.add('micro-cockpit__health--mid');
+    } else {
+      healthEl.classList.add('micro-cockpit__health--low');
+    }
   }
 }
 
@@ -276,9 +402,13 @@ function deactivate() {
  * Update all cockpit displays
  */
 export function updateCockpit() {
+  const completion = computeSketchCompletion();
+
+  // Always update micro-cockpit (visible in portrait mobile)
+  updateMicroCockpit(completion);
+
   if (!isActive) return;
 
-  const completion = computeSketchCompletion();
   updateIntelStrip(completion);
   updateProgressBar(completion.percentage);
 
@@ -307,10 +437,11 @@ function updateProgressBar(pct) {
 
   fill.style.width = `${pct}%`;
 
+  // <25% = low (danger), 25-75% = mid (warning), 75-85% = high, 85%+ = complete (success)
   let level = 'low';
   if (pct >= 85) level = 'complete';
-  else if (pct >= 60) level = 'high';
-  else if (pct >= 30) level = 'mid';
+  else if (pct >= 75) level = 'high';
+  else if (pct >= 25) level = 'mid';
 
   fill.setAttribute('data-level', level);
   fill.closest('[role="progressbar"]')?.setAttribute('aria-valuenow', String(Math.round(pct)));
@@ -323,6 +454,9 @@ function updateProgressBar(pct) {
 export function initCockpit() {
   buildCockpitDOM();
   initQuickWins();
+
+  // Start session tracker early so micro-cockpit timer works in portrait
+  initSessionTracker();
 
   // Use matchMedia for orientation detection
   orientationQuery = window.matchMedia('(orientation: landscape) and (min-width: 568px)');
@@ -367,9 +501,9 @@ export function initCockpit() {
     });
   }
 
-  // Periodic update for session timer and GPS
+  // Periodic update for session timer, GPS, and micro-cockpit
   setInterval(() => {
-    if (isActive) updateCockpit();
+    updateCockpit();
   }, 2000);
 }
 

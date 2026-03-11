@@ -92,7 +92,7 @@ body.cockpit-mode #main {
 }
 
 .cockpit__progress-fill[data-level="high"] {
-  background: #eab308; /* yellow-500 */
+  background: var(--color-success);
 }
 
 .cockpit__progress-fill[data-level="complete"] {
@@ -181,7 +181,7 @@ body.cockpit-mode #main {
 
 .intel-gps__dot--rtk-fixed { background: #22c55e; }
 .intel-gps__dot--rtk-float { background: #3b82f6; }
-.intel-gps__dot--dgps { background: #f59e0b; }
+.intel-gps__dot--dgps { background: var(--color-warning); }
 .intel-gps__dot--gps { background: #eab308; }
 .intel-gps__dot--no-fix { background: #94a3b8; }
 
@@ -259,7 +259,7 @@ body.cockpit-mode #main {
 
 .completion-ring__fill[data-level="low"] { stroke: var(--color-danger); }
 .completion-ring__fill[data-level="mid"] { stroke: var(--color-warning); }
-.completion-ring__fill[data-level="high"] { stroke: #eab308; }
+.completion-ring__fill[data-level="high"] { stroke: var(--color-success); }
 .completion-ring__fill[data-level="complete"] { stroke: var(--color-success); }
 
 .completion-ring__text {
@@ -413,12 +413,12 @@ body.cockpit-mode #main {
   gap: 3px;
   font-size: var(--text-xs);
   font-weight: var(--font-semibold);
-  color: #f59e0b;
+  color: var(--color-warning);
 }
 
 .intel-session__streak .material-icons {
   font-size: 14px;
-  color: #f59e0b;
+  color: var(--color-warning);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -523,6 +523,65 @@ body.cockpit-mode #main {
   box-shadow: 0 0 4px rgba(34, 197, 94, 0.6);
 }
 
+/* ── Condensed Status (visible only when Zone A collapsed) ───── */
+.action-rail__status-condensed {
+  display: none; /* Hidden by default */
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+body.cockpit-mode.zone-a-collapsed .action-rail__status-condensed {
+  display: flex;
+}
+
+.action-rail__status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-muted);
+  flex-shrink: 0;
+}
+
+.action-rail__status-dot--rtk-fixed { background: var(--color-success); }
+.action-rail__status-dot--rtk-float { background: var(--color-primary); }
+.action-rail__status-dot--dgps { background: var(--color-warning); }
+.action-rail__status-dot--gps { background: #eab308; }
+.action-rail__status-dot--no-fix { background: var(--color-muted); }
+
+.action-rail__status-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-rail__status-icon .material-icons {
+  font-size: 14px;
+  color: var(--color-success);
+}
+
+.action-rail__status-icon--syncing .material-icons {
+  color: var(--color-primary);
+  animation: spin 1s linear infinite;
+}
+
+.action-rail__status-icon--offline .material-icons {
+  color: var(--color-muted);
+}
+
+.action-rail__status-icon--error .material-icons {
+  color: var(--color-danger);
+}
+
+.action-rail__status-health {
+  font-size: 9px;
+  font-weight: var(--font-bold);
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
 /* Collapse Zone A toggle */
 .action-rail__btn--collapse .material-icons {
   transition: transform 0.25s ease;
@@ -557,6 +616,13 @@ body.cockpit-mode.zone-a-collapsed .action-rail__btn--collapse .material-icons {
   display: block;
 }
 
+/* Hide more menu in portrait — only relevant in landscape cockpit mode */
+@media (orientation: portrait) {
+  .action-rail__more-menu {
+    display: none !important;
+  }
+}
+
 .action-rail__more-item {
   display: flex;
   align-items: center;
@@ -579,6 +645,41 @@ body.cockpit-mode.zone-a-collapsed .action-rail__btn--collapse .material-icons {
 .action-rail__more-item .material-icons {
   font-size: 18px;
   color: var(--color-muted);
+}
+
+/* Primary action — Save gets visual emphasis */
+.action-rail__more-item--primary {
+  color: var(--color-primary);
+  font-weight: var(--font-semibold);
+}
+
+.action-rail__more-item--primary .material-icons {
+  color: var(--color-primary);
+}
+
+/* Secondary action — less important items */
+.action-rail__more-item--secondary {
+  color: var(--color-text-secondary);
+}
+
+.action-rail__more-item--secondary .material-icons {
+  color: var(--color-text-secondary);
+}
+
+/* Menu group dividers */
+.action-rail__more-divider {
+  border: none;
+  height: 1px;
+  background: var(--color-border);
+  margin: 4px 8px;
+}
+
+/* ── More menu open — dim competing bottom elements ──────────── */
+body.cockpit-more-open .canvas-fab-toolbar,
+body.cockpit-more-open .take-measure-fab {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -632,7 +733,7 @@ body.cockpit-mode.mode-gps #canvasContainer {
 
 .quick-win-toast__icon--success { color: var(--color-success); }
 .quick-win-toast__icon--info { color: var(--color-primary); }
-.quick-win-toast__icon--milestone { color: #f59e0b; }
+.quick-win-toast__icon--milestone { color: var(--color-warning); }
 
 .quick-win-toast__text {
   font-size: var(--text-sm);
@@ -716,9 +817,101 @@ body.cockpit-mode.heatmap-active #canvasContainer {
     border-color: var(--color-border-strong);
   }
 
+  .action-rail__more-divider {
+    background: var(--color-border-strong);
+  }
+
   .quick-win-toast {
     background: var(--color-surface-alt);
     border-color: var(--color-border-strong);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Micro-Cockpit — Compact status strip for mobile portrait
+   ═══════════════════════════════════════════════════════════ */
+.micro-cockpit {
+  display: none; /* Hidden by default — shown only in portrait mobile */
+}
+
+@media (orientation: portrait) and (max-width: 768px) {
+  .micro-cockpit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    height: 28px;
+    padding: 0 12px;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    font-size: 11px;
+    color: var(--color-text-secondary);
+    z-index: 50;
+    flex-shrink: 0;
+  }
+}
+
+/* Hide micro-cockpit when full cockpit is active (landscape) */
+body.cockpit-mode .micro-cockpit {
+  display: none !important;
+}
+
+.micro-cockpit__gps {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-muted);
+  flex-shrink: 0;
+}
+
+.micro-cockpit__gps--rtk-fixed { background: var(--color-success); }
+.micro-cockpit__gps--rtk-float { background: var(--color-primary); }
+.micro-cockpit__gps--dgps { background: var(--color-warning); }
+.micro-cockpit__gps--gps { background: #eab308; }
+.micro-cockpit__gps--no-fix { background: var(--color-muted); }
+
+.micro-cockpit__sync {
+  display: flex;
+  align-items: center;
+}
+
+.micro-cockpit__sync .material-icons {
+  font-size: 14px;
+  color: var(--color-success);
+}
+
+.micro-cockpit__sync--syncing .material-icons {
+  color: var(--color-primary);
+  animation: spin 1s linear infinite;
+}
+
+.micro-cockpit__sync--offline .material-icons {
+  color: var(--color-muted);
+}
+
+.micro-cockpit__sync--error .material-icons {
+  color: var(--color-danger);
+}
+
+.micro-cockpit__health {
+  font-weight: var(--font-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+}
+
+.micro-cockpit__health--good { color: var(--color-success); }
+.micro-cockpit__health--mid { color: var(--color-warning); }
+.micro-cockpit__health--low { color: var(--color-danger); }
+
+.micro-cockpit__timer {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-tertiary);
+}
+
+@media (prefers-color-scheme: dark) {
+  .micro-cockpit {
+    background: var(--color-surface-alt);
+    border-color: var(--color-border);
   }
 }
 

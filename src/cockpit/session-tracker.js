@@ -11,11 +11,16 @@ let sessionStart = 0;
 let nodesAtStart = 0;
 let edgesAtStart = 0;
 let timerInterval = null;
+let initialized = false;
 
 /**
  * Initialize session tracking
  */
 export function initSessionTracker() {
+  // Guard against double-init (called from initCockpit + activate)
+  if (initialized) return;
+  initialized = true;
+
   sessionStart = Date.now();
 
   // Capture initial counts
@@ -47,11 +52,19 @@ function updateSessionDisplay() {
   const nodesEl = document.getElementById('sessionNodes');
   const edgesEl = document.getElementById('sessionEdges');
 
+  const elapsed = Math.floor((Date.now() - sessionStart) / 1000);
+  const mins = Math.floor(elapsed / 60);
+  const secs = elapsed % 60;
+  const formatted = `${mins}:${secs.toString().padStart(2, '0')}`;
+
   if (durationEl) {
-    const elapsed = Math.floor((Date.now() - sessionStart) / 1000);
-    const mins = Math.floor(elapsed / 60);
-    const secs = elapsed % 60;
-    durationEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+    durationEl.textContent = formatted;
+  }
+
+  // Also update micro-cockpit timer (mobile portrait)
+  const microTimer = document.getElementById('microSessionTimer');
+  if (microTimer) {
+    microTimer.textContent = formatted;
   }
 
   // Count current nodes/edges vs start
