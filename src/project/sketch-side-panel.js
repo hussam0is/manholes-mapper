@@ -975,10 +975,90 @@ function _zoomToFitAllSketches() {
   const sketches = getAllSketches();
   if (sketches.length === 0) return null;
 
-  // Compute bounding box across all sketches
+  // --- Step 1: Compute per-sketch centroids (skip empty sketches) ---
+  const sketchCentroids = [];
+  for (const sketch of sketches) {
+    const nodes = sketch.nodes || [];
+    if (nodes.length === 0) continue;
+    let sumX = 0, sumY = 0;
+    for (const n of nodes) {
+      sumX += n.x;
+      sumY += n.y;
+    }
+    sketchCentroids.push({
+      sketch,
+      cx: sumX / nodes.length,
+      cy: sumY / nodes.length,
+      nodeCount: nodes.length,
+    });
+  }
+
+  if (sketchCentroids.length === 0) return { sketchCount: sketches.length, totalNodes: 0 };
+
+  // --- Step 2: Outlier detection using Median Absolute Deviation (MAD) ---
+  // Only meaningful with 3+ sketches; with fewer, use all
+  let filteredCentroids = sketchCentroids;
+  const MAD_THRESHOLD = 3;
+
+  if (sketchCentroids.length >= 3) {
+    const median = (arr) => {
+      const sorted = [...arr].sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+    };
+
+    const centroidXs = sketchCentroids.map(c => c.cx);
+    const centroidYs = sketchCentroids.map(c => c.cy);
+
+    const medianX = median(centroidXs);
+    const medianY = median(centroidYs);
+
+    // MAD = median of absolute deviations from the median
+    const madX = median(centroidXs.map(x => Math.abs(x - medianX)));
+    const madY = median(centroidYs.map(y => Math.abs(y - medianY)));
+
+    // Use scaled MAD as threshold; if MAD is 0 (all same position), use a fallback
+    // The constant 1.4826 scales MAD to be consistent with standard deviation for normal distributions
+    const scaledMadX = madX * 1.4826;
+    const scaledMadY = madY * 1.4826;
+
+    // Minimum threshold to avoid filtering tightly clustered sketches: 10,000 canvas units
+    const thresholdX = Math.max(scaledMadX * MAD_THRESHOLD, 10000);
+    const thresholdY = Math.max(scaledMadY * MAD_THRESHOLD, 10000);
+
+    const inliers = sketchCentroids.filter(c => {
+      const devX = Math.abs(c.cx - medianX);
+      const devY = Math.abs(c.cy - medianY);
+      return devX <= thresholdX && devY <= thresholdY;
+    });
+
+    const outliers = sketchCentroids.filter(c => {
+      const devX = Math.abs(c.cx - medianX);
+      const devY = Math.abs(c.cy - medianY);
+      return devX > thresholdX || devY > thresholdY;
+    });
+
+    // Only exclude outliers if at least 1 sketch remains
+    if (inliers.length >= 1 && outliers.length > 0) {
+      filteredCentroids = inliers;
+      for (const o of outliers) {
+        const name = o.sketch.name || o.sketch.id || '(unnamed)';
+        console.warn(
+          `[ViewAll] Excluded outlier sketch "${name}" — centroid (${o.cx.toFixed(0)}, ${o.cy.toFixed(0)}), ` +
+          `median (${medianX.toFixed(0)}, ${medianY.toFixed(0)}), ` +
+          `thresholds (${thresholdX.toFixed(0)}, ${thresholdY.toFixed(0)})`
+        );
+      }
+      console.log(`[ViewAll] Outlier filter: ${inliers.length} kept, ${outliers.length} excluded`);
+    }
+  }
+
+  // --- Step 3: Compute bounding box from filtered (non-outlier) sketches ---
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   let totalNodes = 0;
+  const filteredSketchSet = new Set(filteredCentroids.map(c => c.sketch));
   for (const sketch of sketches) {
+    if (!filteredSketchSet.has(sketch)) continue;
     for (const n of (sketch.nodes || [])) {
       if (n.x < minX) minX = n.x;
       if (n.y < minY) minY = n.y;
@@ -988,9 +1068,10 @@ function _zoomToFitAllSketches() {
     }
   }
 
-  console.log(`[ViewAll] ${sketches.length} sketches, ${totalNodes} total nodes, bbox: (${minX.toFixed(0)},${minY.toFixed(0)})→(${maxX.toFixed(0)},${maxY.toFixed(0)})`);
+  const sketchCount = filteredSketchSet.size;
+  console.log(`[ViewAll] ${sketchCount}/${sketches.length} sketches, ${totalNodes} total nodes, bbox: (${minX.toFixed(0)},${minY.toFixed(0)})→(${maxX.toFixed(0)},${maxY.toFixed(0)})`);
 
-  if (totalNodes === 0) return { sketchCount: sketches.length, totalNodes: 0 };
+  if (totalNodes === 0) return { sketchCount, totalNodes: 0 };
 
   const canvas = document.getElementById('graphCanvas');
   if (!canvas) return null;
@@ -1008,7 +1089,7 @@ function _zoomToFitAllSketches() {
     const ty = rect.height / 2 - targetScale * stretchY * midY;
     window.__setViewState?.(targetScale, tx, ty);
     window.__scheduleDraw?.();
-    return { sketchCount: sketches.length, totalNodes };
+    return { sketchCount, totalNodes };
   }
 
   // Fit bounding box with generous padding
@@ -1026,7 +1107,7 @@ function _zoomToFitAllSketches() {
   const ty = rect.height / 2 - targetScale * stretchY * midY;
   window.__setViewState?.(targetScale, tx, ty);
   window.__scheduleDraw?.();
-  return { sketchCount: sketches.length, totalNodes };
+  return { sketchCount, totalNodes };
 }
 
 /**
