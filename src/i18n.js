@@ -664,6 +664,8 @@ export const i18n = {
     },
     validation: {
       required: 'שדה חובה',
+      email: 'נא להזין כתובת אימייל תקינה',
+      minLength: (n) => `נדרשים לפחות ${n} תווים`,
     },
     coordinates: {
       import: 'יבא קואורדינטות',
@@ -1730,6 +1732,8 @@ export const i18n = {
     },
     validation: {
       required: 'This field is required',
+      email: 'Please enter a valid email address',
+      minLength: (n) => `At least ${n} characters required`,
     },
     coordinates: {
       import: 'Import Coordinates',
