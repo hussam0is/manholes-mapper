@@ -464,7 +464,7 @@ try { window.currentLang = currentLang; } catch (_) { }
 let viewScale = 1;
 let drawScheduled = false;
 let viewTranslate = { x: 0, y: 0 }; // screen-space translation (for pan/anchored zoom)
-const MIN_SCALE = 0.001;
+const MIN_SCALE = 0.02;
 const MAX_SCALE = 5.0;
 const SCALE_STEP = 1.1; // 10%
 // Canvas stretch state (separate X and Y scaling factors)
