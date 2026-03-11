@@ -1,0 +1,677 @@
+/* ═══════════════════════════════════════════════════════════════
+   Field Commander — Canvas-first UI
+   All styles scoped under body.fc-mode
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Hide old chrome ─────────────────────────────────────────── */
+
+body.fc-mode > header.app-header { display: none !important; }
+body.fc-mode #headerRecallHandle { display: none !important; }
+body.fc-mode #mobileMenu { display: none !important; }
+body.fc-mode #mobileMenuBackdrop { display: none !important; }
+body.fc-mode .canvas-toolbar { display: none !important; }
+body.fc-mode #canvasFabToolbar { display: none !important; }
+body.fc-mode #gpsQuickCaptureBtn { display: none !important; }
+body.fc-mode #surveyConnectionBadge { display: none !important; }
+body.fc-mode .cockpit { display: none !important; }
+
+/* ── Body layout override ────────────────────────────────────── */
+
+body.fc-mode {
+  --fc-status-h: 36px;
+  --fc-action-h: 60px;
+  --fc-safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+body.fc-mode #main {
+  margin-top: var(--fc-status-h);
+  margin-bottom: calc(var(--fc-action-h) + var(--fc-safe-bottom));
+}
+
+body.fc-mode #canvasContainer {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* ── Status Bar ──────────────────────────────────────────────── */
+
+.fc-status-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--fc-status-h);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  font-size: 12px;
+  color: var(--color-text, #1e293b);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.fc-status-bar__left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+.fc-status-bar__sketch-name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+.fc-status-bar__sync {
+  display: flex;
+  align-items: center;
+}
+
+.fc-status-bar__sync .material-icons {
+  font-size: 16px;
+  color: var(--color-text-secondary, #64748b);
+}
+
+.fc-sync--syncing .material-icons {
+  animation: fc-spin 1.5s linear infinite;
+}
+
+@keyframes fc-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.fc-status-bar__center {
+  flex: 1;
+  min-width: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.fc-progress-line {
+  width: 100%;
+  height: 3px;
+  background: var(--color-border, #e2e8f0);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.fc-progress-line__fill {
+  height: 100%;
+  border-radius: 2px;
+  width: 0%;
+  transition: width 600ms ease-out, background 400ms ease;
+}
+
+.fc-progress-line__fill[data-level="low"] {
+  background: #ef4444;
+}
+.fc-progress-line__fill[data-level="mid"] {
+  background: #f59e0b;
+}
+.fc-progress-line__fill[data-level="high"] {
+  background: #22c55e;
+}
+.fc-progress-line__fill[data-level="complete"] {
+  background: linear-gradient(90deg, #22c55e, #10b981);
+}
+
+.fc-status-bar__right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fc-status-bar__gps {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  background: transparent;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--color-text, #1e293b);
+  font-family: inherit;
+  min-height: 24px;
+}
+
+.fc-status-bar__gps:active {
+  background: var(--color-surface-alt, #f1f5f9);
+}
+
+.fc-gps-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #94a3b8;
+  flex-shrink: 0;
+}
+
+.fc-status-bar__menu {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--color-text, #1e293b);
+  padding: 0;
+}
+
+.fc-status-bar__menu:active {
+  background: var(--color-surface-alt, #f1f5f9);
+}
+
+.fc-status-bar__menu .material-icons {
+  font-size: 20px;
+}
+
+/* ── Bottom Action Bar ───────────────────────────────────────── */
+
+.fc-action-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--fc-action-h) + var(--fc-safe-bottom));
+  padding-bottom: var(--fc-safe-bottom);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-inline: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--color-border, #e2e8f0);
+}
+
+.fc-action-bar__modes {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.fc-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 52px;
+  height: 52px;
+  border: none;
+  background: transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  color: var(--color-text-secondary, #64748b);
+  padding: 4px 8px;
+  transition: color 150ms ease, background 150ms ease;
+  font-family: inherit;
+}
+
+.fc-action-btn:active {
+  background: var(--color-surface-alt, #f1f5f9);
+}
+
+.fc-action-btn .material-icons {
+  font-size: 22px;
+}
+
+.fc-action-btn__label {
+  font-size: 10px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.fc-action-btn--active {
+  color: var(--color-primary, #2563eb);
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.fc-action-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* ── Capture Button (center, raised) ─────────────────────────── */
+
+.fc-action-btn--capture {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--color-primary, #2563eb);
+  color: white;
+  margin-top: -18px;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  flex-shrink: 0;
+  transition: background 200ms ease, box-shadow 200ms ease, transform 150ms ease;
+}
+
+.fc-action-btn--capture:active {
+  transform: scale(0.93);
+  background: var(--color-primary, #2563eb);
+}
+
+.fc-action-btn--capture .material-icons {
+  font-size: 26px;
+}
+
+.fc-action-btn--capture .fc-action-btn__label {
+  display: none;
+}
+
+.fc-action-btn--capture.fc-capture--has-fix {
+  background: #3b82f6;
+}
+
+.fc-action-btn--capture.fc-capture--rtk {
+  background: #22c55e;
+  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.4);
+  animation: fc-pulse 2s ease-in-out infinite;
+}
+
+@keyframes fc-pulse {
+  0%, 100% { box-shadow: 0 4px 14px rgba(34, 197, 94, 0.35); }
+  50% { box-shadow: 0 4px 22px rgba(34, 197, 94, 0.65); }
+}
+
+/* ── XP Badge ────────────────────────────────────────────────── */
+
+.fc-action-bar__xp {
+  display: flex;
+  align-items: center;
+  padding-inline-end: 4px;
+}
+
+.fc-xp-badge {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-primary, #2563eb);
+  background: rgba(37, 99, 235, 0.08);
+  padding: 4px 10px;
+  border-radius: 12px;
+  white-space: nowrap;
+  transition: transform 200ms ease;
+}
+
+.fc-xp-badge.fc-xp-bump {
+  animation: fc-xp-bump 350ms cubic-bezier(.2, .8, .2, 1);
+}
+
+@keyframes fc-xp-bump {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+/* ── Panels ──────────────────────────────────────────────────── */
+
+.fc-panel {
+  position: fixed;
+  z-index: 190;
+  background: var(--color-surface, #ffffff);
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.08);
+  transition: transform 300ms cubic-bezier(.2, .8, .2, 1);
+  will-change: transform;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.fc-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  position: sticky;
+  top: 0;
+  background: inherit;
+  z-index: 1;
+}
+
+.fc-panel__title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.fc-panel__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--color-text-secondary, #64748b);
+}
+
+.fc-panel__close:active {
+  background: var(--color-surface-alt, #f1f5f9);
+}
+
+.fc-panel__close .material-icons {
+  font-size: 20px;
+}
+
+.fc-panel__body {
+  padding: 12px;
+}
+
+/* ── Right Panel (Properties) ────────────────────────────────── */
+
+.fc-panel--right {
+  top: var(--fc-status-h);
+  bottom: calc(var(--fc-action-h) + var(--fc-safe-bottom));
+  inset-inline-end: 0;
+  width: min(320px, 85vw);
+  transform: translateX(100%);
+}
+
+[dir="rtl"] .fc-panel--right {
+  transform: translateX(-100%);
+}
+
+.fc-panel--right.fc-panel--open {
+  transform: translateX(0);
+}
+
+/* ── Left Panel (Intel/Status) ───────────────────────────────── */
+
+.fc-panel--left {
+  top: var(--fc-status-h);
+  bottom: calc(var(--fc-action-h) + var(--fc-safe-bottom));
+  inset-inline-start: 0;
+  width: min(220px, 65vw);
+  transform: translateX(-100%);
+}
+
+[dir="rtl"] .fc-panel--left {
+  transform: translateX(100%);
+}
+
+.fc-panel--left.fc-panel--open {
+  transform: translateX(0);
+}
+
+/* ── Bottom Panel (Tools/Settings) ───────────────────────────── */
+
+.fc-panel--bottom {
+  left: 0;
+  right: 0;
+  bottom: calc(var(--fc-action-h) + var(--fc-safe-bottom));
+  max-height: 55vh;
+  border-radius: 16px 16px 0 0;
+  transform: translateY(100%);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.1);
+}
+
+.fc-panel--bottom.fc-panel--open {
+  transform: translateY(0);
+}
+
+.fc-panel__drag-handle {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 4px;
+}
+
+.fc-panel__drag-bar {
+  width: 36px;
+  height: 4px;
+  background: var(--color-border, #cbd5e1);
+  border-radius: 2px;
+}
+
+/* ── Scrim ───────────────────────────────────────────────────── */
+
+.fc-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  z-index: 185;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+}
+
+.fc-scrim--visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ── Bottom Sheet: Tool Grid ─────────────────────────────────── */
+
+.fc-tool-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding: 8px;
+}
+
+.fc-tool-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 12px 4px;
+  border: none;
+  background: var(--color-surface-alt, #f8fafc);
+  border-radius: 12px;
+  cursor: pointer;
+  color: var(--color-text, #1e293b);
+  min-height: 64px;
+  transition: background 150ms ease;
+  font-family: inherit;
+}
+
+.fc-tool-btn:active {
+  background: var(--color-border, #e2e8f0);
+}
+
+.fc-tool-btn .material-icons {
+  font-size: 22px;
+  color: var(--color-text-secondary, #64748b);
+}
+
+.fc-tool-btn__label {
+  font-size: 10px;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.fc-tool-section {
+  margin-bottom: 12px;
+}
+
+.fc-tool-section__title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary, #64748b);
+  padding: 0 12px 6px;
+}
+
+/* ── Left Panel: Intel Cards ─────────────────────────────────── */
+
+.fc-intel-card {
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--color-surface-alt, #f8fafc);
+  margin-bottom: 8px;
+}
+
+.fc-intel-card__title {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary, #64748b);
+  margin-bottom: 6px;
+}
+
+.fc-intel-card__value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text, #1e293b);
+  line-height: 1.2;
+}
+
+.fc-intel-card__sub {
+  font-size: 11px;
+  color: var(--color-text-secondary, #64748b);
+  margin-top: 2px;
+}
+
+.fc-intel-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  padding: 4px 0;
+}
+
+.fc-intel-row .material-icons {
+  font-size: 16px;
+  color: var(--color-text-secondary, #64748b);
+}
+
+/* ── Achievement Toast ───────────────────────────────────────── */
+
+.fc-achievement-toast {
+  position: fixed;
+  top: calc(var(--fc-status-h, 36px) + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px) scale(0.9);
+  background: var(--color-surface, #ffffff);
+  border: 2px solid #22c55e;
+  border-radius: 14px;
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  z-index: 300;
+  opacity: 0;
+  transition: opacity 350ms ease, transform 350ms cubic-bezier(.2, .8, .2, 1);
+  pointer-events: none;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.fc-achievement-toast.fc-achievement-toast--show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.fc-achievement-toast__icon {
+  font-size: 24px;
+}
+
+.fc-achievement-toast__icon--success {
+  color: #22c55e;
+}
+
+.fc-achievement-toast__icon--milestone {
+  color: #f59e0b;
+}
+
+.fc-achievement-toast__icon--info {
+  color: #3b82f6;
+}
+
+.fc-achievement-toast__text {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text, #1e293b);
+}
+
+.fc-achievement-toast__xp {
+  font-size: 15px;
+  font-weight: 700;
+  color: #22c55e;
+  white-space: nowrap;
+}
+
+.fc-achievement-toast__combo {
+  font-size: 10px;
+  font-weight: 600;
+  color: #f59e0b;
+  margin-inline-start: -4px;
+}
+
+/* ── Route Panel Transitions (FC mode) ───────────────────────── */
+
+body.fc-mode #homePanel,
+body.fc-mode #startPanel,
+body.fc-mode #helpModal {
+  transition: opacity 250ms ease, transform 250ms cubic-bezier(.2, .8, .2, 1);
+}
+
+/* ── Dark Mode ───────────────────────────────────────────────── */
+
+@media (prefers-color-scheme: dark) {
+  .fc-status-bar {
+    background: rgba(30, 30, 30, 0.88);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+  .fc-action-bar {
+    background: rgba(30, 30, 30, 0.92);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+  .fc-panel {
+    background: var(--color-surface, #1e1e1e);
+  }
+  .fc-action-btn--capture {
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+  }
+  .fc-achievement-toast {
+    background: var(--color-surface, #1e1e1e);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+}
+
+[data-theme="dark"] .fc-status-bar {
+  background: rgba(30, 30, 30, 0.88);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .fc-action-bar {
+  background: rgba(30, 30, 30, 0.92);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .fc-panel {
+  background: var(--color-surface, #1e1e1e);
+}
+
+[data-theme="dark"] .fc-tool-btn {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .fc-intel-card {
+  background: rgba(255, 255, 255, 0.05);
+}
