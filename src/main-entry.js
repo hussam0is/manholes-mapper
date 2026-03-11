@@ -48,6 +48,8 @@ import { getFixSuggestions } from './project/fix-suggestions.js';
 import { computeSketchIssues } from './project/sketch-issues.js';
 import './project/issue-nav-state.js'; // registers window.__issueNav
 import { initCockpit } from './cockpit/cockpit.js';
+import { initFieldCommander } from './field-commander/fc-shell.js';
+import { initFCTerritory } from './field-commander/fc-territory.js';
 import { showMeasurementRail, hideMeasurementRail } from './features/measurement-rail.js';
 
 // Initialize Vercel Speed Insights only when deployed on Vercel (production)
@@ -292,6 +294,10 @@ if (typeof window !== 'undefined') {
 
     // Initialize Cockpit layout (landscape-first three-zone layout)
     initCockpit();
+
+    // Initialize Field Commander (canvas-first UI) — feature-flagged
+    initFieldCommander();
+    initFCTerritory();
   });
 }
 

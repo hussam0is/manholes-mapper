@@ -5247,6 +5247,11 @@ function draw() {
   // Draw issue highlight animation (pulsing ring at issue location)
   drawIssueHighlight(ctx, viewScale, viewStretchX, viewStretchY, viewTranslate);
 
+  // Draw FC territory overlay (green glow on captured, red ring on missing)
+  if (typeof window.__fcTerritoryOverlay === 'function') {
+    window.__fcTerritoryOverlay(ctx, viewScale, viewTranslate, viewStretchX, viewStretchY);
+  }
+
   // Schedule another frame if animations are still running
   if (_animatingNodes.size > 0 || _animatingEdges.size > 0) {
     requestAnimationFrame(scheduleDraw);
