@@ -616,6 +616,13 @@ body.cockpit-mode.zone-a-collapsed .action-rail__btn--collapse .material-icons {
   display: block;
 }
 
+/* Hide more menu in portrait — only relevant in landscape cockpit mode */
+@media (orientation: portrait) {
+  .action-rail__more-menu {
+    display: none !important;
+  }
+}
+
 .action-rail__more-item {
   display: flex;
   align-items: center;
@@ -665,6 +672,14 @@ body.cockpit-mode.zone-a-collapsed .action-rail__btn--collapse .material-icons {
   height: 1px;
   background: var(--color-border);
   margin: 4px 8px;
+}
+
+/* ── More menu open — dim competing bottom elements ──────────── */
+body.cockpit-more-open .canvas-fab-toolbar,
+body.cockpit-more-open .take-measure-fab {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
 }
 
 /* ═══════════════════════════════════════════════════════════

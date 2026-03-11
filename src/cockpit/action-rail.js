@@ -152,6 +152,7 @@ export function initActionRail() {
       moreMenuOpen = !moreMenuOpen;
       moreMenu.classList.toggle('open', moreMenuOpen);
       moreBtn.setAttribute('aria-expanded', String(moreMenuOpen));
+      document.body.classList.toggle('cockpit-more-open', moreMenuOpen);
     });
 
     // Close on outside click (only when click is outside menu and button)
@@ -160,6 +161,7 @@ export function initActionRail() {
         moreMenuOpen = false;
         moreMenu.classList.remove('open');
         moreBtn.setAttribute('aria-expanded', 'false');
+        document.body.classList.remove('cockpit-more-open');
       }
     });
 
@@ -202,6 +204,7 @@ export function initActionRail() {
         moreMenuOpen = false;
         moreMenu.classList.remove('open');
         moreBtn.setAttribute('aria-expanded', 'false');
+        document.body.classList.remove('cockpit-more-open');
       });
     });
   }
