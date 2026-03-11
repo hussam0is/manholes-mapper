@@ -221,11 +221,11 @@ function updateCompletionRing(completion) {
   fill.style.strokeDashoffset = String(offset);
   text.textContent = `${pct}%`;
 
-  // Determine level
+  // Determine level: <25% = low (danger), 25-75% = mid (warning), 75-85% = high, 85%+ = complete
   let level = 'low';
   if (pct >= 85) level = 'complete';
-  else if (pct >= 60) level = 'high';
-  else if (pct >= 30) level = 'mid';
+  else if (pct >= 75) level = 'high';
+  else if (pct >= 25) level = 'mid';
 
   fill.setAttribute('data-level', level);
 

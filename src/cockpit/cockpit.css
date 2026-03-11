@@ -92,7 +92,7 @@ body.cockpit-mode #main {
 }
 
 .cockpit__progress-fill[data-level="high"] {
-  background: #eab308; /* yellow-500 */
+  background: var(--color-success);
 }
 
 .cockpit__progress-fill[data-level="complete"] {
@@ -181,7 +181,7 @@ body.cockpit-mode #main {
 
 .intel-gps__dot--rtk-fixed { background: #22c55e; }
 .intel-gps__dot--rtk-float { background: #3b82f6; }
-.intel-gps__dot--dgps { background: #f59e0b; }
+.intel-gps__dot--dgps { background: var(--color-warning); }
 .intel-gps__dot--gps { background: #eab308; }
 .intel-gps__dot--no-fix { background: #94a3b8; }
 
@@ -259,7 +259,7 @@ body.cockpit-mode #main {
 
 .completion-ring__fill[data-level="low"] { stroke: var(--color-danger); }
 .completion-ring__fill[data-level="mid"] { stroke: var(--color-warning); }
-.completion-ring__fill[data-level="high"] { stroke: #eab308; }
+.completion-ring__fill[data-level="high"] { stroke: var(--color-success); }
 .completion-ring__fill[data-level="complete"] { stroke: var(--color-success); }
 
 .completion-ring__text {
@@ -413,12 +413,12 @@ body.cockpit-mode #main {
   gap: 3px;
   font-size: var(--text-xs);
   font-weight: var(--font-semibold);
-  color: #f59e0b;
+  color: var(--color-warning);
 }
 
 .intel-session__streak .material-icons {
   font-size: 14px;
-  color: #f59e0b;
+  color: var(--color-warning);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -718,7 +718,7 @@ body.cockpit-mode.mode-gps #canvasContainer {
 
 .quick-win-toast__icon--success { color: var(--color-success); }
 .quick-win-toast__icon--info { color: var(--color-primary); }
-.quick-win-toast__icon--milestone { color: #f59e0b; }
+.quick-win-toast__icon--milestone { color: var(--color-warning); }
 
 .quick-win-toast__text {
   font-size: var(--text-sm);
