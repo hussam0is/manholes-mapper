@@ -129,6 +129,10 @@ export function initXPTracker() {
     menuEvents.on('issues:allResolved', () => {
       xpTracker.award('issue_resolved');
     });
+
+    menuEvents.on('measurement:filled', () => {
+      xpTracker.award('measurement_filled');
+    });
   }
 
   // Track GPS captures via gnssState

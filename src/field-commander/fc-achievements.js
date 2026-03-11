@@ -40,6 +40,9 @@ export function initFCAchievements() {
     });
   }
 
+  // Week streak check
+  checkWeekStreak();
+
   // First RTK fix of the day
   const gnssState = window.__gnssState;
   if (gnssState) {
@@ -69,6 +72,45 @@ function checkNodeMilestone() {
       break;
     }
   }
+}
+
+function checkWeekStreak() {
+  try {
+    const stored = JSON.parse(localStorage.getItem('cockpit_streak') || '{}');
+    const days = (stored.days || []).sort();
+    if (!days.length) return;
+
+    const today = new Date();
+    let streak = 0;
+    const checkDate = new Date(today);
+    const todayStr = checkDate.toISOString().slice(0, 10);
+
+    if (days.includes(todayStr)) {
+      streak = 1;
+      checkDate.setDate(checkDate.getDate() - 1);
+    } else {
+      checkDate.setDate(checkDate.getDate() - 1);
+    }
+
+    for (let i = 0; i < 365; i++) {
+      const dateStr = checkDate.toISOString().slice(0, 10);
+      if (days.includes(dateStr)) {
+        streak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+
+    if (streak >= 7) {
+      const shown = getShownToday();
+      const weekKey = `week_streak_${todayStr}`;
+      if (!shown.includes(weekKey)) {
+        markShown(weekKey);
+        showAchievement('milestone', 'local_fire_department', getMsg('weekStreak', String(streak)));
+      }
+    }
+  } catch { /* ignore */ }
 }
 
 // ── Show Toast ─────────────────────────────────────────────────
@@ -135,7 +177,8 @@ function getMsg(key, ...args) {
     rtkReady: 'RTK Fixed — ready to survey!',
     sketchComplete: 'Sketch complete — zero issues!',
     allIssuesResolved: 'All issues resolved!',
-    nodeMilestone: `${args[0]} nodes mapped — great session!`
+    nodeMilestone: `${args[0]} nodes mapped — great session!`,
+    weekStreak: `${args[0]}-day streak — keep it up!`
   };
 
   return fallbacks[key] || key;

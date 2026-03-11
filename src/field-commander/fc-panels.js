@@ -32,6 +32,7 @@ class FCPanelManager {
     panel.classList.add('fc-panel--open');
     panel.setAttribute('aria-hidden', 'false');
     this.showScrim();
+    navigator.vibrate?.([10]);
   }
 
   close(name) {
@@ -209,6 +210,13 @@ function buildLeftPanel() {
           <span>${esc(t('fc.days'))}</span>
         </div>
       </div>
+      <div class="fc-intel-card" id="fcIntelSync">
+        <div class="fc-intel-card__title">${esc(t('fc.syncStatus'))}</div>
+        <div class="fc-intel-row">
+          <span class="material-icons" id="fcIntelSyncIcon">cloud_done</span>
+          <span id="fcIntelSyncLabel">${esc(t('fc.synced'))}</span>
+        </div>
+      </div>
     </div>
   `;
 
@@ -219,6 +227,9 @@ function buildLeftPanel() {
 
   // Wire GNSS updates to left panel
   wireLeftPanelGPS();
+
+  // Wire sync status to left panel
+  wireLeftPanelSync();
 
   // Start session timer for left panel
   startLeftPanelSessionTimer();
@@ -275,6 +286,30 @@ function wireLeftPanelGPS() {
 
   gnssState.on('position', update);
   gnssState.on('connection', update);
+}
+
+function wireLeftPanelSync() {
+  if (!window.menuEvents) return;
+  const t = window.t || (k => k);
+  window.menuEvents.on('sync:stateChange', (state) => {
+    const icon = document.getElementById('fcIntelSyncIcon');
+    const label = document.getElementById('fcIntelSyncLabel');
+    if (!icon || !label) return;
+
+    if (state?.isSyncing) {
+      icon.textContent = 'sync';
+      label.textContent = t('fc.syncing');
+    } else if (state?.isOnline === false) {
+      icon.textContent = 'cloud_off';
+      label.textContent = t('fc.offline');
+    } else if (state?.error) {
+      icon.textContent = 'error_outline';
+      label.textContent = t('fc.syncError');
+    } else {
+      icon.textContent = 'cloud_done';
+      label.textContent = t('fc.synced');
+    }
+  });
 }
 
 let sessionStart = Date.now();
@@ -426,6 +461,32 @@ function buildBottomPanel() {
         </div>
       </div>
       <div class="fc-tool-section">
+        <div class="fc-tool-section__title">${esc(t('fc.measurement'))}</div>
+        <div class="fc-tool-grid">
+          <button class="fc-tool-btn" data-fc-action-emit="liveMeasure:toggle" type="button">
+            <span class="material-icons">gps_fixed</span>
+            <span class="fc-tool-btn__label">${esc(t('fc.liveMeasure'))}</span>
+          </button>
+          <button class="fc-tool-btn" data-fc-action-emit="tsc3:connect" type="button">
+            <span class="material-icons">settings_remote</span>
+            <span class="fc-tool-btn__label">${esc(t('fc.tsc3'))}</span>
+          </button>
+        </div>
+      </div>
+      <div class="fc-tool-section">
+        <div class="fc-tool-section__title">${esc(t('fc.settings'))}</div>
+        <div class="fc-tool-grid">
+          <button class="fc-tool-btn" data-fc-lang-toggle type="button">
+            <span class="material-icons">language</span>
+            <span class="fc-tool-btn__label" id="fcLangLabel">${esc(t('fc.language'))}</span>
+          </button>
+          <button class="fc-tool-btn" data-fc-fc-toggle type="button">
+            <span class="material-icons">toggle_on</span>
+            <span class="fc-tool-btn__label">${esc(t('fc.fcMode'))}</span>
+          </button>
+        </div>
+      </div>
+      <div class="fc-tool-section">
         <div class="fc-tool-section__title">${esc(t('fc.navigation'))}</div>
         <div class="fc-tool-grid">
           <button class="fc-tool-btn" data-fc-navigate="#/" type="button">
@@ -440,9 +501,9 @@ function buildBottomPanel() {
             <span class="material-icons">folder_open</span>
             <span class="fc-tool-btn__label">${esc(t('fc.projects'))}</span>
           </button>
-          <button class="fc-tool-btn" data-fc-lang-toggle type="button">
-            <span class="material-icons">language</span>
-            <span class="fc-tool-btn__label" id="fcLangLabel">${esc(t('fc.language'))}</span>
+          <button class="fc-tool-btn" data-fc-delegate="helpDialogBtn" type="button">
+            <span class="material-icons">help_outline</span>
+            <span class="fc-tool-btn__label">${esc(t('fc.help'))}</span>
           </button>
         </div>
       </div>
@@ -484,6 +545,13 @@ function buildBottomPanel() {
         langSelect.dispatchEvent(new Event('change', { bubbles: true }));
       }
       fcPanels.close('bottom');
+      return;
+    }
+
+    const fcToggle = e.target.closest('[data-fc-fc-toggle]');
+    if (fcToggle) {
+      // Dynamic import to avoid circular dependency
+      import('./fc-shell.js').then(m => m.setFCMode(false));
     }
   });
 }

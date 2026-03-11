@@ -202,6 +202,7 @@ function wireModeDelegation() {
     btn.addEventListener('click', () => {
       const origId = modeMap[btn.dataset.fcMode];
       if (origId) document.getElementById(origId)?.click();
+      navigator.vibrate?.([10]);
     });
   });
 

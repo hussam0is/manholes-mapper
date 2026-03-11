@@ -1179,6 +1179,7 @@ function handleRoute() {
 }
 function _handleRouteImpl() {
   const hash = location.hash || '#/';
+  if (window.__fcShell?.onRouteChange) window.__fcShell.onRouteChange(hash);
   const isAdmin = (hash === '#/admin');
   const isProjects = (hash === '#/projects');
   const isLogin = (hash === '#/login');
