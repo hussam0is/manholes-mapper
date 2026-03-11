@@ -13190,7 +13190,7 @@ button:focus-visible,
        header via --header-h variable, keeping them as a visual unit.
        When header hides (--header-h: 0px), toolbar hugs the top edge. */
     position: fixed;
-    top: calc(var(--header-h, 36px) + 4px);
+    top: calc(var(--header-h, 36px) + 16px);
     right: 50%;
     transform: translateX(50%);
     transition: top 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -13239,10 +13239,10 @@ button:focus-visible,
   }
 
   /* Edge legend below toolbar row, follows header via --header-h.
-     Toolbar is at --header-h + 4px and is ~40px tall, so legend starts at +48px. */
+     Toolbar is at --header-h + 16px and is ~40px tall, so legend starts at +60px. */
   .edge-legend {
     position: fixed;
-    top: calc(var(--header-h, 36px) + 48px);
+    top: calc(var(--header-h, 36px) + 60px);
     inset-inline-start: 4px;
     transition: top 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     font-size: 10px;
