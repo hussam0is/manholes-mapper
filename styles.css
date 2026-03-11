@@ -10897,12 +10897,19 @@ button:focus-visible,
   align-items: center;
   flex-wrap: wrap;
   gap: 4px 8px;
-  padding: 8px 10px;
+  padding: 12px 10px;
   border-radius: 8px;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, box-shadow 0.15s, border-color 0.15s;
   font-size: 13px;
   min-height: var(--touch-target-min, 44px);
+  border-bottom: 1px solid var(--color-border-light, #f1f5f9);
+  border-inline-start: 4px solid transparent;
+  position: relative;
+}
+
+.sketch-side-panel__item:last-child {
+  border-bottom: none;
 }
 
 .sketch-side-panel__item:hover {
@@ -10910,8 +10917,10 @@ button:focus-visible,
 }
 
 .sketch-side-panel__item.active {
-  background: var(--color-accent-light, #dbeafe);
+  background: var(--color-primary-light, #dbeafe);
   font-weight: 600;
+  border-inline-start-color: var(--color-primary, #2563eb);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .sketch-side-panel__eye {
@@ -10941,9 +10950,27 @@ button:focus-visible,
   flex: 1 1 auto;
   min-width: 60px;
   display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.sketch-side-panel__info-row {
+  display: flex;
   align-items: center;
   gap: 6px;
-  overflow: hidden;
+}
+
+.sketch-side-panel__km-secondary {
+  font-size: 11px;
+  color: var(--color-text-muted, #64748b);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.sketch-side-panel__km-secondary .material-icons {
+  font-size: 13px;
 }
 
 .sketch-side-panel__name {
@@ -10965,6 +10992,24 @@ button:focus-visible,
   font-size: 16px;
   color: var(--color-accent, #2563eb);
   flex-shrink: 0;
+}
+
+.sketch-side-panel__editing-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-primary, #2563eb);
+  background: rgba(37, 99, 235, 0.1);
+  padding: 1px 6px;
+  border-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sketch-side-panel__editing-badge .material-icons {
+  font-size: 12px;
 }
 
 .sketch-side-panel__empty {
@@ -11004,15 +11049,16 @@ button:focus-visible,
 .sketch-side-panel__issues-btn {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
   background: var(--color-danger-light, #fee2e2);
   color: var(--color-danger, #ef4444);
   border: none;
-  border-radius: 10px;
-  padding: 2px 8px;
-  font-size: 11px;
+  border-radius: 12px;
+  padding: 3px 10px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
+  min-width: 28px;
   min-height: 32px;
   transition: background 0.15s;
 }
@@ -11023,7 +11069,7 @@ button:focus-visible,
 }
 
 .sketch-side-panel__issues-btn .material-icons {
-  font-size: 14px;
+  font-size: 15px;
 }
 
 /* Severity color coding: >100 issues = red, 50-100 = orange, <50 = yellow */
@@ -11092,13 +11138,66 @@ button:focus-visible,
   align-items: flex-start;
   flex-wrap: wrap;
   gap: 4px 8px;
-  padding: 8px 16px;
+  padding: 10px 12px;
   border-top: 1px solid var(--color-border, #e2e8f0);
   font-size: 12px;
   color: var(--color-text-secondary, #475569);
   flex-shrink: 0;
 }
 
+.sketch-side-panel__totals-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  width: 100%;
+}
+
+.sketch-side-panel__totals-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+  height: 22px;
+}
+
+.sketch-side-panel__totals-chip .material-icons {
+  font-size: 13px;
+}
+
+.sketch-side-panel__totals-chip--issues {
+  font-weight: 600;
+}
+
+.sketch-side-panel__totals-chip--issues.sketch-side-panel__totals-issues--ok {
+  background: rgba(34, 197, 94, 0.1);
+  color: var(--color-success, #22c55e);
+}
+
+.sketch-side-panel__totals-chip--issues.sketch-side-panel__totals-issues--warn {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--color-danger, #ef4444);
+}
+
+.sketch-side-panel__totals-chip--km {
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--color-primary, #2563eb);
+}
+
+.sketch-side-panel__totals-chip--coords {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--color-warning, #f59e0b);
+}
+
+.sketch-side-panel__totals-chip--pipes {
+  background: var(--color-surface-alt, #f1f5f9);
+  color: var(--color-text-secondary, #475569);
+}
+
+/* Legacy totals classes kept for compatibility */
 .sketch-side-panel__totals-km {
   font-weight: 500;
 }
@@ -11120,25 +11219,6 @@ button:focus-visible,
 
 .sketch-side-panel__totals-issues--warn {
   color: var(--color-danger, #ef4444);
-}
-
-/* Issue type breakdown below the totals summary row */
-.sketch-side-panel__totals-breakdown {
-  width: 100%;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding-top: 4px;
-  border-top: 1px dashed var(--color-border, #e2e8f0);
-  font-size: 11px;
-  color: var(--color-text-secondary, #475569);
-}
-
-.sketch-side-panel__totals-breakdown-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  white-space: nowrap;
 }
 
 /* ── Issues sub-panel ──────────────────────────────────────────────── */
@@ -11557,9 +11637,10 @@ button:focus-visible,
     gap: 2px 6px;
   }
 
-  .sketch-side-panel__totals-breakdown {
+  .sketch-side-panel__totals-chip {
     font-size: 0.6rem;
-    gap: 3px;
+    padding: 1px 4px;
+    height: 18px;
   }
 
   .sketch-side-panel-toggle {
@@ -11613,8 +11694,14 @@ button:focus-visible,
     border-color: var(--color-border, #334155);
   }
 
+  .sketch-side-panel__item {
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+  }
+
   .sketch-side-panel__item.active {
     background: rgba(37, 99, 235, 0.2);
+    border-inline-start-color: var(--color-accent, #60a5fa);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
   }
 
   .sketch-side-panel__eye:hover {
@@ -11624,6 +11711,11 @@ button:focus-visible,
   .sketch-side-panel__badge {
     background: var(--color-surface-alt, #1e293b);
     color: var(--color-text-secondary, #94a3b8);
+  }
+
+  .sketch-side-panel__editing-badge {
+    color: var(--color-accent, #60a5fa);
+    background: rgba(96, 165, 250, 0.15);
   }
 
   .sketch-side-panel__recenter-btn {
@@ -11652,6 +11744,21 @@ button:focus-visible,
 
   .sketch-side-panel__totals {
     border-color: var(--color-border, #334155);
+  }
+
+  .sketch-side-panel__totals-chip--km {
+    background: rgba(96, 165, 250, 0.15);
+    color: var(--color-accent, #60a5fa);
+  }
+
+  .sketch-side-panel__totals-chip--coords {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--color-warning, #f59e0b);
+  }
+
+  .sketch-side-panel__totals-chip--pipes {
+    background: var(--color-surface-alt, #1e293b);
+    color: var(--color-text-secondary, #94a3b8);
   }
 
   .sketch-side-panel__issues-summary {

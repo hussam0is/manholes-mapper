@@ -264,23 +264,33 @@ function renderListView() {
          </button>`
       : '';
 
+    const editingBadge = sketch.isActive
+      ? `<span class="sketch-side-panel__editing-badge">
+           <span class="material-icons">edit</span>${t('projects.canvas.editing') || 'Editing'}
+         </span>`
+      : '';
+
     item.innerHTML = `
       <button class="sketch-side-panel__eye" title="${sketch.isVisible ? t('projects.canvas.hide') || 'Hide' : t('projects.canvas.show') || 'Show'}">
         <span class="material-icons">${sketch.isVisible ? 'visibility' : 'visibility_off'}</span>
       </button>
       <div class="sketch-side-panel__info">
-        <span class="sketch-side-panel__name">${esc(displayName)}</span>
-        <span class="sketch-side-panel__badge">${nodeCount}</span>
+        <div class="sketch-side-panel__info-row">
+          <span class="sketch-side-panel__name">${esc(displayName)}</span>
+          <span class="sketch-side-panel__badge">${nodeCount}</span>
+          ${editingBadge}
+        </div>
+        <span class="sketch-side-panel__km-secondary">
+          <span class="material-icons">straighten</span>${km} ${t('projects.canvas.totalKm') || 'km'}
+        </span>
       </div>
       <div class="sketch-side-panel__stats">
-        <span class="sketch-side-panel__km">${km} ${t('projects.canvas.totalKm') || 'km'}</span>
         ${issuesBadge}
         ${mergeModeBtn}
         <button class="sketch-side-panel__recenter-btn" data-sketch-recenter="${sketch.id}" title="${t('projects.canvas.recenterToSketch') || 'Recenter to sketch'}">
           <span class="material-icons">center_focus_strong</span>
         </button>
       </div>
-      ${sketch.isActive ? '<span class="material-icons sketch-side-panel__active-icon">edit</span>' : ''}
     `;
 
     // Eye toggle
@@ -340,34 +350,31 @@ function renderListView() {
   const issuesClass = totals.issueCount > 0 ? 'sketch-side-panel__totals-issues--warn' : 'sketch-side-panel__totals-issues--ok';
   const issuesIcon = totals.issueCount > 0 ? 'warning' : 'check_circle';
 
-  // Build breakdown text for totals
-  let breakdownHtml = '';
-  if (totals.issueCount > 0) {
-    const breakdownParts = [];
-    if (totals.missingCoordsCount > 0) {
-      breakdownParts.push(`<span class="sketch-side-panel__totals-breakdown-item">
-        <span class="material-icons" style="font-size:13px;vertical-align:middle">location_off</span>
-        ${totals.missingCoordsCount} ${t('projects.canvas.missingCoords') || 'missing coords'}
-      </span>`);
-    }
-    if (totals.missingPipeDataCount > 0) {
-      breakdownParts.push(`<span class="sketch-side-panel__totals-breakdown-item">
-        <span class="material-icons" style="font-size:13px;vertical-align:middle">rule</span>
-        ${totals.missingPipeDataCount} ${t('projects.canvas.missingPipeData') || 'missing pipe data'}
-      </span>`);
-    }
-    if (breakdownParts.length > 0) {
-      breakdownHtml = `<div class="sketch-side-panel__totals-breakdown">${breakdownParts.join('')}</div>`;
-    }
-  }
+  // (breakdown is now integrated into the totals chips below)
 
   totalsEl.innerHTML = `
-    <span class="sketch-side-panel__totals-km">${totals.totalKm.toFixed(2)} ${t('projects.canvas.totalKm') || 'km'}</span>
-    <span class="sketch-side-panel__totals-issues ${issuesClass}">
-      <span class="material-icons">${issuesIcon}</span>
-      ${totals.issueCount} ${t('projects.canvas.issues') || 'Issues'}
-    </span>
-    ${breakdownHtml}
+    <div class="sketch-side-panel__totals-chips">
+      <span class="sketch-side-panel__totals-chip sketch-side-panel__totals-chip--issues ${issuesClass}">
+        <span class="material-icons">${issuesIcon}</span>
+        ${totals.issueCount} ${t('projects.canvas.issues') || 'Issues'}
+      </span>
+      <span class="sketch-side-panel__totals-chip sketch-side-panel__totals-chip--km">
+        <span class="material-icons">straighten</span>
+        ${totals.totalKm.toFixed(2)} ${t('projects.canvas.totalKm') || 'km'}
+      </span>
+      ${totals.missingCoordsCount > 0 ? `
+        <span class="sketch-side-panel__totals-chip sketch-side-panel__totals-chip--coords">
+          <span class="material-icons">location_off</span>
+          ${totals.missingCoordsCount} ${t('projects.canvas.missingCoords') || 'missing coords'}
+        </span>
+      ` : ''}
+      ${totals.missingPipeDataCount > 0 ? `
+        <span class="sketch-side-panel__totals-chip sketch-side-panel__totals-chip--pipes">
+          <span class="material-icons">plumbing</span>
+          ${totals.missingPipeDataCount} ${t('projects.canvas.missingPipeData') || 'missing pipe data'}
+        </span>
+      ` : ''}
+    </div>
   `;
   // Insert after listEl (inside panelEl)
   listEl.parentNode.insertBefore(totalsEl, listEl.nextSibling);

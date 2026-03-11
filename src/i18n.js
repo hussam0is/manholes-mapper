@@ -615,6 +615,7 @@ export const i18n = {
         applyMerge: 'יישם מיזוג',
         mergeErrorSourceNotFound: 'שרטוט מקור לא נמצא',
         mergeErrorNodeNotFound: 'שוחה לא נמצאה',
+        editing: 'עריכה',
       },
     },
     inputFlow: {
@@ -1681,6 +1682,7 @@ export const i18n = {
         applyMerge: 'Apply merge fix',
         mergeErrorSourceNotFound: 'Source sketch not found',
         mergeErrorNodeNotFound: 'Nearby node not found',
+        editing: 'Editing',
       },
     },
     inputFlow: {
