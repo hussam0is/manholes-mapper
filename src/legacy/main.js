@@ -8552,7 +8552,8 @@ canvas.addEventListener('touchstart', (e) => {
   commitIdInputIfFocused();
   if (e.touches.length > 0) {
     e.preventDefault();
-    const rect = getCachedCanvasRect(); // cached — avoids layout reflow
+    invalidateCanvasRectCache(); // panels/drawers may have shifted canvas since last touch
+    const rect = getCachedCanvasRect(); // refreshed cache — touchmove reuses it
     if (e.touches.length >= 2) {
       // Initialize pinch zoom
       isPinching = true;
@@ -11511,7 +11512,7 @@ document.addEventListener('keyup', (e) => {
 let _zoomToastTimer = 0;
 canvas.addEventListener('wheel', (e) => {
   e.preventDefault();
-  const rect = getCachedCanvasRect(); // use cached rect to avoid layout reflow
+  const rect = canvas.getBoundingClientRect(); // fresh rect — panels/drawers can shift canvas position
   const mouseX = e.clientX - rect.left;
   const mouseY = e.clientY - rect.top;
   const focusWorld = screenToWorld(mouseX, mouseY);
