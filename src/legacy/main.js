@@ -934,6 +934,16 @@ function closeAdminModal() {
 async function openAdminScreen() {
   if (!adminScreen || !adminScreenContent) return;
 
+  // Show admin screen and hide main content IMMEDIATELY so the user
+  // doesn't see canvas/project data while the admin module loads.
+  if (adminScreenTitleEl) {
+    const titleText = adminScreenTitleEl.querySelector('.admin-title-text');
+    if (titleText) titleText.textContent = t('adminPanel.tabs.settings');
+  }
+  if (mainEl) mainEl.style.display = 'none';
+  adminScreen.style.display = 'block';
+  applyLangToStaticUI();
+
   // Lazy-load AdminPanel hub (admin-only module)
   const { AdminPanel } = await import('../admin/admin-panel.js');
 
@@ -963,14 +973,6 @@ async function openAdminScreen() {
   if (prevTab) {
     try { adminSettingsScreen.setActiveTab(prevTab); } catch (_) { }
   }
-
-  if (adminScreenTitleEl) {
-    const titleText = adminScreenTitleEl.querySelector('.admin-title-text');
-    if (titleText) titleText.textContent = t('adminPanel.tabs.settings');
-  }
-  if (mainEl) mainEl.style.display = 'none';
-  adminScreen.style.display = 'block';
-  applyLangToStaticUI();
 }
 
 function closeAdminScreen() {
@@ -1254,8 +1256,9 @@ function _handleRouteImpl() {
   if (isAdmin) {
     try { document.body.classList.add('admin-screen'); } catch (_) { }
     try { closeAdminModal(); } catch (_) { }
-    try { openAdminScreen(); } catch (_) { }
     try { closeProjectsScreen(); } catch (_) { }
+    hideHome(true);
+    openAdminScreen().catch(e => console.error('[Admin] Failed to open admin screen:', e));
   } else if (isProjects) {
     // Handle projects route
     try { document.body.classList.add('admin-screen'); } catch (_) { }
