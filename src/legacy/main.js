@@ -5223,18 +5223,21 @@ function draw() {
   // The cache (_edgeLabelDataCache) is invalidated by markEdgeLabelCacheDirty(), which is
   // called from saveToStorage() and whenever the edges array is replaced (load/new sketch).
   // Also rebuilt when viewStretchX/Y or sizeScale change since positions depend on them.
+  // Quantize viewScale to 2 decimal places: during zoom gestures viewScale changes every
+  // frame, but the visual difference at 2dp is imperceptible for label positioning.
+  const _quantizedSizeVS = Math.round(sizeVS * 100) / 100;
   if (
     _edgeLabelDataCache === null ||
     _edgeLabelCacheStretchX !== viewStretchX ||
     _edgeLabelCacheStretchY !== viewStretchY ||
     _edgeLabelCacheSizeScale !== sizeScale ||
-    _edgeLabelCacheViewScale !== sizeVS
+    _edgeLabelCacheViewScale !== _quantizedSizeVS
   ) {
     _edgeLabelDataCache = [];
     _edgeLabelCacheStretchX = viewStretchX;
     _edgeLabelCacheStretchY = viewStretchY;
     _edgeLabelCacheSizeScale = sizeScale;
-    _edgeLabelCacheViewScale = sizeVS;
+    _edgeLabelCacheViewScale = _quantizedSizeVS;
     edges.forEach((edge) => {
       const tailNode = edge.tail != null ? nodeMap.get(String(edge.tail)) : undefined;
       const headNode = edge.head != null ? nodeMap.get(String(edge.head)) : undefined;
@@ -5262,8 +5265,8 @@ function draw() {
 
       const normX = dx / length;
       const normY = dy / length;
-      const offset = 6 * sizeScale / sizeVS;
-      const fontSize = Math.round(14 * sizeScale / sizeVS);
+      const offset = 6 * sizeScale / _quantizedSizeVS;
+      const fontSize = Math.round(14 * sizeScale / _quantizedSizeVS);
 
       if (edge.tail_measurement) {
         const ratio = 0.25;
