@@ -9287,6 +9287,151 @@ select.invalid:focus {
   color: var(--color-primary);
 }
 
+/* =============================================
+   Project Loading Overlay
+   =============================================
+   Full-screen overlay shown when opening a project canvas.
+   Hides the empty canvas during data fetch / canvas prep.
+*/
+.project-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg);
+}
+
+.project-loading-card {
+  background: var(--color-surface);
+  border-radius: 16px;
+  padding: 32px;
+  width: min(400px, calc(100vw - 32px));
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.project-loading-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.project-loading-icon {
+  font-size: 28px;
+  color: var(--color-primary);
+}
+
+.project-loading-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.project-loading-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.project-loading-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--color-border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.project-loading-bar-fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+  width: 0%;
+}
+
+.project-loading-percent {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  min-width: 36px;
+  text-align: end;
+}
+
+.project-loading-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.project-loading-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.project-loading-step .material-icons {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.project-loading-step__label {
+  flex: 1;
+  font-size: 0.875rem;
+  color: var(--color-text);
+}
+
+.project-loading-step__detail {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+/* Step states */
+.project-loading-step--pending .material-icons {
+  color: var(--color-border);
+}
+
+.project-loading-step--loading .material-icons {
+  color: var(--color-primary);
+  animation: spin 1s linear infinite;
+}
+
+.project-loading-step--done .material-icons {
+  color: var(--color-success, #22c55e);
+}
+
+.project-loading-step--error .material-icons {
+  color: var(--color-danger, #ef4444);
+}
+
+/* Fade-out animation for closing */
+.project-loading-overlay--closing {
+  animation: projectLoadingFadeOut 0.3s ease forwards;
+}
+
+@keyframes projectLoadingFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Mobile adjustments */
+@media (max-width: 480px) {
+  .project-loading-card {
+    padding: 24px 20px;
+    border-radius: 12px;
+  }
+
+  .project-loading-title {
+    font-size: 1.1rem;
+  }
+}
+
 /* Auth component overrides */
 .auth-root-box {
   width: 100%;

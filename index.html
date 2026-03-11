@@ -332,6 +332,23 @@
   </div>
 
   <!-- Auth Loading Overlay -->
+  <!-- Project loading overlay — shown when opening a project canvas -->
+  <div id="projectLoadingOverlay" class="project-loading-overlay" style="display:none">
+    <div class="project-loading-card">
+      <div class="project-loading-header">
+        <span class="material-icons project-loading-icon">folder_open</span>
+        <h2 class="project-loading-title" data-i18n="projects.canvas.loadingTitle">Loading Project</h2>
+      </div>
+      <div class="project-loading-progress">
+        <div class="project-loading-bar">
+          <div class="project-loading-bar-fill" id="projectLoadingBarFill"></div>
+        </div>
+        <span class="project-loading-percent" id="projectLoadingPercent">0%</span>
+      </div>
+      <div class="project-loading-steps" id="projectLoadingSteps"></div>
+    </div>
+  </div>
+
   <div id="authLoadingOverlay" class="auth-loading-overlay" style="display: none;">
     <div class="auth-loading-content">
       <span class="material-icons spin">sync</span>

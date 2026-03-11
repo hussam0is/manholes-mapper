@@ -141,6 +141,7 @@ import {
 } from '../project/project-canvas-state.js';
 import { drawBackgroundSketches, drawMergeModeOverlay, invalidateBackgroundCache } from '../project/project-canvas-renderer.js';
 import { initSketchSidePanel, showSketchSidePanel, hideSketchSidePanel } from '../project/sketch-side-panel.js';
+import { showProjectLoadingOverlay, updateLoadingStep, hideProjectLoadingOverlay, forceCloseProjectLoadingOverlay } from '../project/project-loading-overlay.js';
 import { SpatialGrid, buildNodeGrid, buildEdgeGrid } from '../utils/spatial-grid.js';
 import { renderCache } from '../utils/render-cache.js';
 import { renderPerf } from '../utils/render-perf.js';
@@ -2409,9 +2410,9 @@ async function loadProjectReferenceLayers(projectId) {
   if (!projectId) {
     clearReferenceLayers();
     scheduleDraw();
-    return;
+    return { layerCount: 0 };
   }
-  
+
   try {
     // Check IndexedDB cache first
     const cacheKey = `refLayers_${projectId}`;
@@ -2426,7 +2427,7 @@ async function loadProjectReferenceLayers(projectId) {
         }
       }
     } catch (_) { /* ignore cache errors */ }
-    
+
     if (cached) {
       setReferenceLayers(cached);
       loadRefLayerSettings();
@@ -2435,19 +2436,19 @@ async function loadProjectReferenceLayers(projectId) {
       updateLayersPanel();
       scheduleDraw();
       console.debug(`[RefLayers] Loaded ${cached.length} layers from cache for project ${projectId}`);
-      return; // Skip server fetch when cache is fresh (< 1 hour)
+      return { layerCount: cached.length }; // Skip server fetch when cache is fresh (< 1 hour)
     }
 
     // Cache miss or stale — fetch from server
     const response = await fetch(`/api/layers?projectId=${projectId}&full=true`);
     if (!response.ok) {
       console.warn('[RefLayers] Failed to fetch layers:', response.status);
-      return;
+      return { layerCount: 0 };
     }
-    
+
     const data = await response.json();
     const layers = data.layers || [];
-    
+
     setReferenceLayers(layers);
     loadRefLayerSettings();
     loadSectionSettings();
@@ -2462,10 +2463,12 @@ async function loadProjectReferenceLayers(projectId) {
         layers
       }));
     } catch (_) { /* localStorage may be full */ }
-    
+
     console.debug(`[RefLayers] Loaded ${layers.length} layers from server for project ${projectId}`);
+    return { layerCount: layers.length };
   } catch (err) {
     console.warn('[RefLayers] Error loading reference layers:', err.message);
+    return { layerCount: 0 };
   }
 }
 
@@ -3499,6 +3502,10 @@ function repositionAllProjectSketchNodes(sketches) {
 
 /**
  * Enter project-canvas mode: load all sketches for a project onto the canvas.
+ *
+ * Shows a full-screen loading overlay with step progress, fetches sketches and
+ * layers in parallel, prepares the canvas, and then pre-caches map tiles in
+ * the background after the overlay closes.
  */
 async function loadProjectCanvas(projectId) {
   // Long Task observer — detects ANY >50ms main-thread block (debug only)
@@ -3514,49 +3521,81 @@ async function loadProjectCanvas(projectId) {
     } catch (_) { /* longtask not supported */ }
   }
 
+  // 1. Show loading overlay IMMEDIATELY (before anything else)
+  showProjectLoadingOverlay();
+  updateLoadingStep('sketches', 'loading');
+  updateLoadingStep('layers', 'loading');
+
   try {
     const _t0 = performance.now();
     if (_perfDebug) console.time('[PERF] loadProjectCanvas TOTAL');
     if (_perfDebug) console.log(`[PERF] ▶ loadProjectCanvas START at ${_t0.toFixed(0)}ms since page load`);
-    hideHome(true); // Immediate hide to prevent sync-service race condition
-    showToast(t('projects.canvas.loading') || 'Loading project sketches...');
 
-    if (_perfDebug) console.time('[PERF] loadProjectSketches (API fetch)');
-    const sketches = await loadProjectSketches(projectId);
-    if (_perfDebug) console.timeEnd('[PERF] loadProjectSketches (API fetch)');
-    if (_perfDebug) console.log(`[PERF] Loaded ${sketches.length} sketches, total nodes: ${sketches.reduce((s, sk) => s + (sk.nodes?.length || 0), 0)}, total edges: ${sketches.reduce((s, sk) => s + (sk.edges?.length || 0), 0)}`);
+    hideHome(true); // Immediate hide to prevent sync-service race condition
+
+    // 2. Fetch sketches AND layers in parallel
+    if (_perfDebug) console.time('[PERF] parallel fetch (sketches + layers)');
+
+    const [sketches, layersResult] = await Promise.all([
+      loadProjectSketches(projectId).catch(err => {
+        updateLoadingStep('sketches', 'error', t('projects.canvas.loadingError'));
+        throw err;
+      }),
+      loadProjectReferenceLayers(projectId).then(result => {
+        const count = result?.layerCount ?? 0;
+        updateLoadingStep('layers', 'done', t('projects.canvas.loadingLayersDone', count));
+        return result;
+      }).catch(err => {
+        console.warn('[ProjectLoading] Layer loading failed (non-fatal):', err.message);
+        updateLoadingStep('layers', 'error');
+        return { layerCount: 0 };
+      }),
+    ]);
+
+    if (_perfDebug) console.timeEnd('[PERF] parallel fetch (sketches + layers)');
+
+    // Update sketches step with result
+    const totalNodes = sketches.reduce((s, sk) => s + (sk.nodes?.length || 0), 0);
+    const totalEdges = sketches.reduce((s, sk) => s + (sk.edges?.length || 0), 0);
+    updateLoadingStep('sketches', 'done', t('projects.canvas.loadingSketchesDone', sketches.length));
+    if (_perfDebug) console.log(`[PERF] Loaded ${sketches.length} sketches, total nodes: ${totalNodes}, total edges: ${totalEdges}`);
 
     if (sketches.length === 0) {
       showToast(t('projects.homepage.empty') || 'No sketches in this project', 'warning');
+      forceCloseProjectLoadingOverlay();
       location.hash = '#/';
       if (_perfDebug) console.timeEnd('[PERF] loadProjectCanvas TOTAL');
       return;
     }
 
-    // Sync the freshly fetched project sketches into the localStorage library
-    // so the home view stays in sync with the project data
+    // 3. Prepare canvas (sync work)
+    updateLoadingStep('canvas', 'loading');
+
     if (_perfDebug) console.time('[PERF] syncProjectSketchesToLibrary');
     syncProjectSketchesToLibrary();
     if (_perfDebug) console.timeEnd('[PERF] syncProjectSketchesToLibrary');
 
-    // Reposition ALL sketch nodes using global ITM bounds so all sketches
-    // align correctly on the canvas relative to each other
     if (_perfDebug) console.time('[PERF] repositionAllProjectSketchNodes');
     repositionAllProjectSketchNodes(sketches);
     if (_perfDebug) console.timeEnd('[PERF] repositionAllProjectSketchNodes');
-
-    // Load GIS reference layers for the project so they appear in project canvas mode
-    if (_perfDebug) console.time('[PERF] loadProjectReferenceLayers');
-    loadProjectReferenceLayers(projectId);
-    if (_perfDebug) console.timeEnd('[PERF] loadProjectReferenceLayers');
 
     if (_perfDebug) console.time('[PERF] showSketchSidePanel');
     showSketchSidePanel();
     if (_perfDebug) console.timeEnd('[PERF] showSketchSidePanel');
 
     scheduleDraw();
+    updateLoadingStep('canvas', 'done', t('projects.canvas.loadingCanvasDone'));
+
     if (_perfDebug) console.timeEnd('[PERF] loadProjectCanvas TOTAL');
     if (_perfDebug) console.log(`[PERF] ■ loadProjectCanvas END at ${performance.now().toFixed(0)}ms since page load (wall: ${(performance.now() - _t0).toFixed(0)}ms)`);
+
+    // 4. Hide overlay with a brief delay for the last step animation
+    await new Promise(r => setTimeout(r, 300));
+    await hideProjectLoadingOverlay();
+
+    // 5. Pre-cache map tiles in background (non-blocking)
+    updateLoadingStep('tiles', 'loading');
+    precacheProjectTiles(sketches);
 
     // Detect if main thread stays blocked after we return
     const _tReturn = performance.now();
@@ -3572,6 +3611,51 @@ async function loadProjectCanvas(projectId) {
   } catch (err) {
     console.error('[App] Failed to load project canvas:', err);
     showToast(err.message || t('projects.canvas.loadError'), 'error');
+    forceCloseProjectLoadingOverlay();
+  }
+}
+
+/**
+ * Pre-cache map tiles for the project's geographic extent.
+ * Runs in the background — does not block the UI.
+ * @param {Array} sketches - Array of sketch objects with nodes
+ */
+function precacheProjectTiles(sketches) {
+  try {
+    // Extract ITM bounds from all coordinated nodes across all sketches
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    let coordCount = 0;
+
+    for (const sketch of sketches) {
+      for (const node of (sketch.nodes || [])) {
+        const itm = extractNodeItmCoordinates(node, wgs84ToItm);
+        if (itm) {
+          if (itm.surveyX < minX) minX = itm.surveyX;
+          if (itm.surveyX > maxX) maxX = itm.surveyX;
+          if (itm.surveyY < minY) minY = itm.surveyY;
+          if (itm.surveyY > maxY) maxY = itm.surveyY;
+          coordCount++;
+        }
+      }
+    }
+
+    if (coordCount < 2) {
+      updateLoadingStep('tiles', 'done', t('projects.canvas.loadingTilesDone', 0));
+      return;
+    }
+
+    const itmBounds = { minX, maxX, minY, maxY };
+    console.debug(`[ProjectTiles] Pre-caching tiles for ITM bounds: X[${minX.toFixed(1)}, ${maxX.toFixed(1)}] Y[${minY.toFixed(1)}, ${maxY.toFixed(1)}], ${coordCount} nodes`);
+
+    // Use the existing precache function with a progress callback
+    precacheTilesForMeasurementBounds(itmBounds, 100, (loaded, total) => {
+      if (loaded === total) {
+        updateLoadingStep('tiles', 'done', t('projects.canvas.loadingTilesDone', loaded));
+      }
+    });
+  } catch (err) {
+    console.warn('[ProjectTiles] Tile pre-cache failed (non-fatal):', err.message);
+    updateLoadingStep('tiles', 'error');
   }
 }
 
