@@ -108,6 +108,17 @@ function buildCockpitDOM() {
 
     <!-- Zone C: Action Rail -->
     <nav class="action-rail" id="actionRail" role="toolbar" aria-label="Drawing tools">
+      <!-- Condensed status (visible only when Zone A is collapsed) -->
+      <div class="action-rail__status-condensed" id="railStatusCondensed">
+        <span class="action-rail__status-dot" id="railGpsDot"></span>
+        <span class="action-rail__status-icon" id="railSyncIcon">
+          <span class="material-icons">cloud_done</span>
+        </span>
+        <span class="action-rail__status-health" id="railHealthPct">0%</span>
+      </div>
+
+      <div class="action-rail__divider"></div>
+
       <!-- Mode buttons -->
       <button class="action-rail__btn action-rail__btn--mode" data-mode="node" data-i18n-title="cockpit.tooltipNodeMode" aria-pressed="false">
         <span class="material-icons">radio_button_unchecked</span>

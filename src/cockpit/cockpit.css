@@ -523,6 +523,65 @@ body.cockpit-mode #main {
   box-shadow: 0 0 4px rgba(34, 197, 94, 0.6);
 }
 
+/* ── Condensed Status (visible only when Zone A collapsed) ───── */
+.action-rail__status-condensed {
+  display: none; /* Hidden by default */
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+body.cockpit-mode.zone-a-collapsed .action-rail__status-condensed {
+  display: flex;
+}
+
+.action-rail__status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-muted);
+  flex-shrink: 0;
+}
+
+.action-rail__status-dot--rtk-fixed { background: var(--color-success); }
+.action-rail__status-dot--rtk-float { background: var(--color-primary); }
+.action-rail__status-dot--dgps { background: var(--color-warning); }
+.action-rail__status-dot--gps { background: #eab308; }
+.action-rail__status-dot--no-fix { background: var(--color-muted); }
+
+.action-rail__status-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-rail__status-icon .material-icons {
+  font-size: 14px;
+  color: var(--color-success);
+}
+
+.action-rail__status-icon--syncing .material-icons {
+  color: var(--color-primary);
+  animation: spin 1s linear infinite;
+}
+
+.action-rail__status-icon--offline .material-icons {
+  color: var(--color-muted);
+}
+
+.action-rail__status-icon--error .material-icons {
+  color: var(--color-danger);
+}
+
+.action-rail__status-health {
+  font-size: 9px;
+  font-weight: var(--font-bold);
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
 /* Collapse Zone A toggle */
 .action-rail__btn--collapse .material-icons {
   transition: transform 0.25s ease;

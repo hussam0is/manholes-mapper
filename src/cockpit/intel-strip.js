@@ -59,6 +59,7 @@ export function initIntelStrip() {
 export function updateIntelStrip(completion) {
   updateCompletionRing(completion);
   updateHealthStats(completion);
+  updateCondensedStatus(completion);
 
   // Also refresh GPS from current state
   const gnssState = window.__gnssState;
@@ -123,6 +124,71 @@ function updateGPS(gnssState) {
   }
 
   satCount.textContent = String(pos.satellites || 0);
+
+  // Also update condensed status dot in action rail
+  updateCondensedGpsDot(gnssState);
+}
+
+/**
+ * Sync GPS dot in condensed action-rail status
+ */
+function updateCondensedGpsDot(gnssState) {
+  const dot = document.getElementById('railGpsDot');
+  if (!dot) return;
+
+  const pos = gnssState?.position;
+  const connected = gnssState?.connectionState === 'connected';
+
+  dot.className = 'action-rail__status-dot';
+
+  if (!connected || !pos?.isValid) {
+    dot.classList.add('action-rail__status-dot--no-fix');
+    return;
+  }
+
+  const fixClsMap = {
+    4: 'action-rail__status-dot--rtk-fixed',
+    5: 'action-rail__status-dot--rtk-float',
+    2: 'action-rail__status-dot--dgps',
+    1: 'action-rail__status-dot--gps',
+    0: 'action-rail__status-dot--no-fix',
+  };
+
+  dot.classList.add(fixClsMap[pos.fixQuality] || fixClsMap[0]);
+}
+
+/**
+ * Update the condensed status in the action rail (health %, sync icon)
+ */
+function updateCondensedStatus(completion) {
+  const healthEl = document.getElementById('railHealthPct');
+  if (healthEl) {
+    healthEl.textContent = `${completion.percentage}%`;
+  }
+}
+
+/**
+ * Update the condensed sync icon in the action rail
+ */
+function updateCondensedSyncIcon(state) {
+  const iconEl = document.getElementById('railSyncIcon');
+  if (!iconEl) return;
+
+  const iconSpan = iconEl.querySelector('.material-icons');
+  iconEl.className = 'action-rail__status-icon';
+
+  if (state?.isSyncing) {
+    iconEl.classList.add('action-rail__status-icon--syncing');
+    if (iconSpan) iconSpan.textContent = 'sync';
+  } else if (state?.isOnline === false) {
+    iconEl.classList.add('action-rail__status-icon--offline');
+    if (iconSpan) iconSpan.textContent = 'cloud_off';
+  } else if (state?.error) {
+    iconEl.classList.add('action-rail__status-icon--error');
+    if (iconSpan) iconSpan.textContent = 'cloud_off';
+  } else {
+    if (iconSpan) iconSpan.textContent = 'cloud_done';
+  }
 }
 
 /**
@@ -237,6 +303,9 @@ function updateSyncStatus(state) {
       pending.style.display = 'none';
     }
   }
+
+  // Also update condensed sync icon in action rail
+  updateCondensedSyncIcon(state);
 }
 
 /**
