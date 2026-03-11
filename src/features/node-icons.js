@@ -413,12 +413,12 @@ export function drawNodeIcon(ctx, node, radius, colors, selectedNode, options = 
     fillColor = heatmapColor;
   }
 
-  // LOD: when zoomed out very far (node would be < ~6px on screen), draw a simple filled circle
-  // instead of detailed icons with multiple paths, bezier curves, and clipping.
-  // viewScale here is sizeVS (the auto-size divisor), so larger = more zoomed out.
-  // No save/restore needed — we only set fillStyle/strokeStyle/lineWidth which the caller
-  // doesn't rely on being preserved (draw() sets them fresh per element).
-  if (viewScale > 3) {
+  // LOD: when zoomed out very far, draw a simple filled shape instead of detailed icons
+  // with multiple paths, bezier curves, and clipping. viewScale here is sizeVS (the
+  // auto-size divisor). At extreme zoom-out (viewScale < 0.15, i.e. 7x+ zoom-out),
+  // many nodes are visible; simplifying saves significant per-node draw calls.
+  // At extreme zoom-in (viewScale > 3), nodes are huge and detail is also unnecessary.
+  if (viewScale < 0.15 || viewScale > 3) {
     const isDrainage = node.nodeType === 'Drainage' || node.nodeType === 'קולטן';
     if (isDrainage) {
       const w = radius * 1.8, h = radius * 1.3;
@@ -455,8 +455,8 @@ export function drawNodeIcon(ctx, node, radius, colors, selectedNode, options = 
   }
 
   // Draw coordinate status indicator if enabled.
-  // LOD: skip when zoomed out far (viewScale > 2.5 means indicator would be < ~3px on screen)
-  if (showCoordinateStatus && viewScale < 2.5) {
+  // LOD: skip at extreme zoom-in (>2.5) and zoom-out (<0.15) — indicator too small to read
+  if (showCoordinateStatus && viewScale >= 0.15 && viewScale < 2.5) {
     const fixQuality = node.gnssFixQuality;
     // Nodes in coordinatesMap come from the cords file (RTK Fixed survey).
     // Treat them as Fixed (4) even if gnssFixQuality wasn't persisted yet.
