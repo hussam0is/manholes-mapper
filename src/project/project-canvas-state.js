@@ -26,6 +26,12 @@ let currentViewProjectId = null;
 /** @type {Set<string>} IDs of sketches hidden by the user */
 const hiddenSketches = new Set();
 
+/** @type {Set<string>} IDs of sketches selected for full-opacity rendering */
+const _selectedSketches = new Set();
+
+/** Whether multi-select mode is enabled */
+let _multiSelectMode = false;
+
 /** Listeners notified when state changes */
 const listeners = new Set();
 
@@ -48,6 +54,8 @@ export async function loadProjectSketches(projectId) {
 
   projectSketches.clear();
   hiddenSketches.clear();
+  _selectedSketches.clear();
+  _multiSelectMode = false;
 
   for (const s of sketches) {
     projectSketches.set(s.id, s);
@@ -59,6 +67,7 @@ export async function loadProjectSketches(projectId) {
   if (sketches.length > 0) {
     console.time('[PERF] loadProjectSketches:setActive');
     activeSketchId = sketches[0].id;
+    _selectedSketches.add(sketches[0].id);
     const first = sketches[0];
     window.__setActiveSketchData?.({
       nodes: first.nodes || [],
@@ -104,6 +113,7 @@ export function getAllSketches() {
       ...sketch,
       isActive: id === activeSketchId,
       isVisible: !hiddenSketches.has(id),
+      isSelected: _selectedSketches.has(id),
     });
   }
   return result;
@@ -160,6 +170,9 @@ export function switchActiveSketch(sketchId) {
   // Unhide if it was hidden
   hiddenSketches.delete(sketchId);
 
+  // Active sketch is always in the selected set
+  _selectedSketches.add(sketchId);
+
   _notify();
 
   if (typeof window.showToast === 'function') {
@@ -197,6 +210,8 @@ export function clearProjectCanvas() {
 
   projectSketches.clear();
   hiddenSketches.clear();
+  _selectedSketches.clear();
+  _multiSelectMode = false;
   activeSketchId = null;
   currentViewProjectId = null;
   _notify();
@@ -252,6 +267,91 @@ export function findEdgeInBackground(worldX, worldY, viewScaleVal) {
     }
   }
   return null;
+}
+
+// ── Multi-select API ──────────────────────────────────────────────────────
+
+/**
+ * Check whether multi-select mode is enabled.
+ */
+export function isMultiSelectMode() {
+  return _multiSelectMode;
+}
+
+/**
+ * Enable or disable multi-select mode.
+ * When disabling, clears the selection set (only active sketch remains selected).
+ */
+export function toggleMultiSelect(enabled) {
+  _multiSelectMode = enabled;
+  if (!enabled) {
+    _selectedSketches.clear();
+    if (activeSketchId) _selectedSketches.add(activeSketchId);
+  }
+  invalidateBackgroundCache();
+  _notify();
+  window.__scheduleDraw?.();
+}
+
+/**
+ * Toggle whether a sketch is in the selected set.
+ * The active sketch cannot be deselected.
+ * Selecting a hidden sketch also unhides it.
+ */
+export function toggleSketchSelected(sketchId) {
+  // Active sketch is always selected
+  if (sketchId === activeSketchId) return;
+
+  if (_selectedSketches.has(sketchId)) {
+    _selectedSketches.delete(sketchId);
+  } else {
+    _selectedSketches.add(sketchId);
+    // Selecting a sketch also unhides it
+    hiddenSketches.delete(sketchId);
+  }
+  invalidateBackgroundCache();
+  _notify();
+  window.__scheduleDraw?.();
+}
+
+/**
+ * Check whether a sketch is in the selected set.
+ */
+export function isSketchSelected(sketchId) {
+  return _selectedSketches.has(sketchId);
+}
+
+/**
+ * Get a copy of the selected sketch IDs set.
+ */
+export function getSelectedSketchIds() {
+  return new Set(_selectedSketches);
+}
+
+/**
+ * Select ALL sketches (View All). Unhides everything.
+ */
+export function selectAllSketches() {
+  _multiSelectMode = true;
+  _selectedSketches.clear();
+  hiddenSketches.clear();
+  for (const id of projectSketches.keys()) {
+    _selectedSketches.add(id);
+  }
+  invalidateBackgroundCache();
+  _notify();
+  window.__scheduleDraw?.();
+}
+
+/**
+ * Check whether all sketches are currently selected.
+ */
+export function areAllSketchesSelected() {
+  if (projectSketches.size === 0) return false;
+  for (const id of projectSketches.keys()) {
+    if (!_selectedSketches.has(id)) return false;
+  }
+  return true;
 }
 
 /**

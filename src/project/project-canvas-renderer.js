@@ -15,6 +15,7 @@ import { COLORS, NODE_RADIUS } from '../state/constants.js';
 import { isMergeModeEnabled, getNearbyNodes, getCrossMergeIssues } from './merge-mode.js';
 
 const BG_ALPHA = 0.35;
+const BG_ALPHA_SELECTED = 0.85;
 
 // Cache node Maps for background sketches to avoid rebuilding per frame.
 // WeakMap keyed by sketch object → Map<nodeId, node>
@@ -55,9 +56,12 @@ export function invalidateBackgroundCache() {
 function _buildCacheKey(sketches, opts) {
   let totalNodes = 0;
   let ids = '';
+  const selectedIds = opts.selectedIds;
   for (const s of sketches) {
     totalNodes += (s.nodes?.length || 0);
     ids += s.id.slice(-4);
+    // Include selection state in cache key so alpha changes trigger re-render
+    if (selectedIds && selectedIds.has(s.id)) ids += 'S';
   }
   // Quantize viewScale to 1 decimal place: the background cache is only
   // invalidated when zoom changes by 10%+ steps, not every pixel of scroll.
@@ -75,6 +79,7 @@ function _renderToOffscreen(sketches, opts) {
     viewScale = 1,
     viewStretchX = 1,
     viewStretchY = 1,
+    selectedIds = null,
   } = opts;
 
   // 1. Compute world-space bounding box of all background nodes
@@ -130,14 +135,15 @@ function _renderToOffscreen(sketches, opts) {
   ctx.scale(actualScaleX, actualScaleY);
   ctx.translate(-wMinX, -wMinY);
 
-  ctx.globalAlpha = BG_ALPHA;
-
   const arrowLen = 8 / viewScale;
 
   for (const sketch of sketches) {
     const nodes = sketch.nodes || [];
     const edges = sketch.edges || [];
     if (nodes.length === 0 && edges.length === 0) continue;
+
+    // Per-sketch alpha: selected sketches render at higher opacity
+    ctx.globalAlpha = (selectedIds && selectedIds.has(sketch.id)) ? BG_ALPHA_SELECTED : BG_ALPHA;
 
     let nMap = _bgNodeMapCache.get(sketch);
     if (!nMap || nMap.size !== nodes.length) {

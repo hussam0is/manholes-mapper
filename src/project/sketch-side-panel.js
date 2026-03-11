@@ -20,6 +20,10 @@ import {
   setSketchVisibility,
   switchActiveSketch,
   onProjectCanvasChange,
+  toggleSketchSelected,
+  selectAllSketches,
+  areAllSketchesSelected,
+  toggleMultiSelect,
 } from './project-canvas-state.js';
 
 import { computeSketchIssues, computeProjectTotals } from './sketch-issues.js';
@@ -193,6 +197,37 @@ function renderListView() {
   const countEl = panelEl?.querySelector('.sketch-side-panel__count');
   if (countEl) countEl.textContent = `(${sketches.length})`;
 
+  // Remove any existing toolbar before re-rendering
+  const existingToolbar = panelEl?.querySelector('.sketch-side-panel__toolbar');
+  if (existingToolbar) existingToolbar.remove();
+
+  // Add toolbar row with View All button
+  const allSelected = areAllSketchesSelected();
+  const toolbarEl = document.createElement('div');
+  toolbarEl.className = 'sketch-side-panel__toolbar';
+  const viewAllLabel = allSelected
+    ? (t('projects.canvas.viewAllActive') || 'Viewing All')
+    : (t('projects.canvas.viewAll') || 'View All');
+  toolbarEl.innerHTML = `
+    <button class="sketch-side-panel__view-all-btn${allSelected ? ' active' : ''}" title="${esc(viewAllLabel)}">
+      <span class="material-icons">visibility</span>
+      <span>${esc(viewAllLabel)}</span>
+    </button>
+    <span class="sketch-side-panel__toolbar-hint">${t('projects.canvas.multiSelectHint') || 'Double-click to edit'}</span>
+  `;
+  const viewAllBtn = toolbarEl.querySelector('.sketch-side-panel__view-all-btn');
+  viewAllBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (allSelected) {
+      // Toggle back to single-sketch mode
+      toggleMultiSelect(false);
+    } else {
+      selectAllSketches();
+    }
+  });
+  // Insert toolbar before the list element
+  listEl.parentNode.insertBefore(toolbarEl, listEl);
+
   // Compute stats for sketches (with cache to avoid redundant recomputation)
   const allStats = [];
   let cacheHits = 0, cacheMisses = 0;
@@ -215,8 +250,10 @@ function renderListView() {
   listEl.innerHTML = '';
 
   for (const sketch of sketches) {
+    const isSelected = sketch.isActive || sketch.isSelected;
+    const selectionClass = sketch.isActive ? ' active' : isSelected ? ' selected' : ' unselected';
     const item = document.createElement('div');
-    item.className = 'sketch-side-panel__item' + (sketch.isActive ? ' active' : '');
+    item.className = 'sketch-side-panel__item' + selectionClass;
     item.dataset.sketchId = sketch.id;
 
     const nodeCount = (sketch.nodes || []).length;
@@ -268,7 +305,15 @@ function renderListView() {
          </span>`
       : '';
 
+    const selectIcon = isSelected ? 'check_box' : 'check_box_outline_blank';
+    const selectTitle = isSelected
+      ? (t('projects.canvas.deselectSketch') || 'Deselect')
+      : (t('projects.canvas.selectSketch') || 'Select');
+
     item.innerHTML = `
+      <span class="sketch-side-panel__select-indicator" title="${esc(selectTitle)}">
+        <span class="material-icons">${selectIcon}</span>
+      </span>
       <button class="sketch-side-panel__eye" title="${sketch.isVisible ? t('projects.canvas.hide') || 'Hide' : t('projects.canvas.show') || 'Show'}">
         <span class="material-icons">${sketch.isVisible ? 'visibility' : 'visibility_off'}</span>
       </button>
@@ -327,8 +372,26 @@ function renderListView() {
       });
     }
 
-    // Click to switch active
+    // Select indicator click — toggle selection
+    const selectIndicator = item.querySelector('.sketch-side-panel__select-indicator');
+    if (selectIndicator) {
+      selectIndicator.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!sketch.isActive) {
+          toggleSketchSelected(sketch.id);
+        }
+      });
+    }
+
+    // Single click on row — toggle selection (not switch active)
     item.addEventListener('click', () => {
+      if (!sketch.isActive) {
+        toggleSketchSelected(sketch.id);
+      }
+    });
+
+    // Double click on row — switch active sketch
+    item.addEventListener('dblclick', () => {
       if (!sketch.isActive) {
         // If switching away from the active sketch while merge mode is on, disable it
         if (isMergeModeEnabled()) {

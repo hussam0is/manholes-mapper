@@ -139,6 +139,7 @@ import {
   switchActiveSketch,
   onProjectCanvasChange,
   refreshActiveSketchData,
+  getSelectedSketchIds,
 } from '../project/project-canvas-state.js';
 import { drawBackgroundSketches, drawMergeModeOverlay, invalidateBackgroundCache } from '../project/project-canvas-renderer.js';
 import { initSketchSidePanel, showSketchSidePanel, hideSketchSidePanel } from '../project/sketch-side-panel.js';
@@ -5068,6 +5069,7 @@ function draw() {
       viewStretchX,
       viewStretchY,
       visMinX, visMinY, visMaxX, visMaxY,
+      selectedIds: getSelectedSketchIds(),
     };
     if (_perfLogThisFrame) console.time('[PERF] draw:backgroundSketches');
     drawBackgroundSketches(ctx, window.__projectCanvas.getBackgroundSketches(), drawOpts);
