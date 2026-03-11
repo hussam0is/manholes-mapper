@@ -813,6 +813,94 @@ body.cockpit-mode.heatmap-active #canvasContainer {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   Micro-Cockpit — Compact status strip for mobile portrait
+   ═══════════════════════════════════════════════════════════ */
+.micro-cockpit {
+  display: none; /* Hidden by default — shown only in portrait mobile */
+}
+
+@media (orientation: portrait) and (max-width: 768px) {
+  .micro-cockpit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    height: 28px;
+    padding: 0 12px;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    font-size: 11px;
+    color: var(--color-text-secondary);
+    z-index: 50;
+    flex-shrink: 0;
+  }
+}
+
+/* Hide micro-cockpit when full cockpit is active (landscape) */
+body.cockpit-mode .micro-cockpit {
+  display: none !important;
+}
+
+.micro-cockpit__gps {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-muted);
+  flex-shrink: 0;
+}
+
+.micro-cockpit__gps--rtk-fixed { background: var(--color-success); }
+.micro-cockpit__gps--rtk-float { background: var(--color-primary); }
+.micro-cockpit__gps--dgps { background: var(--color-warning); }
+.micro-cockpit__gps--gps { background: #eab308; }
+.micro-cockpit__gps--no-fix { background: var(--color-muted); }
+
+.micro-cockpit__sync {
+  display: flex;
+  align-items: center;
+}
+
+.micro-cockpit__sync .material-icons {
+  font-size: 14px;
+  color: var(--color-success);
+}
+
+.micro-cockpit__sync--syncing .material-icons {
+  color: var(--color-primary);
+  animation: spin 1s linear infinite;
+}
+
+.micro-cockpit__sync--offline .material-icons {
+  color: var(--color-muted);
+}
+
+.micro-cockpit__sync--error .material-icons {
+  color: var(--color-danger);
+}
+
+.micro-cockpit__health {
+  font-weight: var(--font-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+}
+
+.micro-cockpit__health--good { color: var(--color-success); }
+.micro-cockpit__health--mid { color: var(--color-warning); }
+.micro-cockpit__health--low { color: var(--color-danger); }
+
+.micro-cockpit__timer {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-tertiary);
+}
+
+@media (prefers-color-scheme: dark) {
+  .micro-cockpit {
+    background: var(--color-surface-alt);
+    border-color: var(--color-border);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
    Responsive — Portrait Fallback
    ═══════════════════════════════════════════════════════════ */
 @media (orientation: portrait) {

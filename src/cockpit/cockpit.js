@@ -235,6 +235,119 @@ function buildCockpitDOM() {
   if (main) {
     main.insertBefore(cockpitEl, main.firstChild);
   }
+
+  // Build micro-cockpit strip for mobile portrait mode
+  buildMicroCockpit();
+}
+
+/**
+ * Build the micro-cockpit strip for mobile portrait mode.
+ * A thin bar below the header showing GPS, sync, and health indicators.
+ */
+function buildMicroCockpit() {
+  const strip = document.createElement('div');
+  strip.className = 'micro-cockpit';
+  strip.id = 'microCockpit';
+  strip.setAttribute('role', 'status');
+  strip.setAttribute('aria-label', 'Survey status');
+  strip.innerHTML = `
+    <span class="micro-cockpit__gps" id="microGpsDot" title="GPS"></span>
+    <span class="micro-cockpit__sync" id="microSyncIcon">
+      <span class="material-icons">cloud_done</span>
+    </span>
+    <span class="micro-cockpit__health" id="microHealthPct">0%</span>
+    <span class="micro-cockpit__timer" id="microSessionTimer">0:00</span>
+  `;
+
+  // Insert after <header>, before #main
+  const header = document.querySelector('header.app-header');
+  if (header && header.parentNode) {
+    header.parentNode.insertBefore(strip, header.nextSibling);
+  }
+
+  // Wire up GPS updates
+  const gnssState = window.__gnssState;
+  if (gnssState) {
+    gnssState.on('position', () => updateMicroGps(gnssState));
+    gnssState.on('connection', () => updateMicroGps(gnssState));
+  }
+
+  // Wire up sync updates
+  if (window.menuEvents) {
+    window.menuEvents.on('sync:stateChange', (state) => updateMicroSync(state));
+  }
+}
+
+/**
+ * Update micro-cockpit GPS dot
+ */
+function updateMicroGps(gnssState) {
+  const dot = document.getElementById('microGpsDot');
+  if (!dot) return;
+
+  const pos = gnssState?.position;
+  const connected = gnssState?.connectionState === 'connected';
+
+  dot.className = 'micro-cockpit__gps';
+
+  if (!connected || !pos?.isValid) {
+    dot.classList.add('micro-cockpit__gps--no-fix');
+    return;
+  }
+
+  const fixClsMap = {
+    4: 'micro-cockpit__gps--rtk-fixed',
+    5: 'micro-cockpit__gps--rtk-float',
+    2: 'micro-cockpit__gps--dgps',
+    1: 'micro-cockpit__gps--gps',
+    0: 'micro-cockpit__gps--no-fix',
+  };
+
+  dot.classList.add(fixClsMap[pos.fixQuality] || fixClsMap[0]);
+}
+
+/**
+ * Update micro-cockpit sync icon
+ */
+function updateMicroSync(state) {
+  const iconEl = document.getElementById('microSyncIcon');
+  if (!iconEl) return;
+
+  const iconSpan = iconEl.querySelector('.material-icons');
+  iconEl.className = 'micro-cockpit__sync';
+
+  if (state?.isSyncing) {
+    iconEl.classList.add('micro-cockpit__sync--syncing');
+    if (iconSpan) iconSpan.textContent = 'sync';
+  } else if (state?.isOnline === false) {
+    iconEl.classList.add('micro-cockpit__sync--offline');
+    if (iconSpan) iconSpan.textContent = 'cloud_off';
+  } else if (state?.error) {
+    iconEl.classList.add('micro-cockpit__sync--error');
+    if (iconSpan) iconSpan.textContent = 'cloud_off';
+  } else {
+    if (iconSpan) iconSpan.textContent = 'cloud_done';
+  }
+}
+
+/**
+ * Update micro-cockpit health and timer from completion data
+ */
+function updateMicroCockpit(completion) {
+  const healthEl = document.getElementById('microHealthPct');
+  if (healthEl) {
+    healthEl.textContent = `${completion.percentage}%`;
+
+    // Color-code by level
+    healthEl.className = 'micro-cockpit__health';
+    if (completion.percentage >= 85) {
+      healthEl.classList.add('micro-cockpit__health--good');
+    } else if (completion.percentage >= 30) {
+      healthEl.classList.add('micro-cockpit__health--mid');
+    } else {
+      healthEl.classList.add('micro-cockpit__health--low');
+    }
+  }
 }
 
 /**
@@ -289,9 +402,13 @@ function deactivate() {
  * Update all cockpit displays
  */
 export function updateCockpit() {
+  const completion = computeSketchCompletion();
+
+  // Always update micro-cockpit (visible in portrait mobile)
+  updateMicroCockpit(completion);
+
   if (!isActive) return;
 
-  const completion = computeSketchCompletion();
   updateIntelStrip(completion);
   updateProgressBar(completion.percentage);
 
@@ -337,6 +454,9 @@ export function initCockpit() {
   buildCockpitDOM();
   initQuickWins();
 
+  // Start session tracker early so micro-cockpit timer works in portrait
+  initSessionTracker();
+
   // Use matchMedia for orientation detection
   orientationQuery = window.matchMedia('(orientation: landscape) and (min-width: 568px)');
 
@@ -380,9 +500,9 @@ export function initCockpit() {
     });
   }
 
-  // Periodic update for session timer and GPS
+  // Periodic update for session timer, GPS, and micro-cockpit
   setInterval(() => {
-    if (isActive) updateCockpit();
+    updateCockpit();
   }, 2000);
 }
 
