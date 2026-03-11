@@ -59,7 +59,10 @@ function _buildCacheKey(sketches, opts) {
     totalNodes += (s.nodes?.length || 0);
     ids += s.id.slice(-4);
   }
-  return `${ids}|${totalNodes}|${opts.viewScale}|${opts.viewStretchX}|${opts.viewStretchY}|${opts.sizeScale}`;
+  // Quantize viewScale to 1 decimal place: the background cache is only
+  // invalidated when zoom changes by 10%+ steps, not every pixel of scroll.
+  const qScale = Math.round(opts.viewScale * 10) / 10;
+  return `${ids}|${totalNodes}|${qScale}|${opts.viewStretchX}|${opts.viewStretchY}|${opts.sizeScale}`;
 }
 
 /**
