@@ -220,15 +220,15 @@ export class AdminPanel {
     `;
     panel.appendChild(actionsRow);
 
-    actionsRow.querySelector('#apSettingsSaveBtn').addEventListener('click', () => {
+    actionsRow.querySelector('#apSettingsSaveBtn')?.addEventListener('click', () => {
       this._saveSettings();
     });
 
-    actionsRow.querySelector('#apSettingsCancelBtn').addEventListener('click', () => {
+    actionsRow.querySelector('#apSettingsCancelBtn')?.addEventListener('click', () => {
       if (this.onClose) this.onClose();
     });
 
-    actionsRow.querySelector('#apSettingsExportBtn').addEventListener('click', () => {
+    actionsRow.querySelector('#apSettingsExportBtn')?.addEventListener('click', () => {
       this._exportSettings();
     });
 

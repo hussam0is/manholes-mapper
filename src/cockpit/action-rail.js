@@ -154,9 +154,9 @@ export function initActionRail() {
       moreBtn.setAttribute('aria-expanded', String(moreMenuOpen));
     });
 
-    // Close on outside click
-    document.addEventListener('click', () => {
-      if (moreMenuOpen) {
+    // Close on outside click (only when click is outside menu and button)
+    document.addEventListener('click', (e) => {
+      if (moreMenuOpen && !moreMenu.contains(e.target) && !moreBtn.contains(e.target)) {
         moreMenuOpen = false;
         moreMenu.classList.remove('open');
         moreBtn.setAttribute('aria-expanded', 'false');
@@ -167,6 +167,7 @@ export function initActionRail() {
     // or emit the correct menuEvents event name (not the literal 'action')
     moreMenu.querySelectorAll('.action-rail__more-item').forEach(item => {
       item.addEventListener('click', (e) => {
+        e.stopPropagation();
         const action = item.dataset.action;
         if (!action) return;
 
