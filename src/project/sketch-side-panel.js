@@ -221,8 +221,12 @@ function renderListView() {
     if (allSelected) {
       // Toggle back to single-sketch mode
       toggleMultiSelect(false);
+      window.showToast?.(t('projects.canvas.viewAllOff') || 'View All off');
     } else {
       selectAllSketches();
+      // Zoom to fit all sketches so the user can see them
+      _zoomToFitAllSketches();
+      window.showToast?.(t('projects.canvas.viewAllOn') || 'Viewing all sketches');
     }
   });
   // Insert toolbar before the list element
@@ -954,6 +958,60 @@ The nearby node will be removed and its connections will be transferred to the a
 
   // Re-render the panel
   render();
+}
+
+/**
+ * Zoom the canvas to fit ALL loaded sketches (all visible nodes across every sketch).
+ */
+function _zoomToFitAllSketches() {
+  const sketches = getAllSketches();
+  if (sketches.length === 0) return;
+
+  // Compute bounding box across all sketches
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  let totalNodes = 0;
+  for (const sketch of sketches) {
+    for (const n of (sketch.nodes || [])) {
+      if (n.x < minX) minX = n.x;
+      if (n.y < minY) minY = n.y;
+      if (n.x > maxX) maxX = n.x;
+      if (n.y > maxY) maxY = n.y;
+      totalNodes++;
+    }
+  }
+  if (totalNodes === 0) return;
+
+  const canvas = document.getElementById('graphCanvas');
+  if (!canvas) return;
+  const rect = canvas.getBoundingClientRect();
+  const stretchX = window.__getStretch?.()?.x || 0.6;
+  const stretchY = window.__getStretch?.()?.y || 1;
+
+  const midX = (minX + maxX) / 2;
+  const midY = (minY + maxY) / 2;
+
+  // Single-node or very tight cluster: use a moderate zoom
+  if (totalNodes === 1 || (maxX - minX < 1 && maxY - minY < 1)) {
+    const targetScale = 2;
+    const tx = rect.width / 2 - targetScale * stretchX * midX;
+    const ty = rect.height / 2 - targetScale * stretchY * midY;
+    window.__setViewState?.(targetScale, tx, ty);
+    window.__scheduleDraw?.();
+    return;
+  }
+
+  // Fit bounding box with generous padding
+  const dx = (maxX - minX) * stretchX;
+  const dy = (maxY - minY) * stretchY;
+  const padding = 0.7;
+  const scaleX = dx > 0 ? (rect.width * padding) / dx : 10;
+  const scaleY = dy > 0 ? (rect.height * padding) / dy : 10;
+  const targetScale = Math.min(scaleX, scaleY, 10);
+
+  const tx = rect.width / 2 - targetScale * stretchX * midX;
+  const ty = rect.height / 2 - targetScale * stretchY * midY;
+  window.__setViewState?.(targetScale, tx, ty);
+  window.__scheduleDraw?.();
 }
 
 /**
