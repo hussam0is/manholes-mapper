@@ -577,7 +577,7 @@ function activate() {
 
   // Initialize sub-modules
   initIntelStrip();
-  initActionRail();
+  // Action rail removed — canvas toolbar is used in both orientations
   initSessionTracker();
 
   // Trigger initial update
