@@ -225,8 +225,12 @@ function renderListView() {
     } else {
       selectAllSketches();
       // Zoom to fit all sketches so the user can see them
-      _zoomToFitAllSketches();
-      window.showToast?.(t('projects.canvas.viewAllOn') || 'Viewing all sketches');
+      const info = _zoomToFitAllSketches();
+      if (info) {
+        window.showToast?.(`${info.sketchCount} ${t('projects.canvas.sketches') || 'sketches'}, ${info.totalNodes} ${t('projects.canvas.nodes') || 'nodes'}`);
+      } else {
+        window.showToast?.(t('projects.canvas.viewAllOn') || 'Viewing all sketches');
+      }
     }
   });
   // Insert toolbar before the list element
@@ -962,10 +966,11 @@ The nearby node will be removed and its connections will be transferred to the a
 
 /**
  * Zoom the canvas to fit ALL loaded sketches (all visible nodes across every sketch).
+ * @returns {{ sketchCount: number, totalNodes: number } | null}
  */
 function _zoomToFitAllSketches() {
   const sketches = getAllSketches();
-  if (sketches.length === 0) return;
+  if (sketches.length === 0) return null;
 
   // Compute bounding box across all sketches
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -979,10 +984,13 @@ function _zoomToFitAllSketches() {
       totalNodes++;
     }
   }
-  if (totalNodes === 0) return;
+
+  console.log(`[ViewAll] ${sketches.length} sketches, ${totalNodes} total nodes, bbox: (${minX.toFixed(0)},${minY.toFixed(0)})→(${maxX.toFixed(0)},${maxY.toFixed(0)})`);
+
+  if (totalNodes === 0) return { sketchCount: sketches.length, totalNodes: 0 };
 
   const canvas = document.getElementById('graphCanvas');
-  if (!canvas) return;
+  if (!canvas) return null;
   const rect = canvas.getBoundingClientRect();
   const stretchX = window.__getStretch?.()?.x || 0.6;
   const stretchY = window.__getStretch?.()?.y || 1;
@@ -997,7 +1005,7 @@ function _zoomToFitAllSketches() {
     const ty = rect.height / 2 - targetScale * stretchY * midY;
     window.__setViewState?.(targetScale, tx, ty);
     window.__scheduleDraw?.();
-    return;
+    return { sketchCount: sketches.length, totalNodes };
   }
 
   // Fit bounding box with generous padding
@@ -1006,12 +1014,15 @@ function _zoomToFitAllSketches() {
   const padding = 0.7;
   const scaleX = dx > 0 ? (rect.width * padding) / dx : 10;
   const scaleY = dy > 0 ? (rect.height * padding) / dy : 10;
-  const targetScale = Math.min(scaleX, scaleY, 10);
+  const targetScale = Math.min(scaleX, scaleY);
+
+  console.log(`[ViewAll] targetScale=${targetScale.toFixed(4)}, dx=${dx.toFixed(0)}, dy=${dy.toFixed(0)}, canvas=${rect.width}x${rect.height}`);
 
   const tx = rect.width / 2 - targetScale * stretchX * midX;
   const ty = rect.height / 2 - targetScale * stretchY * midY;
   window.__setViewState?.(targetScale, tx, ty);
   window.__scheduleDraw?.();
+  return { sketchCount: sketches.length, totalNodes };
 }
 
 /**
