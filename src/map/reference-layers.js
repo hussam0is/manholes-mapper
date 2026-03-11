@@ -609,19 +609,20 @@ function drawPoint(ctx, coords, properties, style, refPoint, coordScale, stretch
  * Draw a line string feature
  */
 function drawLineString(ctx, coords, properties, style, refPoint, coordScale, stretchX, stretchY, viewScale, visMinX, visMinY, visMaxX, visMaxY, labelsToDraw, preWorldCoords, preBBox) {
-  // Use pre-computed world coords if available, otherwise compute on the fly
-  let points;
-  if (preWorldCoords) {
-    // Apply stretch to pre-computed world coords
-    points = preWorldCoords.map(w => ({ x: w.x * stretchX, y: w.y * stretchY }));
-  } else {
+  // Use pre-computed world coords if available, otherwise compute on the fly.
+  // When preWorldCoords is available, apply stretch inline during drawing to
+  // avoid allocating a new array every frame (hot path optimization).
+  const srcCoords = preWorldCoords; // may be null
+  let points = null; // only allocated for the non-preWorldCoords path or when arrows needed
+  if (!srcCoords) {
     if (coords.length < 2) return;
     points = coords.map(c => {
       const w = itmToWorld(c[0], c[1], refPoint, coordScale);
       return { x: w.x * stretchX, y: w.y * stretchY };
     });
   }
-  if (points.length < 2) return;
+  const src = srcCoords || points;
+  if (src.length < 2) return;
 
   // Quick bounding-box cull (use pre-computed bbox with stretch if available)
   let minX, minY, maxX, maxY;
@@ -632,19 +633,33 @@ function drawLineString(ctx, coords, properties, style, refPoint, coordScale, st
     maxY = preBBox.maxY * stretchY;
   } else {
     minX = Infinity; minY = Infinity; maxX = -Infinity; maxY = -Infinity;
-    for (const p of points) {
-      if (p.x < minX) minX = p.x;
-      if (p.y < minY) minY = p.y;
-      if (p.x > maxX) maxX = p.x;
-      if (p.y > maxY) maxY = p.y;
+    if (srcCoords) {
+      for (let i = 0; i < srcCoords.length; i++) {
+        const sx = srcCoords[i].x * stretchX, sy = srcCoords[i].y * stretchY;
+        if (sx < minX) minX = sx; if (sy < minY) minY = sy;
+        if (sx > maxX) maxX = sx; if (sy > maxY) maxY = sy;
+      }
+    } else {
+      for (const p of points) {
+        if (p.x < minX) minX = p.x; if (p.y < minY) minY = p.y;
+        if (p.x > maxX) maxX = p.x; if (p.y > maxY) maxY = p.y;
+      }
     }
   }
   if (maxX < visMinX || minX > visMaxX || maxY < visMinY || minY > visMaxY) return;
 
+  // Draw path — apply stretch inline for preWorldCoords to avoid array allocation
   ctx.beginPath();
-  ctx.moveTo(points[0].x, points[0].y);
-  for (let i = 1; i < points.length; i++) {
-    ctx.lineTo(points[i].x, points[i].y);
+  if (srcCoords) {
+    ctx.moveTo(srcCoords[0].x * stretchX, srcCoords[0].y * stretchY);
+    for (let i = 1; i < srcCoords.length; i++) {
+      ctx.lineTo(srcCoords[i].x * stretchX, srcCoords[i].y * stretchY);
+    }
+  } else {
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) {
+      ctx.lineTo(points[i].x, points[i].y);
+    }
   }
 
   ctx.strokeStyle = style.strokeColor || 'rgba(0,0,0,0.5)';
@@ -661,15 +676,21 @@ function drawLineString(ctx, coords, properties, style, refPoint, coordScale, st
   ctx.lineCap = 'butt';
   ctx.lineJoin = 'miter';
 
-  // Draw direction arrows if requested
-  if (style.showArrows && points.length >= 2) {
+  // Draw direction arrows if requested — lazy-build points array only when needed
+  if (style.showArrows && src.length >= 2) {
+    if (srcCoords && !points) {
+      points = srcCoords.map(w => ({ x: w.x * stretchX, y: w.y * stretchY }));
+    }
     drawDirectionArrows(ctx, points, style, viewScale);
   }
 
   // Label at midpoint
   if (style.labelField && properties && properties[style.labelField] != null) {
-    const mid = points[Math.floor(points.length / 2)];
-    labelsToDraw.push({ x: mid.x, y: mid.y, text: String(properties[style.labelField]) });
+    const midIdx = Math.floor(src.length / 2);
+    const w = src[midIdx];
+    const mx = srcCoords ? w.x * stretchX : w.x;
+    const my = srcCoords ? w.y * stretchY : w.y;
+    labelsToDraw.push({ x: mx, y: my, text: String(properties[style.labelField]) });
   }
 }
 
@@ -723,15 +744,12 @@ function drawDirectionArrows(ctx, points, style, viewScale) {
  * Draw a polygon feature (exterior ring + holes)
  */
 function drawPolygon(ctx, rings, properties, style, refPoint, coordScale, stretchX, stretchY, viewScale, visMinX, visMinY, visMaxX, visMaxY, labelsToDraw, preWorldRings, preBBox) {
-  // Build stretched rings from pre-computed world coords or compute from raw ITM
-  let exterior;
-  let holeRings;
-  if (preWorldRings) {
-    exterior = preWorldRings[0].map(w => ({ x: w.x * stretchX, y: w.y * stretchY }));
-    holeRings = preWorldRings.slice(1).map(ring =>
-      ring.map(w => ({ x: w.x * stretchX, y: w.y * stretchY }))
-    );
-  } else {
+  // When preWorldRings is available, apply stretch inline during drawing to avoid
+  // allocating new arrays every frame (hot path optimization).
+  const usePre = !!preWorldRings;
+  let exterior = null;
+  let holeRings = null;
+  if (!usePre) {
     if (!rings || rings.length === 0) return;
     exterior = rings[0].map(c => {
       const w = itmToWorld(c[0], c[1], refPoint, coordScale);
@@ -753,32 +771,57 @@ function drawPolygon(ctx, rings, properties, style, refPoint, coordScale, stretc
     minY = preBBox.minY * stretchY;
     maxX = preBBox.maxX * stretchX;
     maxY = preBBox.maxY * stretchY;
+  } else if (usePre) {
+    minX = Infinity; minY = Infinity; maxX = -Infinity; maxY = -Infinity;
+    const ring0 = preWorldRings[0];
+    for (let i = 0; i < ring0.length; i++) {
+      const sx = ring0[i].x * stretchX, sy = ring0[i].y * stretchY;
+      if (sx < minX) minX = sx; if (sy < minY) minY = sy;
+      if (sx > maxX) maxX = sx; if (sy > maxY) maxY = sy;
+    }
   } else {
     minX = Infinity; minY = Infinity; maxX = -Infinity; maxY = -Infinity;
     for (const p of exterior) {
-      if (p.x < minX) minX = p.x;
-      if (p.y < minY) minY = p.y;
-      if (p.x > maxX) maxX = p.x;
-      if (p.y > maxY) maxY = p.y;
+      if (p.x < minX) minX = p.x; if (p.y < minY) minY = p.y;
+      if (p.x > maxX) maxX = p.x; if (p.y > maxY) maxY = p.y;
     }
   }
   if (maxX < visMinX || minX > visMaxX || maxY < visMinY || minY > visMaxY) return;
 
   ctx.beginPath();
-  // Exterior ring
-  ctx.moveTo(exterior[0].x, exterior[0].y);
-  for (let i = 1; i < exterior.length; i++) {
-    ctx.lineTo(exterior[i].x, exterior[i].y);
+  // Exterior ring — apply stretch inline for preWorldRings path
+  if (usePre) {
+    const ring0 = preWorldRings[0];
+    ctx.moveTo(ring0[0].x * stretchX, ring0[0].y * stretchY);
+    for (let i = 1; i < ring0.length; i++) {
+      ctx.lineTo(ring0[i].x * stretchX, ring0[i].y * stretchY);
+    }
+  } else {
+    ctx.moveTo(exterior[0].x, exterior[0].y);
+    for (let i = 1; i < exterior.length; i++) {
+      ctx.lineTo(exterior[i].x, exterior[i].y);
+    }
   }
   ctx.closePath();
 
   // Holes (interior rings)
-  for (const hole of holeRings) {
-    ctx.moveTo(hole[0].x, hole[0].y);
-    for (let i = 1; i < hole.length; i++) {
-      ctx.lineTo(hole[i].x, hole[i].y);
+  if (usePre) {
+    for (let h = 1; h < preWorldRings.length; h++) {
+      const hole = preWorldRings[h];
+      ctx.moveTo(hole[0].x * stretchX, hole[0].y * stretchY);
+      for (let i = 1; i < hole.length; i++) {
+        ctx.lineTo(hole[i].x * stretchX, hole[i].y * stretchY);
+      }
+      ctx.closePath();
     }
-    ctx.closePath();
+  } else {
+    for (const hole of holeRings) {
+      ctx.moveTo(hole[0].x, hole[0].y);
+      for (let i = 1; i < hole.length; i++) {
+        ctx.lineTo(hole[i].x, hole[i].y);
+      }
+      ctx.closePath();
+    }
   }
 
   // Fill
