@@ -224,7 +224,7 @@ self.addEventListener('fetch', (event) => {
   // cache in the background (for freshness).  When there is no cached
   // response we await the network fetch and return the fresh result.  If
   // both cache and network are unavailable we fall back to the offline page.
-  if (request.method === ‘GET’) {
+  if (request.method === 'GET') {
     event.respondWith(
       (async () => {
         const cached = await caches.match(request);
