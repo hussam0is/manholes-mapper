@@ -5542,11 +5542,12 @@ function computeNodeTypes() {
     const headNode = nodeMap.get(String(edge.head));
     
     // If tail measurement missing or empty, mark tail node as type2
-    if (tailNode && (!edge.tail_measurement || edge.tail_measurement.trim() === '')) {
+    // Only flag functional nodes (maintenanceStatus === 1) — matches sketch-issues.js logic
+    if (tailNode && tailNode.maintenanceStatus === 1 && (!edge.tail_measurement || edge.tail_measurement.trim() === '')) {
       tailNode.type = 'type2';
     }
     // If head measurement missing or empty, mark head node as type2
-    if (headNode && (!edge.head_measurement || edge.head_measurement.trim() === '')) {
+    if (headNode && headNode.maintenanceStatus === 1 && (!edge.head_measurement || edge.head_measurement.trim() === '')) {
       headNode.type = 'type2';
     }
   }
@@ -7515,6 +7516,7 @@ function renderDetails() {
         const res = evaluateRules(currentInputFlowConfig, 'nodes', norm);
         const updatedNode = applyActions(node, res, adminConfig.nodes?.defaults || {});
         Object.assign(node, updatedNode);
+        computeNodeTypes(); // Refresh type1/type2 since maintenance status affects issue indicators
         saveToStorage();
         scheduleDraw();
         // Advance to next visible tab after maintenance_status
