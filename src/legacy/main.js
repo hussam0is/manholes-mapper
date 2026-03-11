@@ -6121,8 +6121,8 @@ function drawNode(node) {
   }
 
   // Persistent issue indicator: red warning badge on nodes that have active issues.
-  // LOD: skip when zoomed out far (badge would be < 4px on screen).
-  if (_issueNodeIds.has(String(node.id)) && sizeVS < 3) {
+  // LOD: skip at extreme zoom-out (<0.15) and zoom-in (>3) — badge too small to read.
+  if (_issueNodeIds.has(String(node.id)) && sizeVS >= 0.15 && sizeVS < 3) {
     const badgeRadius = radius * 0.38;
     const badgeOffsetX = radius * 0.75;
     const badgeOffsetY = -radius * 0.75;
@@ -6150,8 +6150,8 @@ function drawNode(node) {
   }
 
   // Position lock indicator: small lock badge on nodes with locked manual coordinates.
-  // LOD: skip when zoomed out far (badge would be < 4px on screen).
-  if (node.positionLocked && node.manual_x != null && node.manual_y != null && sizeVS < 3) {
+  // LOD: skip at extreme zoom-out (<0.15) and zoom-in (>3) — badge too small to read.
+  if (node.positionLocked && node.manual_x != null && node.manual_y != null && sizeVS >= 0.15 && sizeVS < 3) {
     const lockSize = radius * 0.4;
     const lx = stretchedX + radius * 0.7;
     const ly = stretchedY + radius * 0.7;
