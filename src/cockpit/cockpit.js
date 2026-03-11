@@ -192,7 +192,7 @@ function buildCockpitDOM() {
 
     <!-- More menu popup (outside action-rail to avoid overflow clipping) -->
     <div class="action-rail__more-menu" id="railMoreMenu">
-      <button class="action-rail__more-item" data-action="save">
+      <button class="action-rail__more-item action-rail__more-item--primary" data-action="save">
         <span class="material-icons">save</span>
         <span data-i18n="save">Save</span>
       </button>
@@ -208,6 +208,7 @@ function buildCockpitDOM() {
         <span class="material-icons">call_split</span>
         <span data-i18n="exportEdges">Export Edges</span>
       </button>
+      <hr class="action-rail__more-divider">
       <button class="action-rail__more-item" data-action="mySketches">
         <span class="material-icons">description</span>
         <span data-i18n="mySketches">My Sketches</span>
@@ -216,7 +217,8 @@ function buildCockpitDOM() {
         <span class="material-icons">tune</span>
         <span data-i18n="admin.manage">Admin</span>
       </button>
-      <button class="action-rail__more-item" data-action="languageChange">
+      <hr class="action-rail__more-divider">
+      <button class="action-rail__more-item action-rail__more-item--secondary" data-action="languageChange">
         <span class="material-icons">language</span>
         <span data-i18n="cockpit.languageToggle">EN / HE</span>
       </button>
