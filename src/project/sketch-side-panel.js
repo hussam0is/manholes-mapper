@@ -83,8 +83,13 @@ export function initSketchSidePanel() {
   // Close button
   const closeBtn = panelEl.querySelector('.sketch-side-panel__close');
   if (closeBtn) {
-    closeBtn.addEventListener('click', () => {
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
       panelEl.classList.remove('open');
+    });
+    // Also handle touch for mobile/landscape where click may not fire
+    closeBtn.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
     });
   }
 

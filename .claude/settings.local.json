@@ -51,7 +51,18 @@
       "WebFetch(domain:manholes-mapper.vercel.app)",
       "Bash(git status -u)",
       "Bash(git add api/_lib/db.js src/legacy/main.js)",
-      "Bash(git push origin dev)"
+      "Bash(git push origin dev)",
+      "mcp__time__get_current_time",
+      "Bash(ls \"C:/Users/murjan.a/Documents/manholes-mapper-dev-branch/manholes-mapper/app_state_2026-03-08\"*)",
+      "Bash(node scripts/capture-screenshots.mjs)",
+      "Bash(node scripts/capture-supplement.mjs)",
+      "Bash(node scripts/debug-buttons.mjs)",
+      "Bash(git checkout:*)",
+      "Bash(git pull:*)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(git log:*)",
+      "Bash(python3 -c \":*)",
+      "Bash(python -c \":*)"
     ]
   },
   "enableAllProjectMcpServers": true,

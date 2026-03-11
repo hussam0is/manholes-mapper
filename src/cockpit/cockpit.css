@@ -40,11 +40,34 @@ body.cockpit-mode .canvas-toolbar {
 }
 
 body.cockpit-mode .canvas-fab-toolbar {
-  display: none !important;
+  display: flex !important;
+  position: fixed;
+  z-index: 175; /* above cockpit grid (160) */
+  bottom: 8px;
+  inset-inline-end: 8px;
 }
 
 body.cockpit-mode .take-measure-fab {
   display: none !important;
+}
+
+/* In cockpit mode, promote side panel and toggle to fixed positioning
+   so they escape #canvasContainer's stacking context and sit above
+   the cockpit grid overlay (z-index 160). */
+body.cockpit-mode .sketch-side-panel-toggle {
+  position: fixed;
+  z-index: 175; /* above cockpit grid (160) */
+  bottom: 60px; /* above the FAB toolbar */
+  inset-inline-end: 8px;
+}
+
+body.cockpit-mode .sketch-side-panel {
+  position: fixed;
+  z-index: 175;
+  top: 0;
+  bottom: 0;
+  inset-inline-end: 0;
+  height: 100%;
 }
 
 /* Edge legend is replaced by the intel strip in cockpit mode */
@@ -1194,6 +1217,18 @@ body.cockpit-mode .micro-cockpit {
 
   body.cockpit-mode .canvas-fab-toolbar {
     display: flex !important;
+    position: absolute; /* reset from fixed (landscape) to absolute (portrait) */
+    z-index: 16; /* reset from 175 (landscape) to normal */
+  }
+
+  body.cockpit-mode .sketch-side-panel-toggle {
+    position: absolute; /* reset from fixed */
+    z-index: 149;
+  }
+
+  body.cockpit-mode .sketch-side-panel {
+    position: absolute; /* reset from fixed */
+    z-index: 160;
   }
 }
 

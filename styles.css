@@ -2001,13 +2001,13 @@ canvas {
   height: 44px;
   border-radius: 50%;
   border: none;
-  background: rgba(0, 0, 0, 0.65);
-  color: #f9fafb;
+  background: var(--color-primary);
+  color: #fff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
   opacity: 0;
   transform: scale(0.4) translateX(8px);
   transition: opacity 0.2s cubic-bezier(.4, 0, .2, 1),
@@ -2016,7 +2016,7 @@ canvas {
 }
 
 .canvas-fab-toolbar__item:hover {
-  background: rgba(0, 0, 0, 0.85);
+  background: var(--color-primary-hover, #1d4ed8);
 }
 
 .canvas-fab-toolbar__item:active {
@@ -2050,28 +2050,27 @@ canvas {
   visibility: hidden;
 }
 
-/* On narrow portrait viewports, stack FAB items vertically */
-@media (max-width: 480px) and (orientation: portrait) {
-  .canvas-fab-toolbar__actions {
-    flex-direction: column-reverse;
-    max-width: none;
-    max-height: 0;
-    transition: max-height 0.3s cubic-bezier(.4, 0, .2, 1);
-  }
-  .canvas-fab-toolbar.open .canvas-fab-toolbar__actions {
-    max-width: none;
-    max-height: 300px;
-  }
-  .canvas-fab-toolbar__item {
-    transform: scale(0.4) translateY(8px);
-  }
-  .canvas-fab-toolbar.open .canvas-fab-toolbar__item {
-    transform: scale(1) translateY(0);
-  }
-  .canvas-fab-toolbar {
-    flex-direction: column-reverse;
-    align-items: flex-end;
-  }
+/* On narrow portrait viewports, keep FAB horizontal (row-reverse) so it doesn't
+   collide with the canvas toolbar above. Items expand to the inline-start direction. */
+
+/* Distinct colors for each FAB action item */
+#recenterDensityBtn.canvas-fab-toolbar__item {
+  background: var(--color-accent, #a855f7);
+}
+#recenterDensityBtn.canvas-fab-toolbar__item:hover {
+  background: #9333ea;
+}
+#recenterBtn.canvas-fab-toolbar__item {
+  background: var(--color-success, #22c55e);
+}
+#recenterBtn.canvas-fab-toolbar__item:hover {
+  background: #16a34a;
+}
+#zoomToFitBtn.canvas-fab-toolbar__item {
+  background: var(--color-primary, #2563eb);
+}
+#zoomToFitBtn.canvas-fab-toolbar__item:hover {
+  background: var(--color-primary-hover, #1d4ed8);
 }
 
 /* Incomplete tracker styling inside toolbar */
@@ -2080,7 +2079,8 @@ canvas {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: rgba(107, 114, 128, 0.85);
+  background: var(--color-danger, #ef4444);
+  color: #fff;
   padding: 0;
   font-size: 11px;
   font-weight: 600;
