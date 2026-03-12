@@ -27,6 +27,12 @@ function buildCockpitDOM() {
   cockpitEl.innerHTML = `
     <!-- Zone A: Intel Strip -->
     <aside class="intel-strip" id="intelStrip" role="complementary" aria-label="Survey status">
+      <!-- Collapse toggle button at top of Intel Strip -->
+      <button class="intel-strip__collapse-btn" id="intelStripCollapseBtn"
+        aria-label="${window.t?.('cockpit.tooltipCollapse') || 'Toggle panel'}"
+        title="${window.t?.('cockpit.tooltipCollapse') || 'Toggle panel'}">
+        <span class="material-icons">${window.isRTL?.() ? 'chevron_right' : 'chevron_left'}</span>
+      </button>
       <!-- GPS Status -->
       <div class="intel-card intel-gps" id="intelGps">
         <div class="intel-card__header">
@@ -104,6 +110,13 @@ function buildCockpitDOM() {
         </div>
       </div>
     </aside>
+
+    <!-- Expand handle (shown when Zone A is collapsed) -->
+    <button class="intel-strip__expand-handle" id="intelStripExpandBtn"
+      aria-label="${window.t?.('cockpit.tooltipCollapse') || 'Toggle panel'}"
+      title="${window.t?.('cockpit.tooltipCollapse') || 'Toggle panel'}">
+      <span class="material-icons">${window.isRTL?.() ? 'chevron_left' : 'chevron_right'}</span>
+    </button>
 
     <!-- Zone B is the existing #canvasContainer (managed externally) -->
 
@@ -548,6 +561,69 @@ function updateMicroCockpit(completion) {
 }
 
 /**
+ * Toggle Zone A collapsed state and persist to localStorage
+ */
+function toggleZoneACollapse(forceState) {
+  const strip = document.getElementById('intelStrip');
+  const cockpit = document.querySelector('.cockpit');
+  if (!strip || !cockpit) return;
+
+  const shouldCollapse = typeof forceState === 'boolean'
+    ? forceState
+    : !strip.classList.contains('intel-strip--collapsed');
+
+  strip.classList.toggle('intel-strip--collapsed', shouldCollapse);
+  document.body.classList.toggle('zone-a-collapsed', shouldCollapse);
+
+  // Update grid to remove Zone A space when collapsed
+  cockpit.style.gridTemplateColumns = shouldCollapse
+    ? '0px 1fr'
+    : 'var(--cockpit-zone-a, 140px) 1fr';
+
+  // Update chevron icons
+  const collapseIcon = document.querySelector('#intelStripCollapseBtn .material-icons');
+  const expandIcon = document.querySelector('#intelStripExpandBtn .material-icons');
+  const rtl = window.isRTL?.();
+
+  if (collapseIcon) {
+    collapseIcon.textContent = shouldCollapse
+      ? (rtl ? 'chevron_left' : 'chevron_right')
+      : (rtl ? 'chevron_right' : 'chevron_left');
+  }
+  if (expandIcon) {
+    expandIcon.textContent = rtl ? 'chevron_left' : 'chevron_right';
+  }
+
+  // Persist state
+  try {
+    localStorage.setItem('cockpit-collapsed', shouldCollapse ? '1' : '0');
+  } catch { /* ignore */ }
+}
+
+/**
+ * Initialize the collapse/expand toggle buttons and restore saved state
+ */
+function initCollapseToggle() {
+  const collapseBtn = document.getElementById('intelStripCollapseBtn');
+  const expandBtn = document.getElementById('intelStripExpandBtn');
+
+  if (collapseBtn) {
+    collapseBtn.addEventListener('click', () => toggleZoneACollapse());
+  }
+  if (expandBtn) {
+    expandBtn.addEventListener('click', () => toggleZoneACollapse(false));
+  }
+
+  // Restore saved collapsed state
+  try {
+    const saved = localStorage.getItem('cockpit-collapsed');
+    if (saved === '1') {
+      toggleZoneACollapse(true);
+    }
+  } catch { /* ignore */ }
+}
+
+/**
  * Activate cockpit mode
  */
 function activate() {
@@ -579,6 +655,9 @@ function activate() {
   initIntelStrip();
   // Action rail removed — canvas toolbar is used in both orientations
   initSessionTracker();
+
+  // ── Wire up Zone A collapse/expand toggle ────────────────
+  initCollapseToggle();
 
   // Trigger initial update
   requestAnimationFrame(() => {

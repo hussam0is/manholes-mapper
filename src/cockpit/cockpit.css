@@ -161,6 +161,70 @@ body.cockpit-mode #main {
   overflow: hidden;
 }
 
+/* ── Collapse/Expand Toggle Buttons ────────────────────────── */
+.intel-strip__collapse-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  align-self: flex-end;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.intel-strip__collapse-btn:hover {
+  background: var(--color-surface-hover, rgba(0, 0, 0, 0.06));
+  color: var(--color-text);
+}
+
+.intel-strip__collapse-btn .material-icons {
+  font-size: 18px;
+}
+
+/* Expand handle — thin vertical bar shown when Zone A is collapsed */
+.intel-strip__expand-handle {
+  display: none; /* Hidden by default */
+  grid-column: 1;
+  grid-row: 1;
+  width: 24px;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg);
+  border: none;
+  border-inline-end: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 0;
+  z-index: 111;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.intel-strip__expand-handle:hover {
+  background: var(--color-surface-hover, rgba(0, 0, 0, 0.06));
+  color: var(--color-text);
+}
+
+.intel-strip__expand-handle .material-icons {
+  font-size: 16px;
+}
+
+/* Show expand handle only when Zone A is collapsed */
+body.cockpit-mode.zone-a-collapsed .intel-strip__expand-handle {
+  display: flex;
+}
+
+/* Adjust grid to include expand handle column when collapsed */
+body.cockpit-mode.zone-a-collapsed .cockpit {
+  grid-template-columns: 24px 1fr;
+}
+
 /* Section cards within Intel Strip */
 .intel-card {
   background: var(--color-surface);
@@ -1057,6 +1121,19 @@ body.cockpit-mode.heatmap-active #canvasContainer {
 
   .intel-health__stats {
     color: var(--color-text);
+  }
+
+  .intel-strip__collapse-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .intel-strip__expand-handle {
+    background: var(--color-bg);
+    border-color: var(--color-border);
+  }
+
+  .intel-strip__expand-handle:hover {
+    background: rgba(255, 255, 255, 0.08);
   }
 
   .action-rail {
