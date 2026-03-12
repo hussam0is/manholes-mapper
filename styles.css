@@ -11074,24 +11074,24 @@ button:focus-visible,
   padding: 8px;
 }
 
+/* ── Sketch card — 3-row column layout ──────────────────────────────── */
 .sketch-side-panel__item {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px 8px;
-  padding: 12px 10px;
-  border-radius: 8px;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
   cursor: pointer;
   transition: background 0.15s, box-shadow 0.15s, border-color 0.15s;
   font-size: 13px;
-  min-height: var(--touch-target-min, 44px);
   border-bottom: 1px solid var(--color-border-light, #f1f5f9);
   border-inline-start: 4px solid transparent;
+  border: 1px solid transparent;
   position: relative;
 }
 
 .sketch-side-panel__item:last-child {
-  border-bottom: none;
+  border-bottom-color: transparent;
 }
 
 .sketch-side-panel__item:hover {
@@ -11101,8 +11101,48 @@ button:focus-visible,
 .sketch-side-panel__item.active {
   background: var(--color-primary-light, #dbeafe);
   font-weight: 600;
-  border-inline-start-color: var(--color-primary, #2563eb);
+  border-color: var(--color-primary, #2563eb);
+  border-inline-start-width: 4px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.sketch-side-panel__item.selected {
+  background: rgba(37, 99, 235, 0.06);
+  border-color: var(--color-primary-light, #93c5fd);
+}
+
+.sketch-side-panel__item.unselected {
+  opacity: 0.55;
+}
+
+.sketch-side-panel__item.unselected:hover {
+  opacity: 0.8;
+}
+
+/* Row 1: Header — checkbox + title … eye toggle */
+.sketch-card__row1 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+
+.sketch-card__title-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0; /* allow shrink for ellipsis */
+  flex: 1 1 auto;
+}
+
+.sketch-card__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1 1 0;
+  /* BiDi: when dir="ltr" is set, text truncates from the correct (right) end */
+  unicode-bidi: isolate;
 }
 
 .sketch-side-panel__eye {
@@ -11110,11 +11150,11 @@ button:focus-visible,
   border: none;
   cursor: pointer;
   padding: 4px;
-  border-radius: 4px;
+  border-radius: 6px;
   color: var(--color-text-muted, #64748b);
   flex-shrink: 0;
-  min-width: var(--touch-target-min, 44px);
-  min-height: var(--touch-target-min, 44px);
+  min-width: 36px;
+  min-height: 36px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -11122,43 +11162,31 @@ button:focus-visible,
 
 .sketch-side-panel__eye:hover {
   color: var(--color-accent, #2563eb);
+  background: rgba(37, 99, 235, 0.08);
 }
 
 .sketch-side-panel__eye .material-icons {
   font-size: 18px;
 }
 
-.sketch-side-panel__info {
-  flex: 1 1 auto;
-  min-width: 60px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  overflow: hidden;
-}
-
-.sketch-side-panel__info-row {
+/* Row 2: Metadata — distance + node count badge */
+.sketch-card__row2 {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  padding-inline-start: 28px; /* align with title (past checkbox) */
 }
 
-.sketch-side-panel__km-secondary {
+.sketch-card__meta {
   font-size: 11px;
   color: var(--color-text-muted, #64748b);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 3px;
 }
 
-.sketch-side-panel__km-secondary .material-icons {
+.sketch-card__meta .material-icons {
   font-size: 13px;
-}
-
-.sketch-side-panel__name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .sketch-side-panel__badge {
@@ -11168,12 +11196,6 @@ button:focus-visible,
   font-size: 11px;
   padding: 1px 6px;
   border-radius: 10px;
-}
-
-.sketch-side-panel__active-icon {
-  font-size: 16px;
-  color: var(--color-accent, #2563eb);
-  flex-shrink: 0;
 }
 
 .sketch-side-panel__editing-badge {
@@ -11188,10 +11210,33 @@ button:focus-visible,
   border-radius: 8px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  flex-shrink: 0;
 }
 
 .sketch-side-panel__editing-badge .material-icons {
   font-size: 12px;
+}
+
+/* Row 3: Alerts (left/start) & Actions (right/end) */
+.sketch-card__row3 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding-inline-start: 28px;
+}
+
+.sketch-card__alerts {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sketch-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-inline-start: auto;
 }
 
 .sketch-side-panel__empty {
@@ -11211,21 +11256,11 @@ button:focus-visible,
   max-width: 200px;
 }
 
-/* ── Sketch stats (km + issues) in each row ────────────────────────── */
+/* Legacy — kept for backward compat if anything references __stats */
 .sketch-side-panel__stats {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 3px 6px;
-  margin-inline-start: auto;
-  flex-shrink: 0;
-  justify-content: flex-end;
-}
-
-.sketch-side-panel__km {
-  font-size: 11px;
-  color: var(--color-text-muted, #64748b);
-  white-space: nowrap;
+  gap: 4px;
 }
 
 .sketch-side-panel__issues-btn {
@@ -11696,12 +11731,7 @@ button:focus-visible,
   font-size: 16px;
 }
 
-.sketch-side-panel__toolbar-hint {
-  margin-inline-start: auto;
-  font-size: 10px;
-  color: var(--color-text-muted, #94a3b8);
-  white-space: nowrap;
-}
+/* toolbar-hint removed — double-click instruction now shown as card tooltip */
 
 /* Select indicator (checkbox) in sketch row */
 .sketch-side-panel__select-indicator {
@@ -11717,27 +11747,9 @@ button:focus-visible,
   font-size: 20px;
 }
 
-.sketch-side-panel__item.selected .sketch-side-panel__select-indicator {
-  color: var(--color-primary, #2563eb);
-}
-
+.sketch-side-panel__item.selected .sketch-side-panel__select-indicator,
 .sketch-side-panel__item.active .sketch-side-panel__select-indicator {
   color: var(--color-primary, #2563eb);
-}
-
-/* Dim unselected sketch rows */
-.sketch-side-panel__item.unselected {
-  opacity: 0.55;
-}
-
-.sketch-side-panel__item.unselected:hover {
-  opacity: 0.8;
-}
-
-/* Selected (non-active) sketch row highlight */
-.sketch-side-panel__item.selected {
-  background: rgba(37, 99, 235, 0.06);
-  border-inline-start-color: var(--color-primary-light, #93c5fd);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -11887,26 +11899,22 @@ button:focus-visible,
 
   .sketch-side-panel__item {
     padding: 0.25rem 0.35rem;
-    gap: 2px 3px;
-    min-height: 32px;
-    flex-wrap: wrap;
+    gap: 3px;
   }
 
-  .sketch-side-panel__info {
-    flex: 1 1 auto;
-    min-width: 40px;
-  }
-
-  .sketch-side-panel__name {
+  .sketch-card__name {
     font-size: 0.7rem;
   }
 
-  .sketch-side-panel__stats {
-    font-size: 0.6rem;
-    gap: 2px;
+  .sketch-card__row2 {
+    padding-inline-start: 24px;
   }
 
-  .sketch-side-panel__km {
+  .sketch-card__row3 {
+    padding-inline-start: 24px;
+  }
+
+  .sketch-card__meta {
     font-size: 0.6rem;
   }
 
@@ -11937,10 +11945,9 @@ button:focus-visible,
     bottom: 60px;
   }
 
-  /* Recenter button in item row */
   .sketch-side-panel__recenter-btn {
-    min-width: 44px;
-    min-height: 44px;
+    min-width: 36px;
+    min-height: 36px;
     padding: 2px 4px;
   }
 
@@ -11948,14 +11955,9 @@ button:focus-visible,
     font-size: 14px;
   }
 
-  /* Visibility toggle */
   .sketch-side-panel__eye {
-    min-width: 44px;
-    min-height: 44px;
-    padding: 4px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    min-width: 36px;
+    min-height: 36px;
   }
 
   .sketch-side-panel__eye .material-icons {
@@ -11990,7 +11992,7 @@ button:focus-visible,
 
   .sketch-side-panel__item.active {
     background: rgba(37, 99, 235, 0.2);
-    border-inline-start-color: var(--color-accent, #60a5fa);
+    border-color: var(--color-accent, #60a5fa);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
   }
 

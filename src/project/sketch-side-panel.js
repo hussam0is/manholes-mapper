@@ -51,6 +51,15 @@ function formatSketchName(sketch) {
   return sketch.id ? sketch.id.replace('sk_', '#') : 'Sketch';
 }
 
+/** Detect if text is primarily LTR (Latin/digits) — used for BiDi wrapping */
+function isLtrText(str) {
+  if (!str) return false;
+  // Count Latin letters + digits vs Hebrew/Arabic chars
+  const ltr = (str.match(/[A-Za-z0-9_\-.]/g) || []).length;
+  const rtl = (str.match(/[\u0590-\u05FF\u0600-\u06FF]/g) || []).length;
+  return ltr > rtl;
+}
+
 let panelEl = null;
 let listEl = null;
 let _unsub = null;
@@ -214,7 +223,6 @@ function renderListView() {
       <span class="material-icons">visibility</span>
       <span>${esc(viewAllLabel)}</span>
     </button>
-    <span class="sketch-side-panel__toolbar-hint">${t('projects.canvas.multiSelectHint') || 'Double-click to edit'}</span>
   `;
   const viewAllBtn = toolbarEl.querySelector('.sketch-side-panel__view-all-btn');
   viewAllBtn.addEventListener('click', (e) => {
@@ -264,6 +272,10 @@ function renderListView() {
     const item = document.createElement('div');
     item.className = 'sketch-side-panel__item' + selectionClass;
     item.dataset.sketchId = sketch.id;
+    // Tooltip replaces the old floating "double-click to edit" hint text
+    if (!sketch.isActive) {
+      item.title = t('projects.canvas.multiSelectHint') || 'Double-click to edit';
+    }
 
     const nodeCount = (sketch.nodes || []).length;
     const displayName = formatSketchName(sketch);
@@ -319,29 +331,38 @@ function renderListView() {
       ? (t('projects.canvas.deselectSketch') || 'Deselect')
       : (t('projects.canvas.selectSketch') || 'Select');
 
+    // BiDi fix: wrap LTR names (English filenames like "me_rakat 2026-01-22") in dir="ltr" span
+    const nameDir = isLtrText(displayName) ? ' dir="ltr"' : '';
+
     item.innerHTML = `
-      <span class="sketch-side-panel__select-indicator" title="${esc(selectTitle)}">
-        <span class="material-icons">${selectIcon}</span>
-      </span>
-      <button class="sketch-side-panel__eye" title="${sketch.isVisible ? t('projects.canvas.hide') || 'Hide' : t('projects.canvas.show') || 'Show'}">
-        <span class="material-icons">${sketch.isVisible ? 'visibility' : 'visibility_off'}</span>
-      </button>
-      <div class="sketch-side-panel__info">
-        <div class="sketch-side-panel__info-row">
-          <span class="sketch-side-panel__name">${esc(displayName)}</span>
-          <span class="sketch-side-panel__badge">${nodeCount}</span>
+      <div class="sketch-card__row1">
+        <div class="sketch-card__title-group">
+          <span class="sketch-side-panel__select-indicator" title="${esc(selectTitle)}">
+            <span class="material-icons">${selectIcon}</span>
+          </span>
+          <span class="sketch-card__name"${nameDir}>${esc(displayName)}</span>
           ${editingBadge}
         </div>
-        <span class="sketch-side-panel__km-secondary">
+        <button class="sketch-side-panel__eye" title="${sketch.isVisible ? t('projects.canvas.hide') || 'Hide' : t('projects.canvas.show') || 'Show'}">
+          <span class="material-icons">${sketch.isVisible ? 'visibility' : 'visibility_off'}</span>
+        </button>
+      </div>
+      <div class="sketch-card__row2">
+        <span class="sketch-card__meta">
           <span class="material-icons">straighten</span>${km} ${t('projects.canvas.totalKm') || 'km'}
         </span>
+        <span class="sketch-side-panel__badge">${nodeCount}</span>
       </div>
-      <div class="sketch-side-panel__stats">
-        ${issuesBadge}
-        ${mergeModeBtn}
-        <button class="sketch-side-panel__recenter-btn" data-sketch-recenter="${sketch.id}" title="${t('projects.canvas.recenterToSketch') || 'Recenter to sketch'}">
-          <span class="material-icons">center_focus_strong</span>
-        </button>
+      <div class="sketch-card__row3">
+        <div class="sketch-card__alerts">
+          ${issuesBadge}
+        </div>
+        <div class="sketch-card__actions">
+          ${mergeModeBtn}
+          <button class="sketch-side-panel__recenter-btn" data-sketch-recenter="${sketch.id}" title="${t('projects.canvas.recenterToSketch') || 'Recenter to sketch'}">
+            <span class="material-icons">center_focus_strong</span>
+          </button>
+        </div>
       </div>
     `;
 
