@@ -1020,7 +1020,7 @@ body.cockpit-mode.heatmap-active #canvasContainer {
   }
 
   .intel-card__header .material-icons {
-    color: var(--color-text);
+    color: var(--color-text-bright, #f1f5f9);
   }
 
   .completion-ring__text {
