@@ -1871,6 +1871,12 @@ select.btn:focus-visible {
   .edge-legend {
     background: rgba(15, 23, 42, 0.85);
   }
+
+  .edge-legend-toggle {
+    background: rgba(30, 41, 59, 0.92);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #94a3b8;
+  }
 }
 
 /* Landscape: reposition layers config to avoid overflow */
@@ -1991,7 +1997,7 @@ canvas {
 
 .canvas-fab-toolbar.open .canvas-fab-toolbar__actions {
   pointer-events: auto;
-  max-width: 300px;
+  max-width: 400px;
   overflow: visible;
 }
 
@@ -2043,11 +2049,33 @@ canvas {
   transition-delay: 0.06s;
 }
 
+.canvas-fab-toolbar.open .canvas-fab-toolbar__item:nth-child(4) {
+  transition-delay: 0.09s;
+}
+
+.canvas-fab-toolbar.open .canvas-fab-toolbar__item:nth-child(5) {
+  transition-delay: 0.12s;
+}
+
+.canvas-fab-toolbar.open .canvas-fab-toolbar__item:nth-child(6) {
+  transition-delay: 0.15s;
+}
+
 /* Collapse faster (no stagger) — also fully hide items to prevent ghost touch targets */
 .canvas-fab-toolbar:not(.open) .canvas-fab-toolbar__item {
   transition-delay: 0s;
   pointer-events: none;
   visibility: hidden;
+}
+
+/* FAB zoom items: hidden on desktop, shown only on mobile (<=600px) */
+.fab-zoom-item {
+  display: none !important;
+}
+
+/* Edge legend toggle: hidden on desktop, shown on mobile */
+.edge-legend-toggle {
+  display: none;
 }
 
 /* On narrow portrait viewports, keep FAB horizontal (row-reverse) so it doesn't
@@ -6472,9 +6500,14 @@ select.invalid:focus {
 
   /* Do not offset canvas controls horizontally when bottom sheet is open */
   body.drawer-open .canvas-toolbar,
-  body.drawer-open .canvas-fab-toolbar,
   body.drawer-open .canvas-fab {
     inset-inline-end: 12px;
+  }
+
+  /* FAB toolbar stays on inline-start side (opposite toolbar) when drawer is open */
+  body.drawer-open .canvas-fab-toolbar {
+    inset-inline-end: auto;
+    inset-inline-start: 8px;
   }
 
   body.drawer-open .toggle-floating-keyboard {
@@ -6628,9 +6661,10 @@ select.invalid:focus {
   }
 
   .canvas-fab-toolbar {
-    inset-inline-end: 8px;
+    inset-inline-end: auto;
+    inset-inline-start: 8px;
     bottom: calc(60px + env(safe-area-inset-bottom, 0px));
-    transition: bottom 0.3s ease, inset-inline-end 240ms cubic-bezier(.2, .8, .2, 1);
+    transition: bottom 0.3s ease, inset-inline-start 240ms cubic-bezier(.2, .8, .2, 1);
   }
 
   .canvas-fab {
@@ -6666,6 +6700,98 @@ select.invalid:focus {
   /* Incomplete edge tracker mobile sizing (inside toolbar, no positioning needed) */
   .canvas-fab-toolbar .incomplete-tracker {
     font-size: 10px;
+  }
+
+  /* Issue #1: Hide zoom buttons + their preceding divider from canvas toolbar on mobile.
+     They are relocated to the FAB speed dial instead. */
+  #canvasZoomInBtn,
+  #canvasZoomOutBtn {
+    display: none !important;
+  }
+
+  /* Hide the divider before the zoom buttons (the one after redo).
+     It is the 3rd .canvas-toolbar-divider in #modeGroup. */
+  #modeGroup > .canvas-toolbar-divider:nth-of-type(3) {
+    display: none !important;
+  }
+
+  /* Show FAB zoom items on mobile */
+  .fab-zoom-item {
+    display: inline-flex !important;
+  }
+
+  /* FAB zoom button colors — distinct from other FAB items */
+  #fabZoomInBtn.canvas-fab-toolbar__item {
+    background: #0ea5e9; /* sky-500 */
+  }
+  #fabZoomInBtn.canvas-fab-toolbar__item:hover {
+    background: #0284c7; /* sky-600 */
+  }
+  #fabZoomOutBtn.canvas-fab-toolbar__item {
+    background: #64748b; /* slate-500 */
+  }
+  #fabZoomOutBtn.canvas-fab-toolbar__item:hover {
+    background: #475569; /* slate-600 */
+  }
+
+  /* Issue #2: Move FAB to opposite side from toolbar on mobile.
+     Toolbar is at inset-inline-end (left in RTL), so FAB goes to inset-inline-start (right in RTL). */
+  .canvas-fab-toolbar {
+    inset-inline-end: auto;
+    inset-inline-start: 8px;
+  }
+
+  /* Also update drawer-open FAB positioning to use inset-inline-start */
+  body.drawer-open .canvas-fab-toolbar {
+    inset-inline-end: auto;
+    inset-inline-start: 8px;
+  }
+
+  /* Issue #3: Edge legend auto-collapse on mobile */
+  .edge-legend {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  .edge-legend.collapsed {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.9);
+  }
+
+  /* Edge legend toggle button — shown on mobile only */
+  .edge-legend-toggle {
+    display: flex;
+    position: absolute;
+    top: 8px;
+    inset-inline-start: 8px;
+    z-index: 141; /* above edge legend (140) */
+    width: 32px;
+    height: 32px;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .edge-legend-toggle .material-icons {
+    font-size: 18px;
+  }
+
+  /* When legend is visible, hide the toggle so it doesn't overlap */
+  .edge-legend:not(.collapsed) ~ .edge-legend-toggle {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* When legend is collapsed, show the toggle */
+  .edge-legend.collapsed ~ .edge-legend-toggle {
+    opacity: 1;
+    pointer-events: auto;
   }
 
   /* Optimize edge legend for mobile: limit width to avoid overlapping canvas toolbar */
@@ -7372,6 +7498,27 @@ select.invalid:focus {
   /* Fix 3: .soft-blue-header dark mode — replace light-blue gradient with dark tones */
   .soft-blue-header {
     background: linear-gradient(135deg, var(--color-surface-alt) 0%, var(--color-surface) 100%);
+  }
+
+  /* Fix: header utility icons visibility in dark mode */
+  .soft-blue-header #controls .toolbar-group {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .soft-blue-header .segmented .btn {
+    color: var(--color-text-bright, #f1f5f9);
+  }
+
+  .soft-blue-header .btn-ghost {
+    color: var(--color-text-bright, #f1f5f9);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .soft-blue-header .segmented {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.15);
   }
 
   /* Fix 4: project-card and projects-modal dark mode */
