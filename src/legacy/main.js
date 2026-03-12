@@ -2102,6 +2102,16 @@ function renderDetails() {
   detailsContainer.innerHTML = '';
   if (selectedNode) {
     const node = selectedNode;
+    // Set dynamic sidebar title with element type icon
+    if (sidebarTitleEl) {
+      const nodeTypeLabel = node.nodeType === 'Home'
+        ? t('labels.homeConnection')
+        : node.nodeType === 'Drainage'
+          ? t('labels.drainage')
+          : t('labels.manhole');
+      const iconName = node.nodeType === 'Home' ? 'home' : node.nodeType === 'Drainage' ? 'water_drop' : 'album';
+      sidebarTitleEl.innerHTML = `<span class="material-icons">${iconName}</span>${window.escapeHtml(nodeTypeLabel)} #${window.escapeHtml(String(node.id))}`;
+    }
     const container = document.createElement('div');
     // Build node details form
     let materialOptions = '';
@@ -2290,7 +2300,7 @@ function renderDetails() {
     // Add delete button at the bottom (after connected lines if present)
     const deleteButtonWrapper = document.createElement('div');
     deleteButtonWrapper.className = 'details-actions';
-    deleteButtonWrapper.innerHTML = `<button id="deleteNodeBtn" class="btn btn-danger btn-full">${t('labels.deleteNode')}</button>`;
+    deleteButtonWrapper.innerHTML = `<button id="deleteNodeBtn" class="btn-danger-soft"><span class="material-icons" style="font-size:18px;">delete</span> ${t('labels.deleteNode')}</button>`;
     container.appendChild(deleteButtonWrapper);
     detailsContainer.appendChild(container);
     // ID rename listener
@@ -2404,12 +2414,20 @@ function renderDetails() {
     // Node type selection removed from UI per requirements
     // Delete node button listener
     const deleteNodeBtn = container.querySelector('#deleteNodeBtn');
+    let deleteNodeConfirmTimer = null;
     deleteNodeBtn.addEventListener('click', () => {
-      const hasConnections = edges.some((edge) => String(edge.tail) === String(node.id) || String(edge.head) === String(node.id));
-      if (hasConnections) {
-      const ok = confirm(t('confirms.deleteNodeWithEdges'));
-        if (!ok) return;
+      // Two-step confirmation: first click arms, second click within 3s deletes
+      if (!deleteNodeBtn.classList.contains('btn-danger-confirm')) {
+        deleteNodeBtn.classList.add('btn-danger-confirm');
+        deleteNodeBtn.innerHTML = `<span class="material-icons" style="font-size:18px;">warning</span> ${t('labels.confirmDeleteNode')}`;
+        clearTimeout(deleteNodeConfirmTimer);
+        deleteNodeConfirmTimer = setTimeout(() => {
+          deleteNodeBtn.classList.remove('btn-danger-confirm');
+          deleteNodeBtn.innerHTML = `<span class="material-icons" style="font-size:18px;">delete</span> ${t('labels.deleteNode')}`;
+        }, 3000);
+        return;
       }
+      clearTimeout(deleteNodeConfirmTimer);
       // Remove node and associated edges
       nodes = nodes.filter((n) => n !== node);
       edges = edges.filter((edge) => String(edge.tail) !== String(node.id) && String(edge.head) !== String(node.id));
@@ -2425,6 +2443,12 @@ function renderDetails() {
     const edge = selectedEdge;
     const tailNode = nodes.find((n) => String(n.id) === String(edge.tail));
     const headNode = nodes.find((n) => String(n.id) === String(edge.head));
+    // Set dynamic sidebar title with pipe icon
+    if (sidebarTitleEl) {
+      const lineLabel = t('labels.line');
+      const arrow = isRTL(currentLang) ? '&larr;' : '&rarr;';
+      sidebarTitleEl.innerHTML = `<span class="material-icons">timeline</span>${window.escapeHtml(lineLabel)} ${window.escapeHtml(String(edge.tail))} ${arrow} ${window.escapeHtml(String(edge.head))}`;
+    }
     const container = document.createElement('div');
     // Build dropdown options for material
     let materialOptions = '';
@@ -2468,14 +2492,9 @@ function renderDetails() {
     container.innerHTML = `
       <div class="details-section">
         <div class="details-grid two-col">
-          <div class="field col-span-2">
-            <div>${edge.tail} ${isRTL(currentLang) ? '←' : '→'} ${edge.head}</div>
+          <div class="field col-span-2" style="margin-bottom:0;">
+            <div style="font-weight:600;">${edge.tail} ${isRTL(currentLang) ? '←' : '→'} ${edge.head}</div>
           </div>
-        </div>
-      </div>
-
-      <div class="details-section">
-        <div class="details-grid two-col">
           <div class="field">
             <label for="edgeTypeSelect">${t('labels.edgeType')}</label>
             <select id="edgeTypeSelect">${edgeTypeOptions}</select>
@@ -2485,6 +2504,12 @@ function renderDetails() {
             <label for="edgeEngineeringStatusSelect">${t('labels.engineeringStatus')}</label>
             <select id="edgeEngineeringStatusSelect">${edgeEngineeringOptions}</select>
           </div>` : '<div class="field"></div>'}
+        </div>
+      </div>
+
+      <div class="panel-section-header">${t('labels.sectionProperties')}</div>
+      <div class="details-section">
+        <div class="details-grid two-col">
           <div class="field">
             <label for="edgeMaterialSelect">${t('labels.edgeMaterial')}</label>
             <select id="edgeMaterialSelect">${materialOptions}</select>
@@ -2501,6 +2526,7 @@ function renderDetails() {
       </div>
 
       ${(adminConfig.edges.include.fall_depth || adminConfig.edges.include.fall_position) ? `
+      <div class="panel-section-header">${t('labels.sectionFallGrade')}</div>
       <div class="details-section">
         <div class="details-grid two-col">
           ${adminConfig.edges.include.fall_depth ? `
@@ -2523,6 +2549,7 @@ function renderDetails() {
       </div>` : ''}
 
       ${(adminConfig.edges.include.tail_measurement || adminConfig.edges.include.head_measurement) ? `
+      <div class="panel-section-header">${t('labels.sectionMeasurements')}</div>
       <div class="details-section">
         <div class="details-grid two-col">
           ${adminConfig.edges.include.tail_measurement ? `
@@ -2542,12 +2569,12 @@ function renderDetails() {
       <div class="details-section">
         <div class="field">
           <div class="field-label">${t('labels.targetNote')}</div>
-          <div class="muted">${headNode.note}</div>
+          <div class="muted">${window.escapeHtml(headNode.note)}</div>
         </div>
       </div>` : ''}
 
       <div class="details-actions">
-        <button id="deleteEdgeBtn" class="btn btn-danger btn-full">${t('labels.deleteEdge')}</button>
+        <button id="deleteEdgeBtn" class="btn-danger-soft"><span class="material-icons" style="font-size:18px;">delete</span> ${t('labels.deleteEdge')}</button>
       </div>
     `;
     detailsContainer.appendChild(container);
@@ -2649,9 +2676,20 @@ function renderDetails() {
       });
     }
     const deleteEdgeBtn = container.querySelector('#deleteEdgeBtn');
+    let deleteEdgeConfirmTimer = null;
     deleteEdgeBtn.addEventListener('click', () => {
-      const ok = confirm(t('confirms.deleteEdge'));
-      if (!ok) return;
+      // Two-step confirmation: first click arms, second click within 3s deletes
+      if (!deleteEdgeBtn.classList.contains('btn-danger-confirm')) {
+        deleteEdgeBtn.classList.add('btn-danger-confirm');
+        deleteEdgeBtn.innerHTML = `<span class="material-icons" style="font-size:18px;">warning</span> ${t('labels.confirmDeleteEdge')}`;
+        clearTimeout(deleteEdgeConfirmTimer);
+        deleteEdgeConfirmTimer = setTimeout(() => {
+          deleteEdgeBtn.classList.remove('btn-danger-confirm');
+          deleteEdgeBtn.innerHTML = `<span class="material-icons" style="font-size:18px;">delete</span> ${t('labels.deleteEdge')}`;
+        }, 3000);
+        return;
+      }
+      clearTimeout(deleteEdgeConfirmTimer);
       edges = edges.filter((ed) => ed !== edge);
       selectedEdge = null;
       // Recompute node types after deletion
@@ -2663,7 +2701,9 @@ function renderDetails() {
     });
     
   } else {
-    detailsContainer.textContent = t('detailsDefault');  
+    // Reset sidebar title to default
+    if (sidebarTitleEl) sidebarTitleEl.textContent = t('sidebarTitle');
+    detailsContainer.textContent = t('detailsDefault');
   }
   // Toggle drawer visibility on tablet/mobile
   try {
