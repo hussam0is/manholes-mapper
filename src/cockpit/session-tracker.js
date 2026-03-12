@@ -121,13 +121,40 @@ function updateSessionDisplay() {
     } catch { /* ignore */ }
   }
 
-  if (nodesEl) {
-    const diff = currentNodeCount - nodesAtStart;
-    nodesEl.textContent = diff >= 0 ? `+${diff}` : String(diff);
-  }
-  if (edgesEl) {
-    const diff = currentEdgeCount - edgesAtStart;
-    edgesEl.textContent = diff >= 0 ? `+${diff}` : String(diff);
+  const nodeDiff = currentNodeCount - nodesAtStart;
+  const edgeDiff = currentEdgeCount - edgesAtStart;
+
+  // When both counts are 0 and session < 1 minute, show compact message
+  const nodeRow = nodesEl?.closest('.intel-session__row');
+  const edgeRow = edgesEl?.closest('.intel-session__row');
+  const sessionStartedEl = document.getElementById('sessionStartedMsg');
+
+  if (nodeDiff === 0 && edgeDiff === 0 && elapsed < 60) {
+    if (nodeRow) nodeRow.style.display = 'none';
+    if (edgeRow) edgeRow.style.display = 'none';
+    if (sessionStartedEl) sessionStartedEl.style.display = '';
+  } else {
+    if (sessionStartedEl) sessionStartedEl.style.display = 'none';
+
+    // Show node row: hide if 0, otherwise show just the number (no "+" prefix)
+    if (nodesEl && nodeRow) {
+      if (nodeDiff === 0) {
+        nodeRow.style.display = 'none';
+      } else {
+        nodeRow.style.display = '';
+        nodesEl.textContent = String(nodeDiff);
+      }
+    }
+
+    // Show edge row: hide if 0, otherwise show just the number (no "+" prefix)
+    if (edgesEl && edgeRow) {
+      if (edgeDiff === 0) {
+        edgeRow.style.display = 'none';
+      } else {
+        edgeRow.style.display = '';
+        edgesEl.textContent = String(edgeDiff);
+      }
+    }
   }
 }
 

@@ -507,6 +507,14 @@ body.cockpit-mode.zone-a-collapsed .cockpit {
   font-variant-numeric: tabular-nums;
 }
 
+.intel-session__started {
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+  text-align: center;
+  padding: 2px 0;
+  font-style: italic;
+}
+
 .intel-session__streak {
   display: flex;
   align-items: center;

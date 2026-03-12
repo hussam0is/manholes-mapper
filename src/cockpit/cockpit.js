@@ -97,11 +97,14 @@ function buildCockpitDOM() {
         </div>
         <div class="intel-session__row">
           <span data-i18n="cockpit.nodesPlaced">Nodes</span>
-          <span class="intel-session__value" id="sessionNodes">+0</span>
+          <span class="intel-session__value" id="sessionNodes">0</span>
         </div>
         <div class="intel-session__row">
           <span data-i18n="cockpit.edgesDrawn">Edges</span>
-          <span class="intel-session__value" id="sessionEdges">+0</span>
+          <span class="intel-session__value" id="sessionEdges">0</span>
+        </div>
+        <div class="intel-session__started" id="sessionStartedMsg">
+          <span data-i18n="cockpit.sessionStarted">Session started</span>
         </div>
         <div class="intel-session__streak" id="sessionStreak" style="display:none;">
           <span class="material-icons">local_fire_department</span>

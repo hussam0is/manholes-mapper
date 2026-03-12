@@ -2,12 +2,12 @@
 export const i18n = {
   he: {
     appTitle: 'ממפה שוחות',
-    modeNode: 'שוחה',
-    modeHome: 'בית',
-    modeDrainage: 'קולטן',
+    modeNode: 'הוסף שוחה (N)',
+    modeHome: 'הוסף חיבור בית',
+    modeDrainage: 'הוסף קולטן',
     modeForLater: 'למדידה מאוחרת',
     modeIssue: 'בעיה',
-    modeEdge: 'קו',
+    modeEdge: 'צייר קו (E)',
     home: 'בית',
     drainage: 'קולטן',
     forLater: 'למדידה מאוחרת',
