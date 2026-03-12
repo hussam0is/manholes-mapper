@@ -50,7 +50,7 @@ class GNSSStateManager {
       lon: null,
       alt: null,
       fixQuality: 0,
-      fixLabel: 'No Fix',
+      fixLabel: (typeof window !== 'undefined' && window.t?.('gnssMarker.noFix')) || 'No Fix',
       satellites: 0,
       hdop: null,
       speed: null,

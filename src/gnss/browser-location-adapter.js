@@ -12,18 +12,20 @@ let watchId = null;
 /**
  * Infer GNSS fix quality from browser geolocation accuracy (meters).
  * When TMM provides mock location, accuracy reflects Trimble RTK quality.
+ * Uses i18n labels when available (window.t), falls back to English.
  * @param {number} accuracyMeters - Horizontal accuracy in meters
  * @returns {{ fixQuality: number, fixLabel: string }}
  */
 export function inferFixQuality(accuracyMeters) {
+  const t = window.t || ((k) => null);
   if (accuracyMeters == null || isNaN(accuracyMeters)) {
-    return { fixQuality: 0, fixLabel: 'No Fix' };
+    return { fixQuality: 0, fixLabel: t('gnssMarker.noFix') || 'No Fix' };
   }
-  if (accuracyMeters < 0.05) return { fixQuality: 4, fixLabel: 'RTK Fixed' };
-  if (accuracyMeters < 0.5)  return { fixQuality: 5, fixLabel: 'RTK Float' };
-  if (accuracyMeters < 5)    return { fixQuality: 2, fixLabel: 'DGPS' };
-  if (accuracyMeters < 15)   return { fixQuality: 1, fixLabel: 'GPS' };
-  return { fixQuality: 0, fixLabel: 'Low Accuracy' };
+  if (accuracyMeters < 0.05) return { fixQuality: 4, fixLabel: t('gnssMarker.fixRtkFixed') || 'RTK Fixed' };
+  if (accuracyMeters < 0.5)  return { fixQuality: 5, fixLabel: t('gnssMarker.fixRtkFloat') || 'RTK Float' };
+  if (accuracyMeters < 5)    return { fixQuality: 2, fixLabel: t('gnssMarker.fixDgps') || 'DGPS' };
+  if (accuracyMeters < 15)   return { fixQuality: 1, fixLabel: t('gnssMarker.fixGps') || 'GPS' };
+  return { fixQuality: 0, fixLabel: t('gnssMarker.noFix') || 'Low Accuracy' };
 }
 
 /**
