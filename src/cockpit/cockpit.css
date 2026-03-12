@@ -1011,6 +1011,7 @@ body.cockpit-mode.heatmap-active #canvasContainer {
     background: var(--color-surface-alt);
     border-color: var(--color-border-strong);
     border-bottom-color: var(--color-border-strong);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   }
 
   .intel-card__header {
