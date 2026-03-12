@@ -2626,12 +2626,15 @@ canvas {
   margin-bottom: 0.5rem;
 }
 
-/* Make sidebar close button larger and more prominent for mobile use */
+/* Make sidebar close button larger and more prominent for field use (gloves) */
 #sidebarCloseBtn {
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  min-height: 44px;
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 50%;
   background: var(--color-danger-light);
   border-color: transparent;
@@ -2907,6 +2910,21 @@ canvas {
 @keyframes pulse-danger {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.75; }
+}
+
+/* ── Diameter gradient bar (edge panel) ── */
+.diameter-gradient-bar {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right, rgb(0, 0, 220), rgb(0, 180, 180), rgb(0, 200, 0), rgb(230, 200, 0), rgb(230, 0, 0));
+}
+
+@media (prefers-color-scheme: dark) {
+  .diameter-gradient-bar {
+    background: linear-gradient(to right, rgb(40, 40, 255), rgb(0, 200, 200), rgb(0, 220, 0), rgb(255, 220, 0), rgb(255, 40, 40));
+    opacity: 0.85;
+  }
 }
 
 /* ── Fix Suggestions (node/edge drawer) ── */
@@ -3248,7 +3266,7 @@ textarea.wizard-field-input {
   width: 100%;
   padding: 10px 16px;
   margin-top: 12px;
-  background: var(--color-accent, #2563eb);
+  background: var(--color-primary, #2563eb);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -3259,7 +3277,7 @@ textarea.wizard-field-input {
 }
 
 .save-next-btn:hover {
-  opacity: 0.9;
+  background: var(--color-primary-hover, #1d4ed8);
 }
 
 .save-next-btn .material-icons {

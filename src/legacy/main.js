@@ -7756,8 +7756,8 @@ function renderDetails() {
         </div>
         ${adminConfig.edges.include.line_diameter ? `
         <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--color-text-secondary,#888);margin-top:6px">
-          <span>10</span>
-          <div style="flex:1;height:8px;border-radius:4px;background:linear-gradient(to right,rgb(0,0,220),rgb(0,180,180),rgb(0,200,0),rgb(230,200,0),rgb(230,0,0))"></div>
+          <span>10 mm</span>
+          <div class="diameter-gradient-bar"></div>
           <span>2000 mm</span>
         </div>` : ''}
       </div>
