@@ -483,14 +483,47 @@ select.btn:focus-visible {
 .canvas-toolbar .segmented .btn {
   color: #f9fafb;
   border: none;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.06);
+  position: relative;
 }
 .canvas-toolbar .segmented .btn:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.18);
 }
 .canvas-toolbar .segmented .btn.active {
   background: var(--color-primary);
   color: #fff;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+/* Visual divider between tool groups in canvas toolbar */
+.canvas-toolbar-divider {
+  height: 1px;
+  margin: 2px 6px;
+  background: rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
+}
+/* CSS custom tooltips for canvas toolbar buttons — only when title is non-empty */
+.canvas-toolbar .segmented .btn[title]:not([title=""]):hover::after {
+  content: attr(title);
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 8px);
+  transform: translateY(-50%);
+  background: rgba(15, 23, 42, 0.92);
+  color: #f1f5f9;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  z-index: 200;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+/* LTR: tooltip appears on the left side of toolbar */
+[dir="ltr"] .canvas-toolbar .segmented .btn[title]:not([title=""]):hover::after {
+  right: auto;
+  left: calc(100% + 8px);
 }
 canvas { width: 100%; height: 100%; display: block; }
 /* Edge legend */
@@ -1766,6 +1799,14 @@ input.floating-keyboard-active {
   .canvas-toolbar {
     top: 8px;
     right: 8px;
+  }
+  /* Hide CSS tooltips on touch devices — native title still works on long-press */
+  .canvas-toolbar .segmented .btn[title]:not([title=""]):hover::after {
+    display: none;
+  }
+  /* Thinner divider on mobile */
+  .canvas-toolbar-divider {
+    margin: 1px 4px;
   }
   .canvas-fab {
     transition: bottom 0.3s ease;
