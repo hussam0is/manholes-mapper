@@ -55,20 +55,13 @@ function applyProjectsHomeMode(homePanel: HTMLElement) {
   const headerIcon = homePanel.querySelector('.home-panel-header-title .material-icons');
   if (headerIcon) headerIcon.textContent = 'dashboard';
 
-  // Add or reuse subtitle
-  let subtitleEl = homePanel.querySelector('.home-panel-header-subtitle') as HTMLElement | null;
-  if (!subtitleEl) {
-    subtitleEl = document.createElement('div');
-    subtitleEl.className = 'home-panel-header-subtitle';
-    const headerTitle = homePanel.querySelector('.home-panel-header-title');
-    if (headerTitle) headerTitle.after(subtitleEl);
-  }
-  subtitleEl.textContent = 'Select a project to work on';
-  subtitleEl.style.display = '';
+  // Remove old subtitle if it exists
+  const oldSubtitle = homePanel.querySelector('.home-panel-header-subtitle');
+  if (oldSubtitle) oldSubtitle.remove();
 
-  // Hide close button
+  // Show close button
   const closeBtn = document.getElementById('homePanelCloseBtn');
-  if (closeBtn) closeBtn.style.display = 'none';
+  if (closeBtn) closeBtn.style.display = '';
 
   // Hide footer
   const footer = homePanel.querySelector('.home-panel-footer') as HTMLElement;
@@ -90,10 +83,6 @@ function applySketchesHomeMode(homePanel: HTMLElement) {
   // Restore icon
   const headerIcon = homePanel.querySelector('.home-panel-header-title .material-icons');
   if (headerIcon) headerIcon.textContent = 'folder_open';
-
-  // Hide subtitle
-  const subtitleEl = homePanel.querySelector('.home-panel-header-subtitle') as HTMLElement | null;
-  if (subtitleEl) subtitleEl.style.display = 'none';
 
   // Restore close button
   const closeBtn = document.getElementById('homePanelCloseBtn');
@@ -137,21 +126,19 @@ describe('projects homepage DOM mutations', () => {
       expect(headerIcon.textContent).toBe('dashboard');
     });
 
-    it('creates subtitle element', () => {
+    it('removes old subtitle if present', () => {
+      // Create a subtitle to simulate legacy state
+      const subtitle = document.createElement('div');
+      subtitle.className = 'home-panel-header-subtitle';
+      homePanel.querySelector('.home-panel-header')!.appendChild(subtitle);
+
       applyProjectsHomeMode(homePanel);
-      const subtitle = homePanel.querySelector('.home-panel-header-subtitle');
-      expect(subtitle).not.toBeNull();
+      expect(homePanel.querySelector('.home-panel-header-subtitle')).toBeNull();
     });
 
-    it('subtitle has correct text', () => {
+    it('shows close button', () => {
       applyProjectsHomeMode(homePanel);
-      const subtitle = homePanel.querySelector('.home-panel-header-subtitle')!;
-      expect(subtitle.textContent).toBe('Select a project to work on');
-    });
-
-    it('hides close button', () => {
-      applyProjectsHomeMode(homePanel);
-      expect(closeBtn.style.display).toBe('none');
+      expect(closeBtn.style.display).toBe('');
     });
 
     it('hides footer', () => {
@@ -169,11 +156,11 @@ describe('projects homepage DOM mutations', () => {
       expect(homePanel.style.display).toBe('flex');
     });
 
-    it('reuses existing subtitle on re-render', () => {
+    it('has no subtitle after multiple renders', () => {
       applyProjectsHomeMode(homePanel);
       applyProjectsHomeMode(homePanel);
       const subtitles = homePanel.querySelectorAll('.home-panel-header-subtitle');
-      expect(subtitles.length).toBe(1);
+      expect(subtitles.length).toBe(0);
     });
   });
 
@@ -191,12 +178,6 @@ describe('projects homepage DOM mutations', () => {
     it('restores icon to folder_open', () => {
       applySketchesHomeMode(homePanel);
       expect(headerIcon.textContent).toBe('folder_open');
-    });
-
-    it('hides subtitle', () => {
-      applySketchesHomeMode(homePanel);
-      const subtitle = homePanel.querySelector('.home-panel-header-subtitle') as HTMLElement;
-      expect(subtitle.style.display).toBe('none');
     });
 
     it('restores close button visibility', () => {
@@ -222,7 +203,7 @@ describe('projects homepage DOM mutations', () => {
       applyProjectsHomeMode(homePanel);
       expect(homePanel.classList.contains('home-panel--projects')).toBe(true);
       expect(headerIcon.textContent).toBe('dashboard');
-      expect(closeBtn.style.display).toBe('none');
+      expect(closeBtn.style.display).toBe('');
     });
 
     it('cleanup is idempotent', () => {

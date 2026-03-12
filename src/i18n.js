@@ -576,6 +576,7 @@ export const i18n = {
         empty: 'אין שרטוטים בפרויקט זה',
         openProject: 'פתח פרויקט',
         untitledProject: 'פרויקט ללא שם',
+        sketches: 'שרטוטים',
       },
       canvas: {
         sketches: 'שרטוטים',
@@ -967,6 +968,11 @@ export const i18n = {
       issuesLeft: 'בעיות נותרו',
       continue: 'המשך',
       teamProgress: 'התקדמות צוות',
+      resumeWork: 'המשך עבודה',
+    },
+    home: {
+      searchPlaceholder: 'חיפוש...',
+      noSearchResults: 'לא נמצאו תוצאות',
     },
     profile: {
       title: 'פרופיל',
@@ -1665,6 +1671,7 @@ export const i18n = {
         empty: 'No sketches in this project',
         openProject: 'Open Project',
         untitledProject: 'Untitled Project',
+        sketches: 'sketches',
       },
       canvas: {
         sketches: 'Sketches',
@@ -2056,6 +2063,11 @@ export const i18n = {
       issuesLeft: 'Issues left',
       continue: 'Continue',
       teamProgress: 'Team progress',
+      resumeWork: 'Resume',
+    },
+    home: {
+      searchPlaceholder: 'Search...',
+      noSearchResults: 'No results found',
     },
     profile: {
       title: 'Profile',

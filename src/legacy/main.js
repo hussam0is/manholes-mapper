@@ -2688,84 +2688,62 @@ if (window.syncService?.onSyncStateChange) {
 /**
  * Render the Mission Control dashboard header with greeting, streak, and stats.
  */
-function renderMissionControlHeader() {
-  // Remove previous header if exists
-  const existing = document.getElementById('missionControlHeader');
+/**
+ * Render a compact "Resume Last Work" bar at the top of the sketch list.
+ * Replaces the old Mission Control header with a single-row bar showing
+ * the most recent sketch name, inline stats, and a Continue button.
+ */
+function renderResumeBar() {
+  // Remove previous bar if exists
+  const existing = document.getElementById('resumeBar');
   if (existing) existing.remove();
 
-  const header = document.createElement('div');
-  header.id = 'missionControlHeader';
-  header.className = 'mission-control-header';
-
-  // Time-based greeting
-  const hour = new Date().getHours();
-  let greetingKey = 'homeScreen.goodMorning';
-  if (hour >= 12 && hour < 17) greetingKey = 'homeScreen.goodAfternoon';
-  else if (hour >= 17) greetingKey = 'homeScreen.goodEvening';
-  const userName = window.authGuard?.getAuthState?.()?.name || '';
-  const greeting = userName ? `${t(greetingKey)}, ${escapeHtml(userName)}` : t(greetingKey);
-
-  // Streak
-  const streak = parseInt(localStorage.getItem('cockpit_streak') || '0', 10);
-  const streakBadge = streak > 0 ? `<span class="mc-streak"><span class="material-icons">local_fire_department</span>${streak}</span>` : '';
-
-  // Session stats (delta during current session)
-  const sessionStats = window.__getSessionStats?.() || {};
-  const nodesPlaced = sessionStats.nodesPlaced || 0;
-  const edgesDrawn = sessionStats.edgesDrawn || 0;
-
-  // Current sketch totals
-  const totalNodes = (nodes || []).length;
-  const totalEdges = (edges || []).length;
-
-  // Active sketch card
+  // Find the most recently updated sketch
   const lib = getLibrary();
-  const activeSketch = lib.length > 0 ? lib.sort((a, b) => {
+  if (lib.length === 0) return;
+
+  const activeSketch = [...lib].sort((a, b) => {
     const aTime = new Date(a.updatedAt || a.createdAt || 0).getTime();
     const bTime = new Date(b.updatedAt || b.createdAt || 0).getTime();
     return bTime - aTime;
-  })[0] : null;
+  })[0];
+  if (!activeSketch) return;
 
-  let activeSketchHtml = '';
-  if (activeSketch) {
-    const name = escapeHtml(formatSketchDisplayName(activeSketch));
-    activeSketchHtml = `
-      <div class="mc-active-sketch">
-        <div class="mc-active-sketch__label">${t('homeScreen.activeSketch')}</div>
-        <div class="mc-active-sketch__name">${name}</div>
-        <button class="mc-active-sketch__continue" data-sketch-id="${escapeHtml(String(activeSketch.id))}">
-          <span class="material-icons">play_arrow</span> ${t('homeScreen.continue')}
-        </button>
-      </div>`;
-  }
+  const bar = document.createElement('div');
+  bar.id = 'resumeBar';
+  bar.className = 'resume-bar';
 
-  header.innerHTML = `
-    <div class="mc-greeting">${greeting} ${streakBadge}</div>
-    <div class="mc-stats-row">
-      <div class="mc-stats-card">
-        <span class="material-icons">radio_button_unchecked</span>
-        <span class="mc-stats-card__value">${totalNodes}${nodesPlaced > 0 ? `<span class="mc-stats-card__delta">+${nodesPlaced}</span>` : ''}</span>
-        <span class="mc-stats-card__label">${t('cockpit.nodes')}</span>
-      </div>
-      <div class="mc-stats-card">
-        <span class="material-icons">timeline</span>
-        <span class="mc-stats-card__value">${totalEdges}${edgesDrawn > 0 ? `<span class="mc-stats-card__delta">+${edgesDrawn}</span>` : ''}</span>
-        <span class="mc-stats-card__label">${t('cockpit.edges')}</span>
-      </div>
-    </div>
-    ${activeSketchHtml}
-  `;
+  const name = escapeHtml(formatSketchDisplayName(activeSketch));
+  const nodeCount = activeSketch.nodeCount ?? (activeSketch.nodes || []).length;
+  const edgeCount = activeSketch.edgeCount ?? (activeSketch.edges || []).length;
 
-  // Insert at top of home panel body (before sketch list)
+  // Streak badge
+  const streak = parseInt(localStorage.getItem('cockpit_streak') || '0', 10);
+  const streakHtml = streak > 0 ? `<span class="resume-bar__streak"><span class="material-icons">local_fire_department</span>${streak}</span>` : '';
+
+  bar.innerHTML = `
+    <span class="resume-bar__icon material-icons">play_circle</span>
+    <span class="resume-bar__name" title="${name}">${name}</span>
+    ${streakHtml}
+    <span class="resume-bar__stats">
+      <span class="material-icons">account_tree</span>${nodeCount}
+      <span class="material-icons">timeline</span>${edgeCount}
+    </span>
+    <button class="resume-bar__btn" data-sketch-id="${escapeHtml(String(activeSketch.id))}">
+      <span class="material-icons">play_arrow</span>
+      <span>${t('homeScreen.resumeWork')}</span>
+    </button>`;
+
+  // Insert before sketch list
   if (homePanel) {
     const body = homePanel.querySelector('.home-panel-body') || sketchListEl?.parentElement;
     if (body) {
-      body.insertBefore(header, body.firstChild);
+      body.insertBefore(bar, body.firstChild);
     }
   }
 
   // Wire continue button
-  const continueBtn = header.querySelector('.mc-active-sketch__continue');
+  const continueBtn = bar.querySelector('.resume-bar__btn');
   if (continueBtn) {
     continueBtn.addEventListener('click', () => {
       const sketchId = continueBtn.dataset.sketchId;
@@ -2774,10 +2752,57 @@ function renderMissionControlHeader() {
   }
 }
 
+/**
+ * Render a search bar in the home panel for filtering projects/sketches.
+ * Inserts between mode tabs and sketch tabs (or list content).
+ */
+function renderSearchBar() {
+  let searchBar = homePanel?.querySelector('.home-search-bar');
+  if (!searchBar) {
+    searchBar = document.createElement('div');
+    searchBar.className = 'home-search-bar';
+    searchBar.innerHTML = `
+      <span class="home-search-bar__icon material-icons">search</span>
+      <input type="search" class="home-search-bar__input" placeholder="${t('home.searchPlaceholder')}" autocomplete="off" />`;
+    // Insert after sketch tabs or mode tabs
+    const sketchTabs = document.getElementById('sketchTabs');
+    const modeTabs = homePanel?.querySelector('.home-mode-tabs');
+    const insertAfter = sketchTabs || modeTabs;
+    if (insertAfter && insertAfter.parentNode) {
+      insertAfter.parentNode.insertBefore(searchBar, insertAfter.nextSibling);
+    } else if (homePanel) {
+      const content = homePanel.querySelector('.home-panel-content');
+      if (content) content.insertBefore(searchBar, content.firstChild);
+    }
+    // Wire input handler
+    const input = searchBar.querySelector('.home-search-bar__input');
+    if (input) {
+      input.addEventListener('input', () => {
+        homeSearchQuery = input.value.trim().toLowerCase();
+        if (homeMode === 'projects') renderProjectsHome();
+        else renderHome();
+      });
+    }
+  }
+  // Update placeholder based on mode
+  const input = searchBar.querySelector('.home-search-bar__input');
+  if (input) {
+    input.placeholder = t('home.searchPlaceholder');
+    // Preserve the query in the input
+    if (homeSearchQuery && input.value !== homeSearchQuery) {
+      input.value = homeSearchQuery;
+    }
+  }
+  // Show/hide based on mode (always show)
+  searchBar.style.display = '';
+}
+
 // Track the current sketch tab (personal or organization)
 let currentSketchTab = 'personal';
 // Track which home mode is active: 'projects' or 'sketches'
 let homeMode = 'projects';
+// Search query for home panel filtering
+let homeSearchQuery = '';
 
 function renderHome() {
   if (!homePanel || !sketchListEl) return;
@@ -2789,9 +2814,6 @@ function renderHome() {
   if (homeTitleEl) homeTitleEl.textContent = t('homeTitle');
   const headerIcon = homePanel.querySelector('.home-panel-header-title .material-icons');
   if (headerIcon) headerIcon.textContent = 'folder_open';
-  // Hide subtitle
-  const subtitleEl = homePanel.querySelector('.home-panel-header-subtitle');
-  if (subtitleEl) subtitleEl.style.display = 'none';
   // Restore close button
   const closeBtn = document.getElementById('homePanelCloseBtn');
   if (closeBtn) closeBtn.style.display = '';
@@ -2820,8 +2842,11 @@ function renderHome() {
   homePanel.classList.remove('panel-closing');
   homePanel.style.display = 'flex';
 
-  // Mission Control dashboard header
-  renderMissionControlHeader();
+  // Compact resume bar (replaces old Mission Control header)
+  renderResumeBar();
+
+  // Search bar
+  renderSearchBar();
 
   // Update sync status
   if (window.syncService?.getSyncState) {
@@ -2876,13 +2901,23 @@ function renderHome() {
   const lib = getLibrary();
   
   // Filter sketches based on selected tab
-  const filteredLib = lib.filter(rec => {
+  let filteredLib = lib.filter(rec => {
     if (currentSketchTab === 'personal') {
       return rec.isOwner === true || rec.isOwner === undefined; // Include undefined for backwards compatibility
     } else {
       return rec.isOwner === false; // Organization sketches (not owned by current user)
     }
   });
+
+  // Apply search filter
+  if (homeSearchQuery) {
+    filteredLib = filteredLib.filter(rec => {
+      const name = (formatSketchDisplayName(rec) || '').toLowerCase();
+      const createdBy = (rec.createdBy || '').toLowerCase();
+      const modifiedBy = (rec.lastEditedBy || '').toLowerCase();
+      return name.includes(homeSearchQuery) || createdBy.includes(homeSearchQuery) || modifiedBy.includes(homeSearchQuery);
+    });
+  }
 
   // Stable sort: newest updated first, then by ID as tiebreaker
   filteredLib.sort((a, b) => {
@@ -2910,9 +2945,11 @@ function renderHome() {
   if (filteredLib.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'sketch-list-empty';
+    const emptyIcon = homeSearchQuery ? 'search_off' : 'inbox';
+    const emptyText = homeSearchQuery ? t('home.noSearchResults') : (currentSketchTab === 'organization' ? t('noOrganizationSketches') || 'No organization sketches' : t('noSketches'));
     empty.innerHTML = `
-      <span class="material-icons">inbox</span>
-      <span>${currentSketchTab === 'organization' ? t('noOrganizationSketches') || 'No organization sketches' : t('noSketches')}</span>
+      <span class="material-icons">${emptyIcon}</span>
+      <span>${emptyText}</span>
     `;
     sketchListEl.appendChild(empty);
   } else {
@@ -3219,6 +3256,10 @@ function renderHomeModeTabs(activeMode) {
   // Attach click handlers (always re-attach since innerHTML was replaced)
   tabBar.querySelectorAll('.home-mode-tab').forEach(btn => {
     btn.addEventListener('click', () => {
+      // Clear search when switching modes
+      homeSearchQuery = '';
+      const searchInput = homePanel?.querySelector('.home-search-bar__input');
+      if (searchInput) searchInput.value = '';
       const mode = btn.getAttribute('data-home-mode');
       if (mode === 'projects') renderProjectsHome();
       else renderHome();
@@ -3251,16 +3292,9 @@ async function renderProjectsHome() {
   const headerIcon = homePanel.querySelector('.home-panel-header-title .material-icons');
   if (headerIcon) headerIcon.textContent = 'dashboard';
 
-  // Add subtitle below title
-  let subtitleEl = homePanel.querySelector('.home-panel-header-subtitle');
-  if (!subtitleEl) {
-    subtitleEl = document.createElement('div');
-    subtitleEl.className = 'home-panel-header-subtitle';
-    const headerTitle = homePanel.querySelector('.home-panel-header-title');
-    if (headerTitle) headerTitle.after(subtitleEl);
-  }
-  subtitleEl.textContent = t('projects.homepage.subtitle');
-  subtitleEl.style.display = '';
+  // Remove old subtitle if it exists
+  const oldSubtitle = homePanel.querySelector('.home-panel-header-subtitle');
+  if (oldSubtitle) oldSubtitle.remove();
 
   // Show close button so user can dismiss the panel and access the canvas
   const closeBtn = document.getElementById('homePanelCloseBtn');
@@ -3268,6 +3302,9 @@ async function renderProjectsHome() {
 
   // Render top-level mode tabs (Projects | My Sketches) for quick switching
   renderHomeModeTabs('projects');
+
+  // Search bar
+  renderSearchBar();
 
   // Hide footer in projects mode (mode tabs replace the old footer button)
   const footer = homePanel.querySelector('.home-panel-footer');
@@ -3288,7 +3325,7 @@ async function renderProjectsHome() {
     const res = await fetch('/api/projects');
     if (!res.ok) throw new Error('Failed to fetch projects');
     const data = await res.json();
-    const projects = data.projects || [];
+    let projects = data.projects || [];
 
     if (projects.length === 0) {
       // No projects: fall back to old sketch list
@@ -3296,7 +3333,26 @@ async function renderProjectsHome() {
       return;
     }
 
+    // Apply search filter
+    if (homeSearchQuery) {
+      projects = projects.filter(p => {
+        const name = (p.name || '').toLowerCase();
+        const desc = (p.description || '').toLowerCase();
+        return name.includes(homeSearchQuery) || desc.includes(homeSearchQuery);
+      });
+    }
+
     sketchListEl.innerHTML = '';
+
+    if (projects.length === 0) {
+      // Search returned no results
+      sketchListEl.innerHTML = `
+        <div class="sketch-list-empty">
+          <span class="material-icons">search_off</span>
+          <span>${t('home.noSearchResults')}</span>
+        </div>`;
+      return;
+    }
 
     for (const project of projects) {
       const card = document.createElement('div');
@@ -3304,6 +3360,8 @@ async function renderProjectsHome() {
       const safeProjectId = escapeHtml(project.id);
       const safeProjectName = escapeHtml(project.name || (t('projects.homepage.untitledProject') || 'Untitled Project'));
       const safeProjectDescription = project.description ? escapeHtml(project.description) : '';
+      const sketchCount = project.sketchCount || 0;
+      const updatedDate = project.updatedAt ? new Date(project.updatedAt).toLocaleDateString(currentLang === 'he' ? 'he-IL' : 'en-GB') : '';
       card.innerHTML = `
         <div class="sketch-card-header">
           <div class="sketch-card-icon">
@@ -3311,6 +3369,11 @@ async function renderProjectsHome() {
           </div>
           <div class="sketch-card-info">
             <div class="sketch-card-title">${safeProjectName}</div>
+            <div class="sketch-card-meta">
+              <span class="material-icons">layers</span>
+              <span>${sketchCount} ${t('projects.homepage.sketches') || ''}</span>
+              ${updatedDate ? `<span class="sketch-card-meta__sep"></span><span class="material-icons">schedule</span><span>${updatedDate}</span>` : ''}
+            </div>
             ${safeProjectDescription ? `<div class="sketch-card-meta">${safeProjectDescription}</div>` : ''}
           </div>
         </div>

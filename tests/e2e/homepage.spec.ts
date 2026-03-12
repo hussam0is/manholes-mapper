@@ -28,16 +28,21 @@ const MOCK_PROJECTS = [
     id: 'proj-aaa',
     name: 'North District',
     description: 'Northern infrastructure survey',
+    sketchCount: 5,
+    updatedAt: '2026-02-15T10:00:00Z',
   },
   {
     id: 'proj-bbb',
     name: 'South District',
     description: 'Southern manholes mapping',
+    sketchCount: 3,
+    updatedAt: '2026-01-20T08:00:00Z',
   },
   {
     id: 'proj-ccc',
     name: 'Central Area',
     description: '',
+    sketchCount: 0,
   },
 ];
 
@@ -289,14 +294,11 @@ test.describe('Projects Homepage', () => {
     await expect(icon).toHaveText('dashboard');
   });
 
-  test('should show subtitle text', async ({ page }) => {
+  test('should NOT have subtitle element (removed in refactor)', async ({ page }) => {
     await gotoHomeAuthenticated(page);
 
     const subtitle = page.locator('.home-panel-header-subtitle');
-    await expect(subtitle).toBeVisible();
-    // Should have some text (language-dependent)
-    const text = await subtitle.textContent();
-    expect(text!.trim().length).toBeGreaterThan(0);
+    await expect(subtitle).toHaveCount(0);
   });
 
   test('should render project cards', async ({ page }) => {
@@ -318,10 +320,12 @@ test.describe('Projects Homepage', () => {
   test('should display project descriptions when present', async ({ page }) => {
     await gotoHomeAuthenticated(page);
 
-    // First two projects have descriptions
-    const metas = page.locator('.project-card .sketch-card-meta');
-    await expect(metas.nth(0)).toHaveText('Northern infrastructure survey');
-    await expect(metas.nth(1)).toHaveText('Southern manholes mapping');
+    // Each project card now has a sketch-count meta row + optional description meta row.
+    // First two projects have descriptions — check last .sketch-card-meta in each card.
+    const firstCardDesc = page.locator('.project-card').nth(0).locator('.sketch-card-meta').last();
+    await expect(firstCardDesc).toHaveText('Northern infrastructure survey');
+    const secondCardDesc = page.locator('.project-card').nth(1).locator('.sketch-card-meta').last();
+    await expect(secondCardDesc).toHaveText('Southern manholes mapping');
   });
 
   test('should have folder icon on each project card', async ({ page }) => {
@@ -351,15 +355,11 @@ test.describe('Projects Homepage', () => {
     await expect(closeBtn).toBeVisible();
   });
 
-  test('should show footer with View My Sketches button in projects mode', async ({ page }) => {
+  test('should hide footer in projects mode', async ({ page }) => {
     await gotoHomeAuthenticated(page);
 
     const footer = page.locator('.home-panel-footer');
-    await expect(footer).toBeVisible();
-
-    // Footer should contain "View My Sketches" button
-    const viewSketchesBtn = page.locator('#viewMySketchesBtn');
-    await expect(viewSketchesBtn).toBeVisible();
+    await expect(footer).toBeHidden();
   });
 
   test('should hide sketch tabs in projects mode', async ({ page }) => {
