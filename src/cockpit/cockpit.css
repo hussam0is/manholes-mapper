@@ -321,6 +321,35 @@ body.cockpit-mode.zone-a-collapsed .cockpit {
   font-size: 12px;
 }
 
+/* Minimized GPS card — compact single-row when no adapter connected */
+.intel-gps--minimized {
+  padding: 6px 8px;
+  gap: 0;
+}
+
+.intel-gps--minimized .intel-card__header {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+
+/* In minimized state, put dot inline with header */
+.intel-gps--minimized .intel-card__header::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #94a3b8;
+  margin-inline-start: auto;
+  flex-shrink: 0;
+}
+
+.intel-gps--minimized .intel-gps__fix,
+.intel-gps--minimized .intel-gps__accuracy,
+.intel-gps--minimized .intel-gps__satellites {
+  display: none;
+}
+
 .intel-gps__stale {
   opacity: 0.5;
 }

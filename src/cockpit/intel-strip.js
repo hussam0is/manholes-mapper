@@ -5,6 +5,7 @@
 
 let staleTimer = null;
 let lastPositionTime = 0;
+let _gnssEverConnected = false;
 
 /**
  * Initialize Intel Strip event listeners
@@ -69,7 +70,8 @@ export function updateIntelStrip(completion) {
 }
 
 /**
- * Update GPS status display
+ * Update GPS status display.
+ * When GNSS has never connected this session, minimize the card to a single row.
  */
 function updateGPS(gnssState) {
   const dot = document.getElementById('gpsDot');
@@ -81,7 +83,19 @@ function updateGPS(gnssState) {
   if (!dot || !label) return;
 
   const pos = gnssState.position;
-  const connected = gnssState.connectionState === 'connected';
+  const connState = gnssState.connectionState;
+  const connected = connState === 'connected';
+  const connecting = connState === 'connecting';
+
+  // Track if GNSS has ever connected or started connecting this session
+  if (connected || connecting) {
+    _gnssEverConnected = true;
+  }
+
+  // Minimize card when disconnected and never connected this session
+  if (card) {
+    card.classList.toggle('intel-gps--minimized', !_gnssEverConnected && !connected && !connecting);
+  }
 
   // Remove stale class on fresh update
   card?.classList.remove('intel-gps__stale');
@@ -89,8 +103,8 @@ function updateGPS(gnssState) {
   if (!connected || !pos?.isValid) {
     dot.className = 'intel-gps__dot intel-gps__dot--no-fix';
     label.textContent = window.t?.('cockpit.noFix') || 'No Fix';
-    accuracy.textContent = '--';
-    satCount.textContent = '0';
+    if (accuracy) accuracy.textContent = '--';
+    if (satCount) satCount.textContent = '0';
     return;
   }
 
