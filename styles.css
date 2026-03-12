@@ -2912,6 +2912,49 @@ canvas {
   50% { opacity: 0.75; }
 }
 
+/* ── Panel section headers (compact uppercase dividers between logical groups) ── */
+.panel-section-header {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary, #475569);
+  padding: 8px 0 4px;
+  margin-top: 8px;
+  border-top: 1px solid var(--color-border, #e5e7eb);
+}
+.panel-section-header:first-of-type {
+  border-top: none;
+  margin-top: 0;
+}
+
+/* ── Soft danger button (outlined delete actions with icon) ── */
+.btn-danger-soft {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid var(--color-danger, #ef4444);
+  border-radius: 8px;
+  background: #fef2f2;
+  color: var(--color-danger, #ef4444);
+  font-weight: 500;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-danger-soft:hover {
+  background: #fee2e2;
+}
+.btn-danger-soft.btn-danger-confirm {
+  background: var(--color-danger, #ef4444);
+  color: white;
+  animation: pulse-danger 1s ease-in-out infinite;
+}
+
 /* ── Diameter gradient bar (edge panel) ── */
 .diameter-gradient-bar {
   flex: 1;
@@ -2975,6 +3018,20 @@ canvas {
   .btn-fix-suggestion:hover,
   .btn-fix-suggestion:active {
     background: rgba(234, 179, 8, 0.22);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .panel-section-header {
+    color: var(--color-text-secondary, #94a3b8);
+    border-color: var(--color-border, #1f2937);
+  }
+  .btn-danger-soft {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.4);
+  }
+  .btn-danger-soft:hover {
+    background: rgba(239, 68, 68, 0.2);
   }
 }
 

@@ -7074,7 +7074,7 @@ function renderDetails() {
         const ceSortedFallPositionOptions = getSortedOptions('edges', 'fall_position', ceFallPositionOptions);
 
         const connectedLinesText = t('labels.connectedLines');
-        let html = `<div class="details-section"><div class="details-section-title">${connectedLinesText}</div>`;
+        let html = `<div class="details-section"><div class="panel-section-header">${connectedLinesText}</div>`;
         connectedEdges.forEach((e, ceIdx) => {
           const isTail = String(e.tail) === String(node.id);
           const otherNodeId = isTail ? e.head : e.tail;
@@ -7411,7 +7411,7 @@ function renderDetails() {
     // Add delete button at the bottom (after connected lines if present)
     const deleteButtonWrapper = document.createElement('div');
     deleteButtonWrapper.className = 'details-actions';
-    deleteButtonWrapper.innerHTML = `<button id="deleteNodeBtn" class="btn btn-danger btn-full">${t('labels.deleteNode')}</button>`;
+    deleteButtonWrapper.innerHTML = `<button id="deleteNodeBtn" class="btn-danger-soft"><span class="material-icons" style="font-size:18px">delete</span> ${t('labels.deleteNode')}</button>`;
     container.appendChild(deleteButtonWrapper);
 
     // ── Measurement metadata (below delete button, bottom of panel) ──
@@ -7632,18 +7632,18 @@ function renderDetails() {
     const deleteNodeBtn = container.querySelector('#deleteNodeBtn');
     let _nodeDeleteConfirmTimer = null;
     deleteNodeBtn.addEventListener('click', () => {
-      if (deleteNodeBtn.classList.contains('btn-danger--confirming')) {
+      if (deleteNodeBtn.classList.contains('btn-danger-confirm')) {
         // Second tap — perform deletion (skip confirm dialog, already confirmed via UI)
         clearTimeout(_nodeDeleteConfirmTimer);
         deleteNodeShared(node, true, true);
       } else {
         // First tap — enter confirm state
-        const originalText = deleteNodeBtn.textContent;
-        deleteNodeBtn.textContent = t('labels.confirmDeleteNode');
-        deleteNodeBtn.classList.add('btn-danger--confirming');
+        const originalHTML = deleteNodeBtn.innerHTML;
+        deleteNodeBtn.innerHTML = `<span class="material-icons" style="font-size:18px">warning</span> ${t('labels.confirmDeleteNode')}`;
+        deleteNodeBtn.classList.add('btn-danger-confirm');
         _nodeDeleteConfirmTimer = setTimeout(() => {
-          deleteNodeBtn.textContent = originalText;
-          deleteNodeBtn.classList.remove('btn-danger--confirming');
+          deleteNodeBtn.innerHTML = originalHTML;
+          deleteNodeBtn.classList.remove('btn-danger-confirm');
         }, 3000);
       }
     });
@@ -7724,7 +7724,7 @@ function renderDetails() {
       </div>
 
       <div class="details-section">
-        <div class="details-section-title">${t('labels.edgeSectionClassification')}</div>
+        <div class="panel-section-header">${t('labels.edgeSectionClassification')}</div>
         <div class="details-grid two-col">
           <div class="field">
             <label for="edgeTypeSelect">${t('labels.edgeType')}</label>
@@ -7739,7 +7739,7 @@ function renderDetails() {
       </div>
 
       <div class="details-section">
-        <div class="details-section-title">${t('labels.edgeSectionPhysical')}</div>
+        <div class="panel-section-header">${t('labels.edgeSectionPhysical')}</div>
         <div class="details-grid two-col">
           <div class="field">
             <label for="edgeMaterialSelect">${t('labels.edgeMaterial')}</label>
@@ -7764,7 +7764,7 @@ function renderDetails() {
 
       ${(adminConfig.edges.include.fall_depth || adminConfig.edges.include.fall_position || adminConfig.edges.include.tail_measurement || adminConfig.edges.include.head_measurement) ? `
       <div class="details-section">
-        <div class="details-section-title">${t('labels.edgeSectionMeasurements')}</div>
+        <div class="panel-section-header">${t('labels.edgeSectionMeasurements')}</div>
         <div class="details-grid measurements-single-col">
           ${adminConfig.edges.include.fall_depth ? `
           <div class="field">
@@ -7801,7 +7801,7 @@ function renderDetails() {
       </div>` : ''}
 
       <div class="details-actions">
-        <button id="deleteEdgeBtn" class="btn btn-danger btn-full">${t('labels.deleteEdge')}</button>
+        <button id="deleteEdgeBtn" class="btn-danger-soft"><span class="material-icons" style="font-size:18px">delete</span> ${t('labels.deleteEdge')}</button>
       </div>
     `;
     detailsContainer.appendChild(container);
@@ -8064,18 +8064,18 @@ function renderDetails() {
     const deleteEdgeBtn = container.querySelector('#deleteEdgeBtn');
     let _edgeDeleteConfirmTimer = null;
     deleteEdgeBtn.addEventListener('click', () => {
-      if (deleteEdgeBtn.classList.contains('btn-danger--confirming')) {
+      if (deleteEdgeBtn.classList.contains('btn-danger-confirm')) {
         // Second tap — perform deletion (skip confirm dialog, already confirmed via UI)
         clearTimeout(_edgeDeleteConfirmTimer);
         deleteEdgeShared(edge, true, true);
       } else {
         // First tap — enter confirm state
-        const originalText = deleteEdgeBtn.textContent;
-        deleteEdgeBtn.textContent = t('labels.confirmDeleteEdge');
-        deleteEdgeBtn.classList.add('btn-danger--confirming');
+        const originalHTML = deleteEdgeBtn.innerHTML;
+        deleteEdgeBtn.innerHTML = `<span class="material-icons" style="font-size:18px">warning</span> ${t('labels.confirmDeleteEdge')}`;
+        deleteEdgeBtn.classList.add('btn-danger-confirm');
         _edgeDeleteConfirmTimer = setTimeout(() => {
-          deleteEdgeBtn.textContent = originalText;
-          deleteEdgeBtn.classList.remove('btn-danger--confirming');
+          deleteEdgeBtn.innerHTML = originalHTML;
+          deleteEdgeBtn.classList.remove('btn-danger-confirm');
         }, 3000);
       }
     });
