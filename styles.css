@@ -1287,12 +1287,12 @@ select.btn:focus-visible {
   }
 
   .canvas-toolbar .segmented .btn {
-    color: #94a3b8;
+    color: #cbd5e1; /* slate-300 — better contrast than slate-400 (#94a3b8) */
   }
 
   .canvas-toolbar .segmented .btn:hover {
     background: rgba(37, 99, 235, 0.2);
-    color: #93c5fd;
+    color: #e2e8f0; /* slate-200 — brighter on hover */
   }
 
   .canvas-toolbar .segmented .btn.active {
@@ -1311,7 +1311,7 @@ select.btn:focus-visible {
 
   .my-location-btn:hover {
     background: rgba(37, 99, 235, 0.2);
-    color: #93c5fd;
+    color: #e2e8f0;
   }
 
   /* Dark-mode flyout panel */
@@ -1322,12 +1322,12 @@ select.btn:focus-visible {
   }
 
   .node-type-flyout .btn {
-    color: #94a3b8;
+    color: #cbd5e1; /* slate-300 — better contrast than slate-400 */
   }
 
   .node-type-flyout .btn:hover {
     background: rgba(37, 99, 235, 0.2);
-    color: #93c5fd;
+    color: #e2e8f0; /* slate-200 */
   }
 
   .node-type-flyout .btn.active {
