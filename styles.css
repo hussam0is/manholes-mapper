@@ -9136,7 +9136,8 @@ select.invalid:focus {
 
   .sketch-card {
     background: var(--color-surface-alt);
-    border-color: var(--color-border);
+    border-color: var(--color-border-dark, #334155);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   }
 
   .sketch-card:hover {
@@ -9261,8 +9262,9 @@ select.invalid:focus {
   /* Home panel project card dark mode enhancements */
   .sketch-card.project-card {
     background: var(--color-surface-alt);
-    border-color: var(--color-border);
+    border-color: var(--color-border-dark, #334155);
     border-inline-start-color: var(--color-accent);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   }
 
   .sketch-card.project-card:hover {
