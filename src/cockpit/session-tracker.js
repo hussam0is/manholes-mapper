@@ -87,14 +87,20 @@ function updateSessionDisplay() {
   const secs = elapsed % 60;
   const formatted = `${mins}:${secs.toString().padStart(2, '0')}`;
 
+  // Show "New session" for the first minute, then switch to timer
+  const t = window.t || (k => k);
+  const displayText = elapsed < 60
+    ? (t('cockpit.newSession') || 'New session')
+    : formatted;
+
   if (durationEl) {
-    durationEl.textContent = formatted;
+    durationEl.textContent = displayText;
   }
 
   // Also update micro-cockpit timer (mobile portrait)
   const microTimer = document.getElementById('microSessionTimer');
   if (microTimer) {
-    microTimer.textContent = formatted;
+    microTimer.textContent = displayText;
   }
 
   // Use cached counts (updated event-driven via sketch:changed).

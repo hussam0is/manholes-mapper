@@ -206,7 +206,8 @@ function checkGpsStale() {
 }
 
 /**
- * Update the completion ring visualization
+ * Update the completion ring visualization.
+ * On empty sketch (0 nodes, 0 edges), show "--" instead of "0%".
  */
 function updateCompletionRing(completion) {
   const fill = document.getElementById('completionFill');
@@ -215,23 +216,25 @@ function updateCompletionRing(completion) {
 
   if (!fill || !text) return;
 
+  const isEmpty = completion.nodeCount === 0 && completion.edgeCount === 0;
   const pct = completion.percentage;
   const circumference = 97.4; // 2 * PI * 15.5
   const offset = circumference - (circumference * pct / 100);
 
   fill.style.strokeDashoffset = String(offset);
-  text.textContent = `${pct}%`;
+  text.textContent = isEmpty ? '--' : `${pct}%`;
 
   // Determine level: <25% = low (danger), 25-75% = mid (warning), 75-85% = high, 85%+ = complete
   let level = 'low';
-  if (pct >= 85) level = 'complete';
+  if (isEmpty) level = 'low';
+  else if (pct >= 85) level = 'complete';
   else if (pct >= 75) level = 'high';
   else if (pct >= 25) level = 'mid';
 
   fill.setAttribute('data-level', level);
 
   // Trigger complete animation
-  if (pct >= 100) {
+  if (pct >= 100 && !isEmpty) {
     ring?.classList.add('completion-ring--complete');
   } else {
     ring?.classList.remove('completion-ring--complete');
@@ -239,7 +242,9 @@ function updateCompletionRing(completion) {
 }
 
 /**
- * Update health stats text and issue count
+ * Update health stats text and issue count.
+ * When sketch is empty (0 nodes, 0 edges), show an encouraging empty state
+ * message instead of unhelpful "0 nodes · 0 edges".
  */
 function updateHealthStats(completion) {
   const stats = document.getElementById('healthStats');
@@ -248,7 +253,11 @@ function updateHealthStats(completion) {
 
   if (stats) {
     const t = window.t || (k => k);
-    stats.textContent = `${completion.nodeCount} ${t('cockpit.nodes') || 'nodes'} · ${completion.edgeCount} ${t('cockpit.edges') || 'edges'}`;
+    if (completion.nodeCount === 0 && completion.edgeCount === 0) {
+      stats.textContent = t('cockpit.emptySketch') || 'Start drawing to see health stats';
+    } else {
+      stats.textContent = `${completion.nodeCount} ${t('cockpit.nodes') || 'nodes'} · ${completion.edgeCount} ${t('cockpit.edges') || 'edges'}`;
+    }
   }
 
   if (issuesEl && issueCountEl) {

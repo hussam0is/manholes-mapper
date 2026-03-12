@@ -541,16 +541,20 @@ function updateMicroSync(state) {
 }
 
 /**
- * Update micro-cockpit health and timer from completion data
+ * Update micro-cockpit health and timer from completion data.
+ * Shows "--" for empty sketch instead of "0%".
  */
 function updateMicroCockpit(completion) {
   const healthEl = document.getElementById('microHealthPct');
   if (healthEl) {
-    healthEl.textContent = `${completion.percentage}%`;
+    const isEmpty = completion.nodeCount === 0 && completion.edgeCount === 0;
+    healthEl.textContent = isEmpty ? '--' : `${completion.percentage}%`;
 
     // Color-code by level
     healthEl.className = 'micro-cockpit__health';
-    if (completion.percentage >= 85) {
+    if (isEmpty) {
+      // No special color class for empty state
+    } else if (completion.percentage >= 85) {
       healthEl.classList.add('micro-cockpit__health--good');
     } else if (completion.percentage >= 30) {
       healthEl.classList.add('micro-cockpit__health--mid');
