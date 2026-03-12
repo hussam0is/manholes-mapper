@@ -2488,6 +2488,19 @@ canvas {
   line-height: 1.4;
   margin-bottom: 0.15rem;
   font-weight: 600;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Measurements section uses single-column layout for longer labels */
+.details-grid.measurements-single-col {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+.details-grid.measurements-single-col .field {
+  margin-bottom: 0;
 }
 
 #sidebar input[type="text"],
@@ -2881,6 +2894,19 @@ canvas {
 
 .details-actions .btn-danger:hover {
   background: var(--color-danger-light);
+}
+
+/* "Tap again to confirm" state for delete buttons */
+.details-actions .btn-danger.btn-danger--confirming {
+  background: var(--color-danger);
+  color: #fff;
+  border-color: var(--color-danger);
+  animation: pulse-danger 0.8s ease-in-out infinite;
+}
+
+@keyframes pulse-danger {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.75; }
 }
 
 /* ── Fix Suggestions (node/edge drawer) ── */
