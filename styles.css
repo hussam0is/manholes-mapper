@@ -11078,15 +11078,14 @@ button:focus-visible,
 .sketch-side-panel__item {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   padding: 10px 12px;
   border-radius: 10px;
   cursor: pointer;
   transition: background 0.15s, box-shadow 0.15s, border-color 0.15s;
   font-size: 13px;
-  border-bottom: 1px solid var(--color-border-light, #f1f5f9);
-  border-inline-start: 4px solid transparent;
   border: 1px solid transparent;
+  border-bottom-color: var(--color-border-light, #f1f5f9);
   position: relative;
 }
 
@@ -11122,23 +11121,27 @@ button:focus-visible,
 /* Row 1: Header — checkbox + title … eye toggle */
 .sketch-card__row1 {
   display: flex;
+  flex-wrap: nowrap;
   justify-content: space-between;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .sketch-card__title-group {
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   min-width: 0; /* allow shrink for ellipsis */
-  flex: 1 1 auto;
+  overflow: hidden;
+  flex: 1 1 0;
 }
 
 .sketch-card__name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  display: block;
   min-width: 0;
   flex: 1 1 0;
   /* BiDi: when dir="ltr" is set, text truncates from the correct (right) end */
@@ -11172,9 +11175,10 @@ button:focus-visible,
 /* Row 2: Metadata — distance + node count badge */
 .sketch-card__row2 {
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 8px;
-  padding-inline-start: 28px; /* align with title (past checkbox) */
+  padding-inline-start: 26px; /* align with title (past checkbox) */
 }
 
 .sketch-card__meta {
@@ -11220,10 +11224,11 @@ button:focus-visible,
 /* Row 3: Alerts (left/start) & Actions (right/end) */
 .sketch-card__row3 {
   display: flex;
+  flex-wrap: nowrap;
   justify-content: space-between;
   align-items: center;
-  margin-top: auto;
-  padding-inline-start: 28px;
+  margin-top: 2px;
+  padding-inline-start: 26px;
 }
 
 .sketch-card__alerts {
