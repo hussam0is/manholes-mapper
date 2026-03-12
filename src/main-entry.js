@@ -292,12 +292,82 @@ if (typeof window !== 'undefined') {
     // Initialize My Location button
     initMyLocationUI();
 
+    // Initialize edge legend auto-collapse on mobile
+    initEdgeLegendToggle();
+
     // Initialize Cockpit layout (landscape-first three-zone layout)
     initCockpit();
 
     // Initialize Field Commander (canvas-first UI) — feature-flagged
     initFieldCommander();
     initFCTerritory();
+  });
+}
+
+/**
+ * Initialize edge legend auto-collapse on mobile.
+ * On mobile (<=600px), the legend auto-collapses after 5 seconds of any
+ * canvas touch interaction. The toggle button lets users show/hide it manually.
+ * On desktop, the legend is always visible and the toggle is hidden via CSS.
+ */
+function initEdgeLegendToggle() {
+  const legend = document.getElementById('edgeLegend');
+  const toggle = document.getElementById('edgeLegendToggle');
+  const canvas = document.getElementById('graphCanvas');
+  if (!legend || !toggle) return;
+
+  let autoCollapseTimer = null;
+  let hasBeenManuallyToggled = false;
+
+  function isMobile() {
+    return window.innerWidth <= 600;
+  }
+
+  function collapseLegend() {
+    legend.classList.add('collapsed');
+  }
+
+  function expandLegend() {
+    legend.classList.remove('collapsed');
+  }
+
+  // Toggle button click: show/hide the legend
+  toggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    hasBeenManuallyToggled = true;
+    clearTimeout(autoCollapseTimer);
+
+    if (legend.classList.contains('collapsed')) {
+      expandLegend();
+      // Auto-collapse again after 5 seconds
+      autoCollapseTimer = setTimeout(collapseLegend, 5000);
+    } else {
+      collapseLegend();
+    }
+  });
+
+  // Auto-collapse after canvas interaction on mobile
+  if (canvas) {
+    canvas.addEventListener('pointerdown', () => {
+      if (!isMobile() || hasBeenManuallyToggled) return;
+      clearTimeout(autoCollapseTimer);
+      autoCollapseTimer = setTimeout(collapseLegend, 5000);
+    }, { passive: true });
+  }
+
+  // Start the initial auto-collapse timer on mobile
+  if (isMobile()) {
+    autoCollapseTimer = setTimeout(collapseLegend, 5000);
+  }
+
+  // Reset state on resize (e.g., rotating device)
+  window.addEventListener('resize', () => {
+    if (!isMobile()) {
+      // Desktop: always show legend, clear timers
+      clearTimeout(autoCollapseTimer);
+      expandLegend();
+      hasBeenManuallyToggled = false;
+    }
   });
 }
 

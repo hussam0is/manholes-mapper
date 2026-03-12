@@ -10015,6 +10015,19 @@ if (canvasZoomOutBtn) {
     setZoom(viewScale / SCALE_STEP);
   });
 }
+// FAB zoom buttons (mobile only — mirrors canvas toolbar zoom)
+const fabZoomInBtn = document.getElementById('fabZoomInBtn');
+const fabZoomOutBtn = document.getElementById('fabZoomOutBtn');
+if (fabZoomInBtn) {
+  fabZoomInBtn.addEventListener('click', () => {
+    setZoom(viewScale * SCALE_STEP);
+  });
+}
+if (fabZoomOutBtn) {
+  fabZoomOutBtn.addEventListener('click', () => {
+    setZoom(viewScale / SCALE_STEP);
+  });
+}
 if (mobileExportSketchBtn && exportSketchBtn) {
   mobileExportSketchBtn.addEventListener('click', () => {
     closeMobileMenu();

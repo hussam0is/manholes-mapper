@@ -720,14 +720,14 @@
           <button id="redoBtn" class="btn redo-btn" title="" aria-label="Redo last action" disabled data-i18n-title="redo.title" data-i18n-aria-label="redo.title">
             <span class="material-icons" aria-hidden="true">redo</span>
           </button>
-          <div class="canvas-toolbar-divider" role="separator" aria-hidden="true"></div>
+          <div class="canvas-toolbar-divider canvas-toolbar-divider--zoom" role="separator" aria-hidden="true"></div>
           <button id="canvasZoomInBtn" class="btn canvas-zoom-btn" title="" aria-label="Zoom in" data-i18n-title="zoomIn" data-i18n-aria-label="zoomIn">
             <span class="material-icons" aria-hidden="true">add</span>
           </button>
           <button id="canvasZoomOutBtn" class="btn canvas-zoom-btn" title="" aria-label="Zoom out" data-i18n-title="zoomOut" data-i18n-aria-label="zoomOut">
             <span class="material-icons" aria-hidden="true">remove</span>
           </button>
-          <div class="canvas-toolbar-divider" role="separator" aria-hidden="true"></div>
+          <div class="canvas-toolbar-divider canvas-toolbar-divider--3d" role="separator" aria-hidden="true"></div>
           <button id="threeDViewBtn" class="btn" title="3D View" aria-label="3D View" style="display:none" data-i18n-title="threeD.title" data-i18n-aria-label="threeD.title">
             <span class="material-icons" aria-hidden="true">view_in_ar</span>
           </button>
@@ -751,9 +751,20 @@
       <div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
       <!-- Edge type legend -->
       <div id="edgeLegend" class="edge-legend" role="img" aria-label="Edge type color legend"></div>
+      <!-- Edge legend toggle (mobile only): tap to show/hide the edge legend -->
+      <button id="edgeLegendToggle" class="edge-legend-toggle btn-icon-sm" title="Toggle edge legend" aria-label="Toggle edge legend" data-i18n-title="edgeLegend.toggle" data-i18n-aria-label="edgeLegend.toggle">
+        <span class="material-icons" aria-hidden="true">palette</span>
+      </button>
       <!-- Canvas FAB Speed Dial Toolbar -->
       <div id="canvasFabToolbar" class="canvas-fab-toolbar">
         <div class="canvas-fab-toolbar__actions">
+          <!-- Zoom buttons: visible only on mobile (hidden on desktop via CSS) -->
+          <button id="fabZoomInBtn" class="btn btn-icon canvas-fab-toolbar__item fab-zoom-item" title="Zoom in" aria-label="Zoom in" data-i18n-title="zoomIn" data-i18n-aria-label="zoomIn">
+            <span class="material-icons" aria-hidden="true">add</span>
+          </button>
+          <button id="fabZoomOutBtn" class="btn btn-icon canvas-fab-toolbar__item fab-zoom-item" title="Zoom out" aria-label="Zoom out" data-i18n-title="zoomOut" data-i18n-aria-label="zoomOut">
+            <span class="material-icons" aria-hidden="true">remove</span>
+          </button>
           <div id="incompleteEdgeTracker" class="canvas-fab-toolbar__item incomplete-tracker" style="display: none;" role="status" aria-live="polite" aria-label="Incomplete edges count" data-i18n-title="incompleteEdgeTracker">
             <span class="material-icons" aria-hidden="true">link_off</span>
             <span id="incompleteEdgeCount">0</span>

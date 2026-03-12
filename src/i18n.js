@@ -30,6 +30,9 @@ export const i18n = {
     recenter: 'מרכז שרטוט',
     recenterDensity: 'מרכז לפי צפיפות',
     zoomToFit: 'התאם לשרטוט',
+    edgeLegend: {
+      toggle: 'הצג/הסתר מקרא קווים',
+    },
     searchNode: 'חפש שוחה...',
     searchNodeTitle: 'חפש שוחה לפי מספר',
     searchAddress: 'כתובת / עיר / רחוב...',
@@ -1127,6 +1130,9 @@ export const i18n = {
     recenter: 'Recenter sketch',
     recenterDensity: 'Recenter by density',
     zoomToFit: 'Zoom to fit',
+    edgeLegend: {
+      toggle: 'Toggle edge legend',
+    },
     floatingKeyboard: 'Floating Keyboard',
     searchNode: 'Search node...',
     searchNodeTitle: 'Search node by ID',

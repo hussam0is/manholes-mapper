@@ -6504,20 +6504,17 @@ select.invalid:focus {
     inset-inline-end: 12px;
   }
 
-  /* FAB toolbar stays on inline-start side (opposite toolbar) when drawer is open */
+  /* FAB toolbar stays on inline-start side (opposite toolbar) when drawer is open,
+     and moves above the bottom drawer sheet */
   body.drawer-open .canvas-fab-toolbar {
     inset-inline-end: auto;
     inset-inline-start: 8px;
+    bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 8px + 44px + 8px);
   }
 
   body.drawer-open .toggle-floating-keyboard {
     inset-inline-end: 12px;
     bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 8px);
-  }
-
-  /* Position FAB toolbar above drawer */
-  body.drawer-open .canvas-fab-toolbar {
-    bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 8px + 44px + 8px);
   }
 
   /* When keyboard button is visible, move FAB toolbar above it */
@@ -6709,9 +6706,9 @@ select.invalid:focus {
     display: none !important;
   }
 
-  /* Hide the divider before the zoom buttons (the one after redo).
-     It is the 3rd .canvas-toolbar-divider in #modeGroup. */
-  #modeGroup > .canvas-toolbar-divider:nth-of-type(3) {
+  /* Hide dividers around zoom buttons (zoom + 3D sections hidden on mobile) */
+  .canvas-toolbar-divider--zoom,
+  .canvas-toolbar-divider--3d {
     display: none !important;
   }
 
@@ -6734,21 +6731,15 @@ select.invalid:focus {
     background: #475569; /* slate-600 */
   }
 
-  /* Issue #2: Move FAB to opposite side from toolbar on mobile.
-     Toolbar is at inset-inline-end (left in RTL), so FAB goes to inset-inline-start (right in RTL). */
-  .canvas-fab-toolbar {
-    inset-inline-end: auto;
-    inset-inline-start: 8px;
-  }
-
-  /* Also update drawer-open FAB positioning to use inset-inline-start */
-  body.drawer-open .canvas-fab-toolbar {
-    inset-inline-end: auto;
-    inset-inline-start: 8px;
-  }
-
-  /* Issue #3: Edge legend auto-collapse on mobile */
+  /* Optimize edge legend for mobile: limit width + auto-collapse (Issue #3) */
   .edge-legend {
+    top: 8px;
+    inset-inline-start: 8px;
+    font-size: 12px;
+    padding: 3px 6px;
+    gap: 6px;
+    max-width: calc(100vw - 90px); /* toolbar (44px) + margins + edges + gap */
+    flex-wrap: wrap;
     transition: opacity 0.3s ease, transform 0.3s ease;
   }
 
@@ -6792,17 +6783,6 @@ select.invalid:focus {
   .edge-legend.collapsed ~ .edge-legend-toggle {
     opacity: 1;
     pointer-events: auto;
-  }
-
-  /* Optimize edge legend for mobile: limit width to avoid overlapping canvas toolbar */
-  .edge-legend {
-    top: 8px;
-    inset-inline-start: 8px;
-    font-size: 12px;
-    padding: 3px 6px;
-    gap: 6px;
-    max-width: calc(100vw - 90px); /* toolbar (44px) + margins + edges + gap */
-    flex-wrap: wrap;
   }
 
   /* Wrap control buttons to two columns */
