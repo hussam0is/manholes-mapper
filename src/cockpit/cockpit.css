@@ -332,8 +332,8 @@ body.cockpit-mode.zone-a-collapsed .cockpit {
 
 .completion-ring {
   position: relative;
-  width: 64px;
-  height: 64px;
+  width: 48px;
+  height: 48px;
   margin: 4px auto;
 }
 
@@ -368,7 +368,7 @@ body.cockpit-mode.zone-a-collapsed .cockpit {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: var(--font-bold);
   color: var(--color-text);
   font-variant-numeric: tabular-nums;
@@ -1334,13 +1334,13 @@ body.cockpit-mode .micro-cockpit {
   }
 
   .completion-ring {
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
     margin: 2px auto;
   }
 
   .completion-ring__text {
-    font-size: 11px;
+    font-size: 10px;
   }
 
   .intel-health__stats {
