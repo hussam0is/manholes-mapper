@@ -1912,6 +1912,23 @@ select.btn:focus-visible {
   }
 }
 
+/* Cockpit mode: shift layers btn/panel past Zone A so they're not hidden behind the intel strip */
+body.cockpit-mode .layers-config-btn {
+  inset-inline-start: calc(var(--cockpit-zone-a, 140px) + 8px);
+}
+
+body.cockpit-mode .layers-config-panel {
+  inset-inline-start: calc(var(--cockpit-zone-a, 140px) + 56px);
+}
+
+body.cockpit-mode.zone-a-collapsed .layers-config-btn {
+  inset-inline-start: calc(24px + 8px); /* 24px = expand handle width */
+}
+
+body.cockpit-mode.zone-a-collapsed .layers-config-panel {
+  inset-inline-start: calc(24px + 56px);
+}
+
 canvas {
   width: 100%;
   height: 100%;
