@@ -15312,6 +15312,231 @@ body.cockpit-mode #edgeLegend {
   }
 }
 
+/* ── Admin Stats: Velocity badge ── */
+.admin-stats__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  margin-top: 4px;
+}
+.admin-stats__badge .material-icons { font-size: 12px; }
+.badge--up { background: #dcfce7; color: #16a34a; }
+.badge--down { background: #fee2e2; color: #dc2626; }
+.badge--flat { background: #f3f4f6; color: #6b7280; }
+.badge--neutral { background: var(--color-surface-alt, #f3f4f6); color: var(--color-text-muted); font-weight: 500; margin-inline-start: auto; }
+
+@media (prefers-color-scheme: dark) {
+  .badge--up { background: #052e16; color: #4ade80; }
+  .badge--down { background: #450a0a; color: #fca5a5; }
+  .badge--flat { background: #1f2937; color: #9ca3af; }
+}
+
+/* ── Admin Stats: KPI Row ── */
+.admin-stats__kpi-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.admin-stats__kpi-card {
+  background: var(--color-surface-alt, var(--color-surface));
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 16px 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.admin-stats__kpi-icon {
+  font-size: 1.4rem;
+  color: var(--color-accent, #2563eb);
+}
+
+.admin-stats__kpi-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+.admin-stats__kpi-value--sm {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.admin-stats__kpi-label {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.admin-stats__kpi-sub {
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+  opacity: 0.7;
+}
+
+.admin-stats__health-ring {
+  width: 72px;
+  height: 72px;
+}
+
+/* ── Admin Stats: SVG Chart ── */
+.admin-stats__svg-chart {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.admin-stats__svg-chart svg {
+  width: 100%;
+  min-width: 400px;
+  height: auto;
+}
+
+/* ── Admin Stats: Charts Row (donut + issues side by side) ── */
+.admin-stats__charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 640px) {
+  .admin-stats__charts-row {
+    grid-template-columns: 1fr;
+  }
+  .admin-stats__kpi-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
+
+/* ── Admin Stats: Accuracy Donut ── */
+.admin-stats__donut-wrap {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.admin-stats__donut-svg {
+  width: 100px;
+  height: 100px;
+  flex-shrink: 0;
+}
+
+.admin-stats__legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.admin-stats__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+}
+
+.admin-stats__legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.admin-stats__legend-text {
+  flex: 1;
+  color: var(--color-text);
+}
+
+.admin-stats__legend-val {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Admin Stats: Issue Breakdown Bars ── */
+.admin-stats__issue-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.admin-stats__issue-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 140px;
+  font-size: 0.75rem;
+  color: var(--color-text);
+}
+
+.admin-stats__issue-bar-wrap {
+  flex: 1;
+  height: 8px;
+  background: var(--color-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.admin-stats__issue-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.admin-stats__issue-count {
+  min-width: 32px;
+  text-align: end;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Admin Stats: Activity Heatmap ── */
+.admin-stats__heatmap {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 12px);
+  gap: 2px;
+  direction: ltr;
+}
+
+.admin-stats__heatmap-cell {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  cursor: default;
+}
+
+.admin-stats__heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 8px;
+  justify-content: flex-end;
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --heatmap-0: #161b22;
+    --heatmap-1: #0e4429;
+    --heatmap-2: #006d32;
+    --heatmap-3: #26a641;
+    --heatmap-4: #39d353;
+  }
+}
+
 /* ===== Mission Control Home Screen ===== */
 /* ── Resume Bar (compact active sketch shortcut) ── */
 .resume-bar {
