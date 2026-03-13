@@ -3051,6 +3051,9 @@ window.invalidateLibraryCache = invalidateLibraryCache;
 window.renderHome = function () {
   // Don't re-render home when in project canvas mode (e.g. sync-service triggers after cloud fetch)
   if (isProjectCanvasMode()) return;
+  // Don't re-render home when admin or projects screen is active
+  const hash = location.hash || '#/';
+  if (hash === '#/admin' || hash === '#/projects' || hash === '#/profile' || hash === '#/leaderboard') return;
   if (homeMode === 'projects') {
     renderProjectsHome();
   } else {
