@@ -257,7 +257,7 @@ async function handleWorkload(req, res, url, userId, userRecord) {
   const now = new Date();
   const weekAgoMs = now.getTime() - 7 * 24 * 60 * 60 * 1000;
   const twoWeeksAgoMs = now.getTime() - 14 * 24 * 60 * 60 * 1000;
-  const ninetyDaysAgoMs = now.getTime() - 90 * 24 * 60 * 60 * 1000;
+  const yearAgoMs = now.getTime() - 365 * 24 * 60 * 60 * 1000;
 
   // Summary accuracy
   let totalPrecisionSum = 0;
@@ -444,12 +444,12 @@ async function handleWorkload(req, res, url, userId, userRecord) {
         }
       }
 
-      // --- KPI: activity heatmap (last 90 days) ---
+      // --- KPI: activity heatmap (last 365 days) ---
       if (measDate && nodeCreator) {
         const hDay = String(measDate).slice(0, 10);
         if (/^\d{4}-\d{2}-\d{2}$/.test(hDay)) {
           const hMs = new Date(hDay).getTime();
-          if (!isNaN(hMs) && hMs >= ninetyDaysAgoMs) {
+          if (!isNaN(hMs) && hMs >= yearAgoMs) {
             const hKey = `${hDay}|${nodeCreator}`;
             heatmapMap.set(hKey, (heatmapMap.get(hKey) || 0) + 1);
           }
@@ -578,7 +578,63 @@ async function handleWorkload(req, res, url, userId, userRecord) {
     }))
     .sort((a, b) => a.weekStart.localeCompare(b.weekStart));
 
-  // --- Build activity heatmap array (last 90 days, only count > 0) ---
+  // --- Build records (peak day, peak week, this month, last month) ---
+  // Peak day
+  let peakDay = null;
+  for (const [date, count] of dailyMap) {
+    if (!peakDay || count > peakDay.count) {
+      peakDay = { date, count };
+    }
+  }
+
+  // Peak week
+  let peakWeek = null;
+  for (const w of weekly) {
+    if (!peakWeek || w.count > peakWeek.count) {
+      peakWeek = { weekStart: w.weekStart, count: w.count, km: w.km };
+    }
+  }
+
+  // This month / last month stats
+  const thisMonthStr = now.toISOString().slice(0, 7); // YYYY-MM
+  const lastMonthDate = new Date(now);
+  lastMonthDate.setMonth(lastMonthDate.getMonth() - 1);
+  const lastMonthStr = lastMonthDate.toISOString().slice(0, 7);
+
+  let thisMonthNodes = 0, lastMonthNodes = 0;
+  let thisMonthDays = new Set(), lastMonthDays = new Set();
+  for (const [date, count] of dailyMap) {
+    const month = date.slice(0, 7);
+    if (month === thisMonthStr) {
+      thisMonthNodes += count;
+      thisMonthDays.add(date);
+    } else if (month === lastMonthStr) {
+      lastMonthNodes += count;
+      lastMonthDays.add(date);
+    }
+  }
+
+  const records = {
+    peakDay,
+    peakWeek,
+    thisMonth: {
+      month: thisMonthStr,
+      nodes: thisMonthNodes,
+      activeDays: thisMonthDays.size,
+      avgPerDay: thisMonthDays.size > 0 ? Math.round(thisMonthNodes / thisMonthDays.size * 10) / 10 : 0,
+    },
+    lastMonth: {
+      month: lastMonthStr,
+      nodes: lastMonthNodes,
+      activeDays: lastMonthDays.size,
+      avgPerDay: lastMonthDays.size > 0 ? Math.round(lastMonthNodes / lastMonthDays.size * 10) / 10 : 0,
+    },
+    monthOverMonthPct: lastMonthNodes > 0
+      ? Math.round(((thisMonthNodes - lastMonthNodes) / lastMonthNodes) * 100)
+      : null,
+  };
+
+  // --- Build activity heatmap array (last 365 days, only count > 0) ---
   const activityHeatmap = Array.from(heatmapMap.entries())
     .map(([key, count]) => {
       const [date, user] = key.split('|');
@@ -639,5 +695,6 @@ async function handleWorkload(req, res, url, userId, userRecord) {
     accuracyDistribution,
     issueBreakdown,
     activityHeatmap,
+    records,
   });
 }

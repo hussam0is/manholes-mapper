@@ -15149,11 +15149,15 @@ body.cockpit-mode #edgeLegend {
 }
 
 .admin-stats__toolbar {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.admin-stats__filters-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--color-border);
+  flex-wrap: wrap;
 }
 
 .admin-stats__filter {
@@ -15169,6 +15173,93 @@ body.cockpit-mode #edgeLegend {
 .admin-stats__refresh {
   padding: 6px;
   border-radius: 8px;
+  margin-inline-start: auto;
+}
+
+/* Period toggle (Day / Week / Month) */
+.admin-stats__period-toggle {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.admin-stats__period-btn {
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.admin-stats__period-btn:not(:last-child) {
+  border-inline-end: 1px solid var(--color-border);
+}
+.admin-stats__period-btn.active {
+  background: var(--color-accent, #2563eb);
+  color: #fff;
+}
+.admin-stats__period-btn:hover:not(.active) {
+  background: var(--color-surface-alt, #f3f4f6);
+}
+
+/* Records row */
+.admin-stats__records-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.admin-stats__record-card {
+  background: var(--color-surface-alt, var(--color-surface));
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.admin-stats__record-icon {
+  font-size: 1.3rem;
+  margin-bottom: 2px;
+}
+.admin-stats__record-label {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+.admin-stats__record-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+.admin-stats__record-detail {
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+}
+
+/* Highlighted row in user table */
+.admin-stats__row-highlight {
+  background: color-mix(in srgb, var(--color-accent, #2563eb) 10%, transparent) !important;
+}
+
+@media (max-width: 640px) {
+  .admin-stats__records-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .admin-stats__filters-row {
+    gap: 6px;
+  }
+  .admin-stats__filter {
+    min-width: 0;
+    flex: 1 1 45%;
+  }
+  .admin-stats__period-toggle {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
 }
 
 .admin-stats__content {
