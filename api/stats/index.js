@@ -243,6 +243,47 @@ async function handleWorkload(req, res, url, userId, userRecord) {
   const dailyMap = new Map();
   const perProjectMap = new Map();
 
+  // --- KPI tracking ---
+  const now = new Date();
+  const weekAgoMs = now.getTime() - 7 * 24 * 60 * 60 * 1000;
+  const twoWeeksAgoMs = now.getTime() - 14 * 24 * 60 * 60 * 1000;
+  const ninetyDaysAgoMs = now.getTime() - 90 * 24 * 60 * 60 * 1000;
+
+  // Summary accuracy
+  let totalPrecisionSum = 0;
+  let totalPrecisionCount = 0;
+  let weekVelocity = 0;
+  let prevWeekVelocity = 0;
+
+  // Weekly velocity (last 12 weeks, keyed by Monday date string)
+  const weeklyMap = new Map();
+
+  // Accuracy distribution
+  const accuracyDistribution = { rtk: 0, float: 0, dgps: 0, gps: 0, unknown: 0 };
+
+  // Issue breakdown
+  const issueBreakdown = { missingCoords: 0, missingMeasurements: 0, longEdges: 0, negativeGradients: 0 };
+
+  // Activity heatmap (last 90 days): key = "date|user"
+  const heatmapMap = new Map();
+
+  // Per-user accuracy + active days tracking
+  // Stored separately, merged into perUserMap after the loop
+  const perUserAccMap = new Map(); // user -> { totalPrec, precCount, activeDaysSet }
+
+  /**
+   * Get the Monday (start of ISO week) for a given date string.
+   * Returns 'YYYY-MM-DD' of that Monday, or null if invalid.
+   */
+  function getWeekMonday(dateStr) {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return null;
+    const day = d.getUTCDay(); // 0=Sun, 1=Mon, ...
+    const diff = day === 0 ? -6 : 1 - day; // shift to Monday
+    d.setUTCDate(d.getUTCDate() + diff);
+    return d.toISOString().slice(0, 10);
+  }
+
   for (const sketch of sketches) {
     const nodes = sketch.nodes || [];
     const edges = sketch.edges || [];
@@ -251,6 +292,12 @@ async function handleWorkload(req, res, url, userId, userRecord) {
 
     totalNodes += nodeCount;
     totalEdges += edgeCount;
+
+    // Build node lookup map for edge processing (avoids repeated .find())
+    const nodeById = new Map();
+    for (const node of nodes) {
+      nodeById.set(String(node.id), node);
+    }
 
     // Project aggregation
     const projKey = sketch.project_id || '__unassigned__';
@@ -320,26 +367,153 @@ async function handleWorkload(req, res, url, userId, userRecord) {
           dailyMap.set(day, (dailyMap.get(day) || 0) + 1);
         }
       }
+
+      // --- KPI: accuracy tracking ---
+      if (hasSurvey && node.measure_precision != null && node.measure_precision > 0) {
+        totalPrecisionSum += node.measure_precision;
+        totalPrecisionCount++;
+      }
+
+      // --- KPI: accuracy distribution (only nodes with survey coords) ---
+      if (hasSurvey) {
+        const prec = node.measure_precision;
+        if (prec != null && prec > 0) {
+          if (prec < 0.05) accuracyDistribution.rtk++;
+          else if (prec < 0.5) accuracyDistribution.float++;
+          else if (prec < 5) accuracyDistribution.dgps++;
+          else accuracyDistribution.gps++;
+        } else {
+          accuracyDistribution.unknown++;
+        }
+      }
+
+      // --- KPI: velocity (this week / prev week) ---
+      const measDate = node.measureDate || node.createdAt;
+      if (measDate && hasSurvey) {
+        const measMs = new Date(measDate).getTime();
+        if (!isNaN(measMs)) {
+          if (measMs >= weekAgoMs) {
+            weekVelocity++;
+          } else if (measMs >= twoWeeksAgoMs) {
+            prevWeekVelocity++;
+          }
+        }
+      }
+
+      // --- KPI: weekly array (last 12 weeks) ---
+      if (measDate && hasSurvey) {
+        const monday = getWeekMonday(measDate);
+        if (monday) {
+          const mondayMs = new Date(monday).getTime();
+          const twelveWeeksAgoMs = now.getTime() - 12 * 7 * 24 * 60 * 60 * 1000;
+          if (mondayMs >= twelveWeeksAgoMs) {
+            weeklyMap.set(monday, (weeklyMap.get(monday) || 0) + 1);
+          }
+        }
+      }
+
+      // --- KPI: per-user accuracy + active days ---
+      if (hasSurvey) {
+        if (!perUserAccMap.has(nodeCreator)) {
+          perUserAccMap.set(nodeCreator, { totalPrec: 0, precCount: 0, activeDaysSet: new Set() });
+        }
+        const uAcc = perUserAccMap.get(nodeCreator);
+        if (node.measure_precision != null && node.measure_precision > 0) {
+          uAcc.totalPrec += node.measure_precision;
+          uAcc.precCount++;
+        }
+        const mDay = measDate ? String(measDate).slice(0, 10) : null;
+        if (mDay && /^\d{4}-\d{2}-\d{2}$/.test(mDay)) {
+          uAcc.activeDaysSet.add(mDay);
+        }
+      }
+
+      // --- KPI: activity heatmap (last 90 days) ---
+      if (measDate && nodeCreator) {
+        const hDay = String(measDate).slice(0, 10);
+        if (/^\d{4}-\d{2}-\d{2}$/.test(hDay)) {
+          const hMs = new Date(hDay).getTime();
+          if (!isNaN(hMs) && hMs >= ninetyDaysAgoMs) {
+            const hKey = `${hDay}|${nodeCreator}`;
+            heatmapMap.set(hKey, (heatmapMap.get(hKey) || 0) + 1);
+          }
+        }
+      }
+
+      // --- KPI: issue — missingCoords ---
+      if (!hasSurvey &&
+          node.type !== 'schematic' &&
+          node.nodeType !== 'Home' &&
+          node.isForLater !== true) {
+        issueBreakdown.missingCoords++;
+      }
     }
 
-    // Compute km from survey coordinates
+    // Compute km from survey coordinates + edge-level issue tracking
     let km = 0;
     for (const edge of edges) {
-      const tailNode = nodes.find(n => String(n.id) === String(edge.tail));
-      const headNode = nodes.find(n => String(n.id) === String(edge.head));
-      if (tailNode?.surveyX != null && tailNode?.surveyY != null &&
-          headNode?.surveyX != null && headNode?.surveyY != null) {
+      const tailNode = nodeById.get(String(edge.tail));
+      const headNode = nodeById.get(String(edge.head));
+      const tailHasSurvey = tailNode?.surveyX != null && tailNode?.surveyY != null;
+      const headHasSurvey = headNode?.surveyX != null && headNode?.surveyY != null;
+
+      if (tailHasSurvey && headHasSurvey) {
         const dx = tailNode.surveyX - headNode.surveyX;
         const dy = tailNode.surveyY - headNode.surveyY;
-        km += Math.sqrt(dx * dx + dy * dy) / 1000;
+        const distM = Math.sqrt(dx * dx + dy * dy);
+        km += distM / 1000;
+
+        // --- KPI: longEdges (>70m ITM) ---
+        if (distM > 70) {
+          issueBreakdown.longEdges++;
+        }
+      }
+
+      // --- KPI: missingMeasurements ---
+      // Edges connected to functional manholes (maintenanceStatus === 1)
+      // where tail_measurement or head_measurement is missing
+      const tailMeas = edge.tail_measurement;
+      const headMeas = edge.head_measurement;
+      const tailMissing = tailMeas == null || tailMeas === '' || tailMeas === undefined;
+      const headMissing = headMeas == null || headMeas === '' || headMeas === undefined;
+      if (tailMissing || headMissing) {
+        const tailFunctional = tailNode?.maintenanceStatus === 1;
+        const headFunctional = headNode?.maintenanceStatus === 1;
+        if (tailFunctional || headFunctional) {
+          issueBreakdown.missingMeasurements++;
+        }
+      }
+
+      // --- KPI: negativeGradients ---
+      // head_measurement > tail_measurement (both defined numbers > 0)
+      const tailMeasNum = parseFloat(tailMeas);
+      const headMeasNum = parseFloat(headMeas);
+      if (!isNaN(tailMeasNum) && tailMeasNum > 0 &&
+          !isNaN(headMeasNum) && headMeasNum > 0 &&
+          headMeasNum > tailMeasNum) {
+        issueBreakdown.negativeGradients++;
       }
     }
     totalKm += km;
     projStats.km += km;
   }
 
-  // Build sorted arrays
+  // Build sorted arrays — merge per-user accuracy data
   const perUser = Array.from(perUserMap.values())
+    .map(u => {
+      const acc = perUserAccMap.get(u.user);
+      const activeDays = acc ? acc.activeDaysSet.size : 0;
+      return {
+        ...u,
+        avgAccuracy: acc && acc.precCount > 0
+          ? Math.round((acc.totalPrec / acc.precCount) * 100) / 100
+          : null,
+        activeDays,
+        nodesPerDay: activeDays > 0
+          ? Math.round((u.nodesMeasured / activeDays) * 100) / 100
+          : 0,
+      };
+    })
     .sort((a, b) => b.nodesMeasured - a.nodesMeasured);
 
   // Daily activity: last 30 days
@@ -352,6 +526,33 @@ async function handleWorkload(req, res, url, userId, userRecord) {
     .filter(p => p.id) // exclude unassigned
     .sort((a, b) => b.nodes - a.nodes);
 
+  // --- Build weekly velocity array (last 12 weeks, sorted chronologically) ---
+  const weekly = Array.from(weeklyMap.entries())
+    .map(([weekStart, count]) => ({ weekStart, count }))
+    .sort((a, b) => a.weekStart.localeCompare(b.weekStart));
+
+  // --- Build activity heatmap array (last 90 days, only count > 0) ---
+  const activityHeatmap = Array.from(heatmapMap.entries())
+    .map(([key, count]) => {
+      const [date, user] = key.split('|');
+      return { date, user, count };
+    })
+    .sort((a, b) => a.date.localeCompare(b.date) || a.user.localeCompare(b.user));
+
+  // --- Compute summary KPIs ---
+  const avgAccuracy = totalPrecisionCount > 0
+    ? Math.round((totalPrecisionSum / totalPrecisionCount) * 100) / 100
+    : null;
+
+  const velocityChangePct = prevWeekVelocity > 0
+    ? Math.round(((weekVelocity - prevWeekVelocity) / prevWeekVelocity) * 100)
+    : null;
+
+  const unmeasuredNodes = totalNodes - nodesWithCoords;
+  const forecastDays = weekVelocity > 0
+    ? Math.ceil(unmeasuredNodes / weekVelocity * 7)
+    : null;
+
   return res.status(200).json({
     summary: {
       totalSketches: sketches.length,
@@ -360,9 +561,18 @@ async function handleWorkload(req, res, url, userId, userRecord) {
       totalKm: Math.round(totalKm * 100) / 100,
       nodesWithCoords,
       completionPct: totalNodes > 0 ? Math.round((nodesWithCoords / totalNodes) * 100) : 0,
+      avgAccuracy,
+      weekVelocity,
+      prevWeekVelocity,
+      velocityChangePct,
+      forecastDays,
     },
     perUser,
     daily,
     perProject,
+    weekly,
+    accuracyDistribution,
+    issueBreakdown,
+    activityHeatmap,
   });
 }
