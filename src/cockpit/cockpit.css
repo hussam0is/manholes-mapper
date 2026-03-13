@@ -1417,4 +1417,41 @@ body.cockpit-mode .micro-cockpit {
   body.cockpit-mode .cockpit {
     --cockpit-zone-a: 160px;
   }
+
+  /* Increase cockpit card text size on desktop for readability */
+  .intel-card__header {
+    font-size: 11px;
+  }
+
+  .intel-gps__label {
+    font-size: 13px;
+  }
+
+  .intel-gps__accuracy {
+    font-size: 12px;
+  }
+
+  .intel-gps__satellites {
+    font-size: 12px;
+  }
+
+  .intel-health__stats {
+    font-size: 12px;
+  }
+
+  .intel-session__row {
+    font-size: 12px;
+  }
+
+  .intel-session__value {
+    font-size: 13px;
+  }
+
+  .intel-sync__label {
+    font-size: 12px;
+  }
+
+  .intel-session__streak {
+    font-size: 12px;
+  }
 }
