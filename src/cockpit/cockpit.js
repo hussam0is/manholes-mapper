@@ -795,6 +795,9 @@ export function initCockpit() {
             el.setAttribute('aria-label', translated);
           }
         });
+        // Re-run dynamic text updates (GPS label, sync label, health stats)
+        // so language change is reflected in JS-rendered text too
+        updateCockpit();
       }
     });
   }
