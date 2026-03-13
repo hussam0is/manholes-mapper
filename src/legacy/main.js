@@ -2818,13 +2818,20 @@ function renderSearchBar() {
 // Track the current sketch tab (personal or organization)
 let currentSketchTab = 'personal';
 // Track which home mode is active: 'projects' or 'sketches'
-let homeMode = 'projects';
+// Restore last used tab from localStorage, default to 'sketches' (My Sketches)
+let homeMode = (() => {
+  try {
+    const saved = localStorage.getItem('homeMode');
+    return (saved === 'projects' || saved === 'sketches') ? saved : 'sketches';
+  } catch { return 'sketches'; }
+})();
 // Search query for home panel filtering
 let homeSearchQuery = '';
 
 function renderHome() {
   if (!homePanel || !sketchListEl) return;
   homeMode = 'sketches';
+  try { localStorage.setItem('homeMode', 'sketches'); } catch { /* ignore */ }
 
   // Undo projects-mode overrides
   homePanel.classList.remove('home-panel--projects');
@@ -3301,6 +3308,7 @@ async function renderProjectsHome() {
   }
 
   homeMode = 'projects';
+  try { localStorage.setItem('homeMode', 'projects'); } catch { /* ignore */ }
 
   // Show the home panel with loading state
   startPanel.style.display = 'none';
