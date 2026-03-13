@@ -570,10 +570,17 @@ export class AdminStatistics {
 
   // ─── Activity Heatmap (90 days, GitHub-style) ───
   _renderActivityHeatmap(content, heatmapData, t) {
-    // Group by date (sum across users)
-    const dateMap = new Map();
+    // Group by date — total + per-user breakdown
+    const dateMap = new Map();       // date -> total count
+    const dateUsersMap = new Map();  // date -> [{user, count}, ...]
     for (const entry of heatmapData) {
       dateMap.set(entry.date, (dateMap.get(entry.date) || 0) + entry.count);
+      if (!dateUsersMap.has(entry.date)) dateUsersMap.set(entry.date, []);
+      dateUsersMap.get(entry.date).push({ user: entry.user, count: entry.count });
+    }
+    // Sort per-user lists by count descending
+    for (const users of dateUsersMap.values()) {
+      users.sort((a, b) => b.count - a.count);
     }
 
     // Generate last 90 days
@@ -598,30 +605,102 @@ export class AdminStatistics {
       return 'var(--heatmap-4, #216e39)';
     };
 
-    const cellsHtml = days.map(d =>
-      `<div class="admin-stats__heatmap-cell" style="background:${getColor(d.count)}" title="${escapeHtml(d.date)}: ${d.count}"></div>`
+    const cellsHtml = days.map((d, i) =>
+      `<div class="admin-stats__heatmap-cell" data-idx="${i}" style="background:${getColor(d.count)}" title="${escapeHtml(d.date)}: ${d.count} ${escapeHtml(t('statistics.totalNodes'))}"></div>`
     ).join('');
 
-    content.insertAdjacentHTML('beforeend', `
-      <div class="admin-stats__section">
-        <h3 class="admin-stats__section-title">
-          <span class="material-icons">calendar_month</span>
-          ${escapeHtml(t('statistics.activityHeatmap'))}
-        </h3>
-        <div class="admin-stats__heatmap">
-          ${cellsHtml}
-        </div>
-        <div class="admin-stats__heatmap-legend">
-          <span>${escapeHtml(t('statistics.less'))}</span>
-          <div class="admin-stats__heatmap-cell" style="background:var(--heatmap-0, #ebedf0)"></div>
-          <div class="admin-stats__heatmap-cell" style="background:var(--heatmap-1, #9be9a8)"></div>
-          <div class="admin-stats__heatmap-cell" style="background:var(--heatmap-2, #40c463)"></div>
-          <div class="admin-stats__heatmap-cell" style="background:var(--heatmap-3, #30a14e)"></div>
-          <div class="admin-stats__heatmap-cell" style="background:var(--heatmap-4, #216e39)"></div>
-          <span>${escapeHtml(t('statistics.more'))}</span>
-        </div>
+    const sectionEl = document.createElement('div');
+    sectionEl.className = 'admin-stats__section';
+    sectionEl.innerHTML = `
+      <h3 class="admin-stats__section-title">
+        <span class="material-icons">calendar_month</span>
+        ${escapeHtml(t('statistics.activityHeatmap'))}
+      </h3>
+      <div class="admin-stats__heatmap">
+        ${cellsHtml}
       </div>
-    `);
+      <div class="admin-stats__heatmap-tooltip" id="heatmapTooltip"></div>
+      <div class="admin-stats__heatmap-legend">
+        <span>${escapeHtml(t('statistics.less'))}</span>
+        <div class="admin-stats__heatmap-cell" style="background:var(--heatmap-0, #ebedf0)"></div>
+        <div class="admin-stats__heatmap-cell" style="background:var(--heatmap-1, #9be9a8)"></div>
+        <div class="admin-stats__heatmap-cell" style="background:var(--heatmap-2, #40c463)"></div>
+        <div class="admin-stats__heatmap-cell" style="background:var(--heatmap-3, #30a14e)"></div>
+        <div class="admin-stats__heatmap-cell" style="background:var(--heatmap-4, #216e39)"></div>
+        <span>${escapeHtml(t('statistics.more'))}</span>
+      </div>
+    `;
+    content.appendChild(sectionEl);
+
+    // Tooltip interaction
+    const tooltip = sectionEl.querySelector('#heatmapTooltip');
+    const heatmapEl = sectionEl.querySelector('.admin-stats__heatmap');
+    let activeIdx = -1;
+
+    const showTooltip = (idx, cellEl) => {
+      const day = days[idx];
+      if (!day) return;
+      activeIdx = idx;
+
+      const dateStr = new Date(day.date + 'T00:00:00').toLocaleDateString(undefined, {
+        weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
+      });
+
+      let html = `<div class="admin-stats__heatmap-tip-date">${escapeHtml(dateStr)}</div>`;
+      if (day.count === 0) {
+        html += `<div class="admin-stats__heatmap-tip-empty">${escapeHtml(t('statistics.noData'))}</div>`;
+      } else {
+        html += `<div class="admin-stats__heatmap-tip-total">${day.count} ${escapeHtml(t('statistics.nodesMeasured'))}</div>`;
+        const users = dateUsersMap.get(day.date) || [];
+        if (users.length > 0) {
+          html += `<div class="admin-stats__heatmap-tip-users">`;
+          for (const u of users) {
+            html += `<div class="admin-stats__heatmap-tip-user">
+              <span>${escapeHtml(u.user)}</span>
+              <span class="admin-stats__heatmap-tip-count">${u.count}</span>
+            </div>`;
+          }
+          html += `</div>`;
+        }
+      }
+
+      tooltip.innerHTML = html;
+      tooltip.classList.add('visible');
+
+      // Position tooltip near the cell
+      const heatmapRect = heatmapEl.getBoundingClientRect();
+      const cellRect = cellEl.getBoundingClientRect();
+      const tipLeft = cellRect.left - heatmapRect.left + cellRect.width / 2;
+      const tipTop = cellRect.top - heatmapRect.top - 4;
+      tooltip.style.left = `${tipLeft}px`;
+      tooltip.style.top = `${tipTop}px`;
+    };
+
+    const hideTooltip = () => {
+      activeIdx = -1;
+      tooltip.classList.remove('visible');
+    };
+
+    heatmapEl.addEventListener('click', (e) => {
+      const cell = e.target.closest('[data-idx]');
+      if (!cell) return;
+      const idx = parseInt(cell.dataset.idx);
+      if (activeIdx === idx) {
+        hideTooltip();
+      } else {
+        showTooltip(idx, cell);
+      }
+    });
+
+    heatmapEl.addEventListener('mouseover', (e) => {
+      const cell = e.target.closest('[data-idx]');
+      if (!cell) return;
+      showTooltip(parseInt(cell.dataset.idx), cell);
+    });
+
+    heatmapEl.addEventListener('mouseleave', () => {
+      hideTooltip();
+    });
   }
 
   // ─── Daily Activity Chart (existing, preserved) ───

@@ -15525,7 +15525,13 @@ body.cockpit-mode #edgeLegend {
   width: 12px;
   height: 12px;
   border-radius: 2px;
-  cursor: default;
+  cursor: pointer;
+  transition: outline 0.1s;
+}
+.admin-stats__heatmap-cell:hover {
+  outline: 2px solid var(--color-accent, #2563eb);
+  outline-offset: 1px;
+  z-index: 1;
 }
 
 .admin-stats__heatmap-legend {
@@ -15538,6 +15544,63 @@ body.cockpit-mode #edgeLegend {
   color: var(--color-text-muted);
 }
 
+/* ── Admin Stats: Heatmap Tooltip ── */
+.admin-stats__heatmap-tooltip {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 10;
+}
+.admin-stats__heatmap-tooltip.visible {
+  opacity: 1;
+}
+.admin-stats__heatmap-tip-date {
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 4px;
+}
+.admin-stats__heatmap-tip-total {
+  color: var(--color-accent, #2563eb);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.admin-stats__heatmap-tip-empty {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+.admin-stats__heatmap-tip-users {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-top: 1px solid var(--color-border);
+  padding-top: 4px;
+}
+.admin-stats__heatmap-tip-user {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--color-text);
+}
+.admin-stats__heatmap-tip-count {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+/* Heatmap needs relative positioning for tooltip */
+.admin-stats__section:has(.admin-stats__heatmap) {
+  position: relative;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --heatmap-0: #161b22;
@@ -15545,6 +15608,9 @@ body.cockpit-mode #edgeLegend {
     --heatmap-2: #006d32;
     --heatmap-3: #26a641;
     --heatmap-4: #39d353;
+  }
+  .admin-stats__heatmap-tooltip {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
   }
 }
 
