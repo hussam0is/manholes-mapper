@@ -51,11 +51,8 @@ const MAX_RETRY_COUNT = 2;
 const tileRetryCount = new Map();
 
 // Placeholder tile detection: Esri returns HTTP 200 with a tiny "no data" image
-// instead of a 404 for zoom levels without imagery. We detect these by file size
-// and track the highest zoom that has real data per area.
-// Key: "type/regionX/regionY" → highest zoom with real imagery (0 = not yet probed)
-const _maxRealZoom = new Map();
-// Threshold: real tiles are typically > 5KB, placeholders are < 3KB
+// instead of a 404 for zoom levels without imagery. We detect these by size.
+// Real tiles are typically > 5KB, placeholders are < 3KB.
 const PLACEHOLDER_MAX_BYTES = 4000;
 
 // Tile projection cache: stores ITM corners to avoid per-frame proj4 trig calls
@@ -80,18 +77,15 @@ function getTileUrl(x, y, z, type, useFallback = false) {
 }
 
 /**
- * Load a tile image
- * @param {number} x - Tile X coordinate
- * @param {number} y - Tile Y coordinate
- * @param {number} z - Zoom level
- * @param {string} type - Map type
- * @returns {Promise<HTMLImageElement>}
- */
-/**
  * Load a tile image via fetch, filtering out "no data" placeholder tiles.
  * Esri returns HTTP 200 with tiny placeholder PNGs (~800-2500 bytes) for
  * zoom levels without real imagery. We detect these by response size and
  * reject them so the renderer falls back to stretching a parent tile.
+ * @param {number} x - Tile X coordinate
+ * @param {number} y - Tile Y coordinate
+ * @param {number} z - Zoom level
+ * @param {string} type - Map type
+ * @returns {Promise<HTMLImageElement|null>}
  */
 async function loadTile(x, y, z, type) {
   const cacheKey = `${type}/${z}/${x}/${y}`;
@@ -299,18 +293,6 @@ export async function drawMapTiles(ctx, canvasWidth, canvasHeight, viewTranslate
 
   // Get visible tiles
   const tiles = calculateVisibleTiles(viewBounds, zoom);
-
-  // Diagnostic: log tile state every 2 seconds (throttled)
-  const now = Date.now();
-  if (!drawMapTiles._lastLog || now - drawMapTiles._lastLog > 2000) {
-    drawMapTiles._lastLog = now;
-    const cached = tiles.filter(t => getTileFromCache(t.x, t.y, t.z, currentMapType)).length;
-    const retried = tiles.filter(t => {
-      const k = `${currentMapType}/${t.z}/${t.x}/${t.y}`;
-      return (tileRetryCount.get(k) || 0) >= MAX_RETRY_COUNT;
-    }).length;
-    console.debug(`[Map] z=${zoom} viewScale=${viewScale.toFixed(3)} tiles=${tiles.length} cached=${cached} blacklisted=${retried} bounds=[${viewBounds.minX.toFixed(0)},${viewBounds.minY.toFixed(0)},${viewBounds.maxX.toFixed(0)},${viewBounds.maxY.toFixed(0)}]`);
-  }
 
   // Use high quality image smoothing for better aerial photo rendering
   ctx.imageSmoothingEnabled = true;
