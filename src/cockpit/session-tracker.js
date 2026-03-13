@@ -170,6 +170,14 @@ function updateStreakDisplay() {
   if (streak > 0) {
     streakEl.style.display = '';
     streakCountEl.textContent = String(streak);
+    // Update singular/plural days label
+    const daysLabel = document.getElementById('streakDaysLabel');
+    if (daysLabel) {
+      const t = window.t || (k => k);
+      daysLabel.textContent = streak === 1
+        ? (t('cockpit.day') || 'day')
+        : (t('cockpit.days') || 'days');
+    }
   } else {
     streakEl.style.display = 'none';
   }

@@ -109,7 +109,7 @@ function buildCockpitDOM() {
         <div class="intel-session__streak" id="sessionStreak" style="display:none;">
           <span class="material-icons">local_fire_department</span>
           <span id="streakCount">0</span>
-          <span data-i18n="cockpit.days">days</span>
+          <span id="streakDaysLabel">days</span>
         </div>
       </div>
     </aside>
