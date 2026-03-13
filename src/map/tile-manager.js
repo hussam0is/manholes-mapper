@@ -255,10 +255,9 @@ export function calculateZoomLevel(pixelsPerMeter) {
   let bestZoom = 17; // Default to a reasonable zoom
   let bestDiff = Infinity;
 
-  // Cap at zoom 19: Esri World Imagery/Street and OSM tiles are not reliably
-  // available above zoom 19 for Israel. Requesting z=20-21 causes permanent
-  // tile failures and blank map areas.
-  for (let z = 5; z <= 19; z++) {
+  // Allow zoom 5-21 for higher quality aerial imagery.
+  // Esri World Imagery supports zoom 20-21 in Israel and most urban areas.
+  for (let z = 5; z <= 21; z++) {
     const diff = Math.abs(GOVMAP_RESOLUTIONS[z] - targetResolution);
     if (diff < bestDiff) {
       bestDiff = diff;

@@ -112,24 +112,25 @@ async function loadTile(x, y, z, type) {
     
     img.onerror = () => {
       // Try fallback URL
+      console.debug(`[Map] Primary failed: ${getTileUrl(x, y, z, type, false)}`);
       const fallbackImg = new Image();
       fallbackImg.crossOrigin = 'anonymous';
-      
+
       fallbackImg.onload = () => {
         storeTileInCache(x, y, z, type, fallbackImg);
         tileRetryCount.delete(cacheKey);
         resolve(fallbackImg);
       };
-      
+
       fallbackImg.onerror = () => {
         tileRetryCount.set(cacheKey, retries + 1);
-        console.warn(`[Map] Failed to load tile ${cacheKey}`);
+        console.warn(`[Map] Both primary+fallback failed for tile ${cacheKey} (retry ${retries + 1}/${MAX_RETRY_COUNT})`);
         resolve(null);
       };
-      
+
       fallbackImg.src = getTileUrl(x, y, z, type, true);
     };
-    
+
     img.src = getTileUrl(x, y, z, type, false);
   });
   
@@ -233,9 +234,21 @@ export async function drawMapTiles(ctx, canvasWidth, canvasHeight, viewTranslate
   const minStretch = Math.min(stretchX, stretchY);
   const effectiveScale = coordinateScale * viewScale * minStretch;
   const zoom = calculateZoomLevel(effectiveScale);
-  
+
   // Get visible tiles
   const tiles = calculateVisibleTiles(viewBounds, zoom);
+
+  // Diagnostic: log tile state every 2 seconds (throttled)
+  const now = Date.now();
+  if (!drawMapTiles._lastLog || now - drawMapTiles._lastLog > 2000) {
+    drawMapTiles._lastLog = now;
+    const cached = tiles.filter(t => getTileFromCache(t.x, t.y, t.z, currentMapType)).length;
+    const retried = tiles.filter(t => {
+      const k = `${currentMapType}/${t.z}/${t.x}/${t.y}`;
+      return (tileRetryCount.get(k) || 0) >= MAX_RETRY_COUNT;
+    }).length;
+    console.debug(`[Map] z=${zoom} viewScale=${viewScale.toFixed(3)} tiles=${tiles.length} cached=${cached} blacklisted=${retried} bounds=[${viewBounds.minX.toFixed(0)},${viewBounds.minY.toFixed(0)},${viewBounds.maxX.toFixed(0)},${viewBounds.maxY.toFixed(0)}]`);
+  }
 
   // Use high quality image smoothing for better aerial photo rendering
   ctx.imageSmoothingEnabled = true;
