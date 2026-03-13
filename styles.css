@@ -6510,30 +6510,32 @@ select.invalid:focus {
   }
 }
 
-/* Toast — positioned at bottom-center to avoid overlapping legend bar and header */
+/* Toast — compact, auto-dismissing notification that doesn't block drawing */
 #toast {
   position: fixed;
   left: 50%;
   bottom: calc(var(--drawer-height, 0px) + 80px);
   transform: translateX(-50%) translateY(8px);
-  background: var(--color-primary-strong);
-  color: var(--color-text-on-primary, #fff);
-  padding: 0.6rem 1.2rem;
-  border-radius: 24px;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-  font-size: 0.92rem;
-  line-height: 1.4;
+  background: rgba(15, 23, 42, 0.82);
+  color: #f1f5f9;
+  padding: 0.35rem 0.85rem;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  font-size: 0.82rem;
+  line-height: 1.3;
   word-break: break-word;
-  min-height: 36px;
+  min-height: unset;
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  transition: opacity 0.2s ease, transform 0.2s ease;
   z-index: 160;
   max-width: calc(100vw - 32px);
   text-align: center;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 #toast.show {
@@ -7429,7 +7431,8 @@ select.invalid:focus {
   }
 
   #toast {
-    background: var(--color-primary-strong);
+    background: rgba(30, 41, 59, 0.88);
+    color: #e2e8f0;
   }
 
   /* Start panel Cancel button — dark mode outlined style */

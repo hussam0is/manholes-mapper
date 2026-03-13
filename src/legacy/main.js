@@ -8392,7 +8392,7 @@ function pointerDown(x, y) {
         if (String(node.id) === String(pendingEdgeTail.id)) {
           pendingEdgeTail = null;
           pendingEdgePreview = null;
-          showToast(t('toasts.edgeCancelled'));
+          showToast(t('toasts.edgeCancelled'), 1200);
           scheduleDraw();
           return;
         }
@@ -8400,7 +8400,7 @@ function pointerDown(x, y) {
         pendingEdgeTail = null;
         pendingEdgePreview = null;
         if (created) {
-          showToast(t('toasts.edgeCreated'));
+          showToast(t('toasts.edgeCreated'), 1200);
         } else {
           showToast(t('toasts.edgeExists'));
         }
@@ -8460,7 +8460,7 @@ function pointerDown(x, y) {
       // Clicked empty space again - cancel
       pendingEdgeStartPosition = null;
       pendingEdgePreview = null;
-      showToast(t('toasts.edgeCancelled'));
+      showToast(t('toasts.edgeCancelled'), 1200);
       scheduleDraw();
       return;
     }
@@ -8839,7 +8839,7 @@ canvas.addEventListener('touchstart', (e) => {
                 pendingEdgePreview = null;
                 scheduleDraw();
                 if (created) {
-                  showToast(t('toasts.edgeCreated'));
+                  showToast(t('toasts.edgeCreated'), 1200);
                 } else {
                   showToast(t('toasts.edgeExists'));
                 }
@@ -8848,7 +8848,7 @@ canvas.addEventListener('touchstart', (e) => {
                 pendingEdgeTail = null;
                 pendingEdgePreview = null;
                 scheduleDraw();
-                showToast(t('toasts.edgeCancelled'));
+                showToast(t('toasts.edgeCancelled'), 1200);
               }
             } else if (edgeAt) {
               // Cancel and select edge
@@ -9079,7 +9079,7 @@ canvas.addEventListener('touchend', (e) => {
     if (targetNode && String(targetNode.id) !== String(_longPressEdgeTail.id)) {
       const created = createEdge(_longPressEdgeTail.id, targetNode.id);
       if (created) {
-        showToast(t('toasts.edgeCreated'));
+        showToast(t('toasts.edgeCreated'), 1200);
       } else {
         showToast(t('toasts.edgeExists'));
       }
@@ -9341,7 +9341,7 @@ if (nodeModeBtn) {
     selectedNode = null;
     selectedEdge = null;
     renderDetails();
-    showToast(t('toasts.nodeMode'));
+    showToast(t('toasts.nodeMode'), 1200);
   });
 }
 if (homeNodeModeBtn) {
@@ -9359,7 +9359,7 @@ if (homeNodeModeBtn) {
     selectedNode = null;
     selectedEdge = null;
     renderDetails();
-    showToast(t('home'));
+    showToast(t('home'), 1200);
   });
 }
 if (drainageNodeModeBtn) {
@@ -9377,7 +9377,7 @@ if (drainageNodeModeBtn) {
     selectedNode = null;
     selectedEdge = null;
     renderDetails();
-    showToast(t('drainage'));
+    showToast(t('drainage'), 1200);
   });
 }
 if (issueNodeModeBtn) {
@@ -9395,7 +9395,7 @@ if (issueNodeModeBtn) {
     selectedNode = null;
     selectedEdge = null;
     renderDetails();
-    showToast(t('toasts.issueMode'));
+    showToast(t('toasts.issueMode'), 1200);
   });
 }
 if (edgeModeBtn) {
@@ -9413,7 +9413,7 @@ if (edgeModeBtn) {
     selectedNode = null;
     selectedEdge = null;
     renderDetails();
-    showToast(t('toasts.edgeMode'));
+    showToast(t('toasts.edgeMode'), 1200);
   });
 }
 // ── Node-type flyout (mobile) ──────────────────────────────────
@@ -11626,7 +11626,7 @@ document.addEventListener('keydown', (e) => {
       currentMode = 'node';
       pendingEdgeTail = null;
       pendingEdgePreview = null;
-      showToast(t('toasts.nodeMode'));
+      showToast(t('toasts.nodeMode'), 1200);
     }
   }
   if (!isTyping && (e.key === 'e' || e.key === 'E')) {
@@ -11637,7 +11637,7 @@ document.addEventListener('keydown', (e) => {
       currentMode = 'edge';
       pendingEdgeTail = null;
       pendingEdgePreview = null;
-      showToast(t('toasts.edgeMode'));
+      showToast(t('toasts.edgeMode'), 1200);
     }
   }
   if (!isTyping && (e.key === 's' || e.key === 'S')) {
