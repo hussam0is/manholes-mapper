@@ -137,6 +137,7 @@ export function initSketchSidePanel() {
 
 /**
  * Show the side panel (when entering project-canvas mode).
+ * Auto-enables "View All" so all project sketches are visible on canvas.
  */
 export function showSketchSidePanel() {
   if (!panelEl) return;
@@ -146,6 +147,11 @@ export function showSketchSidePanel() {
   _issuesSketchId = null;
   const toggleBtn = document.getElementById('sketchSidePanelToggle');
   if (toggleBtn) toggleBtn.style.display = '';
+  // Auto-enable View All so users see all project sketches immediately
+  const sketches = getAllSketches();
+  if (sketches.length > 0 && !areAllSketchesSelected()) {
+    selectAllSketches();
+  }
   render();
 }
 
