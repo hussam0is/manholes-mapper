@@ -138,7 +138,8 @@ export class AdminStatistics {
 
     // ── 3. Weekly velocity trend chart ──
     if (weekly && weekly.length > 1) {
-      this._renderVelocityChart(content, weekly, t);
+      const useKm = summary.targetKm != null && summary.targetKm > 0;
+      this._renderVelocityChart(content, weekly, t, useKm);
     }
 
     // ── 4. Accuracy distribution + Issue breakdown (side by side) ──
@@ -241,18 +242,46 @@ export class AdminStatistics {
   // ─── KPI Row: Velocity + Forecast + Health ───
   _renderKpiRow(content, summary, t) {
     const velocity = summary.weekVelocity ?? 0;
+    const weekKm = summary.weekKm ?? 0;
+    const hasTargetKm = summary.targetKm != null && summary.targetKm > 0;
     const forecastDays = summary.forecastDays;
     const healthScore = this._computeHealthScore(summary);
 
     // Forecast text
     let forecastText;
-    if (forecastDays != null && forecastDays > 0) {
+    if (forecastDays != null && forecastDays === 0) {
+      forecastText = '100%';
+    } else if (forecastDays != null && forecastDays > 0) {
       forecastText = t('statistics.forecastDays').replace('{0}', forecastDays);
     } else if (summary.completionPct >= 100) {
       forecastText = '100%';
     } else {
       forecastText = t('statistics.noForecast');
     }
+
+    // Km progress bar (only when targetKm is set)
+    let kmProgressHtml = '';
+    if (hasTargetKm) {
+      const kmPct = Math.min(100, Math.round((summary.totalKm / summary.targetKm) * 100));
+      const remainingKm = Math.max(0, summary.targetKm - summary.totalKm).toFixed(1);
+      kmProgressHtml = `
+        <div class="admin-stats__km-progress">
+          <div class="admin-stats__km-progress-text">
+            ${summary.totalKm} / ${summary.targetKm} km (${kmPct}%)
+          </div>
+          <div class="admin-stats__card-bar" style="margin-top:4px">
+            <div class="admin-stats__card-bar-fill" style="width:${kmPct}%"></div>
+          </div>
+          <div class="admin-stats__kpi-sub">${remainingKm} km ${escapeHtml(t('statistics.remaining'))}</div>
+        </div>
+      `;
+    }
+
+    // Velocity card: show km/week if targetKm is set, otherwise nodes/week
+    const velocityValue = hasTargetKm ? `${weekKm}` : `${velocity}`;
+    const velocityUnit = hasTargetKm
+      ? escapeHtml(t('statistics.kmPerWeek'))
+      : escapeHtml(t('statistics.nodesPerWeek'));
 
     const healthColor = healthScore >= 70 ? '#22c55e' : healthScore >= 40 ? '#eab308' : '#ef4444';
     const healthLabel = healthScore >= 70
@@ -265,14 +294,15 @@ export class AdminStatistics {
       <div class="admin-stats__kpi-row">
         <div class="admin-stats__kpi-card">
           <span class="material-icons admin-stats__kpi-icon">speed</span>
-          <div class="admin-stats__kpi-value">${velocity}</div>
-          <div class="admin-stats__kpi-label">${escapeHtml(t('statistics.nodesPerWeek'))}</div>
+          <div class="admin-stats__kpi-value">${velocityValue}</div>
+          <div class="admin-stats__kpi-label">${velocityUnit}</div>
           <div class="admin-stats__kpi-sub">${escapeHtml(t('statistics.velocity'))}</div>
         </div>
         <div class="admin-stats__kpi-card">
           <span class="material-icons admin-stats__kpi-icon">event</span>
           <div class="admin-stats__kpi-value admin-stats__kpi-value--sm">${escapeHtml(forecastText)}</div>
           <div class="admin-stats__kpi-label">${escapeHtml(t('statistics.completionForecast'))}</div>
+          ${kmProgressHtml}
         </div>
         <div class="admin-stats__kpi-card">
           <div class="admin-stats__health-ring">
@@ -333,7 +363,7 @@ export class AdminStatistics {
   }
 
   // ─── Weekly Velocity Trend (SVG Line Chart) ───
-  _renderVelocityChart(content, weekly, t) {
+  _renderVelocityChart(content, weekly, t, useKm = false) {
     const W = 560;
     const H = 140;
     const padX = 40;
@@ -341,7 +371,7 @@ export class AdminStatistics {
     const chartW = W - padX * 2;
     const chartH = H - padY * 2;
 
-    const counts = weekly.map(w => w.count);
+    const counts = weekly.map(w => useKm ? (w.km || 0) : w.count);
     const maxVal = Math.max(...counts, 1);
 
     // Build polyline points
@@ -380,11 +410,13 @@ export class AdminStatistics {
     }).join('');
 
     // Data point dots
+    const unit = useKm ? 'km' : t('statistics.totalNodes');
     const dots = counts.map((c, i) => {
       const x = padX + (i / Math.max(counts.length - 1, 1)) * chartW;
       const y = padY + chartH - (c / maxVal) * chartH;
+      const label = useKm ? `${c.toFixed(2)} km` : `${c}`;
       return `<circle cx="${x}" cy="${y}" r="3" fill="var(--color-accent, #2563eb)">
-        <title>${weekly[i].weekStart}: ${c}</title>
+        <title>${weekly[i].weekStart}: ${label}</title>
       </circle>`;
     }).join('');
 

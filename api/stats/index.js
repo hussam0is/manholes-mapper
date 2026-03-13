@@ -183,12 +183,22 @@ async function handleWorkload(req, res, url, userId, userRecord) {
 
   const projectId = url.searchParams.get('projectId');
 
-  // Build WHERE clause based on role and optional project filter
-  let sketchResult;
+  // Fetch project target_km if filtering by project
+  let projectTargetKm = null;
   if (projectId) {
     if (!validateUUID(projectId)) {
       return res.status(400).json({ error: 'Invalid projectId' });
     }
+    const projLookup = await sql`SELECT organization_id, target_km FROM projects WHERE id = ${projectId}`;
+    const projRow = projLookup.rows?.[0];
+    if (projRow) {
+      projectTargetKm = projRow.target_km != null ? parseFloat(projRow.target_km) : null;
+    }
+  }
+
+  // Build WHERE clause based on role and optional project filter
+  let sketchResult;
+  if (projectId) {
     // Verify access
     if (userRole !== 'super_admin') {
       const projResult = await sql`SELECT organization_id FROM projects WHERE id = ${projectId}`;
@@ -254,6 +264,12 @@ async function handleWorkload(req, res, url, userId, userRecord) {
   let totalPrecisionCount = 0;
   let weekVelocity = 0;
   let prevWeekVelocity = 0;
+
+  // Km velocity tracking — km of edges where both nodes were measured this/prev week
+  let weekKmVelocity = 0;
+  let prevWeekKmVelocity = 0;
+  // Per-week km map for weekly array
+  const weeklyKmMap = new Map();
 
   // Weekly velocity (last 12 weeks, keyed by Monday date string)
   const weeklyMap = new Map();
@@ -461,11 +477,36 @@ async function handleWorkload(req, res, url, userId, userRecord) {
         const dx = tailNode.surveyX - headNode.surveyX;
         const dy = tailNode.surveyY - headNode.surveyY;
         const distM = Math.sqrt(dx * dx + dy * dy);
-        km += distM / 1000;
+        const edgeKm = distM / 1000;
+        km += edgeKm;
 
         // --- KPI: longEdges (>70m ITM) ---
         if (distM > 70) {
           issueBreakdown.longEdges++;
+        }
+
+        // --- KPI: km velocity — attribute edge to the week its newer node was measured ---
+        const tailDate = tailNode.measureDate || tailNode.createdAt;
+        const headDate = headNode.measureDate || headNode.createdAt;
+        const newerDate = tailDate && headDate
+          ? (tailDate > headDate ? tailDate : headDate)
+          : (tailDate || headDate);
+        if (newerDate) {
+          const newerMs = new Date(newerDate).getTime();
+          if (!isNaN(newerMs)) {
+            if (newerMs >= weekAgoMs) weekKmVelocity += edgeKm;
+            else if (newerMs >= twoWeeksAgoMs) prevWeekKmVelocity += edgeKm;
+
+            // Weekly km map
+            const edgeMonday = getWeekMonday(newerDate);
+            if (edgeMonday) {
+              const mondayMs = new Date(edgeMonday).getTime();
+              const twelveWeeksAgoMs = now.getTime() - 12 * 7 * 24 * 60 * 60 * 1000;
+              if (mondayMs >= twelveWeeksAgoMs) {
+                weeklyKmMap.set(edgeMonday, (weeklyKmMap.get(edgeMonday) || 0) + edgeKm);
+              }
+            }
+          }
         }
       }
 
@@ -527,8 +568,14 @@ async function handleWorkload(req, res, url, userId, userRecord) {
     .sort((a, b) => b.nodes - a.nodes);
 
   // --- Build weekly velocity array (last 12 weeks, sorted chronologically) ---
-  const weekly = Array.from(weeklyMap.entries())
-    .map(([weekStart, count]) => ({ weekStart, count }))
+  // Merge node count and km for each week
+  const allWeekKeys = new Set([...weeklyMap.keys(), ...weeklyKmMap.keys()]);
+  const weekly = Array.from(allWeekKeys)
+    .map(weekStart => ({
+      weekStart,
+      count: weeklyMap.get(weekStart) || 0,
+      km: Math.round((weeklyKmMap.get(weekStart) || 0) * 100) / 100,
+    }))
     .sort((a, b) => a.weekStart.localeCompare(b.weekStart));
 
   // --- Build activity heatmap array (last 90 days, only count > 0) ---
@@ -548,10 +595,25 @@ async function handleWorkload(req, res, url, userId, userRecord) {
     ? Math.round(((weekVelocity - prevWeekVelocity) / prevWeekVelocity) * 100)
     : null;
 
-  const unmeasuredNodes = totalNodes - nodesWithCoords;
-  const forecastDays = weekVelocity > 0
-    ? Math.ceil(unmeasuredNodes / weekVelocity * 7)
-    : null;
+  // Round km velocities
+  const weekKmRounded = Math.round(weekKmVelocity * 100) / 100;
+  const prevWeekKmRounded = Math.round(prevWeekKmVelocity * 100) / 100;
+
+  // Forecast: use km-based when targetKm is set, otherwise node-based
+  let forecastDays = null;
+  if (projectTargetKm != null && projectTargetKm > 0) {
+    const remainingKm = projectTargetKm - totalKm;
+    if (remainingKm <= 0) {
+      forecastDays = 0; // already complete
+    } else if (weekKmRounded > 0) {
+      forecastDays = Math.ceil(remainingKm / weekKmRounded * 7);
+    }
+  } else {
+    const unmeasuredNodes = totalNodes - nodesWithCoords;
+    if (weekVelocity > 0) {
+      forecastDays = Math.ceil(unmeasuredNodes / weekVelocity * 7);
+    }
+  }
 
   return res.status(200).json({
     summary: {
@@ -562,9 +624,12 @@ async function handleWorkload(req, res, url, userId, userRecord) {
       nodesWithCoords,
       completionPct: totalNodes > 0 ? Math.round((nodesWithCoords / totalNodes) * 100) : 0,
       avgAccuracy,
+      targetKm: projectTargetKm,
       weekVelocity,
       prevWeekVelocity,
       velocityChangePct,
+      weekKm: weekKmRounded,
+      prevWeekKm: prevWeekKmRounded,
       forecastDays,
     },
     perUser,

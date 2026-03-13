@@ -74,6 +74,9 @@ async function initializeDatabase() {
   // Migration: Add integer version counter for deterministic optimistic locking
   await sql`ALTER TABLE sketches ADD COLUMN IF NOT EXISTS version INTEGER DEFAULT 0`;
 
+  // Migration: Add target_km to projects for completion forecasting
+  await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS target_km NUMERIC`;
+
   await sql`
     CREATE INDEX IF NOT EXISTS idx_sketches_user_id ON sketches(user_id)
   `;
@@ -858,12 +861,12 @@ export async function deleteOrganization(orgId) {
 export async function getProjectsByOrganization(organizationId, { limit = 100, offset = 0 } = {}) {
   const result = await sql`
     SELECT p.id, p.organization_id, p.name, p.description, p.input_flow_config,
-           p.created_at, p.updated_at,
+           p.target_km, p.created_at, p.updated_at,
            COUNT(s.id) as sketch_count
     FROM projects p
     LEFT JOIN sketches s ON p.id = s.project_id
     WHERE p.organization_id = ${organizationId}
-    GROUP BY p.id, p.organization_id, p.name, p.description, p.input_flow_config, p.created_at, p.updated_at
+    GROUP BY p.id, p.organization_id, p.name, p.description, p.input_flow_config, p.target_km, p.created_at, p.updated_at
     ORDER BY p.name
     LIMIT ${limit} OFFSET ${offset}
   `;
@@ -876,11 +879,11 @@ export async function getProjectsByOrganization(organizationId, { limit = 100, o
 export async function getAllProjects({ limit = 100, offset = 0 } = {}) {
   const result = await sql`
     SELECT p.id, p.organization_id, p.name, p.description, p.input_flow_config,
-           p.created_at, p.updated_at,
+           p.target_km, p.created_at, p.updated_at,
            COUNT(s.id) as sketch_count
     FROM projects p
     LEFT JOIN sketches s ON p.id = s.project_id
-    GROUP BY p.id, p.organization_id, p.name, p.description, p.input_flow_config, p.created_at, p.updated_at
+    GROUP BY p.id, p.organization_id, p.name, p.description, p.input_flow_config, p.target_km, p.created_at, p.updated_at
     ORDER BY p.name
     LIMIT ${limit} OFFSET ${offset}
   `;
@@ -892,7 +895,7 @@ export async function getAllProjects({ limit = 100, offset = 0 } = {}) {
  */
 export async function getProjectById(projectId) {
   const result = await sql`
-    SELECT id, organization_id, name, description, input_flow_config, created_at, updated_at
+    SELECT id, organization_id, name, description, input_flow_config, target_km, created_at, updated_at
     FROM projects
     WHERE id = ${projectId}
   `;
@@ -903,17 +906,18 @@ export async function getProjectById(projectId) {
  * Create a new project
  */
 export async function createProject(organizationId, project) {
-  const { name, description, inputFlowConfig } = project;
-  
+  const { name, description, inputFlowConfig, targetKm } = project;
+
   const result = await sql`
-    INSERT INTO projects (organization_id, name, description, input_flow_config)
+    INSERT INTO projects (organization_id, name, description, input_flow_config, target_km)
     VALUES (
       ${organizationId},
       ${name},
       ${description || null},
-      ${JSON.stringify(inputFlowConfig || {})}::jsonb
+      ${JSON.stringify(inputFlowConfig || {})}::jsonb,
+      ${targetKm != null ? targetKm : null}
     )
-    RETURNING id, organization_id, name, description, input_flow_config, created_at, updated_at
+    RETURNING id, organization_id, name, description, input_flow_config, target_km, created_at, updated_at
   `;
   
   return result.rows[0];
@@ -932,6 +936,8 @@ export async function updateProject(projectId, updates) {
   // Detect which optional nullable fields were explicitly provided
   const descriptionProvided = 'description' in updates;
   const description = updates.description ?? null;
+  const targetKmProvided = 'targetKm' in updates;
+  const targetKm = updates.targetKm ?? null;
 
   const result = await sql`
     UPDATE projects
@@ -939,9 +945,10 @@ export async function updateProject(projectId, updates) {
       name = COALESCE(${name}, name),
       description = CASE WHEN ${descriptionProvided}::boolean THEN ${description} ELSE description END,
       input_flow_config = COALESCE(${inputFlowConfig != null ? JSON.stringify(inputFlowConfig) : null}::jsonb, input_flow_config),
+      target_km = CASE WHEN ${targetKmProvided}::boolean THEN ${targetKm} ELSE target_km END,
       updated_at = NOW()
     WHERE id = ${projectId}
-    RETURNING id, organization_id, name, description, input_flow_config, created_at, updated_at
+    RETURNING id, organization_id, name, description, input_flow_config, target_km, created_at, updated_at
   `;
 
   return result.rows[0] || null;
@@ -974,14 +981,15 @@ export async function duplicateProject(projectId, newName) {
   if (!original) return null;
   
   const result = await sql`
-    INSERT INTO projects (organization_id, name, description, input_flow_config)
+    INSERT INTO projects (organization_id, name, description, input_flow_config, target_km)
     VALUES (
       ${original.organization_id},
       ${newName},
       ${original.description},
-      ${JSON.stringify(original.input_flow_config || {})}::jsonb
+      ${JSON.stringify(original.input_flow_config || {})}::jsonb,
+      ${original.target_km}
     )
-    RETURNING id, organization_id, name, description, input_flow_config, created_at, updated_at
+    RETURNING id, organization_id, name, description, input_flow_config, target_km, created_at, updated_at
   `;
   
   return result.rows[0];

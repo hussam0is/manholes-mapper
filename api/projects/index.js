@@ -113,6 +113,7 @@ export default async function handler(req, res) {
         name: p.name,
         description: p.description,
         inputFlowConfig: p.input_flow_config || {},
+        targetKm: p.target_km != null ? parseFloat(p.target_km) : null,
         sketchCount: parseInt(p.sketch_count) || 0,
         createdAt: p.created_at,
         updatedAt: p.updated_at,
@@ -140,7 +141,7 @@ export default async function handler(req, res) {
       }
 
       const body = await parseBody(request);
-      const { name, description, inputFlowConfig, organizationId } = body;
+      const { name, description, inputFlowConfig, organizationId, targetKm } = body;
 
       if (!name || !name.trim()) {
         return res.status(400).json({ error: 'Project name is required' });
@@ -165,6 +166,7 @@ export default async function handler(req, res) {
         name: name.trim(),
         description: description?.trim() || null,
         inputFlowConfig: inputFlowConfig || {},
+        targetKm: targetKm != null ? parseFloat(targetKm) : null,
       });
 
       console.debug(`[API /api/projects] Created project ${project.id} in org ${targetOrgId} by ${userId}`);
@@ -175,6 +177,7 @@ export default async function handler(req, res) {
           name: project.name,
           description: project.description,
           inputFlowConfig: project.input_flow_config || {},
+          targetKm: project.target_km != null ? parseFloat(project.target_km) : null,
           createdAt: project.created_at,
           updatedAt: project.updated_at,
         }
@@ -266,6 +269,7 @@ async function handleSingleProject(req, res, request, projectId) {
           name: project.name,
           description: project.description,
           inputFlowConfig: project.input_flow_config || {},
+          targetKm: project.target_km != null ? parseFloat(project.target_km) : null,
           createdAt: project.created_at,
           updatedAt: project.updated_at,
         }
@@ -297,7 +301,7 @@ async function handleSingleProject(req, res, request, projectId) {
       }
 
       const body = await parseBody(request);
-      const { name, description, inputFlowConfig } = body;
+      const { name, description, inputFlowConfig, targetKm } = body;
 
       if (name !== undefined && !name.trim()) {
         return res.status(400).json({ error: 'Project name cannot be empty' });
@@ -310,6 +314,7 @@ async function handleSingleProject(req, res, request, projectId) {
       if (name) updates.name = name.trim();
       if (description !== undefined) updates.description = description?.trim() || null;
       if (inputFlowConfig !== undefined) updates.inputFlowConfig = inputFlowConfig;
+      if (targetKm !== undefined) updates.targetKm = targetKm != null ? parseFloat(targetKm) : null;
 
       const updatedProject = await updateProject(projectId, updates);
 
@@ -321,6 +326,7 @@ async function handleSingleProject(req, res, request, projectId) {
           name: updatedProject.name,
           description: updatedProject.description,
           inputFlowConfig: updatedProject.input_flow_config || {},
+          targetKm: updatedProject.target_km != null ? parseFloat(updatedProject.target_km) : null,
           createdAt: updatedProject.created_at,
           updatedAt: updatedProject.updated_at,
         }
@@ -363,6 +369,7 @@ async function handleSingleProject(req, res, request, projectId) {
             name: duplicated.name,
             description: duplicated.description,
             inputFlowConfig: duplicated.input_flow_config || {},
+            targetKm: duplicated.target_km != null ? parseFloat(duplicated.target_km) : null,
             createdAt: duplicated.created_at,
             updatedAt: duplicated.updated_at,
           }

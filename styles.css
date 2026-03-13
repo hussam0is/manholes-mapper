@@ -15388,6 +15388,17 @@ body.cockpit-mode #edgeLegend {
   height: 72px;
 }
 
+.admin-stats__km-progress {
+  width: 100%;
+  margin-top: 8px;
+}
+.admin-stats__km-progress-text {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text);
+  text-align: center;
+}
+
 /* ── Admin Stats: SVG Chart ── */
 .admin-stats__svg-chart {
   width: 100%;

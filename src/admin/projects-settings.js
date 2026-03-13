@@ -240,7 +240,7 @@ export class ProjectsSettings {
         <div class="project-info">
           <h3 class="project-name">${this._escapeHtml(project.name)}</h3>
           <p class="project-meta">
-            ${sketchCount} ${this.t('projects.sketchCount')} • ${lastUpdated}
+            ${sketchCount} ${this.t('projects.sketchCount')} • ${lastUpdated}${project.targetKm != null ? ` • ${this.t('projects.targetKmLabel')}: ${project.targetKm} km` : ''}
           </p>
           ${project.description ? `<p class="project-description">${this._escapeHtml(project.description)}</p>` : ''}
         </div>
@@ -340,6 +340,13 @@ export class ProjectsSettings {
           <textarea id="projectDescInput" class="form-input" rows="3"
                     placeholder="${this.t('projects.projectDescription')}...">${isEdit ? this._escapeHtml(project.description || '') : ''}</textarea>
         </div>
+        <div class="form-group">
+          <label for="projectTargetKmInput">${this.t('projects.targetKm')}</label>
+          <input type="number" id="projectTargetKmInput" class="form-input"
+                 value="${isEdit && project.targetKm != null ? project.targetKm : ''}"
+                 placeholder="${this.t('projects.targetKmPlaceholder')}"
+                 min="0" step="0.1" />
+        </div>
       </div>
       <div class="projects-modal-footer">
         <button class="btn btn-secondary projects-modal-cancel">${this.t('buttons.cancel')}</button>
@@ -371,6 +378,8 @@ export class ProjectsSettings {
     modal.querySelector('.projects-modal-save')?.addEventListener('click', async () => {
       const name = modal.querySelector('#projectNameInput')?.value?.trim();
       const description = modal.querySelector('#projectDescInput')?.value?.trim();
+      const targetKmVal = modal.querySelector('#projectTargetKmInput')?.value;
+      const targetKm = targetKmVal !== '' && targetKmVal != null ? parseFloat(targetKmVal) : null;
 
       if (!name) {
         this.showToast(this.t('validation.required'), 'error');
@@ -379,9 +388,9 @@ export class ProjectsSettings {
 
       try {
         if (isEdit) {
-          await this._updateProject(project.id, { name, description });
+          await this._updateProject(project.id, { name, description, targetKm });
         } else {
-          await this._createProject({ name, description });
+          await this._createProject({ name, description, targetKm });
         }
         closeModal();
         await this.render(); // Refresh the list
