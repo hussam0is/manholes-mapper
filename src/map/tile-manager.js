@@ -423,10 +423,10 @@ export function markTileLoadPending(x, y, z, type, promise) {
  * @param {number} y - Child tile Y
  * @param {number} z - Child tile zoom level
  * @param {string} type - Tile type
- * @param {number} [maxLevelsUp=4] - How many zoom levels to search upward
+ * @param {number} [maxLevelsUp=10] - How many zoom levels to search upward
  * @returns {{image: HTMLImageElement, sx: number, sy: number, sw: number, sh: number}|null}
  */
-export function findParentTile(x, y, z, type, maxLevelsUp = 4) {
+export function findParentTile(x, y, z, type, maxLevelsUp = 10) {
   for (let dz = 1; dz <= maxLevelsUp && (z - dz) >= 0; dz++) {
     const pz = z - dz;
     const scale = 1 << dz; // 2^dz

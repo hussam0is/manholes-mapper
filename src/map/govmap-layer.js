@@ -50,6 +50,14 @@ let referencePoint = null; // {itm: {x, y}, canvas: {x, y}}
 const MAX_RETRY_COUNT = 2;
 const tileRetryCount = new Map();
 
+// Placeholder tile detection: Esri returns HTTP 200 with a tiny "no data" image
+// instead of a 404 for zoom levels without imagery. We detect these by file size
+// and track the highest zoom that has real data per area.
+// Key: "type/regionX/regionY" → highest zoom with real imagery (0 = not yet probed)
+const _maxRealZoom = new Map();
+// Threshold: real tiles are typically > 5KB, placeholders are < 3KB
+const PLACEHOLDER_MAX_BYTES = 4000;
+
 // Tile projection cache: stores ITM corners to avoid per-frame proj4 trig calls
 // Key: "z/x/y" → { topLeftItm, bottomRightItm, widthMeters, heightMeters }
 const _tileItmCache = new Map();
@@ -79,63 +87,117 @@ function getTileUrl(x, y, z, type, useFallback = false) {
  * @param {string} type - Map type
  * @returns {Promise<HTMLImageElement>}
  */
+/**
+ * Load a tile image via fetch, filtering out "no data" placeholder tiles.
+ * Esri returns HTTP 200 with tiny placeholder PNGs (~800-2500 bytes) for
+ * zoom levels without real imagery. We detect these by response size and
+ * reject them so the renderer falls back to stretching a parent tile.
+ */
 async function loadTile(x, y, z, type) {
   const cacheKey = `${type}/${z}/${x}/${y}`;
-  
+
   // Check if already failed too many times
   const retries = tileRetryCount.get(cacheKey) || 0;
   if (retries >= MAX_RETRY_COUNT) {
     return null;
   }
-  
+
   // Check cache first
   const cached = getTileFromCache(x, y, z, type);
   if (cached) {
     return cached;
   }
-  
+
   // Check if already loading
   if (isTileLoadPending(x, y, z, type)) {
     return null;
   }
-  
-  // Load the tile
-  const loadPromise = new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    
-    img.onload = () => {
-      storeTileInCache(x, y, z, type, img);
-      tileRetryCount.delete(cacheKey);
-      resolve(img);
-    };
-    
-    img.onerror = () => {
-      // Try fallback URL
-      console.debug(`[Map] Primary failed: ${getTileUrl(x, y, z, type, false)}`);
-      const fallbackImg = new Image();
-      fallbackImg.crossOrigin = 'anonymous';
 
-      fallbackImg.onload = () => {
-        storeTileInCache(x, y, z, type, fallbackImg);
+  // Load tile via fetch to check response size before creating Image
+  const loadPromise = (async () => {
+    const primaryUrl = getTileUrl(x, y, z, type, false);
+    const fallbackUrl = getTileUrl(x, y, z, type, true);
+
+    for (const url of [primaryUrl, fallbackUrl]) {
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) continue;
+
+        const blob = await resp.blob();
+
+        // Detect placeholder tiles by size.
+        // Real imagery tiles are > 4KB. Esri "no data" placeholders are
+        // typically 791-2521 bytes. Reject placeholders so findParentTile()
+        // can show a stretched version of the nearest real tile instead.
+        if (blob.size < PLACEHOLDER_MAX_BYTES) {
+          // Mark as failed so we don't keep re-fetching this placeholder
+          tileRetryCount.set(cacheKey, MAX_RETRY_COUNT);
+          return null;
+        }
+
+        // Convert blob to Image
+        const objectUrl = URL.createObjectURL(blob);
+        const img = await new Promise((resolve, reject) => {
+          const image = new Image();
+          image.crossOrigin = 'anonymous';
+          image.onload = () => {
+            URL.revokeObjectURL(objectUrl);
+            resolve(image);
+          };
+          image.onerror = () => {
+            URL.revokeObjectURL(objectUrl);
+            reject(new Error('Image decode failed'));
+          };
+          image.src = objectUrl;
+        });
+
+        storeTileInCache(x, y, z, type, img);
         tileRetryCount.delete(cacheKey);
-        resolve(fallbackImg);
-      };
+        return img;
+      } catch (_e) {
+        // Try next URL
+      }
+    }
 
-      fallbackImg.onerror = () => {
-        tileRetryCount.set(cacheKey, retries + 1);
-        console.warn(`[Map] Both primary+fallback failed for tile ${cacheKey} (retry ${retries + 1}/${MAX_RETRY_COUNT})`);
-        resolve(null);
-      };
+    // Both URLs failed
+    tileRetryCount.set(cacheKey, retries + 1);
+    return null;
+  })();
 
-      fallbackImg.src = getTileUrl(x, y, z, type, true);
-    };
-
-    img.src = getTileUrl(x, y, z, type, false);
-  });
-  
   markTileLoadPending(x, y, z, type, loadPromise);
   return loadPromise;
+}
+
+/**
+ * When a tile at zoom z is a placeholder, proactively load parent tiles
+ * walking down from z until we find one with real data. This populates
+ * the cache so findParentTile() can show stretched real imagery.
+ */
+async function _loadParentChain(x, y, z, type, onTilesLoaded) {
+  for (let dz = 1; dz <= 10 && (z - dz) >= 5; dz++) {
+    const pz = z - dz;
+    const px = x >> dz;
+    const py = y >> dz;
+    // Skip if already cached or already known as placeholder
+    if (getTileFromCache(px, py, pz, type)) {
+      // Already have a real tile at this level — we're done
+      if (onTilesLoaded) onTilesLoaded();
+      return;
+    }
+    const parentCacheKey = `${type}/${pz}/${px}/${py}`;
+    const parentRetries = tileRetryCount.get(parentCacheKey) || 0;
+    if (parentRetries >= MAX_RETRY_COUNT) {
+      // This parent was also a placeholder, keep going up
+      continue;
+    }
+    const img = await loadTile(px, py, pz, type);
+    if (img) {
+      // Found real imagery — trigger redraw
+      if (onTilesLoaded) onTilesLoaded();
+      return;
+    }
+    // This parent was a placeholder too, continue up
+  }
 }
 
 /**
@@ -270,6 +332,11 @@ export async function drawMapTiles(ctx, canvasWidth, canvasHeight, viewTranslate
       loadTile(x, y, z, currentMapType).then((img) => {
         if (img && onTilesLoaded) {
           onTilesLoaded();
+        }
+        // If this tile was a placeholder (rejected), proactively load
+        // parent tiles so findParentTile has real imagery to show
+        if (!img && onTilesLoaded) {
+          _loadParentChain(x, y, z, currentMapType, onTilesLoaded);
         }
       });
 
