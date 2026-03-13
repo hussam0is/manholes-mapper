@@ -15361,6 +15361,16 @@ body.cockpit-mode #edgeLegend {
   .resume-bar__stats {
     display: none;
   }
+  .resume-bar__name {
+    max-width: 120px;
+  }
+  .resume-bar__streak {
+    display: none;
+  }
+  .resume-bar {
+    gap: 6px;
+    padding-inline: 10px;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
