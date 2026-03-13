@@ -1705,11 +1705,29 @@ function applyLangToStaticUI() {
   }
 
   // Rebuild the help list — it is an array of translated strings, not a single key
+  // Format: "KEY: description" — wrap the key portion in <kbd> for visual distinction
   if (helpListEl) {
     helpListEl.innerHTML = '';
     t('helpLines').forEach((line) => {
       const li = document.createElement('li');
-      li.textContent = line;
+      const colonIdx = line.indexOf(':');
+      if (colonIdx > 0 && colonIdx < 30) {
+        const keyPart = line.substring(0, colonIdx).trim();
+        const descPart = line.substring(colonIdx + 1).trim();
+        // Split compound keys like "= / -" into separate <kbd> elements
+        const keys = keyPart.split(/\s*\/\s*/);
+        keys.forEach((k, i) => {
+          const kbd = document.createElement('kbd');
+          kbd.textContent = k.trim();
+          li.appendChild(kbd);
+          if (i < keys.length - 1) {
+            li.appendChild(document.createTextNode(' / '));
+          }
+        });
+        li.appendChild(document.createTextNode(' — ' + descPart));
+      } else {
+        li.textContent = line;
+      }
       helpListEl.appendChild(li);
     });
   }
