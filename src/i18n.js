@@ -242,6 +242,7 @@ export const i18n = {
       empty: {
         title: 'התחל לשרטט',
         subtitle: 'הקש על הקנבס כדי להוסיף שוחה',
+        hint: 'או לחץ N למצב שוחה',
       },
     },
     renamed: 'שם עודכן',
@@ -1349,6 +1350,7 @@ export const i18n = {
       empty: {
         title: 'Start Drawing',
         subtitle: 'Tap the canvas to add a manhole',
+        hint: 'or press N for Node mode',
       },
     },
     renamed: 'Renamed',

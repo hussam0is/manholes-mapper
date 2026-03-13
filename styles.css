@@ -1368,6 +1368,24 @@ select.btn:focus-visible {
   color: var(--color-muted);
   margin: 0;
 }
+.canvas-empty-state__hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary, #64748b);
+  opacity: 0.7;
+}
+.canvas-empty-state__arrow {
+  font-size: 18px;
+  animation: empty-state-bounce 2s ease-in-out infinite;
+}
+@keyframes empty-state-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(4px); }
+}
 
 /* ── Long-press context menu ──────────────────────────────────── */
 .canvas-context-menu {
