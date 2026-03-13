@@ -160,6 +160,10 @@ export function getMapReferencePoint() {
  */
 export function setMapLayerEnabled(enabled) {
   mapLayerEnabled = enabled;
+  // Clear retry blacklist so tiles can be re-attempted when layer is toggled back on
+  if (enabled) {
+    tileRetryCount.clear();
+  }
 }
 
 /**
@@ -177,6 +181,8 @@ export function isMapLayerEnabled() {
 export function setMapType(type) {
   if (Object.values(MAP_TYPES).includes(type)) {
     currentMapType = type;
+    // Clear retry blacklist so new map type tiles get a fresh chance
+    tileRetryCount.clear();
   }
 }
 
