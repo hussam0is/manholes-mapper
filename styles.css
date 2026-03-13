@@ -6708,6 +6708,19 @@ select.invalid:focus {
     inset-inline-end: 8px;
   }
 
+  /* Mobile toolbar reorder: move drawing tools (Node, Edge) to bottom
+     thumb zone for one-handed use, keep utility tools at top.
+     Order: [My Location] [3D] | [Undo] [Redo] | [Node types] [Edge] */
+  #myLocationBtn                   { order: 1; }
+  .canvas-toolbar-divider--location { order: 2; }
+  #threeDViewBtn                   { order: 3; }
+  .canvas-toolbar-divider--undo    { order: 4; }
+  #undoBtn                         { order: 5; }
+  #redoBtn                         { order: 6; }
+  #nodeTypeFlyoutBtn               { order: 7; }
+  #nodeTypeFlyout                  { order: 8; }
+  #edgeModeBtn                     { order: 9; }
+
   /* ── Node-type flyout (mobile) ───────────────────────────────
      Collapses 4 node-type buttons into one trigger + flyout. */
 
