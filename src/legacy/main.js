@@ -5548,6 +5548,16 @@ function scheduleIncompleteEdgeUpdate() {
 
 function renderEdgeLegend() {
   const legend = document.getElementById('edgeLegend');
+  const toggle = document.getElementById('edgeLegendToggle');
+  // Hide legend entirely when sketch has no edges
+  if (edges.length === 0) {
+    if (legend) legend.style.display = 'none';
+    if (toggle) toggle.style.display = 'none';
+    return;
+  }
+  // Restore display (CSS handles visibility)
+  if (legend) legend.style.removeProperty('display');
+  if (toggle) toggle.style.removeProperty('display');
   renderEdgeLegendFeature(legend, EDGE_TYPE_COLORS);
 }
 
