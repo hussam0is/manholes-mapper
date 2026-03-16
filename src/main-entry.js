@@ -998,12 +998,14 @@ function initCollapsibleMobileMenuGroups(menuEl) {
 try { syncAppHeightVar(); } catch (e) { console.warn('[main-entry] syncAppHeightVar failed:', e); }
 try { syncHeaderHeightVar(); } catch (e) { console.warn('[main-entry] syncHeaderHeightVar failed:', e); }
 
-// --- Landscape header auto-hide ---
-// In landscape mobile mode, the header auto-hides during canvas interaction to
-// maximise vertical drawing space, then reappears on idle or top-edge hover.
+// --- Landscape header auto-hide + floating action pill ---
+// In landscape mobile mode, the 28px status bar and floating action pill auto-hide
+// during canvas interaction to maximise vertical drawing space, then reappear on
+// idle or top-edge hover.
 function setupLandscapeHeaderAutoHide() {
   const header = document.querySelector('header');
   const canvas = document.getElementById('graphCanvas');
+  const pill = document.getElementById('landscapeActionPill');
   if (!header || !canvas) return;
 
   let hideTimer = null;
@@ -1017,11 +1019,16 @@ function setupLandscapeHeaderAutoHide() {
       header.classList.remove('header--hidden');
       header.classList.remove('header--landscape-auto-hide');
       document.body.classList.remove('landscape-header-hidden');
+      if (pill) {
+        pill.classList.remove('landscape-action-pill--auto-hide');
+        pill.classList.remove('landscape-action-pill--hidden');
+      }
       clearTimeout(hideTimer);
       // Re-sync the header height variable
       syncHeaderHeight();
     } else {
       header.classList.add('header--landscape-auto-hide');
+      if (pill) pill.classList.add('landscape-action-pill--auto-hide');
     }
   }
 
@@ -1040,11 +1047,13 @@ function setupLandscapeHeaderAutoHide() {
   function hideHeader() {
     if (!isLandscape) return;
     header.classList.add('header--hidden');
+    if (pill) pill.classList.add('landscape-action-pill--hidden');
     syncHeaderHeight();
   }
 
   function showHeader() {
     header.classList.remove('header--hidden');
+    if (pill) pill.classList.remove('landscape-action-pill--hidden');
     syncHeaderHeight();
     clearTimeout(hideTimer);
     if (isLandscape) {
@@ -1120,6 +1129,33 @@ function setupLandscapeHeaderAutoHide() {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         if (isLandscape) showHeader();
+      }
+    });
+  }
+
+  // --- Floating pill proxy buttons ---
+  // Each pill button has data-pill-proxy="<targetId>", clicking it triggers
+  // the corresponding original button in the header.
+  if (pill) {
+    pill.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-pill-proxy]');
+      if (!btn) return;
+      const targetId = btn.getAttribute('data-pill-proxy');
+      const target = document.getElementById(targetId);
+      if (target) {
+        // For search, focus the input instead of clicking
+        if (targetId === 'searchNodeInput') {
+          target.focus();
+          // Open the mobile menu to the search section if on mobile
+          const mobileSearch = document.querySelector('.mobile-menu__search-input');
+          if (mobileSearch && window.innerWidth <= 600) {
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+            if (mobileMenuBtn) mobileMenuBtn.click();
+            setTimeout(() => mobileSearch.focus(), 300);
+          }
+        } else {
+          target.click();
+        }
       }
     });
   }

@@ -313,6 +313,30 @@
     </button>
   </header>
 
+  <!-- Landscape floating action pill — visible only in landscape mobile mode.
+       Duplicates key action buttons from the header so the 28px status bar
+       stays passive while interactive controls float in a distinct pill. -->
+  <nav id="landscapeActionPill" class="landscape-action-pill" aria-label="Quick actions">
+    <button class="landscape-pill__btn" data-pill-proxy="searchNodeInput" title="Search" aria-label="Search nodes">
+      <span class="material-icons">search</span>
+    </button>
+    <span class="landscape-pill__divider"></span>
+    <button class="landscape-pill__btn" data-pill-proxy="exportMenuBtn" title="Menu" aria-label="Menu">
+      <span class="material-icons">apps</span>
+    </button>
+    <span class="landscape-pill__divider"></span>
+    <button class="landscape-pill__btn landscape-pill__btn--primary" data-pill-proxy="saveBtn" title="Save" aria-label="Save sketch">
+      <span class="material-icons">save</span>
+    </button>
+    <span class="landscape-pill__divider"></span>
+    <button class="landscape-pill__btn" data-pill-proxy="projectsBtn" title="Projects" aria-label="Projects">
+      <span class="material-icons">folder_open</span>
+    </button>
+    <button class="landscape-pill__btn" data-pill-proxy="mySketchesBtn" title="My Sketches" aria-label="My Sketches">
+      <span class="material-icons">description</span>
+    </button>
+  </nav>
+
   <!-- Login Panel (Authentication) -->
   <div id="loginPanel" class="login-panel" style="display: none;" role="dialog" aria-modal="true" aria-label="Authentication">
     <div class="login-panel-content">
