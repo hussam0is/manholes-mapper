@@ -17,7 +17,7 @@ const TAB_CONFIG = [
   { id: 'details', icon: 'edit_note', labelKey: 'sidebar.details' },
   { id: 'status', icon: 'monitor_heart', labelKey: 'sidebar.status' },
   { id: 'layers', icon: 'layers', labelKey: 'sidebar.layers' },
-  { id: 'sketches', icon: 'layers', labelKey: 'sidebar.sketches' },
+  { id: 'sketches', icon: 'description', labelKey: 'sidebar.sketches' },
 ];
 
 /**
@@ -290,17 +290,19 @@ function syncLayerControls() {
     });
   }
 
-  // Periodically check if ref layers section should be shown
-  const checkRefLayers = () => {
-    const origSection = document.getElementById('refLayersSection');
-    const usSection = document.getElementById('usRefLayersSection');
+  // Watch ref layers section visibility via MutationObserver instead of polling
+  const origSection = document.getElementById('refLayersSection');
+  const usSection = document.getElementById('usRefLayersSection');
+  const syncRefLayerVisibility = () => {
     if (origSection && usSection) {
-      const hasLayers = origSection.style.display !== 'none';
-      usSection.style.display = hasLayers ? '' : 'none';
+      usSection.style.display = origSection.style.display !== 'none' ? '' : 'none';
     }
   };
-  setInterval(checkRefLayers, 2000);
-  checkRefLayers();
+  if (origSection) {
+    const refObs = new MutationObserver(syncRefLayerVisibility);
+    refObs.observe(origSection, { attributes: true, attributeFilter: ['style'] });
+  }
+  syncRefLayerVisibility();
 }
 
 /**
@@ -382,14 +384,18 @@ function wireLegacySidebarBridge() {
   });
   observer.observe(oldSidebar, { attributes: true, attributeFilter: ['class'] });
 
-  // Also intercept direct calls to open/close sidebar
-  const origOpen = window.openSidebar;
-  window.openSidebar = function () {
+  // Intercept direct calls to open/close sidebar, chaining the originals
+  const origOpenFn = window.openSidebar;
+  const origCloseFn = window.closeSidebar;
+  window.openSidebar = function (...args) {
     switchTab('details');
     openSidebar();
+    // Chain original so legacy listeners still fire
+    if (typeof origOpenFn === 'function') origOpenFn.apply(this, args);
   };
-  window.closeSidebar = function () {
+  window.closeSidebar = function (...args) {
     closeSidebar();
+    if (typeof origCloseFn === 'function') origCloseFn.apply(this, args);
   };
 }
 
@@ -430,14 +436,13 @@ function updateSketchesTabVisibility() {
     }
   };
 
-  // Check periodically and on relevant events
-  setInterval(check, 2000);
-  check();
-
+  // Listen for project canvas events instead of polling
   if (window.menuEvents) {
     window.menuEvents.on('projectCanvas:enter', check);
     window.menuEvents.on('projectCanvas:exit', check);
   }
+  // Initial check
+  check();
 }
 
 /**
@@ -456,6 +461,31 @@ function reparentSketchPanel() {
     panel.appendChild(origPanel.firstChild);
   }
   origPanel.style.display = 'none';
+}
+
+/**
+ * Tear down the unified sidebar and restore original sidebar
+ */
+export function destroyUnifiedSidebar() {
+  // Restore original window functions if saved
+  if (sidebarEl) {
+    // Move details content back to original sidebar
+    const detailsPanel = document.getElementById('us-panel-details');
+    const oldSidebar = document.getElementById('sidebar');
+    if (detailsPanel && oldSidebar) {
+      while (detailsPanel.firstChild) {
+        oldSidebar.appendChild(detailsPanel.firstChild);
+      }
+      oldSidebar.style.display = '';
+    }
+    sidebarEl.remove();
+  }
+  toggleBtn?.remove();
+  sidebarEl = null;
+  toggleBtn = null;
+  isOpen = false;
+  activeTab = 'details';
+  document.body.classList.remove('sidebar-open');
 }
 
 /**

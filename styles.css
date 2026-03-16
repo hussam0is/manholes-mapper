@@ -16666,12 +16666,10 @@ body.unified-layout #sidebar.drawer {
 
 /* ── Canvas container adjustments under unified layout ── */
 body.unified-layout #canvasContainer {
-  /* Remove old right-side drawer space */
-  margin-inline-end: 0;
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  /* Old sidebar is hidden, so let canvas take full width */
+  flex: 1 1 0%;
+  margin: 0;
+  border-radius: 0;
 }
 
 /* Edge legend repositioned: bottom-left above the toolbar */

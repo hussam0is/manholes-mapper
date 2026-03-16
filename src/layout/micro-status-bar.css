@@ -21,10 +21,10 @@ body.unified-layout .micro-status-bar {
   -webkit-user-select: none;
 }
 
-/* Push canvas container down to accommodate status bar */
-body.unified-layout #canvasContainer {
-  top: calc(var(--header-h, 48px) + 32px);
-}
+/* No canvas container override needed — status bar is fixed position and
+   the canvas container already fills available space via flex layout.
+   The fixed status bar overlaps the top of the canvas; we add top padding
+   inside the canvas container to compensate. */
 
 /* ─── Status items ─── */
 .msb-item {
@@ -101,10 +101,6 @@ body.unified-layout #canvasContainer {
     padding: 0 8px;
   }
 
-  body.unified-layout #canvasContainer {
-    top: calc(var(--header-h, 48px) + 28px);
-  }
-
   .msb-item {
     gap: 3px;
     padding: 1px 4px;
@@ -121,9 +117,6 @@ body.unified-layout #canvasContainer {
     display: none;
   }
 
-  body.unified-layout #canvasContainer {
-    top: var(--header-h, 48px);
-  }
 }
 
 /* ─── Dark mode ─── */
