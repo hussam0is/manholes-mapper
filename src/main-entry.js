@@ -545,6 +545,9 @@ function initMenuSystem() {
   // Initialize mobile menu behavior
   initMobileMenuBehavior();
 
+  // Initialize landscape overflow menu
+  initLandscapeOverflowMenu();
+
   // Wire My Sketches button (desktop + mobile) — navigates to home screen (#/)
   menuEvents.on('mySketches', () => {
     window.location.hash = '#/';
@@ -989,6 +992,117 @@ function initCollapsibleMobileMenuGroups(menuEl) {
         collapsedGroups.delete(group);
       }
       saveCollapsedState();
+    });
+  });
+}
+
+/**
+ * Initialize landscape overflow menu (⋮ button in header).
+ * This menu groups items hidden in landscape mode: language, help, admin,
+ * autosave toggle, and size controls.
+ */
+function initLandscapeOverflowMenu() {
+  const btn = document.getElementById('landscapeOverflowBtn');
+  const menu = document.getElementById('landscapeOverflowMenu');
+  if (!btn || !menu) return;
+
+  let isOpen = false;
+
+  function positionMenu() {
+    const btnRect = btn.getBoundingClientRect();
+    const isRTL = document.dir === 'rtl' || document.documentElement.dir === 'rtl';
+    menu.style.position = 'fixed';
+    menu.style.top = `${btnRect.bottom + 4}px`;
+    if (isRTL) {
+      menu.style.left = `${btnRect.left}px`;
+      menu.style.right = 'auto';
+    } else {
+      menu.style.right = `${window.innerWidth - btnRect.right}px`;
+      menu.style.left = 'auto';
+    }
+  }
+
+  function openMenu() {
+    isOpen = true;
+    positionMenu();
+    menu.classList.add('landscape-overflow-menu--open');
+    btn.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeMenu() {
+    isOpen = false;
+    menu.classList.remove('landscape-overflow-menu--open');
+    btn.setAttribute('aria-expanded', 'false');
+  }
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (isOpen) closeMenu(); else openMenu();
+  });
+
+  document.addEventListener('click', (e) => {
+    if (isOpen && !menu.contains(e.target) && e.target !== btn) {
+      closeMenu();
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isOpen) {
+      closeMenu();
+      btn.focus();
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    if (isOpen) positionMenu();
+  });
+
+  // Sync landscape autosave toggle with the main autosave toggle
+  const landscapeAutosave = document.getElementById('landscapeAutosaveToggle');
+  const mainAutosave = document.getElementById('autosaveToggle');
+  if (landscapeAutosave && mainAutosave) {
+    landscapeAutosave.checked = mainAutosave.checked;
+    landscapeAutosave.addEventListener('change', () => {
+      mainAutosave.checked = landscapeAutosave.checked;
+      mainAutosave.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    mainAutosave.addEventListener('change', () => {
+      landscapeAutosave.checked = mainAutosave.checked;
+    });
+  }
+
+  // Wire overflow action items to the real buttons
+  menu.querySelectorAll('[data-action]').forEach((item) => {
+    item.addEventListener('click', () => {
+      const action = item.dataset.action;
+      if (window.menuEvents) {
+        window.menuEvents.emit(action);
+      }
+      closeMenu();
+    });
+  });
+
+  // Wire language item to toggle the real language select
+  const langItem = menu.querySelector('[data-overflow-for="langSelect"]');
+  const langSelect = document.getElementById('langSelect');
+  if (langItem && langSelect) {
+    langItem.addEventListener('click', () => {
+      // Cycle language: he -> en -> he
+      const current = langSelect.value;
+      langSelect.value = current === 'he' ? 'en' : 'he';
+      langSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      closeMenu();
+    });
+  }
+
+  // Wire size control buttons
+  menu.querySelectorAll('.landscape-overflow-size-btn[data-action]').forEach((sizeBtn) => {
+    sizeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const action = sizeBtn.dataset.action;
+      if (window.menuEvents) {
+        window.menuEvents.emit(action);
+      }
     });
   });
 }

@@ -295,6 +295,46 @@
         <button id="mySketchesBtn" class="menu-btn menu-btn--ghost menu-btn--icon-only" title="" aria-label="My Sketches" data-action="mySketches" data-i18n-title="mySketches" data-i18n-aria-label="mySketches">
           <span class="material-icons">description</span>
         </button>
+        <!-- Landscape overflow button: groups hidden items (lang, help, admin, autosave, size controls) -->
+        <button id="landscapeOverflowBtn" class="menu-btn menu-btn--ghost menu-btn--icon-only landscape-overflow-btn" title="More" aria-label="More options" aria-haspopup="menu" aria-expanded="false">
+          <span class="material-icons">more_vert</span>
+        </button>
+        <div id="landscapeOverflowMenu" class="landscape-overflow-menu" role="menu" aria-label="More options">
+          <button class="landscape-overflow-menu__item" role="menuitem" data-overflow-for="langSelect">
+            <span class="material-icons">language</span>
+            <span data-i18n="language">שפה</span>
+          </button>
+          <button class="landscape-overflow-menu__item" role="menuitem" data-overflow-for="helpBtn" data-action="help">
+            <span class="material-icons">help_outline</span>
+            <span data-i18n="help">עזרה</span>
+          </button>
+          <button class="landscape-overflow-menu__item" role="menuitem" data-overflow-for="adminBtn" data-action="admin">
+            <span class="material-icons">tune</span>
+            <span data-i18n="admin.manage">ניהול</span>
+          </button>
+          <hr class="landscape-overflow-menu__divider" />
+          <label class="landscape-overflow-menu__item landscape-overflow-menu__item--toggle">
+            <input type="checkbox" id="landscapeAutosaveToggle" />
+            <span class="material-icons">save</span>
+            <span data-i18n="autosave">שמירה אוטומטית</span>
+          </label>
+          <hr class="landscape-overflow-menu__divider" />
+          <div class="landscape-overflow-menu__item landscape-overflow-menu__item--size">
+            <span class="material-icons">text_fields</span>
+            <span data-i18n="menuGroupView">תצוגה</span>
+            <div class="landscape-overflow-size-controls">
+              <button class="landscape-overflow-size-btn" data-action="sizeDecrease" aria-label="Decrease size">
+                <span class="material-icons">remove_circle_outline</span>
+              </button>
+              <button class="landscape-overflow-size-btn" data-action="sizeIncrease" aria-label="Increase size">
+                <span class="material-icons">add_circle_outline</span>
+              </button>
+              <button class="landscape-overflow-size-btn" data-action="autoSize" aria-label="Auto size">
+                <span class="material-icons">fit_screen</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- User account button -->
