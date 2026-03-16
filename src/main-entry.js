@@ -301,6 +301,9 @@ if (typeof window !== 'undefined') {
     // Initialize Field Commander (canvas-first UI) — feature-flagged
     initFieldCommander();
     initFCTerritory();
+
+    // Initialize Command Palette (Layout 7 — landscape minimal header)
+    initCommandPalette();
   });
 }
 
@@ -991,6 +994,179 @@ function initCollapsibleMobileMenuGroups(menuEl) {
       saveCollapsedState();
     });
   });
+}
+
+// === Command Palette (Layout 7) ===
+// Universal action palette opened via Ctrl+K / Cmd+K or the header trigger button.
+// In landscape mode the header is minimized to 28px and this palette replaces all menus.
+function initCommandPalette() {
+  const overlay = document.getElementById('cmdPalette');
+  const input = document.getElementById('cmdPaletteInput');
+  const resultsList = document.getElementById('cmdPaletteResults');
+  const triggerBtn = document.getElementById('cmdPaletteBtn');
+  const backdrop = overlay?.querySelector('.cmd-palette-backdrop');
+
+  if (!overlay || !input || !resultsList) return;
+
+  // Command registry — label is a function so i18n works after language switch
+  const COMMANDS = [
+    { id: 'save', icon: 'save', label: () => window.t?.('cmdPalette.save') || 'Save', shortcut: 'S', action: () => document.getElementById('saveBtn')?.click() },
+    { id: 'search', icon: 'search', label: () => window.t?.('cmdPalette.searchNode') || 'Search node', action: () => { closeCmdPalette(); setTimeout(() => document.getElementById('searchNodeInput')?.focus(), 100); } },
+    { id: 'projects', icon: 'folder_open', label: () => window.t?.('cmdPalette.projects') || 'Projects', action: () => document.getElementById('projectsBtn')?.click() },
+    { id: 'sketches', icon: 'description', label: () => window.t?.('cmdPalette.mySketches') || 'My Sketches', action: () => document.getElementById('mySketchesBtn')?.click() },
+    { id: 'admin', icon: 'tune', label: () => window.t?.('cmdPalette.admin') || 'Admin Settings', action: () => document.getElementById('adminBtn')?.click() },
+    { id: 'language', icon: 'language', label: () => window.t?.('cmdPalette.language') || 'Language', action: () => { closeCmdPalette(); document.getElementById('langSelect')?.focus(); } },
+    { id: 'help', icon: 'help_outline', label: () => window.t?.('cmdPalette.help') || 'Help', action: () => document.getElementById('helpBtn')?.click() },
+    { id: 'commandMenu', icon: 'apps', label: () => window.t?.('cmdPalette.commandMenu') || 'Command Menu', action: () => document.getElementById('exportMenuBtn')?.click() },
+    { id: 'zoomIn', icon: 'add_circle_outline', label: () => window.t?.('cmdPalette.zoomIn') || 'Zoom In', shortcut: '+', action: () => document.getElementById('sizeIncreaseBtn')?.click() },
+    { id: 'zoomOut', icon: 'remove_circle_outline', label: () => window.t?.('cmdPalette.zoomOut') || 'Zoom Out', shortcut: '-', action: () => document.getElementById('sizeDecreaseBtn')?.click() },
+    { id: 'exportSketch', icon: 'download', label: () => window.t?.('cmdPalette.exportSketch') || 'Export Sketch', action: () => document.getElementById('exportSketchBtn')?.click() },
+    { id: 'importSketch', icon: 'upload', label: () => window.t?.('cmdPalette.importSketch') || 'Import Sketch', action: () => document.getElementById('importSketchBtn')?.click() },
+    { id: 'exportNodes', icon: 'donut_large', label: () => window.t?.('cmdPalette.exportNodes') || 'Export Nodes', action: () => document.getElementById('exportNodesBtn')?.click() },
+    { id: 'exportEdges', icon: 'call_split', label: () => window.t?.('cmdPalette.exportEdges') || 'Export Edges', action: () => document.getElementById('exportEdgesBtn')?.click() },
+  ];
+
+  let activeIndex = 0;
+  let filteredCommands = [...COMMANDS];
+
+  function renderResults(commands) {
+    const emptyText = window.t?.('cmdPalette.noResults') || 'No results found';
+    resultsList.setAttribute('data-empty-text', emptyText);
+    resultsList.innerHTML = '';
+    commands.forEach((cmd, i) => {
+      const li = document.createElement('li');
+      li.className = 'cmd-palette-item' + (i === activeIndex ? ' cmd-palette-item--active' : '');
+      li.setAttribute('role', 'option');
+      li.setAttribute('aria-selected', i === activeIndex ? 'true' : 'false');
+      li.dataset.index = i;
+
+      li.innerHTML = `
+        <span class="material-icons cmd-palette-item__icon">${escapeHtml(cmd.icon)}</span>
+        <span class="cmd-palette-item__label">${escapeHtml(cmd.label())}</span>
+        ${cmd.shortcut ? `<kbd class="cmd-palette-item__shortcut">${escapeHtml(cmd.shortcut)}</kbd>` : ''}
+      `;
+
+      li.addEventListener('click', () => executeCommand(cmd));
+      li.addEventListener('pointerenter', () => {
+        activeIndex = i;
+        updateActiveItem();
+      });
+
+      resultsList.appendChild(li);
+    });
+  }
+
+  function updateActiveItem() {
+    const items = resultsList.querySelectorAll('.cmd-palette-item');
+    items.forEach((item, i) => {
+      const isActive = i === activeIndex;
+      item.classList.toggle('cmd-palette-item--active', isActive);
+      item.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      if (isActive) item.scrollIntoView({ block: 'nearest' });
+    });
+  }
+
+  function filterCommands(query) {
+    if (!query.trim()) {
+      filteredCommands = [...COMMANDS];
+    } else {
+      const q = query.toLowerCase();
+      filteredCommands = COMMANDS.filter(cmd => {
+        const label = cmd.label().toLowerCase();
+        // Simple fuzzy: check if all query chars appear in order
+        let li = 0;
+        for (let qi = 0; qi < q.length; qi++) {
+          li = label.indexOf(q[qi], li);
+          if (li === -1) return false;
+          li++;
+        }
+        return true;
+      });
+    }
+    activeIndex = 0;
+    renderResults(filteredCommands);
+  }
+
+  function executeCommand(cmd) {
+    closeCmdPalette();
+    if (cmd && typeof cmd.action === 'function') {
+      // Small delay to let overlay close before action runs
+      requestAnimationFrame(() => cmd.action());
+    }
+  }
+
+  function openCmdPalette() {
+    overlay.style.display = 'flex';
+    input.value = '';
+    input.placeholder = window.t?.('cmdPalette.placeholder') || 'Type a command or search...';
+    filteredCommands = [...COMMANDS];
+    activeIndex = 0;
+    renderResults(filteredCommands);
+    // Focus after display change settles
+    requestAnimationFrame(() => input.focus());
+  }
+
+  function closeCmdPalette() {
+    overlay.style.display = 'none';
+    input.value = '';
+  }
+
+  // Input filtering
+  input.addEventListener('input', () => filterCommands(input.value));
+
+  // Keyboard navigation within palette
+  input.addEventListener('keydown', (e) => {
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        activeIndex = (activeIndex + 1) % filteredCommands.length;
+        updateActiveItem();
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        activeIndex = (activeIndex - 1 + filteredCommands.length) % filteredCommands.length;
+        updateActiveItem();
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (filteredCommands[activeIndex]) {
+          executeCommand(filteredCommands[activeIndex]);
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        closeCmdPalette();
+        break;
+    }
+  });
+
+  // Close on backdrop click
+  if (backdrop) {
+    backdrop.addEventListener('click', closeCmdPalette);
+  }
+
+  // Trigger button
+  if (triggerBtn) {
+    triggerBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openCmdPalette();
+    });
+  }
+
+  // Global keyboard shortcut: Ctrl+K / Cmd+K
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      if (overlay.style.display === 'none' || !overlay.style.display) {
+        openCmdPalette();
+      } else {
+        closeCmdPalette();
+      }
+    }
+  });
+
+  // Expose for other modules
+  window.__cmdPalette = { open: openCmdPalette, close: closeCmdPalette };
 }
 
 // After app scripts load, ensure header height and app height variables are synced

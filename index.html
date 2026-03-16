@@ -297,6 +297,14 @@
         </button>
       </div>
 
+      <!-- Command palette trigger (landscape minimal header) -->
+      <div class="menu-group menu-group--cmd-palette">
+        <button id="cmdPaletteBtn" class="cmd-palette-trigger" title="Command Palette (Ctrl+K)" aria-label="Open command palette">
+          <span class="material-icons">search</span>
+          <kbd class="cmd-palette-kbd">&#x2318;K</kbd>
+        </button>
+      </div>
+
       <!-- User account button -->
       <div class="menu-group menu-group--user" id="userButtonContainer">
         <div id="authUserButton"></div>
@@ -312,6 +320,20 @@
       <span class="material-icons">menu</span>
     </button>
   </header>
+
+  <!-- Command Palette Overlay -->
+  <div id="cmdPalette" class="cmd-palette-overlay" style="display:none;" role="dialog" aria-modal="true" aria-label="Command palette">
+    <div class="cmd-palette-backdrop"></div>
+    <div class="cmd-palette-panel">
+      <div class="cmd-palette-search">
+        <span class="material-icons cmd-palette-search__icon">search</span>
+        <input id="cmdPaletteInput" type="text" class="cmd-palette-search__input" placeholder="" autocomplete="off" spellcheck="false" />
+        <kbd class="cmd-palette-search__esc">Esc</kbd>
+      </div>
+      <div class="cmd-palette-divider"></div>
+      <ul id="cmdPaletteResults" class="cmd-palette-results" role="listbox"></ul>
+    </div>
+  </div>
 
   <!-- Login Panel (Authentication) -->
   <div id="loginPanel" class="login-panel" style="display: none;" role="dialog" aria-modal="true" aria-label="Authentication">
