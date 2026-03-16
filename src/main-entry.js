@@ -51,6 +51,7 @@ import { initCockpit } from './cockpit/cockpit.js';
 import { initFieldCommander } from './field-commander/fc-shell.js';
 import { initFCTerritory } from './field-commander/fc-territory.js';
 import { showMeasurementRail, hideMeasurementRail } from './features/measurement-rail.js';
+import { initUnifiedLayout } from './layout/layout-manager.js';
 
 // Initialize Vercel Speed Insights only when deployed on Vercel (production)
 // The /_vercel/speed-insights/script.js endpoint only exists on Vercel's platform
@@ -301,6 +302,9 @@ if (typeof window !== 'undefined') {
     // Initialize Field Commander (canvas-first UI) — feature-flagged
     initFieldCommander();
     initFCTerritory();
+
+    // Initialize unified layout (new clean layout system)
+    initUnifiedLayout();
   });
 }
 

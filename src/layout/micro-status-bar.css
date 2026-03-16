@@ -1,0 +1,136 @@
+/* ─── Micro Status Bar ─── */
+/* Compact 32px bar below header showing GPS, Sync, Health, Session at a glance */
+
+body.unified-layout .micro-status-bar {
+  position: fixed;
+  top: var(--header-h, 48px);
+  left: 0;
+  right: 0;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: var(--color-surface-alt, #f8fafc);
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  z-index: 45;
+  font-size: 12px;
+  color: var(--color-text-muted, #64748b);
+  padding: 0 12px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Push canvas container down to accommodate status bar */
+body.unified-layout #canvasContainer {
+  top: calc(var(--header-h, 48px) + 32px);
+}
+
+/* ─── Status items ─── */
+.msb-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.msb-item:hover {
+  background: var(--color-hover, rgba(0, 0, 0, 0.06));
+}
+
+.msb-item .material-icons {
+  font-size: 14px;
+}
+
+/* GPS dot */
+.msb-gps-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #94a3b8;
+  flex-shrink: 0;
+}
+
+.msb-gps-dot.fix-1 { background: #ef4444; }
+.msb-gps-dot.fix-2 { background: #f59e0b; }
+.msb-gps-dot.fix-4 { background: #22c55e; }
+.msb-gps-dot.fix-5 { background: #3b82f6; }
+
+/* Sync */
+.msb-sync.synced .material-icons { color: #22c55e; }
+.msb-sync.syncing .material-icons { color: #f59e0b; }
+.msb-sync.error .material-icons { color: #ef4444; }
+.msb-sync.offline .material-icons { color: #94a3b8; }
+
+/* Health */
+.msb-health__percent {
+  font-weight: 600;
+}
+
+.msb-health__percent.low { color: #ef4444; }
+.msb-health__percent.medium { color: #f59e0b; }
+.msb-health__percent.high { color: #22c55e; }
+
+/* Issues */
+.msb-issues {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.msb-issues .material-icons {
+  color: #f59e0b;
+}
+
+/* Separator */
+.msb-sep {
+  width: 1px;
+  height: 16px;
+  background: var(--color-border, #e2e8f0);
+}
+
+/* ─── Mobile ─── */
+@media (max-width: 600px) {
+  body.unified-layout .micro-status-bar {
+    height: 28px;
+    gap: 8px;
+    font-size: 11px;
+    padding: 0 8px;
+  }
+
+  body.unified-layout #canvasContainer {
+    top: calc(var(--header-h, 48px) + 28px);
+  }
+
+  .msb-item {
+    gap: 3px;
+    padding: 1px 4px;
+  }
+
+  .msb-sep {
+    display: none;
+  }
+}
+
+/* ─── Landscape compact: hide status bar ─── */
+@media (max-height: 450px) and (orientation: landscape) {
+  body.unified-layout .micro-status-bar {
+    display: none;
+  }
+
+  body.unified-layout #canvasContainer {
+    top: var(--header-h, 48px);
+  }
+}
+
+/* ─── Dark mode ─── */
+@media (prefers-color-scheme: dark) {
+  body.unified-layout .micro-status-bar {
+    background: var(--color-surface-alt, #0f172a);
+    border-color: var(--color-border, #334155);
+    color: var(--color-text-muted, #94a3b8);
+  }
+}

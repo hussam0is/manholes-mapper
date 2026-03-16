@@ -16591,3 +16591,98 @@ body.reduce-blue-light #canvasContainer canvas {
   animation: none;
   opacity: 0.6;
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+   UNIFIED LAYOUT — hides old floating panels when the new layout is active.
+   Scoped under body.unified-layout to avoid conflicts.
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* Hide old canvas toolbar (vertical, right side) */
+body.unified-layout .canvas-toolbar {
+  display: none !important;
+}
+
+/* Hide old FAB speed-dial toolbar */
+body.unified-layout #canvasFabToolbar {
+  display: none !important;
+}
+
+/* Hide old Take Measure FAB (moved into unified toolbar) */
+body.unified-layout .take-measure-fab {
+  display: none !important;
+}
+
+/* Hide old edge legend toggle (palette button) — legend itself stays */
+body.unified-layout #edgeLegendToggle {
+  display: none !important;
+}
+
+/* Hide old layers config button + panel (moved into sidebar Layers tab) */
+body.unified-layout .layers-config-btn {
+  display: none !important;
+}
+body.unified-layout .layers-config-panel {
+  display: none !important;
+}
+
+/* Hide old sketch side panel + toggle (moved into sidebar Sketches tab) */
+body.unified-layout .sketch-side-panel:not(.unified-sidebar__panel--sketches *) {
+  display: none !important;
+}
+body.unified-layout .sketch-side-panel-toggle {
+  display: none !important;
+}
+
+/* Hide old cockpit overlay (replaced by status bar + sidebar Status tab) */
+body.unified-layout .cockpit {
+  display: none !important;
+}
+body.unified-layout .micro-cockpit {
+  display: none !important;
+}
+
+/* Hide old action rail */
+body.unified-layout .action-rail {
+  display: none !important;
+}
+
+/* Hide Field Commander shell (replaced by unified layout) */
+body.unified-layout .fc-status-bar {
+  display: none !important;
+}
+body.unified-layout .fc-action-bar {
+  display: none !important;
+}
+
+/* Hide old survey connection badge (integrated into status bar) */
+body.unified-layout .survey-connection-badge {
+  display: none !important;
+}
+
+/* Hide the old details sidebar shell (content reparented into unified sidebar) */
+body.unified-layout #sidebar.drawer {
+  display: none !important;
+}
+
+/* ── Canvas container adjustments under unified layout ── */
+body.unified-layout #canvasContainer {
+  /* Remove old right-side drawer space */
+  margin-inline-end: 0;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* Edge legend repositioned: bottom-left above the toolbar */
+body.unified-layout #edgeLegend {
+  bottom: 64px;
+  top: auto;
+  inset-inline-start: 8px;
+  inset-inline-end: auto;
+}
+
+/* Toast repositioned: above the toolbar */
+body.unified-layout #toast {
+  bottom: 72px;
+}
