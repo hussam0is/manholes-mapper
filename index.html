@@ -36,6 +36,19 @@
     <span class="material-icons" aria-hidden="true">expand_more</span>
   </div>
 
+  <!-- Layout 9: Peek status strip — always-visible 20px status bar in landscape when header is hidden -->
+  <div id="landscapePeekStrip" class="landscape-peek-strip" role="button" tabindex="0" aria-label="Show toolbar">
+    <span class="material-icons peek-chevron" aria-hidden="true">expand_more</span>
+    <span id="peekSketchName" class="peek-info"></span>
+    <span class="peek-separator">·</span>
+    <span id="peekSyncStatus" class="peek-info">
+      <span class="material-icons peek-sync-icon">cloud_done</span>
+    </span>
+    <span class="peek-separator">·</span>
+    <span id="peekSaveStatus" class="peek-info"></span>
+    <span id="peekAvatar" class="peek-avatar"></span>
+  </div>
+
   <header class="soft-blue-header app-header">
     <!-- Brand section -->
     <div id="brand" class="menu-brand">

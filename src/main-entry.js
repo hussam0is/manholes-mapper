@@ -998,16 +998,89 @@ function initCollapsibleMobileMenuGroups(menuEl) {
 try { syncAppHeightVar(); } catch (e) { console.warn('[main-entry] syncAppHeightVar failed:', e); }
 try { syncHeaderHeightVar(); } catch (e) { console.warn('[main-entry] syncHeaderHeightVar failed:', e); }
 
-// --- Landscape header auto-hide ---
-// In landscape mobile mode, the header auto-hides during canvas interaction to
-// maximise vertical drawing space, then reappears on idle or top-edge hover.
+// --- Layout 9: Peek Status + Swipe-Reveal Landscape Header ---
+// In landscape mobile mode, the full header auto-hides during canvas interaction.
+// A 20px "peek strip" always shows status (sketch name, sync, save state).
+// Tapping the peek strip or swiping down from the top reveals the full toolbar.
+// The full toolbar auto-recedes after 3s of canvas pointerdown.
 function setupLandscapeHeaderAutoHide() {
   const header = document.querySelector('header');
   const canvas = document.getElementById('graphCanvas');
+  const peekStrip = document.getElementById('landscapePeekStrip');
   if (!header || !canvas) return;
 
   let hideTimer = null;
   let isLandscape = false;
+  let peekSyncIntervalId = null;
+
+  // --- Peek strip content elements ---
+  const peekSketchName = document.getElementById('peekSketchName');
+  const peekSyncStatus = document.getElementById('peekSyncStatus');
+  const peekSyncIcon = peekSyncStatus?.querySelector('.peek-sync-icon');
+  const peekSaveStatus = document.getElementById('peekSaveStatus');
+  const peekAvatar = document.getElementById('peekAvatar');
+
+  /** Sync peek strip content from header source elements */
+  function updatePeekStrip() {
+    if (!peekStrip || !isLandscape) return;
+
+    // Sketch name — from desktop or mobile display
+    const nameEl = document.getElementById('sketchNameDisplay')
+      || document.getElementById('sketchNameDisplayMobile');
+    if (peekSketchName && nameEl) {
+      peekSketchName.textContent = nameEl.textContent || '';
+    }
+
+    // Sync status — mirror the header sync indicator
+    const headerSyncEl = document.getElementById('headerSyncIndicator');
+    if (peekSyncIcon && headerSyncEl) {
+      const headerIcon = headerSyncEl.querySelector('.header-sync-indicator__icon');
+      // Mirror the icon text
+      if (headerIcon) peekSyncIcon.textContent = headerIcon.textContent;
+
+      // Mirror status class
+      peekSyncIcon.classList.remove(
+        'peek-sync-icon--synced', 'peek-sync-icon--syncing',
+        'peek-sync-icon--offline', 'peek-sync-icon--error'
+      );
+      if (headerSyncEl.classList.contains('header-sync-indicator--syncing')) {
+        peekSyncIcon.classList.add('peek-sync-icon--syncing');
+      } else if (headerSyncEl.classList.contains('header-sync-indicator--error')) {
+        peekSyncIcon.classList.add('peek-sync-icon--error');
+      } else if (headerSyncEl.classList.contains('header-sync-indicator--offline')) {
+        peekSyncIcon.classList.add('peek-sync-icon--offline');
+      } else {
+        peekSyncIcon.classList.add('peek-sync-icon--synced');
+      }
+
+      // Hide sync section if user not signed in (headerSyncEl hidden)
+      if (peekSyncStatus) {
+        peekSyncStatus.style.display = headerSyncEl.style.display === 'none' ? 'none' : '';
+      }
+    }
+
+    // Save status — show autosave state
+    if (peekSaveStatus) {
+      const autosaveToggle = document.getElementById('autosaveToggle');
+      const t = window.t || ((k) => k);
+      if (autosaveToggle) {
+        peekSaveStatus.textContent = autosaveToggle.checked
+          ? '\uD83D\uDCBE ' + t('autosave')
+          : '\uD83D\uDCBE ' + t('save');
+      }
+    }
+
+    // Avatar — show user initial
+    if (peekAvatar) {
+      const authState = window.authGuard?.getAuthState?.() || {};
+      if (authState.isSignedIn && authState.user) {
+        const name = authState.user.name || authState.user.email || '';
+        peekAvatar.textContent = name.charAt(0).toUpperCase();
+      } else {
+        peekAvatar.textContent = '';
+      }
+    }
+  }
 
   /** Check if we're in landscape mobile mode */
   function checkLandscape() {
@@ -1018,17 +1091,28 @@ function setupLandscapeHeaderAutoHide() {
       header.classList.remove('header--landscape-auto-hide');
       document.body.classList.remove('landscape-header-hidden');
       clearTimeout(hideTimer);
+      // Stop peek sync interval
+      if (peekSyncIntervalId) {
+        clearInterval(peekSyncIntervalId);
+        peekSyncIntervalId = null;
+      }
       // Re-sync the header height variable
       syncHeaderHeight();
     } else {
       header.classList.add('header--landscape-auto-hide');
+      // Start periodic peek strip content sync (every 2s)
+      if (!peekSyncIntervalId) {
+        updatePeekStrip();
+        peekSyncIntervalId = setInterval(updatePeekStrip, 2000);
+      }
     }
   }
 
   /** Sync --header-h based on current header visibility */
   function syncHeaderHeight() {
     if (header.classList.contains('header--hidden')) {
-      document.documentElement.style.setProperty('--header-h', '0px');
+      // When header hidden, set to peek strip height (20px) instead of 0
+      document.documentElement.style.setProperty('--header-h', isLandscape ? '20px' : '0px');
       document.body.classList.add('landscape-header-hidden');
     } else {
       const h = Math.round(header.getBoundingClientRect().height);
@@ -1041,6 +1125,7 @@ function setupLandscapeHeaderAutoHide() {
     if (!isLandscape) return;
     header.classList.add('header--hidden');
     syncHeaderHeight();
+    updatePeekStrip(); // refresh peek content when it becomes visible
   }
 
   function showHeader() {
@@ -1048,7 +1133,7 @@ function setupLandscapeHeaderAutoHide() {
     syncHeaderHeight();
     clearTimeout(hideTimer);
     if (isLandscape) {
-      hideTimer = setTimeout(hideHeader, 2500);
+      hideTimer = setTimeout(hideHeader, 3000);
     }
   }
 
@@ -1063,7 +1148,7 @@ function setupLandscapeHeaderAutoHide() {
     return document.body.classList.contains('mobile-menu-open');
   }
 
-  // Canvas interaction: hide immediately on touch, schedule re-show after release
+  // Canvas interaction: hide header on pointerdown, start 3s recede timer on pointerup
   canvas.addEventListener('pointerdown', () => {
     if (isLandscape && !isMobileMenuOpen()) hideHeader();
   }, { passive: true });
@@ -1071,7 +1156,7 @@ function setupLandscapeHeaderAutoHide() {
   canvas.addEventListener('pointerup', () => {
     if (isLandscape && !isMobileMenuOpen()) {
       clearTimeout(hideTimer);
-      hideTimer = setTimeout(hideHeader, 2500);
+      hideTimer = setTimeout(hideHeader, 3000);
     }
   }, { passive: true });
 
@@ -1104,24 +1189,85 @@ function setupLandscapeHeaderAutoHide() {
     const bodyMo = new MutationObserver(() => {
       if (isLandscape && !isMobileMenuOpen()) {
         clearTimeout(hideTimer);
-        hideTimer = setTimeout(hideHeader, 2500);
+        hideTimer = setTimeout(hideHeader, 3000);
       }
     });
     bodyMo.observe(document.body, { attributes: true, attributeFilter: ['class'] });
   }
 
-  // Issue #5: Header recall handle — tapping the thin strip shows the header
-  const recallHandle = document.getElementById('headerRecallHandle');
-  if (recallHandle) {
-    recallHandle.addEventListener('click', () => {
+  // --- Peek strip interaction: tap to reveal full toolbar ---
+  if (peekStrip) {
+    peekStrip.addEventListener('click', () => {
       if (isLandscape) showHeader();
     });
-    recallHandle.addEventListener('keydown', (e) => {
+    peekStrip.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         if (isLandscape) showHeader();
       }
     });
+  }
+
+  // --- Swipe-down gesture from top edge to reveal toolbar ---
+  let swipeStartY = null;
+  let swipeStartTime = 0;
+  const SWIPE_THRESHOLD = 30; // px
+  const SWIPE_TIMEOUT = 500; // ms
+
+  document.addEventListener('touchstart', (e) => {
+    if (!isLandscape) return;
+    const touch = e.touches[0];
+    // Only track swipes starting in the top 40px zone
+    if (touch.clientY <= 40) {
+      swipeStartY = touch.clientY;
+      swipeStartTime = Date.now();
+    } else {
+      swipeStartY = null;
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchend', (e) => {
+    if (!isLandscape || swipeStartY === null) return;
+    const touch = e.changedTouches[0];
+    const dy = touch.clientY - swipeStartY;
+    const dt = Date.now() - swipeStartTime;
+    if (dy >= SWIPE_THRESHOLD && dt <= SWIPE_TIMEOUT) {
+      showHeader();
+    }
+    swipeStartY = null;
+  }, { passive: true });
+
+  // --- Legacy recall handle (kept for backward compat, hidden by CSS) ---
+  const recallHandle = document.getElementById('headerRecallHandle');
+  if (recallHandle) {
+    recallHandle.addEventListener('click', () => {
+      if (isLandscape) showHeader();
+    });
+  }
+
+  // --- Observe header sync indicator changes to update peek strip immediately ---
+  const headerSyncEl = document.getElementById('headerSyncIndicator');
+  if (headerSyncEl && typeof MutationObserver !== 'undefined') {
+    const syncMo = new MutationObserver(() => {
+      if (isLandscape) updatePeekStrip();
+    });
+    syncMo.observe(headerSyncEl, {
+      attributes: true,
+      attributeFilter: ['class', 'style'],
+      subtree: true,
+      characterData: true
+    });
+  }
+
+  // --- Observe sketch name changes to update peek strip immediately ---
+  const sketchNameEl = document.getElementById('sketchNameDisplay');
+  if (sketchNameEl && typeof MutationObserver !== 'undefined') {
+    const nameMo = new MutationObserver(() => {
+      if (isLandscape && peekSketchName) {
+        peekSketchName.textContent = sketchNameEl.textContent || '';
+      }
+    });
+    nameMo.observe(sketchNameEl, { childList: true, characterData: true, subtree: true });
   }
 
   // Re-evaluate on resize and orientation change

@@ -13683,38 +13683,169 @@ button:focus-visible,
     font-size: 11px;
   }
 
-  /* Header recall handle — chevron strip at top edge when header hidden.
-     Visual height is 28px but the touch target extends to 44px via padding-bottom
-     so finger taps register reliably on real devices. */
+  /* Header recall handle — HIDDEN in Layout 9; replaced by peek strip below */
   .header-recall-handle {
+    display: none !important;
+  }
+}
+
+/* ==========================================================================
+   Layout 9: Peek Status + Swipe-Reveal Toolbar
+   Always-visible 20px status strip in landscape when header is hidden.
+   Shows sketch name, sync status, save state. Tap or swipe-down reveals
+   the full 44px header toolbar. Auto-recedes after 3s of canvas interaction.
+   ========================================================================== */
+
+/* Hidden by default (portrait / desktop) */
+.landscape-peek-strip {
+  display: none;
+}
+
+@media (max-height: 450px) and (orientation: landscape) {
+  .landscape-peek-strip {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    height: 28px;
-    padding-bottom: 16px; /* extends touch area to 44px total */
+    height: 20px;
     display: flex;
     align-items: center;
-    justify-content: center;
-    background: rgba(0, 0, 0, 0.32);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 0 12px;
+    font-size: 11px;
+    font-family: inherit;
+    color: rgba(0, 0, 0, 0.65);
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: saturate(140%) blur(8px);
+    -webkit-backdrop-filter: saturate(140%) blur(8px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
     cursor: pointer;
-    z-index: 201;
+    z-index: 202; /* above header (z-index ~200) */
+    gap: 6px;
+    direction: rtl;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.25s ease;
+    /* Touch target: visual 20px but allow tap across 44px zone via padding-bottom */
+    padding-bottom: 24px;
+    box-sizing: content-box;
   }
 
-  .header-recall-handle .material-icons {
-    font-size: 18px;
-    color: rgba(255, 255, 255, 0.85);
-  }
-
-  body.landscape-header-hidden .header-recall-handle {
+  /* Show peek strip when header is hidden */
+  body.landscape-header-hidden .landscape-peek-strip {
     opacity: 1;
     pointer-events: auto;
+  }
+
+  /* Hide peek strip when header is visible (not hidden) */
+  body:not(.landscape-header-hidden) .landscape-peek-strip {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Chevron affordance */
+  .peek-chevron {
+    font-size: 14px;
+    color: rgba(0, 0, 0, 0.4);
+    transition: transform 0.2s ease;
+    line-height: 1;
+  }
+
+  /* Info text items */
+  .peek-info {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+    line-height: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  #peekSketchName {
+    font-weight: 600;
+    max-width: 150px;
+  }
+
+  /* Separator dot */
+  .peek-separator {
+    color: rgba(0, 0, 0, 0.3);
+    font-size: 10px;
+    line-height: 20px;
+    flex-shrink: 0;
+  }
+
+  /* Sync icon inside peek */
+  .peek-sync-icon {
+    font-size: 13px;
+    line-height: 1;
+  }
+
+  .peek-sync-icon--synced {
+    color: #4caf50;
+  }
+  .peek-sync-icon--syncing {
+    color: #ff9800;
+    animation: peek-spin 1s linear infinite;
+  }
+  .peek-sync-icon--offline {
+    color: rgba(0, 0, 0, 0.35);
+  }
+  .peek-sync-icon--error {
+    color: #f44336;
+  }
+
+  @keyframes peek-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* Avatar on far end (spacer pushes it) */
+  .peek-avatar {
+    margin-inline-start: auto;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--color-accent, #1a73e8);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .peek-avatar:empty {
+    display: none;
+  }
+
+  /* When header is hidden, offset canvas toolbar down by 20px (peek strip height) */
+  body.landscape-header-hidden .canvas-fab-toolbar {
+    top: calc(20px + 4px);
+  }
+
+  /* Dark mode */
+  @media (prefers-color-scheme: dark) {
+    .landscape-peek-strip {
+      color: rgba(255, 255, 255, 0.7);
+      background: rgba(30, 30, 30, 0.7);
+      border-bottom-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .peek-chevron {
+      color: rgba(255, 255, 255, 0.45);
+    }
+
+    .peek-separator {
+      color: rgba(255, 255, 255, 0.25);
+    }
+
+    .peek-sync-icon--offline {
+      color: rgba(255, 255, 255, 0.35);
+    }
   }
 }
 
