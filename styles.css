@@ -13312,15 +13312,21 @@ button:focus-visible,
    Uses max-height + orientation to avoid affecting tablets and desktops.
 */
 
-/* --- Landscape: Compact Header (Glass Morphism + Auto-Hide) --- */
+/* --- Landscape: Tabbed Context Bar Header --- */
+/* Layout 4: Two-row tabbed header with glassmorphism.
+   Row 1 (28px): Identity + 3 tab buttons + save button
+   Row 2 (32px): Active tab content (Canvas/Navigate/Settings)
+   Total: ~60px. Only active tab's content row is shown. */
+
+/* Hide landscape tabs and tab-grouped elements outside landscape */
+.landscape-tabs {
+  display: none;
+}
+
 @media (max-height: 450px) and (orientation: landscape) {
   :root {
-    --header-h: 36px;
-    --header-h-mobile: 36px;
-  }
-
-  header {
-    padding: 0.25rem 0.75rem;
+    --header-h: 60px;
+    --header-h-mobile: 60px;
   }
 
   /* --- Glass morphism header: floats over canvas --- */
@@ -13334,6 +13340,18 @@ button:focus-visible,
     -webkit-backdrop-filter: saturate(160%) blur(12px);
     border-bottom: 1px solid rgba(0, 0, 0, 0.06);
     box-shadow: none;
+    /* Two-row grid layout:
+       Row 1: [brand] [tabs] [user+save]
+       Row 2: [tab content spanning full width] */
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-rows: 28px 32px;
+    grid-template-areas:
+      "brand   tabs   actions"
+      "content content content";
+    gap: 0 0.5rem;
+    align-items: center;
+    padding: 0 0.5rem;
   }
 
   /* Override the solid .soft-blue-header gradient in landscape */
@@ -13357,14 +13375,16 @@ button:focus-visible,
     box-shadow: none;
   }
 
-  /* --- Minimal header: hide brand logo and title --- */
+  /* --- Row 1: Identity (brand) --- */
+  .menu-brand {
+    grid-area: brand;
+    gap: 0.25rem;
+  }
+
+  /* Hide brand logo and title in landscape — show sketch name + sync only */
   .menu-brand__logo,
   .menu-brand__title {
     display: none;
-  }
-
-  .menu-brand {
-    gap: 0.25rem;
   }
 
   /* Sketch name badge: keep visible and prominent */
@@ -13373,18 +13393,156 @@ button:focus-visible,
     padding: 0.15rem 0.5rem;
   }
 
-  /* Compact hamburger & header buttons */
+  /* --- Row 1: Tab buttons (center) --- */
+  .landscape-tabs {
+    display: flex;
+    grid-area: tabs;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+  }
+
+  .landscape-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.15rem 0.5rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--color-text-muted, #64748b);
+    font-size: 0.7rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    line-height: 1;
+  }
+
+  .landscape-tab .material-icons {
+    font-size: 0.85rem;
+  }
+
+  .landscape-tab:hover {
+    background: rgba(59, 130, 246, 0.08);
+    color: var(--color-primary, #2563eb);
+  }
+
+  .landscape-tab.active {
+    background: rgba(59, 130, 246, 0.12);
+    color: var(--color-primary, #2563eb);
+    border-color: rgba(59, 130, 246, 0.2);
+    font-weight: 600;
+  }
+
+  /* --- Row 1: Actions area (user + save) --- */
+  /* Hide mobile menu button in landscape — tabs replace it */
   #mobileMenuBtn {
-    padding: 0.2rem;
+    display: none !important;
   }
 
-  #mobileMenuBtn .material-icons {
-    font-size: 1.2rem;
+  /* Mobile sketch name badge — hide, brand section handles it */
+  .menu-sketch-name--mobile {
+    display: none !important;
   }
 
-  /* Header controls (zoom, home, help) — compact visual, expanded touch area.
-     Visual size is 28px for space savings, but position: relative + ::after
-     provides a 44px touch target for WCAG 2.5.8 compliance. */
+  /* --- Restructure nav as Row 2 tab content area --- */
+  .menu-controls {
+    grid-area: content;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    justify-content: flex-start;
+    overflow: visible;
+    padding: 0;
+    margin: 0;
+    min-height: 32px;
+  }
+
+  /* Save button group: placed in actions area (Row 1, end) */
+  .menu-group--primary {
+    position: fixed;
+    top: 0;
+    right: 0.5rem;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    z-index: 201;
+  }
+
+  [dir="rtl"] .menu-group--primary {
+    right: auto;
+    left: 0.5rem;
+  }
+
+  /* In landscape, hide autosave label from save group — it's in settings tab */
+  .menu-group--primary .menu-autosave {
+    display: none;
+  }
+
+  /* User button: placed in actions area, next to save */
+  .menu-group--user {
+    position: fixed;
+    top: 0;
+    right: 2.75rem;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    z-index: 201;
+  }
+
+  [dir="rtl"] .menu-group--user {
+    right: auto;
+    left: 2.75rem;
+  }
+
+  .menu-group--user .user-avatar {
+    width: 22px;
+    height: 22px;
+    font-size: 0.65rem;
+  }
+
+  /* --- Tab content: show/hide groups based on active tab --- */
+  /* By default, all tab-grouped elements are hidden in landscape */
+  [data-landscape-tab] {
+    display: none !important;
+  }
+
+  /* Active canvas tab content */
+  .landscape-tab-canvas-active [data-landscape-tab="canvas"] {
+    display: flex !important;
+  }
+
+  /* Active navigate tab content */
+  .landscape-tab-navigate-active [data-landscape-tab="navigate"] {
+    display: flex !important;
+  }
+
+  /* Active settings tab content */
+  .landscape-tab-settings-active [data-landscape-tab="settings"] {
+    display: flex !important;
+  }
+
+  /* --- Navigate group styling in landscape --- */
+  .menu-group--navigate {
+    gap: 0.375rem;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid var(--color-border, #e2e8f0);
+  }
+
+  /* --- Settings group styling in landscape --- */
+  .menu-group--settings {
+    gap: 0.375rem;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid var(--color-border, #e2e8f0);
+  }
+
+  /* Header controls — compact visual, expanded touch area */
   .menu-btn--small,
   .menu-btn--icon-only {
     min-height: 28px;
@@ -14328,7 +14486,7 @@ body.cockpit-mode #edgeLegend {
   }
 }
 
-/* --- Landscape: Dark Mode Glass Header --- */
+/* --- Landscape: Dark Mode Glass Header + Tabs --- */
 @media (prefers-color-scheme: dark) {
   @media (max-height: 450px) and (orientation: landscape) {
     .app-header,
@@ -14341,6 +14499,29 @@ body.cockpit-mode #edgeLegend {
       background: rgba(15, 23, 42, 0.85);
       border-color: rgba(96, 165, 250, 0.2);
       color: #93c5fd;
+    }
+
+    /* Dark mode landscape tabs */
+    .landscape-tab {
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .landscape-tab:hover {
+      background: rgba(96, 165, 250, 0.1);
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .landscape-tab.active {
+      background: rgba(96, 165, 250, 0.15);
+      color: #93c5fd;
+      border-color: rgba(96, 165, 250, 0.25);
+    }
+
+    /* Dark mode navigate/settings groups */
+    .menu-group--navigate,
+    .menu-group--settings {
+      background: rgba(15, 23, 42, 0.5);
+      border-color: rgba(255, 255, 255, 0.08);
     }
 
     /* Dark mode header recall handle */

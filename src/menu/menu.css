@@ -419,6 +419,14 @@
   gap: 0.125rem;
 }
 
+.menu-group--navigate {
+  gap: 0.125rem;
+}
+
+.menu-group--settings {
+  gap: 0.125rem;
+}
+
 .menu-group--user {
   background: transparent;
   border: none;

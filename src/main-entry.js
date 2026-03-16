@@ -1136,3 +1136,33 @@ function setupLandscapeHeaderAutoHide() {
 }
 
 try { setupLandscapeHeaderAutoHide(); } catch (e) { console.warn('[main-entry] setupLandscapeHeaderAutoHide failed:', e); }
+
+// --- Landscape Tabbed Context Bar ---
+// Switches between Canvas/Navigate/Settings tabs in landscape header.
+// Tab content is controlled via CSS class on the header element:
+//   .landscape-tab-{name}-active  →  [data-landscape-tab="{name}"] becomes visible
+(function initLandscapeTabs() {
+  const header = document.querySelector('.app-header');
+  const tabBar = document.querySelector('.landscape-tabs');
+  if (!header || !tabBar) return;
+
+  // Set default active tab
+  header.classList.add('landscape-tab-canvas-active');
+
+  tabBar.addEventListener('click', (e) => {
+    const tab = e.target.closest('[data-tab]');
+    if (!tab) return;
+    const id = tab.dataset.tab;
+
+    // Remove all tab-active classes from header
+    header.classList.remove('landscape-tab-canvas-active', 'landscape-tab-navigate-active', 'landscape-tab-settings-active');
+    header.classList.add(`landscape-tab-${id}-active`);
+
+    // Update tab button active states + ARIA
+    tabBar.querySelectorAll('[data-tab]').forEach(btn => {
+      const isActive = btn.dataset.tab === id;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-selected', String(isActive));
+    });
+  });
+})();

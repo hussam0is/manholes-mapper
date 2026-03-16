@@ -54,6 +54,22 @@
     <!-- Mobile sketch name display -->
     <span id="sketchNameDisplayMobile" class="menu-sketch-name menu-sketch-name--mobile"></span>
 
+    <!-- Landscape tab bar (only visible in landscape mode) -->
+    <div class="landscape-tabs" role="tablist" aria-label="Header tabs">
+      <button class="landscape-tab active" data-tab="canvas" role="tab" aria-selected="true" aria-controls="landscape-tab-canvas">
+        <span class="material-icons">search</span>
+        <span class="landscape-tab__label">Canvas</span>
+      </button>
+      <button class="landscape-tab" data-tab="navigate" role="tab" aria-selected="false" aria-controls="landscape-tab-navigate">
+        <span class="material-icons">folder_open</span>
+        <span class="landscape-tab__label">Navigate</span>
+      </button>
+      <button class="landscape-tab" data-tab="settings" role="tab" aria-selected="false" aria-controls="landscape-tab-settings">
+        <span class="material-icons">settings</span>
+        <span class="landscape-tab__label">Settings</span>
+      </button>
+    </div>
+
     <!-- Desktop controls -->
     <nav id="controls" class="menu-controls" role="navigation" aria-label="Main navigation">
       <!-- Primary actions group -->
@@ -71,7 +87,7 @@
       </div>
 
       <!-- Search group -->
-      <div class="menu-group menu-group--search">
+      <div class="menu-group menu-group--search" data-landscape-tab="canvas">
         <div class="menu-search">
           <span class="material-icons menu-search__icon">search</span>
           <input id="searchNodeInput" type="text" placeholder="Search nodes" title="" aria-label="Search nodes" class="menu-search__input" data-i18n-placeholder="searchNode" data-i18n-title="searchNodeTitle" />
@@ -79,7 +95,7 @@
       </div>
 
       <!-- Size controls -->
-      <div class="menu-group menu-group--size">
+      <div class="menu-group menu-group--size" data-landscape-tab="canvas">
         <div class="menu-segmented">
           <button id="sizeDecreaseBtn" class="menu-btn menu-btn--small menu-btn--icon-only" title="" aria-label="Decrease size" data-action="sizeDecrease" data-i18n-title="sizeDecrease" data-i18n-aria-label="sizeDecrease">
             <span class="material-icons">remove_circle_outline</span>
@@ -94,7 +110,7 @@
       </div>
 
       <!-- Command menu (More dropdown) - Grouped with section headers -->
-      <div class="menu-group menu-group--command">
+      <div class="menu-group menu-group--command" data-landscape-tab="canvas">
         <button id="exportMenuBtn" class="menu-btn menu-btn--ghost menu-btn--icon-only menu-btn--command" title="" aria-label="Export options" aria-haspopup="menu" aria-expanded="false" data-i18n-title="menu" data-i18n-aria-label="menu">
           <span class="material-icons">apps</span>
         </button>
@@ -272,8 +288,18 @@
         </div>
       </div>
 
-      <!-- Utility group -->
-      <div class="menu-group menu-group--utility">
+      <!-- Navigate group (Projects & Sketches) -->
+      <div class="menu-group menu-group--navigate" data-landscape-tab="navigate">
+        <button id="projectsBtn" class="menu-btn menu-btn--ghost menu-btn--icon-only" title="" aria-label="Projects" data-action="projects">
+          <span class="material-icons">folder_open</span>
+        </button>
+        <button id="mySketchesBtn" class="menu-btn menu-btn--ghost menu-btn--icon-only" title="" aria-label="My Sketches" data-action="mySketches" data-i18n-title="mySketches" data-i18n-aria-label="mySketches">
+          <span class="material-icons">description</span>
+        </button>
+      </div>
+
+      <!-- Settings group (Lang, Notifications, Help, Admin) -->
+      <div class="menu-group menu-group--settings" data-landscape-tab="settings">
         <select id="langSelect" class="menu-select" data-action="languageChange" title="" aria-label="Select language" data-i18n-title="language">
           <option value="he">עברית</option>
           <option value="en">English</option>
@@ -288,12 +314,6 @@
         </button>
         <button id="adminBtn" class="menu-btn menu-btn--ghost menu-btn--icon-only" title="" aria-label="Admin settings" data-action="admin" data-i18n-title="admin.manage" data-i18n-aria-label="admin.manage">
           <span class="material-icons">tune</span>
-        </button>
-        <button id="projectsBtn" class="menu-btn menu-btn--ghost menu-btn--icon-only" title="" aria-label="Projects" data-action="projects">
-          <span class="material-icons">folder_open</span>
-        </button>
-        <button id="mySketchesBtn" class="menu-btn menu-btn--ghost menu-btn--icon-only" title="" aria-label="My Sketches" data-action="mySketches" data-i18n-title="mySketches" data-i18n-aria-label="mySketches">
-          <span class="material-icons">description</span>
         </button>
       </div>
 
