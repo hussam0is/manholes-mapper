@@ -1136,3 +1136,74 @@ function setupLandscapeHeaderAutoHide() {
 }
 
 try { setupLandscapeHeaderAutoHide(); } catch (e) { console.warn('[main-entry] setupLandscapeHeaderAutoHide failed:', e); }
+
+// --- Landscape Edge Rail ---
+// Wires the landscape rail icon buttons to existing header actions via menuEvents
+// and proxies the user avatar into the rail container.
+function setupLandscapeRail() {
+  const rail = document.getElementById('landscapeRail');
+  if (!rail) return;
+
+  // Map rail data-rail-action values to existing button IDs / actions
+  const actionMap = {
+    search: () => {
+      // Focus the search input (either mobile or desktop)
+      const input = document.getElementById('searchNodeInput');
+      if (input) { input.focus(); input.select(); }
+    },
+    commandMenu: () => {
+      const btn = document.getElementById('exportMenuBtn');
+      if (btn) btn.click();
+    },
+    projects: () => {
+      const btn = document.getElementById('projectsBtn');
+      if (btn) btn.click();
+    },
+    mySketches: () => {
+      const btn = document.getElementById('mySketchesBtn');
+      if (btn) btn.click();
+    },
+    overflow: () => {
+      // Open the mobile menu as the overflow container
+      const btn = document.getElementById('mobileMenuBtn');
+      if (btn) btn.click();
+    },
+  };
+
+  rail.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-rail-action]');
+    if (!btn) return;
+    const action = btn.dataset.railAction;
+    if (actionMap[action]) actionMap[action]();
+  });
+
+  // Proxy: clone the auth user avatar into the rail user container
+  // The auth UI renders asynchronously, so watch for it.
+  const railUserSlot = document.getElementById('railUserButton');
+  const headerUserSlot = document.getElementById('authUserButton');
+  if (railUserSlot && headerUserSlot) {
+    const syncAvatar = () => {
+      const avatar = headerUserSlot.querySelector('button, img, [class*="avatar"], [class*="user"]');
+      if (avatar) {
+        // Clone and simplify for the rail (icon-only, 32px)
+        const clone = avatar.cloneNode(true);
+        clone.removeAttribute('id');
+        clone.style.cssText = 'width:32px;height:32px;border-radius:50%;cursor:pointer;overflow:hidden;display:flex;align-items:center;justify-content:center;';
+        // Forward clicks to the original
+        clone.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          avatar.click();
+        });
+        railUserSlot.innerHTML = '';
+        railUserSlot.appendChild(clone);
+      }
+    };
+    // Observe headerUserSlot for child changes
+    const mo = new MutationObserver(syncAvatar);
+    mo.observe(headerUserSlot, { childList: true, subtree: true });
+    // Initial sync in case it already rendered
+    syncAvatar();
+  }
+}
+
+try { setupLandscapeRail(); } catch (e) { console.warn('[main-entry] setupLandscapeRail failed:', e); }

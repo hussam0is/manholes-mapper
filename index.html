@@ -313,6 +313,37 @@
     </button>
   </header>
 
+  <!-- Landscape Edge Rail: vertical icon strip shown only in landscape orientation -->
+  <aside id="landscapeRail" class="landscape-rail" role="navigation" aria-label="Quick actions">
+    <!-- User avatar -->
+    <div class="landscape-rail__user" id="railUserButton"></div>
+    <hr class="landscape-rail__divider" />
+    <!-- Search -->
+    <button class="landscape-rail__btn" data-rail-action="search" title="Search" aria-label="Search nodes" data-i18n-title="searchNodeTitle" data-i18n-aria-label="searchNodeTitle">
+      <span class="material-icons">search</span>
+    </button>
+    <!-- Command menu -->
+    <button class="landscape-rail__btn" data-rail-action="commandMenu" title="Menu" aria-label="Menu" data-i18n-title="menu" data-i18n-aria-label="menu">
+      <span class="material-icons">apps</span>
+    </button>
+    <hr class="landscape-rail__divider" />
+    <!-- Projects -->
+    <button class="landscape-rail__btn" data-rail-action="projects" title="Projects" aria-label="Projects" data-i18n-title="projects" data-i18n-aria-label="projects">
+      <span class="material-icons">folder_open</span>
+    </button>
+    <!-- My Sketches -->
+    <button class="landscape-rail__btn" data-rail-action="mySketches" title="My Sketches" aria-label="My Sketches" data-i18n-title="mySketches" data-i18n-aria-label="mySketches">
+      <span class="material-icons">description</span>
+    </button>
+    <hr class="landscape-rail__divider" />
+    <!-- Spacer pushes overflow to bottom -->
+    <div class="landscape-rail__spacer"></div>
+    <!-- Overflow menu (language, help, admin, etc.) -->
+    <button class="landscape-rail__btn" data-rail-action="overflow" title="More" aria-label="More options" data-i18n-title="menu" data-i18n-aria-label="menu">
+      <span class="material-icons">more_vert</span>
+    </button>
+  </aside>
+
   <!-- Login Panel (Authentication) -->
   <div id="loginPanel" class="login-panel" style="display: none;" role="dialog" aria-modal="true" aria-label="Authentication">
     <div class="login-panel-content">
