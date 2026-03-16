@@ -13409,6 +13409,222 @@ button:focus-visible,
     font-size: 1rem;
   }
 
+  /* ==============================================
+     Progressive Disclosure — Layout 1
+     Reduces visible header items from ~15 to 5:
+       1. User avatar (#authUserButton)
+       2. Sketch name + sync indicator (identity pill)
+       3. Search icon (collapsed, expands on focus)
+       4. Command menu (#exportMenuBtn)
+       5. Autosave status (compact icon-only)
+     Everything else moves into the command menu overflow.
+     ============================================== */
+
+  /* --- HIDE: Items that move to command menu overflow --- */
+  #langSelect,
+  #helpBtn,
+  #adminBtn,
+  #projectsBtn,
+  #mySketchesBtn,
+  .menu-group--size,
+  #notificationBell {
+    display: none !important;
+  }
+
+  /* --- HIDE: Save button (keep autosave indicator only) --- */
+  #saveBtn {
+    display: none !important;
+  }
+
+  /* --- Utility group: hidden since all children are hidden --- */
+  .menu-group--utility {
+    display: none !important;
+  }
+
+  /* --- LAYOUT: Header grid — 3-zone layout --- */
+  /* Zone 1 (start): identity (avatar + sketch name + sync)
+     Zone 2 (center): stretches
+     Zone 3 (end): actions (search + command menu + autosave) */
+  .app-header {
+    grid-template-columns: auto 1fr auto;
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    min-height: 36px;
+  }
+
+  /* --- ZONE 1: Identity — brand area with sketch name + sync --- */
+  .menu-brand {
+    gap: 0.375rem;
+    align-items: center;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  /* Hide the desktop brand separator — not needed in progressive disclosure */
+  #brand::after {
+    display: none;
+  }
+
+  #brand {
+    padding-inline-end: 0;
+  }
+
+  /* Sketch name: compact pill — show desktop version, hide mobile */
+  .menu-sketch-name:not(.menu-sketch-name--mobile):not(:empty) {
+    display: inline-flex !important;
+    font-size: 0.7rem;
+    padding: 0.125rem 0.5rem;
+    max-width: 160px;
+    border-radius: 12px;
+  }
+
+  .menu-sketch-name--mobile {
+    display: none !important;
+  }
+
+  .menu-sketch-name::before {
+    font-size: 0.875rem;
+  }
+
+  /* Sync indicator: tighter */
+  .header-sync-indicator {
+    width: 22px;
+    height: 22px;
+  }
+
+  .header-sync-indicator__icon {
+    font-size: 0.875rem;
+  }
+
+  /* --- ZONE 3: Controls — only search, command menu, autosave --- */
+  .menu-controls {
+    gap: 0.25rem;
+    overflow: visible;
+    flex-shrink: 0;
+  }
+
+  /* --- Primary group: autosave only (save btn hidden) --- */
+  .menu-group--primary {
+    order: 3; /* move to end */
+    padding: 0;
+    /* Visual separator: left/start border */
+    border-inline-start: 1px solid rgba(0, 0, 0, 0.08);
+    padding-inline-start: 0.375rem;
+    margin-inline-start: 0.125rem;
+  }
+
+  .menu-save-group {
+    gap: 0.25rem;
+  }
+
+  /* Autosave: compact icon-only indicator */
+  .menu-autosave {
+    height: 28px;
+    min-width: 28px;
+    padding: 0 0.25rem;
+    border-radius: 50%;
+    gap: 0.25rem;
+    justify-content: center;
+  }
+
+  .menu-autosave__label {
+    display: none !important;
+  }
+
+  .menu-autosave input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* --- Search: collapse to icon-only, expand inline on focus --- */
+  .menu-group--search {
+    display: flex !important;
+    order: 1;
+    padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+  }
+
+  .menu-search {
+    position: relative;
+  }
+
+  .menu-search__icon {
+    font-size: 1.125rem;
+    cursor: pointer;
+    z-index: 1;
+  }
+
+  .menu-search__input {
+    width: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    opacity: 0;
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.2s ease,
+                padding 0.25s ease;
+    height: 28px;
+    font-size: 0.75rem;
+  }
+
+  .menu-search__input:focus {
+    width: 120px;
+    padding: 0 0.5rem;
+    opacity: 1;
+    background: var(--color-surface, #ffffff);
+    border: 1px solid var(--color-primary, #2563eb);
+    border-radius: var(--menu-btn-radius);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary, #2563eb) 15%, transparent);
+  }
+
+  /* --- Command menu button: prominent --- */
+  .menu-group--command {
+    order: 2;
+    padding: 2px;
+    /* Visual separator: left/start border */
+    border-inline-start: 1px solid rgba(0, 0, 0, 0.08);
+    padding-inline-start: 0.375rem;
+    margin-inline-start: 0.125rem;
+  }
+
+  .menu-btn--command {
+    min-height: 28px;
+    min-width: 28px;
+  }
+
+  .menu-btn--command .material-icons {
+    font-size: 1.125rem;
+  }
+
+  /* --- User button container: part of identity zone (brand area) --- */
+  /* Note: #userButtonContainer is inside .menu-controls, but we want the
+     avatar to appear in Zone 1. Use order to push it to the start. */
+  .menu-group--user {
+    order: -1;
+    padding: 0;
+    margin-inline-end: 0.25rem;
+  }
+
+  /* --- Touch targets: ensure 44px minimum via pseudo-element overlay --- */
+  .menu-autosave,
+  .menu-search__icon,
+  .menu-btn--command {
+    position: relative;
+  }
+
+  .menu-autosave::after,
+  .menu-btn--command::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 44px;
+    height: 44px;
+  }
+
   /* --- Auto-hide animation --- */
   .header--landscape-auto-hide {
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
@@ -14351,6 +14567,32 @@ body.cockpit-mode #edgeLegend {
 
     .header-recall-handle .material-icons {
       color: rgba(255, 255, 255, 0.35);
+    }
+
+    /* Progressive Disclosure — dark mode overrides */
+
+    /* Group separators: lighter for dark mode */
+    .menu-group--primary,
+    .menu-group--command {
+      border-inline-start-color: rgba(255, 255, 255, 0.08);
+    }
+
+    /* Search input dark mode expand */
+    .menu-search__input:focus {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: var(--color-accent, #60a5fa);
+      color: var(--color-text, #e2e8f0);
+      box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+    }
+
+    /* Autosave indicator dark background */
+    .menu-autosave {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .menu-autosave:hover {
+      background: rgba(255, 255, 255, 0.12);
     }
   }
 }
