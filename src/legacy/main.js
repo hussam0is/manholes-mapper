@@ -1603,6 +1603,15 @@ function resizeCanvas() {
   const targetHeight = Math.round(rect.height * dpr);
   // Only update backing store if dimensions actually changed to avoid extra layout
   if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+    // Adjust viewTranslate to keep the center of the view stable
+    const oldLogicalW = canvas.width / dpr;
+    const oldLogicalH = canvas.height / dpr;
+    const newLogicalW = targetWidth / dpr;
+    const newLogicalH = targetHeight / dpr;
+    if (oldLogicalW > 0 && oldLogicalH > 0) {
+      viewTranslate.x += (newLogicalW - oldLogicalW) / 2;
+      viewTranslate.y += (newLogicalH - oldLogicalH) / 2;
+    }
     canvas.width = targetWidth;
     canvas.height = targetHeight;
   }
