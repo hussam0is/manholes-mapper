@@ -13420,6 +13420,155 @@ button:focus-visible,
     opacity: 0;
     pointer-events: none;
   }
+
+  /* --- Smart Collapse: Priority-Based Landscape Header ---
+     Items collapse into an overflow menu based on priority levels:
+     P1 (always visible): avatar, sketch name, sync, save, search, command menu, overflow
+     P2 (>=900px): projects, sketches
+     P3 (>=1200px): language, help, admin
+     "Never" items: size controls, brand, autosave label
+  */
+
+  /* Never-in-landscape items: hidden at all landscape widths */
+  .landscape-never {
+    display: none !important;
+  }
+
+  /* Brand logo/title already hidden via existing rules above */
+
+  /* Base landscape (<900px): hide P2 and P3 groups */
+  [data-landscape-priority="2"],
+  [data-landscape-priority="3"] {
+    display: none !important;
+  }
+
+  /* Navigation group styling (same as utility when visible) */
+  .menu-group--nav {
+    gap: 0.125rem;
+  }
+
+  /* Overflow button: visible in landscape */
+  .landscape-overflow-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    min-height: 28px;
+    min-width: 28px;
+    padding: 0.15rem;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid var(--menu-border);
+    border-radius: var(--menu-btn-radius, 999px);
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+
+  .landscape-overflow-btn:hover {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: var(--color-primary, #2563eb);
+  }
+
+  .landscape-overflow-btn .material-icons {
+    font-size: 1rem;
+    color: var(--color-text, #0f172a);
+  }
+
+  /* Overflow badge: count of hidden items */
+  .landscape-overflow-badge {
+    position: absolute;
+    top: -4px;
+    inset-inline-end: -4px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    font-size: 0.625rem;
+    font-weight: 700;
+    line-height: 16px;
+    text-align: center;
+    color: #ffffff;
+    background: var(--color-primary, #2563eb);
+    border-radius: 999px;
+    pointer-events: none;
+  }
+
+  .landscape-overflow-badge:empty {
+    display: none;
+  }
+
+  /* Header layout: use flexbox for landscape with grouped sections */
+  .app-header {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+
+  .menu-controls {
+    flex: 1;
+    justify-content: flex-end;
+    gap: 0.25rem;
+    overflow: visible;
+  }
+
+  /* Medium landscape (>=900px): show P2 groups */
+  @media (min-width: 900px) {
+    [data-landscape-priority="2"] {
+      display: flex !important;
+    }
+  }
+
+  /* Wide landscape (>=1200px): show P3 groups, hide overflow btn */
+  @media (min-width: 1200px) {
+    [data-landscape-priority="3"] {
+      display: flex !important;
+    }
+
+    .landscape-overflow-btn {
+      display: none;
+    }
+  }
+
+  /* Search input: compact in landscape, icon-only below 900px */
+  .menu-search__input {
+    width: 80px;
+    font-size: 0.75rem;
+    height: 26px;
+    padding: 0 0.5rem;
+  }
+
+  .menu-search__input:focus {
+    width: 120px;
+  }
+
+  @media (min-width: 1200px) {
+    .menu-search__input {
+      width: 120px;
+    }
+    .menu-search__input:focus {
+      width: 160px;
+    }
+  }
+}
+
+/* --- Landscape Smart Collapse: Dark Mode --- */
+@media (max-height: 450px) and (orientation: landscape) and (prefers-color-scheme: dark) {
+  .landscape-overflow-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--color-border, #334155);
+  }
+
+  .landscape-overflow-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--color-accent, #60a5fa);
+  }
+
+  .landscape-overflow-btn .material-icons {
+    color: var(--color-text, #e2e8f0);
+  }
+
+  .landscape-overflow-badge {
+    background: var(--color-accent, #60a5fa);
+    color: #0f172a;
+  }
 }
 
 /* --- Landscape: Login Page --- */

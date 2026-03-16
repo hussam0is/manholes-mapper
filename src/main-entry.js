@@ -1136,3 +1136,63 @@ function setupLandscapeHeaderAutoHide() {
 }
 
 try { setupLandscapeHeaderAutoHide(); } catch (e) { console.warn('[main-entry] setupLandscapeHeaderAutoHide failed:', e); }
+
+// --- Landscape Smart Collapse: overflow badge count ---
+// Counts how many priority groups are hidden and updates the overflow badge.
+// Uses matchMedia listeners so it only recalculates at breakpoint transitions.
+function setupLandscapeOverflowBadge() {
+  const badge = document.getElementById('landscapeOverflowBadge');
+  const overflowBtn = document.getElementById('landscapeOverflowBtn');
+  if (!badge || !overflowBtn) return;
+
+  // Priority items: count of collapsible items per priority level
+  // P2 items: projectsBtn, mySketchesBtn (2 items)
+  // P3 items: langSelect, helpBtn, adminBtn (3 items, plus notification bell if visible)
+  const landscapeMQ = window.matchMedia('(max-height: 450px) and (orientation: landscape)');
+  const mediumMQ = window.matchMedia('(min-width: 900px)');
+  const wideMQ = window.matchMedia('(min-width: 1200px)');
+
+  function updateBadge() {
+    if (!landscapeMQ.matches) {
+      // Not in landscape mode — badge is irrelevant
+      badge.textContent = '';
+      return;
+    }
+
+    // Count hidden items based on current breakpoint
+    let hiddenCount = 0;
+
+    // Count P2 items (visible at >=900px)
+    const p2Groups = document.querySelectorAll('[data-landscape-priority="2"]');
+    // Count P3 items (visible at >=1200px)
+    const p3Groups = document.querySelectorAll('[data-landscape-priority="3"]');
+
+    if (!mediumMQ.matches) {
+      // <900px: both P2 and P3 are hidden
+      p2Groups.forEach(g => { hiddenCount += g.querySelectorAll('button, select, .menu-btn').length; });
+      p3Groups.forEach(g => { hiddenCount += g.querySelectorAll('button, select, .menu-btn').length; });
+    } else if (!wideMQ.matches) {
+      // 900-1199px: only P3 hidden
+      p3Groups.forEach(g => { hiddenCount += g.querySelectorAll('button, select, .menu-btn').length; });
+    }
+    // >=1200px: nothing hidden, overflow btn itself is hidden via CSS
+
+    badge.textContent = hiddenCount > 0 ? `+${hiddenCount}` : '';
+  }
+
+  // Listen for breakpoint changes
+  landscapeMQ.addEventListener('change', updateBadge);
+  mediumMQ.addEventListener('change', updateBadge);
+  wideMQ.addEventListener('change', updateBadge);
+
+  // Overflow button click: open mobile menu as overflow panel
+  overflowBtn.addEventListener('click', () => {
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    if (mobileMenuBtn) mobileMenuBtn.click();
+  });
+
+  // Initial calculation
+  updateBadge();
+}
+
+try { setupLandscapeOverflowBadge(); } catch (e) { console.warn('[main-entry] setupLandscapeOverflowBadge failed:', e); }

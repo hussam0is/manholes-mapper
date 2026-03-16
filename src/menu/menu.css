@@ -2040,6 +2040,43 @@ body.mobile-menu-open .mobile-menu__backdrop {
 }
 
 /* ============================================
+   Landscape Overflow Button (Smart Collapse)
+   Hidden outside landscape mode
+   ============================================ */
+.landscape-overflow-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.landscape-overflow-badge {
+  display: none;
+}
+
+/* Navigation group: same styling as utility group */
+.menu-group--nav {
+  gap: 0.125rem;
+  padding: 3px 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--menu-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  flex-shrink: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .menu-group--nav {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--color-border, #334155);
+  }
+}
+
+/* ============================================
    Print Styles
    ============================================ */
 @media print {
