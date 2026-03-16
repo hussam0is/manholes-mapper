@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Git Network Graph</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-dim: #8b949e;
+    --accent: #58a6ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    z-index: 10;
+    position: relative;
+  }
+  .header h1 { font-size: 18px; font-weight: 600; }
+  .header .branch-badge {
+    background: #1f6feb33;
+    color: var(--accent);
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-family: monospace;
+  }
+  .header .meta {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .header .controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .header button {
+    background: var(--border);
+    color: var(--text);
+    border: none;
+    padding: 5px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  .header button:hover { background: #484f58; }
+  .header select {
+    background: var(--border);
+    color: var(--text);
+    border: none;
+    padding: 5px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+  }
+
+  /* Filter bar */
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .filter-bar input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    width: 260px;
+  }
+  .filter-bar .branch-filters {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .filter-bar .branch-chip {
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    font-family: monospace;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+  }
+  .filter-bar .branch-chip.active { opacity: 1; border-color: currentColor; }
+
+  /* Main layout */
+  .main {
+    display: flex;
+    height: calc(100vh - 90px);
+  }
+
+  /* Graph canvas area */
+  .graph-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+  canvas {
+    display: block;
+    cursor: grab;
+  }
+  canvas.grabbing { cursor: grabbing; }
+
+  /* Detail sidebar */
+  .sidebar {
+    width: 360px;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 16px;
+    transition: width 0.2s;
+  }
+  .sidebar.collapsed { width: 0; padding: 0; overflow: hidden; }
+  .sidebar h3 { font-size: 14px; margin-bottom: 12px; color: var(--text-dim); }
+  .commit-detail { margin-bottom: 20px; }
+  .commit-detail .hash {
+    font-family: monospace;
+    font-size: 13px;
+    color: var(--accent);
+    cursor: pointer;
+  }
+  .commit-detail .subject {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 6px 0;
+    line-height: 1.4;
+  }
+  .commit-detail .meta-row {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin: 4px 0;
+  }
+  .commit-detail .refs-row {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+  .ref-badge {
+    font-size: 11px;
+    padding: 1px 7px;
+    border-radius: 8px;
+    font-family: monospace;
+  }
+  .ref-badge.branch { background: #1f6feb33; color: #58a6ff; }
+  .ref-badge.tag { background: #3fb95033; color: #3fb950; }
+  .ref-badge.head { background: #f0883e33; color: #f0883e; }
+  .ref-badge.remote { background: #8b949e33; color: #8b949e; }
+  .commit-detail .parents {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 8px;
+  }
+  .commit-detail .parents a {
+    color: var(--accent);
+    cursor: pointer;
+    text-decoration: none;
+    font-family: monospace;
+  }
+  .commit-detail .parents a:hover { text-decoration: underline; }
+
+  /* Commit list in sidebar */
+  .commit-list-item {
+    padding: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-bottom: 2px;
+    font-size: 13px;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .commit-list-item:hover { background: #21262d; }
+  .commit-list-item.selected { background: #1f6feb22; }
+  .commit-list-item .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-top: 5px;
+    flex-shrink: 0;
+  }
+  .commit-list-item .info {
+    flex: 1;
+    min-width: 0;
+  }
+  .commit-list-item .msg {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .commit-list-item .sub {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  /* Tooltip */
+  .tooltip {
+    position: fixed;
+    background: #1c2128;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    pointer-events: none;
+    z-index: 100;
+    max-width: 400px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    display: none;
+  }
+  .tooltip .tt-hash { font-family: monospace; color: var(--accent); font-size: 12px; }
+  .tooltip .tt-msg { margin-top: 4px; font-weight: 500; }
+  .tooltip .tt-author { margin-top: 4px; color: var(--text-dim); font-size: 12px; }
+
+  /* Minimap */
+  .minimap {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    width: 180px;
+    height: 120px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    opacity: 0.85;
+  }
+  .minimap canvas { width: 100%; height: 100%; }
+
+  /* Status indicator */
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #3fb950;
+    display: inline-block;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Git Network Graph</h1>
+  <span class="branch-badge" id="currentBranch">...</span>
+  <div class="controls">
+    <button id="btnFit" title="Fit to view">Fit</button>
+    <button id="btnZoomIn" title="Zoom in">+</button>
+    <button id="btnZoomOut" title="Zoom out">-</button>
+    <select id="refreshInterval">
+      <option value="10">10s</option>
+      <option value="30" selected>30s</option>
+      <option value="60">60s</option>
+      <option value="0">Manual</option>
+    </select>
+    <button id="btnRefresh">Refresh</button>
+    <button id="btnToggleSidebar">Panel</button>
+  </div>
+  <div class="meta">
+    <span class="status-dot"></span>
+    <span id="lastUpdate">...</span>
+    <span id="commitCount"></span>
+  </div>
+</div>
+
+<div class="filter-bar">
+  <input type="text" id="searchInput" placeholder="Search commits (message, author, hash)..." />
+  <div class="branch-filters" id="branchFilters"></div>
+</div>
+
+<div class="main">
+  <div class="graph-container" id="graphContainer">
+    <canvas id="graphCanvas"></canvas>
+    <div class="minimap" id="minimap">
+      <canvas id="minimapCanvas"></canvas>
+    </div>
+  </div>
+  <div class="sidebar" id="sidebar">
+    <div id="commitDetail" style="display:none"></div>
+    <h3 id="sidebarTitle">Commits</h3>
+    <div id="commitList"></div>
+  </div>
+</div>
+
+<div class="tooltip" id="tooltip">
+  <div class="tt-hash"></div>
+  <div class="tt-msg"></div>
+  <div class="tt-author"></div>
+</div>
+
+<script>
+// ─── Constants ───
+const LANE_COLORS = [
+  '#58a6ff', '#f0883e', '#3fb950', '#bc8cff', '#f778ba',
+  '#79c0ff', '#d29922', '#56d4dd', '#ff7b72', '#7ee787',
+  '#e3b341', '#a5d6ff', '#ffa657', '#d2a8ff', '#f2cc60',
+];
+const NODE_R = 5;
+const ROW_H = 32;
+const LANE_W = 16;
+const GRAPH_PAD_LEFT = 20;
+const GRAPH_PAD_TOP = 20;
+const TEXT_PAD = 14;
+
+// ─── State ───
+let data = null;
+let layoutData = null; // { commits, lanes, maxLane }
+let selectedHash = null;
+let hoveredHash = null;
+let search = '';
+let activeBranches = new Set(); // empty = show all
+
+// View transform
+let scale = 1;
+let tx = 0, ty = 0;
+let isPanning = false;
+let panStart = { x: 0, y: 0 };
+let panStartT = { x: 0, y: 0 };
+
+// Elements
+const canvas = document.getElementById('graphCanvas');
+const ctx = canvas.getContext('2d');
+const container = document.getElementById('graphContainer');
+const tooltip = document.getElementById('tooltip');
+const sidebar = document.getElementById('sidebar');
+const minimapCanvas = document.getElementById('minimapCanvas');
+const minimapCtx = minimapCanvas.getContext('2d');
+
+// ─── Fetch data ───
+async function fetchData() {
+  try {
+    const res = await fetch('/api/graph');
+    data = await res.json();
+    document.getElementById('currentBranch').textContent = data.currentBranch;
+    document.getElementById('commitCount').textContent = ` · ${data.commits.length} commits`;
+    document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+    layoutGraph();
+    renderBranchFilters();
+    renderCommitList();
+    draw();
+    drawMinimap();
+  } catch (e) {
+    console.error('Fetch error:', e);
+  }
+}
+
+// ─── Layout: assign lanes ───
+function layoutGraph() {
+  if (!data) return;
+
+  const commits = data.commits;
+  const hashIndex = new Map();
+  commits.forEach((c, i) => hashIndex.set(c.hash, i));
+
+  // Lane assignment using a column-reservation algorithm
+  const activeLanes = []; // each slot: hash of the commit that "owns" it, or null
+  const commitLane = new Map();
+
+  for (const c of commits) {
+    // Find if any lane is reserved for this commit
+    let lane = activeLanes.indexOf(c.hash);
+    if (lane === -1) {
+      // Take the first free lane
+      lane = activeLanes.indexOf(null);
+      if (lane === -1) {
+        lane = activeLanes.length;
+        activeLanes.push(null);
+      }
+    }
+    commitLane.set(c.hash, lane);
+
+    // Free this lane
+    activeLanes[lane] = null;
+
+    // Reserve lanes for parents
+    const parents = c.parents.filter((p) => hashIndex.has(p));
+    if (parents.length > 0) {
+      // First parent takes current lane
+      if (activeLanes[lane] === null) {
+        activeLanes[lane] = parents[0];
+      } else {
+        // Already taken, find new slot
+        let newLane = activeLanes.indexOf(null);
+        if (newLane === -1) { newLane = activeLanes.length; activeLanes.push(null); }
+        activeLanes[newLane] = parents[0];
+      }
+      // Other parents get new lanes
+      for (let i = 1; i < parents.length; i++) {
+        if (!activeLanes.includes(parents[i])) {
+          let newLane = activeLanes.indexOf(null);
+          if (newLane === -1) { newLane = activeLanes.length; activeLanes.push(null); }
+          activeLanes[newLane] = parents[i];
+        }
+      }
+    }
+
+    // Trim trailing nulls
+    while (activeLanes.length > 0 && activeLanes[activeLanes.length - 1] === null) {
+      activeLanes.pop();
+    }
+  }
+
+  const maxLane = Math.max(0, ...Array.from(commitLane.values()));
+
+  layoutData = {
+    commits: commits.map((c, i) => ({
+      ...c,
+      lane: commitLane.get(c.hash) || 0,
+      row: i,
+      x: GRAPH_PAD_LEFT + (commitLane.get(c.hash) || 0) * LANE_W + NODE_R,
+      y: GRAPH_PAD_TOP + i * ROW_H + ROW_H / 2,
+    })),
+    maxLane,
+    hashIndex,
+  };
+}
+
+// ─── Filter commits by search and branch ───
+function getFilteredSet() {
+  if (!layoutData) return new Set();
+  const filtered = new Set();
+  const lc = search.toLowerCase();
+
+  for (const c of layoutData.commits) {
+    // Branch filter
+    if (activeBranches.size > 0) {
+      const branchMatch = c.refs.some((r) => activeBranches.has(r));
+      // For non-ref commits, check if any ancestor/descendant is on the active branch
+      // Simplified: only show commits with matching refs when branch filter is active
+      // Actually, let's show all commits on the path — skip branch filter for simplicity
+      // and just highlight branch-filtered commits
+    }
+    // Search filter
+    if (lc) {
+      const match =
+        c.subject.toLowerCase().includes(lc) ||
+        c.authorName.toLowerCase().includes(lc) ||
+        c.shortHash.toLowerCase().includes(lc) ||
+        c.hash.toLowerCase().startsWith(lc);
+      if (!match) continue;
+    }
+    filtered.add(c.hash);
+  }
+  return filtered;
+}
+
+// ─── Draw main graph ───
+function draw() {
+  if (!layoutData) return;
+
+  const dpr = window.devicePixelRatio || 1;
+  const w = container.clientWidth;
+  const h = container.clientHeight;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  ctx.clearRect(0, 0, w, h);
+  ctx.save();
+  ctx.translate(tx, ty);
+  ctx.scale(scale, scale);
+
+  const commits = layoutData.commits;
+  const hashMap = new Map();
+  commits.forEach((c) => hashMap.set(c.hash, c));
+
+  const filtered = search ? getFilteredSet() : null;
+  const textLeft = GRAPH_PAD_LEFT + (layoutData.maxLane + 1) * LANE_W + TEXT_PAD;
+
+  // Draw edges
+  for (const c of commits) {
+    for (const ph of c.parents) {
+      const p = hashMap.get(ph);
+      if (!p) continue;
+
+      const dim = filtered && (!filtered.has(c.hash) && !filtered.has(p.hash));
+      ctx.globalAlpha = dim ? 0.08 : 0.5;
+      ctx.strokeStyle = LANE_COLORS[c.lane % LANE_COLORS.length];
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+
+      if (c.lane === p.lane) {
+        // Straight line
+        ctx.moveTo(c.x, c.y);
+        ctx.lineTo(p.x, p.y);
+      } else {
+        // Curved line
+        const midY = (c.y + p.y) / 2;
+        ctx.moveTo(c.x, c.y);
+        ctx.bezierCurveTo(c.x, midY, p.x, midY, p.x, p.y);
+      }
+      ctx.stroke();
+    }
+  }
+
+  ctx.globalAlpha = 1;
+
+  // Draw nodes and text
+  for (const c of commits) {
+    const dim = filtered && !filtered.has(c.hash);
+    const isSelected = c.hash === selectedHash;
+    const isHovered = c.hash === hoveredHash;
+    const color = LANE_COLORS[c.lane % LANE_COLORS.length];
+
+    // Node circle
+    ctx.globalAlpha = dim ? 0.15 : 1;
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, isSelected ? NODE_R + 2 : isHovered ? NODE_R + 1 : NODE_R, 0, Math.PI * 2);
+
+    if (c.parents.length > 1) {
+      // Merge commit: filled ring
+      ctx.fillStyle = '#0d1117';
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = color;
+      ctx.fill();
+    }
+
+    if (isSelected) {
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    // Ref badges
+    let badgeX = textLeft;
+    if (c.refs.length > 0) {
+      for (const ref of c.refs) {
+        const isHead = ref.startsWith('HEAD');
+        const isTag = ref.startsWith('tag:');
+        const isRemote = ref.includes('origin/');
+        const label = ref.replace('tag: ', '').replace('HEAD -> ', '');
+
+        ctx.font = '10px monospace';
+        const tw = ctx.measureText(label).width + 10;
+
+        // Badge background
+        ctx.fillStyle = isHead ? '#f0883e33' : isTag ? '#3fb95033' : isRemote ? '#8b949e22' : '#1f6feb33';
+        ctx.beginPath();
+        ctx.roundRect(badgeX, c.y - 8, tw, 16, 4);
+        ctx.fill();
+
+        // Badge text
+        ctx.fillStyle = isHead ? '#f0883e' : isTag ? '#3fb950' : isRemote ? '#8b949e' : '#58a6ff';
+        ctx.fillText(label, badgeX + 5, c.y + 3);
+        badgeX += tw + 4;
+      }
+    }
+
+    // Commit message
+    ctx.font = '12px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
+    ctx.fillStyle = dim ? '#8b949e44' : isSelected ? '#fff' : '#e6edf3';
+    const msgX = c.refs.length > 0 ? badgeX + 6 : textLeft;
+    ctx.fillText(truncate(c.subject, 70), msgX, c.y + 4);
+
+    // Author + date
+    const dateStr = timeAgo(c.date);
+    ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
+    ctx.fillStyle = dim ? '#8b949e22' : '#8b949e';
+    const authorX = msgX + ctx.measureText(truncate(c.subject, 70)).width + 12;
+    ctx.fillText(`${c.authorName} · ${dateStr}`, Math.max(authorX, msgX + 200), c.y + 4);
+  }
+
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+// ─── Minimap ───
+function drawMinimap() {
+  if (!layoutData) return;
+
+  const mmEl = document.getElementById('minimap');
+  const dpr = window.devicePixelRatio || 1;
+  const mw = mmEl.clientWidth;
+  const mh = mmEl.clientHeight;
+  minimapCanvas.width = mw * dpr;
+  minimapCanvas.height = mh * dpr;
+  minimapCanvas.style.width = mw + 'px';
+  minimapCanvas.style.height = mh + 'px';
+  minimapCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  minimapCtx.clearRect(0, 0, mw, mh);
+  minimapCtx.fillStyle = '#161b22';
+  minimapCtx.fillRect(0, 0, mw, mh);
+
+  const commits = layoutData.commits;
+  if (commits.length === 0) return;
+
+  const totalH = commits.length * ROW_H + GRAPH_PAD_TOP * 2;
+  const totalW = (layoutData.maxLane + 2) * LANE_W + GRAPH_PAD_LEFT * 2 + 500;
+  const mmScale = Math.min(mw / totalW, mh / totalH);
+
+  minimapCtx.save();
+  minimapCtx.scale(mmScale, mmScale);
+
+  const hashMap = new Map();
+  commits.forEach((c) => hashMap.set(c.hash, c));
+
+  // Draw edges
+  for (const c of commits) {
+    for (const ph of c.parents) {
+      const p = hashMap.get(ph);
+      if (!p) continue;
+      minimapCtx.strokeStyle = LANE_COLORS[c.lane % LANE_COLORS.length];
+      minimapCtx.globalAlpha = 0.3;
+      minimapCtx.lineWidth = 1 / mmScale;
+      minimapCtx.beginPath();
+      minimapCtx.moveTo(c.x, c.y);
+      minimapCtx.lineTo(p.x, p.y);
+      minimapCtx.stroke();
+    }
+  }
+
+  // Draw nodes
+  minimapCtx.globalAlpha = 0.6;
+  for (const c of commits) {
+    minimapCtx.fillStyle = LANE_COLORS[c.lane % LANE_COLORS.length];
+    minimapCtx.beginPath();
+    minimapCtx.arc(c.x, c.y, 2 / mmScale, 0, Math.PI * 2);
+    minimapCtx.fill();
+  }
+
+  // Viewport rect
+  const vx = -tx / scale;
+  const vy = -ty / scale;
+  const vw = container.clientWidth / scale;
+  const vh = container.clientHeight / scale;
+  minimapCtx.globalAlpha = 1;
+  minimapCtx.strokeStyle = '#58a6ff';
+  minimapCtx.lineWidth = 2 / mmScale;
+  minimapCtx.strokeRect(vx, vy, vw, vh);
+
+  minimapCtx.restore();
+}
+
+// ─── Pan & Zoom ───
+canvas.addEventListener('mousedown', (e) => {
+  isPanning = true;
+  panStart = { x: e.clientX, y: e.clientY };
+  panStartT = { x: tx, y: ty };
+  canvas.classList.add('grabbing');
+});
+
+window.addEventListener('mousemove', (e) => {
+  if (isPanning) {
+    tx = panStartT.x + (e.clientX - panStart.x);
+    ty = panStartT.y + (e.clientY - panStart.y);
+    draw();
+    drawMinimap();
+    return;
+  }
+
+  // Hover detection
+  if (!layoutData) return;
+  const rect = canvas.getBoundingClientRect();
+  const mx = (e.clientX - rect.left - tx) / scale;
+  const my = (e.clientY - rect.top - ty) / scale;
+
+  let found = null;
+  for (const c of layoutData.commits) {
+    const dx = mx - c.x;
+    const dy = my - c.y;
+    if (dx * dx + dy * dy < (NODE_R + 4) * (NODE_R + 4)) {
+      found = c;
+      break;
+    }
+  }
+
+  if (found) {
+    hoveredHash = found.hash;
+    canvas.style.cursor = 'pointer';
+    tooltip.style.display = 'block';
+    tooltip.style.left = (e.clientX + 12) + 'px';
+    tooltip.style.top = (e.clientY + 12) + 'px';
+    tooltip.querySelector('.tt-hash').textContent = found.shortHash;
+    tooltip.querySelector('.tt-msg').textContent = found.subject;
+    tooltip.querySelector('.tt-author').textContent = `${found.authorName} · ${timeAgo(found.date)}`;
+  } else {
+    hoveredHash = null;
+    canvas.style.cursor = 'grab';
+    tooltip.style.display = 'none';
+  }
+  draw();
+});
+
+window.addEventListener('mouseup', () => {
+  isPanning = false;
+  canvas.classList.remove('grabbing');
+});
+
+canvas.addEventListener('click', (e) => {
+  if (!layoutData) return;
+  const rect = canvas.getBoundingClientRect();
+  const mx = (e.clientX - rect.left - tx) / scale;
+  const my = (e.clientY - rect.top - ty) / scale;
+
+  for (const c of layoutData.commits) {
+    const dx = mx - c.x;
+    const dy = my - c.y;
+    if (dx * dx + dy * dy < (NODE_R + 4) * (NODE_R + 4)) {
+      selectCommit(c.hash);
+      return;
+    }
+  }
+  // Click on empty space — try matching text row
+  for (const c of layoutData.commits) {
+    if (my > c.y - ROW_H / 2 && my < c.y + ROW_H / 2) {
+      selectCommit(c.hash);
+      return;
+    }
+  }
+});
+
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  const delta = e.deltaY > 0 ? 0.9 : 1.1;
+  const newScale = Math.min(3, Math.max(0.2, scale * delta));
+
+  tx = mx - (mx - tx) * (newScale / scale);
+  ty = my - (my - ty) * (newScale / scale);
+  scale = newScale;
+
+  draw();
+  drawMinimap();
+}, { passive: false });
+
+// ─── Select commit ───
+function selectCommit(hash) {
+  selectedHash = hash;
+  draw();
+  renderCommitDetail(hash);
+  renderCommitList();
+}
+
+function renderCommitDetail(hash) {
+  if (!layoutData) return;
+  const c = layoutData.commits.find((x) => x.hash === hash);
+  if (!c) return;
+
+  const detail = document.getElementById('commitDetail');
+  detail.style.display = 'block';
+
+  const refsHtml = c.refs
+    .map((r) => {
+      const isHead = r.startsWith('HEAD');
+      const isTag = r.startsWith('tag:');
+      const isRemote = r.includes('origin/');
+      const cls = isHead ? 'head' : isTag ? 'tag' : isRemote ? 'remote' : 'branch';
+      return `<span class="ref-badge ${cls}">${esc(r)}</span>`;
+    })
+    .join('');
+
+  const parentsHtml = c.parents
+    .map((p) => {
+      const short = p.slice(0, 7);
+      return `<a onclick="selectCommit('${p}')">${short}</a>`;
+    })
+    .join(' ');
+
+  detail.innerHTML = `
+    <div class="commit-detail">
+      <div class="hash" title="Click to copy" onclick="navigator.clipboard.writeText('${c.hash}')">${c.hash}</div>
+      <div class="subject">${esc(c.subject)}</div>
+      <div class="meta-row">${esc(c.authorName)} &lt;${esc(c.authorEmail)}&gt;</div>
+      <div class="meta-row">${new Date(c.date).toLocaleString()}</div>
+      ${refsHtml ? `<div class="refs-row">${refsHtml}</div>` : ''}
+      ${c.parents.length ? `<div class="parents">Parents: ${parentsHtml}</div>` : ''}
+    </div>
+    <hr style="border-color:#30363d;margin:12px 0">
+  `;
+}
+
+// ─── Commit list sidebar ───
+function renderCommitList() {
+  if (!layoutData) return;
+  const list = document.getElementById('commitList');
+  const filtered = search ? getFilteredSet() : null;
+  const commits = filtered
+    ? layoutData.commits.filter((c) => filtered.has(c.hash))
+    : layoutData.commits;
+
+  document.getElementById('sidebarTitle').textContent = `Commits (${commits.length})`;
+
+  list.innerHTML = commits
+    .slice(0, 200)
+    .map(
+      (c) => `
+    <div class="commit-list-item ${c.hash === selectedHash ? 'selected' : ''}"
+         onclick="selectCommit('${c.hash}')">
+      <div class="dot" style="background:${LANE_COLORS[c.lane % LANE_COLORS.length]}"></div>
+      <div class="info">
+        <div class="msg">${esc(c.subject)}</div>
+        <div class="sub">${esc(c.shortHash)} · ${esc(c.authorName)} · ${timeAgo(c.date)}</div>
+      </div>
+    </div>
+  `
+    )
+    .join('');
+}
+
+// ─── Branch filter chips ───
+function renderBranchFilters() {
+  if (!data) return;
+  const el = document.getElementById('branchFilters');
+  const locals = data.branches.filter((b) => !b.name.startsWith('origin/'));
+  el.innerHTML = locals
+    .map((b, i) => {
+      const active = activeBranches.has(b.name) ? 'active' : '';
+      const color = LANE_COLORS[i % LANE_COLORS.length];
+      return `<span class="branch-chip ${active}" style="color:${color}"
+                    onclick="toggleBranch('${b.name}')">${b.name}</span>`;
+    })
+    .join('');
+}
+
+window.toggleBranch = function (name) {
+  if (activeBranches.has(name)) activeBranches.delete(name);
+  else activeBranches.add(name);
+  renderBranchFilters();
+  draw();
+  renderCommitList();
+};
+
+// ─── Controls ───
+document.getElementById('btnFit').addEventListener('click', fitToView);
+document.getElementById('btnZoomIn').addEventListener('click', () => {
+  scale = Math.min(3, scale * 1.2);
+  draw();
+  drawMinimap();
+});
+document.getElementById('btnZoomOut').addEventListener('click', () => {
+  scale = Math.max(0.2, scale / 1.2);
+  draw();
+  drawMinimap();
+});
+document.getElementById('btnRefresh').addEventListener('click', fetchData);
+document.getElementById('btnToggleSidebar').addEventListener('click', () => {
+  sidebar.classList.toggle('collapsed');
+  setTimeout(() => { draw(); drawMinimap(); }, 250);
+});
+document.getElementById('searchInput').addEventListener('input', (e) => {
+  search = e.target.value;
+  draw();
+  renderCommitList();
+});
+
+function fitToView() {
+  if (!layoutData || layoutData.commits.length === 0) return;
+  const totalH = layoutData.commits.length * ROW_H + GRAPH_PAD_TOP * 2;
+  const totalW = (layoutData.maxLane + 2) * LANE_W + GRAPH_PAD_LEFT * 2 + 800;
+  const w = container.clientWidth;
+  const h = container.clientHeight;
+  scale = Math.min(w / totalW, h / totalH, 1.5);
+  tx = 10;
+  ty = 10;
+  draw();
+  drawMinimap();
+}
+
+// ─── Auto-refresh ───
+let refreshTimer = null;
+function setupRefresh() {
+  clearInterval(refreshTimer);
+  const secs = parseInt(document.getElementById('refreshInterval').value);
+  if (secs > 0) {
+    refreshTimer = setInterval(fetchData, secs * 1000);
+  }
+}
+document.getElementById('refreshInterval').addEventListener('change', setupRefresh);
+
+// ─── Resize ───
+window.addEventListener('resize', () => {
+  draw();
+  drawMinimap();
+});
+
+// ─── Helpers ───
+function truncate(str, n) {
+  return str.length > n ? str.slice(0, n - 1) + '...' : str;
+}
+
+function esc(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function timeAgo(dateStr) {
+  const now = Date.now();
+  const d = new Date(dateStr).getTime();
+  const sec = Math.floor((now - d) / 1000);
+  if (sec < 60) return 'just now';
+  if (sec < 3600) return Math.floor(sec / 60) + 'm ago';
+  if (sec < 86400) return Math.floor(sec / 3600) + 'h ago';
+  if (sec < 604800) return Math.floor(sec / 86400) + 'd ago';
+  return new Date(dateStr).toLocaleDateString();
+}
+
+// Make selectCommit global for inline onclick
+window.selectCommit = selectCommit;
+
+// ─── Init ───
+fetchData();
+setupRefresh();
+</script>
+</body>
+</html>
