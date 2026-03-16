@@ -175,6 +175,9 @@ export function switchActiveSketch(sketchId) {
 
   _notify();
 
+  // Signal that active sketch data changed so cockpit/completion/session-tracker update
+  window.menuEvents?.emit('sketch:changed');
+
   if (typeof window.showToast === 'function') {
     window.showToast(t('projects.canvas.switchedTo') + ' ' + (target.name || sketchId.slice(-6)));
   }
