@@ -414,3 +414,7 @@ adb reverse tcp:8765 tcp:8765                                # Forward mock TSC3
 | Mock TSC3 HTTP | HTTP | 3001 | Control API + Web UI |
 | Chrome CDP | TCP | 9222 | Phone debugging (via ADB forward) |
 | GNSS WiFi TCP | TCP | 5017 | Trimble receiver default |
+
+## Knowledge Base
+
+For a complete catalog of every object, function, button, layout, and DOM element in the app, see [`my_knowledge.md`](./my_knowledge.md). It contains ~2000+ objects organized by module with exact code references, usage patterns, and related objects.
