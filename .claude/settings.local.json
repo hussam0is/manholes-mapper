@@ -74,6 +74,16 @@
   ],
   "hooks": {
     "PreToolUse": [],
-    "PostToolUse": []
+    "PostToolUse": [
+      {
+        "matcher": "mcp__clickup__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/clickup-voice-notify.sh"
+          }
+        ]
+      }
+    ]
   }
 }

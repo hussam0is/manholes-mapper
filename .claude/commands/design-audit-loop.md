@@ -51,6 +51,57 @@ This is the PREFERRED approach when the user's system Chrome is running or when 
 
 ---
 
+## ClickUp Integration
+
+**All design audit issues of severity CRITICAL or HIGH must be tracked in ClickUp.** Use the ClickUp MCP tools to create tasks and update their status as issues move through the audit loop.
+
+### ClickUp Reference
+
+| Item | Value |
+|------|-------|
+| **List ID** | `901815260471` |
+| **MCP Tools** | `mcp__clickup__get_tasks`, `mcp__clickup__create_task`, `mcp__clickup__update_task` |
+
+### Available MCP Tools
+
+| Tool | Purpose |
+|------|---------|
+| `mcp__clickup__get_tasks` | Get tasks from a list (use List ID `901815260471`) |
+| `mcp__clickup__create_task` | Create a new task in a list |
+| `mcp__clickup__update_task` | Update task status, description, assignees, etc. |
+
+### Task Naming Convention
+
+Prefix design audit tasks with `UPGRADE:` (for design/UX improvements) or `BUG:` (for visual bugs):
+- `UPGRADE: improve mobile canvas toolbar touch targets`
+- `BUG: dark mode contrast issue on node panel`
+- `UPGRADE: admin panel information hierarchy`
+
+### Status Flow
+
+| Phase | ClickUp Status | When |
+|-------|---------------|------|
+| Phase 2 (Track) | `backlog` | Issue identified, task created |
+| Phase 3 (Fix) | `in progress` | Fix agent starts working |
+| Phase 3 (Done) | `success in dev` | Fix committed and pushed to dev |
+| Phase 4/5 (Test) | `Testing` | Verification in progress |
+| Phase 6 (Pass) | `Closed` | Fix verified on Playwright + phone |
+| Phase 6 (Fail) | `in progress` | Test failed, needs re-fix |
+
+### When to Use ClickUp
+
+1. **Phase 2** — After writing ISSUES.md, search ClickUp for existing tasks matching your issues (`mcp__clickup__get_tasks`). If a matching task exists, update it. If not, create a new task for each CRITICAL or HIGH issue.
+2. **Phase 3** — Before spawning the fix agent, update all relevant ClickUp tasks to `in progress`.
+3. **Phase 3 completion** — After fixes are committed, update tasks to `success in dev`. Add the commit SHA in the task description.
+4. **Phase 4/5** — After spawning test agents, update tasks to `Testing`.
+5. **Phase 6** — If tests pass, update tasks to `Closed`. If tests fail, update back to `in progress` with a note on what failed.
+
+### MEDIUM/LOW Issues
+
+MEDIUM and LOW issues do NOT need individual ClickUp tasks. They are tracked only in `ISSUES.md`. If a MEDIUM issue persists across 2+ audit iterations, escalate it to a ClickUp task.
+
+---
+
 ## Folder Structure
 
 Each run creates a date-stamped folder:
@@ -469,17 +520,69 @@ Append new issues to `app_state_YYYY-MM-DD/ISSUES.md`. Format:
 - **Fix**: Hide `#debugBar` or remove it entirely; only show in dev mode
 - **Status**: OPEN
 - **Commit**: —
+- **ClickUp**: #task_id (subtask of #parent_id) — backlog
 ```
 
 Mark fixed issues:
 ```markdown
 - **Status**: FIXED
 - **Commit**: abc1234 — "fix: hide debug bar in production"
+- **ClickUp**: #task_id (subtask of #parent_id) — Closed
 ```
+
+### Step 2b — Sync CRITICAL/HIGH issues to ClickUp
+
+After writing ISSUES.md, sync CRITICAL and HIGH issues to ClickUp:
+
+1. **Fetch existing tasks** — Use `mcp__clickup__get_tasks` with list ID `901815260471` to get ALL current tasks. Review both task names and their subtasks.
+
+2. **For each CRITICAL/HIGH issue, decide: subtask vs. standalone task vs. update**
+
+   **Check for parent task fit (subtask):** Look at the existing tasks and determine if the new issue logically belongs as a subtask of an existing parent. Use these heuristics:
+   - **Same UI area** — e.g., issue "touch targets too small on node panel" fits under a parent like "UPGRADE: node/edge panel improvements"
+   - **Same feature scope** — e.g., issue "dark mode contrast on admin panel" fits under "UPGRADE: dark mode fixes" or "UPGRADE: admin panel"
+   - **Related bug cluster** — multiple small bugs in the same screen area should be subtasks of one umbrella task
+
+   If a parent task fits → create a **subtask** using `mcp__clickup__create_task` with the `parent` parameter set to the parent task ID:
+   ```
+   mcp__clickup__create_task({
+     list_id: "901815260471",
+     name: "BUG: [specific issue]",
+     parent: "PARENT_TASK_ID",
+     description: "...",
+     status: "backlog",
+     priority: 1 or 2
+   })
+   ```
+
+   **Check for exact match (update):** If an existing task or subtask already describes this exact issue, use `mcp__clickup__update_task` to add the new audit findings to its description. Do NOT create a duplicate.
+
+   **No match (standalone task):** If no parent task fits and no existing task matches, create a new standalone task:
+   ```
+   mcp__clickup__create_task({
+     list_id: "901815260471",
+     name: "UPGRADE: [issue title]" or "BUG: [issue title]",
+     description: "Severity, screenshot reference, affected files, planned fix",
+     status: "backlog",
+     priority: 1 (urgent) for CRITICAL, 2 (high) for HIGH
+   })
+   ```
+
+3. **Record ClickUp task IDs** in ISSUES.md — Add `- **ClickUp**: #task_id (subtask of #parent_id)` or `- **ClickUp**: #task_id` to each synced issue.
 
 ---
 
 ## Phase 3: Spawn Fix Agent
+
+### Step 3a — Update ClickUp tasks to "in progress"
+
+Before spawning the fix agent, update all ClickUp tasks for the issues being fixed:
+```
+mcp__clickup__update_task({ task_id: "TASK_ID", status: "in progress" })
+```
+Do this for each CRITICAL/HIGH issue that has a ClickUp task ID recorded in ISSUES.md.
+
+### Step 3b — Spawn fix agent
 
 After collecting issues, spawn a `codesmith-engineer` agent via the **Task tool** (`subagent_type: "codesmith-engineer"`).
 
@@ -563,11 +666,34 @@ HIGH:
 
 **Batch size**: Pick top 3-5 issues per iteration (don't overload the fix agent).
 
+### Step 3c — Update ClickUp tasks to "success in dev"
+
+After the fix agent completes and pushes commits, update each ClickUp task:
+```
+mcp__clickup__update_task({
+  task_id: "TASK_ID",
+  status: "success in dev",
+  description: "Fixed in commit [SHA]. [original description]"
+})
+```
+Also update ISSUES.md with the commit SHA and ClickUp status.
+
 ---
 
 ## Phase 4: Spawn Test Agent
 
-After the fix agent pushes to `dev`, wait ~2 minutes for Vercel to deploy, then spawn a `general-purpose` agent via the **Task tool** (`subagent_type: "general-purpose"`).
+After the fix agent pushes to `dev`, wait ~2 minutes for Vercel to deploy.
+
+### Step 4a — Update ClickUp tasks to "Testing"
+
+Before spawning the test agent, update all relevant ClickUp tasks:
+```
+mcp__clickup__update_task({ task_id: "TASK_ID", status: "Testing" })
+```
+
+### Step 4b — Spawn test agent
+
+Spawn a `general-purpose` agent via the **Task tool** (`subagent_type: "general-purpose"`).
 
 **IMPORTANT**: The Phase 0 research agent MUST have fully completed and returned before spawning this agent. Both use Playwright MCP which is a singleton — concurrent access causes browser conflicts.
 
@@ -725,13 +851,16 @@ For each fix:
 
 After each full iteration:
 1. Update `app_state_YYYY-MM-DD/ISSUES.md` with fix status and commit SHAs
-2. Update the `## Audit Focus` section in `workflow_log.md` with results
-3. Present the user with the remaining top improvement areas from Phase 0 (that weren't picked yet)
-4. If the user picks another area → run Phase 1–5 again on the same screenshots but focused on the new area
-5. If all areas addressed → re-run Phase 0 to capture fresh screenshots (post-fix state) and start a new iteration
+2. **Update ClickUp tasks** — Close verified tasks, reopen failed ones:
+   - Tests PASSED → `mcp__clickup__update_task({ task_id: "TASK_ID", status: "Closed" })`
+   - Tests FAILED → `mcp__clickup__update_task({ task_id: "TASK_ID", status: "in progress" })` with a note on what failed
+3. Update the `## Audit Focus` section in `workflow_log.md` with results
+4. Present the user with the remaining top improvement areas from Phase 0 (that weren't picked yet)
+5. If the user picks another area → run Phase 1–5 again on the same screenshots but focused on the new area
+6. If all areas addressed → re-run Phase 0 to capture fresh screenshots (post-fix state) and start a new iteration
 
 ### Loop termination conditions
-- All CRITICAL and HIGH issues are FIXED
+- All CRITICAL and HIGH issues are FIXED (and their ClickUp tasks are `Closed`)
 - User explicitly ends the loop
 - User has cycled through all improvement areas and is satisfied
 
@@ -820,12 +949,12 @@ At the end of each iteration, produce a report:
 - [One-line summary of each workflow's state: smooth / needs work / broken]
 
 ### Focus Area Issues Fixed
-1. ✅ [Issue title] — commit abc1234
-2. ✅ [Issue title] — commit def5678
+1. ✅ [Issue title] — commit abc1234 — ClickUp #task_id Closed
+2. ✅ [Issue title] — commit def5678 — ClickUp #task_id Closed
 
 ### Issues Open (Next Iteration)
-1. 🔴 CRITICAL — [Issue title]
-2. 🟠 HIGH — [Issue title]
+1. 🔴 CRITICAL — [Issue title] — ClickUp #task_id (in progress)
+2. 🟠 HIGH — [Issue title] — ClickUp #task_id (in progress)
 
 ### Remaining Improvement Areas
 1. [Area not yet addressed]

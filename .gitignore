@@ -50,3 +50,12 @@ update-vercel-env.sh
 
 # App design reference screenshots (local only)
 current_app_design/
+
+# Claude Code local-only artifacts
+.claude/.watchdog/
+.claude/worktrees/
+.claude/settings.local.json.bak
+.playwright-user-data/
+app_state_*/
+screenshots/
+manholes-mapper-god-agent/

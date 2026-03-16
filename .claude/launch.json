@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dev",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["C:/Users/murjan.a/AppData/Roaming/npm/node_modules/vercel/dist/vc.js", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "vite",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["node_modules/vite/bin/vite.js", "--port", "5173"],
+      "port": 5173
+    }
+  ]
+}
