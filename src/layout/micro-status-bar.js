@@ -63,8 +63,21 @@ export function initMicroStatusBar() {
     });
   });
 
-  // Start update loop
-  updateInterval = setInterval(updateStatusBar, 1500);
+  // Subscribe to GNSS events for immediate GPS updates
+  const gnss = window.__gnssState || window.gnssState;
+  if (gnss && typeof gnss.on === 'function') {
+    gnss.on('position', updateGPS);
+    gnss.on('connection', updateGPS);
+  }
+
+  // Use a slower fallback interval for sync/health/session (no events available)
+  updateInterval = setInterval(() => {
+    updateSync();
+    updateHealth();
+    updateSession();
+  }, 3000);
+
+  // Initial full update
   updateStatusBar();
 }
 

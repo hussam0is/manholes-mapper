@@ -246,8 +246,15 @@ function wireGPSCapture() {
     }
   };
 
-  // Poll GNSS state
-  setInterval(updateCaptureVisibility, 1000);
+  // Listen for GNSS events instead of polling
+  const gnss = window.__gnssState || window.gnssState;
+  if (gnss && typeof gnss.on === 'function') {
+    gnss.on('position', updateCaptureVisibility);
+    gnss.on('connection', updateCaptureVisibility);
+  } else {
+    // Fallback: poll if gnss not yet available
+    setInterval(updateCaptureVisibility, 1000);
+  }
 }
 
 /**
@@ -308,6 +315,16 @@ function delegate(newId, origId) {
   if (newBtn && origBtn) {
     newBtn.addEventListener('click', () => origBtn.click());
   }
+}
+
+/**
+ * Tear down the unified toolbar and clean up event listeners
+ */
+export function destroyUnifiedToolbar() {
+  toolbarEl?.remove();
+  toolbarEl = null;
+  flyoutEl = null;
+  flyoutOpen = false;
 }
 
 /**

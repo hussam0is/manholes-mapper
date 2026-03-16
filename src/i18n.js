@@ -958,6 +958,13 @@ export const i18n = {
         allIssuesResolved: 'כל הבעיות נפתרו — שרטוט נקי',
         nodeMilestone: (n) => `${n} שוחות מופו — משמרת חזקה`,
       },
+      streak: 'רצף',
+    },
+    sidebar: {
+      details: 'פרטים',
+      status: 'סטטוס',
+      layers: 'שכבות',
+      sketches: 'שרטוטים',
     },
     settings: {
       darkMode: 'מצב כהה',
@@ -2128,6 +2135,13 @@ export const i18n = {
         allIssuesResolved: 'All issues resolved — sketch is clean',
         nodeMilestone: (n) => `${n} nodes mapped — strong session`,
       },
+      streak: 'Streak',
+    },
+    sidebar: {
+      details: 'Details',
+      status: 'Status',
+      layers: 'Layers',
+      sketches: 'Sketches',
     },
     settings: {
       darkMode: 'Dark mode',

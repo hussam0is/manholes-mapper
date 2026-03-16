@@ -7,11 +7,12 @@
  * The unified layout is always active (no feature flag needed after rollout).
  */
 
-import { initUnifiedSidebar } from './unified-sidebar.js';
-import { initUnifiedToolbar } from './unified-toolbar.js';
-import { initMicroStatusBar } from './micro-status-bar.js';
+import { initUnifiedSidebar, destroyUnifiedSidebar } from './unified-sidebar.js';
+import { initUnifiedToolbar, destroyUnifiedToolbar } from './unified-toolbar.js';
+import { initMicroStatusBar, destroyMicroStatusBar } from './micro-status-bar.js';
 
 let initialized = false;
+let resizeHandler = null;
 
 /**
  * Initialize the unified layout system.
@@ -36,6 +37,30 @@ export function initUnifiedLayout() {
 }
 
 /**
+ * Tear down the entire unified layout and restore original UI
+ */
+export function destroyUnifiedLayout() {
+  if (!initialized) return;
+
+  destroyMicroStatusBar();
+  destroyUnifiedSidebar();
+  destroyUnifiedToolbar();
+
+  if (resizeHandler) {
+    window.removeEventListener('resize', resizeHandler);
+    resizeHandler = null;
+  }
+
+  const container = document.getElementById('canvasContainer');
+  if (container) container.style.paddingBottom = '';
+
+  document.body.classList.remove('unified-layout');
+  initialized = false;
+
+  console.debug('[Layout] Unified layout destroyed');
+}
+
+/**
  * Adjust canvas container bottom padding so canvas doesn't render under the toolbar
  */
 function adjustCanvasForToolbar() {
@@ -49,6 +74,8 @@ function adjustCanvasForToolbar() {
       container.style.paddingBottom = h + 'px';
     }
   };
+
+  resizeHandler = updatePadding;
 
   // Update on resize
   window.addEventListener('resize', updatePadding);

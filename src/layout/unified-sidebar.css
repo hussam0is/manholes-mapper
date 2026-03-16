@@ -380,6 +380,7 @@ body.unified-layout .unified-sidebar:not(.collapsed) ~ .unified-sidebar-toggle {
     left: 0;
     right: 0;
     width: 100%;
+    height: 50vh;
     max-height: 55vh;
     border-inline-start: none;
     border-top: 1px solid var(--color-border, #e2e8f0);
