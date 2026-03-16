@@ -271,6 +271,70 @@ export const EDGE_ENGINEERING_STATUS = [
   { code: 4, label: 'מבוטל' },
 ];
 
+/**
+ * English translations for Hebrew option labels.
+ * Used by getOptionLabel() to display the correct language at render time.
+ * The Hebrew labels remain as data keys for storage/API compatibility.
+ */
+const LABEL_EN = {
+  'לא ידוע': 'Unknown',
+  'הנדסית': 'Engineering',
+  'סכימטית': 'Schematic',
+  'פלדה מגולוונת': 'Galvanized steel',
+  'פלדה עם ציפוי פנים וחוץ': 'Steel with internal/external coating',
+  'פלדה ללא ציפוי': 'Uncoated steel',
+  'פי. וי. סי. לפי ת"י 884': 'PVC per SI 884',
+  'פי. וי. סי. לחץ': 'PVC pressure',
+  'פיברגלס': 'Fiberglass',
+  'בטון': 'Concrete',
+  'אסבסט צמנט': 'Asbestos cement',
+  'פקסגול - פוליאטילן': 'Pexgol - Polyethylene',
+  'יציקת ברזל': 'Cast iron',
+  'פלסטיק - שוחת חופית': 'Plastic - coastal manhole',
+  'שוחת PVC': 'PVC manhole',
+  'אבו': 'ABO',
+  'מדרגות ברזל חשוף': 'Exposed iron steps',
+  'מדרגות ברזל מצופה PVC': 'PVC-coated iron steps',
+  'סולם פלדה': 'Steel ladder',
+  'אין אמצעי ירידה': 'No descent means',
+  'מדרגות PVC מובנות': 'Built-in PVC steps',
+  'פעיל': 'Active',
+  'לא פעיל': 'Inactive',
+  'מתוכנן': 'Planned',
+  'מבוטל': 'Cancelled',
+  'תקין': 'Good',
+  'אביזר שבור': 'Broken accessory',
+  'לא ניתן לפתיחה': 'Cannot open',
+  'שוחה מכוסה': 'Covered manhole',
+  'שוחת ביוב - ללא גישה': 'Sewer manhole - no access',
+  'שוחה מלאה חול / זבל': 'Manhole full of sand/debris',
+  'מספל גבוה (סתומה)': 'High level (blocked)',
+  'מכסה שבור/לא תקין': 'Broken/faulty cover',
+  'שוחה יבשה/קו יבש': 'Dry manhole/dry line',
+  'ללא מכסה': 'No cover',
+  'לא מחובר': 'Not connected',
+  'הכנה': 'Preparation',
+  'בית נעול': 'Locked house',
+  'אחר': 'Other',
+  'קו ראשי': 'Main line',
+  'קו סניקה': 'Drainage line',
+  'קו משני': 'Secondary line',
+};
+
+/**
+ * Get the display label for an option, translated to the current UI language.
+ * @param {string|{label: string}} opt — option object or raw label string
+ * @returns {string} display label in the current language
+ */
+export function getOptionLabel(opt) {
+  const label = typeof opt === 'string' ? opt : opt?.label;
+  if (!label) return '';
+  if (document.documentElement.lang === 'en' && LABEL_EN[label]) {
+    return LABEL_EN[label];
+  }
+  return label;
+}
+
 // ============================================
 // Input Flow Configuration
 // ============================================

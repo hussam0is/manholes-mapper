@@ -97,6 +97,46 @@ export function initUnifiedSidebar() {
 
   // ── Sketches tab visibility (only in project-canvas mode) ──
   updateSketchesTabVisibility();
+
+  // ── Re-translate on language change ──
+  document.addEventListener('appLanguageChanged', retranslateSidebar);
+}
+
+/**
+ * Re-translate all sidebar text when language changes
+ */
+function retranslateSidebar() {
+  if (!sidebarEl) return;
+  const t = window.t || ((k) => k);
+
+  const labels = {
+    'sidebar.details': document.documentElement.lang === 'he' ? 'פרטים' : 'Details',
+    'sidebar.status': document.documentElement.lang === 'he' ? 'סטטוס' : 'Status',
+    'sidebar.layers': document.documentElement.lang === 'he' ? 'שכבות' : 'Layers',
+    'sidebar.sketches': document.documentElement.lang === 'he' ? 'שרטוטים' : 'Sketches',
+  };
+  const resolve = (k) => {
+    const val = t(k);
+    return (val && val !== k) ? val : labels[k] || k;
+  };
+
+  // Update tab labels
+  TAB_CONFIG.forEach(tab => {
+    const btn = sidebarEl.querySelector(`[data-tab="${tab.id}"] .unified-sidebar__tab-label`);
+    if (btn) btn.textContent = resolve(tab.labelKey);
+  });
+
+  // Update collapse button icon for RTL
+  const collapseBtn = sidebarEl.querySelector('.unified-sidebar__collapse-btn .material-icons');
+  if (collapseBtn) {
+    const isRTL = document.documentElement.dir === 'rtl';
+    collapseBtn.textContent = isRTL ? 'chevron_left' : 'chevron_right';
+  }
+
+  // Rebuild status and layers tab content with new translations
+  buildStatusTab();
+  buildLayersTab();
+  syncLayerControls();
 }
 
 /**

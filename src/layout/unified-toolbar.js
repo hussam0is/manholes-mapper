@@ -106,6 +106,57 @@ export function initUnifiedToolbar() {
   wireFlyout();
   syncUndoRedoState();
   syncModeState();
+
+  // Re-translate on language change
+  document.addEventListener('appLanguageChanged', retranslateToolbar);
+}
+
+/**
+ * Re-translate toolbar labels/titles when language changes
+ */
+function retranslateToolbar() {
+  if (!toolbarEl) return;
+  const t = window.t || ((k) => k);
+
+  const map = [
+    { id: 'utNodeBtn', labelKey: 'modeNode', fallback: 'Node' },
+    { id: 'utEdgeBtn', labelKey: 'modeEdge', fallback: 'Edge' },
+    { id: 'utLocationBtn', labelKey: 'location.myLocation', fallback: 'GPS' },
+    { id: 'utUndoBtn', titleKey: 'undo.title', fallback: 'Undo' },
+    { id: 'utRedoBtn', titleKey: 'redo.title', fallback: 'Redo' },
+    { id: 'utZoomFitBtn', titleKey: 'zoomToFit', fallback: 'Zoom to fit' },
+    { id: 'utZoomInBtn', titleKey: 'zoomIn', fallback: 'Zoom in' },
+    { id: 'utZoomOutBtn', titleKey: 'zoomOut', fallback: 'Zoom out' },
+    { id: 'utCaptureBtn', titleKey: 'gpsCapture.takeMeasure', fallback: 'Take Measure' },
+  ];
+
+  for (const item of map) {
+    const el = document.getElementById(item.id);
+    if (!el) continue;
+    const text = t(item.labelKey || item.titleKey) || item.fallback;
+    if (item.titleKey) el.title = text;
+    if (item.labelKey) {
+      el.title = text;
+      const label = el.querySelector('.ut-btn__label');
+      if (label) label.textContent = text;
+    }
+  }
+
+  // Flyout node type buttons
+  const flyoutMap = [
+    { type: 'node', key: 'modeNode', fallback: 'Manhole' },
+    { type: 'home', key: 'modeHome', fallback: 'House' },
+    { type: 'drainage', key: 'modeDrainage', fallback: 'Drainage' },
+    { type: 'issue', key: 'modeIssue', fallback: 'Issue' },
+  ];
+  for (const item of flyoutMap) {
+    const btn = toolbarEl.querySelector(`[data-node-type="${item.type}"]`);
+    if (!btn) continue;
+    const text = t(item.key) || item.fallback;
+    btn.title = text;
+    const label = btn.querySelector('.ut-btn__label');
+    if (label) label.textContent = text;
+  }
 }
 
 /**

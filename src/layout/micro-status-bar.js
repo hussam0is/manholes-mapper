@@ -79,6 +79,11 @@ export function initMicroStatusBar() {
 
   // Initial full update
   updateStatusBar();
+
+  // Re-translate on language change
+  document.addEventListener('appLanguageChanged', () => {
+    updateSync();
+  });
 }
 
 /**

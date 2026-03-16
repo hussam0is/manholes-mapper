@@ -536,6 +536,7 @@ import {
   EDGE_TYPE_SELECTED_COLORS,
   EDGE_ENGINEERING_STATUS,
   NODE_ACCURACY_OPTIONS,
+  getOptionLabel,
 } from '../state/constants.js';
 const NODE_MATERIALS = NODE_MATERIAL_OPTIONS.map(o => o.label);
 const EDGE_MATERIALS = EDGE_MATERIAL_OPTIONS.map(o => o.label);
@@ -6500,7 +6501,7 @@ function buildWizardFieldHTML(node, activeKey, ruleResults, opts) {
       break;
     case 'cover_diameter':
       inputHtml = `<select id="coverDiameterSelect" class="wizard-field-input">
-        ${NODE_COVER_DIAMETERS.map(d => `<option value="${d}" ${String(node.coverDiameter) === d ? 'selected' : ''}>${d}</option>`).join('')}
+        ${NODE_COVER_DIAMETERS.map(d => `<option value="${d}" ${String(node.coverDiameter) === d ? 'selected' : ''}>${getOptionLabel(d)}</option>`).join('')}
       </select>`;
       break;
     case 'access':
@@ -6851,7 +6852,7 @@ function renderDetails() {
     const sortedMaterialOptions = getSortedOptions('nodes', 'material', rawMaterialOptions);
     sortedMaterialOptions.forEach((opt) => {
       const mat = opt.label || opt;
-      materialOptions += `<option value="${escapeHtml(mat)}" ${node.material === mat ? 'selected' : ''}>${escapeHtml(mat)}</option>`;
+      materialOptions += `<option value="${escapeHtml(mat)}" ${node.material === mat ? 'selected' : ''}>${escapeHtml(getOptionLabel(opt))}</option>`;
     });
     // Cover diameter as free integer input
     // Access options with smart sorting
@@ -6859,7 +6860,7 @@ function renderDetails() {
       .filter(o => (o.enabled !== false));
     const sortedAccessOptions = getSortedOptions('nodes', 'access', rawAccessOptions);
     const accessOptions = sortedAccessOptions
-      .map(({ code, label }) => `<option value="${escapeHtml(String(code))}" ${Number(node.access)===Number(code)?'selected':''}>${escapeHtml(label)}</option>`)
+      .map((opt) => `<option value="${escapeHtml(String(opt.code))}" ${Number(node.access)===Number(opt.code)?'selected':''}>${escapeHtml(getOptionLabel(opt))}</option>`)
       .join('');
     
     // Accuracy level options with smart sorting
@@ -6867,7 +6868,7 @@ function renderDetails() {
       .filter(o => (o.enabled !== false));
     const sortedAccuracyOptions = getSortedOptions('nodes', 'accuracy_level', rawAccuracyOptions);
     const accuracyLevelOptions = sortedAccuracyOptions
-      .map(({ code, label }) => `<option value="${escapeHtml(String(code))}" ${Number(node.accuracyLevel)===Number(code)?'selected':''}>${escapeHtml(label)}</option>`)
+      .map((opt) => `<option value="${escapeHtml(String(opt.code))}" ${Number(node.accuracyLevel)===Number(opt.code)?'selected':''}>${escapeHtml(getOptionLabel(opt))}</option>`)
       .join('');
 
     // Maintenance status options with smart sorting
@@ -6875,7 +6876,7 @@ function renderDetails() {
       .filter(o => (o.enabled !== false));
     const sortedMaintenanceOptions = getSortedOptions('nodes', 'maintenance_status', rawMaintenanceOptions);
     const maintenanceStatusOptions = sortedMaintenanceOptions
-      .map(({ code, label }) => `<option value="${escapeHtml(String(code))}" ${Number(node.maintenanceStatus)===Number(code)?'selected':''}>${escapeHtml(label)}</option>`)
+      .map((opt) => `<option value="${escapeHtml(String(opt.code))}" ${Number(node.maintenanceStatus)===Number(opt.code)?'selected':''}>${escapeHtml(getOptionLabel(opt))}</option>`)
       .join('');
 
     // Node type options: A (default), B (house), C (grey)
@@ -7098,9 +7099,9 @@ function renderDetails() {
     try {
       const connectedEdges = edges.filter((e) => String(e.tail) === String(node.id) || String(e.head) === String(node.id));
       if (connectedEdges.length > 0) {
-        const edgeMaterialOptionLabels = (adminConfig.edges?.options?.material ?? EDGE_MATERIAL_OPTIONS)
-          .filter(o => (o.enabled !== false))
-          .map(o => o.label || o);
+        const edgeMaterialOptionRaw = (adminConfig.edges?.options?.material ?? EDGE_MATERIAL_OPTIONS)
+          .filter(o => (o.enabled !== false));
+        const edgeMaterialOptionLabels = edgeMaterialOptionRaw.map(o => o.label || o);
         const diameterOptions = (adminConfig.edges?.options?.line_diameter ?? EDGE_LINE_DIAMETERS)
           .filter(o => (o.enabled !== false))
           .map(d => ({ code: d.code ?? d, label: d.label ?? d }));
@@ -7134,14 +7135,14 @@ function renderDetails() {
           const engStatusId = `edgeEngStatus_${e.id}`;
           const fallDepthId = `edgeFallDepth_${e.id}`;
           const fallPosId = `edgeFallPosition_${e.id}`;
-          const materialOptions = edgeMaterialOptionLabels.map((m) => `<option value="${escapeHtml(m)}" ${e.material === m ? 'selected' : ''}>${escapeHtml(m)}</option>`).join('');
+          const materialOptions = edgeMaterialOptionRaw.map((o) => { const m = o.label || o; return `<option value="${escapeHtml(m)}" ${e.material === m ? 'selected' : ''}>${escapeHtml(getOptionLabel(o))}</option>`; }).join('');
           const currentDiameterIndex = diameterIndexFromCode(e.line_diameter);
           const edgeTypeOptionsHtml = ceSortedEdgeTypeOptions.map(opt => {
             const et = opt.label || opt;
-            return `<option value="${escapeHtml(et)}" ${e.edge_type === et ? 'selected' : ''}>${escapeHtml(et)}</option>`;
+            return `<option value="${escapeHtml(et)}" ${e.edge_type === et ? 'selected' : ''}>${escapeHtml(getOptionLabel(opt))}</option>`;
           }).join('');
-          const engStatusOptionsHtml = ceSortedEngineeringOptions.map(({code, label}) =>
-            `<option value="${escapeHtml(String(code))}" ${Number(e.engineeringStatus)===Number(code)?'selected':''}>${escapeHtml(label)}</option>`
+          const engStatusOptionsHtml = ceSortedEngineeringOptions.map((opt) =>
+            `<option value="${escapeHtml(String(opt.code))}" ${Number(e.engineeringStatus)===Number(opt.code)?'selected':''}>${escapeHtml(getOptionLabel(opt))}</option>`
           ).join('');
           const fallPosOptionsHtml = ceSortedFallPositionOptions.map(({code, label}) =>
             `<option value="${escapeHtml(String(code))}" ${Number(e.fall_position)===Number(code)?'selected':''}>${escapeHtml(label)}</option>`
@@ -7712,7 +7713,7 @@ function renderDetails() {
     const sortedEdgeMaterialOptions = getSortedOptions('edges', 'material', rawEdgeMaterialOptions);
     sortedEdgeMaterialOptions.forEach((opt) => {
       const m = opt.label || opt;
-      materialOptions += `<option value="${escapeHtml(m)}" ${edge.material === m ? 'selected' : ''}>${escapeHtml(m)}</option>`;
+      materialOptions += `<option value="${escapeHtml(m)}" ${edge.material === m ? 'selected' : ''}>${escapeHtml(getOptionLabel(opt))}</option>`;
     });
 
     // Compute current material code based on label
@@ -7731,14 +7732,14 @@ function renderDetails() {
     const sortedEdgeTypeOptions = getSortedOptions('edges', 'edge_type', rawEdgeTypeOptions);
     sortedEdgeTypeOptions.forEach((opt) => {
       const et = opt.label || opt;
-      edgeTypeOptions += `<option value="${escapeHtml(et)}" ${edge.edge_type === et ? 'selected' : ''}>${escapeHtml(et)}</option>`;
+      edgeTypeOptions += `<option value="${escapeHtml(et)}" ${edge.edge_type === et ? 'selected' : ''}>${escapeHtml(getOptionLabel(opt))}</option>`;
     });
 
     // Engineering status options for edge with smart sorting
     const rawEngineeringOptions = (adminConfig.edges?.options?.engineering_status ?? EDGE_ENGINEERING_STATUS);
     const sortedEngineeringOptions = getSortedOptions('edges', 'engineering_status', rawEngineeringOptions);
     const edgeEngineeringOptions = sortedEngineeringOptions
-      .map(({ code, label }) => `<option value="${escapeHtml(String(code))}" ${Number(edge.engineeringStatus)===Number(code)?'selected':''}>${escapeHtml(label)}</option>`)
+      .map((opt) => `<option value="${escapeHtml(String(opt.code))}" ${Number(edge.engineeringStatus)===Number(opt.code)?'selected':''}>${escapeHtml(getOptionLabel(opt))}</option>`)
       .join('');
 
     // Normalize line diameter options with smart sorting
@@ -9999,6 +10000,8 @@ menuEvents.on('languageChange', ({ value, element }) => {
   });
 
   applyLangToStaticUI();
+  // Update page title
+  document.title = t('appTitle') || 'Manhole Mapper';
   // Dispatch custom event for language change (for floating keyboard and other modules)
   document.dispatchEvent(new Event('appLanguageChanged'));
   // Re-render dynamic lists and details with translated labels
