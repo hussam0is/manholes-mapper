@@ -233,4 +233,4 @@ initAuthMonitor();
  * 
  * Handles authentication state checking and route protection.
  * Works with Better Auth session management.
- */\n
+ */
