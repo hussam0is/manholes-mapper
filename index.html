@@ -297,6 +297,43 @@
         </button>
       </div>
 
+      <!-- Landscape overflow button (⋮ More) — visible only in landscape mode -->
+      <div class="menu-group menu-group--overflow">
+        <button id="landscapeOverflowBtn" class="menu-btn menu-btn--ghost menu-btn--icon-only" title="More" aria-label="More options" aria-haspopup="menu" aria-expanded="false">
+          <span class="material-icons">more_vert</span>
+        </button>
+        <div class="landscape-overflow-dropdown" id="landscapeOverflowDropdown" role="menu">
+          <button class="landscape-overflow-dropdown__item" data-overflow-proxy="langSelect" role="menuitem">
+            <span class="material-icons">language</span>
+            <span data-i18n="language">שפה</span>
+          </button>
+          <button class="landscape-overflow-dropdown__item" data-overflow-proxy="helpBtn" role="menuitem">
+            <span class="material-icons">help_outline</span>
+            <span data-i18n="help">עזרה</span>
+          </button>
+          <button class="landscape-overflow-dropdown__item" data-overflow-proxy="adminBtn" role="menuitem">
+            <span class="material-icons">tune</span>
+            <span data-i18n="admin.manage">ניהול</span>
+          </button>
+          <hr class="landscape-overflow-dropdown__divider" />
+          <div class="landscape-overflow-dropdown__item landscape-overflow-dropdown__item--size">
+            <span class="material-icons">fit_screen</span>
+            <span data-i18n="sizeControls">גודל</span>
+            <div class="landscape-overflow-size-btns">
+              <button data-overflow-proxy="sizeDecreaseBtn" aria-label="Decrease size">
+                <span class="material-icons">remove_circle_outline</span>
+              </button>
+              <button data-overflow-proxy="autoSizeBtn" aria-label="Auto size">
+                <span class="material-icons">fit_screen</span>
+              </button>
+              <button data-overflow-proxy="sizeIncreaseBtn" aria-label="Increase size">
+                <span class="material-icons">add_circle_outline</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- User account button -->
       <div class="menu-group menu-group--user" id="userButtonContainer">
         <div id="authUserButton"></div>

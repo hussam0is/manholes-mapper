@@ -1136,3 +1136,75 @@ function setupLandscapeHeaderAutoHide() {
 }
 
 try { setupLandscapeHeaderAutoHide(); } catch (e) { console.warn('[main-entry] setupLandscapeHeaderAutoHide failed:', e); }
+
+// --- Landscape overflow ⋮ menu ---
+// In landscape mode, language/help/admin/size controls move into an overflow dropdown.
+// The overflow proxy buttons dispatch clicks to the original hidden buttons.
+function setupLandscapeOverflowMenu() {
+  const btn = document.getElementById('landscapeOverflowBtn');
+  const dropdown = document.getElementById('landscapeOverflowDropdown');
+  if (!btn || !dropdown) return;
+
+  let isOpen = false;
+
+  function openOverflow() {
+    isOpen = true;
+    dropdown.classList.add('landscape-overflow-dropdown--open');
+    btn.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeOverflow() {
+    isOpen = false;
+    dropdown.classList.remove('landscape-overflow-dropdown--open');
+    btn.setAttribute('aria-expanded', 'false');
+  }
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (isOpen) closeOverflow(); else openOverflow();
+  });
+
+  document.addEventListener('click', (e) => {
+    if (isOpen && !dropdown.contains(e.target) && e.target !== btn) {
+      closeOverflow();
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isOpen) closeOverflow();
+  });
+
+  // Proxy clicks: overflow items trigger the original buttons
+  dropdown.querySelectorAll('[data-overflow-proxy]').forEach((proxyEl) => {
+    proxyEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const targetId = proxyEl.getAttribute('data-overflow-proxy');
+      const target = document.getElementById(targetId);
+      if (!target) return;
+
+      if (targetId === 'langSelect') {
+        // Toggle language: cycle he↔en
+        const sel = /** @type {HTMLSelectElement} */ (target);
+        sel.value = sel.value === 'he' ? 'en' : 'he';
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+      } else {
+        target.click();
+      }
+      closeOverflow();
+    });
+  });
+}
+
+try { setupLandscapeOverflowMenu(); } catch (e) { console.warn('[main-entry] setupLandscapeOverflowMenu failed:', e); }
+
+// --- Landscape search icon click-to-focus ---
+// In landscape the search input is collapsed (width: 0). Clicking the search icon focuses the input
+// which triggers CSS :focus-within to expand it.
+function setupLandscapeSearchExpand() {
+  const icon = document.querySelector('.menu-group--search .menu-search__icon');
+  const input = document.getElementById('searchNodeInput');
+  if (!icon || !input) return;
+  icon.addEventListener('click', () => input.focus());
+}
+
+try { setupLandscapeSearchExpand(); } catch (e) { console.warn('[main-entry] setupLandscapeSearchExpand failed:', e); }
