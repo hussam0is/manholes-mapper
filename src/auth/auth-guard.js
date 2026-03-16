@@ -176,6 +176,18 @@ export function redirectIfAuthenticated(currentHash) {
  * @returns {Promise<void>}
  */
 export async function refreshSession() {
+  // DEV BYPASS: On localhost, skip real auth and fake a session
+  // so local development can continue when DB/auth is unavailable
+  const isLocalDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  if (isLocalDev) {
+    console.warn('[Auth] DEV BYPASS: Faking session for local development');
+    updateAuthState({
+      session: { id: 'dev-session', expiresAt: new Date(Date.now() + 86400000).toISOString() },
+      user: { id: 'dev-user', name: 'Dev User', email: 'dev@localhost' },
+    });
+    return;
+  }
+
   try {
     const { data, error } = await getCurrentSession();
     if (error) {

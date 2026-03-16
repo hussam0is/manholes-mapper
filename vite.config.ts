@@ -8,7 +8,8 @@ export default defineConfig({
   plugins: [
     react(),
   ],
-  base: '/', 
+  base: '/',
+  cacheDir: process.env.VITE_CACHE_DIR || 'node_modules/.vite',
   build: {
     rollupOptions: {
       output: {
@@ -59,6 +60,17 @@ export default defineConfig({
     // You'll need to manually refresh after code changes when using `npm start`
     // Use `npm run dev` for HMR if you don't need API routes
     hmr: process.env.PORT ? false : undefined,
+    // Proxy /api requests to production when running standalone vite dev
+    proxy: process.env.PORT ? undefined : {
+      '/api': {
+        target: 'https://manholes-mapper.vercel.app',
+        changeOrigin: true,
+        secure: true,
+        headers: {
+          Origin: 'https://manholes-mapper.vercel.app',
+        },
+      },
+    },
   },
   preview: {
     host: true,
