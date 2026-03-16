@@ -998,12 +998,121 @@ function initCollapsibleMobileMenuGroups(menuEl) {
 try { syncAppHeightVar(); } catch (e) { console.warn('[main-entry] syncAppHeightVar failed:', e); }
 try { syncHeaderHeightVar(); } catch (e) { console.warn('[main-entry] syncHeaderHeightVar failed:', e); }
 
+// --- Landscape dual-row header: status row content sync ---
+// Mirrors sketch name, sync status, and save status from the main header
+// into the non-interactive landscape status row (Row 1 of dual-row layout).
+function setupLandscapeStatusRow() {
+  const statusRowSketchName = document.getElementById('statusRowSketchName');
+  const statusRowSync = document.getElementById('statusRowSync');
+  const statusRowSyncLabel = document.getElementById('statusRowSyncLabel');
+  const statusRowSave = document.getElementById('statusRowSave');
+  const headerSketchName = document.getElementById('sketchNameDisplay');
+  const headerSyncIndicator = document.getElementById('headerSyncIndicator');
+
+  if (!statusRowSketchName || !headerSketchName) return;
+
+  /** Sync sketch name from header to status row */
+  function syncSketchName() {
+    const name = headerSketchName.textContent || '';
+    statusRowSketchName.textContent = name;
+    // Hide the sketch name separator when empty
+    const sep = statusRowSketchName.nextElementSibling;
+    if (sep && sep.classList.contains('landscape-status-row__separator')) {
+      sep.style.display = name ? '' : 'none';
+    }
+  }
+
+  /** Sync sync-status icon + label from header indicator */
+  function syncSyncStatus() {
+    if (!headerSyncIndicator || !statusRowSync) return;
+    const syncIcon = statusRowSync.querySelector('.landscape-status-row__sync-icon');
+    const headerIcon = headerSyncIndicator.querySelector('.header-sync-indicator__icon');
+
+    if (headerSyncIndicator.style.display === 'none') {
+      statusRowSync.style.display = 'none';
+      return;
+    }
+    statusRowSync.style.display = '';
+
+    // Mirror icon text
+    if (syncIcon && headerIcon) {
+      syncIcon.textContent = headerIcon.textContent;
+    }
+
+    // Determine label from sync state class
+    if (statusRowSyncLabel) {
+      const t = window.t || ((k) => k);
+      if (headerSyncIndicator.classList.contains('header-sync-indicator--syncing')) {
+        statusRowSyncLabel.textContent = t('sync.syncing') || 'מסנכרן...';
+        if (syncIcon) syncIcon.style.color = 'var(--color-primary)';
+      } else if (headerSyncIndicator.classList.contains('header-sync-indicator--synced')) {
+        statusRowSyncLabel.textContent = t('sync.synced') || 'מסונכרן';
+        if (syncIcon) syncIcon.style.color = 'var(--color-success)';
+      } else if (headerSyncIndicator.classList.contains('header-sync-indicator--error')) {
+        statusRowSyncLabel.textContent = t('sync.error') || 'שגיאה';
+        if (syncIcon) syncIcon.style.color = 'var(--color-danger)';
+      } else if (headerSyncIndicator.classList.contains('header-sync-indicator--offline')) {
+        statusRowSyncLabel.textContent = t('sync.offline') || 'לא מקוון';
+        if (syncIcon) syncIcon.style.color = 'var(--color-muted)';
+      } else {
+        statusRowSyncLabel.textContent = '';
+      }
+    }
+  }
+
+  /** Sync save/autosave status */
+  function syncSaveStatus() {
+    if (!statusRowSave) return;
+    const autosaveToggle = document.getElementById('autosaveToggle');
+    const t = window.t || ((k) => k);
+    if (autosaveToggle && autosaveToggle.checked) {
+      statusRowSave.textContent = t('autosave') || 'שמירה אוטומטית';
+    } else {
+      statusRowSave.textContent = '';
+    }
+  }
+
+  // Initial sync
+  syncSketchName();
+  syncSyncStatus();
+  syncSaveStatus();
+
+  // Observe sketch name changes
+  if (typeof MutationObserver !== 'undefined') {
+    const nameMo = new MutationObserver(syncSketchName);
+    nameMo.observe(headerSketchName, { childList: true, characterData: true, subtree: true });
+
+    // Observe sync indicator changes
+    if (headerSyncIndicator) {
+      const syncMo = new MutationObserver(syncSyncStatus);
+      syncMo.observe(headerSyncIndicator, { attributes: true, attributeFilter: ['class', 'style'], childList: true, subtree: true });
+    }
+  }
+
+  // Observe autosave toggle changes
+  const autosaveToggle = document.getElementById('autosaveToggle');
+  if (autosaveToggle) {
+    autosaveToggle.addEventListener('change', syncSaveStatus);
+  }
+
+  // Periodic fallback sync (every 2s) to catch programmatic updates
+  setInterval(() => {
+    syncSketchName();
+    syncSyncStatus();
+    syncSaveStatus();
+  }, 2000);
+}
+
+try { setupLandscapeStatusRow(); } catch (e) { console.warn('[main-entry] setupLandscapeStatusRow failed:', e); }
+
 // --- Landscape header auto-hide ---
-// In landscape mobile mode, the header auto-hides during canvas interaction to
-// maximise vertical drawing space, then reappears on idle or top-edge hover.
+// In landscape mobile mode, the dual-row header (status row + action row) auto-hides
+// during canvas interaction to maximise vertical drawing space, then reappears on
+// idle or top-edge hover.
 function setupLandscapeHeaderAutoHide() {
   const header = document.querySelector('header');
   const canvas = document.getElementById('graphCanvas');
+  const statusRow = document.getElementById('landscapeStatusRow');
   if (!header || !canvas) return;
 
   let hideTimer = null;
@@ -1025,14 +1134,19 @@ function setupLandscapeHeaderAutoHide() {
     }
   }
 
-  /** Sync --header-h based on current header visibility */
+  /** Sync --header-h based on current header visibility.
+   *  In landscape dual-row mode, total = status row (22px) + action header height.
+   *  When hidden, --header-h = 0 so canvas elements slide to top edge. */
   function syncHeaderHeight() {
     if (header.classList.contains('header--hidden')) {
       document.documentElement.style.setProperty('--header-h', '0px');
       document.body.classList.add('landscape-header-hidden');
     } else {
-      const h = Math.round(header.getBoundingClientRect().height);
-      document.documentElement.style.setProperty('--header-h', h + 'px');
+      const headerH = Math.round(header.getBoundingClientRect().height);
+      // In landscape, add the status row height (22px) to the action header height
+      const statusRowH = (isLandscape && statusRow) ? Math.round(statusRow.getBoundingClientRect().height) : 0;
+      const totalH = headerH + statusRowH;
+      document.documentElement.style.setProperty('--header-h', totalH + 'px');
       document.body.classList.remove('landscape-header-hidden');
     }
   }

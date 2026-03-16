@@ -36,6 +36,20 @@
     <span class="material-icons" aria-hidden="true">expand_more</span>
   </div>
 
+  <!-- Landscape status row: non-interactive info strip (22px) above action header -->
+  <div id="landscapeStatusRow" class="landscape-status-row" aria-hidden="true">
+    <span class="material-icons landscape-status-row__icon">description</span>
+    <span id="statusRowSketchName" class="landscape-status-row__item"></span>
+    <span class="landscape-status-row__separator">&middot;</span>
+    <span id="statusRowSync" class="landscape-status-row__item">
+      <span class="material-icons landscape-status-row__sync-icon">cloud_done</span>
+      <span id="statusRowSyncLabel"></span>
+    </span>
+    <span class="landscape-status-row__separator">&middot;</span>
+    <span id="statusRowSave" class="landscape-status-row__item"></span>
+    <span class="landscape-status-row__brand">ממפה שוחות geopoint</span>
+  </div>
+
   <header class="soft-blue-header app-header">
     <!-- Brand section -->
     <div id="brand" class="menu-brand">

@@ -13312,24 +13312,93 @@ button:focus-visible,
    Uses max-height + orientation to avoid affecting tablets and desktops.
 */
 
-/* --- Landscape: Compact Header (Glass Morphism + Auto-Hide) --- */
+/* --- Landscape: Dual-Row Compact Header (Layout 10) ---
+   Row 1 (22px): Non-interactive status strip — sketch name, sync, save status, brand
+   Row 2 (34px): Interactive action bar — avatar, save, search, menu, projects, sketches, overflow
+   Total: 56px, glass morphism, auto-hides on canvas interaction
+*/
+
+/* Status row: hidden by default (only visible in landscape) */
+.landscape-status-row {
+  display: none;
+}
+
 @media (max-height: 450px) and (orientation: landscape) {
   :root {
-    --header-h: 36px;
-    --header-h-mobile: 36px;
+    --header-h: 56px;       /* 22px status + 34px action */
+    --header-h-mobile: 56px;
   }
 
-  header {
-    padding: 0.25rem 0.75rem;
-  }
-
-  /* --- Glass morphism header: floats over canvas --- */
-  .app-header {
+  /* --- Row 1: Status strip (22px, non-interactive) --- */
+  .landscape-status-row {
+    display: flex;
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    background: rgba(255, 255, 255, 0.7);
+    height: 22px;
+    align-items: center;
+    padding: 0 12px;
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.5);
+    background: rgba(248, 250, 252, 0.85);
+    backdrop-filter: saturate(140%) blur(10px);
+    -webkit-backdrop-filter: saturate(140%) blur(10px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+    z-index: 201; /* above header (200) */
+    gap: 6px;
+    direction: rtl;
+    /* Completely non-interactive: zero accidental taps */
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .landscape-status-row__icon {
+    font-size: 13px;
+    opacity: 0.5;
+  }
+
+  .landscape-status-row__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+  }
+
+  .landscape-status-row__sync-icon {
+    font-size: 12px;
+    opacity: 0.7;
+  }
+
+  .landscape-status-row__separator {
+    opacity: 0.3;
+    font-weight: 700;
+  }
+
+  .landscape-status-row__brand {
+    margin-inline-start: auto; /* push to end (left in RTL) */
+    font-weight: 600;
+    font-size: 10px;
+    opacity: 0.35;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+  }
+
+  /* --- Row 2: Action header (34px, interactive) --- */
+  header {
+    padding: 0.15rem 0.5rem;
+  }
+
+  .app-header {
+    position: fixed;
+    top: 22px; /* pushed below status row */
+    left: 0;
+    right: 0;
+    min-height: 34px !important;
+    background: rgba(255, 255, 255, 0.75);
     backdrop-filter: saturate(160%) blur(12px);
     -webkit-backdrop-filter: saturate(160%) blur(12px);
     border-bottom: 1px solid rgba(0, 0, 0, 0.06);
@@ -13338,7 +13407,7 @@ button:focus-visible,
 
   /* Override the solid .soft-blue-header gradient in landscape */
   .soft-blue-header {
-    background: rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.75);
     border-bottom: 1px solid rgba(0, 0, 0, 0.06);
     box-shadow: none;
     backdrop-filter: saturate(160%) blur(12px);
@@ -13357,20 +13426,29 @@ button:focus-visible,
     box-shadow: none;
   }
 
-  /* --- Minimal header: hide brand logo and title --- */
+  /* --- Hide items that are now in status row or not needed in action row --- */
+  /* Brand logo + title → replaced by status row brand */
   .menu-brand__logo,
   .menu-brand__title {
     display: none;
+  }
+
+  /* Sketch name badge → in status row now */
+  .menu-sketch-name {
+    display: none !important;
+  }
+
+  .menu-sketch-name--mobile {
+    display: none !important;
   }
 
   .menu-brand {
     gap: 0.25rem;
   }
 
-  /* Sketch name badge: keep visible and prominent */
-  .sketch-name-display-mobile {
-    font-size: 0.7rem;
-    padding: 0.15rem 0.5rem;
+  /* Sync indicator in header → duplicated in status row */
+  .header-sync-indicator {
+    display: none !important;
   }
 
   /* Compact hamburger & header buttons */
@@ -13382,9 +13460,7 @@ button:focus-visible,
     font-size: 1.2rem;
   }
 
-  /* Header controls (zoom, home, help) — compact visual, expanded touch area.
-     Visual size is 28px for space savings, but position: relative + ::after
-     provides a 44px touch target for WCAG 2.5.8 compliance. */
+  /* Action row buttons: 34px visual height with 44px extended touch target */
   .menu-btn--small,
   .menu-btn--icon-only {
     min-height: 28px;
@@ -13409,8 +13485,26 @@ button:focus-visible,
     font-size: 1rem;
   }
 
-  /* --- Auto-hide animation --- */
+  /* --- Divider between action groups --- */
+  .menu-group--utility::before {
+    content: '';
+    display: block;
+    width: 1px;
+    height: 18px;
+    background: rgba(0, 0, 0, 0.1);
+    align-self: center;
+    flex-shrink: 0;
+    margin-inline-end: 2px;
+  }
+
+  /* --- Auto-hide animation (both rows slide together) --- */
   .header--landscape-auto-hide {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Status row follows header auto-hide */
+  .landscape-status-row {
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
                 opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
@@ -13419,6 +13513,12 @@ button:focus-visible,
     transform: translateY(-100%);
     opacity: 0;
     pointer-events: none;
+  }
+
+  /* When header is hidden, status row must hide too */
+  body.landscape-header-hidden .landscape-status-row {
+    transform: translateY(-100%);
+    opacity: 0;
   }
 }
 
@@ -14328,7 +14428,7 @@ body.cockpit-mode #edgeLegend {
   }
 }
 
-/* --- Landscape: Dark Mode Glass Header --- */
+/* --- Landscape: Dark Mode Glass Header + Status Row --- */
 @media (prefers-color-scheme: dark) {
   @media (max-height: 450px) and (orientation: landscape) {
     .app-header,
@@ -14341,6 +14441,30 @@ body.cockpit-mode #edgeLegend {
       background: rgba(15, 23, 42, 0.85);
       border-color: rgba(96, 165, 250, 0.2);
       color: #93c5fd;
+    }
+
+    /* Dark mode status row */
+    .landscape-status-row {
+      background: rgba(11, 18, 32, 0.85);
+      color: rgba(255, 255, 255, 0.4);
+      border-bottom-color: rgba(255, 255, 255, 0.04);
+    }
+
+    .landscape-status-row__icon {
+      opacity: 0.4;
+    }
+
+    .landscape-status-row__separator {
+      opacity: 0.2;
+    }
+
+    .landscape-status-row__brand {
+      opacity: 0.25;
+    }
+
+    /* Dark mode divider between action groups */
+    .menu-group--utility::before {
+      background: rgba(255, 255, 255, 0.1);
     }
 
     /* Dark mode header recall handle */
