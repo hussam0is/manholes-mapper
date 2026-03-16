@@ -411,6 +411,12 @@ let draggingDanglingType = null;      // 'outbound' (danglingEndpoint) or 'inbou
 let draggingDanglingStart = null;     // { x, y } pre-drag position for undo
 let hoveredDanglingEndpoint = null;   // { edge, type } for hover highlight
 let danglingSnapTarget = null;        // { type: 'node'|'dangling', node?, edge?, danglingType? } during drag
+// Edge endpoint drag state (drag connected endpoints to detach/reattach)
+let isDraggingEdgeEndpoint = false;
+let draggingEdgeEndpointEdge = null;    // the edge being manipulated
+let draggingEdgeEndpointEnd = null;     // 'tail' or 'head'
+let draggingEdgeEndpointOriginal = null; // { nodeId, x, y } original state for undo
+let hoveredEdgeEndpoint = null;         // { edge, end: 'tail'|'head' } for hover highlight
 // Undo action history
 const UNDO_STACK_MAX = 50;
 const undoStack = [];
@@ -4640,6 +4646,69 @@ function performUndo() {
     scheduleDraw();
     showToast(t('toasts.undoEdgeCreate'));
 
+  } else if (action.type === 'edgeEndpointDetach') {
+    // Undo detach: reconnect the endpoint to its original node
+    const edge = edges.find(e => e.id === action.edgeId);
+    if (!edge) { undoStack.pop(); updateUndoButton(); return; }
+    // Save current state for redo
+    const currentDanglingEndpoint = edge.danglingEndpoint ? { ...edge.danglingEndpoint } : null;
+    const currentTailPosition = edge.tailPosition ? { ...edge.tailPosition } : null;
+    redoStack.push({
+      type: 'edgeEndpointDetach',
+      edgeId: action.edgeId,
+      end: action.end,
+      nodeId: action.nodeId,
+      oldWasDangling: edge.isDangling,
+      oldDanglingEndpoint: currentDanglingEndpoint,
+      oldTailPosition: currentTailPosition,
+    });
+    // Restore connection
+    if (action.end === 'tail') {
+      edge.tail = action.nodeId;
+      edge.tailPosition = action.oldTailPosition;
+    } else {
+      edge.head = action.nodeId;
+      edge.danglingEndpoint = action.oldDanglingEndpoint;
+    }
+    edge.isDangling = action.oldWasDangling;
+    undoStack.pop();
+    computeNodeTypes();
+    updateIncompleteEdgeTracker();
+    markEdgeLabelCacheDirty();
+    saveToStorage();
+    scheduleDraw();
+    showToast(t('toasts.undoEdgeDetach'));
+
+  } else if (action.type === 'edgeEndpointReattach') {
+    // Undo reattach: restore the endpoint to the old node
+    const edge = edges.find(e => e.id === action.edgeId);
+    if (!edge) { undoStack.pop(); updateUndoButton(); return; }
+    redoStack.push({
+      type: 'edgeEndpointReattach',
+      edgeId: action.edgeId,
+      end: action.end,
+      oldNodeId: action.newNodeId,
+      newNodeId: action.oldNodeId,
+      oldWasDangling: edge.isDangling,
+      oldDanglingEndpoint: edge.danglingEndpoint ? { ...edge.danglingEndpoint } : null,
+      oldTailPosition: edge.tailPosition ? { ...edge.tailPosition } : null,
+    });
+    if (action.end === 'tail') {
+      edge.tail = action.oldNodeId;
+      edge.tailPosition = action.oldTailPosition;
+    } else {
+      edge.head = action.oldNodeId;
+      edge.danglingEndpoint = action.oldDanglingEndpoint;
+    }
+    edge.isDangling = action.oldWasDangling;
+    undoStack.pop();
+    computeNodeTypes();
+    updateIncompleteEdgeTracker();
+    markEdgeLabelCacheDirty();
+    saveToStorage();
+    scheduleDraw();
+    showToast(t('toasts.undoEdgeReattach'));
+
   } else {
     // Unknown action type — just remove it
     undoStack.pop();
@@ -4788,6 +4857,61 @@ function performRedo() {
     edges = edges.filter(e => e.id !== action.edgeBBefore.id);
     // Restore edgeA to merged state (use edgeABefore which was the merged state at redo time)
     Object.assign(edgeA, action.edgeABefore);
+    computeNodeTypes();
+    updateIncompleteEdgeTracker();
+    markEdgeLabelCacheDirty();
+    saveToStorage();
+    scheduleDraw();
+
+  } else if (action.type === 'edgeEndpointDetach') {
+    // Redo detach: detach the endpoint again
+    const edge = edges.find(e => e.id === action.edgeId);
+    if (!edge) { updateRedoButton(); return; }
+    pushUndoDirect({
+      type: 'edgeEndpointDetach',
+      edgeId: action.edgeId,
+      end: action.end,
+      nodeId: action.nodeId,
+      oldWasDangling: edge.isDangling,
+      oldDanglingEndpoint: edge.danglingEndpoint ? { ...edge.danglingEndpoint } : null,
+      oldTailPosition: edge.tailPosition ? { ...edge.tailPosition } : null,
+    });
+    if (action.end === 'tail') {
+      edge.tailPosition = action.oldTailPosition;
+      edge.tail = null;
+    } else {
+      edge.danglingEndpoint = action.oldDanglingEndpoint;
+      edge.head = null;
+    }
+    edge.isDangling = action.oldWasDangling;
+    computeNodeTypes();
+    updateIncompleteEdgeTracker();
+    markEdgeLabelCacheDirty();
+    saveToStorage();
+    scheduleDraw();
+
+  } else if (action.type === 'edgeEndpointReattach') {
+    // Redo reattach: move endpoint to the new node again
+    const edge = edges.find(e => e.id === action.edgeId);
+    if (!edge) { updateRedoButton(); return; }
+    pushUndoDirect({
+      type: 'edgeEndpointReattach',
+      edgeId: action.edgeId,
+      end: action.end,
+      oldNodeId: action.newNodeId,
+      newNodeId: action.oldNodeId,
+      oldWasDangling: edge.isDangling,
+      oldDanglingEndpoint: edge.danglingEndpoint ? { ...edge.danglingEndpoint } : null,
+      oldTailPosition: edge.tailPosition ? { ...edge.tailPosition } : null,
+    });
+    if (action.end === 'tail') {
+      edge.tail = action.newNodeId;
+      edge.tailPosition = null;
+    } else {
+      edge.head = action.newNodeId;
+      edge.danglingEndpoint = null;
+    }
+    edge.isDangling = (edge.tail == null || edge.head == null);
     computeNodeTypes();
     updateIncompleteEdgeTracker();
     markEdgeLabelCacheDirty();
@@ -5004,6 +5128,12 @@ function connectDanglingEdge(edge, nodeId, type = 'outbound') {
  * Finalize a dangling endpoint drag: push undo if moved, save, and reset state.
  */
 function finalizeDanglingEndpointDrag() {
+  // Delegate to edge endpoint drag handler if this was a detach operation
+  if (isDraggingEdgeEndpoint) {
+    finalizeEdgeEndpointDrag();
+    return;
+  }
+
   const snap = danglingSnapTarget;
   danglingSnapTarget = null;
 
@@ -5044,6 +5174,171 @@ function finalizeDanglingEndpointDrag() {
   draggingDanglingStart = null;
   canvas.style.cursor = '';
   scheduleDraw();
+}
+
+// ── Edge Endpoint Dragging (detach/reattach connected endpoints) ──────────
+
+/**
+ * Hit-test the endpoints of the currently selected edge.
+ * Returns { edge, end: 'tail'|'head' } if the click is near a connected endpoint, or null.
+ */
+function findSelectedEdgeEndpointAt(x, y) {
+  if (!selectedEdge) return null;
+  const sv = autoSizeEnabled ? viewScale : 1;
+  const hitRadius = 14 * sizeScale / sv; // generous hit area for endpoints
+
+  const edge = selectedEdge;
+  // Check tail endpoint (only if connected to a node)
+  if (edge.tail != null) {
+    const tailNode = nodeMap.get(String(edge.tail));
+    if (tailNode) {
+      const dist = Math.hypot(tailNode.x - x, tailNode.y - y);
+      if (dist < hitRadius) return { edge, end: 'tail' };
+    }
+  }
+  // Check head endpoint (only if connected to a node)
+  if (edge.head != null) {
+    const headNode = nodeMap.get(String(edge.head));
+    if (headNode) {
+      const dist = Math.hypot(headNode.x - x, headNode.y - y);
+      if (dist < hitRadius) return { edge, end: 'head' };
+    }
+  }
+  return null;
+}
+
+/**
+ * Detach an edge endpoint from its node, converting it to a dangling edge.
+ * Preserves all edge properties. Stores the detached position at the node's location.
+ */
+function detachEdgeEndpoint(edge, end) {
+  const nodeId = end === 'tail' ? edge.tail : edge.head;
+  const node = nodeMap.get(String(nodeId));
+  if (!node) return;
+
+  // Save original state for undo
+  draggingEdgeEndpointOriginal = {
+    nodeId: String(nodeId),
+    end,
+    x: node.x,
+    y: node.y,
+    wasDangling: edge.isDangling,
+    oldDanglingEndpoint: edge.danglingEndpoint ? { ...edge.danglingEndpoint } : null,
+    oldTailPosition: edge.tailPosition ? { ...edge.tailPosition } : null,
+  };
+
+  if (end === 'tail') {
+    edge.tailPosition = { x: node.x, y: node.y };
+    edge.tail = null;
+  } else {
+    edge.danglingEndpoint = { x: node.x, y: node.y };
+    edge.head = null;
+  }
+  edge.isDangling = true;
+
+  // Now start the normal dangling endpoint drag
+  isDraggingDanglingEnd = true;
+  draggingDanglingEdge = edge;
+  draggingDanglingType = end === 'tail' ? 'inbound' : 'outbound';
+  const pos = end === 'tail' ? edge.tailPosition : edge.danglingEndpoint;
+  draggingDanglingStart = pos ? { x: pos.x, y: pos.y } : null;
+
+  updateIncompleteEdgeTracker();
+  markEdgeLabelCacheDirty();
+}
+
+/**
+ * Finalize an edge endpoint detach+drag: push undo, handle snap, save.
+ * Called from the normal finalizeDanglingEndpointDrag flow — this adds the undo entry.
+ */
+function finalizeEdgeEndpointDrag() {
+  const snap = danglingSnapTarget;
+  danglingSnapTarget = null;
+  const orig = draggingEdgeEndpointOriginal;
+  const edge = draggingEdgeEndpointEdge;
+  const end = draggingEdgeEndpointEnd;
+
+  if (!edge || !orig) {
+    resetEdgeEndpointDragState();
+    return;
+  }
+
+  if (snap && snap.type === 'node') {
+    // Reattach to a (possibly different) node
+    const newNodeId = String(snap.node.id);
+    if (end === 'tail') {
+      edge.tail = newNodeId;
+      edge.tailPosition = null;
+    } else {
+      edge.head = newNodeId;
+      edge.danglingEndpoint = null;
+    }
+    // Check if both ends are now connected
+    edge.isDangling = (edge.tail == null || edge.head == null);
+
+    if (newNodeId === orig.nodeId) {
+      // Snapped back to the same node — effectively a no-op
+    } else {
+      // Moved to a different node — push undo
+      pushUndo({
+        type: 'edgeEndpointReattach',
+        edgeId: edge.id,
+        end: orig.end,
+        oldNodeId: orig.nodeId,
+        newNodeId,
+        oldWasDangling: orig.wasDangling,
+        oldDanglingEndpoint: orig.oldDanglingEndpoint,
+        oldTailPosition: orig.oldTailPosition,
+      });
+      showToast(t('toasts.edgeEndpointReattached'));
+    }
+    computeNodeTypes();
+    updateIncompleteEdgeTracker();
+    markEdgeLabelCacheDirty();
+    saveToStorage();
+  } else if (snap && snap.type === 'dangling') {
+    // Merge with another dangling edge
+    mergeDanglingEdges(edge, draggingDanglingType, snap.edge, snap.danglingType);
+    // Push a compound undo that also captures the detach
+    // The merge already pushed its own undo — we augment it
+    if (undoStack.length > 0) {
+      const lastUndo = undoStack[undoStack.length - 1];
+      if (lastUndo.type === 'danglingMerge') {
+        lastUndo._detachOriginal = orig;
+      }
+    }
+    showToast(t('toasts.danglingEdgesMerged'));
+  } else {
+    // Left dangling — push undo for the detach
+    pushUndo({
+      type: 'edgeEndpointDetach',
+      edgeId: edge.id,
+      end: orig.end,
+      nodeId: orig.nodeId,
+      oldWasDangling: orig.wasDangling,
+      oldDanglingEndpoint: orig.oldDanglingEndpoint,
+      oldTailPosition: orig.oldTailPosition,
+    });
+    showToast(t('toasts.edgeEndpointDetached'));
+    updateIncompleteEdgeTracker();
+    markEdgeLabelCacheDirty();
+    saveToStorage();
+  }
+
+  resetEdgeEndpointDragState();
+  scheduleDraw();
+}
+
+function resetEdgeEndpointDragState() {
+  isDraggingEdgeEndpoint = false;
+  draggingEdgeEndpointEdge = null;
+  draggingEdgeEndpointEnd = null;
+  draggingEdgeEndpointOriginal = null;
+  isDraggingDanglingEnd = false;
+  draggingDanglingEdge = null;
+  draggingDanglingType = null;
+  draggingDanglingStart = null;
+  canvas.style.cursor = '';
 }
 
 // Drawing functions
@@ -5765,6 +6060,32 @@ function drawEdge(edge) {
     ctx.closePath();
     ctx.fillStyle = resolvedColor;
     ctx.fill();
+    // Draw draggable endpoint handles on selected edge (in edge mode)
+    if (edge === selectedEdge && currentMode === 'edge' && !window.__sketchReadOnly) {
+      const handleR = 6 * sizeScale / sizeVS;
+      for (const [epX, epY, epEnd] of [[tx1, ty1, 'tail'], [tx2, ty2, 'head']]) {
+        const isHov = hoveredEdgeEndpoint &&
+          hoveredEdgeEndpoint.edge === edge && hoveredEdgeEndpoint.end === epEnd;
+        const isDrag = isDraggingEdgeEndpoint &&
+          draggingEdgeEndpointEdge === edge && draggingEdgeEndpointEnd === epEnd;
+        const active = isHov || isDrag;
+        const r = active ? handleR * 1.5 : handleR;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(epX, epY, r, 0, Math.PI * 2);
+        ctx.fillStyle = active ? 'rgba(124, 58, 237, 0.3)' : 'rgba(124, 58, 237, 0.15)';
+        ctx.fill();
+        ctx.strokeStyle = active ? '#7c3aed' : 'rgba(124, 58, 237, 0.6)';
+        ctx.lineWidth = (active ? 2.5 : 1.5) / sizeVS;
+        ctx.stroke();
+        // Small inner dot
+        ctx.beginPath();
+        ctx.arc(epX, epY, 2 * sizeScale / sizeVS, 0, Math.PI * 2);
+        ctx.fillStyle = '#7c3aed';
+        ctx.fill();
+        ctx.restore();
+      }
+    }
     // Highlighted half-edge overlay
     if (highlightedHalfEdge && highlightedHalfEdge.edgeId === edge.id) {
       const dx = tx2 - tx1;
@@ -8673,6 +8994,18 @@ canvas.addEventListener('mousedown', (e) => {
     // Left button: start background grab-to-pan if clicking empty space; otherwise delegate
     if (e.button === 0) {
       const world = screenToWorld(e.offsetX, e.offsetY);
+      // Check for selected edge endpoint drag (detach/reattach) — highest priority in edge mode
+      if (currentMode === 'edge' && selectedEdge && !window.__sketchReadOnly) {
+        const epHit = findSelectedEdgeEndpointAt(world.x, world.y);
+        if (epHit) {
+          isDraggingEdgeEndpoint = true;
+          draggingEdgeEndpointEdge = epHit.edge;
+          draggingEdgeEndpointEnd = epHit.end;
+          detachEdgeEndpoint(epHit.edge, epHit.end);
+          canvas.style.cursor = 'grabbing';
+          return;
+        }
+      }
       const node = findNodeAt(world.x, world.y);
       const edgeAt = (currentMode === 'edge') ? findEdgeAt(world.x, world.y) : null;
       if (node || edgeAt) {
@@ -8741,16 +9074,33 @@ canvas.addEventListener('mousemove', (e) => {
       }
     }
     pointerMove(e.offsetX, e.offsetY);
-    // Hover detection for dangling endpoints (cursor feedback)
+    // Hover detection for edge endpoints and dangling endpoints (cursor feedback)
     if (!isDragging && !mousePanCandidate) {
       const world = screenToWorld(e.offsetX, e.offsetY);
+      // Check selected edge endpoint handles first
+      let cursorSet = false;
+      if (currentMode === 'edge' && selectedEdge && !window.__sketchReadOnly) {
+        const epHit = findSelectedEdgeEndpointAt(world.x, world.y);
+        const prevEpHov = hoveredEdgeEndpoint;
+        hoveredEdgeEndpoint = epHit;
+        if (epHit) {
+          canvas.style.cursor = 'grab';
+          cursorSet = true;
+        }
+        if (!!epHit !== !!prevEpHov) scheduleDraw();
+      } else {
+        hoveredEdgeEndpoint = null;
+      }
+      // Then check dangling endpoints
       const danglingHit = findDanglingEndpointAt(world.x, world.y);
       const prevHovered = hoveredDanglingEndpoint;
       hoveredDanglingEndpoint = danglingHit;
-      if (danglingHit) {
+      if (danglingHit && !cursorSet) {
         canvas.style.cursor = 'grab';
-      } else if (prevHovered) {
-        canvas.style.cursor = '';
+        cursorSet = true;
+      }
+      if (!cursorSet && (prevHovered || hoveredEdgeEndpoint === null)) {
+        if (prevHovered && !danglingHit) canvas.style.cursor = '';
       }
       if (!!danglingHit !== !!prevHovered) scheduleDraw();
     }
@@ -8816,6 +9166,19 @@ canvas.addEventListener('touchstart', (e) => {
       const y = touch.clientY - rect.top;
       // Defer node creation until touchend to distinguish tap from pinch/drag
       const world = screenToWorld(x, y);
+      // Check for selected edge endpoint drag (detach/reattach) on touch
+      if (currentMode === 'edge' && selectedEdge && !window.__sketchReadOnly) {
+        const epHit = findSelectedEdgeEndpointAt(world.x, world.y);
+        if (epHit) {
+          isDraggingEdgeEndpoint = true;
+          draggingEdgeEndpointEdge = epHit.edge;
+          draggingEdgeEndpointEnd = epHit.end;
+          detachEdgeEndpoint(epHit.edge, epHit.end);
+          touchAddPending = false;
+          touchAddPoint = null;
+          return;
+        }
+      }
       if (currentMode === 'edge') {
         let nodeAt = findNodeAtWithExpansion(world.x, world.y, TOUCH_SELECT_EXPANSION);
         const edgeAt = findEdgeAt(world.x, world.y, TOUCH_EDGE_HIT_THRESHOLD);
