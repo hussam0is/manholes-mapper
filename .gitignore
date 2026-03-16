@@ -45,16 +45,8 @@ manholes/
 .vercel
 .env*.local
 
-# Claude Code local config and session state
-.claude/
-scripts/session-watchdog.sh
-
 # Shell scripts with credentials (must never be committed)
 update-vercel-env.sh
 
 # App design reference screenshots (local only)
 current_app_design/
-
-# Task agent runtime state
-manholes-mapper-god-agent/task-agent-state.json
-manholes-mapper-god-agent/task-agent.log
