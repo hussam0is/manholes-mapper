@@ -222,3 +222,15 @@ export async function initAuthMonitor() {
 
 // Initialize on module load
 initAuthMonitor();
+/**
+ * Auth Guard - Route protection for the Manholes Mapper PWA
+ * 
+ * Handles authentication state checking and route protection.
+ * Works with Better Auth session management.
+ */
+/**
+ * Auth Guard - Route protection for the Manholes Mapper PWA
+ * 
+ * Handles authentication state checking and route protection.
+ * Works with Better Auth session management.
+ */\n

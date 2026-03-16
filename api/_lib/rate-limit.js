@@ -1,20 +1,12 @@
 /**
  * Rate limiting middleware for API routes
  *
- * Two layers of rate limiting:
- *
- * 1. In-memory sliding window (best-effort on serverless):
- *    Each Vercel serverless instance has its own memory, so the in-memory
- *    `requestStore` only limits requests that happen to hit the same warm
- *    instance. An attacker sending rapid requests may bypass this entirely
- *    if requests are spread across cold-started instances. This layer is
- *    kept as a fast, zero-latency first line of defense for warm instances.
- *
- * 2. Database-backed rate limiting (for auth routes):
- *    Uses a `rate_limit_log` Postgres table to track requests across all
- *    serverless instances. Applied to abuse-sensitive auth endpoints where
- *    the extra DB round-trip is acceptable. This provides reliable cross-
- *    instance rate limiting.
+ * In-memory sliding window rate limiting (best-effort on serverless):
+ * Each Vercel serverless instance has its own memory, so the in-memory
+ * requestStore only limits requests that happen to hit the same warm
+ * instance. An attacker sending rapid requests may bypass this entirely
+ * if requests are spread across cold-started instances. This layer is
+ * kept as a fast, zero-latency first line of defense for warm instances.
  */
 
 // Rate limit configuration
