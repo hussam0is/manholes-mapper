@@ -22,7 +22,8 @@ import {
   createOrganization,
   getOrganizationById,
   updateOrganization,
-  deleteOrganization
+  deleteOrganization,
+  getUsersByOrganization,
 } from '../_lib/db.js';
 import { applyRateLimit } from '../_lib/rate-limit.js';
 import { validateUUID, validateOrganizationInput } from '../_lib/validators.js';
@@ -45,6 +46,11 @@ export default async function handler(req, res) {
   // Apply rate limiting
   if (applyRateLimit(req, res)) {
     return; // Rate limited, response already sent
+  }
+
+  // Route to members handler (via rewrite from /api/org-members)
+  if (req.query?.members === 'true') {
+    return handleOrgMembers(req, res, request);
   }
 
   // Route to single-resource handler if ID is provided (via rewrite from /api/organizations/:id)
@@ -121,6 +127,46 @@ export default async function handler(req, res) {
 
   } catch (error) {
     return handleApiError(error, res, '[API /api/organizations]');
+  }
+}
+
+/**
+ * Handle org members listing: GET /api/org-members
+ * (Merged from api/org-members/index.js)
+ * Returns members of the current user's organization for @mention functionality.
+ */
+async function handleOrgMembers(req, res, request) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    await ensureDb();
+
+    const { userId, error } = await verifyAuth(request);
+    if (error) {
+      return res.status(401).json({ error });
+    }
+
+    const currentUser = await getUserById(userId);
+    if (!currentUser || !currentUser.organization_id) {
+      return res.status(200).json({ members: [] });
+    }
+
+    const users = await getUsersByOrganization(currentUser.organization_id, { limit: 200 });
+
+    // Return minimal info needed for mentions (exclude current user)
+    const members = users
+      .filter(u => u.id !== userId)
+      .map(u => ({
+        id: u.id,
+        username: u.username || u.email?.split('@')[0] || 'Unknown',
+        email: u.email,
+      }));
+
+    return res.status(200).json({ members });
+  } catch (err) {
+    return handleApiError(err, res, '[API /api/org-members]');
   }
 }
 

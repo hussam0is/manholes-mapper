@@ -10,6 +10,10 @@
       "destination": "/api/users?id=:id"
     },
     {
+      "source": "/api/org-members",
+      "destination": "/api/organizations?members=true"
+    },
+    {
       "source": "/api/organizations/:id",
       "destination": "/api/organizations?id=:id"
     },
