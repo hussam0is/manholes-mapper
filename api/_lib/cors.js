@@ -17,7 +17,17 @@ function getAllowedOrigins() {
     ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
     : null;
 
-  if (!envOrigins) return null; // dev mode — allow any
+  // In production/preview, require explicit origins — never allow any
+  if (!envOrigins) {
+    if (process.env.VERCEL_ENV === 'production' || process.env.VERCEL_ENV === 'preview') {
+      const fallback = [];
+      if (process.env.VERCEL_URL) fallback.push(`https://${process.env.VERCEL_URL}`);
+      fallback.push('https://manholes-mapper.vercel.app');
+      fallback.push(CAPACITOR_ORIGIN);
+      return fallback;
+    }
+    return null; // dev mode — allow any
+  }
 
   // Always include Capacitor origin
   if (!envOrigins.includes(CAPACITOR_ORIGIN)) {

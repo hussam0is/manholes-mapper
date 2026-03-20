@@ -11,6 +11,7 @@
 import { handleCors } from '../_lib/cors.js';
 import { verifyCsrf } from '../_lib/csrf.js';
 import { verifyAuth, parseBody } from '../_lib/auth.js';
+import { validateUUID } from '../_lib/validators.js';
 import {
   ensureDb,
   getUnreadNotifications,
@@ -63,6 +64,14 @@ export default async function handler(req, res) {
       }
 
       if (Array.isArray(body.ids) && body.ids.length > 0) {
+        if (body.ids.length > 200) {
+          return res.status(400).json({ error: 'Too many IDs (max 200)' });
+        }
+        for (const id of body.ids) {
+          if (!validateUUID(id)) {
+            return res.status(400).json({ error: 'Invalid notification ID format' });
+          }
+        }
         const count = await markNotificationsRead(userId, body.ids);
         return res.status(200).json({ marked: count });
       }

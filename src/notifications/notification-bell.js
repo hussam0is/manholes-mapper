@@ -134,7 +134,7 @@ function renderNotifications(notifications) {
     const preview = n.comment_content ? n.comment_content.slice(0, 60) : '';
 
     return `
-      <div class="notification-item" data-sketch-id="${n.sketch_id}" data-node-id="${n.node_id}">
+      <div class="notification-item" data-sketch-id="${escapeHtmlLocal(n.sketch_id)}" data-node-id="${escapeHtmlLocal(n.node_id)}">
         <div class="notification-item-header">${escapeHtmlLocal(n.commenter_username || '')} ${escapeHtmlLocal(typeLabel)}</div>
         ${preview ? `<div class="notification-item-body">${escapeHtmlLocal(preview)}</div>` : ''}
         <div class="notification-item-time">${escapeHtmlLocal(sketchName)} · ${timeStr}</div>
