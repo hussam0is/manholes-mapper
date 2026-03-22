@@ -194,8 +194,8 @@ function draw() {
     drawMergeModeOverlay(ctx, nodes, drawOpts);
   }
 
-  // Draw edges
-  const _useGridCull = edges.length > 200 && _edgeGrid;
+  // Draw edges — use spatial grid culling for any non-trivial sketch (50+ edges)
+  const _useGridCull = edges.length > 50 && _edgeGrid;
   const _visibleEdges = _useGridCull
     ? _edgeGrid.queryArray(visMinX, visMinY, visMaxX, visMaxY)
     : edges;
@@ -295,7 +295,8 @@ function draw() {
   const labelData = [];
   const nodeData = [];
 
-  const _useNodeGrid = nodes.length > 200 && _nodeGrid;
+  // Use spatial grid culling for any non-trivial sketch (50+ nodes)
+  const _useNodeGrid = nodes.length > 50 && _nodeGrid;
   const _visibleNodes = _useNodeGrid
     ? _nodeGrid.queryArray(visMinX, visMinY, visMaxX, visMaxY)
     : nodes;
