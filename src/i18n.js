@@ -649,7 +649,6 @@ export const i18n = {
         viewAllActive: 'מציג הכל',
         viewAllOn: 'מציג את כל השרטוטים',
         viewAllOff: 'הצג הכל כבוי',
-        sketches: 'שרטוטים',
         nodes: 'נקודות',
         selectSketch: 'בחר',
         deselectSketch: 'בטל בחירה',
@@ -1008,7 +1007,7 @@ export const i18n = {
       teamProgress: 'התקדמות צוות',
       resumeWork: 'המשך עבודה',
     },
-    home: {
+    homeSearch: {
       searchPlaceholder: 'חיפוש...',
       noSearchResults: 'לא נמצאו תוצאות',
     },
@@ -1111,7 +1110,6 @@ export const i18n = {
       day: 'יום',
       week: 'שבוע',
       month: 'חודש',
-      dailyActivity: 'פעילות יומית',
       weeklyActivity: 'פעילות שבועית',
       monthlyActivity: 'פעילות חודשית',
       records: 'שיאים',
@@ -1841,7 +1839,6 @@ export const i18n = {
         viewAllActive: 'Viewing All',
         viewAllOn: 'Viewing all sketches',
         viewAllOff: 'View All off',
-        sketches: 'sketches',
         nodes: 'nodes',
         selectSketch: 'Select',
         deselectSketch: 'Deselect',
@@ -2200,7 +2197,7 @@ export const i18n = {
       teamProgress: 'Team progress',
       resumeWork: 'Resume',
     },
-    home: {
+    homeSearch: {
       searchPlaceholder: 'Search...',
       noSearchResults: 'No results found',
     },
@@ -2303,7 +2300,6 @@ export const i18n = {
       day: 'Day',
       week: 'Week',
       month: 'Month',
-      dailyActivity: 'Daily Activity',
       weeklyActivity: 'Weekly Activity',
       monthlyActivity: 'Monthly Activity',
       records: 'Records',

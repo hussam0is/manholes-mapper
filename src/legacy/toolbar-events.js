@@ -25,6 +25,10 @@ import { commitIdInputIfFocused } from '../dom/dom-utils.js';
 import { openAdminModal, openAdminScreen } from './admin-handlers.js';
 import { saveToLibrary } from './library-manager.js';
 
+// Convenience wrappers so calls inside this module look like plain calls
+const t = (...args) => F.t(...args);
+const showToast = (...args) => F.showToast(...args);
+
 // ── Size scale constants ─────────────────────────────────────────────────
 const MIN_SIZE_SCALE = 0.5;
 const MAX_SIZE_SCALE = 10.0;
