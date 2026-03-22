@@ -21,6 +21,18 @@ function createMockEventEmitter() {
   };
 }
 
+// Stable mock for centralized state (persists across vi.resetModules)
+vi.mock('../../src/state/app-store.js', () => ({
+  appStore: {
+    bus: { on: () => () => {}, emit: () => {}, clear: () => {} },
+    gnss: null,
+    gnssConnection: null,
+    menu: null,
+    auth: null,
+    sync: null,
+  },
+}));
+
 async function freshImportCockpit() {
   vi.resetModules();
   return await import('../../src/cockpit/cockpit.js');

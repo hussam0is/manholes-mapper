@@ -4,8 +4,34 @@
  * Provides reusable test data for unit, integration, and E2E tests.
  */
 
+interface SketchNode {
+  id: string;
+  x: number | string;
+  y: number | string;
+  type?: string;
+  note?: string;
+  [key: string]: unknown;
+}
+
+interface SketchEdge {
+  id: string;
+  tail: string | null;
+  head: string | null;
+  type?: string;
+  [key: string]: unknown;
+}
+
+interface Sketch {
+  name: string;
+  creationDate?: string;
+  nodes: SketchNode[];
+  edges: SketchEdge[];
+  adminConfig?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
 // Valid sketch with full data
-export const validSketch = {
+export const validSketch: Sketch = {
   name: 'Test Sketch',
   creationDate: new Date().toISOString(),
   nodes: [
@@ -19,14 +45,14 @@ export const validSketch = {
 };
 
 // Minimal valid sketch
-export const minimalSketch = {
+export const minimalSketch: Sketch = {
   name: 'Minimal Sketch',
   nodes: [],
   edges: [],
 };
 
 // Sketch with dangling edges (valid - represents incomplete connections)
-export const danglingEdgeSketch = {
+export const danglingEdgeSketch: Sketch = {
   name: 'Dangling Edge Sketch',
   nodes: [{ id: 'n1', x: 100, y: 200, type: 'manhole' }],
   edges: [
@@ -36,7 +62,7 @@ export const danglingEdgeSketch = {
 };
 
 // Invalid sketch - node with non-numeric coordinates
-export const invalidNodeSketch = {
+export const invalidNodeSketch: Sketch = {
   name: 'Invalid Node Sketch',
   nodes: [
     { id: 'n1', x: 'invalid', y: 200 }, // x is string
@@ -58,7 +84,7 @@ export const oversizedSketch = (nodeCount: number) => {
 };
 
 // Sketch with complex node types
-export const complexSketch = {
+export const complexSketch: Sketch = {
   name: 'Complex Sketch',
   creationDate: new Date().toISOString(),
   nodes: [

@@ -78,7 +78,7 @@ describe('API Contract: Sketch Endpoint', () => {
       };
       const errors = validateSketchInput(invalidNode);
       expect(errors).not.toBeNull();
-      expect(errors?.some((e) => e.includes('numeric x and y'))).toBe(true);
+      expect(errors?.some((e: string) => e.includes('numeric x and y'))).toBe(true);
     });
 
     it('should enforce edge structure', () => {

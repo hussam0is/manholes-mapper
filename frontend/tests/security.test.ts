@@ -176,7 +176,7 @@ describe('Security: Input Validation', () => {
       const errors = validateFeaturesInput({
         features: { export_csv: 'true' as any },
       });
-      expect(errors?.some((e) => e.includes('must be boolean'))).toBe(true);
+      expect(errors?.some((e: string) => e.includes('must be boolean'))).toBe(true);
     });
   });
 });

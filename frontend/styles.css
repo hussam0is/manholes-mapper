@@ -27,20 +27,20 @@
   /* ===========================================
      Design Tokens - Core Color Palette
      =========================================== */
-  
+
   /* Primary colors */
   --color-primary: #2563eb;           /* blue-600 */
   --color-primary-hover: #1d4ed8;     /* blue-700 */
   --color-primary-strong: #1d4ed8;    /* alias for hover - legacy support */
   --color-primary-light: #dbeafe;     /* blue-100 */
   --color-primary-bg: #eff6ff;        /* blue-50 */
-  
+
   /* Success colors */
   --color-success: #22c55e;           /* green-500 */
   --color-success-hover: #16a34a;     /* green-600 */
   --color-success-light: #dcfce7;     /* green-100 */
   --color-success-bg: #f0fdf4;        /* green-50 */
-  
+
   /* Danger/Error colors */
   --color-danger: #ef4444;            /* red-500 */
   --color-danger-hover: #dc2626;      /* red-600 */
@@ -49,13 +49,13 @@
   --color-error: var(--color-danger);
   --color-error-light: var(--color-danger-light);
   --color-error-bg: var(--color-danger-bg);
-  
+
   /* Warning colors */
   --color-warning: #f59e0b;           /* amber-500 */
   --color-warning-hover: #d97706;     /* amber-600 */
   --color-warning-light: #fef3c7;     /* amber-100 */
   --color-warning-bg: #fffbeb;        /* amber-50 */
-  
+
   /* Accent/Purple colors */
   --color-accent: #a855f7;            /* purple-500 */
   --color-accent-hover: #9333ea;      /* purple-600 */
@@ -87,7 +87,7 @@
   --color-muted: #64748b;             /* slate-500 */
   --color-border: #e5e7eb;            /* gray-200 */
   --color-border-strong: #d1d5db;     /* gray-300 */
-  
+
   /* ===========================================
      Spacing Scale (4px base)
      =========================================== */
@@ -101,7 +101,7 @@
   --space-8: 32px;
   --space-10: 40px;
   --space-12: 48px;
-  
+
   /* ===========================================
      Typography Scale
      =========================================== */
@@ -111,12 +111,12 @@
   --text-lg: 1.125rem;     /* 18px */
   --text-xl: 1.25rem;      /* 20px */
   --text-2xl: 1.5rem;      /* 24px */
-  
+
   --font-normal: 400;
   --font-medium: 500;
   --font-semibold: 600;
   --font-bold: 700;
-  
+
   /* ===========================================
      Border Radius Scale
      =========================================== */
@@ -126,7 +126,7 @@
   --radius-lg: 12px;
   --radius-xl: 16px;
   --radius-full: 9999px;
-  
+
   /* ===========================================
      Shadows
      =========================================== */
@@ -134,14 +134,14 @@
   --shadow: 0 8px 24px rgba(2, 6, 23, 0.08);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.15);
-  
+
   /* ===========================================
      Interactive States
      =========================================== */
   --ring: 0 0 0 3px rgba(37, 99, 235, 0.3);
   --focus-ring: 0 0 0 3px rgba(37, 99, 235, 0.3);
   --touch-target-min: 44px;
-  
+
   /* ===========================================
      Layout
      =========================================== */
@@ -371,7 +371,7 @@ header h1 {
     font-size: 0.8rem;
     padding: 4px 10px;
   }
-  
+
   .sketch-name-display::before {
     font-size: 0.9rem;
   }
@@ -434,17 +434,17 @@ header h1 {
     border-color: rgba(59, 130, 246, 0.3);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   }
-  
+
   .sketch-name-display::before {
     color: var(--color-accent);
   }
-  
+
   .sketch-name-display-mobile {
     color: #93c5fd;
     background: rgba(15, 23, 42, 0.95);
     border-color: rgba(59, 130, 246, 0.3);
   }
-  
+
   .sketch-name-display-mobile::before {
     color: var(--color-accent);
   }
@@ -743,7 +743,7 @@ header .btn-primary:hover {
   padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
 }
 
-/* Standalone My Sketches button â€” sits above the collapsible groups */
+/* Standalone My Sketches button â€" sits above the collapsible groups */
 .mobile-menu__btn--standalone {
   display: flex;
   align-items: center;
@@ -924,33 +924,33 @@ header .btn-primary:hover {
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  
+
   /* Default sizing */
   min-height: 36px;
   padding: var(--space-2) var(--space-4);
-  
+
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
   line-height: 1.3;
   white-space: normal;
   text-decoration: none;
-  
+
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   background: var(--color-surface);
   color: var(--color-primary);
-  
+
   cursor: pointer;
   user-select: none;
   touch-action: manipulation;
-  
-  transition: 
-    transform 0.1s ease, 
-    background 0.15s ease, 
-    color 0.15s ease, 
-    border-color 0.15s ease, 
+
+  transition:
+    transform 0.1s ease,
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
     box-shadow 0.15s ease;
-  
+
   box-shadow: var(--shadow-sm);
 }
 
@@ -964,7 +964,7 @@ header .btn-primary:hover {
     min-height: var(--touch-target-min);
   }
 
-  /* .btn-icon-sm base class is already 44px â€” no override needed */
+  /* .btn-icon-sm base class is already 44px â€" no override needed */
 }
 
 /* Adjust size of material icons within buttons */
@@ -1083,7 +1083,7 @@ header .btn-ghost:hover,
   width: 100%;
 }
 
-/* Button with icon only â€” 44px touch target (meets WCAG 2.5.8 / Android 44dp) */
+/* Button with icon only â€" 44px touch target (meets WCAG 2.5.8 / Android 44dp) */
 .btn-icon-sm {
   width: 44px;
   height: 44px;
@@ -1192,7 +1192,7 @@ select.btn:focus-visible {
   margin-inline-end: max(4px, env(safe-area-inset-right));
 }
 
-/* Frosted glass toolbar â€” blends with the light theme instead of a harsh dark block */
+/* Frosted glass toolbar â€" blends with the light theme instead of a harsh dark block */
 .canvas-toolbar .segmented {
   background: rgba(255, 255, 255, 0.88);
   border: 1px solid var(--color-border, #e5e7eb);
@@ -1219,7 +1219,7 @@ select.btn:focus-visible {
   flex-shrink: 0;
 }
 
-/* â”€â”€ Node-type flyout (mobile grouping) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+/* â"€â"€ Node-type flyout (mobile grouping) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
    On desktop the trigger is hidden and the 4 node-type buttons
    display inline as before.  On mobile (<=600px) the trigger is
    shown and the buttons live inside a pop-out flyout panel.  */
@@ -1278,7 +1278,7 @@ select.btn:focus-visible {
   pointer-events: none;
 }
 
-/* â”€â”€ Canvas toolbar dark mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â"€â"€ Canvas toolbar dark mode â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
 @media (prefers-color-scheme: dark) {
   .canvas-toolbar .segmented {
     background: rgba(30, 41, 59, 0.92);
@@ -1287,12 +1287,12 @@ select.btn:focus-visible {
   }
 
   .canvas-toolbar .segmented .btn {
-    color: #cbd5e1; /* slate-300 â€” better contrast than slate-400 (#94a3b8) */
+    color: #cbd5e1; /* slate-300 â€" better contrast than slate-400 (#94a3b8) */
   }
 
   .canvas-toolbar .segmented .btn:hover {
     background: rgba(37, 99, 235, 0.2);
-    color: #e2e8f0; /* slate-200 â€” brighter on hover */
+    color: #e2e8f0; /* slate-200 â€" brighter on hover */
   }
 
   .canvas-toolbar .segmented .btn.active {
@@ -1322,7 +1322,7 @@ select.btn:focus-visible {
   }
 
   .node-type-flyout .btn {
-    color: #cbd5e1; /* slate-300 â€” better contrast than slate-400 */
+    color: #cbd5e1; /* slate-300 â€" better contrast than slate-400 */
   }
 
   .node-type-flyout .btn:hover {
@@ -1336,7 +1336,7 @@ select.btn:focus-visible {
   }
 }
 
-/* â”€â”€ Canvas empty-state onboarding hint â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â"€â"€ Canvas empty-state onboarding hint â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
 .canvas-empty-state {
   position: absolute;
   top: 50%;
@@ -1387,7 +1387,7 @@ select.btn:focus-visible {
   50% { transform: translateY(4px); }
 }
 
-/* â”€â”€ Long-press context menu â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â"€â"€ Long-press context menu â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
 .canvas-context-menu {
   position: fixed;
   z-index: 1600; /* above floating-keyboard (1500) */
@@ -1435,7 +1435,7 @@ select.btn:focus-visible {
   opacity: 1;
 }
 
-/* Canvas zoom buttons â€” inherit standardized 22px from .canvas-toolbar .material-icons */
+/* Canvas zoom buttons â€" inherit standardized 22px from .canvas-toolbar .material-icons */
 
 /* My Location button */
 .my-location-btn {
@@ -1457,7 +1457,7 @@ select.btn:focus-visible {
   animation: location-pulse 1s ease-in-out infinite;
 }
 
-/* Active tracking state â€” colored ring around the button */
+/* Active tracking state â€" colored ring around the button */
 .my-location-btn.tracking {
   box-shadow: inset 0 0 0 2px var(--fix-color, #3b82f6);
 }
@@ -1482,7 +1482,7 @@ select.btn:focus-visible {
 }
 
 /* ===========================================
-   Street View Pegman Widget  
+   Street View Pegman Widget
    =========================================== */
 .street-view-pegman {
   position: absolute;
@@ -1585,7 +1585,7 @@ select.btn:focus-visible {
   }
 }
 
-/* Pegman is now on the left â€” no drawer offset needed */
+/* Pegman is now on the left â€" no drawer offset needed */
 
 /* Mobile adjustments */
 @media (max-width: 600px) {
@@ -2037,7 +2037,7 @@ canvas {
   transform: rotate(90deg);
 }
 
-/* Actions container â€” collapsed by default */
+/* Actions container â€" collapsed by default */
 .canvas-fab-toolbar__actions {
   display: flex;
   flex-direction: row;
@@ -2115,7 +2115,7 @@ canvas {
   transition-delay: 0.15s;
 }
 
-/* Collapse faster (no stagger) â€” also fully hide items to prevent ghost touch targets */
+/* Collapse faster (no stagger) â€" also fully hide items to prevent ghost touch targets */
 .canvas-fab-toolbar:not(.open) .canvas-fab-toolbar__item {
   transition-delay: 0s;
   pointer-events: none;
@@ -2194,7 +2194,7 @@ canvas {
   box-shadow: var(--shadow);
 }
 
-/* Take Measure FAB â€” pill-shaped, dynamically colored by GNSS precision */
+/* Take Measure FAB â€" pill-shaped, dynamically colored by GNSS precision */
 .take-measure-fab {
   position: absolute;
   inset-inline-start: 12px;
@@ -2236,7 +2236,7 @@ canvas {
   letter-spacing: 0.01em;
 }
 
-/* Precision pulse â€” expanding ring glow that matches fix color */
+/* Precision pulse â€" expanding ring glow that matches fix color */
 .take-measure-fab.precision-pulse {
   overflow: visible;
 }
@@ -2682,7 +2682,7 @@ canvas {
     will-change: transform;
     backface-visibility: hidden;
     z-index: 160; /* above canvas-toolbar (150), below header (200) */
-    /* On mobile, always use flex layout â€” transform handles visibility */
+    /* On mobile, always use flex layout â€" transform handles visibility */
     display: flex;
   }
 
@@ -2828,7 +2828,7 @@ canvas {
 }
 
 .field-auto-filled::after {
-  content: 'ðŸ”’';
+  content: '\1F512';
   position: absolute;
   inset-inline-end: 8px;
   top: 50%;
@@ -2941,7 +2941,7 @@ canvas {
   text-align: start;
 }
 
-/* Fix quality badges â€” 3 precision levels */
+/* Fix quality badges â€" 3 precision levels */
 .survey-fix-badge {
   display: inline-block;
   padding: 3px 10px;
@@ -2949,17 +2949,17 @@ canvas {
   font-size: 0.85rem;
   font-weight: 600;
 }
-/* Fixed (RTK Fixed from GNSS receiver) â€” green */
+/* Fixed (RTK Fixed from GNSS receiver) â€" green */
 .survey-fix-badge.fix-4 {
   background: var(--color-success-light);
   color: var(--color-success-hover);
 }
-/* Device Float (RTK Float from GNSS receiver) â€” blue */
+/* Device Float (RTK Float from GNSS receiver) â€" blue */
 .survey-fix-badge.fix-5 {
   background: var(--color-primary-light);
   color: var(--color-primary-hover);
 }
-/* Manual Float (user positioned on map) â€” amber */
+/* Manual Float (user positioned on map) â€" amber */
 .survey-fix-badge.fix-6 {
   background: var(--color-warning-light);
   color: var(--color-warning-hover);
@@ -2988,7 +2988,7 @@ canvas {
   user-select: none;
 }
 
-/* â”€â”€ Measurement metadata (bottom of node panel) â”€â”€ */
+/* â"€â"€ Measurement metadata (bottom of node panel) â"€â"€ */
 .measurement-metadata {
   background: transparent;
   border: none;
@@ -3070,7 +3070,7 @@ canvas {
   margin-top: auto;
 }
 
-/* Ghost style for delete buttons in details panel â€” less prominent to prevent accidental taps */
+/* Ghost style for delete buttons in details panel â€" less prominent to prevent accidental taps */
 .details-actions .btn-danger {
   background: transparent;
   color: var(--color-danger);
@@ -3094,7 +3094,7 @@ canvas {
   50% { opacity: 0.75; }
 }
 
-/* â”€â”€ Panel section headers (compact uppercase dividers between logical groups) â”€â”€ */
+/* â"€â"€ Panel section headers (compact uppercase dividers between logical groups) â"€â"€ */
 .panel-section-header {
   font-size: 0.7rem;
   font-weight: 600;
@@ -3110,7 +3110,7 @@ canvas {
   margin-top: 0;
 }
 
-/* â”€â”€ Soft danger button (outlined delete actions with icon) â”€â”€ */
+/* â"€â"€ Soft danger button (outlined delete actions with icon) â"€â"€ */
 .btn-danger-soft {
   display: flex;
   align-items: center;
@@ -3137,7 +3137,7 @@ canvas {
   animation: pulse-danger 1s ease-in-out infinite;
 }
 
-/* â”€â”€ Diameter gradient bar (edge panel) â”€â”€ */
+/* â"€â"€ Diameter gradient bar (edge panel) â"€â"€ */
 .diameter-gradient-bar {
   flex: 1;
   height: 8px;
@@ -3152,7 +3152,7 @@ canvas {
   }
 }
 
-/* â”€â”€ Fix Suggestions (node/edge drawer) â”€â”€ */
+/* â"€â"€ Fix Suggestions (node/edge drawer) â"€â"€ */
 .fix-suggestions-section {
   border-top: 1px solid var(--color-border);
   padding: var(--space-2, 8px) 0;
@@ -3217,7 +3217,7 @@ canvas {
   }
 }
 
-/* â”€â”€ Element Issues (node/edge detail panel) â”€â”€ */
+/* â"€â"€ Element Issues (node/edge detail panel) â"€â"€ */
 .element-issues-section {
   border-top: 1px solid var(--color-border);
   padding: var(--space-2, 8px) 0;
@@ -3276,7 +3276,7 @@ canvas {
   }
 }
 
-/* â”€â”€ Issue Navigation Bar (prev / counter / next) â”€â”€ */
+/* â"€â"€ Issue Navigation Bar (prev / counter / next) â"€â"€ */
 .issue-nav-bar {
   display: flex;
   align-items: center;
@@ -3371,7 +3371,7 @@ canvas {
   border-color: var(--color-warning-light);
 }
 
-/* â”€â”€ Node Tab Wizard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â"€â"€ Node Tab Wizard â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
 .wizard-accuracy-badge {
   display: flex;
   align-items: center;
@@ -3549,7 +3549,7 @@ textarea.wizard-field-input {
   font-size: 18px;
 }
 
-/* Measurement Rail â€” Floating depth inputs on selected edges */
+/* Measurement Rail â€" Floating depth inputs on selected edges */
 .measurement-rail {
   position: absolute;
   top: 0;
@@ -3675,18 +3675,18 @@ select {
   width: 100%;
   min-height: 36px;
   padding: var(--space-2) var(--space-3);
-  
+
   font-family: inherit;
   font-size: var(--text-sm);
   color: var(--color-text);
-  
+
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  
+
   box-sizing: border-box;
-  transition: 
-    border-color 0.15s ease, 
+  transition:
+    border-color 0.15s ease,
     box-shadow 0.15s ease,
     background-color 0.15s ease;
 }
@@ -4019,7 +4019,7 @@ input.floating-keyboard-active {
   .modal-overlay {
     padding: 0;
   }
-  
+
   .modal-container {
     width: 100vw;
     max-width: 100vw;
@@ -4029,7 +4029,7 @@ input.floating-keyboard-active {
     height: 100dvh;
     border-radius: 0;
   }
-  
+
   .modal-container.modal-auto-height {
     height: auto;
     max-height: 90vh;
@@ -4139,7 +4139,7 @@ input.floating-keyboard-active {
   align-items: center;
   gap: 0.875rem;
   flex-wrap: wrap;
-  flex-shrink: 0; /* Never shrink â€” always visible at bottom of flex column */
+  flex-shrink: 0; /* Never shrink â€" always visible at bottom of flex column */
 }
 
 .admin-import-export {
@@ -4573,7 +4573,7 @@ input.floating-keyboard-active {
   .project-card-actions .btn-label {
     display: none;
   }
-  
+
   .project-card-actions .btn-sm {
     padding: 0.4rem;
   }
@@ -5093,16 +5093,16 @@ input:checked + .slider:before {
   .form-row {
     grid-template-columns: 1fr;
   }
-  
+
   .input-flow-modal {
     width: 95%;
     max-height: 90vh;
   }
-  
+
   .input-flow-tabs {
     flex-wrap: wrap;
   }
-  
+
   .input-flow-tab {
     flex: 1;
     justify-content: center;
@@ -5878,7 +5878,7 @@ input:checked + .slider:before {
   border-radius: 8px;
 }
 
-/* Start (primary) button â€” solid blue fill */
+/* Start (primary) button â€" solid blue fill */
 #startPanel #startBtn {
   background: var(--color-primary);
   color: #fff;
@@ -5890,7 +5890,7 @@ input:checked + .slider:before {
   border-color: var(--color-primary-hover);
 }
 
-/* Cancel (secondary) button â€” outlined style */
+/* Cancel (secondary) button â€" outlined style */
 #startPanel #cancelBtn {
   background: var(--color-surface);
   color: var(--color-primary);
@@ -6683,51 +6683,58 @@ select.invalid:focus {
   }
 }
 
-/* Toast â€” compact, auto-dismissing notification that doesn't block drawing */
+/* Toast â€" compact, auto-dismissing notification that doesn't block drawing */
 #toast {
   position: fixed;
   left: 50%;
   bottom: calc(var(--drawer-height, 0px) + 80px);
-  transform: translateX(-50%) translateY(8px);
-  background: rgba(15, 23, 42, 0.82);
+  transform: translateX(-50%) translateY(8px) scale(0.96);
+  background: rgba(15, 23, 42, 0.88);
   color: #f1f5f9;
-  padding: 0.35rem 0.85rem;
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.06);
   font-size: 0.82rem;
+  font-weight: 500;
   line-height: 1.3;
+  letter-spacing: 0.01em;
   word-break: break-word;
   min-height: unset;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 160;
   max-width: calc(100vw - 32px);
   text-align: center;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
 }
 
 #toast.show {
   opacity: 1;
-  transform: translateX(-50%) translateY(0);
+  transform: translateX(-50%) translateY(0) scale(1);
 }
 
 /* Toast variants -- applied via data-variant attribute */
 #toast[data-variant="success"] {
-  background: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 90%, #000);
+  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.25), 0 0 0 1px rgba(34, 197, 94, 0.15);
 }
 
 #toast[data-variant="error"] {
-  background: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 90%, #000);
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.25), 0 0 0 1px rgba(239, 68, 68, 0.15);
 }
 
 #toast[data-variant="warning"] {
   background: var(--color-warning, #f59e0b);
   color: var(--color-text, #0f172a);
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.25), 0 0 0 1px rgba(245, 158, 11, 0.15);
 }
 
 /* Help modal specific */
@@ -6819,7 +6826,7 @@ select.invalid:focus {
     border-inline-start: none;
     border-start-start-radius: var(--radius);
     border-start-end-radius: var(--radius);
-    /* On mobile, always use flex layout â€” transform handles visibility */
+    /* On mobile, always use flex layout â€" transform handles visibility */
     display: flex;
   }
 
@@ -6865,7 +6872,7 @@ select.invalid:focus {
     bottom: calc(var(--drawer-height, min(30vh, 35dvh)) + 8px + 44px + 8px);
   }
 
-  /* Optimize canvas toolbar for mobile â€” keep 44px touch target minimum */
+  /* Optimize canvas toolbar for mobile â€" keep 44px touch target minimum */
   .canvas-toolbar .segmented#modeGroup .btn {
     min-width: 44px;
     height: 44px;
@@ -6894,7 +6901,7 @@ select.invalid:focus {
   #nodeTypeFlyout                  { order: 8; }
   #edgeModeBtn                     { order: 9; }
 
-  /* â”€â”€ Node-type flyout (mobile) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  /* â"€â"€ Node-type flyout (mobile) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
      Collapses 4 node-type buttons into one trigger + flyout. */
 
   /* Allow flyout to overflow beyond the segmented container */
@@ -6926,7 +6933,7 @@ select.invalid:focus {
     opacity: 0.5;
   }
 
-  /* Active indicator on trigger â€” shows colored dot when a node type is active */
+  /* Active indicator on trigger â€" shows colored dot when a node type is active */
   .node-type-flyout-trigger.has-active-type::before {
     content: '';
     position: absolute;
@@ -7064,7 +7071,7 @@ select.invalid:focus {
     display: inline-flex !important;
   }
 
-  /* FAB zoom button colors â€” distinct from other FAB items */
+  /* FAB zoom button colors â€" distinct from other FAB items */
   #fabZoomInBtn.canvas-fab-toolbar__item {
     background: #0ea5e9; /* sky-500 */
   }
@@ -7096,7 +7103,7 @@ select.invalid:focus {
     transform: scale(0.9);
   }
 
-  /* Edge legend toggle button â€” shown on mobile only */
+  /* Edge legend toggle button â€" shown on mobile only */
   .edge-legend-toggle {
     display: flex;
     position: absolute;
@@ -7470,7 +7477,7 @@ select.invalid:focus {
     --color-border-strong: #475569;
     --color-primary-light: #1e3a5f;
     --color-primary-bg: #0f2744;
-    --color-warning: #fbbf24;            /* amber-400 â€” brighter for dark bg */
+    --color-warning: #fbbf24;            /* amber-400 â€" brighter for dark bg */
     --color-warning-light: rgba(251, 191, 36, 0.15);
   }
 
@@ -7621,7 +7628,7 @@ select.invalid:focus {
     color: #e2e8f0;
   }
 
-  /* Start panel Cancel button â€” dark mode outlined style */
+  /* Start panel Cancel button â€" dark mode outlined style */
   #startPanel #cancelBtn {
     background: var(--color-surface);
     color: var(--color-primary);
@@ -7823,7 +7830,7 @@ select.invalid:focus {
     background: var(--color-surface);
   }
 
-  /* Fix 3: .soft-blue-header dark mode â€” replace light-blue gradient with dark tones */
+  /* Fix 3: .soft-blue-header dark mode â€" replace light-blue gradient with dark tones */
   .soft-blue-header {
     background: linear-gradient(135deg, var(--color-surface-alt) 0%, var(--color-surface) 100%);
   }
@@ -9272,7 +9279,7 @@ select.invalid:focus {
   font-size: 1.25rem;
 }
 
-/* â”€â”€ Projects homepage overrides â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â"€â"€ Projects homepage overrides â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
 
 .home-panel--projects .sketch-card.project-card {
   padding: 1rem;
@@ -9295,7 +9302,7 @@ select.invalid:focus {
   border-color: var(--color-primary-hover, #1d4ed8);
 }
 
-/* "View My Sketches" button in projects footer â€” outlined navigation style */
+/* "View My Sketches" button in projects footer â€" outlined navigation style */
 .home-panel-sketches-btn {
   background: transparent;
   color: var(--color-primary);
@@ -9378,7 +9385,7 @@ select.invalid:focus {
   }
 }
 
-/* Short viewport â€” compact home panel so header/close button stays visible */
+/* Short viewport â€" compact home panel so header/close button stays visible */
 @media (max-height: 500px) {
   .home-panel-modern {
     max-height: calc(100vh - 1rem);
@@ -10075,7 +10082,7 @@ select.invalid:focus {
   }
 }
 
-/* â”€â”€ Home mode tabs (Projects | My Sketches) â”€â”€ */
+/* â"€â"€ Home mode tabs (Projects | My Sketches) â"€â"€ */
 .home-mode-tabs {
   display: flex;
   gap: 4px;
@@ -11055,18 +11062,18 @@ html[dir="rtl"] .auth-form-container {
   }
 }
 
-/* RTL adjustments â€” inset-inline-start handles directionality automatically */
+/* RTL adjustments â€" inset-inline-start handles directionality automatically */
 
 /* Mobile adjustments */
 @media (max-width: 768px) {
   .gnss-status-pill {
     bottom: calc(var(--drawer-height, 0px) + 12px);
   }
-  
+
   .gnss-controls-panel {
     bottom: calc(var(--drawer-height, 0px) + 60px);
   }
-  
+
   .point-capture-content {
     width: 95%;
     max-height: 85vh;
@@ -11141,17 +11148,17 @@ button:focus-visible,
     --color-border: #000;
     --color-border-strong: #000;
   }
-  
+
   .btn {
     border-width: 2px;
   }
-  
+
   input,
   select,
   textarea {
     border-width: 2px;
   }
-  
+
   .modal-container {
     border: 2px solid var(--color-text);
   }
@@ -11169,7 +11176,7 @@ button:focus-visible,
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-  
+
   /* Disable specific animations */
   .modal-container,
   .menu-dropdown,
@@ -11179,21 +11186,21 @@ button:focus-visible,
     animation: none !important;
     transition: none !important;
   }
-  
+
   /* Disable spinning animations */
   .spin,
   .material-icons.spin,
   .gnss-status-pill .status-indicator {
     animation: none !important;
   }
-  
+
   /* Disable hover transforms */
   .btn:hover,
   .sketch-card:hover,
   .project-card:hover {
     transform: none !important;
   }
-  
+
   /* Keep opacity transitions very short for visibility changes */
   .toast,
   [role="status"] {
@@ -11212,28 +11219,28 @@ button:focus-visible,
     --space-5: 16px;
     --space-6: 20px;
   }
-  
+
   /* Reduce header padding */
   .app-header {
     padding: var(--space-2) var(--space-3);
     gap: var(--space-2);
   }
-  
+
   /* Smaller brand on tiny screens */
   .menu-brand__logo {
     height: 24px;
   }
-  
+
   .menu-brand__title {
     font-size: 1rem;
   }
-  
+
   /* Stack mode buttons if needed */
   .canvas-toolbar {
     inset-inline-end: var(--space-2);
     top: var(--space-2);
   }
-  
+
   /* Ensure modals are full width on tiny screens */
   .modal-container,
   .panel {
@@ -11241,29 +11248,29 @@ button:focus-visible,
     margin: 0;
     border-radius: var(--radius);
   }
-  
+
   /* Reduce modal padding */
   .modal-header,
   .modal-body,
   .modal-footer {
     padding: var(--space-3) var(--space-4);
   }
-  
+
   /* Compact sidebar */
   .drawer {
     --drawer-w: 280px;
   }
-  
+
   /* Smaller field spacing */
   .field {
     margin-bottom: var(--space-2);
   }
-  
+
   /* Compact details grid */
   .details-grid.two-col {
     gap: var(--space-2);
   }
-  
+
   /* Smaller section padding */
   .details-section {
     padding: var(--space-3);
@@ -11284,7 +11291,7 @@ button:focus-visible,
     min-height: var(--touch-target-min);
     min-width: var(--touch-target-min);
   }
-  
+
   /* Icon buttons */
   .btn-icon,
   .modal-close,
@@ -11294,30 +11301,30 @@ button:focus-visible,
     width: var(--touch-target-min);
     height: var(--touch-target-min);
   }
-  
+
   /* Form controls */
   select,
   input:not([type="checkbox"]):not([type="radio"]) {
     min-height: var(--touch-target-min);
   }
-  
+
   /* Checkboxes and radios - larger touch area */
   input[type="checkbox"],
   input[type="radio"] {
     width: 24px;
     height: 24px;
   }
-  
+
   /* Dropdown items */
   .menu-dropdown__item {
     min-height: var(--touch-target-min);
   }
-  
+
   /* Tabs */
   .sketch-tab {
     min-height: var(--touch-target-min);
   }
-  
+
   /* Sketch cards - ensure action buttons are tappable */
   .sketch-action-btn {
     min-width: var(--touch-target-min);
@@ -11346,19 +11353,19 @@ button:focus-visible,
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     transform: translate3d(0, 100%, 0);
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
-    /* On mobile, always use flex layout â€” transform handles visibility */
+    /* On mobile, always use flex layout â€" transform handles visibility */
     display: flex;
   }
-  
+
   .drawer.open {
     transform: translate3d(0, 0, 0);
   }
-  
+
   /* Show drag handle on mobile */
   .sidebar-drag-handle {
     display: flex;
   }
-  
+
   /* Adjust sidebar header on mobile */
   .sidebar-header {
     padding: var(--space-3) var(--space-4);
@@ -11386,7 +11393,7 @@ button:focus-visible,
     max-height: none;
     border-radius: 0;
   }
-  
+
   /* Hide drag handle on desktop */
   .sidebar-drag-handle {
     display: none;
@@ -11409,11 +11416,11 @@ button:focus-visible,
   .drawer {
     padding-bottom: env(safe-area-inset-bottom);
   }
-  
+
   .modal-footer {
     padding-bottom: max(var(--space-4), env(safe-area-inset-bottom));
   }
-  
+
   .floating-keyboard {
     padding-bottom: env(safe-area-inset-bottom);
   }
@@ -11437,7 +11444,7 @@ button:focus-visible,
   .modal-overlay {
     display: none !important;
   }
-  
+
   /* Full width canvas */
   #canvasContainer {
     margin: 0;
@@ -11445,7 +11452,7 @@ button:focus-visible,
     box-shadow: none;
     border-radius: 0;
   }
-  
+
   /* Ensure canvas prints well */
   canvas {
     width: 100% !important;
@@ -11453,7 +11460,7 @@ button:focus-visible,
   }
 }
 
-/* â”€â”€ Sketch Side Panel (project-canvas mode) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â"€â"€ Sketch Side Panel (project-canvas mode) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
 
 .sketch-side-panel {
   position: absolute;
@@ -11551,7 +11558,7 @@ button:focus-visible,
   padding: 8px;
 }
 
-/* â”€â”€ Sketch card â€” 3-row column layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â"€â"€ Sketch card â€" 3-row column layout â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
 .sketch-side-panel__item {
   display: flex;
   flex-direction: column;
@@ -11595,7 +11602,7 @@ button:focus-visible,
   opacity: 0.8;
 }
 
-/* Row 1: Header â€” checkbox + title â€¦ eye toggle */
+/* Row 1: Header â€" checkbox + title â€¦ eye toggle */
 .sketch-card__row1 {
   display: flex;
   flex-wrap: nowrap;
@@ -11649,7 +11656,7 @@ button:focus-visible,
   font-size: 18px;
 }
 
-/* Row 2: Metadata â€” distance + node count badge */
+/* Row 2: Metadata â€" distance + node count badge */
 .sketch-card__row2 {
   display: flex;
   flex-wrap: nowrap;
@@ -11738,7 +11745,7 @@ button:focus-visible,
   max-width: 200px;
 }
 
-/* Legacy â€” kept for backward compat if anything references __stats */
+/* Legacy â€" kept for backward compat if anything references __stats */
 .sketch-side-panel__stats {
   display: flex;
   align-items: center;
@@ -11831,7 +11838,7 @@ button:focus-visible,
   font-size: 15px;
 }
 
-/* â”€â”€ Totals footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â"€â"€ Totals footer â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
 .sketch-side-panel__totals {
   display: flex;
   align-items: flex-start;
@@ -11920,7 +11927,7 @@ button:focus-visible,
   color: var(--color-danger, #ef4444);
 }
 
-/* â”€â”€ Issues sub-panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â"€â"€ Issues sub-panel â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
 .sketch-side-panel__issues-back {
   display: flex;
   align-items: center;
@@ -12042,7 +12049,7 @@ button:focus-visible,
   font-size: 20px;
 }
 
-/* â”€â”€ Merge mode button (in sketch list row) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â"€â"€ Merge mode button (in sketch list row) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
 .sketch-side-panel__merge-btn {
   display: inline-flex;
   align-items: center;
@@ -12074,7 +12081,7 @@ button:focus-visible,
   font-size: 15px;
 }
 
-/* â”€â”€ Merge mode sub-panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â"€â"€ Merge mode sub-panel â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
 .sketch-side-panel__merge-info {
   display: flex;
   align-items: center;
@@ -12175,7 +12182,7 @@ button:focus-visible,
   font-size: 20px;
 }
 
-/* â”€â”€ View All toolbar + multi-select â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â"€â"€ View All toolbar + multi-select â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
 .sketch-side-panel__toolbar {
   display: flex;
   align-items: center;
@@ -12213,7 +12220,7 @@ button:focus-visible,
   font-size: 16px;
 }
 
-/* toolbar-hint removed â€” double-click instruction now shown as card tooltip */
+/* toolbar-hint removed â€" double-click instruction now shown as card tooltip */
 
 /* Select indicator (checkbox) in sketch row */
 .sketch-side-panel__select-indicator {
@@ -12306,7 +12313,7 @@ button:focus-visible,
   border: 2px solid var(--color-surface);
 }
 
-/* â”€â”€ Mobile: side panel as bottom drawer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â"€â"€ Mobile: side panel as bottom drawer â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
 @media (max-width: 600px) {
   .sketch-side-panel {
     top: auto;
@@ -12337,7 +12344,7 @@ button:focus-visible,
 
 }
 
-/* â”€â”€ Landscape: narrower side panel to maximize canvas area â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â"€â"€ Landscape: narrower side panel to maximize canvas area â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
 /* Issue #8: Narrower panel (180px) with compact content in landscape.
    The toggle button is always visible so the panel can be shown/hidden. */
 @media (max-height: 450px) and (orientation: landscape) {
@@ -12447,7 +12454,7 @@ button:focus-visible,
   }
 }
 
-/* â”€â”€ Dark mode for side panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â"€â"€ Dark mode for side panel â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
 @media (prefers-color-scheme: dark) {
   .sketch-side-panel {
     background: var(--color-surface, #1e293b);
@@ -12568,7 +12575,7 @@ button:focus-visible,
   }
 }
 
-/* â”€â”€ Survey connection status badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â"€â"€ Survey connection status badge â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
 /*
  * Shown inside #canvasContainer (position: relative) when a TSC3 survey
  * device is connected. Placed at the inline-start corner (visual right in
@@ -12610,7 +12617,7 @@ button:focus-visible,
   display: flex;
   flex-direction: column;
 
-  /* 3D-scoped design tokens â€” the 3D view is always dark-themed */
+  /* 3D-scoped design tokens â€" the 3D view is always dark-themed */
   --color-3d-text: #fff;
   --color-3d-text-muted: #94a3b8;
   --color-3d-text-secondary: #e2e8f0;
@@ -12692,7 +12699,7 @@ button:focus-visible,
   height: 100% !important;
 }
 
-/* CSS2DRenderer label layer â€” force LTR so absolutely-positioned label wrappers
+/* CSS2DRenderer label layer â€" force LTR so absolutely-positioned label wrappers
    default to left:0 instead of right:0 in RTL mode. CSS2DRenderer positions
    child elements purely via transform(translate(Xpx, Ypx)) and relies on the
    default position being the top-left corner (0,0). In RTL, absolute elements
@@ -12842,7 +12849,7 @@ button:focus-visible,
   pointer-events: none;
 }
 
-/* 3D pipe label â€” smaller, slightly transparent blue tint */
+/* 3D pipe label â€" smaller, slightly transparent blue tint */
 .three-d-pipe-label {
   font-size: 9px;
   font-weight: 500;
@@ -12851,7 +12858,7 @@ button:focus-visible,
   border-radius: 3px;
 }
 
-/* â”€â”€ 3D Issue badges â”€â”€ */
+/* â"€â"€ 3D Issue badges â"€â"€ */
 .three-d-issue-badge {
   background: var(--color-3d-danger);
   color: var(--color-3d-text);
@@ -12868,7 +12875,7 @@ button:focus-visible,
   font-size: 14px;
 }
 
-/* â”€â”€ 3D Fix Suggestion Popup â”€â”€ */
+/* â"€â"€ 3D Fix Suggestion Popup â"€â"€ */
 .three-d-fix-popup {
   position: absolute;
   background: rgba(15, 23, 42, 0.92);
@@ -12997,7 +13004,7 @@ button:focus-visible,
   white-space: nowrap;
 }
 
-/* 3D Miniature Toggle â€” unified glass-morphism style with mode toggle */
+/* 3D Miniature Toggle â€" unified glass-morphism style with mode toggle */
 .three-d-overlay__miniature-toggle {
   min-width: 44px;
   min-height: 44px;
@@ -13112,7 +13119,7 @@ button:focus-visible,
   z-index: 2;
 }
 
-/* 3D FPS crosshair â€” game-style with center dot and breathing animation */
+/* 3D FPS crosshair â€" game-style with center dot and breathing animation */
 .three-d-overlay__crosshair {
   position: absolute;
   inset: 0;
@@ -13139,7 +13146,7 @@ button:focus-visible,
   width: 2px;
   height: 24px;
 }
-/* Center dot â€” 6px for visibility against complex 3D scenes */
+/* Center dot â€" 6px for visibility against complex 3D scenes */
 .three-d-overlay__crosshair-dot {
   position: absolute;
   width: 6px;
@@ -13157,7 +13164,7 @@ button:focus-visible,
   50% { transform: scale(1.06); opacity: 1; }
 }
 
-/* â”€â”€ 3D Issues Panel â”€â”€ */
+/* â"€â"€ 3D Issues Panel â"€â"€ */
 .three-d-overlay__issues-panel {
   position: absolute;
   top: 60px;
@@ -13270,7 +13277,7 @@ button:focus-visible,
   }
 }
 
-/* Landscape adjustments for 3D overlay â€” PUBG spectator game-HUD style */
+/* Landscape adjustments for 3D overlay â€" PUBG spectator game-HUD style */
 @media (orientation: landscape) and (max-height: 500px) {
   /* -- Auto-hiding header: transparent overlay, fades after 3s via JS -- */
   .three-d-overlay__header {
@@ -13457,7 +13464,7 @@ button:focus-visible,
   }
 }
 
-/* Sprint badge (non-landscape) â€” hidden by default */
+/* Sprint badge (non-landscape) â€" hidden by default */
 .three-d-overlay__sprint-badge {
   display: none;
 }
@@ -13467,7 +13474,7 @@ button:focus-visible,
   }
 }
 
-/* Header show button â€” hidden outside landscape */
+/* Header show button â€" hidden outside landscape */
 .three-d-overlay__header-show-btn {
   display: none;
 }
@@ -13478,7 +13485,7 @@ button:focus-visible,
 }
 
 /* ===========================================
-   Landscape Mobile â€” Horizontal Phone Layout
+   Landscape Mobile â€" Horizontal Phone Layout
    ===========================================
    Targets phones held horizontally: wide viewport with very limited height.
    Key constraint: only ~360px of height available, so every vertical pixel matters.
@@ -13518,7 +13525,7 @@ button:focus-visible,
     -webkit-backdrop-filter: saturate(160%) blur(12px);
   }
 
-  /* Canvas extends to full height â€” no margin reserved for fixed header */
+  /* Canvas extends to full height â€" no margin reserved for fixed header */
   #main {
     margin-top: 0;
   }
@@ -13555,7 +13562,7 @@ button:focus-visible,
     font-size: 1.2rem;
   }
 
-  /* Header controls (zoom, home, help) â€” compact visual, expanded touch area.
+  /* Header controls (zoom, home, help) â€" compact visual, expanded touch area.
      Visual size is 28px for space savings, but position: relative + ::after
      provides a 44px touch target for WCAG 2.5.8 compliance. */
   .menu-btn--small,
@@ -13583,7 +13590,7 @@ button:focus-visible,
   }
 
   /* ==============================================
-     Progressive Disclosure â€” Layout 1
+     Progressive Disclosure â€" Layout 1
      Reduces visible header items from ~15 to 5:
        1. User avatar (#authUserButton)
        2. Sketch name + sync indicator (identity pill)
@@ -13614,7 +13621,7 @@ button:focus-visible,
     display: none !important;
   }
 
-  /* --- LAYOUT: Header grid â€” 3-zone layout --- */
+  /* --- LAYOUT: Header grid â€" 3-zone layout --- */
   /* Zone 1 (start): identity (avatar + sketch name + sync)
      Zone 2 (center): stretches
      Zone 3 (end): actions (search + command menu + autosave) */
@@ -13625,7 +13632,7 @@ button:focus-visible,
     min-height: 36px;
   }
 
-  /* --- ZONE 1: Identity â€” brand area with sketch name + sync --- */
+  /* --- ZONE 1: Identity â€" brand area with sketch name + sync --- */
   .menu-brand {
     gap: 0.375rem;
     align-items: center;
@@ -13633,7 +13640,7 @@ button:focus-visible,
     min-width: 0;
   }
 
-  /* Hide the desktop brand separator â€” not needed in progressive disclosure */
+  /* Hide the desktop brand separator â€" not needed in progressive disclosure */
   #brand::after {
     display: none;
   }
@@ -13642,7 +13649,7 @@ button:focus-visible,
     padding-inline-end: 0;
   }
 
-  /* Sketch name: compact pill â€” show desktop version, hide mobile */
+  /* Sketch name: compact pill â€" show desktop version, hide mobile */
   .menu-sketch-name:not(.menu-sketch-name--mobile):not(:empty) {
     display: inline-flex !important;
     font-size: 0.7rem;
@@ -13669,7 +13676,7 @@ button:focus-visible,
     font-size: 0.875rem;
   }
 
-  /* --- ZONE 3: Controls â€” only search, command menu, autosave --- */
+  /* --- ZONE 3: Controls â€" only search, command menu, autosave --- */
   .menu-controls {
     gap: 0.25rem;
     overflow: visible;
@@ -13814,7 +13821,7 @@ button:focus-visible,
 /* --- Landscape: Login Page --- */
 /* Login/Signup form must be fully usable at 375px height.
    Side-by-side layout (logo left, form right), form side scrolls independently.
-   Signup has 4 fields so vertical space is tight â€” use compact gaps + small labels. */
+   Signup has 4 fields so vertical space is tight â€" use compact gaps + small labels. */
 @media (max-height: 450px) and (orientation: landscape) {
   .login-panel {
     padding: 0.5rem;
@@ -13915,7 +13922,7 @@ button:focus-visible,
     margin-top: 0;
   }
 
-  /* Hide form title/subtitle in landscape â€” the login-panel-header already provides context */
+  /* Hide form title/subtitle in landscape â€" the login-panel-header already provides context */
   .auth-form-title,
   .auth-form-subtitle {
     display: none;
@@ -13965,7 +13972,7 @@ button:focus-visible,
   }
 }
 
-/* --- Landscape: Canvas Toolbar â€” Switch to Horizontal --- */
+/* --- Landscape: Canvas Toolbar â€" Switch to Horizontal --- */
 @media (max-height: 450px) and (orientation: landscape) {
   /* Issue #1 + #2: Compact horizontal toolbar with 44px touch targets.
      Visual size is 34px to save vertical space, but each button has a
@@ -13999,7 +14006,7 @@ button:focus-visible,
   }
 
   .canvas-toolbar .segmented#modeGroup .btn {
-    /* 44px touch target with compact 20px icon â€” border-box keeps sizing predictable.
+    /* 44px touch target with compact 20px icon â€" border-box keeps sizing predictable.
        The 44px meets WCAG 2.5.8 minimum while staying compact in landscape. */
     min-width: 44px;
     min-height: 36px;
@@ -14015,7 +14022,7 @@ button:focus-visible,
     font-size: 20px;
   }
 
-  /* In landscape, always show all node buttons inline â€” no flyout */
+  /* In landscape, always show all node buttons inline â€" no flyout */
   .node-type-flyout-trigger {
     display: none !important;
   }
@@ -14055,7 +14062,7 @@ button:focus-visible,
     height: 44px;
   }
 
-  /* Take Measure FAB â€” min 44px touch target even in landscape */
+  /* Take Measure FAB â€" min 44px touch target even in landscape */
   .take-measure-fab {
     bottom: 4px;
     inset-inline-start: 4px;
@@ -14072,7 +14079,7 @@ button:focus-visible,
     font-size: 11px;
   }
 
-  /* Header recall handle â€” chevron strip at top edge when header hidden.
+  /* Header recall handle â€" chevron strip at top edge when header hidden.
      Visual height is 28px but the touch target extends to 44px via padding-bottom
      so finger taps register reliably on real devices. */
   .header-recall-handle {
@@ -14107,7 +14114,7 @@ button:focus-visible,
   }
 }
 
-/* --- Landscape: Bottom Drawer â€” Side Panel Instead --- */
+/* --- Landscape: Bottom Drawer â€" Side Panel Instead --- */
 @media (max-height: 450px) and (max-width: 900px) and (orientation: landscape) {
   .drawer {
     /* Issue #4: Convert bottom sheet to side panel; narrower (35vw, max 280px)
@@ -14266,7 +14273,7 @@ button:focus-visible,
   }
 }
 
-/* --- Landscape: Home Panel â€” Full-Width Compact --- */
+/* --- Landscape: Home Panel â€" Full-Width Compact --- */
 @media (max-height: 450px) and (orientation: landscape) {
   .home-panel-modern {
     width: min(600px, 90vw);
@@ -14364,7 +14371,7 @@ button:focus-visible,
     min-height: 44px;
   }
 
-  /* Projects home panel â€” compact cards in landscape */
+  /* Projects home panel â€" compact cards in landscape */
   .home-panel--projects .home-panel-header {
     padding-bottom: 0.4rem;
   }
@@ -14742,7 +14749,7 @@ body.cockpit-mode #edgeLegend {
       color: rgba(255, 255, 255, 0.35);
     }
 
-    /* Progressive Disclosure â€” dark mode overrides */
+    /* Progressive Disclosure â€" dark mode overrides */
 
     /* Group separators: lighter for dark mode */
     .menu-group--primary,
@@ -14770,7 +14777,7 @@ body.cockpit-mode #edgeLegend {
   }
 }
 
-/* Header recall handle â€” hidden outside landscape */
+/* Header recall handle â€" hidden outside landscape */
 .header-recall-handle {
   display: none;
 }
@@ -14782,7 +14789,7 @@ body.cockpit-mode #edgeLegend {
 }
 
 /* ============================================================
-   Admin Panel Hub â€” tab system, cards, forms, lists, features
+   Admin Panel Hub â€" tab system, cards, forms, lists, features
    ============================================================ */
 
 /* Override admin-content so hub tabs sit flush */
@@ -14790,7 +14797,7 @@ body.cockpit-mode #edgeLegend {
   padding: 0;
 }
 
-/* Hub tab bar â€” extends the base .admin-tabs style */
+/* Hub tab bar â€" extends the base .admin-tabs style */
 .ap-hub-tabs {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -15834,7 +15841,7 @@ body.cockpit-mode #edgeLegend {
   }
 }
 
-/* â”€â”€ Admin Stats: Velocity badge â”€â”€ */
+/* â"€â"€ Admin Stats: Velocity badge â"€â"€ */
 .admin-stats__badge {
   display: inline-flex;
   align-items: center;
@@ -15857,7 +15864,7 @@ body.cockpit-mode #edgeLegend {
   .badge--flat { background: #1f2937; color: #9ca3af; }
 }
 
-/* â”€â”€ Admin Stats: KPI Row â”€â”€ */
+/* â"€â"€ Admin Stats: KPI Row â"€â"€ */
 .admin-stats__kpi-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -15921,7 +15928,7 @@ body.cockpit-mode #edgeLegend {
   text-align: center;
 }
 
-/* â”€â”€ Admin Stats: SVG Chart â”€â”€ */
+/* â"€â"€ Admin Stats: SVG Chart â"€â"€ */
 .admin-stats__svg-chart {
   width: 100%;
   overflow-x: auto;
@@ -15933,7 +15940,7 @@ body.cockpit-mode #edgeLegend {
   height: auto;
 }
 
-/* â”€â”€ Admin Stats: Charts Row (donut + issues side by side) â”€â”€ */
+/* â"€â"€ Admin Stats: Charts Row (donut + issues side by side) â"€â"€ */
 .admin-stats__charts-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -15951,7 +15958,7 @@ body.cockpit-mode #edgeLegend {
   }
 }
 
-/* â”€â”€ Admin Stats: Accuracy Donut â”€â”€ */
+/* â"€â"€ Admin Stats: Accuracy Donut â"€â"€ */
 .admin-stats__donut-wrap {
   display: flex;
   align-items: center;
@@ -15995,7 +16002,7 @@ body.cockpit-mode #edgeLegend {
   font-variant-numeric: tabular-nums;
 }
 
-/* â”€â”€ Admin Stats: Issue Breakdown Bars â”€â”€ */
+/* â"€â"€ Admin Stats: Issue Breakdown Bars â"€â"€ */
 .admin-stats__issue-row {
   display: flex;
   align-items: center;
@@ -16035,7 +16042,7 @@ body.cockpit-mode #edgeLegend {
   font-variant-numeric: tabular-nums;
 }
 
-/* â”€â”€ Admin Stats: Activity Heatmap â”€â”€ */
+/* â"€â"€ Admin Stats: Activity Heatmap â"€â"€ */
 .admin-stats__heatmap {
   display: grid;
   grid-template-columns: repeat(auto-fill, 12px);
@@ -16066,7 +16073,7 @@ body.cockpit-mode #edgeLegend {
   color: var(--color-text-muted);
 }
 
-/* â”€â”€ Admin Stats: Heatmap Tooltip â”€â”€ */
+/* â"€â"€ Admin Stats: Heatmap Tooltip â"€â"€ */
 .admin-stats__heatmap-tooltip {
   position: absolute;
   transform: translate(-50%, -100%);
@@ -16137,7 +16144,7 @@ body.cockpit-mode #edgeLegend {
 }
 
 /* ===== Mission Control Home Screen ===== */
-/* â”€â”€ Resume Bar (compact active sketch shortcut) â”€â”€ */
+/* â"€â"€ Resume Bar (compact active sketch shortcut) â"€â"€ */
 .resume-bar {
   display: flex;
   align-items: center;
@@ -16250,7 +16257,7 @@ body.cockpit-mode #edgeLegend {
   }
 }
 
-/* â”€â”€ Search Bar â”€â”€ */
+/* â"€â"€ Search Bar â"€â"€ */
 .home-search-bar {
   position: relative;
   padding: 8px 16px;
@@ -16325,7 +16332,7 @@ body.cockpit-mode #edgeLegend {
   }
 }
 
-/* â”€â”€ Project card meta separator â”€â”€ */
+/* â"€â"€ Project card meta separator â"€â"€ */
 .sketch-card-meta__sep {
   display: inline-block;
   width: 1px;
@@ -16766,7 +16773,7 @@ body.reduce-blue-light #canvasContainer canvas {
 }
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   UNIFIED LAYOUT â€” hides old floating panels when the new layout is active.
+   UNIFIED LAYOUT â€" hides old floating panels when the new layout is active.
    Scoped under body.unified-layout to avoid conflicts.
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
@@ -16785,7 +16792,7 @@ body.unified-layout .take-measure-fab {
   display: none !important;
 }
 
-/* Hide old edge legend toggle (palette button) â€” legend itself stays */
+/* Hide old edge legend toggle (palette button) â€" legend itself stays */
 body.unified-layout #edgeLegendToggle {
   display: none !important;
 }
@@ -16837,7 +16844,7 @@ body.unified-layout #sidebar.drawer {
   display: none !important;
 }
 
-/* â”€â”€ Canvas container adjustments under unified layout â”€â”€ */
+/* â"€â"€ Canvas container adjustments under unified layout â"€â"€ */
 body.unified-layout #canvasContainer {
   /* Old sidebar is hidden, so let canvas take full width */
   flex: 1 1 0%;
@@ -16860,7 +16867,7 @@ body.unified-layout #toast {
 
 /* ── Design Issue Fixes (Iteration 7) ──────────────────────────────── */
 
-/* #52 — Wizard tab abbreviated text labels */
+/* #52 - Wizard tab abbreviated text labels */
 .wizard-tab-label {
   display: none;
   font-size: 9px;
@@ -16882,7 +16889,7 @@ body.unified-layout #toast {
   .wizard-tab { width: auto; min-width: 44px; padding: 4px 6px; height: auto; min-height: 44px; }
 }
 
-/* #25 — Issue list collapsible group headers */
+/* #25 - Issue list collapsible group headers */
 .sketch-side-panel__issue-group-header {
   display: flex;
   align-items: center;
@@ -16924,7 +16931,7 @@ body.unified-layout #toast {
   /* container for rows inside a group */
 }
 
-/* #26 — Styled confirmation modal (replaces native confirm) */
+/* #26 - Styled confirmation modal (replaces native confirm) */
 .app-confirm-overlay {
   position: fixed;
   inset: 0;
@@ -16977,7 +16984,7 @@ body.unified-layout #toast {
   cursor: pointer;
 }
 
-/* #32/#53 — Actionable chip (tappable badge) */
+/* #32/#53 - Actionable chip (tappable badge) */
 .chip-actionable {
   cursor: pointer;
   transition: opacity 0.15s;
@@ -16999,5 +17006,164 @@ body.unified-layout #toast {
   background: var(--color-surface, #fff) !important;
   z-index: 9001;
   position: relative;
+}
+
+/* ===========================================
+   Micro-Animations & Visual Polish
+   =========================================== */
+
+/* Floating panel depth — consistent elevated shadow */
+.layers-config-panel,
+.sketch-side-panel,
+.canvas-context-menu,
+#mobileMenu,
+.mobile-menu,
+.user-menu-dropdown,
+.notification-dropdown,
+.menu-dropdown {
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+/* Consistent border-radius for card-like panels */
+.details-section,
+.intel-card,
+.sketch-card,
+.project-card,
+.admin-menu-group,
+.admin-option-card,
+.us-status-card,
+.fc-intel-card,
+.option-card {
+  border-radius: var(--radius-lg);
+}
+
+/* Subtle press feedback on icon buttons */
+.btn-icon:active,
+.icon-btn:active,
+.layers-config-btn:active,
+.edge-legend-toggle:active,
+.my-location-btn:active {
+  transform: scale(0.92);
+  transition: transform 0.1s ease;
+}
+
+/* Details section interactive border */
+.details-section {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Wizard tab smooth transitions */
+.wizard-tab {
+  transition: all 0.15s ease;
+}
+
+/* Sketch card hover lift */
+.sketch-card {
+  transition: border-color 0.15s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.sketch-card:hover {
+  transform: translateY(-1px);
+}
+
+/* Project card transition */
+.project-card {
+  transition: border-color 0.15s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+/* Admin toggle switch smooth animation */
+.admin-toggle-switch {
+  transition: background 0.2s ease;
+}
+
+.admin-toggle-switch::after {
+  transition: inset-inline-start 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Chip hover feedback */
+.chip {
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+/* Sidebar close button polish */
+#sidebarCloseBtn {
+  transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+#sidebarCloseBtn:hover {
+  transform: scale(1.05);
+}
+
+/* Context menu item hover */
+.canvas-context-menu__item {
+  transition: background 0.1s ease;
+}
+
+/* Segmented button transitions */
+.segmented .btn {
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+/* Edge legend smooth transitions */
+.edge-legend {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* Issue nav buttons */
+.issue-nav-bar__btn {
+  transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+/* Progress bar fills — smooth animated width */
+.data-completeness-bar__fill {
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
+}
+
+.pm-overlay__bar-fill {
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
+}
+
+/* Fix suggestion press feedback */
+.btn-fix-suggestion {
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.btn-fix-suggestion:active {
+  transform: scale(0.98);
+}
+
+/* Home panel new button */
+.home-panel-new-btn {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Sketch action button press feedback */
+.sketch-action-btn {
+  transition: all 0.15s ease;
+}
+
+.sketch-action-btn:active {
+  transform: scale(0.97);
+}
+
+/* Dark toast override */
+@media (prefers-color-scheme: dark) {
+  #toast {
+    background: rgba(30, 41, 59, 0.92);
+    color: #e2e8f0;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+
+  #toast[data-variant="success"] {
+    box-shadow: 0 4px 16px rgba(34, 197, 94, 0.3), 0 0 0 1px rgba(34, 197, 94, 0.2);
+  }
+
+  #toast[data-variant="error"] {
+    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.3), 0 0 0 1px rgba(239, 68, 68, 0.2);
+  }
+
+  #toast[data-variant="warning"] {
+    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3), 0 0 0 1px rgba(245, 158, 11, 0.2);
+  }
 }
 
