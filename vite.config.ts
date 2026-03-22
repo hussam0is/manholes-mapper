@@ -57,6 +57,11 @@ export default defineConfig({
       },
     },
     chunkSizeWarningLimit: 1000,
+    // Target modern browsers for smaller output (no legacy polyfills)
+    target: 'es2022',
+    // Skip modulepreload polyfill (~2KB) — all target browsers support it natively
+    modulePreload: { polyfill: false },
+
   },
   server: {
     // When running under vercel dev, let Vercel control the port
