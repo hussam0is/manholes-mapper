@@ -13,7 +13,7 @@ import './menu/menu.css';
 import './utils/toast.js';
 import './serviceWorker/register-sw.js';
 
-import { injectSpeedInsights } from '@vercel/speed-insights';
+// @vercel/speed-insights is lazy-loaded below (only on Vercel production)
 
 import { i18n as I18N_DICT, createTranslator, isRTL as i18nIsRTL } from './i18n.js';
 import { syncHeaderHeightVar, syncAppHeightVar } from './dom/dom-utils.js';
@@ -53,9 +53,8 @@ import { showMeasurementRail, hideMeasurementRail } from './features/measurement
 import { initUnifiedLayout } from './layout/layout-manager.js';
 
 // Initialize Vercel Speed Insights only when deployed on Vercel (production)
-// The /_vercel/speed-insights/script.js endpoint only exists on Vercel's platform
 if (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')) {
-  injectSpeedInsights();
+  import('@vercel/speed-insights').then(m => m.injectSpeedInsights());
 }
 
 /** Escape HTML special characters to prevent XSS */
