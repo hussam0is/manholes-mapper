@@ -8951,6 +8951,8 @@ if (finishWorkdayModal) {
     if (e.target === finishWorkdayModal) {
       closeFinishWorkdayModal();
     }
+  });
+}
 
 // [Extracted to src/legacy/coordinate-handlers.js]
 initCoordinateHandlers();
