@@ -1,9 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
-  "devCommand": "vite --port $PORT",
-  "buildCommand": "vite build",
-  "outputDirectory": "dist",
+  "devCommand": "cd frontend && vite --port $PORT",
+  "buildCommand": "cd frontend && vite build",
+  "outputDirectory": "frontend/dist",
   "rewrites": [
     {
       "source": "/api/users/:id",
