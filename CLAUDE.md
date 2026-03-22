@@ -113,7 +113,7 @@ Allowed operations include: npm scripts, git commands, node execution, curl, Ver
 
 ### Entry Point Flow
 
-`index.html` → `src/main-entry.js` (ES module) → initializes CSS imports, i18n, auth, GNSS, menu system → loads `src/legacy/main.js` (core app logic, ~12300 lines).
+`index.html` → `src/main-entry.js` (ES module) → initializes CSS imports, i18n, auth, GNSS, menu system → loads `src/legacy/main.js` (core app logic, ~11300 lines).
 
 **Critical load order:** `src/capacitor-api-proxy.js` must load before any `fetch()` calls (proxies API for Android native app).
 
@@ -121,7 +121,12 @@ CSS is imported via JS (`import '../styles.css'`) for Vite dev/build compatibili
 
 ### Key Directories
 
-- **`src/legacy/main.js`** — Monolithic core: canvas rendering loop, event handlers, sketch CRUD, all panel logic. Being modularized incrementally. **Excluded from ESLint.**
+- **`src/legacy/main.js`** — Monolithic core (~11300 lines): canvas rendering loop, event handlers, sketch CRUD, all panel logic. Being modularized incrementally. **Excluded from ESLint.**
+- **`src/legacy/shared-state.js`** — Extracted shared state exports (window globals bridge for legacy ↔ ES module communication)
+- **`src/legacy/gnss-handlers.js`** — Extracted GNSS event handlers (~490 lines): live measure integration, position capture, accuracy display
+- **`src/legacy/tsc3-handlers.js`** — Extracted TSC3 survey controller handlers (~170 lines): incoming point processing, node matching
+- **`src/legacy/admin-handlers.js`** — Extracted admin panel handlers (~190 lines): admin config modal, settings import/export
+- **`src/legacy/library-manager.js`** — Extracted library/catalog management (~530 lines): node type, material, diameter catalog operations
 - **`src/auth/`** — Better Auth client (`auth-client.js`), session guards (`auth-guard.js` with 5-min polling), React auth UI (`auth-provider.jsx`), sync-service (`sync-service.js` with 2s debounce, AbortController cleanup), permissions/RBAC (`permissions.js`)
 - **`src/gnss/`** — Live Measure: GNSS state machine (`gnss-state.js` singleton), NMEA parsing (`nmea-parser.js` — GGA/RMC), browser-location-adapter (bridges `navigator.geolocation` → `gnssState`, infers fix quality from accuracy), Bluetooth/WiFi/mock adapters, connection manager, canvas marker rendering (`gnss-marker.js`), point capture dialog
 - **`src/survey/`** — TSC3 survey controller integration: device picker dialog, TSC3 Bluetooth/WebSocket adapters (Trimble TSC3 receivers), TSC3 NMEA parser, survey node-type dialog, connection manager
@@ -184,6 +189,14 @@ All routes require Better Auth session. Rate limited: 100 req/min (20 for auth).
 **Roles:** `user` (own sketches), `admin` (org resources), `super_admin` (everything)
 
 **Feature flags:** `export_csv`, `export_sketch`, `admin_settings`, `finish_workday`, `node_types`, `edge_types`
+
+### Node Type Categories
+
+Defined in `src/state/constants.js` as `NODE_TYPE_CATEGORIES`: **Manhole**, **Home**, **Drainage**, **Covered**, **ForLater**, **Issue**. Each type has a distinct icon drawn by `src/features/node-icons.js`. The **Issue** node type (red circle with exclamation mark) represents a reported field issue that needs attention — it is excluded from heatmap coloring and completeness scoring.
+
+### Heat Map Mode
+
+Toggle via `body.classList.toggle('heatmap-active')`. When active, nodes are color-coded by data completeness: **green** = all fields complete, **orange** = missing optional fields, **red** = issues or missing coordinates. Home, ForLater, and Issue nodes are excluded from heatmap coloring. The heatmap state is cached once per draw frame (`_isHeatmapFrame`) to avoid repeated DOM reads.
 
 ### Data Flow
 
