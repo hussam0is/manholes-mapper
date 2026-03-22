@@ -49,7 +49,7 @@ describe('validateString', () => {
 
 describe('validateRole', () => {
   it('should accept all valid roles', () => {
-    VALID_ROLES.forEach((role) => {
+    VALID_ROLES.forEach((role: string) => {
       expect(validateRole(role)).toBe(true);
     });
   });
@@ -64,7 +64,7 @@ describe('validateRole', () => {
 
 describe('validateFeatureKey', () => {
   it('should accept all valid feature keys', () => {
-    VALID_FEATURE_KEYS.forEach((key) => {
+    VALID_FEATURE_KEYS.forEach((key: string) => {
       expect(validateFeatureKey(key)).toBe(true);
     });
   });

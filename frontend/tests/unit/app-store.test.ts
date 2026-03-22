@@ -62,8 +62,8 @@ describe('appStore', () => {
           this._listeners.get(event)!.add(cb);
           return () => this._listeners.get(event)?.delete(cb);
         },
-        emit(event: string, data?: any) {
-          this._listeners.get(event)?.forEach(cb => cb(data));
+        emit(event: string, data?: unknown) {
+          this._listeners.get(event)?.forEach((cb: Function) => cb(data));
         },
       };
 
@@ -85,8 +85,8 @@ describe('appStore', () => {
           this._listeners.get(event)!.add(cb);
           return () => this._listeners.get(event)?.delete(cb);
         },
-        emit(event: string, data?: any) {
-          this._listeners.get(event)?.forEach(cb => cb(data));
+        emit(event: string, data?: unknown) {
+          this._listeners.get(event)?.forEach((cb: Function) => cb(data));
         },
       };
 

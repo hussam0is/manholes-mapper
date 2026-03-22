@@ -34,6 +34,15 @@ import { appState } from './app-state.js';
  * @property {Object|null} menu — menuEvents singleton
  * @property {Object|null} auth — auth-guard functions
  * @property {Object|null} sync — sync-service functions
+ * @property {(gnssState: Object) => void} registerGnss — register GNSS state manager
+ * @property {(conn: Object) => void} registerGnssConnection — register GNSS connection manager
+ * @property {(menuEvt: Object) => void} registerMenu — register menu events
+ * @property {(authFns: Object) => void} registerAuth — register auth functions
+ * @property {(syncFns: Object) => void} registerSync — register sync service
+ * @property {() => boolean} isGnssConnected — whether GNSS is connected
+ * @property {() => {lat: number, lon: number}|null} getGnssPosition — get GNSS position
+ * @property {() => boolean} isAuthenticated — whether user is authenticated
+ * @property {() => Object|null} getAuthState — get auth state
  */
 
 /** @type {AppStore} */

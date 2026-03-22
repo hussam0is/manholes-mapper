@@ -382,7 +382,7 @@ describe('Sync Service Unit Tests', () => {
 
       expect(result.deduplicated.length).toBe(2);
       expect(result.removedCount).toBe(3);
-      expect(result.deduplicated.map(s => s.id).sort()).toEqual([uuid1, uuid2].sort());
+      expect(result.deduplicated.map((s: any) => s.id).sort()).toEqual([uuid1, uuid2].sort());
     });
   });
 

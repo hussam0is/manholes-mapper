@@ -166,7 +166,7 @@ describe('Edge Cases: Validators', () => {
 
   describe('validateRole edge cases', () => {
     it('should accept all valid roles exactly', () => {
-      VALID_ROLES.forEach((role) => {
+      VALID_ROLES.forEach((role: string) => {
         expect(validateUserUpdateInput({ role })).toBeNull();
       });
     });
