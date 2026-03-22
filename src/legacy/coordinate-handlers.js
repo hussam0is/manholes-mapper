@@ -91,6 +91,7 @@ async function handleCoordinatesImport(file) {
       }
       saveCoordinatesToStorage(S.coordinatesMap);
 
+      const matchingIds = S.nodes.filter(n => S.coordinatesMap.has(String(n.id)));
       const matchCount = matchingIds.length;
       const totalNodes = S.nodes.length;
       const addedNew = S.coordinatesMap.size - prevSize;

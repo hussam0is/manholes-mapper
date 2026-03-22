@@ -12,6 +12,7 @@ import { S, F } from './shared-state.js';
 
 // ── Convenience wrappers ────────────────────────────────────────────────
 const t = (...args) => F.t(...args);
+const escapeHtml = (s) => window.escapeHtml ? window.escapeHtml(s) : String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 
 // ── DOM refs ────────────────────────────────────────────────────────────
 const nodeTypeFlyoutBtn = document.getElementById('nodeTypeFlyoutBtn');

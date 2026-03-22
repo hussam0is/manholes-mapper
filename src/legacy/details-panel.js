@@ -18,6 +18,7 @@
  */
 
 import { S, F } from './shared-state.js';
+import { isRTL } from '../i18n.js';
 import {
   NODE_MATERIAL_OPTIONS,
   NODE_ACCESS_OPTIONS,
@@ -37,6 +38,7 @@ import {
 
 // Convenience wrappers so calls inside this module look like plain calls
 const t = (...args) => F.t(...args);
+const escapeHtml = (s) => window.escapeHtml ? window.escapeHtml(s) : String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 
 // ============================================
 // @Mention autocomplete for issue comments

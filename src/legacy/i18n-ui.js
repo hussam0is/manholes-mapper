@@ -19,7 +19,9 @@ import {
   updateLayersConfigTranslations
 } from '../map/layers-config.js';
 
-// use global t/isRTL injected from module entry
+// Convenience wrappers for global t/isRTL injected from module entry
+const t = (...args) => (typeof window.t === 'function' ? window.t(...args) : args[0]);
+const isRTL = (lang) => (typeof window.isRTL === 'function' ? window.isRTL(lang) : false);
 
 export function applyLangToStaticUI() {
   // Sweep all elements with translation data-attributes
