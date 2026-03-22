@@ -1327,162 +1327,10 @@ if (saveBtn) {
 }
 // Autosave toggle — [Extracted to src/legacy/toolbar-events.js]
 
-// Load size scale preference
-try {
-  const savedSizeScale = localStorage.getItem(STORAGE_KEYS.sizeScale);
-  if (savedSizeScale !== null) {
-    const parsed = parseFloat(savedSizeScale);
-    if (!isNaN(parsed) && parsed >= MIN_SIZE_SCALE && parsed <= MAX_SIZE_SCALE) {
-      sizeScale = parsed;
-    }
-  }
-} catch (e) {
-  console.warn('[App] Failed to load size scale preference:', e.message);
-}
-
-// Size control buttons
-function increaseSizeScale() {
-  const newScale = Math.min(sizeScale + SIZE_SCALE_STEP, MAX_SIZE_SCALE);
-  if (newScale !== sizeScale) {
-    sizeScale = newScale;
-    localStorage.setItem(STORAGE_KEYS.sizeScale, String(sizeScale));
-    scheduleDraw();
-    const pct = Math.round(sizeScale * 100);
-    showToast(t('toasts.sizeChanged', pct));
-  }
-}
-
-function decreaseSizeScale() {
-  const newScale = Math.max(sizeScale - SIZE_SCALE_STEP, MIN_SIZE_SCALE);
-  if (newScale !== sizeScale) {
-    sizeScale = newScale;
-    localStorage.setItem(STORAGE_KEYS.sizeScale, String(sizeScale));
-    scheduleDraw();
-    const pct = Math.round(sizeScale * 100);
-    showToast(t('toasts.sizeChanged', pct));
-  }
-}
-
-if (sizeIncreaseBtn) {
-  sizeIncreaseBtn.addEventListener('click', increaseSizeScale);
-}
-if (sizeDecreaseBtn) {
-  sizeDecreaseBtn.addEventListener('click', decreaseSizeScale);
-}
-if (mobileSizeIncreaseBtn) {
-  mobileSizeIncreaseBtn.addEventListener('click', increaseSizeScale);
-}
-if (mobileSizeDecreaseBtn) {
-  mobileSizeDecreaseBtn.addEventListener('click', decreaseSizeScale);
-}
-
-// Auto size toggle — keeps nodes/edges at constant screen pixel size during zoom
-function updateAutoSizeBtnStyle() {
-  const activeClass = 'menu-btn--active';
-  if (autoSizeBtn) {
-    autoSizeBtn.classList.toggle(activeClass, autoSizeEnabled);
-  }
-  if (mobileAutoSizeBtn) {
-    mobileAutoSizeBtn.classList.toggle('active', autoSizeEnabled);
-  }
-}
-
-function toggleAutoSize() {
-  autoSizeEnabled = !autoSizeEnabled;
-  localStorage.setItem(STORAGE_KEYS.autoSize, String(autoSizeEnabled));
-  updateAutoSizeBtnStyle();
-  scheduleDraw();
-  showToast(autoSizeEnabled ? t('toasts.autoSizeOn') : t('toasts.autoSizeOff'));
-}
-
-// Load auto size preference
-try {
-  const savedAutoSize = localStorage.getItem(STORAGE_KEYS.autoSize);
-  if (savedAutoSize === 'false') {
-    autoSizeEnabled = false;
-  }
-} catch (e) {
-  console.warn('[App] Failed to load auto size preference:', e.message);
-}
-updateAutoSizeBtnStyle();
-
-if (autoSizeBtn) {
-  autoSizeBtn.addEventListener('click', toggleAutoSize);
-}
-if (mobileAutoSizeBtn) {
-  mobileAutoSizeBtn.addEventListener('click', toggleAutoSize);
-}
-
-// Help modal controls
-if (helpBtn && helpModal) {
-  helpBtn.addEventListener('click', () => {
-    helpModal.classList.remove('panel-closing');
-    helpModal.style.display = 'flex';
-  });
-}
-if (closeHelpBtn && helpModal) {
-  closeHelpBtn.addEventListener('click', () => {
-    hidePanelAnimated(helpModal);
-  });
-}
-if (helpModal) {
-  helpModal.addEventListener('click', (e) => {
-    if (e.target === helpModal) hidePanelAnimated(helpModal);
-  });
-}
-
-// Language selector
-menuEvents.on('languageChange', ({ value, element }) => {
-  const newValue = value === 'en' ? 'en' : 'he';
-  currentLang = newValue;
-  try { window.currentLang = currentLang; } catch (_) { }
-  localStorage.setItem(STORAGE_KEYS.lang, currentLang);
-  
-  // Sync all language selects
-  document.querySelectorAll('[data-action="languageChange"]').forEach(select => {
-    if (select.value !== newValue) {
-      select.value = newValue;
-    }
-  });
-
-  applyLangToStaticUI();
-  // Update page title
-  document.title = t('appTitle') || 'Manhole Mapper';
-  // Dispatch custom event for language change (for floating keyboard and other modules)
-  document.dispatchEvent(new Event('appLanguageChanged'));
-  // Re-render dynamic lists and details with translated labels
-  if (homePanel && homePanel.style.display === 'flex') {
-    renderHome();
-  }
-  renderDetails();
-  // Re-mount auth forms if login panel is visible (so translations update)
-  if (loginPanel && loginPanel.style.display === 'flex') {
-    const hash = location.hash;
-    if (hash === '#/signup') {
-      mountAuthSignUp();
-    } else {
-      mountAuthSignIn();
-    }
-    // Update login panel wrapper text
-    if (loginTitle) loginTitle.textContent = t('auth.loginTitle');
-    if (loginSubtitle) loginSubtitle.textContent = t('auth.loginSubtitle');
-  }
-  // If admin modal is open, rebuild its UI to apply new translations
-  if (adminModal && adminModal.style.display !== 'none') {
-    openAdminModal();
-  }
-  // If admin screen is active (#/admin), rebuild it as well
-  try {
-    if (location.hash === '#/admin') {
-      openAdminScreen();
-    }
-  } catch (_) { }
-
-  // Close mobile menu if change came from mobile
-  if (element && element.id === 'mobileLangSelect') {
-    closeMobileMenu();
-  }
-});
+// Size scale, auto-size, help modal, language selector, autosave toggle
+// — [Extracted to src/legacy/toolbar-events.js]
+// Loaded and wired via loadSizePreferences() (above) and initToolbarEvents() in init().
+loadSizePreferences();
 
 // [Extracted to src/legacy/mobile-menu.js]
 initMobileMenu();
@@ -2081,6 +1929,10 @@ initAuthUI();
 // Project UI (flyout, project dropdown)
 // [Extracted to src/legacy/project-ui.js]
 initProjectUI();
+
+// Toolbar events (mode buttons, export/import, size controls, help, language, autosave, home)
+// [Extracted to src/legacy/toolbar-events.js]
+initToolbarEvents();
 
 // ── Emergency save on page unload ─────────────────────────────────────────
 window.addEventListener('beforeunload', (e) => {
