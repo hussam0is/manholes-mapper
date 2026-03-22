@@ -68,16 +68,16 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Initialize database
-    await ensureDb();
-
-    // Verify authentication
+    // Verify authentication first (before DB init to return 401 instead of 500)
     const { userId, error: authError, user: authUser } = await verifyAuth(request);
 
     if (authError) {
       console.warn(`[API /api/sketches] Auth failed: ${authError}`);
       return res.status(401).json({ error: authError });
     }
+
+    // Initialize database
+    await ensureDb();
 
     if (req.method === 'GET') {
       const username = authUser?.name || null;
