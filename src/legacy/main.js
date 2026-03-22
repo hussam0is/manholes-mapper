@@ -2081,7 +2081,11 @@ async function loadFromLibrary(sketchId) {
   const lib = getLibrary();
   const rec = lib.find((r) => r.id === sketchId);
   if (!rec) return false;
-  
+
+  // Show loading overlay while sketch data loads
+  showProjectLoadingOverlay();
+  updateLoadingStep(t('sketches.loading') || 'Loading sketch…');
+
   // Release lock on previous sketch if we held one
   if (currentSketchId && window.syncService?.releaseSketchLock) {
     await window.syncService.releaseSketchLock(currentSketchId).catch(() => {});
@@ -2165,6 +2169,9 @@ async function loadFromLibrary(sketchId) {
   // Load reference layers for the project (if sketch belongs to one)
   loadProjectReferenceLayers(currentProjectId);
   updateCanvasEmptyState();
+
+  // Hide loading overlay now that sketch is fully loaded
+  await hideProjectLoadingOverlay();
 
   return true;
 }
@@ -2441,7 +2448,7 @@ if (window.syncService?.onSyncStateChange) {
     updateSyncStatusUI(state);
     // Re-render home panel when sync completes while it is visible (but not in project canvas mode)
     if (homePanel && homePanel.style.display === 'flex' && !isProjectCanvasMode()) {
-      if (homeMode === 'projects') {
+      if (getHomeMode() === 'projects') {
         renderProjectsHome();
       } else {
         renderHome();
