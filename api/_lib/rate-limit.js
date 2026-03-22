@@ -140,3 +140,41 @@ export function applyRateLimit(req, res, maxRequests = MAX_REQUESTS_DEFAULT) {
 
 // Export constants for use in routes
 export { MAX_REQUESTS_DEFAULT, MAX_REQUESTS_AUTH };
+
+// Re-export getClientIP for use in other modules
+export { getClientIP };
+
+/**
+ * Database-backed rate limit check (cross-instance, reliable)
+ * Uses the rate_limit_log table to track requests across serverless instances.
+ * @param {string} ip - Client IP address
+ * @param {string} endpoint - API endpoint being accessed
+ * @param {number} maxRequests - Maximum requests allowed in the window
+ * @param {number} windowSeconds - Window size in seconds
+ * @returns {Promise<{ allowed: boolean, remaining: number }>}
+ */
+export async function checkDbRateLimit(ip, endpoint, maxRequests = MAX_REQUESTS_DEFAULT, windowSeconds = 60) {
+  const { sql } = await import('@vercel/postgres');
+  
+  // Log this request
+  await sql`
+    INSERT INTO rate_limit_log (ip, endpoint) VALUES (${ip}, ${endpoint})
+  `;
+  
+  // Count recent requests within the window
+  const result = await sql`
+    SELECT COUNT(*) as count FROM rate_limit_log
+    WHERE ip = ${ip} AND endpoint = ${endpoint}
+      AND created_at > NOW() - INTERVAL '1 second' * ${windowSeconds}
+  `;
+  
+  const count = parseInt(result.rows[0].count, 10);
+  
+  // Periodic cleanup: remove old entries (best-effort, non-blocking)
+  sql`DELETE FROM rate_limit_log WHERE created_at < NOW() - INTERVAL '5 minutes'`.catch(() => {});
+  
+  return {
+    allowed: count <= maxRequests,
+    remaining: Math.max(0, maxRequests - count),
+  };
+}
