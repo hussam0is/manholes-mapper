@@ -5,9 +5,9 @@ import { chromium } from 'playwright';
 import { mkdir, rename, readdir } from 'fs/promises';
 import path from 'path';
 
-const APP_URL = 'https://manholes-mapper.vercel.app';
-const EMAIL = 'admin@geopoint.me';
-const PASSWORD = 'Geopoint2026!';
+const APP_URL = process.env.APP_URL || 'https://manholes-mapper.vercel.app';
+const EMAIL = process.env.ADMIN_EMAIL || (() => { throw new Error('ADMIN_EMAIL env var is required'); })();
+const PASSWORD = process.env.ADMIN_PASSWORD || (() => { throw new Error('ADMIN_PASSWORD env var is required'); })();
 const OUT = 'C:/Users/murjan.a/Documents/manholes-mapper-dev-branch/manholes-mapper/app_state_2026-03-10';
 
 await mkdir(OUT, { recursive: true });

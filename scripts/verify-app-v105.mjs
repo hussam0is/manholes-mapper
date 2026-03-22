@@ -14,7 +14,10 @@ import { mkdirSync } from 'fs';
 
 const APP_URL = 'https://manholes-mapper.vercel.app';
 const SCREENSHOT_DIR = 'app_state_2026-03-02_verify';
-const CREDENTIALS = { email: 'admin@geopoint.me', password: 'Geopoint2026!' };
+const CREDENTIALS = {
+  email: process.env.ADMIN_EMAIL || (() => { throw new Error('ADMIN_EMAIL env var is required'); })(),
+  password: process.env.ADMIN_PASSWORD || (() => { throw new Error('ADMIN_PASSWORD env var is required'); })(),
+};
 
 mkdirSync(SCREENSHOT_DIR, { recursive: true });
 
