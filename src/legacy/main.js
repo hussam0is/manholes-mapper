@@ -165,37 +165,14 @@ import { hidePanelAnimated, showLoginPanel, hideLoginPanel, showAuthLoading, hid
 import { normalizeLegacySketch, loadFromStorage, saveToStorage, debouncedSaveToStorage, clearStorage, collectUsedNumericIds, findSmallestAvailableNumericId, renameNodeIdInternal } from './storage-manager.js';
 // Project dropdown and flyout UI — [Extracted to src/legacy/project-ui.js]
 import { fetchProjects, renderProjectDropdown, getProjectInputFlowConfig, syncFlyoutIcon, closeFlyout, initProjectUI } from './project-ui.js';
+// Utility functions and canvas helpers — [Extracted to src/legacy/app-utils.js]
+import { getCurrentUsername, updateNodeTimestamp, updateEdgeTimestamp, synthesizeClickOnTap, updateSketchNameDisplay, getCachedCanvasRect, invalidateCanvasRectCache, markEdgeLabelCacheDirty, resizeCanvas, scheduleResizeCanvas, saveAdminConfig, defaultAdminConfig, loadAdminConfig } from './app-utils.js';
+// Graph CRUD — [Extracted to src/legacy/graph-crud.js]
+import { newSketch, createNode, createEdge, createDanglingEdge, createInboundDanglingEdge, findIncompleteEdges, markRequiredFields, isNodeIncomplete, findNextIncompleteNode, centerOnNode } from './graph-crud.js';
+// Wizard helpers — [Extracted to src/legacy/wizard-helpers.js]
+import { wizardIsRTKFixed, wizardGetVisibleTabs, wizardIsFieldFilled, buildWizardTabsHTML, buildWizardFieldHTML, WIZARD_TAB_DEFS } from './wizard-helpers.js';
 
-/**
- * Get the current username from authentication or return a default
- * @returns {string}
- */
-function getCurrentUsername() {
-  try {
-    const username = getAuthUsername();
-    return username || 'anonymous';
-  } catch (_) {
-    return 'anonymous';
-  }
-}
-
-/**
- * Update timestamp fields on a node when it's modified
- * @param {object} node - The node to update
- */
-function updateNodeTimestamp(node) {
-  node.updatedAt = new Date().toISOString();
-  node.modifiedBy = getCurrentUsername();
-}
-
-/**
- * Update timestamp fields on an edge when it's modified
- * @param {object} edge - The edge to update
- */
-function updateEdgeTimestamp(edge) {
-  edge.updatedAt = new Date().toISOString();
-  edge.modifiedBy = getCurrentUsername();
-}
+// [getCurrentUsername, updateNodeTimestamp, updateEdgeTimestamp — extracted to src/legacy/app-utils.js]
 
 // DOM references
 const canvas = document.getElementById('graphCanvas');
@@ -374,26 +351,7 @@ const mobileMapLayerToggle = document.getElementById('mobileMapLayerToggle');
 const mapTypeSelect = document.getElementById('mapTypeSelect');
 const mobileMapTypeSelect = document.getElementById('mobileMapTypeSelect');
 
-// iPad/iOS: ensure taps trigger clicks on header buttons (Safari sometimes suppresses click)
-function synthesizeClickOnTap(element) {
-  if (!element) return;
-  let touchMoved = false;
-  const onTouchStart = () => { touchMoved = false; };
-  const onTouchMove = () => { touchMoved = true; };
-  const onTouchEnd = (e) => {
-    try {
-      // If it was a simple tap and default hasn't been prevented, fire a click
-      if (!touchMoved) {
-        e.preventDefault();
-        e.stopPropagation();
-        element.click();
-      }
-    } catch (_) { }
-  };
-  try { element.addEventListener('touchstart', onTouchStart, { passive: true }); } catch (_) { element.addEventListener('touchstart', onTouchStart); }
-  try { element.addEventListener('touchmove', onTouchMove, { passive: true }); } catch (_) { element.addEventListener('touchmove', onTouchMove); }
-  try { element.addEventListener('touchend', onTouchEnd, { passive: false }); } catch (_) { element.addEventListener('touchend', onTouchEnd); }
-}
+// [synthesizeClickOnTap — extracted to src/legacy/app-utils.js]
 
 // Apply iOS tap-to-click fix to top bar buttons and key controls
 [
@@ -455,16 +413,7 @@ let autosaveEnabled = true;
 let lastSurveyNodeId = null;
 let surveyAutoConnect = true;
 
-// Update the sketch name display in the header (desktop and mobile)
-function updateSketchNameDisplay() {
-  const name = currentSketchName || '';
-  if (sketchNameDisplayEl) {
-    sketchNameDisplayEl.textContent = name;
-  }
-  if (sketchNameDisplayMobileEl) {
-    sketchNameDisplayMobileEl.textContent = name;
-  }
-}
+// [updateSketchNameDisplay — extracted to src/legacy/app-utils.js]
 let currentLang = 'he';
 // Pointer position used for edge preview in edge mode
 let pendingEdgePreview = null; // { x, y } or null
@@ -505,6 +454,7 @@ let translateStart = { x: 0, y: 0 };
 // Touch tap-to-add deferral to avoid accidental node creation during pinch or slight taps
 // touchAddPending, touchAddPoint, mouse/touch constants & state,
 // pendingDetailsForSelectedNode, pendingDeselect -- moved to pointer-handlers.js
+let __wizardActiveTab = null; // persists across renderDetails re-renders
 
 // Highlight state for half-edge when editing via node details panel
 let highlightedHalfEdge = null; // { edgeId, half: 'tail' | 'head' } or null
@@ -529,8 +479,7 @@ import {
   NODE_ACCURACY_OPTIONS,
   getOptionLabel,
 } from '../state/constants.js';
-const NODE_MATERIALS = NODE_MATERIAL_OPTIONS.map(o => o.label);
-const EDGE_MATERIALS = EDGE_MATERIAL_OPTIONS.map(o => o.label);
+// [NODE_MATERIALS, EDGE_MATERIALS — moved to src/legacy/app-utils.js]
 
 // Fall icon image (used to mark edges with a fall depth)
 let fallIconImage = null;
@@ -547,18 +496,7 @@ let _issueSetsDirty = true;   // Recompute when data changes
 
 // --- Draw-loop performance caches ---
 
-// Issue 2: canvas bounding rect cache — avoids forced layout flush during drag frames.
-// Invalidated by resizeCanvas() and the window resize listener.
-let _cachedCanvasRect = null;
-function getCachedCanvasRect() {
-  if (!_cachedCanvasRect) {
-    _cachedCanvasRect = canvas.getBoundingClientRect();
-  }
-  return _cachedCanvasRect;
-}
-function invalidateCanvasRectCache() {
-  _cachedCanvasRect = null;
-}
+// [getCachedCanvasRect, invalidateCanvasRectCache — extracted to src/legacy/app-utils.js]
 
 // Issue 3: edge label data cache — rebuilt only when edges change.
 // Avoids iterating all edges twice per frame for label-collision input data.
@@ -568,9 +506,7 @@ let _edgeLabelCacheStretchX = NaN;
 let _edgeLabelCacheStretchY = NaN;
 let _edgeLabelCacheSizeScale = NaN;
 let _edgeLabelCacheViewScale = NaN;
-function markEdgeLabelCacheDirty() {
-  _edgeLabelDataCache = null;
-}
+// [markEdgeLabelCacheDirty — extracted to src/legacy/app-utils.js]
 // ── Spatial grid caches ──────────────────────────────────────────────────
 // Grid-based spatial index for fast viewport culling. Rebuilt lazily when
 // nodes/edges change (tracked by the same _nodeMapDirty flag).
@@ -607,113 +543,8 @@ try {
 
 // Type and option catalogs are imported above
 
-// ---- Admin configuration (persisted) ----
-/**
- * adminConfig allows administrators to control:
- * - Which fields are included in CSV export for nodes (manholes/homes) and edges (lines)
- * - Default values for newly created entities
- * - Option lists for selectable fields, with mapping between labels (UI) and numeric codes (CSV)
- */
-const ADMIN_STORAGE_KEY = STORAGE_KEYS.adminConfig;
-const defaultAdminConfig = {
-  nodes: {
-    include: {
-      id: true,
-      type: true,
-      note: true,
-      material: true,
-      cover_diameter: true,
-      access: true,
-      accuracy_level: true,
-      engineering_status: false,
-      maintenance_status: true,
-      survey_x: true,
-      survey_y: true,
-      terrain_level: true,
-      measure_precision: true,
-      fix_type: true,
-    },
-    defaults: {
-      material: NODE_MATERIALS[0],
-      cover_diameter: '',
-      access: 0,
-      accuracy_level: 0,
-      engineering_status: 0,
-      maintenance_status: 0,
-    },
-    options: {
-      material: NODE_MATERIAL_OPTIONS.map(o => ({ code: o.code, label: o.label, enabled: true })),
-      access: NODE_ACCESS_OPTIONS.map(o => ({ code: o.code, label: o.label, enabled: true })),
-      accuracy_level: NODE_ACCURACY_OPTIONS.map(o => ({ code: o.code, label: o.label, enabled: true })),
-      engineering_status: NODE_ENGINEERING_STATUS.map(o => ({ code: o.code, label: o.label, enabled: true })),
-      maintenance_status: NODE_MAINTENANCE_OPTIONS.map(o => ({ code: o.code, label: o.label, enabled: true })),
-    },
-    // customFields removed
-  },
-  edges: {
-    include: {
-      from_node: true,
-      to_node: true,
-      tail_measurement: true,
-      head_measurement: true,
-      fall_depth: true,
-      fall_position: true,
-      line_diameter: true,
-      note: true,
-      edge_material: true,
-      edge_type: true,
-      engineering_status: true,
-    },
-    defaults: {
-      material: EDGE_MATERIALS[0],
-      edge_type: EDGE_TYPES[0],
-      tail_measurement: '',
-      head_measurement: '',
-      fall_depth: '',
-      fall_position: 0,
-      line_diameter: '',
-      engineering_status: 0,
-    },
-    options: {
-      material: EDGE_MATERIAL_OPTIONS.map(o => ({ code: o.code, label: o.label, enabled: true })),
-      edge_type: EDGE_TYPE_OPTIONS.map(o => ({ code: o.code, label: o.label, enabled: true })),
-      engineering_status: EDGE_ENGINEERING_STATUS.map(o => ({ code: o.code, label: o.label, enabled: true })),
-      line_diameter: EDGE_LINE_DIAMETERS.map(v => ({ code: v, label: v, enabled: true })),
-      fall_position: [
-        { code: 0, label: typeof t === 'function' ? t('labels.fallPositionInternal') : 'פנימי', enabled: true },
-        { code: 1, label: typeof t === 'function' ? t('labels.fallPositionExternal') : 'חיצוני', enabled: true },
-      ],
-    },
-    // customFields removed
-  }
-};
-
-let adminConfig = (() => {
-  try {
-    const raw = localStorage.getItem(ADMIN_STORAGE_KEY);
-    if (!raw) return JSON.parse(JSON.stringify(defaultAdminConfig));
-    const parsed = JSON.parse(raw);
-    const merged = { ...JSON.parse(JSON.stringify(defaultAdminConfig)), ...parsed };
-    // Normalize nested shapes for backward compatibility
-    merged.nodes = merged.nodes || {};
-    merged.edges = merged.edges || {};
-    // customFields removed
-    merged.nodes.options = merged.nodes.options || {};
-    merged.edges.options = merged.edges.options || {};
-    merged.nodes.include = merged.nodes.include || {};
-    merged.edges.include = merged.edges.include || {};
-    merged.nodes.defaults = merged.nodes.defaults || {};
-    merged.edges.defaults = merged.edges.defaults || {};
-    return merged;
-  } catch (e) {
-    console.warn('[App] Failed to load admin config; using defaults', e.message);
-    return JSON.parse(JSON.stringify(defaultAdminConfig));
-  }
-})();
-
-function saveAdminConfig() {
-  localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(adminConfig));
-}
+// [Admin configuration (defaultAdminConfig, adminConfig loader, saveAdminConfig) — extracted to src/legacy/app-utils.js]
+let adminConfig = loadAdminConfig();
 
 // ─── Shared state proxy for extracted modules ───────────────────────────────
 // Populated immediately so that all imported extracted modules (gnss-handlers,
@@ -788,6 +619,8 @@ function saveAdminConfig() {
     sidebarTitleEl:           def('sidebarTitleEl',           () => sidebarTitleEl,            null),
     sidebarEl:                def('sidebarEl',                () => sidebarEl,                 null),
     sidebarCloseBtn:          def('sidebarCloseBtn',          () => sidebarCloseBtn,           null),
+    sketchNameDisplayEl:      def('sketchNameDisplayEl',      () => sketchNameDisplayEl,       null),
+    sketchNameDisplayMobileEl: def('sketchNameDisplayMobileEl', () => sketchNameDisplayMobileEl, null),
     // Canvas-draw module state
     nodeMap:                  def('nodeMap',                  () => nodeMap,                  (v) => { nodeMap = v; }),
     fallIconImage:            def('fallIconImage',            () => fallIconImage,            (v) => { fallIconImage = v; }),
@@ -1076,51 +909,7 @@ if (adminModal) {
   });
 }
 
-/**
- * Resize the canvas to match its container and device pixel ratio,
- * then trigger a redraw.
- */
-function resizeCanvas() {
-  const rect = canvas.parentElement.getBoundingClientRect();
-  const dpr = window.devicePixelRatio || 1;
-  const targetWidth = Math.round(rect.width * dpr);
-  const targetHeight = Math.round(rect.height * dpr);
-  // Only update backing store if dimensions actually changed to avoid extra layout
-  if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
-    // Adjust viewTranslate to keep the center of the view stable
-    const oldLogicalW = canvas.width / dpr;
-    const oldLogicalH = canvas.height / dpr;
-    const newLogicalW = targetWidth / dpr;
-    const newLogicalH = targetHeight / dpr;
-    if (oldLogicalW > 0 && oldLogicalH > 0) {
-      viewTranslate.x += (newLogicalW - oldLogicalW) / 2;
-      viewTranslate.y += (newLogicalH - oldLogicalH) / 2;
-    }
-    canvas.width = targetWidth;
-    canvas.height = targetHeight;
-  }
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.scale(dpr, dpr);
-  invalidateCanvasRectCache(); // bounding rect changes on resize
-  draw();
-}
-
-// Coalesce resize-triggered work to the next animation frame
-let resizeRafId = 0;
-function scheduleResizeCanvas() {
-  if (resizeRafId) return;
-  if (typeof requestAnimationFrame === 'function') {
-    resizeRafId = requestAnimationFrame(() => {
-      resizeRafId = 0;
-      resizeCanvas();
-    });
-  } else {
-    resizeRafId = setTimeout(() => {
-      resizeRafId = 0;
-      resizeCanvas();
-    }, 0);
-  }
-}
+// [resizeCanvas, scheduleResizeCanvas — extracted to src/legacy/app-utils.js]
 
 window.addEventListener('resize', scheduleResizeCanvas);
 window.addEventListener('scroll', invalidateCanvasRectCache, { passive: true }); // keep canvas rect cache fresh on page scroll
@@ -1195,449 +984,15 @@ if (window.syncService?.onSyncStateChange) {
 // precacheProjectTiles, handleChangeProject
 // State: currentSketchTab, homeMode, homeSearchQuery
 
-/**
- * Initialize a brand new sketch and reset all transient state.
- * @param {string} date - ISO date string used for exported filenames
- * @param {string} projectId - Optional project ID to associate with this sketch
- * @param {Object} inputFlowConfig - Optional input flow configuration (copied from project)
- */
-function newSketch(date, projectId = null, inputFlowConfig = null) {
-  nodes = [];
-  _nodeMapDirty = true; _spatialGridDirty = true; _dataVersion++;
-  edges = [];
-  clearUndoStack();
-  markEdgeLabelCacheDirty(); // sketch cleared
-  nextNodeId = 1;
-  selectedNode = null;
-  selectedEdge = null;
-  isDragging = false;
-  pendingEdgeTail = null;
-  pendingEdgeStartPosition = null;
-  creationDate = date;
-  currentSketchId = null; // new unsaved sketch
-  currentSketchName = null;
-  currentProjectId = projectId;
-  currentInputFlowConfig = inputFlowConfig || DEFAULT_INPUT_FLOW_CONFIG;
-  updateSketchNameDisplay();
-  saveToStorage();
-  updateCanvasEmptyState();
-  draw();
-  renderDetails();
-}
+// [Extracted to src/legacy/graph-crud.js]
+// newSketch, createNode, createEdge, createDanglingEdge, createInboundDanglingEdge,
+// findIncompleteEdges, markRequiredFields, isNodeIncomplete, findNextIncompleteNode, centerOnNode
 
-/**
- * Create a node at the provided canvas coordinates.
- * Chooses the next available numeric id and stores it as a string.
- * @param {number} x - X coordinate
- * @param {number} y - Y coordinate
- * @returns {{id:string,x:number,y:number,note:string,material:string,type:string}} The created node
- */
-function createNode(x, y) {
-  // Determine ID for a new Manhole by finding the smallest available numeric id
-  const candidateStr = findSmallestAvailableNumericId();
-  // Prepare nextNodeId to the next available after this
-  const used = collectUsedNumericIds();
-  used.add(parseInt(candidateStr, 10));
-  let nextCandidate = 1;
-  while (used.has(nextCandidate)) nextCandidate += 1;
-  nextNodeId = nextCandidate;
-  const node = {
-    id: candidateStr,
-    x: x,
-    y: y,
-    note: '',
-    material: (adminConfig.nodes?.defaults?.material ?? NODE_MATERIALS[0]),
-    coverDiameter: (adminConfig.nodes?.defaults?.cover_diameter ?? ''),
-    type: 'type1',
-    nodeType: 'Manhole',
-    access: (adminConfig.nodes?.defaults?.access ?? 0),
-    accuracyLevel: (adminConfig.nodes?.defaults?.accuracy_level ?? 0),
-    nodeEngineeringStatus: (adminConfig.nodes?.defaults?.engineering_status ?? 0),
-    maintenanceStatus: (adminConfig.nodes?.defaults?.maintenance_status ?? 0),
-    createdAt: new Date().toISOString(),
-    createdBy: getCurrentUsername(),
-    gnssFixQuality: 6, // Manual Float — user placed on canvas
-  };
-  // Compute manual ITM coordinates from canvas position (not survey-grade)
-  const ref = getMapReferencePoint();
-  if (ref && ref.itm && ref.canvas && coordinateScale > 0) {
-    node.manual_x = ref.itm.x + (x - ref.canvas.x) / coordinateScale;
-    node.manual_y = ref.itm.y - (y - ref.canvas.y) / coordinateScale;
-    // surveyX/surveyY are NOT set — those are reserved for GNSS/TSC3 survey captures
-  }
-  // Apply custom default fields
-  if (Array.isArray(adminConfig.nodes?.customFields)) {
-    adminConfig.nodes.customFields.forEach((f) => {
-      if (!f || !f.key) return;
-      node[f.key] = f.default ?? '';
-    });
-  }
-  nodes.push(node);
-  _nodeMapDirty = true; _spatialGridDirty = true; _dataVersion++;
+// [Extracted to src/legacy/wizard-helpers.js]
+// wizardIsRTKFixed, wizardGetVisibleTabs, wizardIsFieldFilled,
+// buildWizardTabsHTML, buildWizardFieldHTML
+// Constants: WIZARD_TAB_DEFS, WIZARD_CLOSED_MAINT, WIZARD_NO_COVER_MAINT
 
-  // Check for nearby dangling edges and auto-connect
-  const nearbyDangling = findDanglingEdgeNear(x, y);
-  if (nearbyDangling) {
-    connectDanglingEdge(nearbyDangling.edge, node.id, nearbyDangling.type);
-    showToast(t('toasts.danglingEdgeConnected'));
-  }
-  
-  computeNodeTypes();
-  pushUndo({ type: 'nodeCreate', nodeId: node.id });
-  saveToStorage();
-  updateCanvasEmptyState();
-  // Trigger placement animation + haptic feedback
-  _animatingNodes.set(String(node.id), performance.now());
-  navigator.vibrate?.(10);
-  scheduleDraw();
-  return node;
-}
-
-/**
- * Create a directed edge between two nodes.
- * Prevents duplicates regardless of direction (A→B or B→A).
- * Supports dangling edges where either tailId or headId is null.
- * @param {string|number|null} tailId - Source node id (null for inbound dangling edge)
- * @param {string|number|null} headId - Target node id (null for outbound dangling edge)
- * @param {object} options - Optional: { danglingEndpoint: {x, y}, tailPosition: {x, y} }
- * @returns {object|null} The created edge, or null if duplicate exists
- */
-function createEdge(tailId, headId, options = {}) {
-  const tailStr = tailId != null ? String(tailId) : null;
-  const headStr = headId != null ? String(headId) : null;
-  const isDanglingHead = headStr === null; // outbound: missing head
-  const isDanglingTail = tailStr === null; // inbound: missing tail
-  const isDangling = isDanglingHead || isDanglingTail;
-  
-  // Block duplicate edges in either direction (only for non-dangling edges)
-  if (!isDangling) {
-    const exists = edges.some((e) =>
-      (String(e.tail) === tailStr && String(e.head) === headStr) ||
-      (String(e.tail) === headStr && String(e.head) === tailStr)
-    );
-    if (exists) {
-      return null;
-    }
-  }
-  
-  const edge = {
-    id: Date.now() + Math.random(), // unique id for internal use
-    tail: tailStr,
-    head: headStr,
-    isDangling: isDangling,
-    danglingEndpoint: isDanglingHead ? (options.danglingEndpoint || null) : null, // for outbound
-    tailPosition: isDanglingTail ? (options.tailPosition || null) : null, // for inbound
-    tail_measurement: (adminConfig.edges?.defaults?.tail_measurement ?? ''),
-    head_measurement: (adminConfig.edges?.defaults?.head_measurement ?? ''),
-    fall_depth: (adminConfig.edges?.defaults?.fall_depth ?? ''),
-    fall_position: (adminConfig.edges?.defaults?.fall_position ?? ''),
-    line_diameter: (adminConfig.edges?.defaults?.line_diameter ?? ''),
-    edge_type: (adminConfig.edges?.defaults?.edge_type ?? EDGE_TYPES[0]),
-    material: (adminConfig.edges?.defaults?.material ?? EDGE_MATERIALS[0]),
-    maintenanceStatus: 0,
-    engineeringStatus: (adminConfig.edges?.defaults?.engineering_status ?? 0),
-    createdAt: new Date().toISOString(),
-    createdBy: getCurrentUsername(),
-  };
-  if (Array.isArray(adminConfig.edges?.customFields)) {
-    adminConfig.edges.customFields.forEach((f) => {
-      if (!f || !f.key) return;
-      edge[f.key] = f.default ?? '';
-    });
-  }
-  edges.push(edge);
-  computeNodeTypes();
-  pushUndo({ type: 'edgeCreate', edgeId: edge.id });
-  saveToStorage();
-  // Trigger snap animation + haptic feedback
-  _animatingEdges.set(edge.id, performance.now());
-  navigator.vibrate?.(10);
-  scheduleDraw();
-  return edge;
-}
-
-/**
- * Create a dangling edge from a node with the open end at the specified position.
- * @param {string|number} tailId - Source node id
- * @param {number} endX - X coordinate for the dangling endpoint
- * @param {number} endY - Y coordinate for the dangling endpoint
- * @returns {object} The created dangling edge
- */
-/**
- * Create an outbound dangling edge (from node to open end).
- */
-function createDanglingEdge(tailId, endX, endY) {
-  return createEdge(tailId, null, { danglingEndpoint: { x: endX, y: endY } });
-}
-
-/**
- * Create an inbound dangling edge (from open end to node).
- */
-function createInboundDanglingEdge(startX, startY, headId) {
-  return createEdge(null, headId, { tailPosition: { x: startX, y: startY } });
-}
-
-/**
- * Find all incomplete/dangling edges (edges with only one connected node).
- * Includes both outbound (head === null) and inbound (tail === null) dangling edges.
- * @returns {Array<object>} Array of dangling edges
- */
-function findIncompleteEdges() {
-  return edges.filter(edge => edge.isDangling || edge.head === null || edge.tail === null);
-}
-
-// ── Required Field Validation ──────────────────────────────────────────────
-
-/**
- * Mark required fields in a details container with visual indicators.
- * Adds a red asterisk to labels of required fields and applies `.invalid`
- * class to empty selects/inputs, with a small error message below.
- *
- * @param {HTMLElement} container - The form container
- * @param {Set|Array} requiredFields - Field keys that are required (snake_case)
- */
-function markRequiredFields(container, requiredFields) {
-  if (!requiredFields || requiredFields.size === 0) return;
-  const required = requiredFields instanceof Set ? requiredFields : new Set(requiredFields);
-
-  // Map snake_case field keys to DOM element IDs
-  const fieldIdMap = {
-    'accuracy_level': 'accuracyLevelSelect',
-    'maintenance_status': 'nodeMaintenanceStatusSelect',
-    'material': 'materialSelect',
-    'cover_diameter': 'coverDiameterSelect',
-    'access': 'accessSelect',
-    'note': 'noteInput',
-    'edge_type': 'edgeTypeSelect',
-    'engineering_status': 'edgeEngineeringStatusSelect',
-    'line_diameter': 'edgeDiameterSelect',
-    'tail_measurement': 'tailInput',
-    'head_measurement': 'headInput',
-    'fall_depth': 'fallDepthInput',
-    'fall_position': 'fallPositionSelect',
-  };
-
-  for (const fieldKey of required) {
-    const elId = fieldIdMap[fieldKey];
-    if (!elId) continue;
-    const el = container.querySelector('#' + elId);
-    if (!el) continue;
-
-    // Add required asterisk to the label
-    const field = el.closest('.field');
-    if (field) {
-      const label = field.querySelector('label');
-      if (label && !label.querySelector('.field-required-mark')) {
-        const mark = document.createElement('span');
-        mark.className = 'field-required-mark';
-        mark.textContent = ' *';
-        label.appendChild(mark);
-      }
-    }
-
-    // Check if the field value is empty
-    const isEmpty = el.tagName === 'TEXTAREA'
-      ? !el.value.trim()
-      : (el.tagName === 'SELECT' ? (!el.value || el.value === '') : !el.value.trim());
-
-    if (isEmpty) {
-      el.classList.add('invalid');
-      // Add error message below the field if not already present
-      if (field && !field.querySelector('.field-error')) {
-        const err = document.createElement('div');
-        err.className = 'field-error';
-        err.innerHTML = `<span class="material-icons" style="font-size:14px">error_outline</span> ${t('validation.required')}`;
-        field.appendChild(err);
-      }
-    }
-
-    // On change, re-evaluate validity
-    el.addEventListener('change', () => {
-      const nowEmpty = el.tagName === 'TEXTAREA'
-        ? !el.value.trim()
-        : (el.tagName === 'SELECT' ? (!el.value || el.value === '') : !el.value.trim());
-      el.classList.toggle('invalid', nowEmpty);
-      const errEl = field?.querySelector('.field-error');
-      if (nowEmpty && !errEl && field) {
-        const err = document.createElement('div');
-        err.className = 'field-error';
-        err.innerHTML = `<span class="material-icons" style="font-size:14px">error_outline</span> ${t('validation.required')}`;
-        field.appendChild(err);
-      } else if (!nowEmpty && errEl) {
-        errEl.remove();
-      }
-    });
-  }
-}
-
-// Long-Press Context Menu -- [Extracted to src/legacy/pointer-handlers.js]
-// showNodeContextMenu, _contextMenuDismiss, hideNodeContextMenu, clearLongPressTimer
-
-// ── Undo Action System ──────────────────────────────────────────────────────
-// [Extracted to src/legacy/undo-redo.js]
-// pushUndo, pushUndoDirect, clearUndoStack, updateUndoButton, updateRedoButton,
-// deepCopyObj, deleteNodeShared, deleteEdgeShared, nodeHasValuableData, edgeHasValuableData,
-// performUndo, performRedo, updateIncompleteEdgeTracker, findDanglingEdgeNear,
-// findDanglingEndpointAt, findDanglingSnapTarget, mergeDanglingEdges, connectDanglingEdge,
-// finalizeDanglingEndpointDrag
-
-// Drawing functions — extracted to ./canvas-draw.js
-
-// ── Node Tab Wizard helpers ──────────────────────────────────
-let __wizardActiveTab = null; // persists across renderDetails re-renders
-
-const WIZARD_TAB_DEFS = {
-  accuracy_level:     { icon: 'gps_fixed', color: '#1565C0', bg: '#E3F2FD', labelKey: 'labels.accuracyLevel' },
-  maintenance_status: { icon: 'build',     color: '#E65100', bg: '#FFF3E0', labelKey: 'labels.maintenanceStatus' },
-  material:           { icon: 'layers',    color: '#6A1B9A', bg: '#F3E5F5', labelKey: 'labels.coverMaterial' },
-  cover_diameter:     { icon: 'circle',    color: '#2E7D32', bg: '#E8F5E9', labelKey: 'labels.coverDiameter' },
-  access:             { icon: 'stairs',    color: '#C62828', bg: '#FFEBEE', labelKey: 'labels.access' },
-  note:               { icon: 'notes',     color: '#37474F', bg: '#ECEFF1', labelKey: 'labels.note' },
-};
-
-// Maintenance codes that block access to manhole internals
-const WIZARD_CLOSED_MAINT = new Set([3, 4, 5, 13]);
-// Maintenance codes where there's no cover (skip material/diameter)
-const WIZARD_NO_COVER_MAINT = new Set([10]);
-
-/**
- * Check if a node has incomplete wizard tabs (any visible tab not filled).
- */
-function isNodeIncomplete(node) {
-  if (node.nodeType === 'Home' || node.nodeType === 'ForLater' || node.nodeType === 'למדידה מאוחרת' || node.nodeType === 'Issue') return false;
-  const visibleTabs = wizardGetVisibleTabs(node);
-  return visibleTabs.some(key => !wizardIsFieldFilled(node, key));
-}
-
-/**
- * Find the next incomplete node after the given node.
- * Priority: BFS through connected nodes first, then by ID order.
- */
-function findNextIncompleteNode(currentNode) {
-  // BFS through connected nodes
-  const visited = new Set([String(currentNode.id)]);
-  const queue = [currentNode];
-  while (queue.length > 0) {
-    const n = queue.shift();
-    // Find neighbors
-    for (const edge of edges) {
-      let neighborId = null;
-      if (String(edge.tail) === String(n.id) && edge.head != null) neighborId = String(edge.head);
-      else if (String(edge.head) === String(n.id) && edge.tail != null) neighborId = String(edge.tail);
-      if (neighborId && !visited.has(neighborId)) {
-        visited.add(neighborId);
-        const neighbor = nodeMap.get(neighborId);
-        if (neighbor) {
-          if (isNodeIncomplete(neighbor)) return neighbor;
-          queue.push(neighbor);
-        }
-      }
-    }
-  }
-  // Fallback: any incomplete node by order
-  for (const node of nodes) {
-    if (String(node.id) === String(currentNode.id)) continue;
-    if (isNodeIncomplete(node)) return node;
-  }
-  return null;
-}
-
-/**
- * Center the viewport on a given node.
- */
-function centerOnNode(node) {
-  const canvasW = canvas.width / (window.devicePixelRatio || 1);
-  const canvasH = canvas.height / (window.devicePixelRatio || 1);
-  const tx = canvasW / 2 - viewScale * viewStretchX * node.x;
-  const ty = canvasH / 2 - viewScale * viewStretchY * node.y;
-  window.__setViewState?.(viewScale, tx, ty);
-}
-
-function wizardIsRTKFixed(node) {
-  const inMap = typeof coordinatesMap !== 'undefined' && coordinatesMap && coordinatesMap.has(String(node.id));
-  return node.gnssFixQuality === 4 ||
-    (inMap && node.gnssFixQuality !== 5 && node.gnssFixQuality !== 6) ||
-    (node.measure_precision != null && node.measure_precision <= 0.05);
-}
-
-function wizardGetVisibleTabs(node) {
-  const tabs = [];
-  const autoFixed = wizardIsRTKFixed(node);
-  if (!autoFixed) tabs.push('accuracy_level');
-  tabs.push('maintenance_status');
-  const maint = Number(node.maintenanceStatus);
-  if (maint === 0) return tabs; // not set yet, stop here
-  if (WIZARD_CLOSED_MAINT.has(maint)) { tabs.push('note'); return tabs; }
-  if (WIZARD_NO_COVER_MAINT.has(maint)) { tabs.push('access'); tabs.push('note'); return tabs; }
-  tabs.push('material'); tabs.push('cover_diameter'); tabs.push('access'); tabs.push('note');
-  return tabs;
-}
-
-function wizardIsFieldFilled(node, key) {
-  switch (key) {
-    case 'accuracy_level':     return Number(node.accuracyLevel) !== 0 || wizardIsRTKFixed(node);
-    case 'maintenance_status': return Number(node.maintenanceStatus) !== 0;
-    case 'material':           { const m = node.material; return m && m !== 'לא ידוע' && m !== ''; }
-    case 'cover_diameter':     return node.coverDiameter !== '' && node.coverDiameter != null && node.coverDiameter !== 'לא ידוע';
-    case 'access':             return Number(node.access) !== 0;
-    case 'note':               return !!(node.note && node.note.trim());
-    default:                   return false;
-  }
-}
-
-function buildWizardTabsHTML(node, activeKey, visibleTabs) {
-  return visibleTabs.map(key => {
-    const def = WIZARD_TAB_DEFS[key];
-    const filled = wizardIsFieldFilled(node, key);
-    const isActive = key === activeKey;
-    let cls = 'wizard-tab';
-    if (isActive) cls += ' wizard-tab--active';
-    if (filled) cls += ' wizard-tab--filled';
-    const label = t(def.labelKey);
-    return `<button class="${cls}" data-wizard-tab="${key}" title="${label}"
-              aria-label="${label}"
-              style="--tab-color:${def.color};--tab-bg:${def.bg}">
-      <span class="material-icons">${def.icon}</span>
-      <span class="wizard-tab-label">${label}</span>
-      <span class="wizard-check material-icons ${filled ? 'wizard-check--filled' : 'wizard-check--empty'}">${filled ? 'check_circle' : 'radio_button_unchecked'}</span>
-    </button>`;
-  }).join('');
-}
-
-function buildWizardFieldHTML(node, activeKey, ruleResults, opts) {
-  const def = WIZARD_TAB_DEFS[activeKey];
-  const label = t(def.labelKey);
-  let inputHtml = '';
-  switch (activeKey) {
-    case 'accuracy_level':
-      inputHtml = `<select id="accuracyLevelSelect" class="wizard-field-input">${opts.accuracyLevelOptions}</select>`;
-      break;
-    case 'maintenance_status':
-      inputHtml = `<select id="nodeMaintenanceStatusSelect" class="wizard-field-input">${opts.maintenanceStatusOptions}</select>`;
-      break;
-    case 'material':
-      inputHtml = `<select id="materialSelect" class="wizard-field-input">${opts.materialOptions}</select>`;
-      break;
-    case 'cover_diameter':
-      inputHtml = `<select id="coverDiameterSelect" class="wizard-field-input">
-        ${NODE_COVER_DIAMETERS.map(d => `<option value="${d}" ${String(node.coverDiameter) === d ? 'selected' : ''}>${getOptionLabel(d)}</option>`).join('')}
-      </select>`;
-      break;
-    case 'access':
-      inputHtml = `<select id="accessSelect" class="wizard-field-input">${opts.accessOptions}</select>`;
-      break;
-    case 'note':
-      inputHtml = `<textarea id="noteInput" rows="3" class="wizard-field-input" placeholder="${t('labels.notePlaceholder')}" dir="auto">${escapeHtml(node.note || '')}</textarea>`;
-      break;
-  }
-  return `
-    <div class="wizard-field-header" style="color:${def.color}">
-      <span class="material-icons">${def.icon}</span>
-      <span class="wizard-field-label">${label}</span>
-    </div>
-    ${inputHtml}
-  `;
-}
 
 // ============================================
 // Details panel, sidebar, issue comments - [Extracted to src/legacy/details-panel.js]
@@ -2882,6 +2237,8 @@ F.screenToWorld           = (...a) => screenToWorld(...a);
 F.createDanglingEdge      = (...a) => createDanglingEdge(...a);
 F.createInboundDanglingEdge = (...a) => createInboundDanglingEdge(...a);
 F.pushUndo                = (...a) => pushUndo(...a);
+F.findDanglingEdgeNear    = (...a) => findDanglingEdgeNear(...a);
+F.connectDanglingEdge     = (...a) => connectDanglingEdge(...a);
 F.autoPanWhenDragging     = (...a) => autoPanWhenDragging(...a);
 F.getMapReferencePoint    = (...a) => getMapReferencePoint(...a);
 F.draw                    = (...a) => draw(...a);
