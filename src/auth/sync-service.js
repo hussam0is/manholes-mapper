@@ -19,6 +19,98 @@ import {
   removeSyncQueueItem,
 } from '../db.js';
 
+// Retry configuration for exponential backoff
+const RETRY_CONFIG = {
+  maxRetries: 3,
+  baseDelayMs: 1000,
+  maxDelayMs: 30000,
+  backoffMultiplier: 2,
+};
+
+/**
+ * Sleep for the given number of milliseconds.
+ * @param {number} ms
+ * @returns {Promise<void>}
+ */
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Calculate the delay for a given retry attempt using exponential backoff with jitter.
+ * @param {number} attempt - Zero-based retry attempt number
+ * @returns {number} Delay in milliseconds
+ */
+export function calculateBackoffDelay(attempt) {
+  const delay = Math.min(
+    RETRY_CONFIG.baseDelayMs * Math.pow(RETRY_CONFIG.backoffMultiplier, attempt),
+    RETRY_CONFIG.maxDelayMs
+  );
+  // Add jitter (±25%) to prevent thundering herd
+  const jitter = delay * 0.25 * (Math.random() * 2 - 1);
+  return Math.max(0, Math.round(delay + jitter));
+}
+
+/**
+ * Execute an async function with retry logic and exponential backoff.
+ * Only retries on transient errors (network, 5xx, 429). Non-retryable errors
+ * (4xx except 429, auth errors) are thrown immediately.
+ *
+ * @param {Function} fn - Async function to execute
+ * @param {Object} [options]
+ * @param {number} [options.maxRetries] - Override default max retries
+ * @param {string} [options.operationName] - Name for logging
+ * @returns {Promise<*>} Result of the function
+ */
+export async function withRetry(fn, options = {}) {
+  const maxRetries = options.maxRetries ?? RETRY_CONFIG.maxRetries;
+  const operationName = options.operationName ?? 'operation';
+  let lastError;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+
+      // Don't retry non-transient errors
+      const statusCode = error.statusCode || 0;
+      const isTransient =
+        !statusCode || // Network errors (no status code)
+        statusCode === 429 || // Rate limited
+        statusCode >= 500; // Server errors
+
+      // Don't retry expected dev errors or auth errors
+      if (error.isExpectedDevError || statusCode === 401 || statusCode === 403) {
+        throw error;
+      }
+
+      if (!isTransient || attempt >= maxRetries) {
+        throw error;
+      }
+
+      const delay = calculateBackoffDelay(attempt);
+      console.debug(
+        `[Sync] ${operationName} failed (attempt ${attempt + 1}/${maxRetries + 1}), ` +
+        `retrying in ${delay}ms: ${error.message}`
+      );
+      await sleep(delay);
+    }
+  }
+
+  throw lastError;
+}
+
+// Sync health monitoring — tracks success/failure rates for diagnostics
+const syncHealth = {
+  totalAttempts: 0,
+  successCount: 0,
+  failureCount: 0,
+  lastFailureTime: null,
+  lastFailureMessage: null,
+  consecutiveFailures: 0,
+};
+
 // Sync state
 let syncState = {
   isOnline: navigator.onLine,
@@ -26,6 +118,12 @@ let syncState = {
   lastSyncTime: null,
   pendingChanges: 0,
   error: null,
+  // Queue status fields
+  queueSize: 0,
+  // Health monitoring fields
+  healthStatus: 'healthy', // 'healthy' | 'degraded' | 'unhealthy'
+  successRate: 1,
+  consecutiveFailures: 0,
 };
 
 // Sync lock to prevent concurrent sync operations
@@ -145,6 +243,73 @@ export function compareSketchData(local, server) {
  * @param {Object} localData - The local sketch payload that was overridden
  * @param {string} sketchName - Human-readable sketch name for the toast
  */
+
+/**
+ * Merge local and server sketch data using a union strategy.
+ * 
+ * Strategy:
+ * - Nodes: union by ID. If both sides have the same node ID, prefer the server version.
+ * - Edges: union by ID with the same preference logic.
+ * - This produces a "best effort" merge that preserves work from both sides.
+ *
+ * @param {Object} local  - Local sketch payload
+ * @param {Object} server - Server sketch data
+ * @returns {{ nodes: Array, edges: Array, mergeInfo: { addedNodes: number, addedEdges: number, conflictingNodes: number, conflictingEdges: number } }}
+ */
+export function mergeSketchData(local, server) {
+  const localNodes = local.nodes || [];
+  const serverNodes = server.nodes || [];
+  const localEdges = local.edges || [];
+  const serverEdges = server.edges || [];
+
+  const serverNodeMap = new Map(serverNodes.map(n => [n.id, n]));
+  const serverEdgeMap = new Map(serverEdges.map(e => [e.id, e]));
+  const localNodeMap = new Map(localNodes.map(n => [n.id, n]));
+  const localEdgeMap = new Map(localEdges.map(e => [e.id, e]));
+
+  let addedNodes = 0;
+  let addedEdges = 0;
+  let conflictingNodes = 0;
+  let conflictingEdges = 0;
+
+  // Start with server nodes (authoritative base), then add local-only nodes
+  const mergedNodeMap = new Map(serverNodeMap);
+  for (const [id, localNode] of localNodeMap) {
+    if (!mergedNodeMap.has(id)) {
+      mergedNodeMap.set(id, localNode);
+      addedNodes++;
+    } else {
+      const serverNode = mergedNodeMap.get(id);
+      const differs =
+        localNode.x !== serverNode.x ||
+        localNode.y !== serverNode.y ||
+        localNode.type !== serverNode.type;
+      if (differs) conflictingNodes++;
+    }
+  }
+
+  const mergedEdgeMap = new Map(serverEdgeMap);
+  for (const [id, localEdge] of localEdgeMap) {
+    if (!mergedEdgeMap.has(id)) {
+      mergedEdgeMap.set(id, localEdge);
+      addedEdges++;
+    } else {
+      const serverEdge = mergedEdgeMap.get(id);
+      const differs =
+        localEdge.from !== serverEdge.from ||
+        localEdge.to !== serverEdge.to ||
+        localEdge.length !== serverEdge.length;
+      if (differs) conflictingEdges++;
+    }
+  }
+
+  return {
+    nodes: Array.from(mergedNodeMap.values()),
+    edges: Array.from(mergedEdgeMap.values()),
+    mergeInfo: { addedNodes, addedEdges, conflictingNodes, conflictingEdges },
+  };
+}
+
 function saveConflictBackup(sketchId, localData, sketchName) {
   if (typeof window === 'undefined' || !window.localStorage) return;
 
@@ -205,6 +370,95 @@ function getCsrfCookie() {
 // and immune to clock/precision issues unlike the old timestamp-based approach.
 // Key: sketchId (UUID), Value: integer version number
 const lastKnownServerVersion = new Map();
+
+/**
+ * Record a sync success for health monitoring.
+ */
+function recordSyncSuccess() {
+  syncHealth.totalAttempts++;
+  syncHealth.successCount++;
+  syncHealth.consecutiveFailures = 0;
+  _updateHealthStatus();
+}
+
+/**
+ * Record a sync failure for health monitoring.
+ * @param {string} message - Error message
+ */
+function recordSyncFailure(message) {
+  syncHealth.totalAttempts++;
+  syncHealth.failureCount++;
+  syncHealth.consecutiveFailures++;
+  syncHealth.lastFailureTime = new Date();
+  syncHealth.lastFailureMessage = message;
+  _updateHealthStatus();
+}
+
+/**
+ * Derive the health status from recorded metrics.
+ * healthy: success rate >= 90% and <= 2 consecutive failures
+ * degraded: success rate >= 50% or <= 5 consecutive failures
+ * unhealthy: otherwise
+ */
+function _updateHealthStatus() {
+  const rate = syncHealth.totalAttempts > 0
+    ? syncHealth.successCount / syncHealth.totalAttempts
+    : 1;
+  let status = 'healthy';
+  if (syncHealth.consecutiveFailures > 5 || rate < 0.5) {
+    status = 'unhealthy';
+  } else if (syncHealth.consecutiveFailures > 2 || rate < 0.9) {
+    status = 'degraded';
+  }
+  updateSyncState({
+    healthStatus: status,
+    successRate: Math.round(rate * 100) / 100,
+    consecutiveFailures: syncHealth.consecutiveFailures,
+  });
+}
+
+/**
+ * Get the current sync health metrics.
+ * @returns {Object}
+ */
+export function getSyncHealth() {
+  return { ...syncHealth };
+}
+
+/**
+ * Reset sync health counters (e.g. after login or manual reset).
+ */
+export function resetSyncHealth() {
+  syncHealth.totalAttempts = 0;
+  syncHealth.successCount = 0;
+  syncHealth.failureCount = 0;
+  syncHealth.lastFailureTime = null;
+  syncHealth.lastFailureMessage = null;
+  syncHealth.consecutiveFailures = 0;
+  _updateHealthStatus();
+}
+
+/**
+ * Refresh the queue status by peeking at the current queue size.
+ * Updates syncState with the current queue info.
+ */
+export async function refreshQueueStatus() {
+  try {
+    const operations = await drainSyncQueue();
+    // Re-enqueue drained items (non-destructive peek)
+    for (const op of operations) {
+      await enqueueSyncOperation(op);
+    }
+    updateSyncState({
+      queueSize: operations.length,
+      pendingChanges: operations.length,
+    });
+    return operations.length;
+  } catch (err) {
+    console.warn('[Sync] Failed to refresh queue status:', err);
+    return syncState.queueSize;
+  }
+}
 
 /**
  * Subscribe to sync state changes
@@ -1609,5 +1863,8 @@ if (typeof window !== 'undefined') {
     acquireSketchLock,
     releaseSketchLock,
     clearLocalSketchData,
+    getSyncHealth,
+    resetSyncHealth,
+    refreshQueueStatus,
   };
 }
