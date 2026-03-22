@@ -74,7 +74,6 @@ import {
   gnssToCanvas,
   openPointCaptureDialog,
   gnssState,
-  gnssConnection,
   startBrowserLocationAdapter,
   stopBrowserLocationAdapter,
   isBrowserLocationActive,
@@ -125,9 +124,8 @@ import {
 import { drawIssueHighlight } from '../project/issue-highlight.js';
 import { getLastEditPosition, setLastEditPosition } from '../project/last-edit-tracker.js';
 import { menuEvents } from '../menu/menu-events.js';
-import { tsc3Connection } from '../survey/tsc3-connection-manager.js';
-import { initSurveyNodeTypeDialog, openSurveyNodeTypeDialog, getSurveyAutoConnect } from '../survey/survey-node-type-dialog.js';
-import { openDevicePickerDialog } from '../survey/device-picker-dialog.js';
+// tsc3Connection, initSurveyNodeTypeDialog, openSurveyNodeTypeDialog, getSurveyAutoConnect,
+// openDevicePickerDialog — moved to src/legacy/tsc3-handlers.js
 import {
   loadProjectSketches,
   getBackgroundSketches,
@@ -150,6 +148,7 @@ import { renderPerf } from '../utils/render-perf.js';
 import { progressiveRenderer } from '../utils/progressive-renderer.js';
 import { S, F } from './shared-state.js';
 import { initGnssHandlers, setLiveMeasureMode, syncLiveMeasureToggleUI, updateLocationStatus, openGnssPointCaptureDialog, handleGnssPointCapture, vibrateForFixQuality, gpsQuickCapture, createNodeFromMeasurement, getNextEdgeId, centerOnGpsLocation, centerNewSketchOnUserLocation, toggleUserLocationTracking, updateGpsQuickCaptureBtn } from './gnss-handlers.js';
+import { initTSC3Handlers, handleTSC3PointReceived } from './tsc3-handlers.js';
 
 /**
  * Get the current username from authentication or return a default
@@ -12333,177 +12332,8 @@ window.__createNodeFromMeasurement = createNodeFromMeasurement;
 // ============================================
 // TSC3 Survey Device Integration
 // ============================================
-
-// Initialize dialog DOM
-initSurveyNodeTypeDialog();
-
-// Initialize sketch side panel for project-canvas mode
-initSketchSidePanel();
-
-// Wire tsc3Connection callbacks
-tsc3Connection._getNodes = () => nodes;
-tsc3Connection._showToast = (msg) => showToast(msg);
-tsc3Connection._t = (path, ...args) => t(path, ...args);
-tsc3Connection._openTypeDialog = (pointName, coords, onChoose, onCancel, tFn) => {
-  openSurveyNodeTypeDialog(pointName, coords, (type) => {
-    surveyAutoConnect = getSurveyAutoConnect();
-    onChoose(type);
-  }, onCancel, tFn, { autoConnect: surveyAutoConnect });
-};
-tsc3Connection._onPointUpdate = (pointName, coords, isNew, nodeType) => {
-  handleTSC3PointReceived(pointName, coords, isNew, nodeType);
-};
-
-// Wire persistent connection state badge — shows a green Bluetooth icon while
-// a TSC3 survey device is connected; hides automatically on disconnect.
-tsc3Connection.onConnectionChange = ({ connected, name }) => {
-  const badge = document.getElementById('surveyConnectionBadge');
-  if (!badge) return;
-  badge.style.display = connected ? 'flex' : 'none';
-  badge.title = connected && name ? name : '';
-};
-
-/**
- * Handle an incoming survey point from the TSC3 connection manager.
- * @param {string} pointName - Point name/ID
- * @param {{ easting: number, northing: number, elevation: number }} coords - ITM coordinates
- * @param {boolean} isNew - Whether this is a new node (no existing match)
- * @param {string} nodeType - 'Manhole', 'Home', or 'Drainage'
- */
-function handleTSC3PointReceived(pointName, coords, isNew, nodeType) {
-  let node;
-
-  if (isNew) {
-    // Create a new node at canvas center; applyCoordinatesIfEnabled() will immediately
-    // reposition it to the correct world coordinates once the survey data is applied below.
-    node = createNode(canvas.width / 2, canvas.height / 2);
-    // Override the auto-generated ID with the survey point name
-    node.id = String(pointName);
-    node.nodeType = nodeType || 'Manhole';
-  } else {
-    node = nodes.find(n => String(n.id) === String(pointName));
-    if (!node) return;
-  }
-
-  // Preserve manual float coords before overwriting with TSC3 survey data
-  if (node.gnssFixQuality === 6 && node.surveyX != null && node.surveyY != null) {
-    node.manual_x = node.surveyX;
-    node.manual_y = node.surveyY;
-  }
-
-  // Store survey coordinates on the node (TSC3 = RTK Fixed)
-  node.hasCoordinates = true;
-  node._hidden = false;
-  node.surveyX = coords.easting;
-  node.surveyY = coords.northing;
-  node.surveyZ = coords.elevation;
-  node.measure_precision = 0.02; // TSC3 RTK default precision (meters)
-  node.gnssFixQuality = 4; // TSC3 delivers RTK Fixed coordinates
-  // Measurement metadata
-  node.measuredAt = Date.now();
-  const tscAuthUser = window.authGuard?.getAuthState?.()?.user;
-  node.measuredBy = tscAuthUser?.name || tscAuthUser?.email || null;
-
-  // Update coordinatesMap
-  coordinatesMap.set(String(pointName), {
-    x: coords.easting,
-    y: coords.northing,
-    z: coords.elevation,
-  });
-  saveCoordinatesToStorage(coordinatesMap);
-
-  // Auto-enable coordinates if not already on
-  if (!coordinatesEnabled) {
-    coordinatesEnabled = true;
-    saveCoordinatesEnabled(coordinatesEnabled);
-  }
-
-  // Apply coordinates to reposition nodes on canvas
-  applyCoordinatesIfEnabled();
-
-  // Auto-connect to previous survey node
-  if (isNew && surveyAutoConnect && lastSurveyNodeId) {
-    createEdge(lastSurveyNodeId, node.id);
-  }
-  if (isNew) lastSurveyNodeId = node.id;
-
-  // Select the node and update UI
-  selectedNode = node;
-  selectedEdge = null;
-  renderDetails();
-  computeNodeTypes();
-  saveToStorage();
-  scheduleDraw();
-
-  // Auto zoom/recenter after new survey points
-  if (isNew) {
-    const surveyNodes = nodes.filter(n => n.hasCoordinates);
-    if (surveyNodes.length >= 2) {
-      zoomToFit();
-    } else {
-      recenterView();
-    }
-  }
-
-  // Show toast
-  if (isNew) {
-    const typeLabel = t(`mode${nodeType}`) || nodeType;
-    showToast(t('survey.pointCreated', typeLabel, pointName) || `Created ${nodeType} ${pointName}`);
-  } else {
-    showToast(t('survey.pointUpdated', pointName) || `Point ${pointName} updated`);
-  }
-}
-
-// TSC3 menu event handlers
-menuEvents.on('connectSurveyBluetooth', async () => {
-  const devices = await tsc3Connection.getPairedDevices();
-  const surveyDevices = devices.filter(d => d.isSurvey);
-
-  if (surveyDevices.length === 1) {
-    // Auto-connect when exactly one survey device is available.
-    showToast(t('survey.connecting') || 'Connecting...');
-    await tsc3Connection.connectBluetooth(surveyDevices[0].address);
-  } else if (devices.length > 0) {
-    // Show a touch-friendly modal picker — window.prompt() is broken on
-    // Android WebView / Capacitor.
-    const chosen = await openDevicePickerDialog(devices, t);
-    if (chosen) {
-      showToast(t('survey.connecting') || 'Connecting...');
-      await tsc3Connection.connectBluetooth(chosen.address);
-    }
-  } else {
-    showToast(t('survey.noDevicesFound') || 'No devices found');
-  }
-});
-
-menuEvents.on('connectSurveyWebSocket', () => {
-  const savedAddr = localStorage.getItem(STORAGE_KEYS.tsc3WsAddress) || 'localhost:8765';
-  const input = prompt('WebSocket host:port', savedAddr);
-  if (!input) return;
-  localStorage.setItem(STORAGE_KEYS.tsc3WsAddress, input);
-  const parts = input.split(':');
-  const host = parts[0] || 'localhost';
-  const port = parseInt(parts[1], 10) || 8765;
-  showToast(t('survey.connecting') || 'Connecting...');
-  tsc3Connection.connectWebSocket(host, port);
-});
-
-menuEvents.on('disconnectSurvey', async () => {
-  await tsc3Connection.disconnect();
-});
-
-// TMM (Trimble Mobile Manager) connection handler
-menuEvents.on('connectTMM', async () => {
-  showToast(t('tmm.connecting') || 'Connecting to TMM...');
-  const success = await gnssConnection.connectTMM();
-  if (success) {
-    // Auto-enable Live Measure when TMM connects
-    setLiveMeasureMode(true);
-    showToast(t('tmm.connected') || 'TMM Connected');
-  } else {
-    showToast(t('tmm.portNotFound') || 'TMM server not found. Make sure TMM is running.');
-  }
-});
+// [Extracted to src/legacy/tsc3-handlers.js]
+initTSC3Handlers();
 
 // ── Emergency save on page unload ─────────────────────────────────────────
 window.addEventListener('beforeunload', (e) => {
