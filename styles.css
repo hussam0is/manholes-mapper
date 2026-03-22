@@ -1,4 +1,4 @@
-/* Self-hosted Material Icons font (avoids CSP cross-origin issues with Google Fonts CDN) */
+﻿/* Self-hosted Material Icons font (avoids CSP cross-origin issues with Google Fonts CDN) */
 @font-face {
   font-family: 'Material Icons';
   font-style: normal;
@@ -743,7 +743,7 @@ header .btn-primary:hover {
   padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
 }
 
-/* Standalone My Sketches button — sits above the collapsible groups */
+/* Standalone My Sketches button â€” sits above the collapsible groups */
 .mobile-menu__btn--standalone {
   display: flex;
   align-items: center;
@@ -964,7 +964,7 @@ header .btn-primary:hover {
     min-height: var(--touch-target-min);
   }
 
-  /* .btn-icon-sm base class is already 44px — no override needed */
+  /* .btn-icon-sm base class is already 44px â€” no override needed */
 }
 
 /* Adjust size of material icons within buttons */
@@ -1083,7 +1083,7 @@ header .btn-ghost:hover,
   width: 100%;
 }
 
-/* Button with icon only — 44px touch target (meets WCAG 2.5.8 / Android 44dp) */
+/* Button with icon only â€” 44px touch target (meets WCAG 2.5.8 / Android 44dp) */
 .btn-icon-sm {
   width: 44px;
   height: 44px;
@@ -1192,7 +1192,7 @@ select.btn:focus-visible {
   margin-inline-end: max(4px, env(safe-area-inset-right));
 }
 
-/* Frosted glass toolbar — blends with the light theme instead of a harsh dark block */
+/* Frosted glass toolbar â€” blends with the light theme instead of a harsh dark block */
 .canvas-toolbar .segmented {
   background: rgba(255, 255, 255, 0.88);
   border: 1px solid var(--color-border, #e5e7eb);
@@ -1219,7 +1219,7 @@ select.btn:focus-visible {
   flex-shrink: 0;
 }
 
-/* ── Node-type flyout (mobile grouping) ─────────────────────────
+/* â”€â”€ Node-type flyout (mobile grouping) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
    On desktop the trigger is hidden and the 4 node-type buttons
    display inline as before.  On mobile (<=600px) the trigger is
    shown and the buttons live inside a pop-out flyout panel.  */
@@ -1278,7 +1278,7 @@ select.btn:focus-visible {
   pointer-events: none;
 }
 
-/* ── Canvas toolbar dark mode ──────────────────────────────────── */
+/* â”€â”€ Canvas toolbar dark mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (prefers-color-scheme: dark) {
   .canvas-toolbar .segmented {
     background: rgba(30, 41, 59, 0.92);
@@ -1287,12 +1287,12 @@ select.btn:focus-visible {
   }
 
   .canvas-toolbar .segmented .btn {
-    color: #cbd5e1; /* slate-300 — better contrast than slate-400 (#94a3b8) */
+    color: #cbd5e1; /* slate-300 â€” better contrast than slate-400 (#94a3b8) */
   }
 
   .canvas-toolbar .segmented .btn:hover {
     background: rgba(37, 99, 235, 0.2);
-    color: #e2e8f0; /* slate-200 — brighter on hover */
+    color: #e2e8f0; /* slate-200 â€” brighter on hover */
   }
 
   .canvas-toolbar .segmented .btn.active {
@@ -1322,7 +1322,7 @@ select.btn:focus-visible {
   }
 
   .node-type-flyout .btn {
-    color: #cbd5e1; /* slate-300 — better contrast than slate-400 */
+    color: #cbd5e1; /* slate-300 â€” better contrast than slate-400 */
   }
 
   .node-type-flyout .btn:hover {
@@ -1336,7 +1336,7 @@ select.btn:focus-visible {
   }
 }
 
-/* ── Canvas empty-state onboarding hint ───────────────────────── */
+/* â”€â”€ Canvas empty-state onboarding hint â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .canvas-empty-state {
   position: absolute;
   top: 50%;
@@ -1387,7 +1387,7 @@ select.btn:focus-visible {
   50% { transform: translateY(4px); }
 }
 
-/* ── Long-press context menu ──────────────────────────────────── */
+/* â”€â”€ Long-press context menu â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .canvas-context-menu {
   position: fixed;
   z-index: 1600; /* above floating-keyboard (1500) */
@@ -1435,7 +1435,7 @@ select.btn:focus-visible {
   opacity: 1;
 }
 
-/* Canvas zoom buttons — inherit standardized 22px from .canvas-toolbar .material-icons */
+/* Canvas zoom buttons â€” inherit standardized 22px from .canvas-toolbar .material-icons */
 
 /* My Location button */
 .my-location-btn {
@@ -1457,7 +1457,7 @@ select.btn:focus-visible {
   animation: location-pulse 1s ease-in-out infinite;
 }
 
-/* Active tracking state — colored ring around the button */
+/* Active tracking state â€” colored ring around the button */
 .my-location-btn.tracking {
   box-shadow: inset 0 0 0 2px var(--fix-color, #3b82f6);
 }
@@ -1585,7 +1585,7 @@ select.btn:focus-visible {
   }
 }
 
-/* Pegman is now on the left — no drawer offset needed */
+/* Pegman is now on the left â€” no drawer offset needed */
 
 /* Mobile adjustments */
 @media (max-width: 600px) {
@@ -2037,7 +2037,7 @@ canvas {
   transform: rotate(90deg);
 }
 
-/* Actions container — collapsed by default */
+/* Actions container â€” collapsed by default */
 .canvas-fab-toolbar__actions {
   display: flex;
   flex-direction: row;
@@ -2115,7 +2115,7 @@ canvas {
   transition-delay: 0.15s;
 }
 
-/* Collapse faster (no stagger) — also fully hide items to prevent ghost touch targets */
+/* Collapse faster (no stagger) â€” also fully hide items to prevent ghost touch targets */
 .canvas-fab-toolbar:not(.open) .canvas-fab-toolbar__item {
   transition-delay: 0s;
   pointer-events: none;
@@ -2194,7 +2194,7 @@ canvas {
   box-shadow: var(--shadow);
 }
 
-/* Take Measure FAB — pill-shaped, dynamically colored by GNSS precision */
+/* Take Measure FAB â€” pill-shaped, dynamically colored by GNSS precision */
 .take-measure-fab {
   position: absolute;
   inset-inline-start: 12px;
@@ -2236,7 +2236,7 @@ canvas {
   letter-spacing: 0.01em;
 }
 
-/* Precision pulse — expanding ring glow that matches fix color */
+/* Precision pulse â€” expanding ring glow that matches fix color */
 .take-measure-fab.precision-pulse {
   overflow: visible;
 }
@@ -2608,7 +2608,7 @@ canvas {
     will-change: transform;
     backface-visibility: hidden;
     z-index: 160; /* above canvas-toolbar (150), below header (200) */
-    /* On mobile, always use flex layout — transform handles visibility */
+    /* On mobile, always use flex layout â€” transform handles visibility */
     display: flex;
   }
 
@@ -2754,7 +2754,7 @@ canvas {
 }
 
 .field-auto-filled::after {
-  content: '🔒';
+  content: 'ðŸ”’';
   position: absolute;
   inset-inline-end: 8px;
   top: 50%;
@@ -2867,7 +2867,7 @@ canvas {
   text-align: start;
 }
 
-/* Fix quality badges — 3 precision levels */
+/* Fix quality badges â€” 3 precision levels */
 .survey-fix-badge {
   display: inline-block;
   padding: 3px 10px;
@@ -2875,17 +2875,17 @@ canvas {
   font-size: 0.85rem;
   font-weight: 600;
 }
-/* Fixed (RTK Fixed from GNSS receiver) — green */
+/* Fixed (RTK Fixed from GNSS receiver) â€” green */
 .survey-fix-badge.fix-4 {
   background: var(--color-success-light);
   color: var(--color-success-hover);
 }
-/* Device Float (RTK Float from GNSS receiver) — blue */
+/* Device Float (RTK Float from GNSS receiver) â€” blue */
 .survey-fix-badge.fix-5 {
   background: var(--color-primary-light);
   color: var(--color-primary-hover);
 }
-/* Manual Float (user positioned on map) — amber */
+/* Manual Float (user positioned on map) â€” amber */
 .survey-fix-badge.fix-6 {
   background: var(--color-warning-light);
   color: var(--color-warning-hover);
@@ -2914,7 +2914,7 @@ canvas {
   user-select: none;
 }
 
-/* ── Measurement metadata (bottom of node panel) ── */
+/* â”€â”€ Measurement metadata (bottom of node panel) â”€â”€ */
 .measurement-metadata {
   background: transparent;
   border: none;
@@ -2942,7 +2942,7 @@ canvas {
   margin-top: auto;
 }
 
-/* Ghost style for delete buttons in details panel — less prominent to prevent accidental taps */
+/* Ghost style for delete buttons in details panel â€” less prominent to prevent accidental taps */
 .details-actions .btn-danger {
   background: transparent;
   color: var(--color-danger);
@@ -2966,7 +2966,7 @@ canvas {
   50% { opacity: 0.75; }
 }
 
-/* ── Panel section headers (compact uppercase dividers between logical groups) ── */
+/* â”€â”€ Panel section headers (compact uppercase dividers between logical groups) â”€â”€ */
 .panel-section-header {
   font-size: 0.7rem;
   font-weight: 600;
@@ -2982,7 +2982,7 @@ canvas {
   margin-top: 0;
 }
 
-/* ── Soft danger button (outlined delete actions with icon) ── */
+/* â”€â”€ Soft danger button (outlined delete actions with icon) â”€â”€ */
 .btn-danger-soft {
   display: flex;
   align-items: center;
@@ -3009,7 +3009,7 @@ canvas {
   animation: pulse-danger 1s ease-in-out infinite;
 }
 
-/* ── Diameter gradient bar (edge panel) ── */
+/* â”€â”€ Diameter gradient bar (edge panel) â”€â”€ */
 .diameter-gradient-bar {
   flex: 1;
   height: 8px;
@@ -3024,7 +3024,7 @@ canvas {
   }
 }
 
-/* ── Fix Suggestions (node/edge drawer) ── */
+/* â”€â”€ Fix Suggestions (node/edge drawer) â”€â”€ */
 .fix-suggestions-section {
   border-top: 1px solid var(--color-border);
   padding: var(--space-2, 8px) 0;
@@ -3089,7 +3089,7 @@ canvas {
   }
 }
 
-/* ── Element Issues (node/edge detail panel) ── */
+/* â”€â”€ Element Issues (node/edge detail panel) â”€â”€ */
 .element-issues-section {
   border-top: 1px solid var(--color-border);
   padding: var(--space-2, 8px) 0;
@@ -3148,7 +3148,7 @@ canvas {
   }
 }
 
-/* ── Issue Navigation Bar (prev / counter / next) ── */
+/* â”€â”€ Issue Navigation Bar (prev / counter / next) â”€â”€ */
 .issue-nav-bar {
   display: flex;
   align-items: center;
@@ -3243,7 +3243,7 @@ canvas {
   border-color: var(--color-warning-light);
 }
 
-/* ── Node Tab Wizard ─────────────────────────────────────── */
+/* â”€â”€ Node Tab Wizard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .wizard-accuracy-badge {
   display: flex;
   align-items: center;
@@ -3395,7 +3395,7 @@ textarea.wizard-field-input {
   font-size: 18px;
 }
 
-/* Measurement Rail — Floating depth inputs on selected edges */
+/* Measurement Rail â€” Floating depth inputs on selected edges */
 .measurement-rail {
   position: absolute;
   top: 0;
@@ -3985,7 +3985,7 @@ input.floating-keyboard-active {
   align-items: center;
   gap: 0.875rem;
   flex-wrap: wrap;
-  flex-shrink: 0; /* Never shrink — always visible at bottom of flex column */
+  flex-shrink: 0; /* Never shrink â€” always visible at bottom of flex column */
 }
 
 .admin-import-export {
@@ -5724,7 +5724,7 @@ input:checked + .slider:before {
   border-radius: 8px;
 }
 
-/* Start (primary) button — solid blue fill */
+/* Start (primary) button â€” solid blue fill */
 #startPanel #startBtn {
   background: var(--color-primary);
   color: #fff;
@@ -5736,7 +5736,7 @@ input:checked + .slider:before {
   border-color: var(--color-primary-hover);
 }
 
-/* Cancel (secondary) button — outlined style */
+/* Cancel (secondary) button â€” outlined style */
 #startPanel #cancelBtn {
   background: var(--color-surface);
   color: var(--color-primary);
@@ -6529,7 +6529,7 @@ select.invalid:focus {
   }
 }
 
-/* Toast — compact, auto-dismissing notification that doesn't block drawing */
+/* Toast â€” compact, auto-dismissing notification that doesn't block drawing */
 #toast {
   position: fixed;
   left: 50%;
@@ -6645,7 +6645,7 @@ select.invalid:focus {
     width: 100%;
     border-left: none;
     border-top: 1px solid var(--color-border);
-    max-height: 40vh;
+    max-height: 30vh;
     height: auto;
   }
 
@@ -6656,7 +6656,7 @@ select.invalid:focus {
     bottom: 0;
     top: auto;
     width: 100%;
-    height: min(40vh, 50dvh);
+    height: min(30vh, 35dvh);
     max-height: 50dvh;
     transform: translate3d(0, 100%, 0);
     transition: transform 260ms cubic-bezier(.2, .8, .2, 1);
@@ -6665,7 +6665,7 @@ select.invalid:focus {
     border-inline-start: none;
     border-start-start-radius: var(--radius);
     border-start-end-radius: var(--radius);
-    /* On mobile, always use flex layout — transform handles visibility */
+    /* On mobile, always use flex layout â€” transform handles visibility */
     display: flex;
   }
 
@@ -6689,29 +6689,29 @@ select.invalid:focus {
   body.drawer-open .canvas-fab-toolbar {
     inset-inline-end: auto;
     inset-inline-start: 8px;
-    bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 8px + 44px + 8px);
+    bottom: calc(var(--drawer-height, min(30vh, 35dvh)) + 8px + 44px + 8px);
   }
 
   body.drawer-open .toggle-floating-keyboard {
     inset-inline-end: 12px;
-    bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 8px);
+    bottom: calc(var(--drawer-height, min(30vh, 35dvh)) + 8px);
   }
 
   /* When keyboard button is visible, move FAB toolbar above it */
   body.drawer-open.keyboard-button-visible .canvas-fab-toolbar {
-    bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 8px + 44px + 8px + 44px + 8px);
+    bottom: calc(var(--drawer-height, min(30vh, 35dvh)) + 8px + 44px + 8px + 44px + 8px);
   }
 
   /* Keep .canvas-fab rules for standalone items (e.g. sketchSidePanelToggle) */
   body.drawer-open .canvas-fab {
-    bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 8px);
+    bottom: calc(var(--drawer-height, min(30vh, 35dvh)) + 8px);
   }
 
   body.drawer-open.keyboard-button-visible .canvas-fab {
-    bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 8px + 44px + 8px);
+    bottom: calc(var(--drawer-height, min(30vh, 35dvh)) + 8px + 44px + 8px);
   }
 
-  /* Optimize canvas toolbar for mobile — keep 44px touch target minimum */
+  /* Optimize canvas toolbar for mobile â€” keep 44px touch target minimum */
   .canvas-toolbar .segmented#modeGroup .btn {
     min-width: 44px;
     height: 44px;
@@ -6740,7 +6740,7 @@ select.invalid:focus {
   #nodeTypeFlyout                  { order: 8; }
   #edgeModeBtn                     { order: 9; }
 
-  /* ── Node-type flyout (mobile) ───────────────────────────────
+  /* â”€â”€ Node-type flyout (mobile) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
      Collapses 4 node-type buttons into one trigger + flyout. */
 
   /* Allow flyout to overflow beyond the segmented container */
@@ -6772,7 +6772,7 @@ select.invalid:focus {
     opacity: 0.5;
   }
 
-  /* Active indicator on trigger — shows colored dot when a node type is active */
+  /* Active indicator on trigger â€” shows colored dot when a node type is active */
   .node-type-flyout-trigger.has-active-type::before {
     content: '';
     position: absolute;
@@ -6884,7 +6884,7 @@ select.invalid:focus {
   }
 
   body.drawer-open .take-measure-fab {
-    bottom: calc(var(--drawer-height, min(40vh, 50dvh)) + 8px);
+    bottom: calc(var(--drawer-height, min(30vh, 35dvh)) + 8px);
   }
 
   /* Incomplete edge tracker mobile sizing (inside toolbar, no positioning needed) */
@@ -6910,7 +6910,7 @@ select.invalid:focus {
     display: inline-flex !important;
   }
 
-  /* FAB zoom button colors — distinct from other FAB items */
+  /* FAB zoom button colors â€” distinct from other FAB items */
   #fabZoomInBtn.canvas-fab-toolbar__item {
     background: #0ea5e9; /* sky-500 */
   }
@@ -6942,7 +6942,7 @@ select.invalid:focus {
     transform: scale(0.9);
   }
 
-  /* Edge legend toggle button — shown on mobile only */
+  /* Edge legend toggle button â€” shown on mobile only */
   .edge-legend-toggle {
     display: flex;
     position: absolute;
@@ -7316,7 +7316,7 @@ select.invalid:focus {
     --color-border-strong: #475569;
     --color-primary-light: #1e3a5f;
     --color-primary-bg: #0f2744;
-    --color-warning: #fbbf24;            /* amber-400 — brighter for dark bg */
+    --color-warning: #fbbf24;            /* amber-400 â€” brighter for dark bg */
     --color-warning-light: rgba(251, 191, 36, 0.15);
   }
 
@@ -7467,7 +7467,7 @@ select.invalid:focus {
     color: #e2e8f0;
   }
 
-  /* Start panel Cancel button — dark mode outlined style */
+  /* Start panel Cancel button â€” dark mode outlined style */
   #startPanel #cancelBtn {
     background: var(--color-surface);
     color: var(--color-primary);
@@ -7669,7 +7669,7 @@ select.invalid:focus {
     background: var(--color-surface);
   }
 
-  /* Fix 3: .soft-blue-header dark mode — replace light-blue gradient with dark tones */
+  /* Fix 3: .soft-blue-header dark mode â€” replace light-blue gradient with dark tones */
   .soft-blue-header {
     background: linear-gradient(135deg, var(--color-surface-alt) 0%, var(--color-surface) 100%);
   }
@@ -9118,7 +9118,7 @@ select.invalid:focus {
   font-size: 1.25rem;
 }
 
-/* ── Projects homepage overrides ──────────────────────────────────────── */
+/* â”€â”€ Projects homepage overrides â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .home-panel--projects .sketch-card.project-card {
   padding: 1rem;
@@ -9141,7 +9141,7 @@ select.invalid:focus {
   border-color: var(--color-primary-hover, #1d4ed8);
 }
 
-/* "View My Sketches" button in projects footer — outlined navigation style */
+/* "View My Sketches" button in projects footer â€” outlined navigation style */
 .home-panel-sketches-btn {
   background: transparent;
   color: var(--color-primary);
@@ -9224,7 +9224,7 @@ select.invalid:focus {
   }
 }
 
-/* Short viewport — compact home panel so header/close button stays visible */
+/* Short viewport â€” compact home panel so header/close button stays visible */
 @media (max-height: 500px) {
   .home-panel-modern {
     max-height: calc(100vh - 1rem);
@@ -9921,7 +9921,7 @@ select.invalid:focus {
   }
 }
 
-/* ── Home mode tabs (Projects | My Sketches) ── */
+/* â”€â”€ Home mode tabs (Projects | My Sketches) â”€â”€ */
 .home-mode-tabs {
   display: flex;
   gap: 4px;
@@ -10901,7 +10901,7 @@ html[dir="rtl"] .auth-form-container {
   }
 }
 
-/* RTL adjustments — inset-inline-start handles directionality automatically */
+/* RTL adjustments â€” inset-inline-start handles directionality automatically */
 
 /* Mobile adjustments */
 @media (max-width: 768px) {
@@ -11192,7 +11192,7 @@ button:focus-visible,
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     transform: translate3d(0, 100%, 0);
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
-    /* On mobile, always use flex layout — transform handles visibility */
+    /* On mobile, always use flex layout â€” transform handles visibility */
     display: flex;
   }
   
@@ -11299,7 +11299,7 @@ button:focus-visible,
   }
 }
 
-/* ── Sketch Side Panel (project-canvas mode) ──────────────────────────── */
+/* â”€â”€ Sketch Side Panel (project-canvas mode) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .sketch-side-panel {
   position: absolute;
@@ -11397,7 +11397,7 @@ button:focus-visible,
   padding: 8px;
 }
 
-/* ── Sketch card — 3-row column layout ──────────────────────────────── */
+/* â”€â”€ Sketch card â€” 3-row column layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .sketch-side-panel__item {
   display: flex;
   flex-direction: column;
@@ -11441,7 +11441,7 @@ button:focus-visible,
   opacity: 0.8;
 }
 
-/* Row 1: Header — checkbox + title … eye toggle */
+/* Row 1: Header â€” checkbox + title â€¦ eye toggle */
 .sketch-card__row1 {
   display: flex;
   flex-wrap: nowrap;
@@ -11495,7 +11495,7 @@ button:focus-visible,
   font-size: 18px;
 }
 
-/* Row 2: Metadata — distance + node count badge */
+/* Row 2: Metadata â€” distance + node count badge */
 .sketch-card__row2 {
   display: flex;
   flex-wrap: nowrap;
@@ -11584,7 +11584,7 @@ button:focus-visible,
   max-width: 200px;
 }
 
-/* Legacy — kept for backward compat if anything references __stats */
+/* Legacy â€” kept for backward compat if anything references __stats */
 .sketch-side-panel__stats {
   display: flex;
   align-items: center;
@@ -11677,7 +11677,7 @@ button:focus-visible,
   font-size: 15px;
 }
 
-/* ── Totals footer ─────────────────────────────────────────────────── */
+/* â”€â”€ Totals footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .sketch-side-panel__totals {
   display: flex;
   align-items: flex-start;
@@ -11766,7 +11766,7 @@ button:focus-visible,
   color: var(--color-danger, #ef4444);
 }
 
-/* ── Issues sub-panel ──────────────────────────────────────────────── */
+/* â”€â”€ Issues sub-panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .sketch-side-panel__issues-back {
   display: flex;
   align-items: center;
@@ -11888,7 +11888,7 @@ button:focus-visible,
   font-size: 20px;
 }
 
-/* ── Merge mode button (in sketch list row) ────────────────────────── */
+/* â”€â”€ Merge mode button (in sketch list row) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .sketch-side-panel__merge-btn {
   display: inline-flex;
   align-items: center;
@@ -11920,7 +11920,7 @@ button:focus-visible,
   font-size: 15px;
 }
 
-/* ── Merge mode sub-panel ──────────────────────────────────────────── */
+/* â”€â”€ Merge mode sub-panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .sketch-side-panel__merge-info {
   display: flex;
   align-items: center;
@@ -12021,7 +12021,7 @@ button:focus-visible,
   font-size: 20px;
 }
 
-/* ── View All toolbar + multi-select ───────────────────────────────── */
+/* â”€â”€ View All toolbar + multi-select â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .sketch-side-panel__toolbar {
   display: flex;
   align-items: center;
@@ -12059,7 +12059,7 @@ button:focus-visible,
   font-size: 16px;
 }
 
-/* toolbar-hint removed — double-click instruction now shown as card tooltip */
+/* toolbar-hint removed â€” double-click instruction now shown as card tooltip */
 
 /* Select indicator (checkbox) in sketch row */
 .sketch-side-panel__select-indicator {
@@ -12152,7 +12152,7 @@ button:focus-visible,
   border: 2px solid var(--color-surface);
 }
 
-/* ── Mobile: side panel as bottom drawer ─────────────────────────────── */
+/* â”€â”€ Mobile: side panel as bottom drawer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (max-width: 600px) {
   .sketch-side-panel {
     top: auto;
@@ -12183,7 +12183,7 @@ button:focus-visible,
 
 }
 
-/* ── Landscape: narrower side panel to maximize canvas area ────────── */
+/* â”€â”€ Landscape: narrower side panel to maximize canvas area â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 /* Issue #8: Narrower panel (180px) with compact content in landscape.
    The toggle button is always visible so the panel can be shown/hidden. */
 @media (max-height: 450px) and (orientation: landscape) {
@@ -12293,7 +12293,7 @@ button:focus-visible,
   }
 }
 
-/* ── Dark mode for side panel ────────────────────────────────────────── */
+/* â”€â”€ Dark mode for side panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (prefers-color-scheme: dark) {
   .sketch-side-panel {
     background: var(--color-surface, #1e293b);
@@ -12414,7 +12414,7 @@ button:focus-visible,
   }
 }
 
-/* ── Survey connection status badge ─────────────────────────────────── */
+/* â”€â”€ Survey connection status badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 /*
  * Shown inside #canvasContainer (position: relative) when a TSC3 survey
  * device is connected. Placed at the inline-start corner (visual right in
@@ -12456,7 +12456,7 @@ button:focus-visible,
   display: flex;
   flex-direction: column;
 
-  /* 3D-scoped design tokens — the 3D view is always dark-themed */
+  /* 3D-scoped design tokens â€” the 3D view is always dark-themed */
   --color-3d-text: #fff;
   --color-3d-text-muted: #94a3b8;
   --color-3d-text-secondary: #e2e8f0;
@@ -12538,7 +12538,7 @@ button:focus-visible,
   height: 100% !important;
 }
 
-/* CSS2DRenderer label layer — force LTR so absolutely-positioned label wrappers
+/* CSS2DRenderer label layer â€” force LTR so absolutely-positioned label wrappers
    default to left:0 instead of right:0 in RTL mode. CSS2DRenderer positions
    child elements purely via transform(translate(Xpx, Ypx)) and relies on the
    default position being the top-left corner (0,0). In RTL, absolute elements
@@ -12688,7 +12688,7 @@ button:focus-visible,
   pointer-events: none;
 }
 
-/* 3D pipe label — smaller, slightly transparent blue tint */
+/* 3D pipe label â€” smaller, slightly transparent blue tint */
 .three-d-pipe-label {
   font-size: 9px;
   font-weight: 500;
@@ -12697,7 +12697,7 @@ button:focus-visible,
   border-radius: 3px;
 }
 
-/* ── 3D Issue badges ── */
+/* â”€â”€ 3D Issue badges â”€â”€ */
 .three-d-issue-badge {
   background: var(--color-3d-danger);
   color: var(--color-3d-text);
@@ -12714,7 +12714,7 @@ button:focus-visible,
   font-size: 14px;
 }
 
-/* ── 3D Fix Suggestion Popup ── */
+/* â”€â”€ 3D Fix Suggestion Popup â”€â”€ */
 .three-d-fix-popup {
   position: absolute;
   background: rgba(15, 23, 42, 0.92);
@@ -12843,7 +12843,7 @@ button:focus-visible,
   white-space: nowrap;
 }
 
-/* 3D Miniature Toggle — unified glass-morphism style with mode toggle */
+/* 3D Miniature Toggle â€” unified glass-morphism style with mode toggle */
 .three-d-overlay__miniature-toggle {
   min-width: 44px;
   min-height: 44px;
@@ -12958,7 +12958,7 @@ button:focus-visible,
   z-index: 2;
 }
 
-/* 3D FPS crosshair — game-style with center dot and breathing animation */
+/* 3D FPS crosshair â€” game-style with center dot and breathing animation */
 .three-d-overlay__crosshair {
   position: absolute;
   inset: 0;
@@ -12985,7 +12985,7 @@ button:focus-visible,
   width: 2px;
   height: 24px;
 }
-/* Center dot — 6px for visibility against complex 3D scenes */
+/* Center dot â€” 6px for visibility against complex 3D scenes */
 .three-d-overlay__crosshair-dot {
   position: absolute;
   width: 6px;
@@ -13003,7 +13003,7 @@ button:focus-visible,
   50% { transform: scale(1.06); opacity: 1; }
 }
 
-/* ── 3D Issues Panel ── */
+/* â”€â”€ 3D Issues Panel â”€â”€ */
 .three-d-overlay__issues-panel {
   position: absolute;
   top: 60px;
@@ -13116,7 +13116,7 @@ button:focus-visible,
   }
 }
 
-/* Landscape adjustments for 3D overlay — PUBG spectator game-HUD style */
+/* Landscape adjustments for 3D overlay â€” PUBG spectator game-HUD style */
 @media (orientation: landscape) and (max-height: 500px) {
   /* -- Auto-hiding header: transparent overlay, fades after 3s via JS -- */
   .three-d-overlay__header {
@@ -13303,7 +13303,7 @@ button:focus-visible,
   }
 }
 
-/* Sprint badge (non-landscape) — hidden by default */
+/* Sprint badge (non-landscape) â€” hidden by default */
 .three-d-overlay__sprint-badge {
   display: none;
 }
@@ -13313,7 +13313,7 @@ button:focus-visible,
   }
 }
 
-/* Header show button — hidden outside landscape */
+/* Header show button â€” hidden outside landscape */
 .three-d-overlay__header-show-btn {
   display: none;
 }
@@ -13324,7 +13324,7 @@ button:focus-visible,
 }
 
 /* ===========================================
-   Landscape Mobile — Horizontal Phone Layout
+   Landscape Mobile â€” Horizontal Phone Layout
    ===========================================
    Targets phones held horizontally: wide viewport with very limited height.
    Key constraint: only ~360px of height available, so every vertical pixel matters.
@@ -13364,7 +13364,7 @@ button:focus-visible,
     -webkit-backdrop-filter: saturate(160%) blur(12px);
   }
 
-  /* Canvas extends to full height — no margin reserved for fixed header */
+  /* Canvas extends to full height â€” no margin reserved for fixed header */
   #main {
     margin-top: 0;
   }
@@ -13401,7 +13401,7 @@ button:focus-visible,
     font-size: 1.2rem;
   }
 
-  /* Header controls (zoom, home, help) — compact visual, expanded touch area.
+  /* Header controls (zoom, home, help) â€” compact visual, expanded touch area.
      Visual size is 28px for space savings, but position: relative + ::after
      provides a 44px touch target for WCAG 2.5.8 compliance. */
   .menu-btn--small,
@@ -13429,7 +13429,7 @@ button:focus-visible,
   }
 
   /* ==============================================
-     Progressive Disclosure — Layout 1
+     Progressive Disclosure â€” Layout 1
      Reduces visible header items from ~15 to 5:
        1. User avatar (#authUserButton)
        2. Sketch name + sync indicator (identity pill)
@@ -13460,7 +13460,7 @@ button:focus-visible,
     display: none !important;
   }
 
-  /* --- LAYOUT: Header grid — 3-zone layout --- */
+  /* --- LAYOUT: Header grid â€” 3-zone layout --- */
   /* Zone 1 (start): identity (avatar + sketch name + sync)
      Zone 2 (center): stretches
      Zone 3 (end): actions (search + command menu + autosave) */
@@ -13471,7 +13471,7 @@ button:focus-visible,
     min-height: 36px;
   }
 
-  /* --- ZONE 1: Identity — brand area with sketch name + sync --- */
+  /* --- ZONE 1: Identity â€” brand area with sketch name + sync --- */
   .menu-brand {
     gap: 0.375rem;
     align-items: center;
@@ -13479,7 +13479,7 @@ button:focus-visible,
     min-width: 0;
   }
 
-  /* Hide the desktop brand separator — not needed in progressive disclosure */
+  /* Hide the desktop brand separator â€” not needed in progressive disclosure */
   #brand::after {
     display: none;
   }
@@ -13488,7 +13488,7 @@ button:focus-visible,
     padding-inline-end: 0;
   }
 
-  /* Sketch name: compact pill — show desktop version, hide mobile */
+  /* Sketch name: compact pill â€” show desktop version, hide mobile */
   .menu-sketch-name:not(.menu-sketch-name--mobile):not(:empty) {
     display: inline-flex !important;
     font-size: 0.7rem;
@@ -13515,7 +13515,7 @@ button:focus-visible,
     font-size: 0.875rem;
   }
 
-  /* --- ZONE 3: Controls — only search, command menu, autosave --- */
+  /* --- ZONE 3: Controls â€” only search, command menu, autosave --- */
   .menu-controls {
     gap: 0.25rem;
     overflow: visible;
@@ -13660,7 +13660,7 @@ button:focus-visible,
 /* --- Landscape: Login Page --- */
 /* Login/Signup form must be fully usable at 375px height.
    Side-by-side layout (logo left, form right), form side scrolls independently.
-   Signup has 4 fields so vertical space is tight — use compact gaps + small labels. */
+   Signup has 4 fields so vertical space is tight â€” use compact gaps + small labels. */
 @media (max-height: 450px) and (orientation: landscape) {
   .login-panel {
     padding: 0.5rem;
@@ -13761,7 +13761,7 @@ button:focus-visible,
     margin-top: 0;
   }
 
-  /* Hide form title/subtitle in landscape — the login-panel-header already provides context */
+  /* Hide form title/subtitle in landscape â€” the login-panel-header already provides context */
   .auth-form-title,
   .auth-form-subtitle {
     display: none;
@@ -13811,7 +13811,7 @@ button:focus-visible,
   }
 }
 
-/* --- Landscape: Canvas Toolbar — Switch to Horizontal --- */
+/* --- Landscape: Canvas Toolbar â€” Switch to Horizontal --- */
 @media (max-height: 450px) and (orientation: landscape) {
   /* Issue #1 + #2: Compact horizontal toolbar with 44px touch targets.
      Visual size is 34px to save vertical space, but each button has a
@@ -13845,7 +13845,7 @@ button:focus-visible,
   }
 
   .canvas-toolbar .segmented#modeGroup .btn {
-    /* 44px touch target with compact 20px icon — border-box keeps sizing predictable.
+    /* 44px touch target with compact 20px icon â€” border-box keeps sizing predictable.
        The 44px meets WCAG 2.5.8 minimum while staying compact in landscape. */
     min-width: 44px;
     min-height: 36px;
@@ -13861,7 +13861,7 @@ button:focus-visible,
     font-size: 20px;
   }
 
-  /* In landscape, always show all node buttons inline — no flyout */
+  /* In landscape, always show all node buttons inline â€” no flyout */
   .node-type-flyout-trigger {
     display: none !important;
   }
@@ -13901,7 +13901,7 @@ button:focus-visible,
     height: 44px;
   }
 
-  /* Take Measure FAB — min 44px touch target even in landscape */
+  /* Take Measure FAB â€” min 44px touch target even in landscape */
   .take-measure-fab {
     bottom: 4px;
     inset-inline-start: 4px;
@@ -13918,7 +13918,7 @@ button:focus-visible,
     font-size: 11px;
   }
 
-  /* Header recall handle — chevron strip at top edge when header hidden.
+  /* Header recall handle â€” chevron strip at top edge when header hidden.
      Visual height is 28px but the touch target extends to 44px via padding-bottom
      so finger taps register reliably on real devices. */
   .header-recall-handle {
@@ -13953,7 +13953,7 @@ button:focus-visible,
   }
 }
 
-/* --- Landscape: Bottom Drawer — Side Panel Instead --- */
+/* --- Landscape: Bottom Drawer â€” Side Panel Instead --- */
 @media (max-height: 450px) and (max-width: 900px) and (orientation: landscape) {
   .drawer {
     /* Issue #4: Convert bottom sheet to side panel; narrower (35vw, max 280px)
@@ -14112,7 +14112,7 @@ button:focus-visible,
   }
 }
 
-/* --- Landscape: Home Panel — Full-Width Compact --- */
+/* --- Landscape: Home Panel â€” Full-Width Compact --- */
 @media (max-height: 450px) and (orientation: landscape) {
   .home-panel-modern {
     width: min(600px, 90vw);
@@ -14210,7 +14210,7 @@ button:focus-visible,
     min-height: 44px;
   }
 
-  /* Projects home panel — compact cards in landscape */
+  /* Projects home panel â€” compact cards in landscape */
   .home-panel--projects .home-panel-header {
     padding-bottom: 0.4rem;
   }
@@ -14588,7 +14588,7 @@ body.cockpit-mode #edgeLegend {
       color: rgba(255, 255, 255, 0.35);
     }
 
-    /* Progressive Disclosure — dark mode overrides */
+    /* Progressive Disclosure â€” dark mode overrides */
 
     /* Group separators: lighter for dark mode */
     .menu-group--primary,
@@ -14616,7 +14616,7 @@ body.cockpit-mode #edgeLegend {
   }
 }
 
-/* Header recall handle — hidden outside landscape */
+/* Header recall handle â€” hidden outside landscape */
 .header-recall-handle {
   display: none;
 }
@@ -14628,7 +14628,7 @@ body.cockpit-mode #edgeLegend {
 }
 
 /* ============================================================
-   Admin Panel Hub — tab system, cards, forms, lists, features
+   Admin Panel Hub â€” tab system, cards, forms, lists, features
    ============================================================ */
 
 /* Override admin-content so hub tabs sit flush */
@@ -14636,7 +14636,7 @@ body.cockpit-mode #edgeLegend {
   padding: 0;
 }
 
-/* Hub tab bar — extends the base .admin-tabs style */
+/* Hub tab bar â€” extends the base .admin-tabs style */
 .ap-hub-tabs {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -15680,7 +15680,7 @@ body.cockpit-mode #edgeLegend {
   }
 }
 
-/* ── Admin Stats: Velocity badge ── */
+/* â”€â”€ Admin Stats: Velocity badge â”€â”€ */
 .admin-stats__badge {
   display: inline-flex;
   align-items: center;
@@ -15703,7 +15703,7 @@ body.cockpit-mode #edgeLegend {
   .badge--flat { background: #1f2937; color: #9ca3af; }
 }
 
-/* ── Admin Stats: KPI Row ── */
+/* â”€â”€ Admin Stats: KPI Row â”€â”€ */
 .admin-stats__kpi-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -15767,7 +15767,7 @@ body.cockpit-mode #edgeLegend {
   text-align: center;
 }
 
-/* ── Admin Stats: SVG Chart ── */
+/* â”€â”€ Admin Stats: SVG Chart â”€â”€ */
 .admin-stats__svg-chart {
   width: 100%;
   overflow-x: auto;
@@ -15779,7 +15779,7 @@ body.cockpit-mode #edgeLegend {
   height: auto;
 }
 
-/* ── Admin Stats: Charts Row (donut + issues side by side) ── */
+/* â”€â”€ Admin Stats: Charts Row (donut + issues side by side) â”€â”€ */
 .admin-stats__charts-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -15797,7 +15797,7 @@ body.cockpit-mode #edgeLegend {
   }
 }
 
-/* ── Admin Stats: Accuracy Donut ── */
+/* â”€â”€ Admin Stats: Accuracy Donut â”€â”€ */
 .admin-stats__donut-wrap {
   display: flex;
   align-items: center;
@@ -15841,7 +15841,7 @@ body.cockpit-mode #edgeLegend {
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Admin Stats: Issue Breakdown Bars ── */
+/* â”€â”€ Admin Stats: Issue Breakdown Bars â”€â”€ */
 .admin-stats__issue-row {
   display: flex;
   align-items: center;
@@ -15881,7 +15881,7 @@ body.cockpit-mode #edgeLegend {
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Admin Stats: Activity Heatmap ── */
+/* â”€â”€ Admin Stats: Activity Heatmap â”€â”€ */
 .admin-stats__heatmap {
   display: grid;
   grid-template-columns: repeat(auto-fill, 12px);
@@ -15912,7 +15912,7 @@ body.cockpit-mode #edgeLegend {
   color: var(--color-text-muted);
 }
 
-/* ── Admin Stats: Heatmap Tooltip ── */
+/* â”€â”€ Admin Stats: Heatmap Tooltip â”€â”€ */
 .admin-stats__heatmap-tooltip {
   position: absolute;
   transform: translate(-50%, -100%);
@@ -15983,7 +15983,7 @@ body.cockpit-mode #edgeLegend {
 }
 
 /* ===== Mission Control Home Screen ===== */
-/* ── Resume Bar (compact active sketch shortcut) ── */
+/* â”€â”€ Resume Bar (compact active sketch shortcut) â”€â”€ */
 .resume-bar {
   display: flex;
   align-items: center;
@@ -16096,7 +16096,7 @@ body.cockpit-mode #edgeLegend {
   }
 }
 
-/* ── Search Bar ── */
+/* â”€â”€ Search Bar â”€â”€ */
 .home-search-bar {
   position: relative;
   padding: 8px 16px;
@@ -16171,7 +16171,7 @@ body.cockpit-mode #edgeLegend {
   }
 }
 
-/* ── Project card meta separator ── */
+/* â”€â”€ Project card meta separator â”€â”€ */
 .sketch-card-meta__sep {
   display: inline-block;
   width: 1px;
@@ -16611,10 +16611,10 @@ body.reduce-blue-light #canvasContainer canvas {
   opacity: 0.6;
 }
 
-/* ════════════════════════════════════════════════════════════════════════
-   UNIFIED LAYOUT — hides old floating panels when the new layout is active.
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   UNIFIED LAYOUT â€” hides old floating panels when the new layout is active.
    Scoped under body.unified-layout to avoid conflicts.
-   ════════════════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 /* Hide old canvas toolbar (vertical, right side) */
 body.unified-layout .canvas-toolbar {
@@ -16631,7 +16631,7 @@ body.unified-layout .take-measure-fab {
   display: none !important;
 }
 
-/* Hide old edge legend toggle (palette button) — legend itself stays */
+/* Hide old edge legend toggle (palette button) â€” legend itself stays */
 body.unified-layout #edgeLegendToggle {
   display: none !important;
 }
@@ -16683,7 +16683,7 @@ body.unified-layout #sidebar.drawer {
   display: none !important;
 }
 
-/* ── Canvas container adjustments under unified layout ── */
+/* â”€â”€ Canvas container adjustments under unified layout â”€â”€ */
 body.unified-layout #canvasContainer {
   /* Old sidebar is hidden, so let canvas take full width */
   flex: 1 1 0%;
