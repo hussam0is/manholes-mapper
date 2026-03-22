@@ -2054,7 +2054,7 @@ const debouncedSaveToStorage = (function () {
     if (timeoutId) clearTimeout(timeoutId);
     timeoutId = setTimeout(() => {
       timeoutId = undefined;
-      try { saveToStorage(); showToast(t('toasts.saved') || '✓ Saved', 'success', 1000); } catch (_) { }
+      try { saveToStorage(); showToast(t('toasts.saved') || 'Saved', 'success', 1000); } catch (_) { }
     }, delayMs);
   };
 })();

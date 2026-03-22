@@ -59,6 +59,9 @@ let homeMode = (() => {
 // Search query for home panel filtering
 let homeSearchQuery = '';
 
+/** @returns {'projects'|'sketches'} */
+export function getHomeMode() { return homeMode; }
+
 // Format sketch display name - use name if available, otherwise format creation date
 function formatSketchDisplayName(rec) {
   if (rec.name && rec.name.trim()) {
