@@ -34,7 +34,7 @@ const exportDropdown          = document.getElementById('exportDropdown');
  * Get all dangling edges (edges with head === null)
  * @returns {Array} Array of dangling edge objects
  */
-function getDanglingEdges() {
+export function getDanglingEdges() {
   return S.edges.filter(e => e.head === null || e.isDangling === true);
 }
 
@@ -120,7 +120,7 @@ function closeFinishWorkdayModal() {
  * Resolve dangling edges by creating nodes at their endpoints
  * @returns {boolean} True if all dangling edges were resolved
  */
-function resolveDanglingEdges() {
+export function resolveDanglingEdges() {
   const danglingEdgesList = getDanglingEdges();
   const selects = danglingEdgesListEl?.querySelectorAll('.dangling-edge-select') || [];
   
