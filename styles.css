@@ -16857,3 +16857,147 @@ body.unified-layout #edgeLegend {
 body.unified-layout #toast {
   bottom: 72px;
 }
+
+/* ── Design Issue Fixes (Iteration 7) ──────────────────────────────── */
+
+/* #52 — Wizard tab abbreviated text labels */
+.wizard-tab-label {
+  display: none;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1;
+  margin-top: 1px;
+  max-width: 40px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wizard-tab {
+  flex-direction: column;
+  gap: 1px;
+}
+/* Show labels on wider screens */
+@media (min-width: 380px) {
+  .wizard-tab-label { display: block; }
+  .wizard-tab { width: auto; min-width: 44px; padding: 4px 6px; height: auto; min-height: 44px; }
+}
+
+/* #25 — Issue list collapsible group headers */
+.sketch-side-panel__issue-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  background: var(--color-surface-secondary, #f7f7f7);
+  border-bottom: 1px solid var(--color-border, #e0e0e0);
+  font-weight: 600;
+  font-size: 13px;
+  user-select: none;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.sketch-side-panel__issue-group-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sketch-side-panel__issue-group-count {
+  background: var(--color-danger, #ef4444);
+  color: white;
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 20px;
+  text-align: center;
+}
+.sketch-side-panel__issue-group-chevron {
+  font-size: 18px !important;
+  color: var(--color-text-secondary, #999);
+  transition: transform 0.15s ease;
+}
+.sketch-side-panel__issue-group-items {
+  /* container for rows inside a group */
+}
+
+/* #26 — Styled confirmation modal (replaces native confirm) */
+.app-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.15s ease;
+}
+.app-confirm-dialog {
+  background: var(--color-surface, #fff);
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 320px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+}
+.app-confirm-message {
+  font-size: 16px;
+  font-weight: 500;
+  text-align: center;
+  margin: 0 0 20px;
+  color: var(--color-text, #333);
+}
+.app-confirm-actions {
+  display: flex;
+  gap: 12px;
+}
+.app-confirm-cancel {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 10px;
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #333);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.app-confirm-ok {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  background: var(--color-danger, #ef4444);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* #32/#53 — Actionable chip (tappable badge) */
+.chip-actionable {
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.chip-actionable:hover,
+.chip-actionable:active {
+  opacity: 0.8;
+}
+
+/* #37 — Picker dialog fix: ensure opaque overlay */
+.picker-overlay,
+.custom-select-overlay {
+  background: rgba(0,0,0,0.3);
+  z-index: 9000;
+}
+.picker-modal,
+.custom-select-modal,
+.custom-select__dropdown {
+  background: var(--color-surface, #fff) !important;
+  z-index: 9001;
+  position: relative;
+}
+

@@ -28,7 +28,7 @@ import { onAuthStateChange, getAuthState, updateAuthState, guardRoute, redirectI
 import { initSyncService } from './auth/sync-service.js';
 import { initNotificationBell, destroyNotificationBell } from './notifications/notification-bell.js';
 import { authClient, signOutUser, getCurrentSession } from './auth/auth-client.js';
-import { initPermissionsService, getUserRole } from './auth/permissions.js';
+import { initPermissionsService, getUserRole, isAdmin, onPermissionChange } from './auth/permissions.js';
 import { menuEvents, setupEventDelegation } from './menu/menu-events.js';
 import {
   initGnssModule,
@@ -229,6 +229,22 @@ if (typeof window !== 'undefined') {
 if (typeof window !== 'undefined') {
   initSyncService();
   initPermissionsService();
+
+  // Hide admin-only controls (stretch/scale) for non-admin users (#16)
+  function _updateAdminOnlyControls() {
+    const show = isAdmin();
+    document.querySelectorAll('.admin-only-control').forEach(el => {
+      el.style.display = show ? '' : 'none';
+    });
+  }
+  onPermissionChange(_updateAdminOnlyControls);
+  // Run once initially after DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _updateAdminOnlyControls);
+  } else {
+    _updateAdminOnlyControls();
+  }
+
   // Initialize notification bell (polls for unread issue notifications)
   onAuthStateChange((state) => {
     if (state.isAuthenticated) {

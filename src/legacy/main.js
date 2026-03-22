@@ -158,6 +158,7 @@ import { getLibrary, setLibrary, invalidateLibraryCache, syncProjectSketchesToLi
 import { renderResumeBar, renderSearchBar, renderHome, hideHome, renderHomeModeTabs, renderProjectsHome, repositionAllProjectSketchNodes, loadProjectCanvas, precacheProjectTiles, handleChangeProject, getHomeMode } from './home-renderer.js';
 import { pushUndo, pushUndoDirect, clearUndoStack, updateUndoButton, updateRedoButton, deepCopyObj, deleteNodeShared, deleteEdgeShared, nodeHasValuableData, edgeHasValuableData, performUndo, performRedo, updateIncompleteEdgeTracker, findDanglingEdgeNear, findDanglingEndpointAt, findDanglingSnapTarget, mergeDanglingEdges, connectDanglingEdge, finalizeDanglingEndpointDrag } from './undo-redo.js';
 import { closeMobileMenu, initMobileMenu } from './mobile-menu.js';
+import { initToolbarEvents, increaseSizeScale, decreaseSizeScale, updateAutoSizeBtnStyle, toggleAutoSize, loadSizePreferences } from './toolbar-events.js';
 import { initFinishWorkday } from './finish-workday.js';
 // Auth UI, login panel, routing — [Extracted to src/legacy/auth-ui.js]
 import { hidePanelAnimated, showLoginPanel, hideLoginPanel, showAuthLoading, hideAuthLoading, mountAuthSignIn, mountAuthSignUp, updateUserButtonVisibility, handleRoute, preventModalScrollPropagation, initAuthUI } from './auth-ui.js';
@@ -1098,97 +1099,9 @@ if (cancelBtn) {
   });
 }
 
-// Mode selection buttons
-if (nodeModeBtn) {
-  nodeModeBtn.addEventListener('click', () => {
-    commitIdInputIfFocused();
-    currentMode = 'node';
-    nodeModeBtn.classList.add('active');
-    if (homeNodeModeBtn) homeNodeModeBtn.classList.remove('active');
-    if (drainageNodeModeBtn) drainageNodeModeBtn.classList.remove('active');
-    if (issueNodeModeBtn) issueNodeModeBtn.classList.remove('active');
-    if (edgeModeBtn) edgeModeBtn.classList.remove('active');
-    pendingEdgeTail = null;
-    pendingEdgePreview = null;
-    pendingEdgeStartPosition = null;
-    selectedNode = null;
-    selectedEdge = null;
-    renderDetails();
-    showToast(t('toasts.nodeMode'), 1200);
-  });
-}
-if (homeNodeModeBtn) {
-  homeNodeModeBtn.addEventListener('click', () => {
-    commitIdInputIfFocused();
-    currentMode = 'home';
-    homeNodeModeBtn.classList.add('active');
-    if (nodeModeBtn) nodeModeBtn.classList.remove('active');
-    if (drainageNodeModeBtn) drainageNodeModeBtn.classList.remove('active');
-    if (issueNodeModeBtn) issueNodeModeBtn.classList.remove('active');
-    if (edgeModeBtn) edgeModeBtn.classList.remove('active');
-    pendingEdgeTail = null;
-    pendingEdgePreview = null;
-    pendingEdgeStartPosition = null;
-    selectedNode = null;
-    selectedEdge = null;
-    renderDetails();
-    showToast(t('home'), 1200);
-  });
-}
-if (drainageNodeModeBtn) {
-  drainageNodeModeBtn.addEventListener('click', () => {
-    commitIdInputIfFocused();
-    currentMode = 'drainage';
-    drainageNodeModeBtn.classList.add('active');
-    if (nodeModeBtn) nodeModeBtn.classList.remove('active');
-    if (homeNodeModeBtn) homeNodeModeBtn.classList.remove('active');
-    if (issueNodeModeBtn) issueNodeModeBtn.classList.remove('active');
-    if (edgeModeBtn) edgeModeBtn.classList.remove('active');
-    pendingEdgeTail = null;
-    pendingEdgePreview = null;
-    pendingEdgeStartPosition = null;
-    selectedNode = null;
-    selectedEdge = null;
-    renderDetails();
-    showToast(t('drainage'), 1200);
-  });
-}
-if (issueNodeModeBtn) {
-  issueNodeModeBtn.addEventListener('click', () => {
-    commitIdInputIfFocused();
-    currentMode = 'issue';
-    issueNodeModeBtn.classList.add('active');
-    if (nodeModeBtn) nodeModeBtn.classList.remove('active');
-    if (homeNodeModeBtn) homeNodeModeBtn.classList.remove('active');
-    if (drainageNodeModeBtn) drainageNodeModeBtn.classList.remove('active');
-    if (edgeModeBtn) edgeModeBtn.classList.remove('active');
-    pendingEdgeTail = null;
-    pendingEdgePreview = null;
-    pendingEdgeStartPosition = null;
-    selectedNode = null;
-    selectedEdge = null;
-    renderDetails();
-    showToast(t('toasts.issueMode'), 1200);
-  });
-}
-if (edgeModeBtn) {
-  edgeModeBtn.addEventListener('click', () => {
-    commitIdInputIfFocused();
-    currentMode = 'edge';
-    edgeModeBtn.classList.add('active');
-    if (nodeModeBtn) nodeModeBtn.classList.remove('active');
-    if (homeNodeModeBtn) homeNodeModeBtn.classList.remove('active');
-    if (drainageNodeModeBtn) drainageNodeModeBtn.classList.remove('active');
-    if (issueNodeModeBtn) issueNodeModeBtn.classList.remove('active');
-    pendingEdgeTail = null;
-    pendingEdgePreview = null;
-    pendingEdgeStartPosition = null;
-    selectedNode = null;
-    selectedEdge = null;
-    renderDetails();
-    showToast(t('toasts.edgeMode'), 1200);
-  });
-}
+// Mode selection buttons — [Extracted to src/legacy/toolbar-events.js]
+// nodeModeBtn, homeNodeModeBtn, drainageNodeModeBtn, issueNodeModeBtn, edgeModeBtn
+// event listeners are wired via initToolbarEvents() in init().
 // [Node-type flyout (syncFlyoutIcon, closeFlyout, event listeners) � extracted to src/legacy/project-ui.js]
 // initProjectUI() is called from init().
 
@@ -1239,158 +1152,11 @@ if (zoomOutBtn) {
 }
 // No explicit edit button; edit works contextually in Node mode via right-click or double-click.
 
-// Export nodes CSV
-if (exportNodesBtn) {
-  exportNodesBtn.addEventListener('click', async () => {
-    if (nodes.length === 0) {
-      showToast(t('alerts.noNodesToExport'));
-      return;
-    }
-    showToast(t('toasts.exporting'));
-    const { exportNodesCsv } = await import('../utils/csv.js');
-    const csvContent = 'sep=,\r\n' + exportNodesCsv(nodes, adminConfig, t).replace(/\n/g, '\r\n');
-    // Encode as UTF-16LE with BOM for best compatibility with Excel on Windows
-    const bytes = encodeUtf16LeWithBom(csvContent);
-    const blob = new Blob([bytes], { type: 'text/csv;charset=utf-16le;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    const datePart = creationDate || new Date().toISOString().substr(0, 10);
-    a.download = `nodes_${datePart}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    // Do not clear storage so user can export edges separately
-    showToast(t('toasts.nodesExported'));
-  });
-}
+// Export/import buttons — [Extracted to src/legacy/toolbar-events.js]
+// exportNodesBtn, exportEdgesBtn, exportSketchBtn, importSketchBtn/importSketchFile
+// event listeners are wired via initToolbarEvents() in init().
 
-// Export edges CSV
-if (exportEdgesBtn) {
-  exportEdgesBtn.addEventListener('click', async () => {
-    if (edges.length === 0) {
-      showToast(t('alerts.noEdgesToExport'));
-      return;
-    }
-    showToast(t('toasts.exporting'));
-    const { exportEdgesCsv } = await import('../utils/csv.js');
-    const csvContent = 'sep=,\r\n' + exportEdgesCsv(edges, adminConfig, t).replace(/\n/g, '\r\n');
-    // Encode as UTF-16LE with BOM for best compatibility with Excel on Windows
-    const bytes = encodeUtf16LeWithBom(csvContent);
-    const blob = new Blob([bytes], { type: 'text/csv;charset=utf-16le;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    const datePart = creationDate || new Date().toISOString().substr(0, 10);
-    a.download = `edges_${datePart}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    // Do not clear storage here
-    showToast(t('toasts.edgesExported'));
-  });
-}
-
-// Export dropdown toggle - Now handled by main-entry.js initCommandDropdown()
-// The new implementation uses fixed positioning to avoid overflow clipping issues
-
-// Export complete sketch as JSON
-if (exportSketchBtn) {
-  exportSketchBtn.addEventListener('click', async () => {
-    if (nodes.length === 0 && edges.length === 0) {
-      showToast(t('alerts.noSketchToExport'));
-      return;
-    }
-    try {
-      showToast(t('toasts.exporting'));
-      const { exportSketchToJson } = await import('../utils/sketch-io.js');
-      const sketchData = {
-        nodes: nodes,
-        edges: edges,
-        nextNodeId: nextNodeId,
-        creationDate: creationDate,
-        sketchId: currentSketchId,
-        sketchName: currentSketchName,
-      };
-      exportSketchToJson(sketchData);
-      showToast(t('toasts.sketchExported'));
-    } catch (error) {
-      console.error('[App] Export error:', error.message);
-      showToast(t('alerts.exportFailed'));
-    }
-  });
-}
-
-// Import sketch from JSON
-if (importSketchBtn && importSketchFile) {
-  importSketchBtn.addEventListener('click', () => {
-    // Trigger file picker
-    importSketchFile.click();
-  });
-
-  importSketchFile.addEventListener('change', async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const { importSketchFromJson } = await import('../utils/sketch-io.js');
-      const importedSketch = await importSketchFromJson(file);
-
-      // Ask user if they want to replace current sketch or create new
-      const hasCurrentSketch = nodes.length > 0 || edges.length > 0;
-      let shouldReplace = true;
-
-      if (hasCurrentSketch) {
-        shouldReplace = confirm(t('alerts.confirmImportReplace'));
-        if (!shouldReplace) {
-          // Reset file input
-          importSketchFile.value = '';
-          return;
-        }
-      }
-
-      // Load the imported sketch
-      nodes = importedSketch.nodes;
-      _nodeMapDirty = true; _spatialGridDirty = true; _dataVersion++;
-      edges = importedSketch.edges;
-      nextNodeId = importedSketch.nextNodeId;
-      creationDate = importedSketch.creationDate;
-      currentSketchId = null; // Will get new ID when saved
-      currentSketchName = importedSketch.sketchName;
-      currentProjectId = importedSketch.projectId || null;
-      currentInputFlowConfig = importedSketch.inputFlowConfig || DEFAULT_INPUT_FLOW_CONFIG;
-      updateSketchNameDisplay();
-
-      // Recompute node types and save
-      computeNodeTypes();
-      saveToStorage();
-      updateCanvasEmptyState();
-      draw();
-      renderDetails();
-
-      // Recenter view
-      try { recenterView(); } catch (_) { }
-
-      showToast(t('toasts.sketchImported'));
-
-    } catch (error) {
-      console.error('[App] Import error:', error.message);
-      showToast(t('alerts.importFailed'));
-    } finally {
-      // Reset file input so same file can be imported again
-      importSketchFile.value = '';
-    }
-  });
-}
-
-// Home/Library controls
-if (homeBtn) {
-  homeBtn.addEventListener('click', () => {
-    renderHome();
-  });
-}
+// Home button — [Extracted to src/legacy/toolbar-events.js]
 if (createFromHomeBtn) {
   createFromHomeBtn.addEventListener('click', () => {
     hideHome();
@@ -1559,17 +1325,7 @@ if (saveBtn) {
     }
   });
 }
-if (autosaveToggle) {
-  const savedPref = localStorage.getItem(STORAGE_KEYS.autosave);
-  if (savedPref !== null) autosaveEnabled = savedPref === 'true';
-  autosaveToggle.checked = autosaveEnabled;
-  autosaveToggle.addEventListener('change', () => {
-    autosaveEnabled = !!autosaveToggle.checked;
-    localStorage.setItem(STORAGE_KEYS.autosave, String(autosaveEnabled));
-    showToast(autosaveEnabled ? t('toasts.autosaveOn') : t('toasts.autosaveOff'));
-    if (autosaveEnabled) saveToLibrary();
-  });
-}
+// Autosave toggle — [Extracted to src/legacy/toolbar-events.js]
 
 // Load size scale preference
 try {

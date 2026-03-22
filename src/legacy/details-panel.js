@@ -551,7 +551,7 @@ function renderDetails() {
                   : t('labels.indicatorMissingCoords');
                 return `<div class="chip chip-warn">${label}</div>`;
               }
-              return `<div class="chip chip-ok">${t('labels.indicatorOk')}</div>`;
+              return `<div class="chip chip-ok" title="${t('labels.dataComplete') || 'All required data is complete'}">${t('labels.indicatorOk')}</div>`;
             })()}
           </div>
           ${(() => {
@@ -1771,6 +1771,22 @@ function initDetailsPanel() {
       e.stopPropagation();
       closeSidebarPanel();
     }, { passive: false });
+  }
+
+  // Actionable chip click: scroll to relevant section (#32/#53)
+  if (sidebarEl) {
+    sidebarEl.addEventListener('click', (e) => {
+      const chip = e.target.closest('.chip-actionable');
+      if (!chip) return;
+      const scrollTarget = chip.dataset.scrollTo;
+      if (!scrollTarget) return;
+      const section = sidebarEl.querySelector(`[data-section="${scrollTarget}"], .panel-section-header`);
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        section.style.outline = '2px solid var(--color-primary, #1976d2)';
+        setTimeout(() => { section.style.outline = ''; }, 2000);
+      }
+    });
   }
 
   // Close panel when app comes back from background (Android multitasking)
