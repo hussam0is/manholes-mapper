@@ -554,6 +554,19 @@ function renderDetails() {
               return `<div class="chip chip-ok">${t('labels.indicatorOk')}</div>`;
             })()}
           </div>
+          ${(() => {
+            const visTabs = F.wizardGetVisibleTabs(node);
+            const filledCount = visTabs.filter(k => F.wizardIsFieldFilled(node, k)).length;
+            const totalCount = visTabs.length;
+            const pct = totalCount > 0 ? Math.round((filledCount / totalCount) * 100) : 0;
+            const barColor = pct === 100 ? 'var(--color-success, #22c55e)' : pct >= 50 ? 'var(--color-warning, #eab308)' : 'var(--color-danger, #ef4444)';
+            return `<div class="data-completeness-bar" title="${t('labels.dataCompleteness')}: ${filledCount}/${totalCount}">
+              <div class="data-completeness-bar__track">
+                <div class="data-completeness-bar__fill" style="width:${pct}%;background:${barColor}"></div>
+              </div>
+              <span class="data-completeness-bar__label">${filledCount}/${totalCount} (${pct}%)</span>
+            </div>`;
+          })()}
           <div class="node-tab-wizard" id="nodeTabWizard">
             <div class="wizard-tabs-row" id="wizardTabsRow">
               ${F.buildWizardTabsHTML(node, activeWizardTab, visibleTabs)}

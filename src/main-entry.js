@@ -47,9 +47,7 @@ import {
 import { getFixSuggestions } from './project/fix-suggestions.js';
 import { computeSketchIssues } from './project/sketch-issues.js';
 import './project/issue-nav-state.js'; // registers window.__issueNav
-import { initCockpit } from './cockpit/cockpit.js';
-import { initFieldCommander } from './field-commander/fc-shell.js';
-import { initFCTerritory } from './field-commander/fc-territory.js';
+// Cockpit, Field Commander, and FC Territory are lazy-loaded below (perf: code-splitting)
 import { showMeasurementRail, hideMeasurementRail } from './features/measurement-rail.js';
 import { initUnifiedLayout } from './layout/layout-manager.js';
 
@@ -296,12 +294,19 @@ if (typeof window !== 'undefined') {
     // Initialize edge legend auto-collapse on mobile
     initEdgeLegendToggle();
 
-    // Initialize Cockpit layout (landscape-first three-zone layout)
-    initCockpit();
+    // Lazy-load Cockpit layout (landscape-first three-zone layout)
+    import('./cockpit/cockpit.js').then(m => m.initCockpit());
 
-    // Initialize Field Commander (canvas-first UI) — feature-flagged
-    initFieldCommander();
-    initFCTerritory();
+    // Lazy-load Field Commander (canvas-first UI) — feature-flagged
+    if (localStorage.getItem('fc_mode') === '1') {
+      Promise.all([
+        import('./field-commander/fc-shell.js'),
+        import('./field-commander/fc-territory.js'),
+      ]).then(([shell, territory]) => {
+        shell.initFieldCommander();
+        territory.initFCTerritory();
+      });
+    }
 
     // Initialize unified layout (new clean layout system)
     initUnifiedLayout();

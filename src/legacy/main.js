@@ -3587,6 +3587,7 @@ F.deleteEdgeShared        = (...a) => deleteEdgeShared(...a);
 F.markRequiredFields      = (...a) => markRequiredFields(...a);
 F.wizardGetVisibleTabs    = (...a) => wizardGetVisibleTabs(...a);
 F.wizardIsRTKFixed        = (...a) => wizardIsRTKFixed(...a);
+F.wizardIsFieldFilled     = (...a) => wizardIsFieldFilled(...a);
 F.buildWizardTabsHTML     = (...a) => buildWizardTabsHTML(...a);
 F.buildWizardFieldHTML    = (...a) => buildWizardFieldHTML(...a);
 F.resizeCanvas            = (...a) => resizeCanvas(...a);

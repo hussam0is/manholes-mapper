@@ -41,6 +41,14 @@ export default defineConfig({
           if (id.includes('/admin/admin-settings') || id.includes('/admin/projects-settings') || id.includes('/admin/input-flow-settings')) {
             return 'admin';
           }
+          // Lazy-loaded cockpit module
+          if (id.includes('/cockpit/')) {
+            return 'cockpit';
+          }
+          // Lazy-loaded field-commander module
+          if (id.includes('/field-commander/')) {
+            return 'field-commander';
+          }
         },
       },
     },
