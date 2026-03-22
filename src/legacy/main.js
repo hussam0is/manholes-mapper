@@ -34,8 +34,7 @@ import { encodeUtf16LeWithBom } from '../utils/encoding.js';
 import { distanceToSegment } from '../utils/geometry.js';
 import { isNumericId, generateHomeInternalId } from '../graph/id-utils.js';
 import { commitIdInputIfFocused } from '../dom/dom-utils.js';
-import { AdminSettings, getNodeSpecs, getEdgeSpecs } from '../admin/admin-settings.js';
-import { ProjectsSettings } from '../admin/projects-settings.js';
+// AdminSettings, getNodeSpecs, getEdgeSpecs, ProjectsSettings — moved to src/legacy/admin-handlers.js
 import { drawHouse as primitivesDrawHouse, drawDirectConnectionBadge as primitivesDrawDirectConnectionBadge } from '../features/drawing-primitives.js';
 import { drawInfiniteGrid as drawInfiniteGridFeature, renderEdgeLegend as renderEdgeLegendFeature, drawEdge as drawEdgeFeature, drawNode as drawNodeFeature } from '../features/rendering.js';
 import { drawNodeIcon } from '../features/node-icons.js';
@@ -149,6 +148,7 @@ import { progressiveRenderer } from '../utils/progressive-renderer.js';
 import { S, F } from './shared-state.js';
 import { initGnssHandlers, setLiveMeasureMode, syncLiveMeasureToggleUI, updateLocationStatus, openGnssPointCaptureDialog, handleGnssPointCapture, vibrateForFixQuality, gpsQuickCapture, createNodeFromMeasurement, getNextEdgeId, centerOnGpsLocation, centerNewSketchOnUserLocation, toggleUserLocationTracking, updateGpsQuickCaptureBtn } from './gnss-handlers.js';
 import { initTSC3Handlers, handleTSC3PointReceived } from './tsc3-handlers.js';
+import { initAdminHandlers, openAdminModal, closeAdminModal, openAdminScreen, closeAdminScreen, openProjectsScreen, closeProjectsScreen, navigateToAdmin, navigateToProjects, getAdminSettingsModal, getAdminSettingsScreen } from './admin-handlers.js';
 
 /**
  * Get the current username from authentication or return a default
@@ -973,167 +973,10 @@ function formatSketchDisplayName(rec) {
   return rec.id ? rec.id.replace('sk_', '#') : 'Sketch';
 }
 
-// Shared AdminSettings instance for both modal and screen
-let adminSettingsModal = null;
-let adminSettingsScreen = null;
-
-async function openAdminModal() {
-  if (!adminModal || !adminContent) return;
-
-  // Lazy-load AdminSettings (admin-only module)
-  const { AdminSettings } = await import('../admin/admin-settings.js');
-
-  // Create or reuse AdminSettings instance
-  adminSettingsModal = new AdminSettings({
-    container: adminContent,
-    config: adminConfig,
-    t,
-    showHeader: true,
-  });
-  adminSettingsModal.render();
-
-  adminModal.style.display = 'flex';
-
-  // Apply localized title
-  const adminTitleEl = document.getElementById('adminTitle');
-  if (adminTitleEl) {
-    const titleText = adminTitleEl.querySelector('.admin-title-text');
-    if (titleText) titleText.textContent = t('admin.title');
-  }
-
-  applyLangToStaticUI();
-}
-
-function closeAdminModal() {
-  if (adminModal) adminModal.style.display = 'none';
-}
-
-// Admin screen (separate view) open/close
-async function openAdminScreen() {
-  if (!adminScreen || !adminScreenContent) return;
-
-  // Show admin screen and hide main content IMMEDIATELY so the user
-  // doesn't see canvas/project data while the admin module loads.
-  if (adminScreenTitleEl) {
-    const titleText = adminScreenTitleEl.querySelector('.admin-title-text');
-    if (titleText) titleText.textContent = t('adminPanel.tabs.settings');
-  }
-  if (mainEl) mainEl.style.display = 'none';
-  adminScreen.style.display = 'block';
-  applyLangToStaticUI();
-
-  // Lazy-load AdminPanel hub (admin-only module)
-  const { AdminPanel } = await import('../admin/admin-panel.js');
-
-  // Preserve active tab across re-renders
-  const prevTab = adminSettingsScreen ? adminSettingsScreen.getActiveTab?.() : null;
-
-  // Create AdminPanel hub instance
-  adminSettingsScreen = new AdminPanel({
-    container: adminScreenContent,
-    adminConfig,
-    t,
-    showToast,
-    onSaveSettings: (cfg) => {
-      Object.assign(adminConfig, cfg);
-      saveAdminConfig();
-      renderDetails();
-    },
-    onClose: () => {
-      markInternalNavigation();
-      closeAdminScreen();
-      try { location.hash = '#/'; } catch (_) { }
-    },
-  });
-  await adminSettingsScreen.render();
-
-  // Restore previously active tab if applicable
-  if (prevTab) {
-    try { adminSettingsScreen.setActiveTab(prevTab); } catch (_) { }
-  }
-}
-
-function closeAdminScreen() {
-  if (adminScreen) adminScreen.style.display = 'none';
-  if (mainEl) mainEl.style.display = '';
-}
-
-// Projects screen instance
-let projectsSettingsScreen = null;
-
-// Projects screen (separate view) open/close
-async function openProjectsScreen() {
-  if (!projectsScreen || !projectsScreenContent) return;
-
-  // Show screen immediately so user sees loading spinner
-  if (projectsScreenTitleEl) {
-    const titleText = projectsScreenTitleEl.querySelector('.admin-title-text');
-    if (titleText) titleText.textContent = t('projects.title');
-  }
-  if (mainEl) mainEl.style.display = 'none';
-  projectsScreen.style.display = 'block';
-  applyLangToStaticUI();
-
-  // Lazy-load ProjectsSettings (admin-only module)
-  const { ProjectsSettings } = await import('../admin/projects-settings.js');
-
-  // Create or reuse ProjectsSettings instance for screen
-  projectsSettingsScreen = new ProjectsSettings({
-    container: projectsScreenContent,
-    t,
-    showToast,
-  });
-  await projectsSettingsScreen.render();
-}
-
-function closeProjectsScreen() {
-  if (projectsScreen) projectsScreen.style.display = 'none';
-  if (mainEl) mainEl.style.display = '';
-}
-
-function navigateToProjects() {
-  try { closeMobileMenu(); } catch (_) { }
-  markInternalNavigation();
-  try { location.hash = '#/projects'; } catch (_) { }
-  try { handleRoute(); } catch (_) { }
-}
-
-function navigateToAdmin() {
-  try { closeMobileMenu(); } catch (_) { }
-  markInternalNavigation();
-  try { location.hash = '#/admin'; } catch (_) { }
-  try { handleRoute(); } catch (_) { }
-}
-if (adminBtn) adminBtn.addEventListener('click', (e) => {
-  if (e && typeof e.preventDefault === 'function') e.preventDefault();
-  navigateToAdmin();
-});
-if (mobileAdminBtn) {
-  const openAdminFromMobile = (e) => {
-    if (e && typeof e.preventDefault === 'function') e.preventDefault();
-    if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-    navigateToAdmin();
-  };
-  // Use both click and touchend for broad Android compatibility
-  mobileAdminBtn.addEventListener('click', openAdminFromMobile);
-  try { mobileAdminBtn.addEventListener('touchend', openAdminFromMobile, { passive: false }); } catch (_) { mobileAdminBtn.addEventListener('touchend', openAdminFromMobile); }
-}
-
-// Projects button click handlers
-if (projectsBtn) projectsBtn.addEventListener('click', (e) => {
-  if (e && typeof e.preventDefault === 'function') e.preventDefault();
-  navigateToProjects();
-});
-if (mobileProjectsBtn) {
-  const openProjectsFromMobile = (e) => {
-    if (e && typeof e.preventDefault === 'function') e.preventDefault();
-    if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-    navigateToProjects();
-  };
-  // Use both click and touchend for broad Android compatibility
-  mobileProjectsBtn.addEventListener('click', openProjectsFromMobile);
-  try { mobileProjectsBtn.addEventListener('touchend', openProjectsFromMobile, { passive: false }); } catch (_) { mobileProjectsBtn.addEventListener('touchend', openProjectsFromMobile); }
-}
+// Admin/projects handlers — [Extracted to src/legacy/admin-handlers.js]
+// openAdminModal, closeAdminModal, openAdminScreen, closeAdminScreen,
+// openProjectsScreen, closeProjectsScreen, navigateToAdmin, navigateToProjects
+// and button event wiring are initialized via initAdminHandlers() in init().
 
 // DOM references for login
 const loginPanel = document.getElementById('loginPanel');
@@ -1431,10 +1274,11 @@ if (adminCancelBtn) adminCancelBtn.addEventListener('click', () => {
   try { if (document.body.classList.contains('admin-screen')) location.hash = '#/'; } catch (_) { }
 });
 if (adminSaveBtn) adminSaveBtn.addEventListener('click', () => {
-  if (!adminSettingsModal) return;
+  const _adminSettingsModal = getAdminSettingsModal();
+  if (!_adminSettingsModal) return;
 
   // Validate before saving
-  const validation = adminSettingsModal.validate();
+  const validation = _adminSettingsModal.validate();
   if (!validation.valid) {
     // Scroll to first error
     if (validation.errors[0]?.field) {
@@ -1445,7 +1289,7 @@ if (adminSaveBtn) adminSaveBtn.addEventListener('click', () => {
   }
 
   // Collect and save configuration
-  const newConfig = adminSettingsModal.collectConfig();
+  const newConfig = _adminSettingsModal.collectConfig();
   Object.assign(adminConfig, newConfig);
   saveAdminConfig();
   closeAdminModal();
@@ -1575,7 +1419,8 @@ if (adminScreenImportBtn && adminScreenImportFile) {
     if (!file) return;
     try {
       // Preserve currently active tab before rebuild
-      const prevTab = adminSettingsScreen ? adminSettingsScreen.getActiveTab() : 'nodes';
+      const _adminScrInst = getAdminSettingsScreen();
+      const prevTab = _adminScrInst ? _adminScrInst.getActiveTab() : 'nodes';
       let text = await file.text();
       if (text && text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
       text = text.trim();
@@ -1608,8 +1453,9 @@ if (adminScreenImportBtn && adminScreenImportFile) {
       try { openAdminScreen(); } catch (_) { }
       // Restore previously selected tab if applicable
       try {
-        if (prevTab && prevTab !== 'nodes' && adminSettingsScreen) {
-          adminSettingsScreen.setActiveTab(prevTab);
+        const _scrInst = getAdminSettingsScreen();
+        if (prevTab && prevTab !== 'nodes' && _scrInst) {
+          _scrInst.setActiveTab(prevTab);
         }
       } catch (_) { }
       // Refresh details panel to reflect updated dropdown options
@@ -1623,10 +1469,11 @@ if (adminScreenImportBtn && adminScreenImportFile) {
 
 // Admin screen save/cancel
 if (adminScreenSaveBtn) adminScreenSaveBtn.addEventListener('click', () => {
-  if (!adminSettingsScreen) return;
+  const _adminSettingsScreen = getAdminSettingsScreen();
+  if (!_adminSettingsScreen) return;
 
   // Validate before saving
-  const validation = adminSettingsScreen.validate();
+  const validation = _adminSettingsScreen.validate();
   if (!validation.valid) {
     // Scroll to first error
     if (validation.errors[0]?.field) {
@@ -1637,7 +1484,7 @@ if (adminScreenSaveBtn) adminScreenSaveBtn.addEventListener('click', () => {
   }
 
   // Collect and save configuration
-  const newConfig = adminSettingsScreen.collectConfig();
+  const newConfig = _adminSettingsScreen.collectConfig();
   Object.assign(adminConfig, newConfig);
   saveAdminConfig();
   markInternalNavigation();
@@ -12284,6 +12131,11 @@ F.setLiveMeasureMode      = (...a) => setLiveMeasureMode(...a);
 F.updateSketchNameDisplay = (...a) => updateSketchNameDisplay(...a);
 F.t                       = (...a) => t(...a);
 F.getNextNodeId           = () => nextNodeId++;
+F.applyLangToStaticUI     = (...a) => applyLangToStaticUI(...a);
+F.saveAdminConfig         = (...a) => saveAdminConfig(...a);
+F.markInternalNavigation  = (...a) => markInternalNavigation(...a);
+F.closeMobileMenu         = (...a) => closeMobileMenu(...a);
+F.handleRoute             = (...a) => handleRoute(...a);
 // ────────────────────────────────────────────────────────────────────────────
 
 init();
@@ -12334,6 +12186,10 @@ window.__createNodeFromMeasurement = createNodeFromMeasurement;
 // ============================================
 // [Extracted to src/legacy/tsc3-handlers.js]
 initTSC3Handlers();
+
+// Admin/Projects screen handlers
+// [Extracted to src/legacy/admin-handlers.js]
+initAdminHandlers();
 
 // ── Emergency save on page unload ─────────────────────────────────────────
 window.addEventListener('beforeunload', (e) => {
