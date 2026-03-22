@@ -281,10 +281,10 @@
           <option value="he">עברית</option>
           <option value="en">English</option>
         </select>
-        <div id="notificationBell" class="notification-bell menu-btn menu-btn--ghost menu-btn--icon-only" title="Notifications" aria-label="Notifications" style="display:none;">
+        <div id="notificationBell" class="notification-bell menu-btn menu-btn--ghost menu-btn--icon-only" title="Notifications" aria-label="Notifications" role="button" tabindex="0" aria-haspopup="true" aria-expanded="false" style="display:none;">
           <span class="material-icons">notifications</span>
           <span id="notificationBadge" class="notification-badge" style="display:none;">0</span>
-          <div id="notificationDropdown" class="notification-dropdown"></div>
+          <div id="notificationDropdown" class="notification-dropdown" role="log" aria-label="Notifications"></div>
         </div>
         <button id="helpBtn" class="menu-btn menu-btn--ghost menu-btn--icon-only" title="" aria-label="Help" data-action="help" data-i18n-title="help" data-i18n-aria-label="help">
           <span class="material-icons">help_outline</span>
