@@ -24,6 +24,7 @@
  */
 
 import { bus } from './event-bus.js';
+import { appState } from './app-state.js';
 
 /**
  * @typedef {Object} AppStore
@@ -38,6 +39,7 @@ import { bus } from './event-bus.js';
 /** @type {AppStore} */
 const appStore = {
   bus,
+  state: appState,
   gnss: null,
   gnssConnection: null,
   menu: null,
@@ -53,9 +55,15 @@ const appStore = {
   registerGnss(gnssState) {
     this.gnss = gnssState;
 
-    // Bridge native gnssState events → bus
-    gnssState.on('position', (pos) => bus.emit('gnss:position', pos));
-    gnssState.on('connection', (state) => bus.emit('gnss:connection', state));
+    // Bridge native gnssState events → bus + appState
+    gnssState.on('position', (pos) => {
+      bus.emit('gnss:position', pos);
+      appState.set('gnssPosition', pos);
+    });
+    gnssState.on('connection', (state) => {
+      bus.emit('gnss:connection', state);
+      appState.set('gnssConnected', state === 'connected');
+    });
     gnssState.on('capture', (point) => bus.emit('gnss:capture', point));
   },
 
@@ -104,9 +112,13 @@ const appStore = {
   registerAuth(authFns) {
     this.auth = authFns;
 
-    // Bridge auth state changes → bus
+    // Bridge auth state changes → bus + appState
     if (authFns.onAuthStateChange) {
-      authFns.onAuthStateChange((state) => bus.emit('auth:stateChanged', state));
+      authFns.onAuthStateChange((state) => {
+        bus.emit('auth:stateChanged', state);
+        appState.set('authState', state);
+        appState.set('currentUser', state?.user ?? null);
+      });
     }
   },
 
@@ -117,10 +129,12 @@ const appStore = {
   registerSync(syncFns) {
     this.sync = syncFns;
 
-    // Bridge sync state changes → bus (duplicates what menuEvents does,
-    // but guarantees bus delivery even if menuEvents isn't wired yet)
+    // Bridge sync state changes → bus + appState
     if (syncFns.onSyncStateChange) {
-      syncFns.onSyncStateChange((state) => bus.emit('sync:stateChange', state));
+      syncFns.onSyncStateChange((state) => {
+        bus.emit('sync:stateChange', state);
+        appState.set('syncState', state);
+      });
     }
   },
 
