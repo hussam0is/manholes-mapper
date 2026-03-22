@@ -1,0 +1,256 @@
+/* ─── Unified Bottom Toolbar ─── */
+/* Replaces canvas-toolbar (vertical right) + FAB speed-dial (bottom right) */
+
+body.unified-layout .unified-toolbar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--color-border, #e2e8f0);
+  z-index: 40;
+  gap: 4px;
+  /* Safe area for notched phones */
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* ─── Button base ─── */
+.ut-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-text-muted, #64748b);
+  padding: 4px 8px;
+  border-radius: 10px;
+  transition: background 0.15s, color 0.15s, transform 0.1s;
+  min-width: 44px;
+  min-height: 44px;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ut-btn .material-icons {
+  font-size: 22px;
+}
+
+.ut-btn__label {
+  font-size: 9px;
+  font-weight: 500;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.ut-btn:hover {
+  background: var(--color-hover, rgba(0, 0, 0, 0.06));
+}
+
+.ut-btn:active {
+  transform: scale(0.92);
+}
+
+.ut-btn.active {
+  color: var(--color-accent, #2563eb);
+  background: rgba(37, 99, 235, 0.1);
+}
+
+.ut-btn:disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* ─── Toolbar sections ─── */
+.ut-section {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.ut-section--modes {
+  flex: 1;
+  justify-content: flex-start;
+}
+
+.ut-section--center {
+  flex: 0 0 auto;
+}
+
+.ut-section--actions {
+  flex: 1;
+  justify-content: flex-end;
+}
+
+/* ─── Separator ─── */
+.ut-sep {
+  width: 1px;
+  height: 28px;
+  background: var(--color-border, #e2e8f0);
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+
+/* ─── GPS Capture hero button ─── */
+.ut-capture-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--color-accent, #2563eb);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+  transition: transform 0.15s, box-shadow 0.15s;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ut-capture-btn .material-icons {
+  font-size: 26px;
+}
+
+.ut-capture-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+}
+
+.ut-capture-btn:active {
+  transform: scale(0.95);
+}
+
+.ut-capture-btn:disabled {
+  background: #94a3b8;
+  box-shadow: none;
+  pointer-events: none;
+}
+
+/* Fix quality ring around capture button */
+.ut-capture-btn::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.ut-capture-btn.fix-rtk::before { border-color: #22c55e; }
+.ut-capture-btn.fix-float::before { border-color: #3b82f6; }
+.ut-capture-btn.fix-dgps::before { border-color: #f59e0b; }
+.ut-capture-btn.fix-gps::before { border-color: #ef4444; }
+
+/* Pulsing animation when waiting for fix */
+.ut-capture-btn.waiting {
+  animation: ut-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes ut-pulse {
+  0%, 100% { box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3); }
+  50% { box-shadow: 0 2px 20px rgba(37, 99, 235, 0.5); }
+}
+
+/* Hide capture button when not tracking */
+.ut-capture-btn.hidden {
+  display: none;
+}
+
+/* ─── Node type flyout (above toolbar) ─── */
+.ut-flyout {
+  position: absolute;
+  bottom: 100%;
+  left: 8px;
+  margin-bottom: 8px;
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 12px;
+  padding: 6px;
+  display: none;
+  gap: 2px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  z-index: 41;
+}
+
+[dir="rtl"] .ut-flyout {
+  left: auto;
+  right: 8px;
+}
+
+.ut-flyout.open {
+  display: flex;
+}
+
+.ut-flyout .ut-btn {
+  min-width: 52px;
+}
+
+/* ─── Mobile tweaks ─── */
+@media (max-width: 600px) {
+  body.unified-layout .unified-toolbar {
+    height: 52px;
+    padding: 0 4px;
+  }
+
+  .ut-btn {
+    padding: 4px 6px;
+    min-width: 40px;
+  }
+
+  .ut-btn .material-icons {
+    font-size: 20px;
+  }
+
+  .ut-btn__label {
+    display: none;
+  }
+
+  .ut-capture-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .ut-capture-btn .material-icons {
+    font-size: 24px;
+  }
+}
+
+/* ─── Landscape compact ─── */
+@media (max-height: 450px) and (orientation: landscape) {
+  body.unified-layout .unified-toolbar {
+    height: 44px;
+  }
+
+  .ut-btn__label {
+    display: none;
+  }
+
+  .ut-capture-btn {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+/* ─── Dark mode ─── */
+@media (prefers-color-scheme: dark) {
+  body.unified-layout .unified-toolbar {
+    background: rgba(30, 41, 59, 0.92);
+    border-color: var(--color-border, #334155);
+  }
+
+  .ut-flyout {
+    background: var(--color-surface, #1e293b);
+    border-color: var(--color-border, #334155);
+  }
+}
