@@ -15,17 +15,79 @@
       const intervalMs = 15 * 60 * 1000;
       setInterval(() => { try { reg.update(); } catch (_) {} }, intervalMs);
 
-      function requestSkipWaiting(sw) {
-        try { sw && sw.postMessage({ type: 'SKIP_WAITING' }); } catch (_) {}
+      /**
+       * Show an "Update available" banner instead of silently reloading.
+       * The user can choose to update now or dismiss.
+       */
+      function showUpdateBanner(waitingSW) {
+        // Remove any existing banner first
+        const existing = document.getElementById('sw-update-banner');
+        if (existing) existing.remove();
+
+        const isHebrew = (document.documentElement.lang || '').startsWith('he');
+        const banner = document.createElement('div');
+        banner.id = 'sw-update-banner';
+        banner.setAttribute('role', 'alert');
+        banner.setAttribute('dir', isHebrew ? 'rtl' : 'ltr');
+        banner.innerHTML = [
+          '<style>',
+          '#sw-update-banner{',
+          '  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:99999;',
+          '  display:flex;align-items:center;gap:12px;',
+          '  padding:12px 20px;border-radius:14px;',
+          '  background:#1e293b;color:#f1f5f9;',
+          '  box-shadow:0 8px 32px rgba(0,0,0,.25);',
+          '  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;',
+          '  font-size:0.9rem;max-width:90vw;',
+          '  animation:sw-slide-up .35s ease-out;',
+          '}',
+          '@keyframes sw-slide-up{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}',
+          '#sw-update-banner button{',
+          '  border:none;border-radius:8px;padding:6px 14px;font-size:0.85rem;font-weight:600;cursor:pointer;',
+          '}',
+          '#sw-update-banner .sw-update-btn{background:#3b82f6;color:#fff;}',
+          '#sw-update-banner .sw-dismiss-btn{background:transparent;color:#94a3b8;}',
+          '@media(prefers-color-scheme:dark){#sw-update-banner{background:#0f172a;border:1px solid #1e293b;}}',
+          '</style>',
+          '<span class="material-icons" style="font-size:1.3rem;color:#3b82f6">system_update</span>',
+          '<span>' + (isHebrew ? 'גרסה חדשה זמינה' : 'A new version is available') + '</span>',
+          '<button class="sw-update-btn">' + (isHebrew ? 'עדכן עכשיו' : 'Update') + '</button>',
+          '<button class="sw-dismiss-btn">' + (isHebrew ? 'אחר כך' : 'Later') + '</button>'
+        ].join('\n');
+
+        document.body.appendChild(banner);
+
+        banner.querySelector('.sw-update-btn').addEventListener('click', () => {
+          banner.remove();
+          if (waitingSW) {
+            waitingSW.postMessage({ type: 'SKIP_WAITING' });
+          }
+        });
+
+        banner.querySelector('.sw-dismiss-btn').addEventListener('click', () => {
+          banner.remove();
+        });
       }
-      if (reg.waiting) requestSkipWaiting(reg.waiting);
+
+      function handleWaitingSW(sw) {
+        if (!sw) return;
+        // If there's already an active controller, this is an update — show the banner
+        if (navigator.serviceWorker.controller) {
+          showUpdateBanner(sw);
+        } else {
+          // First install — activate immediately
+          try { sw.postMessage({ type: 'SKIP_WAITING' }); } catch (_) {}
+        }
+      }
+
+      if (reg.waiting) handleWaitingSW(reg.waiting);
 
       reg.addEventListener('updatefound', () => {
         const sw = reg.installing;
         if (!sw) return;
         sw.addEventListener('statechange', () => {
-          if (sw.state === 'installed' && navigator.serviceWorker.controller) {
-            requestSkipWaiting(sw);
+          if (sw.state === 'installed') {
+            handleWaitingSW(sw);
           }
         });
       });
