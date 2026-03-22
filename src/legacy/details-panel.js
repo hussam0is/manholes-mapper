@@ -1306,10 +1306,22 @@ function renderDetails() {
       .join('');
 
     container.innerHTML = `
-      <div class="details-section">
-        <div class="details-grid two-col">
-          <div class="field col-span-2">
-            <div>${escapeHtml(edge.tail)} ${isRTL(currentLang) ? '\u2190' : '\u2192'} ${escapeHtml(edge.head)}</div>
+      <div class="details-section edge-connection-diagram">
+        <div class="edge-connection-diagram__flow">
+          <div class="edge-connection-diagram__node">
+            <span class="material-icons">radio_button_checked</span>
+            <span class="edge-connection-diagram__id">${escapeHtml(String(edge.tail))}</span>
+            ${tailNode ? `<span class="edge-connection-diagram__type">${escapeHtml(t('nodeTypeLabel.' + (tailNode.nodeType || 'manhole').toLowerCase()) || '')}</span>` : ''}
+          </div>
+          <div class="edge-connection-diagram__arrow">
+            <span class="edge-connection-diagram__line"></span>
+            <span class="material-icons">${isRTL(currentLang) ? 'arrow_back' : 'arrow_forward'}</span>
+            ${edge.length_m ? `<span class="edge-connection-diagram__length">${Number(edge.length_m).toFixed(1)} ${t('units.meters')}</span>` : ''}
+          </div>
+          <div class="edge-connection-diagram__node">
+            <span class="material-icons">radio_button_checked</span>
+            <span class="edge-connection-diagram__id">${escapeHtml(String(edge.head))}</span>
+            ${headNode ? `<span class="edge-connection-diagram__type">${escapeHtml(t('nodeTypeLabel.' + (headNode.nodeType || 'manhole').toLowerCase()) || '')}</span>` : ''}
           </div>
         </div>
       </div>
@@ -1677,8 +1689,21 @@ function renderDetails() {
   // Toggle drawer visibility on tablet/mobile
   try {
     const shouldOpen = !!(selectedNode || selectedEdge);
+    const wasOpen = sidebarEl && sidebarEl.classList && sidebarEl.classList.contains('open');
     if (sidebarEl && sidebarEl.classList) {
-      if (shouldOpen) sidebarEl.classList.add('open');
+      if (shouldOpen) {
+        // Save pre-sidebar focus before opening (only on fresh open)
+        if (!wasOpen) {
+          _preSidebarFocusEl = document.activeElement;
+        }
+        sidebarEl.classList.add('open');
+        // Move focus into the sidebar for screen-reader users
+        requestAnimationFrame(() => {
+          const firstInput = detailsContainer.querySelector('input, select, textarea, button');
+          if (firstInput) firstInput.focus({ preventScroll: true });
+          else if (sidebarTitleEl) sidebarTitleEl.focus({ preventScroll: true });
+        });
+      }
       else sidebarEl.classList.remove('open');
     }
     // Mark body for CSS offset of canvas toolbar
@@ -1704,6 +1729,10 @@ function renderDetails() {
   }
 }
 
+// Track the element that had focus before the sidebar opened so we can
+// restore it when the panel closes (a11y focus-management best practice).
+let _preSidebarFocusEl = null;
+
 // Close button for drawer
 function closeSidebarPanel() {
   const sidebarEl = S.sidebarEl;
@@ -1713,6 +1742,11 @@ function closeSidebarPanel() {
   S.selectedEdge = null;
   renderDetails();
   F.scheduleDraw();
+  // Restore focus to the element that was focused before the sidebar opened
+  if (_preSidebarFocusEl && typeof _preSidebarFocusEl.focus === 'function') {
+    try { _preSidebarFocusEl.focus(); } catch (_) {}
+    _preSidebarFocusEl = null;
+  }
 }
 
 /**

@@ -2934,6 +2934,60 @@ canvas {
   opacity: 0.6;
 }
 
+/* Edge connection diagram */
+.edge-connection-diagram__flow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 4px;
+}
+.edge-connection-diagram__node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 48px;
+}
+.edge-connection-diagram__node .material-icons {
+  font-size: 20px;
+  color: var(--color-primary, #3b82f6);
+}
+.edge-connection-diagram__id {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--color-text, #222);
+}
+.edge-connection-diagram__type {
+  font-size: 10px;
+  color: var(--color-text-secondary, #888);
+}
+.edge-connection-diagram__arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 40px;
+  position: relative;
+}
+.edge-connection-diagram__line {
+  width: 100%;
+  height: 2px;
+  background: var(--color-primary, #3b82f6);
+  border-radius: 1px;
+}
+.edge-connection-diagram__arrow .material-icons {
+  font-size: 18px;
+  color: var(--color-primary, #3b82f6);
+  margin-top: -2px;
+}
+.edge-connection-diagram__length {
+  font-size: 10px;
+  color: var(--color-text-secondary, #888);
+  white-space: nowrap;
+}
+
 .details-actions {
   position: relative;
   background: transparent;
