@@ -149,6 +149,7 @@ import { S, F } from './shared-state.js';
 import { initGnssHandlers, setLiveMeasureMode, syncLiveMeasureToggleUI, updateLocationStatus, openGnssPointCaptureDialog, handleGnssPointCapture, vibrateForFixQuality, gpsQuickCapture, createNodeFromMeasurement, getNextEdgeId, centerOnGpsLocation, centerNewSketchOnUserLocation, toggleUserLocationTracking, updateGpsQuickCaptureBtn } from './gnss-handlers.js';
 import { initTSC3Handlers, handleTSC3PointReceived } from './tsc3-handlers.js';
 import { initAdminHandlers, openAdminModal, closeAdminModal, openAdminScreen, closeAdminScreen, openProjectsScreen, closeProjectsScreen, navigateToAdmin, navigateToProjects, getAdminSettingsModal, getAdminSettingsScreen } from './admin-handlers.js';
+import { getLibrary, setLibrary, invalidateLibraryCache, syncProjectSketchesToLibrary, generateSketchId, saveToLibrary, loadFromLibrary, loadProjectReferenceLayers, deleteFromLibrary, migrateSingleSketchToLibraryIfNeeded, updateSyncStatusUI, formatTimeAgo } from './library-manager.js';
 
 /**
  * Get the current username from authentication or return a default
@@ -2066,199 +2067,14 @@ function clearStorage() {
 }
 
 // === Library management (multiple sketches) ===
-// Cache for library to avoid repeated JSON.parse() on large datasets
-let _libraryCache = null;
-let _libraryCacheValid = false;
+// [Extracted to src/legacy/library-manager.js]
+// getLibrary cache variables and function body live in library-manager.js
 
-function getLibrary() {
-  if (_libraryCacheValid && _libraryCache !== null) {
-    return _libraryCache;
-  }
-  try {
-    const raw = localStorage.getItem(STORAGE_KEYS.library);
-    if (!raw) {
-      _libraryCache = [];
-      _libraryCacheValid = true;
-      return [];
-    }
-    const lib = JSON.parse(raw);
-    if (Array.isArray(lib)) {
-      _libraryCache = lib;
-      _libraryCacheValid = true;
-      return lib;
-    }
-    _libraryCache = [];
-    _libraryCacheValid = true;
-    return [];
-  } catch (e) {
-    console.error('[App] Failed to parse library', e.message);
-    _libraryCache = [];
-    _libraryCacheValid = true;
-    return [];
-  }
-}
+// [Extracted to src/legacy/library-manager.js]
 
-// Pending localStorage write for library (to batch writes)
-let _libraryWritePending = false;
+// [Extracted to src/legacy/library-manager.js]
 
-function setLibrary(list) {
-  // Update cache immediately for responsive reads
-  _libraryCache = list;
-  _libraryCacheValid = true;
-  
-  // Defer the heavy localStorage write to avoid blocking UI
-  if (!_libraryWritePending) {
-    _libraryWritePending = true;
-    const doWrite = () => {
-      _libraryWritePending = false;
-      // Use the cached version to ensure we write the latest state
-      if (_libraryCache !== null) {
-        localStorage.setItem(STORAGE_KEYS.library, JSON.stringify(_libraryCache));
-      }
-    };
-    
-    if (typeof requestIdleCallback === 'function') {
-      requestIdleCallback(doWrite, { timeout: 100 });
-    } else {
-      setTimeout(doWrite, 0);
-    }
-  }
-}
-
-function invalidateLibraryCache() {
-  _libraryCacheValid = false;
-  _libraryCache = null;
-}
-
-/**
- * Sync project canvas sketches back to the localStorage library.
- * Called when leaving project-canvas mode so the home view shows
- * up-to-date node/edge counts and metadata for all project sketches.
- */
-function syncProjectSketchesToLibrary() {
-  try {
-    const projectSketchList = getAllSketches(); // from project-canvas-state
-    if (!projectSketchList || projectSketchList.length === 0) return;
-
-    if (_perfDebug) console.time('[PERF] syncLib:getLibrary');
-    const lib = getLibrary();
-    if (_perfDebug) console.timeEnd('[PERF] syncLib:getLibrary');
-    if (_perfDebug) console.log(`[PERF] syncLib: ${projectSketchList.length} project sketches, ${lib.length} library entries`);
-    let changed = false;
-
-    for (const ps of projectSketchList) {
-      // The active sketch's live data is in the globals, not the Map
-      const sketchNodes = ps.isActive ? nodes : (ps.nodes || []);
-      const sketchEdges = ps.isActive ? edges : (ps.edges || []);
-
-      const idx = lib.findIndex(s => s.id === ps.id);
-      if (idx >= 0) {
-        // Update existing entry with fresh data from the project canvas
-        lib[idx] = {
-          ...lib[idx],
-          nodes: sketchNodes,
-          edges: sketchEdges,
-          nodeCount: sketchNodes.length,
-          edgeCount: sketchEdges.length,
-          name: ps.name || lib[idx].name,
-          adminConfig: ps.adminConfig || lib[idx].adminConfig || {},
-          updatedAt: ps.updatedAt || lib[idx].updatedAt,
-          metadataOnly: false,
-        };
-        changed = true;
-      } else {
-        // Sketch exists in project but not in library — add it
-        lib.unshift({
-          id: ps.id,
-          name: ps.name || null,
-          creationDate: ps.creationDate || ps.createdAt,
-          createdAt: ps.createdAt,
-          updatedAt: ps.updatedAt,
-          projectId: ps.projectId,
-          nodes: sketchNodes,
-          edges: sketchEdges,
-          nodeCount: sketchNodes.length,
-          edgeCount: sketchEdges.length,
-          adminConfig: ps.adminConfig || {},
-          cloudSynced: true,
-          metadataOnly: false,
-          ownerId: ps.ownerId,
-          ownerUsername: ps.ownerUsername,
-          ownerEmail: ps.ownerEmail,
-          isOwner: ps.isOwner,
-          createdBy: ps.createdBy,
-          lastEditedBy: ps.lastEditedBy,
-        });
-        changed = true;
-      }
-    }
-
-    if (changed) {
-      if (_perfDebug) console.time('[PERF] syncLib:setLibrary');
-      setLibrary(lib);
-      if (_perfDebug) console.timeEnd('[PERF] syncLib:setLibrary');
-    }
-  } catch (err) {
-    console.warn('[App] Failed to sync project sketches to library:', err);
-  }
-}
-
-function generateSketchId() {
-  return 'sk_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-}
-
-function saveToLibrary() {
-  const lib = getLibrary();
-  const nowIso = new Date().toISOString();
-  const sketchId = currentSketchId || generateSketchId();
-
-  // Silently skip saving empty sketches (no nodes and no edges)
-  if ((!nodes || nodes.length === 0) && (!edges || edges.length === 0)) {
-    console.debug('[App] Skipping save of empty sketch:', sketchId);
-    return;
-  }
-
-  const lastEdit = getLastEditPosition();
-  const record = {
-    id: sketchId,
-    createdAt: creationDate || nowIso,
-    updatedAt: nowIso,
-    nodes,
-    edges,
-    nodeCount: nodes.length,
-    edgeCount: edges.length,
-    nextNodeId,
-    creationDate: creationDate || nowIso,
-    name: currentSketchName || null,
-    projectId: currentProjectId || null,
-    inputFlowConfig: currentInputFlowConfig || null,
-    lastEditedBy: getCurrentUsername(),
-    metadataOnly: false,
-    lastEditX: lastEdit?.x ?? null,
-    lastEditY: lastEdit?.y ?? null,
-  };
-  const idx = lib.findIndex((s) => s.id === record.id);
-  let finalRecord = record;
-  if (idx >= 0) {
-    // Preserve existing name if current is null, so we don't accidentally clear it
-    const existing = lib[idx];
-    const merged = { ...record };
-    if ((record.name == null || record.name === '') && (existing.name != null && existing.name !== '')) {
-      merged.name = existing.name;
-      // Also update currentSketchName so subsequent syncs use the preserved name
-      currentSketchName = existing.name;
-      updateSketchNameDisplay();
-    }
-    lib[idx] = merged;
-    finalRecord = merged;
-  } else {
-    lib.unshift(record);
-  }
-  setLibrary(lib);
-  currentSketchId = finalRecord.id;
-  // Mirror into IndexedDB (use finalRecord which has the merged/preserved name)
-  idbSaveRecordCompat(finalRecord);
-}
+// [Extracted to src/legacy/library-manager.js]
 
 async function loadFromLibrary(sketchId) {
   const lib = getLibrary();
