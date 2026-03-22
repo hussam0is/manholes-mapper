@@ -77,29 +77,29 @@ export async function openAdminScreen() {
   adminScreen.style.display = 'block';
   F.applyLangToStaticUI();
 
-  // Lazy-load AdminPanel hub (admin-only module)
-  const { AdminPanel } = await import('../admin/admin-panel.js');
+  // Lazy-load AdminSettings (admin-only module, supersedes removed AdminPanel)
+  const { AdminSettings } = await import('../admin/admin-settings.js');
 
   // Preserve active tab across re-renders
   const prevTab = adminSettingsScreen ? adminSettingsScreen.getActiveTab?.() : null;
 
-  adminSettingsScreen = new AdminPanel({
+  adminSettingsScreen = new AdminSettings({
     container: adminScreenContent,
-    adminConfig: S.adminConfig,
+    config: S.adminConfig,
     t,
-    showToast: (...a) => F.showToast(...a),
-    onSaveSettings: (cfg) => {
+    showHeader: true,
+    onSave: (cfg) => {
       Object.assign(S.adminConfig, cfg);
       F.saveAdminConfig();
       F.renderDetails();
     },
-    onClose: () => {
+    onCancel: () => {
       F.markInternalNavigation();
       closeAdminScreen();
       try { location.hash = '#/'; } catch (_) { }
     },
   });
-  await adminSettingsScreen.render();
+  adminSettingsScreen.render();
 
   if (prevTab) {
     try { adminSettingsScreen.setActiveTab(prevTab); } catch (_) { }

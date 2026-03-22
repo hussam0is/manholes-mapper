@@ -24,10 +24,10 @@ import {
 } from '../utils/coordinates.js';
 import {
   setMapReferencePoint,
-  setStreetViewVisible,
   precacheTilesForMeasurementBounds,
   wgs84ToItm,
 } from '../map/govmap-layer.js';
+import { setStreetViewVisible } from '../map/street-view.js';
 import {
   loadProjectSketches,
   isProjectCanvasMode,
