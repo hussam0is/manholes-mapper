@@ -1,7 +1,14 @@
 /**
  * WiFi TCP Adapter
  * Connects to GNSS receiver via TCP socket over WiFi
- * Uses Capacitor plugin for native TCP access
+ * Uses Capacitor plugin for native TCP access.
+ *
+ * NOTE: The `capacitor-tcp-socket` package is NOT currently installed in
+ * package.json. This adapter gracefully degrades — it checks for the Capacitor
+ * runtime and plugin at runtime, returning null/false if unavailable. The plugin
+ * is only needed when WiFi TCP GNSS connectivity is required for production
+ * Android builds. Install with: `npm install capacitor-tcp-socket` and register
+ * the plugin in capacitor.config.ts when ready to enable WiFi GNSS.
  */
 
 import { NMEAParser } from './nmea-parser.js';
