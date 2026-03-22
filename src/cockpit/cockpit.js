@@ -478,16 +478,17 @@ function buildMicroCockpit() {
     header.parentNode.insertBefore(strip, header.nextSibling);
   }
 
-  // Wire up GPS updates
-  const gnssState = window.__gnssState;
+  // Wire up GPS updates via centralized bus (falls back to window globals)
+  const gnssState = appStore.gnss || window.__gnssState;
   if (gnssState) {
     gnssState.on('position', () => updateMicroGps(gnssState));
     gnssState.on('connection', () => updateMicroGps(gnssState));
   }
 
-  // Wire up sync updates
-  if (window.menuEvents) {
-    window.menuEvents.on('sync:stateChange', (state) => updateMicroSync(state));
+  // Wire up sync updates via centralized bus (falls back to window globals)
+  const menuEvt = appStore.menu || window.menuEvents;
+  if (menuEvt) {
+    menuEvt.on('sync:stateChange', (state) => updateMicroSync(state));
   }
 }
 
@@ -776,9 +777,10 @@ export function initCockpit() {
   handleOrientation(orientationQuery);
 
   // Re-compute on sketch changes (debounced to avoid rapid-fire updates)
-  if (window.menuEvents) {
-    window.menuEvents.on('sketch:changed', debouncedUpdateCockpit);
-    window.menuEvents.on('translations:updated', () => {
+  const menuEvtMain = appStore.menu || window.menuEvents;
+  if (menuEvtMain) {
+    menuEvtMain.on('sketch:changed', debouncedUpdateCockpit);
+    menuEvtMain.on('translations:updated', () => {
       if (cockpitEl && window.t) {
         cockpitEl.querySelectorAll('[data-i18n]').forEach(el => {
           const key = el.getAttribute('data-i18n');

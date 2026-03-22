@@ -430,4 +430,4 @@ adb reverse tcp:8765 tcp:8765                                # Forward mock TSC3
 
 ## Knowledge Base
 
-For a complete catalog of every object, function, button, layout, and DOM element in the app, see [`my_knowledge.md`](./my_knowledge.md). It contains ~2000+ objects organized by module with exact code references, usage patterns, and related objects.
+For a complete catalog of every object, function, button, layout, and DOM element in the app, see [`my_knowledge.md`](./docs/my_knowledge.md). It contains ~2000+ objects organized by module with exact code references, usage patterns, and related objects.
