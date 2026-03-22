@@ -149,7 +149,7 @@ import { S, F } from './shared-state.js';
 import { initGnssHandlers, setLiveMeasureMode, syncLiveMeasureToggleUI, updateLocationStatus, openGnssPointCaptureDialog, handleGnssPointCapture, vibrateForFixQuality, gpsQuickCapture, createNodeFromMeasurement, getNextEdgeId, centerOnGpsLocation, centerNewSketchOnUserLocation, toggleUserLocationTracking, updateGpsQuickCaptureBtn } from './gnss-handlers.js';
 import { initCoordinateHandlers, handleCoordinatesImport, applyCoordinatesIfEnabled, restoreOriginalPositions, toggleCoordinates, syncCoordinatesToggleUI, toggleMapLayer, syncMapLayerToggleUI, getMeasurementBoundsItm, startMeasurementTilesPrecache, updateMapReferencePoint, autoRepositionFromEmbeddedCoords, showCoordinatesRequiredPrompt, updateScaleDisplay, saveCoordinateScale, loadCoordinateScale, updateStretchDisplay, saveViewStretch, loadViewStretch, changeViewStretch, resetViewStretch, changeCoordinateScale, initCoordinates } from './coordinate-handlers.js';
 import { draw, scheduleDraw, scheduleEdgeLegendUpdate, scheduleIncompleteEdgeUpdate, renderEdgeLegend, drawInfiniteGrid, ensureVirtualPadding, autoPanWhenDragging, computeNodeTypes, drawEdge, drawDanglingEdgeLocal, drawEdgeLabels, drawNode, drawHouse, drawDirectConnectionBadge, updateCanvasEmptyState } from './canvas-draw.js';
-import { initTSC3Handlers, handleTSC3PointReceived } from './tsc3-handlers.js';
+// TSC3 survey handlers are lazy-loaded below (perf: only needed for survey device connections)
 import { initAdminHandlers, openAdminModal, closeAdminModal, openAdminScreen, closeAdminScreen, openProjectsScreen, closeProjectsScreen, navigateToAdmin, navigateToProjects, getAdminSettingsModal, getAdminSettingsScreen } from './admin-handlers.js';
 import { renderDetails, closeSidebarPanel, initDetailsPanel, assignHomeIdFromConnectedManhole } from './details-panel.js';
 import { renderRefLayerToggles, syncRefLayerCheckboxes, initRefLayerToggles, screenToWorld, applyStretch, stretchedNodeFast, stretchedNode, setZoom, getSketchCenter, recenterView, zoomToFit, getSketchDensityCenter, recenterDensityView, searchAndCenterNode, geocodeAddress, searchAddressAndCenter, runAddressSearch, initViewHandlers } from './view-utils.js';
@@ -3353,6 +3353,43 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
   }
 
+  // Tab / Shift+Tab: cycle through nodes on the canvas for keyboard-based selection
+  if (!isTyping && e.key === 'Tab' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    // Only cycle when no modal/panel is open
+    const anyModalOpen = [homePanel, startPanel, helpModal, adminModal, adminScreen, projectsScreen]
+      .some(el => el && el.style.display !== 'none' && el.style.display !== '');
+    if (!anyModalOpen && nodes.length > 0) {
+      e.preventDefault();
+      const direction = e.shiftKey ? -1 : 1;
+      const currentIndex = selectedNode ? nodes.indexOf(selectedNode) : -1;
+      let nextIndex;
+      if (currentIndex < 0) {
+        nextIndex = direction === 1 ? 0 : nodes.length - 1;
+      } else {
+        nextIndex = (currentIndex + direction + nodes.length) % nodes.length;
+      }
+      selectedNode = nodes[nextIndex];
+      selectedEdge = null;
+      centerOnNode(selectedNode);
+      renderDetails();
+      scheduleDraw();
+      showToast(t('toasts.nodeSelected', selectedNode.id), 1200);
+    }
+  }
+
+  // Enter: open the details sidebar for the currently selected node/edge
+  if (!isTyping && e.key === 'Enter' && !e.ctrlKey && !e.metaKey) {
+    if (selectedNode || selectedEdge) {
+      const sidebarEl = document.getElementById('sidebar');
+      if (sidebarEl && !sidebarEl.classList.contains('open')) {
+        sidebarEl.classList.add('open');
+        document.body.classList.add('drawer-open');
+        renderDetails();
+        e.preventDefault();
+      }
+    }
+  }
+
   // Escape: close modals/panels, cancel pending edge, or clear selection
   if (e.key === 'Escape') {
     // K-01: Close admin screen if open
@@ -3657,8 +3694,8 @@ window.__createNodeFromMeasurement = createNodeFromMeasurement;
 // ============================================
 // TSC3 Survey Device Integration
 // ============================================
-// [Extracted to src/legacy/tsc3-handlers.js]
-initTSC3Handlers();
+// [Extracted to src/legacy/tsc3-handlers.js — lazy-loaded]
+import('./tsc3-handlers.js').then(m => m.initTSC3Handlers());
 
 // Admin/Projects screen handlers
 // [Extracted to src/legacy/admin-handlers.js]

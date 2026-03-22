@@ -49,6 +49,10 @@ export default defineConfig({
           if (id.includes('/field-commander/')) {
             return 'field-commander';
           }
+          // Lazy-loaded survey/TSC3 modules
+          if (id.includes('/survey/') || id.includes('tsc3-handlers')) {
+            return 'survey';
+          }
         },
       },
     },
