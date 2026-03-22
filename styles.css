@@ -2916,11 +2916,11 @@ canvas {
 }
 
 .details-actions {
-  position: sticky;
-  bottom: 0;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--color-surface, #fff) 0%, transparent), var(--color-surface, #fff) 32%);
-  padding-top: 0.5rem;
-  padding-bottom: 16px;
+  position: relative;
+  background: transparent;
+  padding-top: 1.5rem;
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 16px));
+  margin-top: auto;
 }
 
 /* Ghost style for delete buttons in details panel — less prominent to prevent accidental taps */
