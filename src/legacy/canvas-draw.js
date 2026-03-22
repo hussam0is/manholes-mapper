@@ -326,23 +326,47 @@ function draw() {
     : nodes;
   let _nodesDrawn = 0;
 
-  for (let i = 0; i < _visibleNodes.length; i++) {
-    const node = _visibleNodes[i];
-    if (node._hidden) continue;
-    const sx = node.x * viewStretchX;
-    const sy = node.y * viewStretchY;
-    if (!_useNodeGrid) {
-      if (sx + nodeRadius < visMinX || sx - nodeRadius > visMaxX ||
-          sy + nodeRadius < visMinY || sy - nodeRadius > visMaxY) {
-        continue;
+  // For very large visible node sets, use progressive rendering to stay in frame budget
+  const _useProgressiveNodes = _visibleNodes.length > 500;
+  if (_useProgressiveNodes) {
+    const viewCenterX = (visMinX + visMaxX) / 2;
+    const viewCenterY = (visMinY + visMaxY) / 2;
+    progressiveRenderer.begin(_visibleNodes, viewCenterX, viewCenterY, (node) => ({
+      x: node.x * viewStretchX,
+      y: node.y * viewStretchY,
+    }));
+    while (progressiveRenderer.hasMore()) {
+      const node = progressiveRenderer.next();
+      if (node._hidden) continue;
+      const label = drawNode(node);
+      if (label) labelData.push(label);
+      const sx = node.x * viewStretchX;
+      const sy = node.y * viewStretchY;
+      nodeData.push({ x: sx, y: sy, radius: nodeRadius });
+      _nodesDrawn++;
+      if (progressiveRenderer.overBudget()) break;
+    }
+    progressiveRenderer.finish();
+    if (!progressiveRenderer.isComplete) scheduleDraw();
+  } else {
+    for (let i = 0; i < _visibleNodes.length; i++) {
+      const node = _visibleNodes[i];
+      if (node._hidden) continue;
+      const sx = node.x * viewStretchX;
+      const sy = node.y * viewStretchY;
+      if (!_useNodeGrid) {
+        if (sx + nodeRadius < visMinX || sx - nodeRadius > visMaxX ||
+            sy + nodeRadius < visMinY || sy - nodeRadius > visMaxY) {
+          continue;
+        }
       }
+      const label = drawNode(node);
+      if (label) {
+        labelData.push(label);
+      }
+      nodeData.push({ x: sx, y: sy, radius: nodeRadius });
+      _nodesDrawn++;
     }
-    const label = drawNode(node);
-    if (label) {
-      labelData.push(label);
-    }
-    nodeData.push({ x: sx, y: sy, radius: nodeRadius });
-    _nodesDrawn++;
   }
 
   renderPerf.record('visibleNodes', _nodesDrawn);
