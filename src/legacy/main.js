@@ -29,7 +29,7 @@
 
 // IndexedDB bridge moved to src/state/persistence.js and src/db.js
 import { restoreFromIndexedDbIfNeeded, idbSaveCurrentCompat, idbSaveRecordCompat, idbDeleteRecordCompat, STORAGE_KEYS } from '../state/persistence.js';
-import { mountSignIn as _mountSignIn, mountSignUp as _mountSignUp, unmountAuth as _unmountAuth } from '../auth/auth-provider.jsx';
+// [mountSignIn, mountSignUp, unmountAuth — moved to src/legacy/auth-ui.js]
 import { encodeUtf16LeWithBom } from '../utils/encoding.js';
 import { distanceToSegment } from '../utils/geometry.js';
 import { isNumericId, generateHomeInternalId } from '../graph/id-utils.js';
@@ -159,6 +159,12 @@ import { renderResumeBar, renderSearchBar, renderHome, hideHome, renderHomeModeT
 import { pushUndo, pushUndoDirect, clearUndoStack, updateUndoButton, updateRedoButton, deepCopyObj, deleteNodeShared, deleteEdgeShared, nodeHasValuableData, edgeHasValuableData, performUndo, performRedo, updateIncompleteEdgeTracker, findDanglingEdgeNear, findDanglingEndpointAt, findDanglingSnapTarget, mergeDanglingEdges, connectDanglingEdge, finalizeDanglingEndpointDrag } from './undo-redo.js';
 import { closeMobileMenu, initMobileMenu } from './mobile-menu.js';
 import { initFinishWorkday } from './finish-workday.js';
+// Auth UI, login panel, routing — [Extracted to src/legacy/auth-ui.js]
+import { hidePanelAnimated, showLoginPanel, hideLoginPanel, showAuthLoading, hideAuthLoading, mountAuthSignIn, mountAuthSignUp, updateUserButtonVisibility, handleRoute, preventModalScrollPropagation, initAuthUI } from './auth-ui.js';
+// Storage/persistence and ID management — [Extracted to src/legacy/storage-manager.js]
+import { normalizeLegacySketch, loadFromStorage, saveToStorage, debouncedSaveToStorage, clearStorage, collectUsedNumericIds, findSmallestAvailableNumericId, renameNodeIdInternal } from './storage-manager.js';
+// Project dropdown and flyout UI — [Extracted to src/legacy/project-ui.js]
+import { fetchProjects, renderProjectDropdown, getProjectInputFlowConfig, syncFlyoutIcon, closeFlyout, initProjectUI } from './project-ui.js';
 
 /**
  * Get the current username from authentication or return a default
@@ -821,296 +827,10 @@ import { loadFieldHistory, saveFieldHistory, diameterToColor, trackFieldUsage, g
 // openProjectsScreen, closeProjectsScreen, navigateToAdmin, navigateToProjects
 // and button event wiring are initialized via initAdminHandlers() in init().
 
-// DOM references for login
-const loginPanel = document.getElementById('loginPanel');
-const authLoadingOverlay = document.getElementById('authLoadingOverlay');
-const authContainer = document.getElementById('authContainer');
-const loginTitle = document.getElementById('loginTitle');
-const loginSubtitle = document.getElementById('loginSubtitle');
-const loginLoadingText = document.getElementById('loginLoadingText');
-const authLoadingText = document.getElementById('authLoadingText');
-const userButtonContainer = document.getElementById('userButtonContainer');
-const mobileUserButtonContainer = document.getElementById('mobileUserButtonContainer');
+// [Auth UI DOM refs and functions — extracted to src/legacy/auth-ui.js]
 
-// Animated panel close helper — plays modalSlideOut then hides
-function hidePanelAnimated(el, callback) {
-  if (!el || el.style.display === 'none') { if (callback) callback(); return; }
-  // If reduced motion or animation not supported, skip animation
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (reducedMotion) {
-    el.classList.remove('panel-closing');
-    el.style.display = 'none';
-    if (callback) callback();
-    return;
-  }
-  el.classList.add('panel-closing');
-  const onEnd = () => {
-    el.removeEventListener('animationend', onEnd);
-    el.classList.remove('panel-closing');
-    el.style.display = 'none';
-    if (callback) callback();
-  };
-  el.addEventListener('animationend', onEnd, { once: true });
-  // Safety timeout in case animationend never fires
-  setTimeout(() => {
-    if (el.classList.contains('panel-closing')) {
-      el.classList.remove('panel-closing');
-      el.style.display = 'none';
-      if (callback) callback();
-    }
-  }, 200);
-}
-
-// Show/hide login panel
-function showLoginPanel() {
-  if (loginPanel) {
-    loginPanel.classList.remove('panel-closing');
-    loginPanel.style.display = 'flex';
-    document.body.classList.add('show-login');
-  }
-  // Update login panel text based on language
-  if (loginTitle) loginTitle.textContent = t('auth.loginTitle');
-  if (loginSubtitle) loginSubtitle.textContent = t('auth.loginSubtitle');
-  if (loginLoadingText) loginLoadingText.textContent = t('auth.loading');
-  
-  // Mount SignIn when ready
-  mountAuthSignIn();
-}
-
-function hideLoginPanel() {
-  if (loginPanel) {
-    hidePanelAnimated(loginPanel, () => {
-      document.body.classList.remove('show-login');
-    });
-  }
-}
-
-function showAuthLoading() {
-  if (authLoadingOverlay) {
-    authLoadingOverlay.style.display = 'flex';
-    if (authLoadingText) authLoadingText.textContent = t('auth.checkingAuth');
-  }
-}
-
-function hideAuthLoading() {
-  if (authLoadingOverlay) {
-    authLoadingOverlay.style.display = 'none';
-  }
-}
-
-// Mount SignIn component (Better Auth)
-// Re-uses the existing React root via getRoot() — no unmount needed.
-// React handles re-rendering internally when switching between SignIn/SignUp.
-function mountAuthSignIn() {
-  if (!authContainer) return;
-  _mountSignIn(authContainer, { signUpUrl: '#/signup' });
-}
-
-// Mount SignUp component (Better Auth)
-// Re-uses the existing React root via getRoot() — no unmount needed.
-function mountAuthSignUp() {
-  if (!authContainer) return;
-  _mountSignUp(authContainer, { signInUrl: '#/login' });
-}
-
-// Update user button visibility (desktop and mobile)
-function updateUserButtonVisibility(isSignedIn) {
-  if (userButtonContainer) {
-    userButtonContainer.style.display = isSignedIn ? 'flex' : 'none';
-  }
-  if (mobileUserButtonContainer) {
-    mobileUserButtonContainer.style.display = isSignedIn ? 'flex' : 'none';
-  }
-
-  // Hide admin/project menu items from non-admin users
-  const userRole = window.permissionsService?.getUserRole?.();
-  const isAdminRole = userRole?.isAdmin === true;
-  const adminDisplay = isSignedIn && isAdminRole ? '' : 'none';
-  if (adminBtn) adminBtn.style.display = adminDisplay;
-  if (mobileAdminBtn) mobileAdminBtn.style.display = adminDisplay;
-  if (projectsBtn) projectsBtn.style.display = adminDisplay;
-  if (mobileProjectsBtn) mobileProjectsBtn.style.display = adminDisplay;
-}
-
-// Simple hash routing for admin screen and login
-let _routePending = false;
-function handleRoute() {
-  // Debounce: coalesce rapid calls (auth changes, hashchange, init) into one frame
-  if (_routePending) return;
-  _routePending = true;
-  requestAnimationFrame(() => {
-    _routePending = false;
-    _handleRouteImpl();
-  });
-}
-function _handleRouteImpl() {
-  const hash = location.hash || '#/';
-  if (window.__fcShell?.onRouteChange) window.__fcShell.onRouteChange(hash);
-  const isAdmin = (hash === '#/admin');
-  const isProjects = (hash === '#/projects');
-  const isLogin = (hash === '#/login');
-  const isSignup = (hash === '#/signup');
-  const isProfile = (hash === '#/profile');
-  const isLeaderboard = (hash === '#/leaderboard');
-  // Must check /stats BEFORE generic project match to avoid capturing stats as project ID
-  const projectStatsMatch = hash.match(/^#\/project\/([^/]+)\/stats$/);
-  const projectMatch = projectStatsMatch ? null : hash.match(/^#\/project\/([^/]+)$/);
-
-  // Get auth state if available
-  const authState = window.authGuard?.getAuthState?.() || { isLoaded: false, isSignedIn: false };
-
-  console.debug('[App] handleRoute:', { hash, isLoaded: authState.isLoaded, isSignedIn: authState.isSignedIn });
-
-  // If auth is not yet loaded, show loading
-  if (!authState.isLoaded) {
-    showAuthLoading();
-    return;
-  }
-
-  hideAuthLoading();
-
-  // Handle login/signup routes
-  if (isLogin || isSignup) {
-    // If already signed in, redirect to home
-    if (authState.isSignedIn) {
-      location.hash = '#/';
-      return;
-    }
-    showLoginPanel();
-    if (isSignup) {
-      mountAuthSignUp();
-      if (loginTitle) loginTitle.textContent = t('auth.signupTitle');
-      if (loginSubtitle) loginSubtitle.textContent = t('auth.signupSubtitle');
-    } else {
-      mountAuthSignIn();
-    }
-    return;
-  }
-
-  // For protected routes, check authentication
-  if (!authState.isSignedIn) {
-    location.hash = '#/login';
-    return;
-  }
-
-  // Hide login panel for authenticated routes
-  hideLoginPanel();
-  updateUserButtonVisibility(authState.isSignedIn);
-
-  // Hide page panels when navigating away from them
-  if (!isProfile) {
-    import('../pages/profile-page.js').then(m => m.hideProfilePage()).catch(() => {});
-  }
-  if (!isLeaderboard) {
-    import('../pages/leaderboard-page.js').then(m => m.hideLeaderboardPage()).catch(() => {});
-  }
-  if (!projectStatsMatch) {
-    import('../pages/project-stats-page.js').then(m => m.hideProjectStatsPage()).catch(() => {});
-  }
-
-  // Leave project-canvas mode when navigating away from #/project/:id
-  if (!projectMatch && !projectStatsMatch && isProjectCanvasMode()) {
-    // Sync project sketches back to localStorage so the home view is up to date
-    syncProjectSketchesToLibrary();
-    clearProjectCanvas();
-    hideSketchSidePanel();
-  }
-
-  // Handle admin route
-  if (isAdmin) {
-    try { document.body.classList.add('admin-screen'); } catch (_) { }
-    try { closeAdminModal(); } catch (_) { }
-    try { closeProjectsScreen(); } catch (_) { }
-    hideHome(true);
-    openAdminScreen().catch(e => console.error('[Admin] Failed to open admin screen:', e));
-  } else if (isProjects) {
-    // Handle projects route
-    try { document.body.classList.add('admin-screen'); } catch (_) { }
-    try { closeAdminModal(); } catch (_) { }
-    try { closeAdminScreen(); } catch (_) { }
-    try { openProjectsScreen(); } catch (_) { }
-  } else if (isProfile) {
-    // Handle #/profile route
-    try { document.body.classList.remove('admin-screen'); } catch (_) { }
-    try { closeAdminScreen(); } catch (_) { }
-    try { closeProjectsScreen(); } catch (_) { }
-    hideHome(true);
-    import('../pages/profile-page.js').then(m => m.renderProfilePage()).catch(e => console.error('[Profile]', e));
-  } else if (isLeaderboard) {
-    // Handle #/leaderboard route
-    try { document.body.classList.remove('admin-screen'); } catch (_) { }
-    try { closeAdminScreen(); } catch (_) { }
-    try { closeProjectsScreen(); } catch (_) { }
-    hideHome(true);
-    import('../pages/leaderboard-page.js').then(m => m.renderLeaderboardPage()).catch(e => console.error('[Leaderboard]', e));
-  } else if (projectStatsMatch) {
-    // Handle #/project/:id/stats route
-    try { document.body.classList.remove('admin-screen'); } catch (_) { }
-    try { closeAdminScreen(); } catch (_) { }
-    try { closeProjectsScreen(); } catch (_) { }
-    hideHome(true);
-    import('../pages/project-stats-page.js').then(m => m.renderProjectStatsPage(projectStatsMatch[1])).catch(e => console.error('[ProjectStats]', e));
-  } else if (projectMatch) {
-    // Handle #/project/:id route — load project canvas
-    try { document.body.classList.remove('admin-screen'); } catch (_) { }
-    try { closeAdminScreen(); } catch (_) { }
-    try { closeProjectsScreen(); } catch (_) { }
-    hideHome(true); // Immediate hide to prevent race with sync-service
-    loadProjectCanvas(projectMatch[1]);
-  } else {
-    try { document.body.classList.remove('admin-screen'); } catch (_) { }
-    try { closeAdminScreen(); } catch (_) { }
-    try { closeProjectsScreen(); } catch (_) { }
-    // Default route: show projects homepage if user has an org, else show sketch list
-    renderProjectsHome();
-  }
-}
-
-// Listen for auth state changes to re-route
-if (window.authGuard?.onAuthStateChange) {
-  window.authGuard.onAuthStateChange((state) => {
-    handleRoute();
-    updateUserButtonVisibility(state.isSignedIn);
-  });
-}
-
-// Re-evaluate admin button visibility when permissions are loaded (async after auth)
-if (window.permissionsService?.onPermissionChange) {
-  window.permissionsService.onPermissionChange((roleData) => {
-    const authState = window.authGuard?.getAuthState?.() || {};
-    updateUserButtonVisibility(!!authState.isSignedIn);
-    // Show 3D View button for admin/super_admin only
-    if (threeDViewBtn) {
-      threeDViewBtn.style.display = roleData?.isAdmin ? '' : 'none';
-    }
-  });
-}
-
-window.addEventListener('hashchange', handleRoute);
-// Expose handleRoute globally so main-entry.js can call it
-window.handleRoute = handleRoute;
-
-// Prevent scroll and zoom propagation from modals to the canvas
-function preventModalScrollPropagation() {
-  const modals = ['startPanel', 'homePanel', 'helpModal', 'adminModal', 'adminScreen', 'projectsScreen'];
-  modals.forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    
-    // Stop mouse wheel and touch events from reaching the canvas
-    const stopProp = (e) => e.stopPropagation();
-    el.addEventListener('wheel', stopProp, { passive: false });
-    el.addEventListener('touchmove', stopProp, { passive: false });
-    el.addEventListener('mousedown', stopProp);
-    el.addEventListener('touchstart', stopProp, { passive: false });
-  });
-}
-
-// Initialize route on load (with slight delay to allow auth to initialize)
-setTimeout(() => {
-  try { handleRoute(); } catch (_) { }
-  preventModalScrollPropagation();
-}, 100);
+// [Routing, auth listeners, scroll propagation — extracted to src/legacy/auth-ui.js]
+// initAuthUI() is called from init().
 if (adminCancelBtn) adminCancelBtn.addEventListener('click', () => {
   closeAdminModal();
   closeAdminScreen();
@@ -1428,384 +1148,12 @@ import { applyLangToStaticUI } from './i18n-ui.js';
  * Utility: determine if an id is a strictly numeric positive integer string.
  */
 
-function collectUsedNumericIds() {
-  const used = new Set();
-  for (const n of nodes) {
-    if (!n) continue;
-    // Include all nodes with numeric IDs (manholes, drainage, and homes)
-    if (isNumericId(n.id)) {
-      used.add(parseInt(String(n.id), 10));
-    }
-  }
-  return used;
-}
+// [collectUsedNumericIds, findSmallestAvailableNumericId, renameNodeIdInternal — extracted to src/legacy/storage-manager.js]
 
-function findSmallestAvailableNumericId() {
-  const used = collectUsedNumericIds();
-  let candidate = 1;
-  while (used.has(candidate)) candidate += 1;
-  return String(candidate);
-}
+// [encodeUtf16LeWithBom, distanceToSegment — extracted earlier to src/utils/]
 
-function renameNodeIdInternal(oldId, newId) {
-  const node = nodes.find((n) => String(n.id) === String(oldId));
-  if (!node) return;
-  node.id = String(newId);
-  edges.forEach((edge) => {
-    if (String(edge.tail) === String(oldId)) edge.tail = String(newId);
-    if (String(edge.head) === String(oldId)) edge.head = String(newId);
-  });
-}
-
-/**
- * Encode a JS string as UTF-16LE with BOM so that Excel on Windows opens it with correct encoding.
- * @param {string} text
- * @returns {Uint8Array}
- */
-
-/**
- * Compute the shortest distance from a point to a line segment.
- * @param {number} x0 - X of point
- * @param {number} y0 - Y of point
- * @param {number} x1 - X of first segment endpoint
- * @param {number} y1 - Y of first segment endpoint
- * @param {number} x2 - X of second segment endpoint
- * @param {number} y2 - Y of second segment endpoint
- * @returns {number} Euclidean distance in pixels
- */
-
-/**
- * Normalize legacy sketch data in-place so that both localStorage and library
- * loaders produce identical, fully-populated node/edge objects.
- *
- * Node normalization:
- *  - nodeType: case-insensitive aliases → canonical 'Manhole'|'Home'|'Covered'|'Drainage'
- *  - Home/Drainage nodes: clear inapplicable fields, ensure directConnection default
- *  - coverDiameter: undefined → NODE_COVER_DIAMETERS[0]; present → round(Number) or ''
- *  - access, accuracyLevel, nodeEngineeringStatus, maintenanceStatus: coerce to Number
- *  - id: coerce to String
- *
- * Edge normalization:
- *  - material, fall_depth, fall_position, line_diameter, edge_type: set defaults
- *  - maintenanceStatus, engineeringStatus: coerce to Number
- *  - tail/head: String (preserving null for dangling edges)
- *
- * @param {Array} nodes - Node array (mutated in-place)
- * @param {Array} edges - Edge array (mutated in-place)
- */
-function normalizeLegacySketch(nodes, edges) {
-  nodes.forEach((node) => {
-    // --- Required scalar fields ---
-    if (node.material === undefined) node.material = NODE_MATERIALS[0];
-    if (node.type === undefined) node.type = NODE_TYPES[0];
-
-    // --- nodeType canonicalization ---
-    if (node.nodeType === undefined) node.nodeType = 'Manhole';
-    const nt = node.nodeType;
-    if (nt === 'בית' || nt === 'Home' || nt === 'B') {
-      node.nodeType = 'Home';
-    } else if (nt === 'שוחה מכוסה' || nt === 'Covered' || nt === 'C') {
-      node.nodeType = 'Covered';
-    } else if (nt === 'קולטן' || nt === 'Drainage' || nt === 'D') {
-      node.nodeType = 'Drainage';
-    } else if (nt === 'Issue' || nt === 'בעיה') {
-      node.nodeType = 'Issue';
-    } else if (nt === 'ForLater' || nt === 'למדידה מאוחרת') {
-      node.nodeType = 'ForLater';
-    } else {
-      node.nodeType = 'Manhole';
-    }
-
-    // --- Fields that are N/A for Home and Drainage nodes ---
-    if (node.nodeType === 'Home') {
-      node.material = NODE_MATERIALS[0];
-      node.coverDiameter = '';
-      node.access = '';
-      node.nodeEngineeringStatus = '';
-      // maintenanceStatus is editable for Home — initialize if missing
-      if (node.maintenanceStatus === undefined) node.maintenanceStatus = 0;
-      if (node.directConnection === undefined) node.directConnection = false;
-    }
-    if (node.nodeType === 'Drainage') {
-      node.material = NODE_MATERIALS[0];
-      node.coverDiameter = '';
-      node.access = '';
-      node.nodeEngineeringStatus = '';
-      // maintenanceStatus is editable for Drainage via wizard — initialize if missing
-      if (node.maintenanceStatus === undefined) node.maintenanceStatus = 0;
-    }
-
-    // --- coverDiameter ---
-    if (node.coverDiameter === undefined) {
-      node.coverDiameter = NODE_COVER_DIAMETERS[0];
-    } else if (node.coverDiameter !== '') {
-      const cdNum = Number(node.coverDiameter);
-      node.coverDiameter = Number.isFinite(cdNum) ? Math.round(cdNum) : '';
-    }
-
-    // --- Numeric coercions ---
-    if (node.access === undefined) node.access = 0;
-    if (typeof node.access !== 'number') {
-      const acc = Number(node.access);
-      node.access = Number.isFinite(acc) ? acc : 0;
-    }
-
-    if (node.accuracyLevel === undefined) node.accuracyLevel = 0;
-    if (typeof node.accuracyLevel !== 'number') {
-      const acl = Number(node.accuracyLevel);
-      node.accuracyLevel = Number.isFinite(acl) ? acl : 0;
-    }
-
-    if (node.nodeEngineeringStatus === undefined) node.nodeEngineeringStatus = 0;
-    if (typeof node.nodeEngineeringStatus !== 'number') {
-      const esn = Number(node.nodeEngineeringStatus);
-      node.nodeEngineeringStatus = Number.isFinite(esn) ? esn : 0;
-    }
-
-    if (node.maintenanceStatus === undefined) node.maintenanceStatus = 0;
-    if (typeof node.maintenanceStatus !== 'number') {
-      const ms = Number(node.maintenanceStatus);
-      node.maintenanceStatus = Number.isFinite(ms) ? ms : 0;
-    }
-
-    // --- id coercion ---
-    node.id = String(node.id);
-
-    // --- gnssFixQuality migration ---
-    // Existing nodes with survey coords but no gnssFixQuality default to Fixed (4)
-    // since all historical survey data came from RTK Fixed measurements.
-    // Nodes with gnssFixQuality === 6 (Manual Float) that have surveyX/surveyY
-    // should move those coords to manual_x/manual_y.
-    if (node.gnssFixQuality === undefined && node.surveyX != null && node.surveyY != null) {
-      node.gnssFixQuality = 4; // Assume Fixed from historical cords data
-    }
-    if (node.gnssFixQuality === 6 && node.surveyX != null && node.surveyY != null) {
-      if (node.manual_x == null) node.manual_x = node.surveyX;
-      if (node.manual_y == null) node.manual_y = node.surveyY;
-      node.surveyX = null;
-      node.surveyY = null;
-      node.surveyZ = null;
-      node.measure_precision = null;
-    }
-    // Sub-RTK quality (GPS/DGPS/etc.) nodes should not lock their position.
-    // Demote surveyX/Y to manual coords and clear the survey fields.
-    if (
-      node.gnssFixQuality != null &&
-      node.gnssFixQuality !== 4 &&
-      node.gnssFixQuality !== 5 &&
-      node.gnssFixQuality !== 6 &&
-      node.surveyX != null &&
-      node.surveyY != null
-    ) {
-      if (node.manual_x == null) node.manual_x = node.surveyX;
-      if (node.manual_y == null) node.manual_y = node.surveyY;
-      node.surveyX = null;
-      node.surveyY = null;
-      node.surveyZ = null;
-      node.measure_precision = null;
-      node.gnssFixQuality = 6;
-    }
-  });
-
-  edges.forEach((edge) => {
-    // --- Default scalar fields ---
-    if (edge.material === undefined) edge.material = EDGE_MATERIALS[0];
-    if (edge.fall_depth === undefined) edge.fall_depth = '';
-    if (edge.fall_position === undefined) edge.fall_position = '';
-    if (edge.line_diameter === undefined) edge.line_diameter = '';
-    if (edge.edge_type === undefined) edge.edge_type = EDGE_TYPES[0];
-
-    // --- Numeric coercions ---
-    if (edge.maintenanceStatus === undefined) edge.maintenanceStatus = 0;
-    if (typeof edge.maintenanceStatus !== 'number') {
-      const m = Number(edge.maintenanceStatus);
-      edge.maintenanceStatus = Number.isFinite(m) ? m : 0;
-    }
-
-    if (edge.engineeringStatus === undefined) edge.engineeringStatus = 0;
-    if (typeof edge.engineeringStatus !== 'number') {
-      const es = Number(edge.engineeringStatus);
-      edge.engineeringStatus = Number.isFinite(es) ? es : 0;
-    }
-
-    // --- id coercion (preserve null for dangling edges) ---
-    edge.tail = edge.tail != null ? String(edge.tail) : null;
-    edge.head = edge.head != null ? String(edge.head) : null;
-  });
-}
-
-/**
- * Load a previously saved sketch from localStorage if present.
- * Ensures required properties exist and normalizes id types, then
- * recomputes node types based on edge measurements.
- * @returns {boolean} true if a sketch was loaded; false otherwise
- */
-function loadFromStorage() {
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.sketch);
-    if (!data) return false;
-    const parsed = JSON.parse(data);
-    if (!parsed || !parsed.nodes || !parsed.edges) return false;
-    nodes = parsed.nodes;
-    _nodeMapDirty = true; _spatialGridDirty = true; _dataVersion++;
-    edges = parsed.edges;
-    clearUndoStack();
-    markEdgeLabelCacheDirty(); // new sketch data loaded
-    creationDate = parsed.creationDate || null;
-    currentSketchId = parsed.sketchId || null;
-    currentSketchName = parsed.sketchName || null;
-    currentProjectId = parsed.projectId || null;
-    currentInputFlowConfig = parsed.inputFlowConfig || DEFAULT_INPUT_FLOW_CONFIG;
-    updateSketchNameDisplay();
-    // Normalize nodes and edges to canonical shape (single source of truth)
-    normalizeLegacySketch(nodes, edges);
-    // Recompute nextNodeId as (max numeric id among nodes) + 1
-    let maxNumericId = 0;
-    for (const n of nodes) {
-      const parsedId = parseInt(String(n.id), 10);
-      if (Number.isFinite(parsedId)) {
-        if (parsedId > maxNumericId) maxNumericId = parsedId;
-      }
-    }
-    nextNodeId = maxNumericId + 1;
-    // Restore last edit position if available
-    if (parsed.lastEditX != null && parsed.lastEditY != null) {
-      setLastEditPosition(parsed.lastEditX, parsed.lastEditY);
-    }
-    // Recompute node types based on measurements
-    computeNodeTypes();
-    // Auto-reposition nodes from embedded geographic coordinates
-    autoRepositionFromEmbeddedCoords();
-    // Load reference layers for the project (if sketch belongs to one)
-    loadProjectReferenceLayers(currentProjectId);
-    updateCanvasEmptyState();
-    return true;
-  } catch (e) {
-    console.error('[App] Error loading sketch from storage:', e.message);
-    return false;
-  }
-}
-
-/**
- * Persist the current sketch to localStorage.
- * Uses requestIdleCallback to defer heavy JSON serialization off the main thread.
- */
-function saveToStorage() {
-  // Skip saving completely empty sketches (no nodes, no edges)
-  if ((!nodes || nodes.length === 0) && (!edges || edges.length === 0)) {
-    return;
-  }
-
-  const nowIso = new Date().toISOString();
-  const username = getCurrentUsername();
-
-  // Capture current state references (these are lightweight)
-  markEdgeLabelCacheDirty(); // edge/node data changed — invalidate label layout cache
-  _issueSetsDirty = true;    // recompute issue indicators on next draw
-  const currentNodes = nodes;
-  const currentEdges = edges;
-  const currentNextNodeId = nextNodeId;
-  const currentCreationDate = creationDate;
-  const savedSketchId = currentSketchId;
-  const savedSketchName = currentSketchName;
-  const savedProjectId = currentProjectId;
-  const savedInputFlowConfig = currentInputFlowConfig;
-  const savedAdminConfig = typeof adminConfig !== 'undefined' ? adminConfig : {};
-  
-  // Schedule the heavy work to run when browser is idle
-  const doSave = () => {
-    const lastEdit = getLastEditPosition();
-    const payload = {
-      nodes: currentNodes,
-      edges: currentEdges,
-      nextNodeId: currentNextNodeId,
-      creationDate: currentCreationDate,
-      sketchId: savedSketchId,
-      sketchName: savedSketchName,
-      projectId: savedProjectId,
-      inputFlowConfig: savedInputFlowConfig,
-      lastEditedBy: username,
-      lastEditedAt: nowIso,
-      lastEditX: lastEdit?.x ?? null,
-      lastEditY: lastEdit?.y ?? null,
-    };
-    
-    // Single JSON.stringify call, reuse the string
-    const payloadJson = JSON.stringify(payload);
-    localStorage.setItem(STORAGE_KEYS.sketch, payloadJson);
-
-    // Persist to IndexedDB for durability (fire-and-forget)
-    idbSaveCurrentCompat(payload);
-    
-    if (autosaveEnabled) {
-      saveToLibrary();
-    }
-    
-    // Trigger cloud sync if authenticated and online
-    if (savedSketchId && window.syncService?.debouncedSyncToCloud) {
-      // Get the name from the library record if currentSketchName is null
-      let nameForSync = savedSketchName;
-      if (!nameForSync && savedSketchId) {
-        const lib = getLibrary();
-        const rec = lib.find((r) => r.id === savedSketchId);
-        if (rec && rec.name) {
-          nameForSync = rec.name;
-          // Also update currentSketchName so it stays in sync
-          currentSketchName = rec.name;
-          updateSketchNameDisplay();
-        }
-      }
-      const sketchForSync = {
-        id: savedSketchId,
-        name: nameForSync,
-        creationDate: currentCreationDate,
-        nodes: currentNodes,
-        edges: currentEdges,
-        adminConfig: savedAdminConfig,
-        projectId: savedProjectId,
-        snapshotInputFlowConfig: savedInputFlowConfig,
-        lastEditedBy: username,
-        lastEditedAt: nowIso,
-      };
-      window.syncService.debouncedSyncToCloud(sketchForSync);
-    }
-
-    // Update side panel stats in project-canvas mode
-    if (isProjectCanvasMode()) {
-      refreshActiveSketchData();
-    }
-  };
-
-  // Use requestIdleCallback if available, otherwise setTimeout(0)
-  if (typeof requestIdleCallback === 'function') {
-    requestIdleCallback(doSave, { timeout: 100 });
-  } else {
-    setTimeout(doSave, 0);
-  }
-}
-
-// Debounced saver to reduce jank on mobile while typing
-const debouncedSaveToStorage = (function () {
-  /** @type {number|undefined} */
-  let timeoutId;
-  const delayMs = 150;
-  return function () {
-    if (timeoutId) clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => {
-      timeoutId = undefined;
-      try { saveToStorage(); showToast(t('toasts.saved') || 'Saved', 'success', 1000); } catch (_) { }
-    }, delayMs);
-  };
-})();
-
-/**
- * Remove the stored sketch from localStorage.
- */
-function clearStorage() {
-  localStorage.removeItem(STORAGE_KEYS.sketch);
-  // Remove from IndexedDB as well
-  idbSaveCurrentCompat(null);
-}
+// [normalizeLegacySketch — extracted to src/legacy/storage-manager.js]
+// [loadFromStorage, saveToStorage, debouncedSaveToStorage, clearStorage � extracted to src/legacy/storage-manager.js]
 
 // === Library management (multiple sketches) ===
 // [Extracted to src/legacy/library-manager.js]
@@ -2247,8 +1595,10 @@ function buildWizardTabsHTML(node, activeKey, visibleTabs) {
     if (filled) cls += ' wizard-tab--filled';
     const label = t(def.labelKey);
     return `<button class="${cls}" data-wizard-tab="${key}" title="${label}"
+              aria-label="${label}"
               style="--tab-color:${def.color};--tab-bg:${def.bg}">
       <span class="material-icons">${def.icon}</span>
+      <span class="wizard-tab-label">${label}</span>
       <span class="wizard-check material-icons ${filled ? 'wizard-check--filled' : 'wizard-check--empty'}">${filled ? 'check_circle' : 'radio_button_unchecked'}</span>
     </button>`;
   }).join('');
@@ -2304,77 +1654,7 @@ function buildWizardFieldHTML(node, activeKey, ruleResults, opts) {
 // Project Management Functions
 // ============================================
 
-/**
- * Fetch available projects from the API
- * @returns {Promise<Array>} List of projects
- */
-async function fetchProjects() {
-  try {
-    // Better Auth uses cookie-based sessions, no token needed
-    // The session cookie is automatically sent with fetch requests
-    const authState = window.authGuard?.getAuthState?.() || {};
-    if (!authState.isSignedIn) {
-      console.warn('[Projects] Not authenticated');
-      return [];
-    }
-    
-    const response = await fetch('/api/projects', {
-      credentials: 'include', // Include cookies for session auth
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    if (!response.ok) {
-      console.error('[Projects] Failed to fetch projects:', response.status);
-      return [];
-    }
-    
-    const data = await response.json();
-    availableProjects = data.projects || [];
-    return availableProjects;
-  } catch (error) {
-    console.error('[Projects] Error fetching projects:', error);
-    return [];
-  }
-}
-
-/**
- * Render the project dropdown in the start panel
- */
-function renderProjectDropdown() {
-  const projectSelect = document.getElementById('projectSelect');
-  if (!projectSelect) return;
-
-  // Hide the entire project field when no projects exist
-  const fieldContainer = projectSelect.closest('.field');
-  if (availableProjects.length === 0) {
-    if (fieldContainer) fieldContainer.style.display = 'none';
-    return;
-  }
-
-  if (fieldContainer) fieldContainer.style.display = '';
-  projectSelect.innerHTML = `
-    <option value="">${t('labels.selectProject')}</option>
-    ${availableProjects.map(p => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join('')}
-  `;
-}
-
-/**
- * Get the selected project's input flow config
- * @param {string} projectId - Project ID
- * @returns {Object} Input flow configuration
- */
-function getProjectInputFlowConfig(projectId) {
-  if (!projectId) return DEFAULT_INPUT_FLOW_CONFIG;
-  
-  const project = availableProjects.find(p => p.id === projectId);
-  if (!project || !project.inputFlowConfig || Object.keys(project.inputFlowConfig).length === 0) {
-    return DEFAULT_INPUT_FLOW_CONFIG;
-  }
-  
-  return project.inputFlowConfig;
-}
+// [fetchProjects, renderProjectDropdown, getProjectInputFlowConfig � extracted to src/legacy/project-ui.js]
 
 // Control buttons handlers
 if (newSketchBtn) newSketchBtn.addEventListener('click', async () => {
@@ -2554,71 +1834,8 @@ if (edgeModeBtn) {
     showToast(t('toasts.edgeMode'), 1200);
   });
 }
-// ── Node-type flyout (mobile) ──────────────────────────────────
-// On mobile, 4 node-type buttons collapse into a single trigger
-// that opens a flyout panel.  Selecting a type closes the flyout
-// and updates the trigger icon to reflect the active type.
-const NODE_TYPE_ICONS = {
-  node:     'radio_button_unchecked',
-  home:     'home',
-  drainage: 'water_drop',
-  issue:    'report_problem',
-};
-
-// Safe to call at any time — no-ops if flyout elements are absent.
-function syncFlyoutIcon() {
-  if (!nodeTypeFlyoutBtn) return;
-  const iconEl = nodeTypeFlyoutBtn.querySelector('.material-icons');
-  if (!iconEl) return;
-  const isNodeType = ['node', 'home', 'drainage', 'issue'].includes(currentMode);
-  iconEl.textContent = isNodeType
-    ? (NODE_TYPE_ICONS[currentMode] || 'radio_button_unchecked')
-    : 'radio_button_unchecked';
-  nodeTypeFlyoutBtn.classList.toggle('has-active-type', isNodeType);
-  nodeTypeFlyoutBtn.classList.toggle('active', isNodeType);
-}
-
-function closeFlyout() {
-  if (!nodeTypeFlyout || !nodeTypeFlyoutBtn) return;
-  nodeTypeFlyout.classList.remove('open');
-  nodeTypeFlyoutBtn.setAttribute('aria-expanded', 'false');
-}
-
-if (nodeTypeFlyoutBtn && nodeTypeFlyout) {
-  function toggleFlyout() {
-    const isOpen = nodeTypeFlyout.classList.toggle('open');
-    nodeTypeFlyoutBtn.setAttribute('aria-expanded', String(isOpen));
-  }
-
-  nodeTypeFlyoutBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    toggleFlyout();
-  });
-
-  // Close flyout when a node-type button is clicked
-  [nodeModeBtn, homeNodeModeBtn, drainageNodeModeBtn, issueNodeModeBtn].forEach(btn => {
-    if (btn) btn.addEventListener('click', () => {
-      closeFlyout();
-      syncFlyoutIcon();
-    });
-  });
-
-  // Close flyout when edge mode or any non-node-type is chosen
-  if (edgeModeBtn) edgeModeBtn.addEventListener('click', () => {
-    closeFlyout();
-    syncFlyoutIcon();
-  });
-
-  // Close flyout on outside tap
-  document.addEventListener('click', (e) => {
-    if (!nodeTypeFlyout.classList.contains('open')) return;
-    if (nodeTypeFlyoutBtn.contains(e.target) || nodeTypeFlyout.contains(e.target)) return;
-    closeFlyout();
-  });
-
-  // Initial sync
-  syncFlyoutIcon();
-}
+// [Node-type flyout (syncFlyoutIcon, closeFlyout, event listeners) � extracted to src/legacy/project-ui.js]
+// initProjectUI() is called from init().
 
 // Undo button
 if (undoBtn) {
@@ -3673,6 +2890,19 @@ F.findDanglingSnapTarget  = (...a) => findDanglingSnapTarget(...a);
 F.finalizeDanglingEndpointDrag = (...a) => finalizeDanglingEndpointDrag(...a);
 F.invalidateCanvasRectCache = (...a) => invalidateCanvasRectCache(...a);
 F._setDraggingDanglingStart = (v) => { draggingDanglingStart = v; };
+// Auth-ui module dependencies
+F.hideHome                = (...a) => hideHome(...a);
+F.renderProjectsHome      = (...a) => renderProjectsHome(...a);
+F.loadProjectCanvas       = (...a) => loadProjectCanvas(...a);
+F.openAdminScreen         = (...a) => openAdminScreen(...a);
+F.closeAdminScreen        = (...a) => closeAdminScreen(...a);
+F.closeAdminModal         = (...a) => closeAdminModal(...a);
+F.openProjectsScreen      = (...a) => openProjectsScreen(...a);
+F.closeProjectsScreen     = (...a) => closeProjectsScreen(...a);
+// Storage-manager module dependencies
+F.clearUndoStack          = (...a) => clearUndoStack(...a);
+F.autoRepositionFromEmbeddedCoords = (...a) => autoRepositionFromEmbeddedCoords(...a);
+F.loadProjectReferenceLayers = (...a) => loadProjectReferenceLayers(...a);
 // ────────────────────────────────────────────────────────────────────────────
 
 init();
@@ -3730,6 +2960,14 @@ initAdminHandlers();
 // Details panel / sidebar close listeners
 // [Extracted to src/legacy/details-panel.js]
 initDetailsPanel();
+
+// Auth UI (login panel, routing, auth listeners)
+// [Extracted to src/legacy/auth-ui.js]
+initAuthUI();
+
+// Project UI (flyout, project dropdown)
+// [Extracted to src/legacy/project-ui.js]
+initProjectUI();
 
 // ── Emergency save on page unload ─────────────────────────────────────────
 window.addEventListener('beforeunload', (e) => {
@@ -3812,13 +3050,14 @@ function markInternalNavigation() {
       return;
     }
 
-    // On the main canvas — ask user to confirm exit
+    // On the main canvas — ask user to confirm exit with styled modal (#26)
     if (nodes?.length > 0 || edges?.length > 0) {
       const msg = typeof t === 'function' ? t('confirms.exitApp') : 'Exit the app?';
-      if (confirm(msg)) {
-        // Actually go back — remove guard and navigate back
+      const exitLabel = typeof t === 'function' ? t('confirms.exitButton') || 'Exit' : 'Exit';
+      const stayLabel = typeof t === 'function' ? t('confirms.stayButton') || 'Stay' : 'Stay';
+      _showConfirmModal(msg, exitLabel, stayLabel, () => {
         history.back();
-      }
+      });
     }
   });
 })();
