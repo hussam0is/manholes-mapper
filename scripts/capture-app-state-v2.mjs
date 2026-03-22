@@ -8,7 +8,10 @@ import { join } from 'path';
 
 const OUTPUT_DIR = join(process.cwd(), 'app_state_2026-03-04');
 const BASE_URL = 'https://manholes-mapper-git-dev-hussam0is-projects.vercel.app';
-const CREDENTIALS = { email: 'admin@geopoint.me', password: 'Geopoint2026!' };
+const CREDENTIALS = {
+  email: process.env.ADMIN_EMAIL || (() => { throw new Error('ADMIN_EMAIL env var is required'); })(),
+  password: process.env.ADMIN_PASSWORD || (() => { throw new Error('ADMIN_PASSWORD env var is required'); })(),
+};
 
 if (!existsSync(OUTPUT_DIR)) mkdirSync(OUTPUT_DIR, { recursive: true });
 

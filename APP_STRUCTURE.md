@@ -11,7 +11,7 @@ index.html
      ├─ i18n init
      ├─ GNSS init
      ├─ Exposes window globals (t, isRTL, authGuard, menuEvents, CONSTS…)
-     ├─ src/legacy/main.js            (side-effect import — monolith ~11,700 lines)
+     ├─ src/legacy/main.js            (side-effect import — monolith ~11,300 lines)
      └─ DOMContentLoaded →
          ├─ initMenuSystem()
          ├─ initCanvasFabToolbar()
@@ -880,7 +880,12 @@ Focus: (1) `window.addEventListener('online')` → "Connection restored" toast, 
 |------|------|
 | `index.html` | All static DOM elements (949 lines) |
 | `src/main-entry.js` | ES module entry, auth/i18n/GNSS/menu init (972 lines) |
-| `src/legacy/main.js` | Monolith: canvas, routing, panels, sidebar, CRUD (~11,700 lines) |
+| `src/legacy/main.js` | Monolith: canvas, routing, panels, sidebar, CRUD (~11,300 lines) |
+| `src/legacy/shared-state.js` | Extracted shared state exports (legacy ↔ ES module bridge) |
+| `src/legacy/gnss-handlers.js` | Extracted GNSS event handlers (~490 lines) |
+| `src/legacy/tsc3-handlers.js` | Extracted TSC3 survey controller handlers (~170 lines) |
+| `src/legacy/admin-handlers.js` | Extracted admin panel handlers (~190 lines) |
+| `src/legacy/library-manager.js` | Extracted library/catalog management (~530 lines) |
 | `src/auth/auth-guard.js` | Route protection, session polling |
 | `src/auth/auth-provider.jsx` | React SignIn/SignUp forms |
 | `src/auth/sync-service.js` | Cloud sync with 2s debounce, AbortController |

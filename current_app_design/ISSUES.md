@@ -17,11 +17,11 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 |----------|-------|-------|------|
 | CRITICAL | 1 | 0 | 1 (not app bug) |
 | HIGH | 12 | 10 | 2 (already ok) |
-| MEDIUM | 28 | 19 | 9 |
-| LOW | 19 | 8 | 10 (1 deferred) |
+| MEDIUM | 28 | 21 | 7 |
+| LOW | 19 | 9 | 9 (1 deferred) |
 | FEATURE | 1 | 1 | — |
 | NEW (Iter 6) | 8 | 8 | — |
-| **TOTAL** | **69** | **46** | **22** |
+| **TOTAL** | **69** | **49** | **19** |
 
 **By Iteration:**
 | Iteration | Issues Fixed | Cumulative |
@@ -178,9 +178,9 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Type**: design
 - **Screenshot**: 03_layers_panel_open.png
 - **Problem**: The Layers floating panel appears centered-left on screen, partially covering the canvas content and the GNSS location marker. On mobile, the panel position is not intuitive.
-- **Fix**: Anchor the Layers panel to the top-left where the layers button is, or make it a bottom sheet on mobile.
-- **Status**: OPEN
-- **Commit**: —
+- **Fix**: Converted layers panel to bottom sheet on mobile (max-width: 600px) with slide-up animation, full-width layout, and rounded top corners.
+- **Status**: Fixed ✓
+- **Commit**: `c35fb14`
 
 ### Issue #15 — No Zoom +/- Buttons on Canvas
 - **Severity**: LOW
@@ -402,9 +402,9 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Type**: ux
 - **Screenshot**: 41_node_panel_very_top_nodeid_fields.png, 43_maintenance_picker_dismissed.png
 - **Problem**: The "Delete Node" full-width red button is visible at panel bottom even at default height before the user has scrolled to see all fields. Destructive action is always visible while useful fields require scrolling.
-- **Fix**: Ensure Delete button is inside the scrollable area at the very end of content — not sticky/pinned at bottom. Alternatively hide behind "More actions" overflow menu.
-- **Status**: OPEN
-- **Commit**: —
+- **Fix**: Changed `.details-actions` from `position: sticky; bottom: 0` to `position: relative` so the delete button scrolls with content instead of being pinned at the bottom.
+- **Status**: Fixed ✓
+- **Commit**: `5d315b4`
 
 ### Issue #39 — Connected Lines Section Lacks Clear Visual Separation from Node Fields
 - **Severity**: MEDIUM
@@ -519,9 +519,9 @@ Auto-maintained by the `design-audit-loop` skill. Each iteration reads screensho
 - **Type**: ux
 - **Screenshot**: 41_node_panel_very_top_nodeid_fields.png, 45_node_panel_more_fields_scroll2.png
 - **Problem**: Open panel occupies ~50% viewport. Remaining canvas is too small to identify the selected node. No visual highlight on the selected element while panel is open. Field workers cannot verify they're editing the right node.
-- **Fix**: (1) Auto-center canvas on selected node when panel opens. (2) Persistent pulsing highlight on selected node/edge while panel is open. (3) Panel starts at 30% height (compact), user drags up for more fields.
-- **Status**: OPEN
-- **Commit**: —
+- **Fix**: Reduced mobile drawer default height from 40vh to 30vh (and fallback references throughout) so the panel starts compact. Users can still drag up for more fields. Auto-center and pulsing highlight require JS changes (not addressed here).
+- **Status**: Partially Fixed (panel height)
+- **Commit**: `748236b`
 
 ### Issue #52 — Node Panel Wizard Tab Icons Have No Labels or Aria-Labels
 - **Severity**: LOW

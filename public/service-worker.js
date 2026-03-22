@@ -16,7 +16,7 @@
 // the network was unavailable and there was no cached response, causing
 // offline pages to break.  Increasing the version here forces browsers
 // to pick up the updated logic.
-const APP_VERSION = 'v129';
+const APP_VERSION = 'v130';
 const PRECACHE = 'graph-sketch-shell-' + APP_VERSION;
 const RUNTIME = 'graph-sketch-runtime-' + APP_VERSION;
 
@@ -86,11 +86,19 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Allow the page to ask the waiting worker to activate immediately
+// Allow the page to ask the waiting worker to activate immediately and
+// respond to version queries so the UI can detect updates.
 self.addEventListener('message', (event) => {
   const data = event && event.data;
-  if (data && data.type === 'SKIP_WAITING') {
+  if (!data) return;
+  if (data.type === 'SKIP_WAITING') {
     self.skipWaiting();
+  }
+  if (data.type === 'GET_VERSION') {
+    event.source && event.source.postMessage({
+      type: 'SW_VERSION',
+      version: APP_VERSION
+    });
   }
 });
 

@@ -13,7 +13,7 @@ import './menu/menu.css';
 import './utils/toast.js';
 import './serviceWorker/register-sw.js';
 
-import { injectSpeedInsights } from '@vercel/speed-insights';
+// @vercel/speed-insights is lazy-loaded below (only on Vercel production)
 
 import { i18n as I18N_DICT, createTranslator, isRTL as i18nIsRTL } from './i18n.js';
 import { syncHeaderHeightVar, syncAppHeightVar } from './dom/dom-utils.js';
@@ -22,12 +22,13 @@ import { applyDarkMode, isReducedBlueLightEnabled } from './state/constants.js';
 import { initSkillLevel, isFeatureVisible } from './state/skill-level.js';
 import { attachFloatingKeyboard } from './utils/floating-keyboard.js';
 import { initResizableDrawer } from './utils/resizable-drawer.js';
+import { initCustomSelect } from './utils/custom-select.js';
 import { initCanvasFabToolbar } from './canvas-fab-toolbar.js';
 import { onAuthStateChange, getAuthState, updateAuthState, guardRoute, redirectIfAuthenticated, refreshSession } from './auth/auth-guard.js';
 import { initSyncService } from './auth/sync-service.js';
 import { initNotificationBell, destroyNotificationBell } from './notifications/notification-bell.js';
 import { authClient, signOutUser, getCurrentSession } from './auth/auth-client.js';
-import { initPermissionsService, getUserRole } from './auth/permissions.js';
+import { initPermissionsService, getUserRole, isAdmin, onPermissionChange } from './auth/permissions.js';
 import { menuEvents, setupEventDelegation } from './menu/menu-events.js';
 import {
   initGnssModule,
@@ -47,16 +48,13 @@ import {
 import { getFixSuggestions } from './project/fix-suggestions.js';
 import { computeSketchIssues } from './project/sketch-issues.js';
 import './project/issue-nav-state.js'; // registers window.__issueNav
-import { initCockpit } from './cockpit/cockpit.js';
-import { initFieldCommander } from './field-commander/fc-shell.js';
-import { initFCTerritory } from './field-commander/fc-territory.js';
+// Cockpit, Field Commander, and FC Territory are lazy-loaded below (perf: code-splitting)
 import { showMeasurementRail, hideMeasurementRail } from './features/measurement-rail.js';
 import { initUnifiedLayout } from './layout/layout-manager.js';
 
 // Initialize Vercel Speed Insights only when deployed on Vercel (production)
-// The /_vercel/speed-insights/script.js endpoint only exists on Vercel's platform
 if (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')) {
-  injectSpeedInsights();
+  import('@vercel/speed-insights').then(m => m.injectSpeedInsights());
 }
 
 /** Escape HTML special characters to prevent XSS */
@@ -231,6 +229,22 @@ if (typeof window !== 'undefined') {
 if (typeof window !== 'undefined') {
   initSyncService();
   initPermissionsService();
+
+  // Hide admin-only controls (stretch/scale) for non-admin users (#16)
+  function _updateAdminOnlyControls() {
+    const show = isAdmin();
+    document.querySelectorAll('.admin-only-control').forEach(el => {
+      el.style.display = show ? '' : 'none';
+    });
+  }
+  onPermissionChange(_updateAdminOnlyControls);
+  // Run once initially after DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _updateAdminOnlyControls);
+  } else {
+    _updateAdminOnlyControls();
+  }
+
   // Initialize notification bell (polls for unread issue notifications)
   onAuthStateChange((state) => {
     if (state.isAuthenticated) {
@@ -280,6 +294,7 @@ if (typeof window !== 'undefined') {
 
     attachFloatingKeyboard();
     initResizableDrawer();
+    initCustomSelect();
     initCanvasFabToolbar();
     
     // Initialize new menu system
@@ -296,12 +311,19 @@ if (typeof window !== 'undefined') {
     // Initialize edge legend auto-collapse on mobile
     initEdgeLegendToggle();
 
-    // Initialize Cockpit layout (landscape-first three-zone layout)
-    initCockpit();
+    // Lazy-load Cockpit layout (landscape-first three-zone layout)
+    import('./cockpit/cockpit.js').then(m => m.initCockpit());
 
-    // Initialize Field Commander (canvas-first UI) — feature-flagged
-    initFieldCommander();
-    initFCTerritory();
+    // Lazy-load Field Commander (canvas-first UI) — feature-flagged
+    if (localStorage.getItem('fc_mode') === '1') {
+      Promise.all([
+        import('./field-commander/fc-shell.js'),
+        import('./field-commander/fc-territory.js'),
+      ]).then(([shell, territory]) => {
+        shell.initFieldCommander();
+        territory.initFCTerritory();
+      });
+    }
 
     // Initialize unified layout (new clean layout system)
     initUnifiedLayout();

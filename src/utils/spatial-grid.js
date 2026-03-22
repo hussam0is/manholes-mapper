@@ -18,20 +18,26 @@ export class SpatialGrid {
   constructor(cellSize = 200) {
     /** @type {number} */
     this.cellSize = cellSize;
-    /** @type {Map<string, T[]>} */
+    /** @type {Map<number, T[]>} */
     this._cells = new Map();
     /** @type {number} */
     this._count = 0;
+    /** @type {number} */
+    this._invCellSize = 1 / cellSize;
   }
 
   /** Number of items in the grid */
   get size() { return this._count; }
 
-  /** Generate a cell key from cell coordinates */
-  _key(cx, cy) { return `${cx},${cy}`; }
+  /**
+   * Generate a numeric cell key from cell coordinates.
+   * Uses a Cantor-like pairing that handles negative coords by biasing.
+   * Much faster than string template concatenation on the hot path.
+   */
+  _key(cx, cy) { return ((cx + 0x7FFF) << 16) | ((cy + 0x7FFF) & 0xFFFF); }
 
   /** Convert a world coordinate to a cell index */
-  _cellIndex(v) { return Math.floor(v / this.cellSize); }
+  _cellIndex(v) { return Math.floor(v * this._invCellSize); }
 
   /**
    * Insert an item with a bounding box.

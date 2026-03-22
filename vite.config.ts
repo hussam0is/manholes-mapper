@@ -16,7 +16,7 @@ export default defineConfig({
         entryFileNames: 'main.js',
         assetFileNames: (assetInfo) => {
           if (assetInfo.name && assetInfo.name.endsWith('.css')) {
-            return 'styles.css';
+            return 'assets/[name]-[hash:8].css';
           }
           return 'assets/[name][extname]';
         },
@@ -41,10 +41,27 @@ export default defineConfig({
           if (id.includes('/admin/admin-settings') || id.includes('/admin/projects-settings') || id.includes('/admin/input-flow-settings')) {
             return 'admin';
           }
+          // Lazy-loaded cockpit module
+          if (id.includes('/cockpit/')) {
+            return 'cockpit';
+          }
+          // Lazy-loaded field-commander module
+          if (id.includes('/field-commander/')) {
+            return 'field-commander';
+          }
+          // Lazy-loaded survey/TSC3 modules
+          if (id.includes('/survey/') || id.includes('tsc3-handlers')) {
+            return 'survey';
+          }
         },
       },
     },
     chunkSizeWarningLimit: 1000,
+    // Target modern browsers for smaller output (no legacy polyfills)
+    target: 'es2022',
+    // Skip modulepreload polyfill (~2KB) — all target browsers support it natively
+    modulePreload: { polyfill: false },
+
   },
   server: {
     // When running under vercel dev, let Vercel control the port
