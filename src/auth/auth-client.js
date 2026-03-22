@@ -1,8 +1,14 @@
 /**
  * Better Auth Client
- * 
+ *
  * Client-side authentication using Better Auth.
  * Provides sign-in, sign-up, and session management.
+ *
+ * @typedef {import('../types/index.d.ts').AuthUser} AuthUser
+ * @typedef {import('../types/index.d.ts').AuthSession} AuthSession
+ * @typedef {import('../types/index.d.ts').SessionData} SessionData
+ * @typedef {import('../types/index.d.ts').AuthResponse} AuthResponse
+ * @typedef {import('../types/index.d.ts').AuthError} AuthError
  */
 
 import { createAuthClient } from "better-auth/client";
@@ -26,9 +32,9 @@ export const {
 
 /**
  * Sign in with email and password
- * @param {string} email 
- * @param {string} password 
- * @returns {Promise<{data: any, error: any}>}
+ * @param {string} email
+ * @param {string} password
+ * @returns {Promise<AuthResponse<SessionData>>}
  */
 export async function signInWithEmail(email, password) {
   return authClient.signIn.email({
@@ -39,10 +45,10 @@ export async function signInWithEmail(email, password) {
 
 /**
  * Sign up with email and password
- * @param {string} email 
- * @param {string} password 
- * @param {string} name 
- * @returns {Promise<{data: any, error: any}>}
+ * @param {string} email
+ * @param {string} password
+ * @param {string} name
+ * @returns {Promise<AuthResponse<SessionData>>}
  */
 export async function signUpWithEmail(email, password, name) {
   return authClient.signUp.email({
@@ -62,7 +68,7 @@ export async function signOutUser() {
 
 /**
  * Get current session
- * @returns {Promise<{data: {session: any, user: any} | null, error: any}>}
+ * @returns {Promise<AuthResponse<SessionData>>}
  */
 export async function getCurrentSession() {
   return authClient.getSession();
@@ -70,18 +76,19 @@ export async function getCurrentSession() {
 
 /**
  * Subscribe to session changes
- * @param {Function} callback - Called when session changes
- * @returns {Function} Unsubscribe function
+ * @param {(data: SessionData) => void} callback - Called when session changes
+ * @returns {() => void} Unsubscribe function
  */
 export function onSessionChange(callback) {
   // Better Auth uses a polling mechanism or we can manually check
+  /** @type {AuthSession | null} */
   let lastSession = null;
-  
+
   const checkSession = async () => {
     try {
       const { data } = await authClient.getSession();
       const currentSession = data?.session || null;
-      
+
       // Only call callback if session actually changed
       if (JSON.stringify(currentSession) !== JSON.stringify(lastSession)) {
         lastSession = currentSession;
@@ -90,17 +97,17 @@ export function onSessionChange(callback) {
           user: data?.user || null,
         });
       }
-    } catch (error) {
+    } catch (/** @type {*} */ error) {
       console.error('[Auth] Session check failed:', error.message);
     }
   };
-  
+
   // Check immediately
   checkSession();
-  
+
   // Set up polling (every 5 minutes)
   const intervalId = setInterval(checkSession, 5 * 60 * 1000);
-  
+
   // Return unsubscribe function
   return () => {
     clearInterval(intervalId);

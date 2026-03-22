@@ -1,13 +1,18 @@
 /**
  * Auth Guard - Route protection for the Manholes Mapper PWA
- * 
+ *
  * Handles authentication state checking and route protection.
  * Works with Better Auth session management.
+ *
+ * @typedef {import('../types/index.d.ts').AuthState} AuthState
+ * @typedef {import('../types/index.d.ts').AuthUser} AuthUser
+ * @typedef {import('../types/index.d.ts').SessionData} SessionData
  */
 
 import { getCurrentSession } from './auth-client.js';
 
 // Auth state cache
+/** @type {AuthState} */
 let authState = {
   isLoaded: false,
   isSignedIn: false,
@@ -17,6 +22,7 @@ let authState = {
 };
 
 // Callbacks for auth state changes
+/** @type {Set<(state: AuthState) => void>} */
 const authStateListeners = new Set();
 
 // Session refresh interval ID (to prevent accumulation on re-init)
@@ -24,8 +30,8 @@ let sessionRefreshInterval = null;
 
 /**
  * Subscribe to auth state changes
- * @param {Function} callback - Called when auth state changes
- * @returns {Function} Unsubscribe function
+ * @param {(state: AuthState) => void} callback - Called when auth state changes
+ * @returns {() => void} Unsubscribe function
  */
 export function onAuthStateChange(callback) {
   authStateListeners.add(callback);
@@ -47,7 +53,7 @@ function notifyAuthStateChange() {
 
 /**
  * Update auth state from Better Auth session
- * @param {Object} sessionData - Session data from Better Auth
+ * @param {SessionData} sessionData - Session data from Better Auth
  */
 export function updateAuthState(sessionData) {
   authState = {
@@ -62,7 +68,7 @@ export function updateAuthState(sessionData) {
 
 /**
  * Get current auth state
- * @returns {Object} Current auth state
+ * @returns {AuthState} Current auth state
  */
 export function getAuthState() {
   return { ...authState };
@@ -222,15 +228,3 @@ export async function initAuthMonitor() {
 
 // Initialize on module load
 initAuthMonitor();
-/**
- * Auth Guard - Route protection for the Manholes Mapper PWA
- * 
- * Handles authentication state checking and route protection.
- * Works with Better Auth session management.
- */
-/**
- * Auth Guard - Route protection for the Manholes Mapper PWA
- * 
- * Handles authentication state checking and route protection.
- * Works with Better Auth session management.
- */
