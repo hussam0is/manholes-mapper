@@ -38,6 +38,7 @@ import { drawNodeIcon } from '../features/node-icons.js';
 import { processLabels } from '../utils/label-collision.js';
 import { buildNodeGrid, buildEdgeGrid } from '../utils/spatial-grid.js';
 import { renderPerf } from '../utils/render-perf.js';
+import { progressiveRenderer } from '../utils/progressive-renderer.js';
 import { drawReferenceLayers } from '../map/reference-layers.js';
 import { drawBackgroundSketches, drawMergeModeOverlay } from '../project/project-canvas-renderer.js';
 import { drawIssueHighlight } from '../project/issue-highlight.js';
@@ -200,20 +201,43 @@ function draw() {
     ? _edgeGrid.queryArray(visMinX, visMinY, visMaxX, visMaxY)
     : edges;
   let _edgesDrawn = 0;
-  for (let i = 0; i < _visibleEdges.length; i++) {
-    const edge = _visibleEdges[i];
-    const tn = edge.tail != null ? nodeMap.get(String(edge.tail)) : null;
-    const hn = edge.head != null ? nodeMap.get(String(edge.head)) : null;
-    if ((tn && tn._hidden) || (hn && hn._hidden)) continue;
-    if (!_useGridCull && tn && hn) {
-      const sx1 = tn.x * viewStretchX, sy1 = tn.y * viewStretchY;
-      const sx2 = hn.x * viewStretchX, sy2 = hn.y * viewStretchY;
-      const eMinX = Math.min(sx1, sx2), eMaxX = Math.max(sx1, sx2);
-      const eMinY = Math.min(sy1, sy2), eMaxY = Math.max(sy1, sy2);
-      if (eMaxX < visMinX || eMinX > visMaxX || eMaxY < visMinY || eMinY > visMaxY) continue;
+  const _useProgressiveEdges = _visibleEdges.length > 500;
+  if (_useProgressiveEdges) {
+    const viewCenterX = (visMinX + visMaxX) / 2;
+    const viewCenterY = (visMinY + visMaxY) / 2;
+    progressiveRenderer.begin(_visibleEdges, viewCenterX, viewCenterY, (edge) => {
+      const tn = edge.tail != null ? nodeMap.get(String(edge.tail)) : null;
+      const hn = edge.head != null ? nodeMap.get(String(edge.head)) : null;
+      if (tn && hn) return { x: (tn.x + hn.x) * 0.5 * viewStretchX, y: (tn.y + hn.y) * 0.5 * viewStretchY };
+      return { x: 0, y: 0 };
+    });
+    while (progressiveRenderer.hasMore()) {
+      const edge = progressiveRenderer.next();
+      const tn = edge.tail != null ? nodeMap.get(String(edge.tail)) : null;
+      const hn = edge.head != null ? nodeMap.get(String(edge.head)) : null;
+      if ((tn && tn._hidden) || (hn && hn._hidden)) continue;
+      drawEdge(edge);
+      _edgesDrawn++;
+      if (progressiveRenderer.overBudget()) break;
     }
-    drawEdge(edge);
-    _edgesDrawn++;
+    progressiveRenderer.finish();
+    if (!progressiveRenderer.isComplete) scheduleDraw();
+  } else {
+    for (let i = 0; i < _visibleEdges.length; i++) {
+      const edge = _visibleEdges[i];
+      const tn = edge.tail != null ? nodeMap.get(String(edge.tail)) : null;
+      const hn = edge.head != null ? nodeMap.get(String(edge.head)) : null;
+      if ((tn && tn._hidden) || (hn && hn._hidden)) continue;
+      if (!_useGridCull && tn && hn) {
+        const sx1 = tn.x * viewStretchX, sy1 = tn.y * viewStretchY;
+        const sx2 = hn.x * viewStretchX, sy2 = hn.y * viewStretchY;
+        const eMinX = Math.min(sx1, sx2), eMaxX = Math.max(sx1, sx2);
+        const eMinY = Math.min(sy1, sy2), eMaxY = Math.max(sy1, sy2);
+        if (eMaxX < visMinX || eMinX > visMaxX || eMaxY < visMinY || eMinY > visMaxY) continue;
+      }
+      drawEdge(edge);
+      _edgesDrawn++;
+    }
   }
 
   // Rubber-band preview when creating an edge
