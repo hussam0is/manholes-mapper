@@ -3358,22 +3358,48 @@ document.addEventListener('keydown', (e) => {
     // Only cycle when no modal/panel is open
     const anyModalOpen = [homePanel, startPanel, helpModal, adminModal, adminScreen, projectsScreen]
       .some(el => el && el.style.display !== 'none' && el.style.display !== '');
-    if (!anyModalOpen && nodes.length > 0) {
+    const totalItems = nodes.length + edges.length;
+    if (!anyModalOpen && totalItems > 0) {
       e.preventDefault();
       const direction = e.shiftKey ? -1 : 1;
-      const currentIndex = selectedNode ? nodes.indexOf(selectedNode) : -1;
+      // Build a unified list: nodes first, then edges
+      let currentIndex = -1;
+      if (selectedNode) {
+        currentIndex = nodes.indexOf(selectedNode);
+      } else if (selectedEdge) {
+        currentIndex = nodes.length + edges.indexOf(selectedEdge);
+      }
       let nextIndex;
       if (currentIndex < 0) {
-        nextIndex = direction === 1 ? 0 : nodes.length - 1;
+        nextIndex = direction === 1 ? 0 : totalItems - 1;
       } else {
-        nextIndex = (currentIndex + direction + nodes.length) % nodes.length;
+        nextIndex = (currentIndex + direction + totalItems) % totalItems;
       }
-      selectedNode = nodes[nextIndex];
-      selectedEdge = null;
-      centerOnNode(selectedNode);
+      if (nextIndex < nodes.length) {
+        // Select a node
+        selectedNode = nodes[nextIndex];
+        selectedEdge = null;
+        centerOnNode(selectedNode);
+        showToast(t('toasts.nodeSelected', selectedNode.id), 1200);
+      } else {
+        // Select an edge
+        const edgeIdx = nextIndex - nodes.length;
+        selectedEdge = edges[edgeIdx];
+        selectedNode = null;
+        // Center on edge midpoint
+        const tn = nodeMap.get(String(selectedEdge.tail));
+        const hn = nodeMap.get(String(selectedEdge.head));
+        if (tn && hn) {
+          const midX = (tn.x + hn.x) / 2;
+          const midY = (tn.y + hn.y) / 2;
+          const cw = canvas.width, ch = canvas.height;
+          viewTranslate.x = cw / 2 - viewScale * viewStretchX * midX;
+          viewTranslate.y = ch / 2 - viewScale * viewStretchY * midY;
+        }
+        showToast(t('toasts.edgeSelected', selectedEdge.tail, selectedEdge.head), 1200);
+      }
       renderDetails();
       scheduleDraw();
-      showToast(t('toasts.nodeSelected', selectedNode.id), 1200);
     }
   }
 
