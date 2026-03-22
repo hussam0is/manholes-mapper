@@ -193,6 +193,10 @@ export function renderSearchBar() {
 
 export function renderHome() {
   if (!S.homePanel || !S.sketchListEl) return;
+  // Capture focus before opening the panel (a11y)
+  if (S.homePanel.style.display === 'none' || S.homePanel.style.display === '') {
+    _preHomeFocusEl = document.activeElement;
+  }
   homeMode = 'sketches';
   try { localStorage.setItem('homeMode', 'sketches'); } catch { /* ignore */ }
 
@@ -440,9 +444,17 @@ export function hideHome(immediate) {
   } else {
     F.hidePanelAnimated(S.homePanel);
   }
+  // Restore focus to the element that triggered the panel (a11y)
+  if (_preHomeFocusEl && typeof _preHomeFocusEl.focus === 'function') {
+    try { _preHomeFocusEl.focus(); } catch (_) {}
+    _preHomeFocusEl = null;
+  }
   // Deferred update: after panel animation completes, show empty state if applicable
   setTimeout(() => F.updateCanvasEmptyState(), 350);
 }
+
+// Track the element that had focus before the home panel opened
+let _preHomeFocusEl = null;
 
 // ── Projects Homepage & Project Canvas ────────────────────────────────────
 

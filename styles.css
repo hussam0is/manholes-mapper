@@ -2587,6 +2587,80 @@ canvas {
   white-space: nowrap;
 }
 
+/* Custom select bottom-sheet (mobile replacement for native <select>) */
+.custom-select-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0,0,0,0);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+.custom-select-overlay--open {
+  background: rgba(0,0,0,0.4);
+}
+.custom-select-overlay--closing {
+  background: rgba(0,0,0,0);
+}
+.custom-select-sheet {
+  width: 100%;
+  max-width: 480px;
+  max-height: 60vh;
+  background: var(--color-surface, #fff);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+  overflow: hidden;
+}
+.custom-select-overlay--open .custom-select-sheet {
+  transform: translateY(0);
+}
+.custom-select-overlay--closing .custom-select-sheet {
+  transform: translateY(100%);
+}
+.custom-select-sheet__title {
+  padding: 14px 16px 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text, #222);
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+}
+.custom-select-sheet__list {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 0 max(8px, env(safe-area-inset-bottom));
+}
+.custom-select-sheet__item {
+  width: 100%;
+  text-align: start;
+  padding: 12px 16px;
+  font-size: 15px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text, #222);
+  transition: background 0.1s;
+}
+.custom-select-sheet__item:active {
+  background: var(--color-surface-variant, #f3f4f6);
+}
+.custom-select-sheet__item--selected {
+  color: var(--color-primary, #3b82f6);
+  font-weight: 600;
+  background: var(--color-primary-light, #eff6ff);
+}
+.custom-select-sheet__item--selected::before {
+  content: '✓';
+  margin-inline-end: 8px;
+  font-weight: 700;
+}
+
 /* Slide-in drawer behavior on tablet/mobile; docked on wide screens */
 .drawer {
   position: relative;
