@@ -148,6 +148,8 @@ import { SpatialGrid, buildNodeGrid, buildEdgeGrid } from '../utils/spatial-grid
 import { renderCache } from '../utils/render-cache.js';
 import { renderPerf } from '../utils/render-perf.js';
 import { progressiveRenderer } from '../utils/progressive-renderer.js';
+import { S, F } from './shared-state.js';
+import { initGnssHandlers, setLiveMeasureMode, syncLiveMeasureToggleUI, updateLocationStatus, openGnssPointCaptureDialog, handleGnssPointCapture, vibrateForFixQuality, gpsQuickCapture, createNodeFromMeasurement, getNextEdgeId, centerOnGpsLocation, centerNewSketchOnUserLocation, toggleUserLocationTracking, updateGpsQuickCaptureBtn } from './gnss-handlers.js';
 
 /**
  * Get the current username from authentication or return a default
@@ -723,6 +725,78 @@ let adminConfig = (() => {
 function saveAdminConfig() {
   localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(adminConfig));
 }
+
+// ─── Shared state proxy for extracted modules ───────────────────────────────
+// Populated immediately so that all imported extracted modules (gnss-handlers,
+// tsc3-handlers, etc.) can read/write main.js local variables through S.X.
+// Getters ensure we always return the current value; setters update the local var.
+/* eslint-disable no-unused-vars */
+(function _initStateProxy() {
+  const def = (name, get, set) => ({
+    get, set, enumerable: true, configurable: true,
+  });
+  Object.defineProperties(S, {
+    nodes:                    def('nodes',                    () => nodes,                    (v) => { nodes = v; }),
+    edges:                    def('edges',                    () => edges,                    (v) => { edges = v; }),
+    nextNodeId:               def('nextNodeId',               () => nextNodeId,               (v) => { nextNodeId = v; }),
+    selectedNode:             def('selectedNode',             () => selectedNode,             (v) => { selectedNode = v; }),
+    selectedEdge:             def('selectedEdge',             () => selectedEdge,             (v) => { selectedEdge = v; }),
+    isDragging:               def('isDragging',               () => isDragging,               (v) => { isDragging = v; }),
+    dragOffset:               def('dragOffset',               () => dragOffset,               (v) => { dragOffset = v; }),
+    isDraggingDanglingEnd:    def('isDraggingDanglingEnd',    () => isDraggingDanglingEnd,    (v) => { isDraggingDanglingEnd = v; }),
+    draggingDanglingEdge:     def('draggingDanglingEdge',     () => draggingDanglingEdge,     (v) => { draggingDanglingEdge = v; }),
+    draggingDanglingType:     def('draggingDanglingType',     () => draggingDanglingType,     (v) => { draggingDanglingType = v; }),
+    hoveredDanglingEndpoint:  def('hoveredDanglingEndpoint',  () => hoveredDanglingEndpoint,  (v) => { hoveredDanglingEndpoint = v; }),
+    danglingSnapTarget:       def('danglingSnapTarget',       () => danglingSnapTarget,       (v) => { danglingSnapTarget = v; }),
+    currentMode:              def('currentMode',              () => currentMode,              (v) => { currentMode = v; }),
+    pendingEdgeTail:          def('pendingEdgeTail',          () => pendingEdgeTail,          (v) => { pendingEdgeTail = v; }),
+    pendingEdgeStartPosition: def('pendingEdgeStartPosition', () => pendingEdgeStartPosition, (v) => { pendingEdgeStartPosition = v; }),
+    creationDate:             def('creationDate',             () => creationDate,             (v) => { creationDate = v; }),
+    currentSketchId:          def('currentSketchId',          () => currentSketchId,          (v) => { currentSketchId = v; }),
+    currentSketchName:        def('currentSketchName',        () => currentSketchName,        (v) => { currentSketchName = v; }),
+    currentProjectId:         def('currentProjectId',         () => currentProjectId,         (v) => { currentProjectId = v; }),
+    currentInputFlowConfig:   def('currentInputFlowConfig',   () => currentInputFlowConfig,   (v) => { currentInputFlowConfig = v; }),
+    availableProjects:        def('availableProjects',        () => availableProjects,        (v) => { availableProjects = v; }),
+    autosaveEnabled:          def('autosaveEnabled',          () => autosaveEnabled,          (v) => { autosaveEnabled = v; }),
+    lastSurveyNodeId:         def('lastSurveyNodeId',         () => lastSurveyNodeId,         (v) => { lastSurveyNodeId = v; }),
+    surveyAutoConnect:        def('surveyAutoConnect',        () => surveyAutoConnect,        (v) => { surveyAutoConnect = v; }),
+    currentLang:              def('currentLang',              () => currentLang,              (v) => { currentLang = v; }),
+    pendingEdgePreview:       def('pendingEdgePreview',       () => pendingEdgePreview,       (v) => { pendingEdgePreview = v; }),
+    viewScale:                def('viewScale',                () => viewScale,                (v) => { viewScale = v; }),
+    drawScheduled:            def('drawScheduled',            () => drawScheduled,            (v) => { drawScheduled = v; }),
+    viewTranslate:            def('viewTranslate',            () => viewTranslate,            (v) => { viewTranslate = v; }),
+    viewStretchX:             def('viewStretchX',             () => viewStretchX,             (v) => { viewStretchX = v; }),
+    viewStretchY:             def('viewStretchY',             () => viewStretchY,             (v) => { viewStretchY = v; }),
+    sizeScale:                def('sizeScale',                () => sizeScale,                (v) => { sizeScale = v; }),
+    autoSizeEnabled:          def('autoSizeEnabled',          () => autoSizeEnabled,          (v) => { autoSizeEnabled = v; }),
+    sizeVS:                   def('sizeVS',                   () => sizeVS,                   (v) => { sizeVS = v; }),
+    isPinching:               def('isPinching',               () => isPinching,               (v) => { isPinching = v; }),
+    isPanning:                def('isPanning',                () => isPanning,                (v) => { isPanning = v; }),
+    spacePanning:             def('spacePanning',             () => spacePanning,             (v) => { spacePanning = v; }),
+    panStart:                 def('panStart',                 () => panStart,                 (v) => { panStart = v; }),
+    translateStart:           def('translateStart',           () => translateStart,           (v) => { translateStart = v; }),
+    highlightedHalfEdge:      def('highlightedHalfEdge',      () => highlightedHalfEdge,      (v) => { highlightedHalfEdge = v; }),
+    coordinatesMap:           def('coordinatesMap',           () => coordinatesMap,           (v) => { coordinatesMap = v; }),
+    coordinatesEnabled:       def('coordinatesEnabled',       () => coordinatesEnabled,       (v) => { coordinatesEnabled = v; }),
+    originalNodePositions:    def('originalNodePositions',    () => originalNodePositions,    (v) => { originalNodePositions = v; }),
+    geoNodePositions:         def('geoNodePositions',         () => geoNodePositions,         (v) => { geoNodePositions = v; }),
+    coordinateScale:          def('coordinateScale',          () => coordinateScale,          (v) => { coordinateScale = v; }),
+    liveMeasureEnabled:       def('liveMeasureEnabled',       () => liveMeasureEnabled,       (v) => { liveMeasureEnabled = v; }),
+    mapLayerEnabled:          def('mapLayerEnabled',          () => mapLayerEnabled,          (v) => { mapLayerEnabled = v; }),
+    adminConfig:              def('adminConfig',              () => adminConfig,              (v) => { adminConfig = v; }),
+    _nodeMapDirty:            def('_nodeMapDirty',            () => _nodeMapDirty,            (v) => { _nodeMapDirty = v; }),
+    _spatialGridDirty:        def('_spatialGridDirty',        () => _spatialGridDirty,        (v) => { _spatialGridDirty = v; }),
+    _dataVersion:             def('_dataVersion',             () => _dataVersion,             (v) => { _dataVersion = v; }),
+    _issueSetsDirty:          def('_issueSetsDirty',          () => _issueSetsDirty,          (v) => { _issueSetsDirty = v; }),
+    _liveMeasureFirstFixDone: def('_liveMeasureFirstFixDone', () => _liveMeasureFirstFixDone, (v) => { _liveMeasureFirstFixDone = v; }),
+    __wizardActiveTab:        def('__wizardActiveTab',        () => __wizardActiveTab,        (v) => { __wizardActiveTab = v; }),
+    // DOM refs used by extracted modules
+    canvas:                   def('canvas',                   () => canvas,                   null),
+    ctx:                      def('ctx',                      () => ctx,                      null),
+  });
+})();
+/* eslint-enable no-unused-vars */
+// ────────────────────────────────────────────────────────────────────────────
 
 // === Field History Tracking System ===
 // Tracks user field value selections to provide smart sorting in dropdowns
@@ -11357,57 +11431,10 @@ if (mobileLiveMeasureToggle) {
   });
 }
 
-// Subscribe to gnssState position updates for status and redraw.
-// Also auto-center on first GPS fix when Live Measure is enabled and the sketch has
-// no ITM-anchored coordinates yet (e.g. empty sketch or default Tel Aviv reference
-// point). Without this the marker renders off-screen because the default reference
-// point may be far from the user's actual location.
-let _liveMeasureFirstFixDone = false;
-gnssState.on('position', (pos) => {
-  updateLocationStatus();
-  updateGpsQuickCaptureBtn();
-  scheduleDraw();
-
-  if (liveMeasureEnabled && !_liveMeasureFirstFixDone && pos && pos.isValid && coordinatesMap.size === 0) {
-    _liveMeasureFirstFixDone = true;
-    const itm = wgs84ToItm(pos.lat, pos.lon);
-    const rect = canvas.getBoundingClientRect();
-    setMapReferencePoint({
-      itm: { x: itm.x, y: itm.y },
-      canvas: { x: rect.width / 2, y: rect.height / 2 }
-    });
-    centerOnGpsLocation(pos.lat, pos.lon);
-  }
-});
-
-// GPS Quick Capture FAB wiring
-const gpsQuickCaptureBtn = document.getElementById('gpsQuickCaptureBtn');
-if (gpsQuickCaptureBtn) {
-  gpsQuickCaptureBtn.addEventListener('click', () => {
-    gpsQuickCapture();
-  });
-}
-
-/**
- * Update Take Measure button: dynamic color based on fix quality, pulse animation
- */
-function updateGpsQuickCaptureBtn() {
-  if (!gpsQuickCaptureBtn) return;
-  const pos = gnssState.getPosition();
-  const hasValidFix = pos && pos.isValid;
-  gpsQuickCaptureBtn.disabled = !hasValidFix;
-
-  if (hasValidFix) {
-    const color = FIX_COLORS[pos.fixQuality] || FIX_COLORS[0];
-    gpsQuickCaptureBtn.style.setProperty('--fix-color', color);
-    gpsQuickCaptureBtn.classList.add('has-fix');
-    // Pulse for high-quality fixes (RTK Fixed/Float, DGPS)
-    gpsQuickCaptureBtn.classList.toggle('precision-pulse', pos.fixQuality >= 2);
-  } else {
-    gpsQuickCaptureBtn.classList.remove('has-fix', 'precision-pulse');
-    gpsQuickCaptureBtn.style.removeProperty('--fix-color');
-  }
-}
+// [Moved to src/legacy/gnss-handlers.js → initGnssHandlers()]
+// gnssState 'position' subscription, gpsQuickCaptureBtn click wiring,
+// and updateGpsQuickCaptureBtn are now in gnss-handlers.js.
+let _liveMeasureFirstFixDone = false; // kept here so S proxy getter/setter still works
 
 // ============================================
 // Reference Layers UI Controls
@@ -12236,6 +12263,30 @@ async function init() {
   renderDetails();
 }
 
+// ─── Function registry for extracted modules ────────────────────────────────
+// Set here (after all function definitions) so extracted modules can call
+// cross-module functions via F.X() without circular imports.
+F.scheduleDraw            = (...a) => scheduleDraw(...a);
+F.saveToStorage           = (...a) => saveToStorage(...a);
+F.renderDetails           = (...a) => renderDetails(...a);
+F.showToast               = (...a) => showToast(...a);
+F.applyCoordinatesIfEnabled = (...a) => applyCoordinatesIfEnabled(...a);
+F.createNode              = (...a) => createNode(...a);
+F.createEdge              = (...a) => createEdge(...a);
+F.computeNodeTypes        = (...a) => computeNodeTypes(...a);
+F.syncCoordinatesToggleUI = (...a) => syncCoordinatesToggleUI(...a);
+F.saveCoordinatesEnabled  = (...a) => saveCoordinatesEnabled(...a);
+F.updateGpsQuickCaptureBtn = (...a) => updateGpsQuickCaptureBtn(...a);
+F.zoomToFit               = (...a) => zoomToFit(...a);
+F.recenterView            = (...a) => recenterView(...a);
+F.updateLocationStatus    = (...a) => updateLocationStatus(...a);
+F.syncLiveMeasureToggleUI = (...a) => syncLiveMeasureToggleUI(...a);
+F.setLiveMeasureMode      = (...a) => setLiveMeasureMode(...a);
+F.updateSketchNameDisplay = (...a) => updateSketchNameDisplay(...a);
+F.t                       = (...a) => t(...a);
+F.getNextNodeId           = () => nextNodeId++;
+// ────────────────────────────────────────────────────────────────────────────
+
 init();
 
 // Listen for theme changes and redraw canvas
@@ -12264,437 +12315,8 @@ window.addEventListener('unhandledrejection', (e) => {
 // ============================================
 // GNSS / Live Measure Mode Integration
 // ============================================
-
-/**
- * Enable or disable Live Measure mode (unified location system).
- * Starts/stops the browser geolocation adapter and feeds positions into gnssState.
- * @param {boolean} enabled
- */
-function setLiveMeasureMode(enabled) {
-  if (enabled) {
-    // Auto-enable coordinates display when Live Measure is turned on
-    if (!coordinatesEnabled) {
-      coordinatesEnabled = true;
-      saveCoordinatesEnabled(true);
-      syncCoordinatesToggleUI();
-    }
-
-    // Skip browser adapter when TMM (or another managed adapter) is already connected
-    const connType = gnssState.connectionType;
-    if (connType !== 'tmm' && connType !== 'bluetooth' && connType !== 'wifi' && connType !== 'mock') {
-      // Start browser geolocation → gnssState bridge
-      const started = startBrowserLocationAdapter();
-      if (!started) {
-        showToast(t('location.notSupported') || 'Location not supported');
-        liveMeasureEnabled = false;
-        gnssState.setLiveMeasureEnabled(false);
-        syncLiveMeasureToggleUI();
-        return;
-      }
-    }
-
-    liveMeasureEnabled = true;
-    gnssState.setLiveMeasureEnabled(true);
-  } else {
-    // Stop browser adapter only if it was the active one
-    const connType = gnssState.connectionType;
-    if (!connType || connType === 'browser') {
-      stopBrowserLocationAdapter();
-    }
-    liveMeasureEnabled = false;
-    gnssState.setLiveMeasureEnabled(false);
-    _liveMeasureFirstFixDone = false; // Allow auto-center on next enable
-  }
-
-  syncLiveMeasureToggleUI();
-  updateLocationStatus();
-  scheduleDraw();
-}
-
-/**
- * Sync Live Measure toggle UI state across desktop and mobile checkboxes
- */
-function syncLiveMeasureToggleUI() {
-  if (liveMeasureToggle) {
-    liveMeasureToggle.checked = liveMeasureEnabled;
-  }
-  if (mobileLiveMeasureToggle) {
-    mobileLiveMeasureToggle.checked = liveMeasureEnabled;
-  }
-  // Show/hide GPS Quick Capture FAB
-  const fab = document.getElementById('gpsQuickCaptureBtn');
-  if (fab) {
-    fab.style.display = liveMeasureEnabled ? '' : 'none';
-    if (liveMeasureEnabled) updateGpsQuickCaptureBtn();
-  }
-}
-
-/**
- * Update location status display in menu toggles
- */
-function updateLocationStatus() {
-  const statusEl = document.getElementById('locationStatus');
-  const mobileStatusEl = document.getElementById('mobileLocationStatus');
-
-  let text = '';
-  if (liveMeasureEnabled) {
-    const pos = gnssState.getPosition();
-    if (pos && pos.isValid) {
-      text = pos.fixLabel || 'Active';
-    } else {
-      text = t('liveMeasure.waiting') || 'Waiting...';
-    }
-  }
-
-  if (statusEl) statusEl.textContent = text;
-  if (mobileStatusEl) mobileStatusEl.textContent = text;
-}
-
-/**
- * Open the GNSS point capture dialog
- * Called when user clicks the "Capture Point" button
- */
-function openGnssPointCaptureDialog() {
-  openPointCaptureDialog(
-    nodes,
-    (captureData) => {
-      handleGnssPointCapture(captureData);
-    },
-    () => {
-      // On cancel - nothing to do
-    }
-  );
-}
-
-/**
- * Handle a captured GNSS point
- * @param {object} captureData - Data from point capture dialog
- */
-function handleGnssPointCapture(captureData) {
-  let targetNodeId = captureData.nodeId;
-  
-  // Create new node if requested
-  if (captureData.createNewNode) {
-    const newId = getNextNodeId();
-    const newNode = {
-      id: newId,
-      x: 400, // Will be updated by coordinates
-      y: 300,
-      type: 'type1',
-      nodeType: 'Manhole',
-      hasCoordinates: true
-    };
-    nodes.push(newNode);
-    _nodeMapDirty = true; _spatialGridDirty = true; _dataVersion++;
-    targetNodeId = newId;
-  }
-  
-  // Store coordinates
-  coordinatesMap.set(String(targetNodeId), {
-    x: captureData.itm.x,
-    y: captureData.itm.y,
-    z: captureData.position.alt || 0
-  });
-  saveCoordinatesToStorage(coordinatesMap);
-  
-  // Mark the node as having coordinates
-  const node = nodes.find(n => String(n.id) === String(targetNodeId));
-  if (node) {
-    node.hasCoordinates = true;
-    node._hidden = false;
-    node.surveyX = captureData.itm.x;
-    node.surveyY = captureData.itm.y;
-    node.surveyZ = captureData.position.alt || 0;
-    node.gnssFixQuality = captureData.position.fixQuality;
-    node.gnssHdop = captureData.position.hdop;
-    node.measure_precision = captureData.position.accuracy || null;
-    // Measurement metadata
-    node.measuredAt = captureData.capturedAt || Date.now();
-    const authUser = window.authGuard?.getAuthState?.()?.user;
-    node.measuredBy = authUser?.name || authUser?.email || null;
-  }
-
-  // Create edge if requested
-  if (captureData.createEdge && captureData.edgeFromNode) {
-    const newEdge = {
-      id: getNextEdgeId(),
-      tail: captureData.edgeFromNode,
-      head: targetNodeId,
-      edge_type: captureData.edgeType || EDGE_TYPES[0],
-      material: 0,
-      line_diameter: null
-    };
-    edges.push(newEdge);
-  }
-  
-  // Update gnss state with the captured point
-  gnssState?.capturePoint(targetNodeId, {
-    itm: captureData.itm,
-    fixQuality: captureData.position.fixQuality,
-    hdop: captureData.position.hdop
-  });
-  
-  // Re-apply coordinates to update node positions (keep current view — don't recenter)
-  applyCoordinatesIfEnabled({ recenter: false });
-
-  // Select the node (reset wizard so RTK badge and updated tabs are shown)
-  __wizardActiveTab = null;
-  selectedNode = node;
-  selectedEdge = null;
-  renderDetails();
-
-  scheduleDraw();
-  showToast(t('gpsCapture.pointCaptured', targetNodeId));
-}
-
-/**
- * Vibrate the phone based on GNSS fix quality
- * @param {number} fixQuality - GNSS fix quality value
- */
-function vibrateForFixQuality(fixQuality) {
-  if (!navigator.vibrate) return;
-  if (fixQuality === 4) {
-    // RTK Fixed — single buzz
-    navigator.vibrate(100);
-  } else if (fixQuality === 5) {
-    // RTK Float — two buzzes
-    navigator.vibrate([100, 80, 100]);
-  } else {
-    // GPS/DGPS — three buzzes
-    navigator.vibrate([100, 80, 100, 80, 100]);
-  }
-}
-
-/**
- * GPS Quick Capture — create a node at the current GPS position.
- * Delegates to precision-gated measurement flow when available,
- * otherwise falls back to instant capture.
- */
-function gpsQuickCapture() {
-  const position = gnssState.getPosition();
-  if (!position || !position.isValid) {
-    showToast(t('gpsCapture.noFix') || 'No GPS fix available');
-    return;
-  }
-
-  // Use precision-gated flow if the orchestrator is wired up
-  if (typeof window.__startPrecisionMeasure === 'function') {
-    window.__startPrecisionMeasure();
-    return;
-  }
-
-  // Fallback: instant capture (legacy behavior)
-  createNodeFromMeasurement({ position });
-}
-
-/**
- * Create a node from a measurement result (used by both instant capture
- * and precision-gated flow).
- * @param {object} result - { position: { lat, lon, alt, fixQuality, fixLabel, hdop, satellites, accuracy, hrms, vrms } }
- */
-function createNodeFromMeasurement(result) {
-  const position = result.position;
-
-  // 1. Get reference point for coordinate conversion
-  const referencePoint = getMapReferencePoint();
-  if (!referencePoint) {
-    showToast(t('location.enableCoordinatesFirst') || 'Enable coordinates first');
-    return;
-  }
-
-  // 2. Convert GPS → canvas world coords
-  const canvasPos = gnssToCanvas(position, referencePoint, coordinateScale);
-  if (!canvasPos) {
-    showToast(t('gpsCapture.conversionError') || 'Could not convert GPS position');
-    return;
-  }
-
-  // 3. Create node at the canvas position (gets auto-numbered ID, admin defaults)
-  const node = createNode(canvasPos.x, canvasPos.y);
-
-  // 4. Set nodeType based on current drawing mode
-  if (currentMode === 'home') {
-    node.nodeType = 'Home';
-  } else if (currentMode === 'drainage') {
-    node.nodeType = 'Drainage';
-  } else {
-    node.nodeType = 'Manhole';
-  }
-
-  // 5. Store survey coordinates
-  const itm = wgs84ToItm(position.lat, position.lon);
-  node.hasCoordinates = true;
-  node._hidden = false;
-  node.surveyX = itm.x;
-  node.surveyY = itm.y;
-  node.surveyZ = position.alt || 0;
-  node.gnssFixQuality = position.fixQuality;
-  node.gnssHdop = position.hdop;
-  node.measure_precision = position.hrms || position.accuracy || null;
-  // Measurement metadata
-  node.measuredAt = Date.now();
-  const qcAuthUser = window.authGuard?.getAuthState?.()?.user;
-  node.measuredBy = qcAuthUser?.name || qcAuthUser?.email || null;
-  coordinatesMap.set(String(node.id), {
-    x: itm.x,
-    y: itm.y,
-    z: position.alt || 0
-  });
-  saveCoordinatesToStorage(coordinatesMap);
-
-  // 6. Auto-create edge from previously captured node (chain pattern)
-  const lastId = gnssState.lastCapturedNodeId;
-  if (lastId != null) {
-    const prevNode = nodes.find(n => String(n.id) === String(lastId));
-    if (prevNode) {
-      createEdge(String(lastId), String(node.id));
-    }
-  }
-
-  // 7. Update gnss state
-  gnssState.capturePoint(node.id, {
-    itm,
-    fixQuality: position.fixQuality,
-    hdop: position.hdop
-  });
-
-  // 8. Position node correctly if coordinate mode is on (keep current view — don't recenter)
-  applyCoordinatesIfEnabled({ recenter: false });
-
-  // 9. Vibrate based on fix quality
-  vibrateForFixQuality(position.fixQuality);
-
-  // 10. Select node, show toast, save, redraw (reset wizard so RTK badge shows)
-  __wizardActiveTab = null;
-  selectedNode = node;
-  selectedEdge = null;
-  renderDetails();
-
-  const fixLabels = { 4: 'RTK Fixed', 5: 'RTK Float', 2: 'DGPS', 1: 'GPS' };
-  const fixLabel = fixLabels[position.fixQuality] || position.fixLabel || 'GPS';
-  showToast(t('gpsCapture.captured', node.nodeType, node.id, fixLabel)
-    || `Captured ${node.nodeType} #${node.id} (${fixLabel})`);
-
-  computeNodeTypes();
-  saveToStorage();
-  scheduleDraw();
-}
-
-// Expose for precision-measure orchestrator in main-entry.js
-window.__createNodeFromMeasurement = createNodeFromMeasurement;
-
-/**
- * Get the next available edge ID
- */
-function getNextEdgeId() {
-  if (edges.length === 0) return 1;
-  return Math.max(...edges.map(e => typeof e.id === 'number' ? e.id : 0)) + 1;
-}
-
-/**
- * Center the view on a GPS location (lat/lon)
- * @param {number} lat - Latitude
- * @param {number} lon - Longitude
- * @returns {boolean} True if centering was successful
- */
-function centerOnGpsLocation(lat, lon) {
-  const referencePoint = getMapReferencePoint();
-  if (!referencePoint) {
-    showToast(t('location.enableCoordinatesFirst') || 'Enable coordinates first');
-    return false;
-  }
-  
-  const position = { lat, lon };
-  const rect = canvas.getBoundingClientRect();
-  const newTranslate = calculateCenterOnUser(
-    position,
-    referencePoint,
-    coordinateScale,
-    rect.width,
-    rect.height,
-    viewScale,
-    viewStretchX,
-    viewStretchY
-  );
-  
-  if (newTranslate) {
-    viewTranslate.x = newTranslate.x;
-    viewTranslate.y = newTranslate.y;
-    scheduleDraw();
-    return true;
-  }
-  return false;
-}
-
-/**
- * Center a new empty sketch on the user's mobile location.
- * Uses the active GNSS position if available, otherwise does a one-shot geolocation request.
- * Silently fails if location is unavailable.
- */
-async function centerNewSketchOnUserLocation() {
-  try {
-    let lat, lon;
-
-    // If Live Measure is active, use the already-streaming GNSS position
-    if (isBrowserLocationActive()) {
-      const pos = gnssState.getPosition();
-      if (pos && pos.isValid) {
-        lat = pos.lat;
-        lon = pos.lon;
-      }
-    }
-
-    // Otherwise do a one-shot geolocation request
-    if (lat == null) {
-      if (!navigator.geolocation) return;
-      const position = await new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 30000
-        });
-      });
-      lat = position.coords.latitude;
-      lon = position.coords.longitude;
-    }
-
-    // Convert to ITM and set reference point at canvas center
-    const itm = wgs84ToItm(lat, lon);
-    const rect = canvas.getBoundingClientRect();
-    setMapReferencePoint({
-      itm: { x: itm.x, y: itm.y },
-      canvas: { x: rect.width / 2, y: rect.height / 2 }
-    });
-
-    // Center the view on this position
-    centerOnGpsLocation(lat, lon);
-  } catch (err) {
-    console.debug('[Location] Could not center new sketch on user location:', err.message);
-  }
-}
-
-/**
- * Toggle Live Measure mode (unified location tracking).
- * Called from menu event delegation and exposed globally.
- * @returns {boolean} True if now enabled
- */
-function toggleUserLocationTracking() {
-  const newState = !liveMeasureEnabled;
-  setLiveMeasureMode(newState);
-
-  if (newState && liveMeasureEnabled) {
-    showToast(t('liveMeasure.enabled') || 'Live measurement enabled');
-    // Center on position if available
-    const pos = gnssState.getPosition();
-    if (pos && pos.isValid) {
-      centerOnGpsLocation(pos.lat, pos.lon);
-    }
-  } else if (!newState) {
-    showToast(t('liveMeasure.disabled') || 'Live measurement disabled');
-  }
-
-  return liveMeasureEnabled;
-}
+// [Extracted to src/legacy/gnss-handlers.js]
+initGnssHandlers();
 
 // Expose functions globally for GNSS module integration and programmatic control
 window.scheduleDraw = scheduleDraw;
@@ -12706,6 +12328,7 @@ window.setLiveMeasureMode = setLiveMeasureMode;
 window.openGnssPointCaptureDialog = openGnssPointCaptureDialog;
 window.centerOnGpsLocation = centerOnGpsLocation;
 window.toggleUserLocationTracking = toggleUserLocationTracking;
+window.__createNodeFromMeasurement = createNodeFromMeasurement;
 
 // ============================================
 // TSC3 Survey Device Integration
