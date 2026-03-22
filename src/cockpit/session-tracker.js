@@ -265,6 +265,20 @@ function getStreak() {
 /**
  * Get session stats for external use
  */
+/**
+ * Reset internal state. Used by tests to allow re-initialization.
+ */
+export function _resetForTesting() {
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = null;
+  initialized = false;
+  sessionStart = 0;
+  nodesAtStart = 0;
+  edgesAtStart = 0;
+  currentNodeCount = 0;
+  currentEdgeCount = 0;
+}
+
 export function getSessionStats() {
   const elapsed = Math.floor((Date.now() - sessionStart) / 1000);
   let nodesPlaced = 0;

@@ -1,14 +1,22 @@
 /**
  * Unit tests for src/project/project-canvas-renderer.js
  *
+ * The renderer uses an offscreen canvas cache: background sketches are
+ * drawn once into an offscreen buffer and blitted to the main ctx via
+ * drawImage(). The tests must mock OffscreenCanvas/getContext to verify
+ * that rendering logic runs correctly.
+ *
  * Covers:
- * - drawBackgroundSketches: node Map caching across frames (WeakMap)
- * - drawBackgroundSketches: viewport culling for edges and nodes
- * - drawBackgroundSketches: empty sketch handling
+ * - drawBackgroundSketches: empty/null input handling
+ * - drawBackgroundSketches: offscreen canvas creation and cache invalidation
+ * - drawBackgroundSketches: node drawing (circle, rectangle, house shape)
+ * - drawBackgroundSketches: edge batching
+ * - drawBackgroundSketches: alpha settings per sketch selection
  * - drawMergeModeOverlay: distance-squared optimization in closest-node search
+ * - drawMergeModeOverlay: viewport culling
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock merge-mode before importing renderer
 vi.mock('../../src/project/merge-mode.js', () => ({
@@ -36,11 +44,9 @@ vi.mock('../../src/state/constants.js', () => ({
   NODE_RADIUS: 20,
 }));
 
-import { drawBackgroundSketches, drawMergeModeOverlay } from '../../src/project/project-canvas-renderer.js';
-import { isMergeModeEnabled, getNearbyNodes, getCrossMergeIssues } from '../../src/project/merge-mode.js';
+// ── Mock OffscreenCanvas to capture drawing calls ────────────────────────────
 
-// ── Mock canvas context ──────────────────────────────────────────────────────
-
+/** Create a mock 2D context that records all calls */
 function createMockCtx() {
   return {
     save: vi.fn(),
@@ -55,7 +61,13 @@ function createMockCtx() {
     fillRect: vi.fn(),
     strokeRect: vi.fn(),
     fillText: vi.fn(),
+    strokeText: vi.fn(),
+    clearRect: vi.fn(),
+    drawImage: vi.fn(),
     setLineDash: vi.fn(),
+    scale: vi.fn(),
+    translate: vi.fn(),
+    measureText: vi.fn(() => ({ width: 10 })),
     font: '',
     fillStyle: '',
     strokeStyle: '',
@@ -63,8 +75,43 @@ function createMockCtx() {
     globalAlpha: 1,
     textAlign: 'start',
     textBaseline: 'alphabetic',
+    lineCap: 'butt',
+    lineJoin: 'miter',
   } as unknown as CanvasRenderingContext2D;
 }
+
+// Track the offscreen context separately so we can inspect what was drawn to it
+let _offscreenCtx: ReturnType<typeof createMockCtx>;
+
+// Must set up OffscreenCanvas mock BEFORE importing the module under test
+const _origOffscreen = (globalThis as any).OffscreenCanvas;
+beforeEach(() => {
+  _offscreenCtx = createMockCtx();
+  (globalThis as any).OffscreenCanvas = class MockOffscreenCanvas {
+    width: number;
+    height: number;
+    constructor(w: number, h: number) { this.width = w; this.height = h; }
+    getContext() { return _offscreenCtx; }
+  };
+});
+
+afterEach(() => {
+  if (_origOffscreen) {
+    (globalThis as any).OffscreenCanvas = _origOffscreen;
+  } else {
+    delete (globalThis as any).OffscreenCanvas;
+  }
+});
+
+// We need a fresh module for each test to reset module-level cache vars
+// Use dynamic import + vi.resetModules() pattern
+async function freshImport() {
+  vi.resetModules();
+  const mod = await import('../../src/project/project-canvas-renderer.js');
+  return mod;
+}
+
+import { isMergeModeEnabled, getNearbyNodes, getCrossMergeIssues } from '../../src/project/merge-mode.js';
 
 // ── Test data ────────────────────────────────────────────────────────────────
 
@@ -86,46 +133,51 @@ const defaultOpts = {
 // ── Tests ────────────────────────────────────────────────────────────────────
 
 describe('project-canvas-renderer', () => {
-  let ctx: CanvasRenderingContext2D;
+  let mainCtx: ReturnType<typeof createMockCtx>;
 
   beforeEach(() => {
-    ctx = createMockCtx();
+    mainCtx = createMockCtx();
   });
 
   describe('drawBackgroundSketches()', () => {
-    it('does nothing for empty sketches array', () => {
-      drawBackgroundSketches(ctx, [], defaultOpts);
-      expect(ctx.save).not.toHaveBeenCalled();
+    it('does nothing for empty sketches array', async () => {
+      const { drawBackgroundSketches } = await freshImport();
+      drawBackgroundSketches(mainCtx, [], defaultOpts);
+      // No drawImage call — nothing to blit
+      expect(mainCtx.drawImage).not.toHaveBeenCalled();
     });
 
-    it('does nothing for null sketches', () => {
-      drawBackgroundSketches(ctx, null as any, defaultOpts);
-      expect(ctx.save).not.toHaveBeenCalled();
+    it('does nothing for null sketches', async () => {
+      const { drawBackgroundSketches } = await freshImport();
+      drawBackgroundSketches(mainCtx, null as any, defaultOpts);
+      expect(mainCtx.drawImage).not.toHaveBeenCalled();
     });
 
-    it('skips sketches with no nodes and no edges', () => {
+    it('skips sketches with no nodes and no edges', async () => {
+      const { drawBackgroundSketches } = await freshImport();
       const sketches = [makeSketch('empty', [], [])];
-      drawBackgroundSketches(ctx, sketches, defaultOpts);
-      // save/restore are called for the outer context, but no drawing happens
-      expect(ctx.save).toHaveBeenCalledOnce();
-      expect(ctx.restore).toHaveBeenCalledOnce();
-      // No arc or rect calls for nodes
-      expect(ctx.arc).not.toHaveBeenCalled();
+      drawBackgroundSketches(mainCtx, sketches, defaultOpts);
+      // No nodes → bounding box is empty → no offscreen render → no drawImage
+      expect(mainCtx.drawImage).not.toHaveBeenCalled();
     });
 
-    it('draws nodes for non-empty sketches', () => {
+    it('draws nodes for non-empty sketches to offscreen canvas', async () => {
+      const { drawBackgroundSketches } = await freshImport();
       const sketches = [
         makeSketch('s1', [
           { id: '1', x: 10, y: 20 },
           { id: '2', x: 30, y: 40 },
         ], []),
       ];
-      drawBackgroundSketches(ctx, sketches, defaultOpts);
-      // Should draw 2 nodes (default circle: arc call)
-      expect(ctx.arc).toHaveBeenCalledTimes(2);
+      drawBackgroundSketches(mainCtx, sketches, defaultOpts);
+      // Should blit the offscreen canvas to main ctx
+      expect(mainCtx.drawImage).toHaveBeenCalled();
+      // Offscreen ctx should have arc calls for 2 nodes
+      expect(_offscreenCtx.arc).toHaveBeenCalledTimes(2);
     });
 
-    it('draws edges between connected nodes', () => {
+    it('draws edges between connected nodes', async () => {
+      const { drawBackgroundSketches } = await freshImport();
       const sketches = [
         makeSketch('s1', [
           { id: '1', x: 10, y: 20 },
@@ -134,124 +186,101 @@ describe('project-canvas-renderer', () => {
           { tail: '1', head: '2' },
         ]),
       ];
-      drawBackgroundSketches(ctx, sketches, defaultOpts);
-      // Edges are batched — should have moveTo/lineTo calls
-      expect(ctx.moveTo).toHaveBeenCalled();
-      expect(ctx.lineTo).toHaveBeenCalled();
+      drawBackgroundSketches(mainCtx, sketches, defaultOpts);
+      // Edges are drawn to offscreen ctx — should have moveTo/lineTo
+      expect(_offscreenCtx.moveTo).toHaveBeenCalled();
+      expect(_offscreenCtx.lineTo).toHaveBeenCalled();
     });
 
-    it('culls off-screen nodes', () => {
+    it('caches offscreen canvas across frames with same parameters', async () => {
+      const { drawBackgroundSketches } = await freshImport();
       const sketches = [
         makeSketch('s1', [
-          { id: '1', x: 1000, y: 1000 }, // off-screen
-        ], []),
+          { id: '1', x: 10, y: 20 },
+          { id: '2', x: 30, y: 40 },
+        ], [{ tail: '1', head: '2' }]),
       ];
-      const opts = { ...defaultOpts, visMinX: 0, visMinY: 0, visMaxX: 100, visMaxY: 100 };
-      drawBackgroundSketches(ctx, sketches, opts);
-      // Node is off-screen, should not be drawn
-      expect(ctx.arc).not.toHaveBeenCalled();
+
+      // Frame 1 — cache miss, renders to offscreen
+      drawBackgroundSketches(mainCtx, sketches, defaultOpts);
+      const arcCallsF1 = (_offscreenCtx.arc as any).mock.calls.length;
+      expect(arcCallsF1).toBe(2);
+
+      // Frame 2 — cache hit, should NOT re-render to offscreen
+      drawBackgroundSketches(mainCtx, sketches, defaultOpts);
+      const arcCallsF2 = (_offscreenCtx.arc as any).mock.calls.length;
+      // Same count — no additional offscreen rendering
+      expect(arcCallsF2).toBe(arcCallsF1);
+      // But drawImage should be called again (blit cached)
+      expect(mainCtx.drawImage).toHaveBeenCalledTimes(2);
     });
 
-    it('culls off-screen edges', () => {
-      const sketches = [
-        makeSketch('s1', [
-          { id: '1', x: 1000, y: 1000 },
-          { id: '2', x: 1100, y: 1100 },
-        ], [
-          { tail: '1', head: '2' },
-        ]),
-      ];
-      const opts = { ...defaultOpts, visMinX: 0, visMinY: 0, visMaxX: 100, visMaxY: 100 };
-      drawBackgroundSketches(ctx, sketches, opts);
-      // Edge vertices are all off-screen, edge should be culled
-      // Only the moveTo for batch stroke should not include off-screen edges
-      // Since batching uses arrays, stroke would only be called if array has items
-      // The nodes are also off-screen
-      expect(ctx.arc).not.toHaveBeenCalled();
-    });
+    it('invalidates cache when sketch data changes', async () => {
+      const { drawBackgroundSketches } = await freshImport();
+      const sketch = makeSketch('s1', [{ id: '1', x: 10, y: 20 }], []);
 
-    it('caches node Map across multiple frames (same sketch object)', () => {
-      const sketch = makeSketch('s1', [
-        { id: '1', x: 10, y: 20 },
-        { id: '2', x: 30, y: 40 },
-      ], [
-        { tail: '1', head: '2' },
-      ]);
-      const sketches = [sketch];
+      drawBackgroundSketches(mainCtx, [sketch], defaultOpts);
+      const arcCallsF1 = (_offscreenCtx.arc as any).mock.calls.length;
+      expect(arcCallsF1).toBe(1);
 
-      // Frame 1
-      drawBackgroundSketches(ctx, sketches, defaultOpts);
-      const arcCallsFrame1 = (ctx.arc as any).mock.calls.length;
-
-      // Frame 2 — same sketch objects should reuse cached node Map
-      drawBackgroundSketches(ctx, sketches, defaultOpts);
-      const arcCallsFrame2 = (ctx.arc as any).mock.calls.length;
-
-      // Both frames should draw the same nodes (2 per frame = 4 total)
-      expect(arcCallsFrame2).toBe(arcCallsFrame1 * 2);
-    });
-
-    it('invalidates node Map cache when sketch size changes', () => {
-      const sketch = makeSketch('s1', [
-        { id: '1', x: 10, y: 20 },
-      ], []);
-
-      drawBackgroundSketches(ctx, [sketch], defaultOpts);
-      expect(ctx.arc).toHaveBeenCalledTimes(1);
-
-      // Add a node (simulate sketch data update)
+      // Add a node — changes totalNodes in cache key → invalidation
       sketch.nodes.push({ id: '2', x: 30, y: 40 });
-
-      // Reset mock
-      (ctx.arc as any).mockClear();
-      drawBackgroundSketches(ctx, [sketch], defaultOpts);
-      // Should now draw 2 nodes (cache was invalidated due to size mismatch)
-      expect(ctx.arc).toHaveBeenCalledTimes(2);
+      drawBackgroundSketches(mainCtx, [sketch], defaultOpts);
+      const arcCallsF2 = (_offscreenCtx.arc as any).mock.calls.length;
+      // Should have drawn 2 more nodes (1 original + 1 new)
+      expect(arcCallsF2).toBe(arcCallsF1 + 2);
     });
 
-    it('draws drainage nodes as rectangles', () => {
+    it('draws drainage nodes as rectangles', async () => {
+      const { drawBackgroundSketches } = await freshImport();
       const sketches = [
         makeSketch('s1', [
           { id: '1', x: 10, y: 20, nodeType: 'Drainage' },
         ], []),
       ];
-      drawBackgroundSketches(ctx, sketches, defaultOpts);
-      expect(ctx.fillRect).toHaveBeenCalled();
+      drawBackgroundSketches(mainCtx, sketches, defaultOpts);
+      expect(_offscreenCtx.fillRect).toHaveBeenCalled();
     });
 
-    it('draws home nodes with house shape', () => {
+    it('draws home nodes with house shape', async () => {
+      const { drawBackgroundSketches } = await freshImport();
       const sketches = [
         makeSketch('s1', [
           { id: '1', x: 10, y: 20, nodeType: 'Home' },
         ], []),
       ];
-      drawBackgroundSketches(ctx, sketches, defaultOpts);
+      drawBackgroundSketches(mainCtx, sketches, defaultOpts);
       // Home shape uses closePath for the polygon
-      expect(ctx.closePath).toHaveBeenCalled();
+      expect(_offscreenCtx.closePath).toHaveBeenCalled();
     });
 
-    it('sets globalAlpha to BG_ALPHA', () => {
+    it('sets globalAlpha per sketch', async () => {
+      const { drawBackgroundSketches } = await freshImport();
       const sketches = [makeSketch('s1', [{ id: '1', x: 10, y: 20 }], [])];
-      drawBackgroundSketches(ctx, sketches, defaultOpts);
-      expect(ctx.globalAlpha).toBe(0.35);
+      drawBackgroundSketches(mainCtx, sketches, defaultOpts);
+      // BG_ALPHA = 0.5 (unselected)
+      expect(_offscreenCtx.globalAlpha).toBe(0.5);
     });
   });
 
   describe('drawMergeModeOverlay()', () => {
-    it('does nothing when merge mode is disabled', () => {
+    it('does nothing when merge mode is disabled', async () => {
+      const { drawMergeModeOverlay } = await freshImport();
       (isMergeModeEnabled as any).mockReturnValue(false);
-      drawMergeModeOverlay(ctx, [], defaultOpts);
-      expect(ctx.save).not.toHaveBeenCalled();
+      drawMergeModeOverlay(mainCtx, [], defaultOpts);
+      expect(mainCtx.save).not.toHaveBeenCalled();
     });
 
-    it('does nothing when no nearby nodes', () => {
+    it('does nothing when no nearby nodes', async () => {
+      const { drawMergeModeOverlay } = await freshImport();
       (isMergeModeEnabled as any).mockReturnValue(true);
       (getNearbyNodes as any).mockReturnValue([]);
-      drawMergeModeOverlay(ctx, [], defaultOpts);
-      expect(ctx.save).not.toHaveBeenCalled();
+      drawMergeModeOverlay(mainCtx, [], defaultOpts);
+      expect(mainCtx.save).not.toHaveBeenCalled();
     });
 
-    it('draws nearby nodes when merge mode is enabled', () => {
+    it('draws nearby nodes when merge mode is enabled', async () => {
+      const { drawMergeModeOverlay } = await freshImport();
       (isMergeModeEnabled as any).mockReturnValue(true);
       (getNearbyNodes as any).mockReturnValue([
         { sketchId: 's2', sketchName: 'Sketch 2', node: { id: '10', x: 50, y: 50 } },
@@ -259,14 +288,15 @@ describe('project-canvas-renderer', () => {
       (getCrossMergeIssues as any).mockReturnValue([]);
 
       const activeNodes = [{ id: '1', x: 100, y: 100 }];
-      drawMergeModeOverlay(ctx, activeNodes, defaultOpts);
+      drawMergeModeOverlay(mainCtx, activeNodes, defaultOpts);
 
       // Should draw the nearby node (ring + body = 2 arc calls)
-      expect(ctx.arc).toHaveBeenCalled();
-      expect(ctx.save).toHaveBeenCalled();
+      expect(mainCtx.arc).toHaveBeenCalled();
+      expect(mainCtx.save).toHaveBeenCalled();
     });
 
-    it('draws connector lines from nearby to closest active node', () => {
+    it('draws connector lines from nearby to closest active node', async () => {
+      const { drawMergeModeOverlay } = await freshImport();
       (isMergeModeEnabled as any).mockReturnValue(true);
       (getNearbyNodes as any).mockReturnValue([
         { sketchId: 's2', sketchName: 'S2', node: { id: '10', x: 50, y: 50 } },
@@ -277,14 +307,15 @@ describe('project-canvas-renderer', () => {
         { id: '1', x: 100, y: 100 },
         { id: '2', x: 200, y: 200 },
       ];
-      drawMergeModeOverlay(ctx, activeNodes, defaultOpts);
+      drawMergeModeOverlay(mainCtx, activeNodes, defaultOpts);
 
       // Connector line should be drawn
-      expect(ctx.moveTo).toHaveBeenCalled();
-      expect(ctx.lineTo).toHaveBeenCalled();
+      expect(mainCtx.moveTo).toHaveBeenCalled();
+      expect(mainCtx.lineTo).toHaveBeenCalled();
     });
 
-    it('uses distance-squared for closest-node search (no sqrt)', () => {
+    it('uses distance-squared for closest-node search (no sqrt)', async () => {
+      const { drawMergeModeOverlay } = await freshImport();
       (isMergeModeEnabled as any).mockReturnValue(true);
       (getNearbyNodes as any).mockReturnValue([
         { sketchId: 's2', sketchName: 'S2', node: { id: '10', x: 50, y: 50 } },
@@ -296,18 +327,18 @@ describe('project-canvas-renderer', () => {
         { id: '1', x: 60, y: 60 },   // distance ~14.1
         { id: '2', x: 200, y: 200 },  // distance ~212
       ];
-      drawMergeModeOverlay(ctx, activeNodes, defaultOpts);
+      drawMergeModeOverlay(mainCtx, activeNodes, defaultOpts);
 
       // The connector should go to the closer node (60,60)
-      // Check that lineTo was called with the closer node's coordinates
-      const lineToArgs = (ctx.lineTo as any).mock.calls;
+      const lineToArgs = (mainCtx.lineTo as any).mock.calls;
       const hasCloseNode = lineToArgs.some(
         (args: number[]) => args[0] === 60 && args[1] === 60
       );
       expect(hasCloseNode).toBe(true);
     });
 
-    it('culls off-screen nearby nodes', () => {
+    it('culls off-screen nearby nodes', async () => {
+      const { drawMergeModeOverlay } = await freshImport();
       (isMergeModeEnabled as any).mockReturnValue(true);
       (getNearbyNodes as any).mockReturnValue([
         { sketchId: 's2', sketchName: 'S2', node: { id: '10', x: 5000, y: 5000 } },
@@ -316,13 +347,10 @@ describe('project-canvas-renderer', () => {
 
       const activeNodes = [{ id: '1', x: 50, y: 50 }];
       const opts = { ...defaultOpts, visMinX: 0, visMinY: 0, visMaxX: 100, visMaxY: 100 };
-      drawMergeModeOverlay(ctx, activeNodes, opts);
+      drawMergeModeOverlay(mainCtx, activeNodes, opts);
 
-      // Node is off-screen, connector should still be tried but node drawing skipped
-      // arc should not be called for off-screen nearby nodes
-      // (the moveTo/lineTo for the connector line also has viewport check)
-      // The ring + body arcs should not be drawn
-      const arcCalls = (ctx.arc as any).mock.calls.length;
+      // Node is off-screen — ring + body arcs should not be drawn
+      const arcCalls = (mainCtx.arc as any).mock.calls.length;
       expect(arcCalls).toBe(0);
     });
   });

@@ -230,8 +230,13 @@ function handleGnssPointCapture(captureData) {
  * Vibrate the phone based on GNSS fix quality
  * @param {number} fixQuality - GNSS fix quality value
  */
+// Throttle GNSS vibration: at most once per 2 seconds to save battery in field use
+let _lastGnssVibrate = 0;
 function vibrateForFixQuality(fixQuality) {
   if (!navigator.vibrate) return;
+  const now = performance.now();
+  if (now - _lastGnssVibrate < 2000) return; // skip if vibrated recently
+  _lastGnssVibrate = now;
   if (fixQuality === 4) {
     // RTK Fixed — single buzz
     navigator.vibrate(100);

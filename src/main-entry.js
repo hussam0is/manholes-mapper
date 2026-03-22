@@ -311,6 +311,13 @@ if (typeof window !== 'undefined') {
     // Initialize edge legend auto-collapse on mobile
     initEdgeLegendToggle();
 
+    // Adapt progressive renderer budget to device capabilities
+    import('./utils/device-perf.js').then(({ getFrameBudgetMs }) => {
+      import('./utils/progressive-renderer.js').then(({ setRenderBudget }) => {
+        setRenderBudget(getFrameBudgetMs());
+      });
+    });
+
     // Lazy-load Cockpit layout (landscape-first three-zone layout)
     import('./cockpit/cockpit.js').then(m => m.initCockpit());
 

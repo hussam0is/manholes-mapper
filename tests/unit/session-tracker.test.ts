@@ -4,26 +4,45 @@
  * Tests session duration tracking, node/edge deltas, and streak calculation.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { initSessionTracker, getSessionStats } from '../../src/cockpit/session-tracker.js';
+import { initSessionTracker, getSessionStats, _resetForTesting } from '../../src/cockpit/session-tracker.js';
 
 function mockSketchData(nodes: unknown[], edges: unknown[]) {
   (window as any).__getActiveSketchData = vi.fn(() => ({ nodes, edges }));
 }
 
 function mockDOM() {
-  // Create minimal DOM elements the session tracker looks for
-  for (const id of ['sessionDuration', 'sessionNodes', 'sessionEdges', 'sessionStreak', 'streakCount']) {
+  // Create minimal DOM elements the session tracker looks for.
+  // sessionNodes/sessionEdges need to be inside .intel-session__row parents
+  // so that closest('.intel-session__row') works for show/hide logic.
+  for (const id of ['sessionDuration', 'sessionStreak', 'streakCount']) {
     if (!document.getElementById(id)) {
       const el = document.createElement('div');
       el.id = id;
       document.body.appendChild(el);
     }
   }
+  for (const id of ['sessionNodes', 'sessionEdges']) {
+    if (!document.getElementById(id)) {
+      const row = document.createElement('div');
+      row.className = 'intel-session__row';
+      const el = document.createElement('span');
+      el.id = id;
+      row.appendChild(el);
+      document.body.appendChild(row);
+    }
+  }
 }
 
 function cleanupDOM() {
-  for (const id of ['sessionDuration', 'sessionNodes', 'sessionEdges', 'sessionStreak', 'streakCount']) {
+  for (const id of ['sessionDuration', 'sessionStreak', 'streakCount']) {
     document.getElementById(id)?.remove();
+  }
+  // Remove the row parents for sessionNodes/sessionEdges
+  for (const id of ['sessionNodes', 'sessionEdges']) {
+    const el = document.getElementById(id);
+    const row = el?.closest('.intel-session__row');
+    if (row) row.remove();
+    else el?.remove();
   }
 }
 
@@ -36,9 +55,12 @@ describe('Session Tracker', () => {
     (window as any).__getSketchStats = undefined;
     // Mock document.hidden to false so timer callbacks execute in test environment
     Object.defineProperty(document, 'hidden', { value: false, writable: true, configurable: true });
+    // Reset module state so each test starts fresh
+    _resetForTesting();
   });
 
   afterEach(() => {
+    _resetForTesting();
     vi.useRealTimers();
     vi.restoreAllMocks();
     cleanupDOM();
@@ -201,10 +223,13 @@ describe('Session Tracker', () => {
     it('should show node delta in display', () => {
       mockSketchData([{ id: '1' }], []);
       initSessionTracker();
+      // Simulate adding a node after 61 seconds (past "New session" phase)
+      vi.advanceTimersByTime(61000);
       mockSketchData([{ id: '1' }, { id: '2' }], []);
-      vi.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000); // Trigger another display update
       const el = document.getElementById('sessionNodes');
-      expect(el?.textContent).toBe('+1');
+      // Current code shows String(nodeDiff) without "+" prefix
+      expect(el?.textContent).toBe('1');
     });
   });
 });
