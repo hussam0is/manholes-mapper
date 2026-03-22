@@ -440,7 +440,7 @@ function renderDetails() {
           </div>
           <div class="issue-comment-input-row">
             <textarea id="issueCommentInput" rows="2" placeholder="${t('issue.commentPlaceholder')}" dir="auto"></textarea>
-            <button id="issueCommentSendBtn" class="btn btn-primary issue-comment-send" title="${t('issue.send')}">
+            <button id="issueCommentSendBtn" class="btn btn-primary issue-comment-send" title="${t('issue.send')}" aria-label="${t('issue.send')}">
               <span class="material-icons">send</span>
             </button>
           </div>
@@ -964,20 +964,22 @@ function renderDetails() {
           }
         }
 
-        // ── Issue navigation bar (prev / counter / next) ──
+        // ── Issue navigation bar (prev / counter / next) — node panel ──
         if (window.__issueNav) {
           const nav = window.__issueNav.getNavState();
           if (nav.total > 0) {
             const navBar = document.createElement('div');
             navBar.className = 'issue-nav-bar';
+            navBar.setAttribute('role', 'navigation');
+            navBar.setAttribute('aria-label', t('fixes.title'));
             const counterText = t('fixes.issueCounter', nav.currentIndex + 1, nav.total);
             navBar.innerHTML = `
-              <button class="issue-nav-bar__btn issue-nav-bar__prev" title="${escapeHtml(t('fixes.prevIssue'))}">
-                <span class="material-icons">navigate_before</span>
+              <button class="issue-nav-bar__btn issue-nav-bar__prev" title="${escapeHtml(t('fixes.prevIssue'))}" aria-label="${escapeHtml(t('fixes.prevIssue'))}">
+                <span class="material-icons" aria-hidden="true">navigate_before</span>
               </button>
-              <span class="issue-nav-bar__counter">${escapeHtml(counterText)}</span>
-              <button class="issue-nav-bar__btn issue-nav-bar__next" title="${escapeHtml(t('fixes.nextIssue'))}">
-                <span class="material-icons">navigate_next</span>
+              <span class="issue-nav-bar__counter" aria-live="polite">${escapeHtml(counterText)}</span>
+              <button class="issue-nav-bar__btn issue-nav-bar__next" title="${escapeHtml(t('fixes.nextIssue'))}" aria-label="${escapeHtml(t('fixes.nextIssue'))}">
+                <span class="material-icons" aria-hidden="true">navigate_next</span>
               </button>
             `;
             navBar.querySelector('.issue-nav-bar__prev').addEventListener('click', () => {
@@ -1002,7 +1004,7 @@ function renderDetails() {
     // Add delete button at the bottom (after connected lines if present)
     const deleteButtonWrapper = document.createElement('div');
     deleteButtonWrapper.className = 'details-actions';
-    deleteButtonWrapper.innerHTML = `<button id="deleteNodeBtn" class="btn-danger-soft"><span class="material-icons" style="font-size:18px">delete</span> ${t('labels.deleteNode')}</button>`;
+    deleteButtonWrapper.innerHTML = `<button id="deleteNodeBtn" class="btn-danger-soft" aria-label="${t('labels.deleteNode')}"><span class="material-icons" style="font-size:18px" aria-hidden="true">delete</span> ${t('labels.deleteNode')}</button>`;
     container.appendChild(deleteButtonWrapper);
 
     // ── Measurement metadata (below delete button, bottom of panel) ──
@@ -1515,14 +1517,16 @@ function renderDetails() {
           if (nav.total > 0) {
             const navBar = document.createElement('div');
             navBar.className = 'issue-nav-bar';
+            navBar.setAttribute('role', 'navigation');
+            navBar.setAttribute('aria-label', t('fixes.title'));
             const counterText = t('fixes.issueCounter', nav.currentIndex + 1, nav.total);
             navBar.innerHTML = `
-              <button class="issue-nav-bar__btn issue-nav-bar__prev" title="${escapeHtml(t('fixes.prevIssue'))}">
-                <span class="material-icons">navigate_before</span>
+              <button class="issue-nav-bar__btn issue-nav-bar__prev" title="${escapeHtml(t('fixes.prevIssue'))}" aria-label="${escapeHtml(t('fixes.prevIssue'))}">
+                <span class="material-icons" aria-hidden="true">navigate_before</span>
               </button>
-              <span class="issue-nav-bar__counter">${escapeHtml(counterText)}</span>
-              <button class="issue-nav-bar__btn issue-nav-bar__next" title="${escapeHtml(t('fixes.nextIssue'))}">
-                <span class="material-icons">navigate_next</span>
+              <span class="issue-nav-bar__counter" aria-live="polite">${escapeHtml(counterText)}</span>
+              <button class="issue-nav-bar__btn issue-nav-bar__next" title="${escapeHtml(t('fixes.nextIssue'))}" aria-label="${escapeHtml(t('fixes.nextIssue'))}">
+                <span class="material-icons" aria-hidden="true">navigate_next</span>
               </button>
             `;
             navBar.querySelector('.issue-nav-bar__prev').addEventListener('click', () => {
