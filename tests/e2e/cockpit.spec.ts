@@ -435,7 +435,7 @@ test.describe('Cockpit — More Menu', () => {
     const display = await items.evaluate(el => el.style.display);
     // After click, should not be 'none' (Playwright test style, may vary)
     // We check the aria-expanded attribute instead
-    const header = page.locator('[data-more-group-toggle="view"]');
+    const header = page.locator('[data-more-group-toggle="view"]').first();
     const expanded = await header.getAttribute('aria-expanded');
     // It should have toggled (may depend on JS init)
     expect(expanded).toBeDefined();
@@ -447,17 +447,17 @@ test.describe('Cockpit — More Menu', () => {
   });
 
   test('view group has size controls and 3D view', async ({ page }) => {
-    await expect(page.locator('[data-action="sizeDecrease"]')).toBeAttached();
-    await expect(page.locator('[data-action="sizeIncrease"]')).toBeAttached();
-    await expect(page.locator('[data-action="autoSize"]')).toBeAttached();
-    await expect(page.locator('[data-action="threeDView"]')).toBeAttached();
+    await expect(page.locator('[data-action="sizeDecrease"]').first()).toBeAttached();
+    await expect(page.locator('[data-action="sizeIncrease"]').first()).toBeAttached();
+    await expect(page.locator('[data-action="autoSize"]').first()).toBeAttached();
+    await expect(page.locator('[data-action="threeDView"]').first()).toBeAttached();
   });
 
   test('sketch & export group has export/import buttons', async ({ page }) => {
-    await expect(page.locator('[data-action="exportSketch"]')).toBeAttached();
-    await expect(page.locator('[data-action="importSketch"]')).toBeAttached();
-    await expect(page.locator('[data-action="exportNodes"]')).toBeAttached();
-    await expect(page.locator('[data-action="exportEdges"]')).toBeAttached();
+    await expect(page.locator('[data-action="exportSketch"]').first()).toBeAttached();
+    await expect(page.locator('[data-action="importSketch"]').first()).toBeAttached();
+    await expect(page.locator('[data-action="exportNodes"]').first()).toBeAttached();
+    await expect(page.locator('[data-action="exportEdges"]').first()).toBeAttached();
   });
 
   test('location & map group has coordinate controls', async ({ page }) => {
@@ -468,22 +468,22 @@ test.describe('Cockpit — More Menu', () => {
   });
 
   test('measurement group has survey and finish workday buttons', async ({ page }) => {
-    await expect(page.locator('[data-action="connectTMM"]')).toBeAttached();
-    await expect(page.locator('[data-action="connectSurveyBluetooth"]')).toBeAttached();
-    await expect(page.locator('[data-action="connectSurveyWebSocket"]')).toBeAttached();
-    await expect(page.locator('[data-action="disconnectSurvey"]')).toBeAttached();
-    await expect(page.locator('[data-action="finishWorkday"]')).toBeAttached();
+    await expect(page.locator('[data-action="connectTMM"]').first()).toBeAttached();
+    await expect(page.locator('[data-action="connectSurveyBluetooth"]').first()).toBeAttached();
+    await expect(page.locator('[data-action="connectSurveyWebSocket"]').first()).toBeAttached();
+    await expect(page.locator('[data-action="disconnectSurvey"]').first()).toBeAttached();
+    await expect(page.locator('[data-action="finishWorkday"]').first()).toBeAttached();
   });
 
   test('settings group has autosave toggle and admin button', async ({ page }) => {
     await expect(page.locator('#railAutosaveToggle')).toBeAttached();
-    await expect(page.locator('[data-action="admin"]')).toBeAttached();
-    await expect(page.locator('[data-action="projects"]')).toBeAttached();
-    await expect(page.locator('[data-action="help"]')).toBeAttached();
+    await expect(page.locator('[data-action="admin"]').first()).toBeAttached();
+    await expect(page.locator('[data-action="projects"]').first()).toBeAttached();
+    await expect(page.locator('[data-action="help"]').first()).toBeAttached();
   });
 
   test('language toggle button exists at bottom', async ({ page }) => {
-    const langBtn = page.locator('[data-action="languageChange"]');
+    const langBtn = page.locator('[data-action="languageChange"]').first();
     await expect(langBtn).toBeAttached();
   });
 });

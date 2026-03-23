@@ -292,18 +292,26 @@ export async function gotoHome(page: Page) {
 
 /**
  * Close the home panel if it is open, so the canvas is accessible.
- * Uses JavaScript to force-hide to avoid animation timing issues.
+ * Waits for a stable load state before touching the DOM to avoid
+ * "execution context was destroyed" errors when a navigation
+ * (e.g. auth redirect) is still settling.
  */
 export async function dismissHomePanel(page: Page) {
-  await page.evaluate(() => {
-    for (const id of ['homePanel', 'startPanel']) {
-      const el = document.getElementById(id);
-      if (el) {
+  // Ensure the page has committed a document and isn't mid-navigation
+  await page.waitForLoadState('domcontentloaded');
+
+  // Use locator-based approach: more resilient than raw evaluate()
+  // because Playwright auto-waits and retries against the live DOM.
+  for (const id of ['homePanel', 'startPanel']) {
+    const panel = page.locator(`#${id}`);
+    if (await panel.count() > 0) {
+      await panel.evaluate((el) => {
         el.classList.remove('panel-closing');
-        el.style.display = 'none';
-      }
+        (el as HTMLElement).style.display = 'none';
+      });
     }
-  });
+  }
+
   // Wait briefly for event loop to settle
   await page.waitForTimeout(300);
 }
