@@ -138,5 +138,42 @@ export function applyRateLimit(req, res, maxRequests = MAX_REQUESTS_DEFAULT) {
   return false; // Allowed
 }
 
-// Export constants for use in routes
-export { MAX_REQUESTS_DEFAULT, MAX_REQUESTS_AUTH };
+/**
+ * Database-backed rate limit check (cross-instance, reliable)
+ * Uses the rate_limit_log table for persistent tracking across serverless instances.
+ * @param {string} ip - Client IP address
+ * @param {string} endpoint - API endpoint being rate-limited
+ * @param {number} maxRequests - Maximum requests allowed in the window
+ * @param {number} windowSeconds - Time window in seconds
+ * @returns {Promise<{ allowed: boolean, count: number }>}
+ */
+export async function checkDbRateLimit(ip, endpoint, maxRequests, windowSeconds) {
+  // Dynamic import to avoid circular dependency with db.js
+  const { sql } = await import('./db.js');
+
+  // Count recent requests from this IP to this endpoint
+  const result = await sql`
+    SELECT COUNT(*) as count
+    FROM rate_limit_log
+    WHERE ip = ${ip}
+      AND endpoint = ${endpoint}
+      AND created_at > NOW() - (${windowSeconds} || ' seconds')::interval
+  `;
+
+  const count = parseInt(result.rows[0].count, 10);
+
+  if (count >= maxRequests) {
+    return { allowed: false, count };
+  }
+
+  // Log this request
+  await sql`
+    INSERT INTO rate_limit_log (ip, endpoint)
+    VALUES (${ip}, ${endpoint})
+  `;
+
+  return { allowed: true, count: count + 1 };
+}
+
+// Export constants and helpers for use in routes
+export { MAX_REQUESTS_DEFAULT, MAX_REQUESTS_AUTH, getClientIP };
