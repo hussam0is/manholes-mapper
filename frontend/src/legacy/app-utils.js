@@ -8,6 +8,7 @@
 import { S, F } from './shared-state.js';
 import { getUsername as getAuthUsername } from '../auth/auth-guard.js';
 import { STORAGE_KEYS } from '../state/persistence.js';
+import { getEffectiveDpr } from '../utils/device-perf.js';
 import {
   NODE_MATERIAL_OPTIONS,
   NODE_ACCESS_OPTIONS,
@@ -143,7 +144,9 @@ export function resizeCanvas() {
   const canvas = S.canvas;
   const ctx = S.ctx;
   const rect = canvas.parentElement.getBoundingClientRect();
-  const dpr = window.devicePixelRatio || 1;
+  // Cap DPR on mid-range devices (e.g. Galaxy Note 10: 2.625 → 2.0) to reduce
+  // canvas pixel buffer by ~40%, saving GPU memory and improving frame times.
+  const dpr = getEffectiveDpr();
   const targetWidth = Math.round(rect.width * dpr);
   const targetHeight = Math.round(rect.height * dpr);
   // Only update backing store if dimensions actually changed to avoid extra layout

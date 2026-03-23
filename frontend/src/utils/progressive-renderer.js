@@ -101,5 +101,14 @@ export class ProgressiveRenderer {
   get totalCount() { return this._items.length; }
 }
 
-/** Singleton for the main rendering pipeline */
+/** Singleton for the main rendering pipeline — budget set at module load */
 export const progressiveRenderer = new ProgressiveRenderer(10);
+
+/**
+ * Adapt the progressive renderer budget to the current device tier.
+ * Call once during app init after device detection has run.
+ * @param {number} budgetMs - Frame budget in milliseconds
+ */
+export function setRenderBudget(budgetMs) {
+  progressiveRenderer.budget = budgetMs;
+}

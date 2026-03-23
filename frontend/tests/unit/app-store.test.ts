@@ -1,177 +1,225 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { bus, EventBus } from '../../src/state/event-bus.js';
-import { appStore } from '../../src/state/app-store.js';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { AppStore, store } from '../../src/state/app-store.js';
+import { bus } from '../../src/state/event-bus.js';
 
-describe('appStore', () => {
+describe('AppStore', () => {
+  let s: InstanceType<typeof AppStore>;
+
   beforeEach(() => {
-    bus.clear();
-    // Reset appStore singletons
-    appStore.gnss = null;
-    appStore.gnssConnection = null;
-    appStore.menu = null;
-    appStore.auth = null;
-    appStore.sync = null;
+    s = new AppStore();
+    bus.clear(); // isolate bus events
   });
 
-  describe('registerGnss', () => {
-    it('stores gnss reference and bridges events to bus', () => {
-      const positionCb = vi.fn();
-      bus.on('gnss:position', positionCb);
-
-      const fakeGnss = {
-        connectionState: 'connected',
-        _listeners: {} as Record<string, Function>,
-        on(event: string, cb: Function) { this._listeners[event] = cb; },
-        getPosition() { return { lat: 32, lon: 35 }; },
-      };
-
-      appStore.registerGnss(fakeGnss);
-      expect(appStore.gnss).toBe(fakeGnss);
-
-      // Simulate gnss emitting a position
-      fakeGnss._listeners['position']({ lat: 32, lon: 35 });
-      expect(positionCb).toHaveBeenCalledWith({ lat: 32, lon: 35 });
+  describe('get / set', () => {
+    it('should store and retrieve values', () => {
+      s.set('nodes', [1, 2, 3]);
+      expect(s.get('nodes')).toEqual([1, 2, 3]);
     });
 
-    it('bridges connection events to bus', () => {
-      const connCb = vi.fn();
-      bus.on('gnss:connection', connCb);
+    it('should return undefined for unset keys', () => {
+      expect(s.get('nonexistent')).toBeUndefined();
+    });
 
-      const fakeGnss = {
-        connectionState: 'disconnected',
-        _listeners: {} as Record<string, Function>,
-        on(event: string, cb: Function) { this._listeners[event] = cb; },
-        getPosition() { return null; },
-      };
-
-      appStore.registerGnss(fakeGnss);
-      fakeGnss._listeners['connection']('connected');
-      expect(connCb).toHaveBeenCalledWith('connected');
+    it('should overwrite existing values', () => {
+      s.set('x', 1);
+      s.set('x', 2);
+      expect(s.get('x')).toBe(2);
     });
   });
 
-  describe('registerMenu', () => {
-    it('bridges known menu events to bus', () => {
-      const sketchCb = vi.fn();
-      bus.on('sketch:changed', sketchCb);
-
-      const fakeMenu = {
-        _listeners: new Map() as Map<string, Set<Function>>,
-        on(event: string, cb: Function) {
-          if (!this._listeners.has(event)) this._listeners.set(event, new Set());
-          this._listeners.get(event)!.add(cb);
-          return () => this._listeners.get(event)?.delete(cb);
-        },
-        emit(event: string, data?: unknown) {
-          this._listeners.get(event)?.forEach((cb: Function) => cb(data));
-        },
-      };
-
-      appStore.registerMenu(fakeMenu);
-
-      // Emit via the original menu emitter
-      fakeMenu._listeners.get('sketch:changed')?.forEach(cb => cb({ id: '1' }));
-      expect(sketchCb).toHaveBeenCalledWith({ id: '1' });
+  describe('has', () => {
+    it('should return true for existing keys', () => {
+      s.set('a', null);
+      expect(s.has('a')).toBe(true);
     });
 
-    it('forwards non-bridged events with menu: prefix', () => {
-      const customCb = vi.fn();
-      bus.on('menu:customAction', customCb);
-
-      const fakeMenu = {
-        _listeners: new Map() as Map<string, Set<Function>>,
-        on(event: string, cb: Function) {
-          if (!this._listeners.has(event)) this._listeners.set(event, new Set());
-          this._listeners.get(event)!.add(cb);
-          return () => this._listeners.get(event)?.delete(cb);
-        },
-        emit(event: string, data?: unknown) {
-          this._listeners.get(event)?.forEach((cb: Function) => cb(data));
-        },
-      };
-
-      appStore.registerMenu(fakeMenu);
-      fakeMenu.emit('customAction', { x: 1 });
-      expect(customCb).toHaveBeenCalledWith({ x: 1 });
+    it('should return false for missing keys', () => {
+      expect(s.has('b')).toBe(false);
     });
   });
 
-  describe('registerAuth', () => {
-    it('bridges auth state changes to bus', () => {
-      const authCb = vi.fn();
-      bus.on('auth:stateChanged', authCb);
-
-      let authListener: Function | null = null;
-      const fakeAuth = {
-        getAuthState: () => ({ isSignedIn: true, userId: '123' }),
-        isAuthenticated: () => true,
-        onAuthStateChange: (cb: Function) => { authListener = cb; return () => { authListener = null; }; },
-      };
-
-      appStore.registerAuth(fakeAuth);
-      expect(appStore.auth).toBe(fakeAuth);
-
-      // Simulate auth state change
-      authListener!({ isSignedIn: true, userId: '123' });
-      expect(authCb).toHaveBeenCalledWith({ isSignedIn: true, userId: '123' });
+  describe('init', () => {
+    it('should bulk-initialize state without firing subscribers', () => {
+      const handler = vi.fn();
+      s.subscribe('x', handler);
+      s.init({ x: 10, y: 20 });
+      expect(s.get('x')).toBe(10);
+      expect(s.get('y')).toBe(20);
+      expect(handler).not.toHaveBeenCalled();
     });
   });
 
-  describe('registerSync', () => {
-    it('bridges sync state changes to bus', () => {
-      const syncCb = vi.fn();
-      bus.on('sync:stateChange', syncCb);
+  describe('subscribe', () => {
+    it('should notify on value change', () => {
+      const handler = vi.fn();
+      s.subscribe('count', handler);
+      s.set('count', 5);
+      expect(handler).toHaveBeenCalledWith(5, undefined);
+    });
 
-      let syncListener: Function | null = null;
-      const fakeSync = {
-        onSyncStateChange: (cb: Function) => { syncListener = cb; return () => { syncListener = null; }; },
-        debouncedSyncToCloud: vi.fn(),
-      };
+    it('should provide old and new values', () => {
+      s.set('count', 1);
+      const handler = vi.fn();
+      s.subscribe('count', handler);
+      s.set('count', 2);
+      expect(handler).toHaveBeenCalledWith(2, 1);
+    });
 
-      appStore.registerSync(fakeSync);
-      expect(appStore.sync).toBe(fakeSync);
+    it('should not fire on identical reference assignment', () => {
+      const arr = [1, 2];
+      s.set('items', arr);
+      const handler = vi.fn();
+      s.subscribe('items', handler);
+      s.set('items', arr); // same ref
+      expect(handler).not.toHaveBeenCalled();
+    });
 
-      syncListener!({ syncing: true });
-      expect(syncCb).toHaveBeenCalledWith({ syncing: true });
+    it('should allow unsubscription via returned function', () => {
+      const handler = vi.fn();
+      const unsub = s.subscribe('x', handler);
+      unsub();
+      s.set('x', 99);
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it('should support multiple subscribers', () => {
+      const h1 = vi.fn();
+      const h2 = vi.fn();
+      s.subscribe('x', h1);
+      s.subscribe('x', h2);
+      s.set('x', 42);
+      expect(h1).toHaveBeenCalledWith(42, undefined);
+      expect(h2).toHaveBeenCalledWith(42, undefined);
     });
   });
 
-  describe('convenience accessors', () => {
-    it('isGnssConnected returns true when connected', () => {
-      appStore.gnss = { connectionState: 'connected' };
-      expect(appStore.isGnssConnected()).toBe(true);
+  describe('batch', () => {
+    it('should coalesce notifications to one per key', () => {
+      const handler = vi.fn();
+      s.subscribe('x', handler);
+      s.batch(() => {
+        s.set('x', 1);
+        s.set('x', 2);
+        s.set('x', 3);
+      });
+      // Should fire once with first old value and final new value
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(handler).toHaveBeenCalledWith(3, undefined);
     });
 
-    it('isGnssConnected returns false when not registered', () => {
-      expect(appStore.isGnssConnected()).toBe(false);
+    it('should notify for each changed key after batch', () => {
+      const hx = vi.fn();
+      const hy = vi.fn();
+      s.subscribe('x', hx);
+      s.subscribe('y', hy);
+      s.batch(() => {
+        s.set('x', 10);
+        s.set('y', 20);
+      });
+      expect(hx).toHaveBeenCalledTimes(1);
+      expect(hy).toHaveBeenCalledTimes(1);
     });
 
-    it('getGnssPosition delegates to gnss.getPosition()', () => {
-      appStore.gnss = { getPosition: () => ({ lat: 32, lon: 35 }) };
-      expect(appStore.getGnssPosition()).toEqual({ lat: 32, lon: 35 });
+    it('should handle nested batches gracefully', () => {
+      const handler = vi.fn();
+      s.subscribe('x', handler);
+      s.batch(() => {
+        s.set('x', 1);
+        s.batch(() => {
+          s.set('x', 2);
+        });
+      });
+      // Nested batch runs inline, outer batch flushes
+      expect(handler).toHaveBeenCalledTimes(1);
     });
 
-    it('getGnssPosition returns null when not registered', () => {
-      expect(appStore.getGnssPosition()).toBeNull();
+    it('should flush even if fn throws', () => {
+      const handler = vi.fn();
+      s.subscribe('x', handler);
+      try {
+        s.batch(() => {
+          s.set('x', 1);
+          throw new Error('boom');
+        });
+      } catch (_) {}
+      expect(handler).toHaveBeenCalledWith(1, undefined);
     });
+  });
 
-    it('isAuthenticated delegates to auth', () => {
-      appStore.auth = { isAuthenticated: () => true };
-      expect(appStore.isAuthenticated()).toBe(true);
+  describe('snapshot', () => {
+    it('should return a plain object copy of state', () => {
+      s.set('a', 1);
+      s.set('b', 'hello');
+      const snap = s.snapshot();
+      expect(snap).toEqual({ a: 1, b: 'hello' });
+      // Should be a copy, not live
+      s.set('a', 999);
+      expect(snap.a).toBe(1);
     });
+  });
 
-    it('isAuthenticated returns false when not registered', () => {
-      expect(appStore.isAuthenticated()).toBe(false);
+  describe('keys', () => {
+    it('should return all key names', () => {
+      s.set('a', 1);
+      s.set('b', 2);
+      expect(s.keys().sort()).toEqual(['a', 'b']);
     });
+  });
 
-    it('getAuthState delegates to auth', () => {
-      const state = { isSignedIn: true, userId: '1' };
-      appStore.auth = { getAuthState: () => state };
-      expect(appStore.getAuthState()).toEqual(state);
+  describe('clear', () => {
+    it('should remove all state and subscribers', () => {
+      const handler = vi.fn();
+      s.set('a', 1);
+      s.subscribe('a', handler);
+      s.clear();
+      expect(s.get('a')).toBeUndefined();
+      expect(s.keys()).toEqual([]);
     });
+  });
 
-    it('getAuthState returns null when not registered', () => {
-      expect(appStore.getAuthState()).toBeNull();
+  describe('bus integration', () => {
+    it('should emit store:key events on the bus', () => {
+      const handler = vi.fn();
+      bus.on('store:count', handler);
+      s.set('count', 42);
+      expect(handler).toHaveBeenCalledWith({
+        key: 'count',
+        value: 42,
+        prev: undefined,
+      });
+    });
+  });
+
+  describe('error handling', () => {
+    it('should not break other subscribers if one throws', () => {
+      const bad = vi.fn(() => { throw new Error('oops'); });
+      const good = vi.fn();
+      s.subscribe('x', bad);
+      s.subscribe('x', good);
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      s.set('x', 1);
+      expect(good).toHaveBeenCalledWith(1, undefined);
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe('debug', () => {
+    it('should return type info for each key', () => {
+      s.set('num', 42);
+      s.set('str', 'hello');
+      s.set('arr', [1, 2]);
+      s.set('nil', null);
+      const dbg = s.debug();
+      expect(dbg.num).toBe('number');
+      expect(dbg.str).toBe('string');
+      expect(dbg.arr).toBe('array(2)');
+      expect(dbg.nil).toBe('null');
+    });
+  });
+
+  describe('singleton', () => {
+    it('should export a singleton store instance', () => {
+      expect(store).toBeInstanceOf(AppStore);
     });
   });
 });

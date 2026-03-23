@@ -42,6 +42,7 @@ import { progressiveRenderer } from '../utils/progressive-renderer.js';
 import { drawReferenceLayers } from '../map/reference-layers.js';
 import { drawBackgroundSketches, drawMergeModeOverlay } from '../project/project-canvas-renderer.js';
 import { drawIssueHighlight } from '../project/issue-highlight.js';
+import { getEffectiveDpr, getFrameBudgetMs } from '../utils/device-perf.js';
 
 // ── Performance debug ────────────────────────────────────────
 let _perfDebug = false;
@@ -124,7 +125,8 @@ function draw() {
   // Clear canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.save();
-  const dpr = window.devicePixelRatio || 1;
+  // Use capped DPR to reduce GPU memory on high-DPR mobile devices (e.g. Galaxy Note 10 DPR 2.625 → 2.0)
+  const dpr = getEffectiveDpr();
   const canvasLogicalW = canvas.width / dpr;
   const canvasLogicalH = canvas.height / dpr;
 

@@ -1,23 +1,30 @@
+// @ts-check
 /**
  * Permissions Service for Manholes Mapper
- * 
+ *
  * Handles user role and feature permission checking on the client side.
  * Fetches and caches user role data from the API.
+ *
+ * @typedef {import('../types/index.d.ts').UserRoleData} UserRoleData
+ * @typedef {import('../types/index.d.ts').AuthState} AuthState
  */
 
 import { getToken, getAuthState } from './auth-guard.js';
 
 // Cached user role data
+/** @type {UserRoleData | null} */
 let userRoleCache = null;
+/** @type {Promise<UserRoleData | null> | null} */
 let fetchPromise = null;
 
 // Listeners for permission changes
+/** @type {Set<(role: UserRoleData | null) => void>} */
 const permissionListeners = new Set();
 
 /**
  * Subscribe to permission changes
- * @param {Function} callback
- * @returns {Function} Unsubscribe function
+ * @param {(role: UserRoleData | null) => void} callback
+ * @returns {() => void} Unsubscribe function
  */
 export function onPermissionChange(callback) {
   permissionListeners.add(callback);
@@ -38,8 +45,8 @@ function notifyPermissionChange() {
 
 /**
  * Fetch user role and permissions from API
- * @param {boolean} forceRefresh - Force refresh from API
- * @returns {Promise<Object>} User role data
+ * @param {boolean} [forceRefresh] - Force refresh from API
+ * @returns {Promise<UserRoleData | null>} User role data
  */
 export async function fetchUserRole(forceRefresh = false) {
   const authState = getAuthState();
@@ -97,7 +104,7 @@ export async function fetchUserRole(forceRefresh = false) {
 
 /**
  * Get cached user role data
- * @returns {Object|null}
+ * @returns {UserRoleData | null}
  */
 export function getUserRole() {
   return userRoleCache;
@@ -133,7 +140,7 @@ export function canAccessFeature(featureKey) {
 
 /**
  * Get all features for current user
- * @returns {Object}
+ * @returns {Record<string, boolean>}
  */
 export function getFeatures() {
   return userRoleCache?.features || {};
@@ -186,12 +193,12 @@ if (typeof window !== 'undefined') {
   };
 }
 
-// Available feature keys for reference
-export const FEATURE_KEYS = [
+/** Available feature keys for reference. */
+export const FEATURE_KEYS = /** @type {const} */ ([
   'export_csv',
   'export_sketch',
   'admin_settings',
   'finish_workday',
   'node_types',
   'edge_types',
-];
+]);

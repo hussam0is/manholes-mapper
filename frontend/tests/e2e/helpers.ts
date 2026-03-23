@@ -277,8 +277,17 @@ export async function gotoCanvasReady(page: Page) {
     },
     { timeout: 15000 }
   );
-  // Wait a bit for init() to finish its async work
-  await page.waitForTimeout(500);
+  // Wait for lazy-loaded modules (cockpit, etc.) to initialize.
+  // The cockpit module is loaded via dynamic import in main-entry.js
+  // and injects a .cockpit element into the DOM when ready.
+  await page.waitForFunction(
+    () => document.querySelector('.cockpit') !== null,
+    { timeout: 10000 }
+  ).catch(() => {
+    // Cockpit may not init in all viewport sizes — non-fatal
+  });
+  // Brief settle time for event handlers
+  await page.waitForTimeout(300);
 }
 
 /**
@@ -292,18 +301,26 @@ export async function gotoHome(page: Page) {
 
 /**
  * Close the home panel if it is open, so the canvas is accessible.
- * Uses JavaScript to force-hide to avoid animation timing issues.
+ * Waits for a stable load state before touching the DOM to avoid
+ * "execution context was destroyed" errors when a navigation
+ * (e.g. auth redirect) is still settling.
  */
 export async function dismissHomePanel(page: Page) {
-  await page.evaluate(() => {
-    for (const id of ['homePanel', 'startPanel']) {
-      const el = document.getElementById(id);
-      if (el) {
+  // Ensure the page has committed a document and isn't mid-navigation
+  await page.waitForLoadState('domcontentloaded');
+
+  // Use locator-based approach: more resilient than raw evaluate()
+  // because Playwright auto-waits and retries against the live DOM.
+  for (const id of ['homePanel', 'startPanel']) {
+    const panel = page.locator(`#${id}`);
+    if (await panel.count() > 0) {
+      await panel.evaluate((el) => {
         el.classList.remove('panel-closing');
-        el.style.display = 'none';
-      }
+        (el as HTMLElement).style.display = 'none';
+      });
     }
-  });
+  }
+
   // Wait briefly for event loop to settle
   await page.waitForTimeout(300);
 }
