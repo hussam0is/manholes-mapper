@@ -187,8 +187,8 @@ test.describe('Cockpit — Intel Strip', () => {
     const completionText = page.locator('#completionText');
     await expect(completionText).toBeAttached();
     const text = await completionText.textContent();
-    // Should show "0%" or a percentage
-    expect(text).toMatch(/^\d+%$/);
+    // Empty sketch shows "--", populated sketch shows "N%"
+    expect(text).toMatch(/^(--|\d+%)$/);
   });
 
   test('sync status card is present', async ({ page }) => {

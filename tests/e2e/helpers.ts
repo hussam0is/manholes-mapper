@@ -277,8 +277,17 @@ export async function gotoCanvasReady(page: Page) {
     },
     { timeout: 15000 }
   );
-  // Wait a bit for init() to finish its async work
-  await page.waitForTimeout(500);
+  // Wait for lazy-loaded modules (cockpit, etc.) to initialize.
+  // The cockpit module is loaded via dynamic import in main-entry.js
+  // and injects a .cockpit element into the DOM when ready.
+  await page.waitForFunction(
+    () => document.querySelector('.cockpit') !== null,
+    { timeout: 10000 }
+  ).catch(() => {
+    // Cockpit may not init in all viewport sizes — non-fatal
+  });
+  // Brief settle time for event handlers
+  await page.waitForTimeout(300);
 }
 
 /**
