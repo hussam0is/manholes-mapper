@@ -49,6 +49,8 @@ let _offWorldH = 0;
  */
 export function invalidateBackgroundCache() {
   _cacheKey = '';
+  _offCanvas = null;
+  _offCtx = null;
 }
 
 /**
@@ -135,6 +137,7 @@ function _renderToOffscreen(sketches, opts) {
   _offWorldH = wMaxY - wMinY;
 
   const ctx = _offCtx;
+  if (!ctx) return; // JSDOM/test environment — canvas context unavailable
   ctx.clearRect(0, 0, pxW, pxH);
 
   // 4. Set up transform: world-space → pixel-space

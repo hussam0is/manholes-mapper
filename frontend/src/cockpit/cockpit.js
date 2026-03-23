@@ -12,6 +12,7 @@ import { initActionRail } from './action-rail.js';
 import { initSessionTracker } from './session-tracker.js';
 import { initQuickWins } from './quick-wins.js';
 import { computeSketchCompletion } from './completion-engine.js';
+import { appStore } from '../state/app-store.js';
 
 let cockpitEl = null;
 let isActive = false;

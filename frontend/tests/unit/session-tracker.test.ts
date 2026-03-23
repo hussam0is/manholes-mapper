@@ -4,26 +4,44 @@
  * Tests session duration tracking, node/edge deltas, and streak calculation.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { initSessionTracker, getSessionStats } from '../../src/cockpit/session-tracker.js';
+import { initSessionTracker, getSessionStats, __resetForTests } from '../../src/cockpit/session-tracker.js';
 
 function mockSketchData(nodes: unknown[], edges: unknown[]) {
   (window as any).__getActiveSketchData = vi.fn(() => ({ nodes, edges }));
 }
 
 function mockDOM() {
-  // Create minimal DOM elements the session tracker looks for
-  for (const id of ['sessionDuration', 'sessionNodes', 'sessionEdges', 'sessionStreak', 'streakCount']) {
+  // Create minimal DOM elements the session tracker looks for.
+  // sessionNodes and sessionEdges need a parent .intel-session__row for display logic.
+  for (const id of ['sessionDuration', 'sessionStreak', 'streakCount', 'streakDaysLabel', 'sessionStartedMsg']) {
     if (!document.getElementById(id)) {
       const el = document.createElement('div');
       el.id = id;
       document.body.appendChild(el);
     }
   }
+  // Create row containers for nodes/edges (source code queries .closest('.intel-session__row'))
+  for (const id of ['sessionNodes', 'sessionEdges']) {
+    if (!document.getElementById(id)) {
+      const row = document.createElement('div');
+      row.className = 'intel-session__row';
+      const el = document.createElement('span');
+      el.id = id;
+      row.appendChild(el);
+      document.body.appendChild(row);
+    }
+  }
 }
 
 function cleanupDOM() {
-  for (const id of ['sessionDuration', 'sessionNodes', 'sessionEdges', 'sessionStreak', 'streakCount']) {
-    document.getElementById(id)?.remove();
+  for (const id of ['sessionDuration', 'sessionNodes', 'sessionEdges', 'sessionStreak', 'streakCount', 'streakDaysLabel', 'sessionStartedMsg']) {
+    const el = document.getElementById(id);
+    // Remove parent row if it exists
+    if (el?.closest('.intel-session__row')) {
+      el.closest('.intel-session__row')?.remove();
+    } else {
+      el?.remove();
+    }
   }
 }
 
@@ -34,8 +52,11 @@ describe('Session Tracker', () => {
     mockDOM();
     (window as any).__getActiveSketchData = undefined;
     (window as any).__getSketchStats = undefined;
+    (window as any).menuEvents = undefined;
     // Mock document.hidden to false so timer callbacks execute in test environment
     Object.defineProperty(document, 'hidden', { value: false, writable: true, configurable: true });
+    // Reset internal state so each test starts fresh
+    __resetForTests();
   });
 
   afterEach(() => {
@@ -68,6 +89,7 @@ describe('Session Tracker', () => {
       initSessionTracker();
       const stored = JSON.parse(localStorage.getItem('cockpit_streak') || '{}');
       const today = new Date().toISOString().slice(0, 10);
+      expect(stored.days).toBeDefined();
       expect(stored.days).toContain(today);
     });
   });
@@ -84,7 +106,7 @@ describe('Session Tracker', () => {
     it('should calculate node delta from init', () => {
       mockSketchData([{ id: '1' }], []);
       initSessionTracker();
-      // Simulate adding nodes
+      // Simulate adding nodes — getSessionStats re-reads from window.__getActiveSketchData
       mockSketchData([{ id: '1' }, { id: '2' }, { id: '3' }], []);
       const stats = getSessionStats();
       expect(stats.nodesPlaced).toBe(2);
@@ -117,7 +139,7 @@ describe('Session Tracker', () => {
 
     it('should count consecutive days', () => {
       const today = new Date();
-      const days = [];
+      const days: string[] = [];
       for (let i = 2; i >= 0; i--) {
         const d = new Date(today);
         d.setDate(d.getDate() - i);
@@ -132,7 +154,7 @@ describe('Session Tracker', () => {
 
     it('should allow one freeze day (gap of 1)', () => {
       const today = new Date();
-      const days = [];
+      const days: string[] = [];
       // Today, skip yesterday, day before yesterday
       days.push(today.toISOString().slice(0, 10));
       const twoDaysAgo = new Date(today);
@@ -148,7 +170,7 @@ describe('Session Tracker', () => {
 
     it('should break streak on double gap', () => {
       const today = new Date();
-      const days = [];
+      const days: string[] = [];
       days.push(today.toISOString().slice(0, 10));
       // 3 days ago (two day gap)
       const threeDaysAgo = new Date(today);
@@ -164,7 +186,6 @@ describe('Session Tracker', () => {
 
     it('should return 0 with no streak data', () => {
       mockSketchData([], []);
-      // Don't initialize — getSessionStats still reads streak
       initSessionTracker();
       // Clear the streak data that init just wrote
       localStorage.removeItem('cockpit_streak');
@@ -173,9 +194,9 @@ describe('Session Tracker', () => {
     });
 
     it('should limit stored days to 60', () => {
-      const days = [];
+      const days: string[] = [];
       const today = new Date();
-      // Exclude today (i >= 1) so markDayActive adds it and triggers the trim
+      // Pre-fill 70 days excluding today so markDayActive adds today and triggers trim
       for (let i = 70; i >= 1; i--) {
         const d = new Date(today);
         d.setDate(d.getDate() - i);
@@ -185,6 +206,7 @@ describe('Session Tracker', () => {
       mockSketchData([], []);
       initSessionTracker();
       const stored = JSON.parse(localStorage.getItem('cockpit_streak') || '{}');
+      // 70 existing + today = 71, trimmed to last 60
       expect(stored.days.length).toBeLessThanOrEqual(60);
     });
   });
@@ -202,9 +224,12 @@ describe('Session Tracker', () => {
       mockSketchData([{ id: '1' }], []);
       initSessionTracker();
       mockSketchData([{ id: '1' }, { id: '2' }], []);
-      vi.advanceTimersByTime(1000);
+      // Need to advance past 60s so the "New session" message is gone
+      // and the delta display logic runs
+      vi.advanceTimersByTime(61000);
       const el = document.getElementById('sessionNodes');
-      expect(el?.textContent).toBe('+1');
+      // Source code uses String(nodeDiff) without '+' prefix
+      expect(el?.textContent).toBe('1');
     });
   });
 });

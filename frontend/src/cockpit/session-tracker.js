@@ -294,3 +294,20 @@ export function getSessionStats() {
     streak: getStreak()
   };
 }
+
+/**
+ * Reset internal state for testing purposes.
+ * @internal
+ */
+export function __resetForTests() {
+  initialized = false;
+  sessionStart = 0;
+  nodesAtStart = 0;
+  edgesAtStart = 0;
+  currentNodeCount = 0;
+  currentEdgeCount = 0;
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+}
