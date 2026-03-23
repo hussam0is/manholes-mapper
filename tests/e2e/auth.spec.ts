@@ -82,7 +82,7 @@ test.describe('Authentication', () => {
 
   test('should show login panel when not authenticated', async ({ page }) => {
     // Wait for the app to initialize
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Login panel should be visible or auth loading should complete
     const loginPanel = page.locator('#loginPanel');
@@ -96,7 +96,7 @@ test.describe('Authentication', () => {
   });
 
   test('should have login form elements', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Check for auth container
     const authContainer = page.locator('#authContainer');
@@ -119,7 +119,7 @@ test.describe('Authentication', () => {
 test.describe('Navigation', () => {
   test('should have main navigation elements', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Check header and brand exist in DOM (on mobile the login dialog may overlay them)
     const header = page.locator('header.app-header');
@@ -148,7 +148,7 @@ test.describe('Navigation', () => {
     // Set viewport to mobile size with enough height
     await page.setViewportSize({ width: 375, height: 800 });
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     // Wait for auth overlay to dismiss
     await page.locator('#authLoadingOverlay').waitFor({ state: 'hidden', timeout: 10000 });
 
@@ -189,7 +189,7 @@ test.describe('Accessibility', () => {
 
   test('should have proper form labels', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Hidden file inputs should have aria-labels
     const importSketchFile = page.locator('#importSketchFile');

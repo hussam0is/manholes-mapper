@@ -154,7 +154,7 @@ test.describe('Sidebar', () => {
   test.beforeEach(async ({ page }) => {
     await mockAuth(page);
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.locator('#authLoadingOverlay').waitFor({ state: 'hidden', timeout: 10000 });
   });
 
   test('should have sidebar element', async ({ page }) => {
@@ -177,7 +177,7 @@ test.describe('Dialogs and Modals', () => {
   test.beforeEach(async ({ page }) => {
     await mockAuth(page);
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.locator('#authLoadingOverlay').waitFor({ state: 'hidden', timeout: 10000 });
   });
 
   test('should have help modal (hidden by default)', async ({ page }) => {
@@ -219,7 +219,7 @@ test.describe('Responsive Design', () => {
     // Set viewport to mobile size
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.locator('#authLoadingOverlay').waitFor({ state: 'hidden', timeout: 10000 });
 
     // Mobile menu button should be visible
     const mobileMenuBtn = page.locator('#mobileMenuBtn');
@@ -231,7 +231,7 @@ test.describe('Responsive Design', () => {
     // Set viewport to desktop size
     await page.setViewportSize({ width: 1920, height: 1080 });
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.locator('#authLoadingOverlay').waitFor({ state: 'hidden', timeout: 10000 });
 
     // Desktop controls should be visible
     const controls = page.locator('#controls');
