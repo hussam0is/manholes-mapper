@@ -1,27 +1,21 @@
+/**
+ * API Route: /api/auth/*
+ *
+ * Handler for Better Auth endpoints.
+ * Uses auth.handler (Web API Request/Response) to avoid
+ * body parsing conflicts with Vercel's Node.js runtime.
+ *
+ * Vercel pre-parses req.body as an object, which confuses
+ * toNodeHandler. Instead, we construct a Web API Request
+ * from the Node.js req and use auth.handler directly.
+ */
+
 import { auth } from "../../lib/auth.js";
-import { toNodeHandler } from "better-auth/node";
 
 export const config = { runtime: 'nodejs' };
 
-const betterAuthHandler = toNodeHandler(auth);
-
 export default async function handler(req, res) {
-  // Debug mode
-  if (req.headers['x-debug-auth'] === '1') {
-    return res.status(200).json({
-      url: req.url,
-      method: req.method,
-      contentType: req.headers['content-type'],
-      bodyType: typeof req.body,
-      bodyKeys: req.body ? Object.keys(req.body) : null,
-      bodyStr: req.body ? JSON.stringify(req.body).substring(0, 200) : null,
-      readable: req.readable,
-      readableEnded: req.readableEnded,
-      readableLength: req.readableLength,
-    });
-  }
-
-  // CORS
+  // CORS preflight
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -30,16 +24,61 @@ export default async function handler(req, res) {
     return res.status(204).end();
   }
 
-  const origin = req.headers.origin || '*';
-  res.setHeader('Access-Control-Allow-Origin', origin);
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-
   try {
-    return await betterAuthHandler(req, res);
+    // Build Web API Request from Node.js req
+    const protocol = req.headers['x-forwarded-proto'] || 'https';
+    const host = req.headers['x-forwarded-host'] || req.headers.host;
+    const url = `${protocol}://${host}${req.url}`;
+
+    const headers = new Headers();
+    for (const [key, value] of Object.entries(req.headers)) {
+      if (value && typeof value === 'string') {
+        headers.set(key, value);
+      }
+    }
+
+    const init = { method: req.method, headers };
+
+    // For POST/PUT/PATCH, include the body
+    // Use req.body (already parsed by Vercel) re-serialized as string
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      if (req.body !== undefined && req.body !== null) {
+        init.body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+      }
+    }
+
+    const webRequest = new Request(url, init);
+    const webResponse = await auth.handler(webRequest);
+
+    // Convert Web API Response back to Node.js res
+    res.status(webResponse.status);
+
+    // Copy headers
+    for (const [key, value] of webResponse.headers.entries()) {
+      if (key.toLowerCase() === 'set-cookie') {
+        // Handle multiple Set-Cookie headers
+        const cookies = webResponse.headers.getSetCookie
+          ? webResponse.headers.getSetCookie()
+          : [value];
+        for (const c of cookies) {
+          res.appendHeader('set-cookie', c);
+        }
+      } else {
+        res.setHeader(key, value);
+      }
+    }
+
+    // Add CORS headers
+    const origin = req.headers.origin || '*';
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+    const body = await webResponse.text();
+    return res.end(body);
   } catch (error) {
-    console.error('[Auth] Error:', error);
+    console.error('[Auth API] Error:', error.message || error, error.stack);
     if (!res.headersSent) {
-      return res.status(500).json({ error: error.message });
+      return res.status(500).json({ error: error.message || 'Internal server error' });
     }
   }
 }
