@@ -97,6 +97,9 @@ export default async function authHandler(req, res) {
     if (!res.headersSent) {
       return res.status(500).json({
         error: h.sanitizeErrorMessage(error),
+        // Temporary: expose error for debugging auth 500s (remove after fix)
+        _debug: error.message,
+        _code: error.code,
       });
     }
   }
