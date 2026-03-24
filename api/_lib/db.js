@@ -217,7 +217,7 @@ async function initializeDatabase() {
         EXECUTE FUNCTION update_updated_at_column()
   `;
 
-  // Issue comments table — stores comments on Issue-type nodes
+  // Issue comments table â stores comments on Issue-type nodes
   await sql`
     CREATE TABLE IF NOT EXISTS issue_comments (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -237,7 +237,7 @@ async function initializeDatabase() {
     ON issue_comments(sketch_id, node_id)
   `;
 
-  // Issue notifications table — tracks unread notifications per user
+  // Issue notifications table â tracks unread notifications per user
   await sql`
     CREATE TABLE IF NOT EXISTS issue_notifications (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -254,21 +254,6 @@ async function initializeDatabase() {
   await sql`
     CREATE INDEX IF NOT EXISTS idx_issue_notifications_user
     ON issue_notifications(user_id, read, created_at DESC)
-  `;
-
-  // Rate limit log table — database-backed rate limiting across serverless instances
-  await sql`
-    CREATE TABLE IF NOT EXISTS rate_limit_log (
-      id SERIAL PRIMARY KEY,
-      ip TEXT NOT NULL,
-      endpoint TEXT NOT NULL,
-      created_at TIMESTAMPTZ DEFAULT NOW()
-    )
-  `;
-
-  await sql`
-    CREATE INDEX IF NOT EXISTS idx_rate_limit_ip_time
-    ON rate_limit_log(ip, created_at)
   `;
 }
 
@@ -397,7 +382,7 @@ export async function acquireSketchLock(sketchId, userId, username) {
     };
   }
 
-  // Lock not acquired — fetch current lock info for the error response
+  // Lock not acquired â fetch current lock info for the error response
   const checkResult = await sql`
     SELECT locked_by, locked_at, lock_expires_at
     FROM sketches
@@ -561,7 +546,7 @@ export async function createSketch(userId, sketch) {
  *
  * 1. **Integer version counter** (preferred): if `clientVersion` is provided (a number),
  *    the update only succeeds when the DB's `version` matches. On success the version
- *    is incremented atomically. Deterministic — immune to clock/precision issues.
+ *    is incremented atomically. Deterministic â immune to clock/precision issues.
  *
  * 2. **Timestamp comparison** (legacy fallback): if `clientVersion` is absent but
  *    `clientUpdatedAt` is provided, the update uses the old timestamp-based check.
@@ -617,7 +602,7 @@ export async function updateSketch(sketchId, userId, updates) {
   `;
 
   if (result.rows.length === 0) {
-    // No rows updated — determine the cause: lock conflict, version conflict, or not-found
+    // No rows updated â determine the cause: lock conflict, version conflict, or not-found
     const current = await sql`
       SELECT id, name, creation_date, nodes, edges, admin_config, created_by, last_edited_by,
              project_id, snapshot_input_flow_config, created_at, updated_at, version,

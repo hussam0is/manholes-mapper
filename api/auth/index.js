@@ -3,21 +3,24 @@
  *
  * Handler for Better Auth endpoints.
  * Uses Vercel rewrites to catch all /api/auth/* paths.
- * Handles: signIn, signUp, signOut, session, etc.
+ *
+ * bodyParser: false is critical — Vercel normally pre-parses the body,
+ * consuming the stream before toNodeHandler can read it.
  */
 
 import { auth } from "../../lib/auth.js";
 import { toNodeHandler } from "better-auth/node";
 import { handleCors } from "../_lib/cors.js";
-import { sanitizeErrorMessage } from "../_lib/auth.js";
 import { applyRateLimit, checkDbRateLimit, getClientIP, MAX_REQUESTS_AUTH } from "../_lib/rate-limit.js";
 import { ensureDb } from "../_lib/db.js";
 
 export const config = {
   runtime: 'nodejs',
+  api: {
+    bodyParser: false,
+  },
 };
 
-// Create the node handler
 const betterAuthHandler = toNodeHandler(auth);
 
 export default async function authHandler(req, res) {
@@ -26,12 +29,10 @@ export default async function authHandler(req, res) {
   const isSignOut = req.url?.includes('/sign-out');
 
   if (!isSignOut) {
-    // Layer 1: In-memory rate limit (fast, best-effort per warm instance)
     if (applyRateLimit(req, res, MAX_REQUESTS_AUTH)) {
       return;
     }
 
-    // Layer 2: Database-backed rate limit (cross-instance, reliable)
     try {
       await ensureDb();
       const ip = getClientIP(req);
@@ -46,8 +47,6 @@ export default async function authHandler(req, res) {
         });
       }
     } catch (dbError) {
-      // Database rate limit is best-effort — if DB is unreachable, fall through
-      // to in-memory limit which already passed above
       console.warn('[Auth API] DB rate limit check failed:', dbError.message);
     }
   }
@@ -58,7 +57,7 @@ export default async function authHandler(req, res) {
     console.error('[Auth API] Error:', error.message || error);
     if (!res.headersSent) {
       return res.status(500).json({
-        error: sanitizeErrorMessage(error),
+        error: 'Internal server error',
       });
     }
   }

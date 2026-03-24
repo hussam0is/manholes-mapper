@@ -139,40 +139,55 @@ export function applyRateLimit(req, res, maxRequests = MAX_REQUESTS_DEFAULT) {
 }
 
 /**
- * Database-backed rate limit check (cross-instance, reliable)
- * Uses the rate_limit_log table for persistent tracking across serverless instances.
+ * Database-backed rate limit check (cross-instance, reliable).
+ * Uses the rate_limits table to track request counts across all serverless instances.
  * @param {string} ip - Client IP address
- * @param {string} endpoint - API endpoint being rate-limited
+ * @param {string} endpoint - API endpoint being rate limited
  * @param {number} maxRequests - Maximum requests allowed in the window
  * @param {number} windowSeconds - Time window in seconds
- * @returns {Promise<{ allowed: boolean, count: number }>}
+ * @returns {Promise<{ allowed: boolean, remaining: number }>}
  */
-export async function checkDbRateLimit(ip, endpoint, maxRequests, windowSeconds) {
-  // Dynamic import to avoid circular dependency with db.js
-  const { sql } = await import('./db.js');
-
-  // Count recent requests from this IP to this endpoint
-  const result = await sql`
-    SELECT COUNT(*) as count
-    FROM rate_limit_log
-    WHERE ip = ${ip}
-      AND endpoint = ${endpoint}
-      AND created_at > NOW() - (${windowSeconds} || ' seconds')::interval
-  `;
-
-  const count = parseInt(result.rows[0].count, 10);
-
-  if (count >= maxRequests) {
-    return { allowed: false, count };
+export async function checkDbRateLimit(ip, endpoint, maxRequests = MAX_REQUESTS_DEFAULT, windowSeconds = 60) {
+  try {
+    const { sql } = await import('@vercel/postgres');
+    
+    // Create rate_limits table if it doesn't exist
+    await sql`
+      CREATE TABLE IF NOT EXISTS rate_limits (
+        id SERIAL PRIMARY KEY,
+        ip TEXT NOT NULL,
+        endpoint TEXT NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `;
+    
+    // Count recent requests within the window
+    const result = await sql`
+      SELECT COUNT(*) as count FROM rate_limits
+      WHERE ip = ${ip} AND endpoint = ${endpoint}
+      AND created_at > NOW() - INTERVAL '1 second' * ${windowSeconds}
+    `;
+    
+    const count = parseInt(result.rows[0]?.count || '0', 10);
+    
+    if (count >= maxRequests) {
+      return { allowed: false, remaining: 0 };
+    }
+    
+    // Record this request
+    await sql`INSERT INTO rate_limits (ip, endpoint) VALUES (${ip}, ${endpoint})`;
+    
+    // Periodically clean old entries (1% chance per request)
+    if (Math.random() < 0.01) {
+      sql`DELETE FROM rate_limits WHERE created_at < NOW() - INTERVAL '5 minutes'`.catch(() => {});
+    }
+    
+    return { allowed: true, remaining: maxRequests - count - 1 };
+  } catch (err) {
+    // If DB is unavailable, allow the request (fail open)
+    console.warn('[RateLimit] DB check failed:', err.message);
+    return { allowed: true, remaining: maxRequests };
   }
-
-  // Log this request
-  await sql`
-    INSERT INTO rate_limit_log (ip, endpoint)
-    VALUES (${ip}, ${endpoint})
-  `;
-
-  return { allowed: true, count: count + 1 };
 }
 
 // Export constants and helpers for use in routes
