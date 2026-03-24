@@ -53,19 +53,23 @@ export default async function handler(req, res) {
     // Convert Web API Response back to Node.js res
     res.status(webResponse.status);
 
-    // Copy headers
+    // Copy headers (avoid appendHeader for Node.js compat)
+    const setCookies = [];
     for (const [key, value] of webResponse.headers.entries()) {
       if (key.toLowerCase() === 'set-cookie') {
-        // Handle multiple Set-Cookie headers
-        const cookies = webResponse.headers.getSetCookie
-          ? webResponse.headers.getSetCookie()
-          : [value];
-        for (const c of cookies) {
-          res.appendHeader('set-cookie', c);
-        }
+        setCookies.push(value);
       } else {
         res.setHeader(key, value);
       }
+    }
+    // getSetCookie() returns all Set-Cookie headers properly
+    if (webResponse.headers.getSetCookie) {
+      const cookies = webResponse.headers.getSetCookie();
+      if (cookies.length > 0) {
+        res.setHeader('set-cookie', cookies);
+      }
+    } else if (setCookies.length > 0) {
+      res.setHeader('set-cookie', setCookies);
     }
 
     // Add CORS headers
@@ -76,9 +80,12 @@ export default async function handler(req, res) {
     const body = await webResponse.text();
     return res.end(body);
   } catch (error) {
-    console.error('[Auth API] Error:', error.message || error, error.stack);
+    console.error('[Auth API] Error:', error.message, error.stack);
     if (!res.headersSent) {
-      return res.status(500).json({ error: error.message || 'Internal server error' });
+      return res.status(500).json({
+        error: error.message || 'Internal server error',
+        at: error.stack?.split('\n')[1]?.trim(),
+      });
     }
   }
 }
