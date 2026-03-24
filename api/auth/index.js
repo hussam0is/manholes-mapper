@@ -1,65 +1,43 @@
 /**
  * API Route: /api/auth/*
  *
- * Handler for Better Auth endpoints.
- * Uses Vercel rewrites to catch all /api/auth/* paths.
+ * Handler for Better Auth endpoints using Web Standard API.
+ * Vercel's modern Node.js runtime uses fetch-style handlers
+ * (Request → Response), not the legacy (req, res) format.
  *
- * bodyParser: false is critical — Vercel normally pre-parses the body,
- * consuming the stream before toNodeHandler can read it.
+ * auth.handler is Better Auth's native Web API handler that takes
+ * a standard Request and returns a Response — no body parsing issues.
  */
 
 import { auth } from "../../lib/auth.js";
-import { toNodeHandler } from "better-auth/node";
-import { handleCors } from "../_lib/cors.js";
-import { applyRateLimit, checkDbRateLimit, getClientIP, MAX_REQUESTS_AUTH } from "../_lib/rate-limit.js";
-import { ensureDb } from "../_lib/db.js";
 
-export const config = {
-  runtime: 'nodejs',
-  api: {
-    bodyParser: false,
-  },
-};
-
-const betterAuthHandler = toNodeHandler(auth);
-
-export default async function authHandler(req, res) {
-  if (handleCors(req, res)) return;
-
-  const isSignOut = req.url?.includes('/sign-out');
-
-  if (!isSignOut) {
-    if (applyRateLimit(req, res, MAX_REQUESTS_AUTH)) {
-      return;
+export default {
+  async fetch(request) {
+    // Handle CORS preflight
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Credentials': 'true',
+        },
+      });
     }
 
     try {
-      await ensureDb();
-      const ip = getClientIP(req);
-      const dbResult = await checkDbRateLimit(ip, '/api/auth', MAX_REQUESTS_AUTH, 60);
-      if (!dbResult.allowed) {
-        res.setHeader('X-RateLimit-Limit', MAX_REQUESTS_AUTH);
-        res.setHeader('X-RateLimit-Remaining', 0);
-        res.setHeader('Retry-After', 60);
-        return res.status(429).json({
-          error: 'Too many requests',
-          retryAfter: 60,
-        });
-      }
-    } catch (dbError) {
-      console.warn('[Auth API] DB rate limit check failed:', dbError.message);
+      const response = await auth.handler(request);
+      return response;
+    } catch (error) {
+      console.error('[Auth API] Error:', error.message || error);
+      return new Response(
+        JSON.stringify({ error: error.message || 'Internal server error' }),
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
     }
-  }
-
-  try {
-    return await betterAuthHandler(req, res);
-  } catch (error) {
-    console.error('[Auth API] Error:', error.message || error, error.stack);
-    if (!res.headersSent) {
-      return res.status(500).json({
-        error: error.message || 'Internal server error',
-        code: error.code || undefined,
-      });
-    }
-  }
-}
+  },
+};
