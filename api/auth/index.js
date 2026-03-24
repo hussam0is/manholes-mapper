@@ -28,6 +28,19 @@ export default async function handler(req, res) {
     const webRes = await auth.handler(new Request(url, init));
     const body = await webRes.text();
     
+    // If auth.handler returned an error, add debug info
+    if (webRes.status >= 500 && !body) {
+      res.statusCode = 500;
+      res.setHeader('content-type', 'application/json');
+      return res.end(JSON.stringify({
+        error: 'auth.handler returned empty 500',
+        status: webRes.status,
+        statusText: webRes.statusText,
+        headers: Object.fromEntries(webRes.headers.entries()),
+        bodyLength: body.length,
+      }));
+    }
+    
     res.statusCode = webRes.status;
     webRes.headers.forEach((v, k) => {
       if (k.toLowerCase() !== 'set-cookie') res.setHeader(k, v);
