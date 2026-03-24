@@ -19,14 +19,14 @@
  * S now delegates to AppStore internally.  When a property is written via S.foo = x,
  * the setter writes to both the local variable (for main.js compat) AND the AppStore.
  * New code can subscribe to changes via:
- *   import { store } from '../state/app-store.js';
- *   store.subscribe('nodes', (newVal, oldVal) => { ... });
+ *   import { appState } from '../state/app-state.js';
+ *   appState.subscribe('nodes', (newVal, oldVal) => { ... });
  *
  * F remains unchanged — it's a simple function registry that will be
  * replaced by direct imports once circular dependency chains are broken.
  */
 
-import { store } from '../state/app-store.js';
+import { appState as store } from '../state/app-state.js';
 
 /** @type {Record<string, any>} */
 export const S = {};
@@ -66,9 +66,7 @@ export function bridgedProperty(name, getter, setter) {
  * Call once after _initStateProxy() in main.js to seed the store.
  */
 export function hydrateStore() {
-  const entries = {};
   for (const key of Object.keys(S)) {
-    try { entries[key] = S[key]; } catch (_) { /* skip getter-only failures */ }
+    try { store.set(key, S[key]); } catch (_) { /* skip getter-only failures */ }
   }
-  store.init(entries);
 }
