@@ -1,43 +1,49 @@
 /**
  * API Route: /api/auth/*
  *
- * Handler for Better Auth endpoints using Web Standard API.
- * Vercel's modern Node.js runtime uses fetch-style handlers
- * (Request → Response), not the legacy (req, res) format.
+ * Handler for Better Auth endpoints.
+ * Uses Vercel rewrites to catch all /api/auth/* paths.
+ * Handles: signIn, signUp, signOut, session, etc.
  *
- * auth.handler is Better Auth's native Web API handler that takes
- * a standard Request and returns a Response — no body parsing issues.
+ * IMPORTANT: Do NOT add middleware that reads req.body before
+ * betterAuthHandler — toNodeHandler reads the raw body stream.
+ * Do NOT add bodyParser config — Vercel Node.js runtime doesn't
+ * pre-parse bodies for non-Next.js functions.
  */
 
 import { auth } from "../../lib/auth.js";
+import { toNodeHandler } from "better-auth/node";
 
-export default {
-  async fetch(request) {
-    // Handle CORS preflight
-    if (request.method === 'OPTIONS') {
-      return new Response(null, {
-        status: 204,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-          'Access-Control-Allow-Credentials': 'true',
-        },
+export const config = {
+  runtime: 'nodejs',
+};
+
+const betterAuthHandler = toNodeHandler(auth);
+
+export default async function authHandler(req, res) {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    return res.status(204).end();
+  }
+
+  // Set CORS headers for all requests
+  const origin = req.headers.origin || req.headers.referer?.replace(/\/$/, '') || '*';
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+  try {
+    return await betterAuthHandler(req, res);
+  } catch (error) {
+    console.error('[Auth API] Error:', error.message || error);
+    if (!res.headersSent) {
+      return res.status(500).json({
+        error: 'Internal server error',
+        message: error.message,
       });
     }
-
-    try {
-      const response = await auth.handler(request);
-      return response;
-    } catch (error) {
-      console.error('[Auth API] Error:', error.message || error);
-      return new Response(
-        JSON.stringify({ error: error.message || 'Internal server error' }),
-        {
-          status: 500,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
-    }
-  },
-};
+  }
+}
