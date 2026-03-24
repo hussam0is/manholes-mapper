@@ -87,6 +87,11 @@ export default async function authHandler(req, res) {
       return res.status(500).json({
         error: 'Internal server error',
         _debug: error.message,
+        _reqBodyType: typeof req.body,
+        _reqBodyIsNull: req.body === null,
+        _reqBodyIsUndef: req.body === undefined,
+        _reqBodyPreview: req.body != null ? JSON.stringify(req.body).substring(0, 100) : 'empty',
+        _readable: typeof wrappedReq?.read,
       });
     }
   }
