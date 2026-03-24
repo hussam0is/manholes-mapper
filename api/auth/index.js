@@ -126,6 +126,7 @@ export default async function authHandler(req, res) {
     });
 
     // Use Better Auth's Web API handler
+    console.log('[Auth API] Request:', req.method, req.url, 'body-type:', typeof body, 'body-len:', body?.length, 'body-preview:', body?.substring(0, 100));
     const webResponse = await d.auth.handler(webRequest);
 
     // Convert Web API Response back to Node.js res
@@ -151,6 +152,9 @@ export default async function authHandler(req, res) {
       return res.status(500).json({
         error: 'Internal server error',
         _debug: error.message,
+        _bodyType: typeof body,
+        _bodyPreview: typeof body === 'string' ? body.substring(0, 200) : String(body),
+        _reqBody: req.body !== undefined ? typeof req.body : 'undefined',
       });
     }
   }
