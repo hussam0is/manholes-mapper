@@ -118,12 +118,11 @@ export default async function authHandler(req, res) {
       }
     }
 
-    const webRequest = new Request(url, {
-      method: req.method,
-      headers,
-      body,
-      duplex: 'half',
-    });
+    const init = { method: req.method, headers };
+    if (body !== undefined) {
+      init.body = body;
+    }
+    const webRequest = new Request(url, init);
 
     // Use Better Auth's Web API handler
     console.log('[Auth API] Request:', req.method, req.url, 'body-type:', typeof body, 'body-len:', body?.length, 'body-preview:', body?.substring(0, 100));
