@@ -2,6 +2,7 @@ import { auth } from "../../lib/auth.js";
 
 export const config = { runtime: 'nodejs' };
 
+<<<<<<< Updated upstream
 export default async function handler(req, res) {
   // Step 1: Can we even respond to POST?
   if (req.headers['x-echo'] === '1') {
@@ -15,6 +16,33 @@ export default async function handler(req, res) {
       return res.end(JSON.stringify({ echo: true, method: req.method, url: req.url, dbTables: tables, hasPostgresUrl: !!process.env.POSTGRES_URL, hasDatabaseUrl: !!process.env.DATABASE_URL }));
     } catch (e) {
       return res.end(JSON.stringify({ echo: true, dbError: e.message }));
+=======
+const betterAuthHandler = toNodeHandler(auth);
+
+export default async function authHandler(req, res) {
+  // CORS preflight
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    return res.status(204).end();
+  }
+
+  const origin = req.headers.origin || req.headers.referer?.replace(/\/$/, '') || '*';
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+  try {
+    return await betterAuthHandler(req, res);
+  } catch (error) {
+    console.error('[Auth API] Error:', error);
+    if (!res.headersSent) {
+      return res.status(500).json({
+        error: 'Internal server error',
+        message: error.message,
+      });
+>>>>>>> Stashed changes
     }
   }
 
