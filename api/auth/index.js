@@ -54,10 +54,11 @@ export default async function authHandler(req, res) {
   try {
     return await betterAuthHandler(req, res);
   } catch (error) {
-    console.error('[Auth API] Error:', error.message || error);
+    console.error('[Auth API] Error:', error.message || error, error.stack);
     if (!res.headersSent) {
       return res.status(500).json({
-        error: 'Internal server error',
+        error: error.message || 'Internal server error',
+        code: error.code || undefined,
       });
     }
   }
