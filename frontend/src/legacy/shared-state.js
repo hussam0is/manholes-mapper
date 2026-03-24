@@ -26,7 +26,8 @@
  * replaced by direct imports once circular dependency chains are broken.
  */
 
-import { appState as store } from '../state/app-state.js';
+import { appState } from '../state/app-state.js';
+import { store } from '../state/app-store.js';
 
 /** @type {Record<string, any>} */
 export const S = {};
@@ -54,7 +55,8 @@ export function bridgedProperty(name, getter, setter) {
   if (setter) {
     desc.set = (v) => {
       setter(v);
-      // Mirror into AppStore so subscribers get notified
+      // Mirror into both AppState and AppStore so subscribers get notified
+      appState.set(name, v);
       store.set(name, v);
     };
   }
@@ -67,6 +69,10 @@ export function bridgedProperty(name, getter, setter) {
  */
 export function hydrateStore() {
   for (const key of Object.keys(S)) {
-    try { store.set(key, S[key]); } catch (_) { /* skip getter-only failures */ }
+    try {
+      const val = S[key];
+      appState.set(key, val);
+      store.set(key, val);
+    } catch (_) { /* skip getter-only failures */ }
   }
 }

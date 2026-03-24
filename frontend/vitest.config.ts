@@ -1,6 +1,14 @@
 import { defineConfig } from 'vitest/config';
+import path from 'path';
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      // api/_lib lives at the repo root, not inside frontend/
+      '../../api/_lib': path.resolve(__dirname, '../api/_lib'),
+      '../api/_lib': path.resolve(__dirname, '../api/_lib'),
+    },
+  },
   test: {
     environment: 'jsdom',
     setupFiles: ['./tests/setup.ts'],
