@@ -5,8 +5,17 @@ export const config = { runtime: 'nodejs' };
 export default async function handler(req, res) {
   // Step 1: Can we even respond to POST?
   if (req.headers['x-echo'] === '1') {
-    res.setHeader('content-type', 'application/json');
-    return res.end(JSON.stringify({ echo: true, method: req.method, url: req.url }));
+    // Test DB connection directly
+    try {
+      const { Pool } = await import('@neondatabase/serverless');
+      const pool = new Pool({ connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL });
+      const r = await pool.query("SELECT table_name FROM information_schema.tables WHERE table_schema='public' ORDER BY table_name");
+      const tables = r.rows.map(r => r.table_name);
+      await pool.end();
+      return res.end(JSON.stringify({ echo: true, method: req.method, url: req.url, dbTables: tables, hasPostgresUrl: !!process.env.POSTGRES_URL, hasDatabaseUrl: !!process.env.DATABASE_URL }));
+    } catch (e) {
+      return res.end(JSON.stringify({ echo: true, dbError: e.message }));
+    }
   }
 
   // Step 2: Try auth.handler
