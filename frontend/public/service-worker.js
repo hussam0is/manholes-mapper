@@ -42,7 +42,6 @@ const PRECACHE_ASSETS = [
   withBase('index.html'),
   OFFLINE_URL,
   withBase('manifest.json'),
-  withBase('styles.css'),
   withBase('fonts/material-icons.woff2'),
   withBase('app_icon.png'),
   withBase('health/index.html')
