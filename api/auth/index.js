@@ -3,12 +3,10 @@
  *
  * Handler for Better Auth endpoints.
  * Uses Vercel rewrites to catch all /api/auth/* paths.
- * Handles: signIn, signUp, signOut, session, etc.
  *
- * IMPORTANT: Do NOT add middleware that reads req.body before
- * betterAuthHandler — toNodeHandler reads the raw body stream.
- * Do NOT add bodyParser config — Vercel Node.js runtime doesn't
- * pre-parse bodies for non-Next.js functions.
+ * IMPORTANT: Vercel rewrites /api/auth/:path* → /api/auth
+ * This means req.url loses the sub-path. We must reconstruct
+ * the original URL from x-forwarded headers or the :path param.
  */
 
 import { auth } from "../../lib/auth.js";
@@ -30,10 +28,46 @@ export default async function authHandler(req, res) {
     return res.status(204).end();
   }
 
-  // Set CORS headers for all requests
+  // Set CORS headers
   const origin = req.headers.origin || req.headers.referer?.replace(/\/$/, '') || '*';
   res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+  // Vercel rewrites /api/auth/:path* → /api/auth, losing the sub-path.
+  // Reconstruct original URL from x-matched-path or x-invoke-path headers.
+  const originalUrl = req.headers['x-matched-path']
+    || req.headers['x-invoke-path']
+    || req.headers['x-original-url']
+    || req.url;
+
+  // If Vercel stripped the path, try to reconstruct from query params
+  // (Vercel sometimes passes path as query: /api/auth?path=sign-in/email)
+  if (req.url === '/api/auth' && req.query?.path) {
+    req.url = `/api/auth/${Array.isArray(req.query.path) ? req.query.path.join('/') : req.query.path}`;
+  } else if (originalUrl !== req.url) {
+    req.url = originalUrl;
+  }
+
+  // TEMP DEBUG: return request info to diagnose routing
+  if (req.headers['x-debug-auth'] === '1') {
+    return res.status(200).json({
+      url: req.url,
+      method: req.method,
+      originalUrl: originalUrl,
+      query: req.query,
+      headers: {
+        'x-matched-path': req.headers['x-matched-path'],
+        'x-invoke-path': req.headers['x-invoke-path'],
+        'x-original-url': req.headers['x-original-url'],
+        'x-forwarded-host': req.headers['x-forwarded-host'],
+        'x-vercel-forwarded-for': req.headers['x-vercel-forwarded-for'],
+      },
+      bodyType: typeof req.body,
+      bodyIsNull: req.body === null,
+      bodyIsUndef: req.body === undefined,
+      hasOnData: typeof req.on === 'function',
+    });
+  }
 
   try {
     return await betterAuthHandler(req, res);
@@ -41,8 +75,7 @@ export default async function authHandler(req, res) {
     console.error('[Auth API] Error:', error.message || error);
     if (!res.headersSent) {
       return res.status(500).json({
-        error: 'Internal server error',
-        message: error.message,
+        error: error.message || 'Internal server error',
       });
     }
   }
