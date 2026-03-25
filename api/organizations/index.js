@@ -18,6 +18,7 @@ import { verifyAuth, parseBody } from '../_lib/auth.js';
 import {
   ensureDb,
   getUserById,
+  getUsersByOrganization,
   getAllOrganizations,
   createOrganization,
   getOrganizationById,
@@ -45,6 +46,12 @@ export default async function handler(req, res) {
   // Apply rate limiting
   if (applyRateLimit(req, res)) {
     return; // Rate limited, response already sent
+  }
+
+  // Route to members sub-handler (merged from /api/org-members)
+  const action = req.query?.action;
+  if (action === 'members') {
+    return handleOrgMembers(req, res, request);
   }
 
   // Route to single-resource handler if ID is provided (via rewrite from /api/organizations/:id)
@@ -121,6 +128,44 @@ export default async function handler(req, res) {
 
   } catch (error) {
     return handleApiError(error, res, '[API /api/organizations]');
+  }
+}
+
+/**
+ * Handle org members listing: GET /api/organizations?action=members
+ * (Merged from api/org-members/index.js)
+ */
+async function handleOrgMembers(req, res, request) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    await ensureDb();
+
+    const { userId, error } = await verifyAuth(request);
+    if (error) {
+      return res.status(401).json({ error });
+    }
+
+    const currentUser = await getUserById(userId);
+    if (!currentUser || !currentUser.organization_id) {
+      return res.status(200).json({ members: [] });
+    }
+
+    const users = await getUsersByOrganization(currentUser.organization_id, { limit: 200 });
+
+    const members = users
+      .filter(u => u.id !== userId)
+      .map(u => ({
+        id: u.id,
+        username: u.username || u.email?.split('@')[0] || 'Unknown',
+        email: u.email,
+      }));
+
+    return res.status(200).json({ members });
+  } catch (err) {
+    return handleApiError(err, res, '[API /api/organizations?action=members]');
   }
 }
 

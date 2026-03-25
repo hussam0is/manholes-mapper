@@ -56,7 +56,7 @@ export function destroyNotificationBell() {
 
 async function fetchCount() {
   try {
-    const resp = await fetch('/api/notifications?count=true');
+    const resp = await fetch('/api/issue-comments?action=notifications&count=true');
     if (!resp.ok) return;
     const data = await resp.json();
     updateBadge(data.count || 0);
@@ -95,7 +95,7 @@ async function openDropdown() {
   dropdownEl.innerHTML = '<div class="notification-empty">...</div>';
 
   try {
-    const resp = await fetch('/api/notifications');
+    const resp = await fetch('/api/issue-comments?action=notifications');
     if (!resp.ok) throw new Error('Failed');
     const data = await resp.json();
     const notifications = data.notifications || [];
@@ -150,7 +150,7 @@ function renderNotifications(notifications) {
     markAllBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
       try {
-        await fetch('/api/notifications', {
+        await fetch('/api/issue-comments?action=notifications', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ all: true }),

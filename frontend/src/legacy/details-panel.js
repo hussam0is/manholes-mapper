@@ -51,7 +51,7 @@ async function _fetchOrgMembers() {
   if (_mentionCachePromise) return _mentionCachePromise;
   _mentionCachePromise = (async () => {
     try {
-      const resp = await fetch('/api/org-members');
+      const resp = await fetch('/api/organizations?action=members');
       if (!resp.ok) return [];
       const data = await resp.json();
       _mentionCache = data.members || [];

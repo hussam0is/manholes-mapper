@@ -43,7 +43,7 @@
     },
     {
       "source": "/api/notifications/:path*",
-      "destination": "/api/notifications"
+      "destination": "/api/issue-comments?action=notifications"
     }
   ],
   "headers": [
