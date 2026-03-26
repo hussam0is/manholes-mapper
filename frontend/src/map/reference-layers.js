@@ -102,6 +102,16 @@ const DEFAULT_STYLES = {
     labelColor: '#965096',
     labelColorDark: '#d8b4fe',
     labelFontSize: 8
+  },
+  coordinates: {
+    strokeColor: 'rgba(16, 185, 129, 0.8)',
+    fillColor: 'rgba(16, 185, 129, 0.6)',
+    pointRadius: 4,
+    pointShape: 'diamond',
+    labelField: 'name',
+    labelColor: '#065f46',
+    labelColorDark: '#6ee7b7',
+    labelFontSize: 9
   }
 };
 
@@ -179,6 +189,36 @@ export function setRefLayersEnabled(enabled) {
  */
 export function isRefLayersEnabled() {
   return refLayersEnabled;
+}
+
+/**
+ * Get the raw layers array (including full geojson data).
+ * Used for merging custom layers into the existing set.
+ * @returns {Array<LayerData>}
+ */
+export function getRawLayers() {
+  return layers;
+}
+
+/**
+ * Add or replace a single layer by ID, preserving other layers.
+ * @param {LayerData} layerData - Full layer object including geojson
+ */
+export function upsertReferenceLayer(layerData) {
+  const idx = layers.findIndex(l => l.id === layerData.id);
+  if (idx >= 0) {
+    layers[idx] = layerData;
+  } else {
+    layers.push(layerData);
+  }
+  // Initialize visibility
+  if (!layerVisibility.has(layerData.id)) {
+    layerVisibility.set(layerData.id, layerData.visible !== false);
+  }
+  // Invalidate caches
+  _sortedLayersCache = null;
+  _styleCache.clear();
+  _preTransformRefX = null;
 }
 
 /**
@@ -585,6 +625,12 @@ function drawPoint(ctx, coords, properties, style, refPoint, coordScale, stretch
   ctx.beginPath();
   if (style.pointShape === 'square') {
     ctx.rect(sx - radius, sy - radius, radius * 2, radius * 2);
+  } else if (style.pointShape === 'diamond') {
+    ctx.moveTo(sx, sy - radius);
+    ctx.lineTo(sx + radius, sy);
+    ctx.lineTo(sx, sy + radius);
+    ctx.lineTo(sx - radius, sy);
+    ctx.closePath();
   } else {
     ctx.arc(sx, sy, radius, 0, Math.PI * 2);
   }

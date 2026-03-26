@@ -44,6 +44,9 @@ import {
   initLayersConfig,
 } from '../map/layers-config.js';
 import {
+  upsertReferenceLayer,
+} from '../map/reference-layers.js';
+import {
   isProjectCanvasMode,
 } from '../project/project-canvas-state.js';
 import { STORAGE_KEYS } from '../state/persistence.js';
@@ -59,6 +62,54 @@ const COORDINATE_SCALE_KEY = STORAGE_KEYS.coordinateScale;
 
 // Convenience wrapper so calls inside this module look like plain t() calls
 const t = (...args) => F.t(...args);
+
+/**
+ * Create a reference layer from coordinates map showing all survey points with labels.
+ * Adds/replaces a layer named "Coordinates" in the reference layers system.
+ * @param {Map<string, {x: number, y: number, z: number}>} coordinatesMap
+ */
+function addCoordinatesReferenceLayer(coordinatesMap) {
+  if (!coordinatesMap || coordinatesMap.size === 0) return;
+
+  // Build GeoJSON FeatureCollection from coordinates (ITM x,y → GeoJSON coordinates)
+  const features = [];
+  for (const [pointId, coords] of coordinatesMap) {
+    features.push({
+      type: 'Feature',
+      geometry: {
+        type: 'Point',
+        coordinates: [coords.x, coords.y], // ITM easting, northing
+      },
+      properties: {
+        name: pointId,
+        z: coords.z || 0,
+      },
+    });
+  }
+
+  upsertReferenceLayer({
+    id: '__coordinates_layer__',
+    name: t('coordinates.layerName') || 'Coordinates',
+    layerType: 'coordinates',
+    visible: true,
+    geojson: {
+      type: 'FeatureCollection',
+      features,
+    },
+    style: {
+      strokeColor: 'rgba(16, 185, 129, 0.8)',   // emerald
+      fillColor: 'rgba(16, 185, 129, 0.6)',
+      pointRadius: 4,
+      pointShape: 'diamond',
+      labelField: 'name',
+      labelColor: '#065f46',
+      labelColorDark: '#6ee7b7',
+      labelFontSize: 9,
+    },
+  });
+
+  console.debug(`[Coordinates] Added reference layer with ${features.length} survey points`);
+}
 
 // ============================================
 // Coordinate System Handlers
@@ -92,6 +143,9 @@ async function handleCoordinatesImport(file) {
         S.coordinatesMap = newCoordinates;
       }
       saveCoordinatesToStorage(S.coordinatesMap);
+
+      // Create a reference layer showing all coordinate survey points with labels
+      addCoordinatesReferenceLayer(S.coordinatesMap);
 
       const matchingIds = S.nodes.filter(n => S.coordinatesMap.has(String(n.id)));
       const matchCount = matchingIds.length;
@@ -842,6 +896,11 @@ function initCoordinates() {
   syncCoordinatesToggleUI();
   updateScaleDisplay();
   updateStretchDisplay();
+
+  // Recreate coordinates reference layer from stored data
+  if (S.coordinatesMap.size > 0) {
+    addCoordinatesReferenceLayer(S.coordinatesMap);
+  }
 
   // Mark nodes with coordinate status
   if (S.coordinatesMap.size > 0) {
