@@ -1974,6 +1974,37 @@ function markInternalNavigation() {
   setTimeout(() => { _internalNavigation = false; }, 100);
 }
 
+// ── Exit confirmation modal ───────────────────────────────────────────────
+// Styled confirm dialog for back-button exit guard (replaces window.confirm).
+function _showExitConfirmModal(message, confirmLabel, cancelLabel, onConfirm) {
+  // Remove any existing modal
+  document.querySelector('.exit-confirm-overlay')?.remove();
+
+  const overlay = document.createElement('div');
+  overlay.className = 'exit-confirm-overlay panel-overlay';
+  const modal = document.createElement('div');
+  modal.className = 'exit-confirm-modal panel-modal';
+  modal.innerHTML = `
+    <div class="panel-modal-header">
+      <span class="material-icons">warning</span>
+      <span>${message}</span>
+    </div>
+    <div class="panel-modal-footer" style="display:flex;gap:8px;justify-content:flex-end;padding:12px 16px;">
+      <button class="exit-confirm-cancel" style="padding:8px 16px;border:1px solid #ccc;border-radius:6px;background:#fff;cursor:pointer;">${cancelLabel}</button>
+      <button class="exit-confirm-ok" style="padding:8px 16px;border:none;border-radius:6px;background:#ef4444;color:#fff;cursor:pointer;">${confirmLabel}</button>
+    </div>`;
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+
+  const close = () => overlay.remove();
+  overlay.querySelector('.exit-confirm-cancel').addEventListener('click', close);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+  overlay.querySelector('.exit-confirm-ok').addEventListener('click', () => {
+    close();
+    if (typeof onConfirm === 'function') onConfirm();
+  });
+}
+
 // ── Android back-button exit guard ────────────────────────────────────────
 // Push a history entry so the Android back button triggers popstate instead
 // of immediately exiting the app/PWA. On popstate we prompt confirmation.
@@ -2025,7 +2056,7 @@ function markInternalNavigation() {
       const msg = typeof t === 'function' ? t('confirms.exitApp') : 'Exit the app?';
       const exitLabel = typeof t === 'function' ? t('confirms.exitButton') || 'Exit' : 'Exit';
       const stayLabel = typeof t === 'function' ? t('confirms.stayButton') || 'Stay' : 'Stay';
-      _showConfirmModal(msg, exitLabel, stayLabel, () => {
+      _showExitConfirmModal(msg, exitLabel, stayLabel, () => {
         history.back();
       });
     }
