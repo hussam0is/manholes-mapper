@@ -14085,15 +14085,13 @@ button:focus-visible,
     top: 0;
     left: 0;
     right: 0;
-    height: 28px;
-    padding-bottom: 16px; /* extends touch area to 44px total */
+    height: 6px;
+    padding-bottom: 38px; /* extends touch area to 44px total */
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.32);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    background: transparent;
+    border-bottom: none;
     cursor: pointer;
     z-index: 201;
     opacity: 0;
@@ -14102,8 +14100,9 @@ button:focus-visible,
   }
 
   .header-recall-handle .material-icons {
-    font-size: 18px;
-    color: rgba(255, 255, 255, 0.85);
+    font-size: 14px;
+    color: rgba(0, 0, 0, 0.25);
+    margin-top: -2px;
   }
 
   body.landscape-header-hidden .header-recall-handle {
@@ -14739,12 +14738,12 @@ body.cockpit-mode #edgeLegend {
 
     /* Dark mode header recall handle */
     .header-recall-handle {
-      background: rgba(255, 255, 255, 0.08);
-      border-bottom-color: rgba(255, 255, 255, 0.06);
+      background: transparent;
+      border-bottom-color: transparent;
     }
 
     .header-recall-handle .material-icons {
-      color: rgba(255, 255, 255, 0.35);
+      color: rgba(255, 255, 255, 0.2);
     }
 
     /* Progressive Disclosure â€" dark mode overrides */
