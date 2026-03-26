@@ -75,11 +75,11 @@ export const menuEvents = new MenuEventEmitter();
  */
 export function setupEventDelegation(container) {
   // Click delegation (skip <select> elements — they are handled by 'change')
+  // NOTE: Do NOT stopPropagation — legacy handlers use addEventListener('click')
+  // on the same elements and need the native event to bubble through.
   container.addEventListener('click', (e) => {
     const actionEl = e.target.closest('[data-action]');
     if (actionEl && actionEl.tagName !== 'SELECT') {
-      e.preventDefault();
-      e.stopPropagation();
       const action = actionEl.dataset.action;
       menuEvents.emit(action, { element: actionEl, originalEvent: e });
     }

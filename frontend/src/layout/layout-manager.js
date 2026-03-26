@@ -77,8 +77,12 @@ function adjustCanvasForToolbar() {
 
   resizeHandler = updatePadding;
 
-  // Update on resize
-  window.addEventListener('resize', updatePadding);
+  // Update on resize (debounced to avoid thrashing during orientation changes)
+  let _layoutResizeRaf = 0;
+  window.addEventListener('resize', () => {
+    if (_layoutResizeRaf) cancelAnimationFrame(_layoutResizeRaf);
+    _layoutResizeRaf = requestAnimationFrame(updatePadding);
+  });
   // Initial update after a frame for the toolbar to render
   requestAnimationFrame(updatePadding);
 }

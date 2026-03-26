@@ -387,7 +387,12 @@ export class HeaderComponent {
       }
     };
 
-    window.addEventListener('resize', updateLayout);
+    // Debounce resize to avoid layout thrashing during orientation changes
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+      if (resizeTimer) cancelAnimationFrame(resizeTimer);
+      resizeTimer = requestAnimationFrame(updateLayout);
+    });
     updateLayout();
   }
 
