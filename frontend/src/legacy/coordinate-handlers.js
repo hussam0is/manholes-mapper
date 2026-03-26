@@ -20,6 +20,8 @@ import {
   approximateUncoordinatedNodePositions,
   classifySketchCoordinates,
   repositionNodesFromEmbeddedCoordinates,
+  computeHypotheticalSchematicPositions,
+  computeHypotheticalSurveyPositions,
 } from '../utils/coordinates.js';
 import {
   getMapReferencePoint,
@@ -216,6 +218,12 @@ function applyCoordinatesIfEnabled(options = {}) {
     S.nodes = approximateUncoordinatedNodePositions(S.nodes, S.edges, S.originalNodePositions);
     S._nodeMapDirty = true; S._spatialGridDirty = true; S._dataVersion++;
   }
+
+  // Compute hypothetical positions for both views:
+  // - survey_x/y_hypothetical for schematic-only nodes (geo-referenced view)
+  // - x/y_hypothetical for survey-only nodes (schematic view)
+  computeHypotheticalSurveyPositions(S.nodes, S.edges);
+  computeHypotheticalSchematicPositions(S.nodes, S.edges);
 
   // Handle view adjustment based on options
   if (recenter) {

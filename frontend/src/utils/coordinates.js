@@ -433,6 +433,186 @@ export function approximateUncoordinatedNodePositions(nodes, edges, originalPosi
 }
 
 /**
+ * Compute hypothetical schematic positions for nodes that only have survey coordinates
+ * (e.g. GNSS-created nodes). Uses the distance and direction from a connected neighbor
+ * that has both schematic and survey positions to derive where the node would be in
+ * the schematic layout.
+ *
+ * @param {Array} nodes - All nodes
+ * @param {Array} edges - All edges
+ * @returns {number} - Count of nodes that got hypothetical positions
+ */
+export function computeHypotheticalSchematicPositions(nodes, edges) {
+  const nodeMap = new Map();
+  const adjacency = new Map();
+  nodes.forEach(n => {
+    nodeMap.set(String(n.id), n);
+    adjacency.set(String(n.id), []);
+  });
+  edges.forEach(e => {
+    const t = String(e.tail), h = String(e.head);
+    if (adjacency.has(t) && h) adjacency.get(t).push(h);
+    if (adjacency.has(h) && t) adjacency.get(h).push(t);
+  });
+
+  // Nodes that need hypothetical schematic positions:
+  // have surveyX/Y but no schematicX/Y (and no meaningful original x,y)
+  const needsSchematic = nodes.filter(n =>
+    n.surveyX != null && n.surveyY != null && n.schematicX == null
+  );
+  if (needsSchematic.length === 0) return 0;
+
+  // Anchor nodes: have both schematicX/Y and surveyX/Y
+  const anchorSet = new Set(
+    nodes.filter(n => n.schematicX != null && n.surveyX != null).map(n => String(n.id))
+  );
+
+  let count = 0;
+  const positioned = new Set();
+  const maxPasses = 10;
+
+  for (let pass = 0; pass < maxPasses; pass++) {
+    let changed = false;
+    for (const node of needsSchematic) {
+      const nid = String(node.id);
+      if (positioned.has(nid)) continue;
+
+      const neighbors = adjacency.get(nid) || [];
+      // Find an anchor neighbor (has schematic + survey)
+      const anchor = neighbors
+        .map(id => nodeMap.get(id))
+        .find(n => n && (anchorSet.has(String(n.id)) || positioned.has(String(n.id))));
+
+      if (!anchor) continue;
+
+      // Compute distance and angle in survey space
+      const sdx = node.surveyX - anchor.surveyX;
+      const sdy = node.surveyY - anchor.surveyY;
+      const surveyDist = Math.sqrt(sdx * sdx + sdy * sdy);
+      const surveyAngle = Math.atan2(sdy, sdx);
+
+      // Anchor's schematic position
+      const ax = anchor.schematicX != null ? anchor.schematicX : anchor.x_hypothetical;
+      const ay = anchor.schematicY != null ? anchor.schematicY : anchor.y_hypothetical;
+      if (ax == null || ay == null) continue;
+
+      // Compute scale factor from anchor edges between nodes with both positions
+      // For simplicity, use direct survey distance as schematic distance (preserving angle)
+      // since schematic layout has arbitrary scale
+      node.x_hypothetical = ax + Math.cos(surveyAngle) * surveyDist;
+      node.y_hypothetical = ay + Math.sin(surveyAngle) * surveyDist;
+      node._isHypotheticalSchematic = true;
+      positioned.add(nid);
+      changed = true;
+      count++;
+    }
+    if (!changed) break;
+  }
+
+  return count;
+}
+
+/**
+ * Compute hypothetical survey positions for nodes that only have schematic positions
+ * (manual/drawn nodes without GNSS or CSV coordinates). Uses the distance and direction
+ * from a connected neighbor that has both types of positions.
+ *
+ * @param {Array} nodes - All nodes
+ * @param {Array} edges - All edges
+ * @returns {number} - Count of nodes that got hypothetical positions
+ */
+export function computeHypotheticalSurveyPositions(nodes, edges) {
+  const nodeMap = new Map();
+  const adjacency = new Map();
+  nodes.forEach(n => {
+    nodeMap.set(String(n.id), n);
+    adjacency.set(String(n.id), []);
+  });
+  edges.forEach(e => {
+    const t = String(e.tail), h = String(e.head);
+    if (adjacency.has(t) && h) adjacency.get(t).push(h);
+    if (adjacency.has(h) && t) adjacency.get(h).push(t);
+  });
+
+  // Nodes that need hypothetical survey positions:
+  // have schematicX/Y (or x,y) but no surveyX/Y
+  const needsSurvey = nodes.filter(n =>
+    (n.surveyX == null || n.surveyY == null) && (n.schematicX != null || n.x != null)
+  );
+  if (needsSurvey.length === 0) return 0;
+
+  // Anchor nodes: have both schematicX/Y and surveyX/Y
+  const anchorSet = new Set(
+    nodes.filter(n => n.schematicX != null && n.surveyX != null).map(n => String(n.id))
+  );
+  if (anchorSet.size === 0) return 0;
+
+  // Compute scale factor: average (survey distance / schematic distance) across anchor edges
+  let scaleFactors = [];
+  edges.forEach(e => {
+    const tn = nodeMap.get(String(e.tail));
+    const hn = nodeMap.get(String(e.head));
+    if (!tn || !hn) return;
+    if (!anchorSet.has(String(tn.id)) || !anchorSet.has(String(hn.id))) return;
+    const schDist = Math.sqrt(
+      Math.pow((hn.schematicX || hn.x) - (tn.schematicX || tn.x), 2) +
+      Math.pow((hn.schematicY || hn.y) - (tn.schematicY || tn.y), 2)
+    );
+    const surDist = Math.sqrt(
+      Math.pow(hn.surveyX - tn.surveyX, 2) + Math.pow(hn.surveyY - tn.surveyY, 2)
+    );
+    if (schDist > 1) scaleFactors.push(surDist / schDist);
+  });
+  const avgScale = scaleFactors.length > 0
+    ? scaleFactors.reduce((a, b) => a + b, 0) / scaleFactors.length
+    : 1;
+
+  let count = 0;
+  const positioned = new Set();
+  const maxPasses = 10;
+
+  for (let pass = 0; pass < maxPasses; pass++) {
+    let changed = false;
+    for (const node of needsSurvey) {
+      const nid = String(node.id);
+      if (positioned.has(nid)) continue;
+
+      const neighbors = adjacency.get(nid) || [];
+      const anchor = neighbors
+        .map(id => nodeMap.get(id))
+        .find(n => n && (anchorSet.has(String(n.id)) || positioned.has(String(n.id))));
+      if (!anchor) continue;
+
+      // Schematic positions
+      const nx = node.schematicX != null ? node.schematicX : node.x;
+      const ny = node.schematicY != null ? node.schematicY : node.y;
+      const ax = anchor.schematicX != null ? anchor.schematicX : anchor.x;
+      const ay = anchor.schematicY != null ? anchor.schematicY : anchor.y;
+
+      const dx = nx - ax;
+      const dy = ny - ay;
+      const angle = Math.atan2(dy, dx);
+      const dist = Math.sqrt(dx * dx + dy * dy) * avgScale;
+
+      // Anchor's survey position
+      const asx = anchor.surveyX != null ? anchor.surveyX : anchor.survey_x_hypothetical;
+      const asy = anchor.surveyY != null ? anchor.surveyY : anchor.survey_y_hypothetical;
+      if (asx == null || asy == null) continue;
+
+      node.survey_x_hypothetical = asx + Math.cos(angle) * dist;
+      node.survey_y_hypothetical = asy + Math.sin(angle) * dist;
+      node._isHypotheticalSurvey = true;
+      positioned.add(nid);
+      changed = true;
+      count++;
+    }
+    if (!changed) break;
+  }
+
+  return count;
+}
+
+/**
  * Apply coordinates to nodes array
  * Transforms ITM survey coordinates to canvas positions while preserving spatial relationships
  * @param {Array} nodes - Array of node objects

@@ -812,6 +812,28 @@ function drawEdge(edge) {
       ctx.restore();
     }
 
+    // Glow effect for edges connected to hypothetical nodes
+    if ((tailNode._isHypotheticalSchematic || headNode._isHypotheticalSchematic ||
+         tailNode._isHypotheticalSurvey || headNode._isHypotheticalSurvey) && sizeVS < 3) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(251, 191, 36, 0.4)'; // amber glow
+      ctx.lineWidth = edgeLW * 3;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(tx1, ty1);
+      ctx.lineTo(tx2, ty2);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(251, 191, 36, 0.7)';
+      ctx.lineWidth = edgeLW * 1.5;
+      ctx.setLineDash([4 / sizeVS, 3 / sizeVS]);
+      ctx.beginPath();
+      ctx.moveTo(tx1, ty1);
+      ctx.lineTo(tx2, ty2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
     if (_issueEdgeIds.has(String(edge.id)) && edge !== selectedEdge && sizeVS < 3) {
       ctx.save();
       ctx.strokeStyle = 'rgba(239, 68, 68, 0.55)';
@@ -1230,6 +1252,32 @@ function drawNode(node) {
     heatmapColor: heatmapColor
   };
   drawNodeIcon(ctx, stretchedN, radius, COLORS, isSelected ? stretchedN : null, coordinateOptions);
+
+  // Hypothetical position indicator: dashed amber ring
+  if ((node._isHypotheticalSchematic || node._isHypotheticalSurvey) && sizeVS >= 0.15 && sizeVS < 3) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(251, 191, 36, 0.75)'; // amber
+    ctx.lineWidth = 2 / sizeVS;
+    ctx.setLineDash([3 / sizeVS, 3 / sizeVS]);
+    ctx.beginPath();
+    ctx.arc(stretchedX, stretchedY, radius * 1.4, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Small "~" badge
+    const badgeR = radius * 0.32;
+    const bx = stretchedX - radius * 0.8;
+    const by = stretchedY - radius * 0.8;
+    ctx.beginPath();
+    ctx.arc(bx, by, badgeR, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(251, 191, 36, 0.9)';
+    ctx.fill();
+    ctx.font = `bold ${badgeR * 1.4}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff';
+    ctx.fillText('~', bx, by);
+    ctx.restore();
+  }
 
   if (node.nodeType === 'Home' && node.directConnection) {
     drawDirectConnectionBadge(stretchedX, stretchedY, radius);
