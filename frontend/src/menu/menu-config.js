@@ -203,7 +203,7 @@ export const menuConfig = {
     {
       id: 'sketches',
       icon: 'layers',
-      labelKey: 'sketches',
+      labelKey: 'sketchesBtn',
       showLabel: true,
     },
   ],
