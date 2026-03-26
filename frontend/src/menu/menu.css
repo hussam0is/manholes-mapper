@@ -346,11 +346,14 @@
   display: none !important;
 }
 
-/* Medium screens - ensure controls don't overflow */
+/* Medium screens - keep all controls visible without clipping */
 @media (max-width: 900px) and (min-width: 601px) {
   .menu-controls {
     gap: 0.25rem;
-    max-width: calc(100vw - 350px); /* Leave space for brand */
+    overflow-x: visible;
+    overflow-y: visible;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
   
   .menu-group {
@@ -360,6 +363,21 @@
   
   .menu-group--primary {
     gap: 0.25rem;
+  }
+
+  .menu-group--utility {
+    gap: 0;
+  }
+}
+
+/* Narrower tablets (601-750px) — hide search and language to fit core controls */
+@media (max-width: 750px) and (min-width: 601px) {
+  .menu-group--search {
+    display: none;
+  }
+
+  .menu-select {
+    display: none;
   }
 }
 
