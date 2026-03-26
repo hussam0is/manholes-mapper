@@ -43,6 +43,58 @@ let pendingDetailsForSelectedNode = false;
 let selectedNodeDownScreen = null;
 let selectedNodeMoveThreshold = MOUSE_TAP_MOVE_THRESHOLD;
 let lastPointerType = 'mouse';
+
+// Reference layer tooltip
+let _refTooltipEl = null;
+let _refTooltipVisible = false;
+
+function _ensureRefTooltip() {
+  if (_refTooltipEl) return _refTooltipEl;
+  _refTooltipEl = document.createElement('div');
+  _refTooltipEl.className = 'ref-layer-tooltip';
+  _refTooltipEl.style.cssText = 'display:none;position:fixed;z-index:9999;pointer-events:none;' +
+    'background:rgba(15,23,42,0.92);color:#e2e8f0;padding:6px 10px;border-radius:6px;' +
+    'font-size:12px;line-height:1.4;max-width:280px;box-shadow:0 4px 12px rgba(0,0,0,0.3);white-space:pre-line;';
+  document.body.appendChild(_refTooltipEl);
+  return _refTooltipEl;
+}
+
+function _updateRefLayerTooltip(screenX, screenY, world) {
+  try {
+    if (typeof F.hitTestReferenceLayers !== 'function') return;
+
+    const hitRadius = 15 / S.viewScale;
+    const hit = F.hitTestReferenceLayers(
+      world.x / S.viewStretchX,
+      world.y / S.viewStretchY,
+      hitRadius,
+      S.coordinateScale
+    );
+
+    const tip = _ensureRefTooltip();
+    if (hit) {
+      const p = hit.properties;
+      let lines = [];
+      if (p.name) lines.push(`ID: ${p.name}`);
+      lines.push(`Layer: ${hit.layerName}`);
+      if (p.x != null) lines.push(`X: ${Number(p.x).toFixed(3)}`);
+      if (p.y != null) lines.push(`Y: ${Number(p.y).toFixed(3)}`);
+      if (p.z != null && p.z !== 0) lines.push(`Z: ${Number(p.z).toFixed(3)}`);
+      if (p.sourceFile) lines.push(`File: ${p.sourceFile}`);
+      tip.textContent = lines.join('\n');
+      tip.style.display = '';
+      const rect = S.canvas.getBoundingClientRect();
+      tip.style.left = `${rect.left + screenX + 14}px`;
+      tip.style.top = `${rect.top + screenY - 10}px`;
+      _refTooltipVisible = true;
+    } else if (_refTooltipVisible) {
+      tip.style.display = 'none';
+      _refTooltipVisible = false;
+    }
+  } catch (_) {
+    // hitTestReferenceLayers not available yet
+  }
+}
 let pendingDeselect = false;
 
 // ── Convenience aliases via F ───────────────────────────────────────────────
@@ -561,6 +613,9 @@ export function initPointerHandlers() {
           canvas.style.cursor = '';
         }
         if (!!danglingHit !== !!prevHovered) F.scheduleDraw();
+
+        // Reference layer hover tooltip
+        _updateRefLayerTooltip(e.offsetX, e.offsetY, world);
       }
     }
   });

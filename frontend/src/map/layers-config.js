@@ -13,8 +13,10 @@ import {
   getReferenceLayers, setLayerVisibility,
   saveRefLayerSettings,
   getSectionFeatures, setSectionVisibility, saveSectionSettings,
-  OUTSIDE_SECTIONS
+  OUTSIDE_SECTIONS,
+  addRawPointsLayer,
 } from './reference-layers.js';
+import { parseCoordinatesCsv } from '../utils/coordinates.js';
 
 /** @type {HTMLElement|null} */
 let btnEl = null;
@@ -207,6 +209,35 @@ function populatePanel() {
     }
   }
 
+  // --- Raw Points Section (always shown) ---
+  const rawPointLayers = allRefLayers.filter(l => l.layerType === 'raw_points');
+  html += `
+    <div class="layers-config-panel__section">
+      <div class="layers-config-panel__section-header">
+        <span class="material-icons layers-config-panel__section-icon" style="color:#dc2626">place</span>
+        <span>${escHtml(t('layersConfig.rawPoints') || 'Raw Points')}</span>
+      </div>
+      <div class="layers-config-panel__section-items">
+  `;
+  for (const layer of rawPointLayers) {
+    html += `
+      <label class="layers-config-panel__toggle">
+        <input type="checkbox" data-layer-id="${escHtml(layer.id)}" ${layer.visible ? 'checked' : ''} class="lc-ref-layer-cb" />
+        <span>${escHtml(layer.name)}</span>
+        <span class="layers-config-panel__count">(${layer.featureCount})</span>
+      </label>
+    `;
+  }
+  html += `
+        <button class="layers-config-panel__add-btn" id="lc-add-raw-points">
+          <span class="material-icons">add_circle_outline</span>
+          <span>${escHtml(t('layersConfig.addRawPoints') || 'Add Coordinates File')}</span>
+        </button>
+        <input type="file" id="lc-raw-points-file" accept=".csv,text/csv" style="display:none" />
+      </div>
+    </div>
+  `;
+
   html += '</div>';
   panelEl.innerHTML = html;
   attachPanelListeners();
@@ -272,6 +303,38 @@ function attachPanelListeners() {
       _scheduleDraw();
     });
   });
+
+  // Add raw points file upload
+  const addBtn = panelEl.querySelector('#lc-add-raw-points');
+  const fileInput = panelEl.querySelector('#lc-raw-points-file');
+  if (addBtn && fileInput) {
+    addBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const coordsMap = parseCoordinatesCsv(text);
+        if (coordsMap.size === 0) {
+          alert((_t || (k => k))('coordinates.noCoordinatesFound') || 'No coordinates found in file');
+          return;
+        }
+        addRawPointsLayer(file.name, coordsMap);
+        // Refresh panel to show the new layer toggle
+        populatePanel();
+        // Refresh other layer UIs
+        if (typeof window.renderRefLayerToggles === 'function') {
+          window.renderRefLayerToggles();
+        }
+        _scheduleDraw();
+      } catch (err) {
+        console.error('[LayersConfig] Failed to parse raw points CSV:', err);
+        alert((_t || (k => k))('coordinates.importError') || 'Error loading coordinates');
+      } finally {
+        fileInput.value = '';
+      }
+    });
+  }
 }
 
 /**

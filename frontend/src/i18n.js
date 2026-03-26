@@ -782,6 +782,8 @@ export const i18n = {
       baseMap: 'מפת רקע',
       sections: 'מנות',
       outsideSections: 'מחוץ למנות',
+      rawPoints: 'נקודות גולמיות',
+      addRawPoints: 'הוסף קובץ קואורדינטות',
     },
     location: {
       notSupported: 'מיקום אינו נתמך במכשיר זה',
@@ -1980,6 +1982,8 @@ export const i18n = {
       baseMap: 'Base Map',
       sections: 'Sections',
       outsideSections: 'Outside Sections',
+      rawPoints: 'Raw Points',
+      addRawPoints: 'Add Coordinates File',
     },
     location: {
       notSupported: 'Location not supported on this device',

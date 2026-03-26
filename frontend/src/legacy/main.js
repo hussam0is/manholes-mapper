@@ -108,7 +108,8 @@ import {
   saveRefLayerSettings,
   loadRefLayerSettings,
   clearReferenceLayers,
-  loadSectionSettings
+  loadSectionSettings,
+  hitTestReferenceLayers
 } from '../map/reference-layers.js';
 import {
   initStreetView,
@@ -1799,6 +1800,7 @@ F.applyCoordinatesIfEnabled = (...a) => applyCoordinatesIfEnabled(...a);
 F.addCoordinatesReferenceLayer = (...a) => addCoordinatesReferenceLayer(...a);
 F.updateMapReferencePoint = (...a) => updateMapReferencePoint(...a);
 F.renderRefLayerToggles   = (...a) => renderRefLayerToggles(...a);
+F.hitTestReferenceLayers  = (...a) => hitTestReferenceLayers(...a);
 F.createNode              = (...a) => createNode(...a);
 F.createEdge              = (...a) => createEdge(...a);
 F.computeNodeTypes        = (...a) => computeNodeTypes(...a);

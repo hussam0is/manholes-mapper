@@ -112,6 +112,16 @@ const DEFAULT_STYLES = {
     labelColor: '#065f46',
     labelColorDark: '#6ee7b7',
     labelFontSize: 9
+  },
+  raw_points: {
+    strokeColor: 'rgba(220, 38, 38, 0.9)',
+    fillColor: 'rgba(220, 38, 38, 0.6)',
+    pointRadius: 5,
+    pointShape: 'circle',
+    labelField: 'name',
+    labelColor: '#991b1b',
+    labelColorDark: '#fca5a5',
+    labelFontSize: 9
   }
 };
 
@@ -960,6 +970,90 @@ function drawLabels(ctx, labels, style, viewScale, _stretchX, _stretchY) {
 
     drawnPositions.push({ x: label.x, y: label.y });
   }
+}
+
+/**
+ * Hit-test reference layer points at a world coordinate.
+ * Returns the closest feature's properties + layer info within hitRadius, or null.
+ * @param {number} worldX - World X coordinate
+ * @param {number} worldY - World Y coordinate
+ * @param {number} hitRadius - Hit radius in world coordinates
+ * @param {number} coordinateScale - Pixels per meter
+ * @returns {{properties: object, layerName: string, layerType: string}|null}
+ */
+export function hitTestReferenceLayers(worldX, worldY, hitRadius, coordinateScale) {
+  if (!refLayersEnabled || layers.length === 0) return null;
+  const refPoint = getMapReferencePoint();
+  if (!refPoint) return null;
+
+  let closest = null;
+  let closestDist = hitRadius;
+
+  for (const layer of layers) {
+    if (!isLayerVisible(layer.id)) continue;
+    const features = layer.geojson?.features;
+    if (!features) continue;
+
+    for (const feature of features) {
+      if (!feature.geometry || feature.geometry.type !== 'Point') continue;
+      const [itmX, itmY] = feature.geometry.coordinates;
+      // Use pre-transformed world coords if available
+      const wx = feature._worldX != null ? feature._worldX : refPoint.canvas.x + (itmX - refPoint.itm.x) * coordinateScale;
+      const wy = feature._worldY != null ? feature._worldY : refPoint.canvas.y - (itmY - refPoint.itm.y) * coordinateScale;
+      const dx = wx - worldX;
+      const dy = wy - worldY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < closestDist) {
+        closestDist = dist;
+        closest = {
+          properties: feature.properties || {},
+          layerName: layer.name,
+          layerType: layer.layerType,
+          worldX: wx,
+          worldY: wy,
+        };
+      }
+    }
+  }
+  return closest;
+}
+
+/**
+ * Add a "raw points" layer from a parsed coordinates CSV.
+ * Each call creates a separate named layer so multiple files can coexist.
+ * @param {string} fileName - Original file name (shown in tooltips)
+ * @param {Map<string, {x: number, y: number, z: number}>} coordsMap - Parsed coordinates
+ * @returns {string} - The generated layer ID
+ */
+export function addRawPointsLayer(fileName, coordsMap) {
+  const features = [];
+  for (const [pointId, coords] of coordsMap) {
+    features.push({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [coords.x, coords.y] },
+      properties: {
+        name: pointId,
+        x: coords.x,
+        y: coords.y,
+        z: coords.z || 0,
+        sourceFile: fileName,
+      },
+    });
+  }
+
+  const layerId = `__raw_points_${Date.now()}_${Math.random().toString(36).slice(2, 6)}__`;
+  const displayName = fileName.replace(/\.[^.]+$/, ''); // strip extension
+
+  upsertReferenceLayer({
+    id: layerId,
+    name: displayName,
+    layerType: 'raw_points',
+    visible: true,
+    geojson: { type: 'FeatureCollection', features },
+    style: { ...DEFAULT_STYLES.raw_points },
+  });
+
+  return layerId;
 }
 
 // Initialize settings on module load
