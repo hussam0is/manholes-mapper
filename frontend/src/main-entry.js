@@ -1100,6 +1100,10 @@ function setupLandscapeHeaderAutoHide() {
     } else {
       header.classList.add('header--landscape-auto-hide');
     }
+    // Force canvas redraw after layout mode change (sticky ↔ fixed header)
+    requestAnimationFrame(() => {
+      if (window.scheduleDraw) window.scheduleDraw();
+    });
   }
 
   /** Sync --header-h based on current header visibility */
@@ -1112,6 +1116,8 @@ function setupLandscapeHeaderAutoHide() {
       document.documentElement.style.setProperty('--header-h', h + 'px');
       document.body.classList.remove('landscape-header-hidden');
     }
+    // Trigger canvas resize + redraw after header height change so canvas fills properly
+    if (window.scheduleDraw) window.scheduleDraw();
   }
 
   function hideHeader() {
