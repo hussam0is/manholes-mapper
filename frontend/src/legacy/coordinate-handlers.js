@@ -159,10 +159,15 @@ function applyCoordinatesIfEnabled(options = {}) {
     return;
   }
 
-  // Store original positions before applying coordinates (if not already stored)
+  // Store original schematic positions before applying coordinates (if not already stored)
   S.nodes.forEach(node => {
     if (!S.originalNodePositions.has(node.id)) {
       S.originalNodePositions.set(node.id, { x: node.x, y: node.y });
+    }
+    // Persist schematic positions on the node itself so they survive export/import
+    if (node.schematicX == null) {
+      node.schematicX = node.x;
+      node.schematicY = node.y;
     }
   });
 
@@ -465,10 +470,14 @@ function autoRepositionFromEmbeddedCoords() {
   console.debug('[Coordinates] Sketch classification:', classification);
 
   if (classification.withCoords > 0) {
-    // Save original node positions before repositioning
+    // Save original schematic positions before repositioning
     for (const node of S.nodes) {
       if (!S.originalNodePositions.has(node.id)) {
         S.originalNodePositions.set(node.id, { x: node.x, y: node.y });
+      }
+      if (node.schematicX == null) {
+        node.schematicX = node.x;
+        node.schematicY = node.y;
       }
     }
 

@@ -308,14 +308,20 @@ export function initToolbarEvents() {
         S.currentSketchName = importedSketch.sketchName;
         S.currentProjectId = importedSketch.projectId || null;
 
-        // Rebuild coordinatesMap from imported nodes' embedded survey coords
+        // Rebuild coordinatesMap and originalNodePositions from imported nodes
         const newCoordsMap = new Map();
+        const origPositions = new Map();
         for (const node of importedSketch.nodes) {
           if (node.hasCoordinates && node.surveyX != null && node.surveyY != null) {
             newCoordsMap.set(String(node.id), { x: node.surveyX, y: node.surveyY, z: node.surveyZ || 0 });
           }
+          // Restore schematic positions if saved in the sketch
+          if (node.schematicX != null && node.schematicY != null) {
+            origPositions.set(node.id, { x: node.schematicX, y: node.schematicY });
+          }
         }
         S.coordinatesMap = newCoordsMap;
+        S.originalNodePositions = origPositions;
         const { DEFAULT_INPUT_FLOW_CONFIG } = await import('../state/constants.js');
         S.currentInputFlowConfig = importedSketch.inputFlowConfig || DEFAULT_INPUT_FLOW_CONFIG;
         F.updateSketchNameDisplay();
