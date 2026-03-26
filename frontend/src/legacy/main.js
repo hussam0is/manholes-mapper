@@ -648,6 +648,8 @@ let adminConfig = loadAdminConfig();
     undoBtn:                  bp('undoBtn',                  () => undoBtn,                  null),
     redoBtn:                  bp('redoBtn',                  () => redoBtn,                  null),
     draggingDanglingStart:    bp('draggingDanglingStart',    () => draggingDanglingStart,    (v) => { draggingDanglingStart = v; }),
+    // Computed: true when sketch has nodes but no survey coordinates
+    isSchematicView:          { get() { return nodes.length > 0 && coordinatesMap.size === 0; }, enumerable: true, configurable: true },
   });
   // Hydrate AppStore with initial values
   hydrateStore();

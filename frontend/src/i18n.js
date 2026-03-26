@@ -736,6 +736,9 @@ export const i18n = {
       noCoordinatesBody: 'כדי להציג על המפה, יבא קואורדינטות מ-CSV או מדוד עם GNSS.',
       openWithoutCoords: 'פתח ללא קואורדינטות',
     },
+    schematicView: {
+      banner: 'תצוגה סכמטית — יבא קואורדינטות לתצוגה גיאוגרפית',
+    },
     stretch: {
       horizontal: 'מתיחה אופקית',
       vertical: 'מתיחה אנכית',
@@ -1191,6 +1194,9 @@ export const i18n = {
         weekStreak: (days) => `רצף ${days} ימים — המשך כך!`,
       },
     },
+  },
+  schematicView: {
+    banner: 'תצוגה סכמטית — יבא קובץ קואורדינטות לתצוגה גיאוגרפית',
   },
   en: {
     appTitle: 'Manhole Mapper',
@@ -1926,6 +1932,9 @@ export const i18n = {
       noCoordinatesBody: 'To display on the map, import CSV coordinates or measure with GNSS.',
       openWithoutCoords: 'Open without coordinates',
     },
+    schematicView: {
+      banner: 'Schematic View — Import coordinates for geo-referenced layout',
+    },
     stretch: {
       horizontal: 'Horizontal Stretch',
       vertical: 'Vertical Stretch',
@@ -2381,6 +2390,9 @@ export const i18n = {
         weekStreak: (days) => `${days}-day streak — keep it up!`,
       },
     },
+  },
+  schematicView: {
+    banner: 'Schematic View — Import coordinates for geo-referenced layout',
   },
 };
 

@@ -122,6 +122,9 @@ function draw() {
   const _isHeatmapFrame = document.body.classList.contains('heatmap-active');
   S._isHeatmapFrame = _isHeatmapFrame;
 
+  // Schematic view: sketch has nodes but no survey coordinates attached
+  const isSchematicView = nodes.length > 0 && coordinatesMap.size === 0;
+
   // Clear canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.save();
@@ -149,7 +152,7 @@ function draw() {
     ctx.restore();
   }
 
-  drawInfiniteGrid(canvasLogicalW, canvasLogicalH);
+  drawInfiniteGrid(canvasLogicalW, canvasLogicalH, isSchematicView);
   ctx.translate(viewTranslate.x, viewTranslate.y);
   ctx.scale(viewScale, viewScale);
 
@@ -556,6 +559,11 @@ function draw() {
     drawMapAttribution(ctx, canvas.width, canvas.height);
   }
 
+  // Schematic view banner (screen-space overlay)
+  if (isSchematicView) {
+    drawSchematicBanner(ctx, canvasLogicalW, _isDarkFrame);
+  }
+
   scheduleEdgeLegendUpdate();
   scheduleIncompleteEdgeUpdate();
   renderPerf.frameEnd();
@@ -597,8 +605,33 @@ function renderEdgeLegend() {
 
 // ── Grid / padding / auto-pan ────────────────────────────────
 
-function drawInfiniteGrid(logicalW, logicalH) {
-  drawInfiniteGridFeature(S.ctx, S.viewTranslate, S.viewScale, S.canvas, S.viewStretchX, S.viewStretchY, logicalW, logicalH);
+function drawInfiniteGrid(logicalW, logicalH, isSchematicView = false) {
+  drawInfiniteGridFeature(S.ctx, S.viewTranslate, S.viewScale, S.canvas, S.viewStretchX, S.viewStretchY, logicalW, logicalH, isSchematicView);
+}
+
+function drawSchematicBanner(ctx, logicalW, isDark) {
+  const t = typeof window.t === 'function' ? window.t : (k) => k;
+  const text = t('schematicView.banner');
+  const bannerH = 30;
+  const padding = 8;
+  ctx.save();
+  // Background pill
+  ctx.fillStyle = isDark ? 'rgba(148,163,184,0.12)' : 'rgba(100,116,139,0.10)';
+  ctx.fillRect(0, 0, logicalW, bannerH);
+  // Subtle bottom border
+  ctx.strokeStyle = isDark ? 'rgba(148,163,184,0.15)' : 'rgba(100,116,139,0.12)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, bannerH);
+  ctx.lineTo(logicalW, bannerH);
+  ctx.stroke();
+  // Icon + text
+  ctx.font = '600 12px Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = isDark ? 'rgba(148,163,184,0.65)' : 'rgba(71,85,105,0.65)';
+  ctx.fillText('◇  ' + text + '  ◇', logicalW / 2, bannerH / 2);
+  ctx.restore();
 }
 
 function ensureVirtualPadding() {

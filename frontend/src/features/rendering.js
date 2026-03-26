@@ -49,7 +49,7 @@ export function renderEdgeLegend(legendEl, edgeTypeColors) {
  * @param {number} [viewStretchX=1] - Horizontal stretch factor
  * @param {number} [viewStretchY=1] - Vertical stretch factor
  */
-export function drawInfiniteGrid(ctx, viewTranslate, viewScale, canvas, viewStretchX = 1, viewStretchY = 1, screenW, screenH) {
+export function drawInfiniteGrid(ctx, viewTranslate, viewScale, canvas, viewStretchX = 1, viewStretchY = 1, screenW, screenH, isSchematicView = false) {
   // Use pre-computed dimensions when available to avoid getBoundingClientRect() reflow per frame
   const screenWidth = screenW || canvas.getBoundingClientRect().width;
   const screenHeight = screenH || canvas.getBoundingClientRect().height;
@@ -64,7 +64,13 @@ export function drawInfiniteGrid(ctx, viewTranslate, viewScale, canvas, viewStre
   const startYScreen = startYWorld * viewScale * viewStretchY + viewTranslate.y;
   ctx.save();
   ctx.beginPath();
-  ctx.strokeStyle = COLORS.grid.stroke;
+  if (isSchematicView) {
+    const isDark = window.CONSTS?.isDarkMode?.() || false;
+    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
+    ctx.setLineDash([2, 6]);
+  } else {
+    ctx.strokeStyle = COLORS.grid.stroke;
+  }
   ctx.lineWidth = 1;
   for (let x = startXScreen; x <= screenWidth; x += screenStepX) {
     ctx.moveTo(x, 0);
