@@ -608,8 +608,12 @@ function initMenuSystem() {
     if (toggleBtn && toggleBtn.style.display !== 'none') {
       toggleBtn.click();
     } else {
-      // Fall back to home sketches list
-      window.location.hash = '#/';
+      // Show home sketches list — if already on #/, force re-render since hashchange won't fire
+      if (window.location.hash === '#/' || window.location.hash === '' || window.location.hash === '#') {
+        if (window.handleRoute) window.handleRoute();
+      } else {
+        window.location.hash = '#/';
+      }
     }
   });
 
@@ -621,7 +625,11 @@ function initMenuSystem() {
       if (toggleBtn && toggleBtn.style.display !== 'none') {
         toggleBtn.click();
       } else {
-        window.location.hash = '#/';
+        if (window.location.hash === '#/' || window.location.hash === '' || window.location.hash === '#') {
+          if (window.handleRoute) window.handleRoute();
+        } else {
+          window.location.hash = '#/';
+        }
       }
       if (window.closeMobileMenu) window.closeMobileMenu();
     });
