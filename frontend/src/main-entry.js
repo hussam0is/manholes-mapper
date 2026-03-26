@@ -602,7 +602,8 @@ function initMenuSystem() {
   });
 
   // Wire Sketches button — shows sketches in current project (side panel) or falls back to home
-  menuEvents.on('sketches', () => {
+  function handleSketchesClick() {
+    console.debug('[Sketches] button clicked');
     const toggleBtn = document.getElementById('sketchSidePanelToggle');
     // If the sketch side panel toggle is visible, we're in project-canvas mode
     if (toggleBtn && toggleBtn.style.display !== 'none') {
@@ -615,7 +616,13 @@ function initMenuSystem() {
         window.location.hash = '#/';
       }
     }
-  });
+  }
+  menuEvents.on('sketches', handleSketchesClick);
+  // Direct click listener as fallback (in case delegation doesn't reach the button)
+  const sketchesBtn = document.getElementById('sketchesBtn');
+  if (sketchesBtn) {
+    sketchesBtn.addEventListener('click', handleSketchesClick);
+  }
 
   // Wire standalone mobile Sketches button
   const mobileSketches = document.getElementById('mobileSketchesBtn');
