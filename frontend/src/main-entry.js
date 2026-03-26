@@ -618,11 +618,6 @@ function initMenuSystem() {
     }
   }
   menuEvents.on('sketches', handleSketchesClick);
-  // Direct click listener as fallback (in case delegation doesn't reach the button)
-  const sketchesBtn = document.getElementById('sketchesBtn');
-  if (sketchesBtn) {
-    sketchesBtn.addEventListener('click', handleSketchesClick);
-  }
 
   // Wire standalone mobile Sketches button
   const mobileSketches = document.getElementById('mobileSketchesBtn');
