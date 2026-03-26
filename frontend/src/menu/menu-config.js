@@ -200,6 +200,12 @@ export const menuConfig = {
       labelKey: 'mySketches',
       showLabel: false,
     },
+    {
+      id: 'sketches',
+      icon: 'layers',
+      labelKey: 'sketches',
+      showLabel: true,
+    },
   ],
 
   // Mobile menu groups for organized slide-out panel

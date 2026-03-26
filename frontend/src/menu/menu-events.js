@@ -152,4 +152,5 @@ export const legacyMappings = {
   admin: 'adminBtn',
   projects: 'projectsBtn',
   mySketches: 'mySketchesBtn',
+  sketches: 'sketchesBtn',
 };

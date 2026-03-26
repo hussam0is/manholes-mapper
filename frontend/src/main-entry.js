@@ -601,6 +601,32 @@ function initMenuSystem() {
     window.location.hash = '#/';
   });
 
+  // Wire Sketches button — shows sketches in current project (side panel) or falls back to home
+  menuEvents.on('sketches', () => {
+    const toggleBtn = document.getElementById('sketchSidePanelToggle');
+    // If the sketch side panel toggle is visible, we're in project-canvas mode
+    if (toggleBtn && toggleBtn.style.display !== 'none') {
+      toggleBtn.click();
+    } else {
+      // Fall back to home sketches list
+      window.location.hash = '#/';
+    }
+  });
+
+  // Wire standalone mobile Sketches button
+  const mobileSketches = document.getElementById('mobileSketchesBtn');
+  if (mobileSketches) {
+    mobileSketches.addEventListener('click', () => {
+      const toggleBtn = document.getElementById('sketchSidePanelToggle');
+      if (toggleBtn && toggleBtn.style.display !== 'none') {
+        toggleBtn.click();
+      } else {
+        window.location.hash = '#/';
+      }
+      if (window.closeMobileMenu) window.closeMobileMenu();
+    });
+  }
+
   // Wire standalone mobile My Sketches button (not inside a group, not caught by delegation)
   const mobileMySketches = document.getElementById('mobileMySketchesBtn');
   if (mobileMySketches) {
