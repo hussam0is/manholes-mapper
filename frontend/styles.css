@@ -13619,6 +13619,15 @@ button:focus-visible,
     display: none !important;
   }
 
+  /* --- Sketches button: always visible --- */
+  .menu-group--sketches {
+    display: flex !important;
+  }
+
+  .menu-group--sketches .label {
+    display: none;
+  }
+
   /* --- LAYOUT: Header grid â€" 3-zone layout --- */
   /* Zone 1 (start): identity (avatar + sketch name + sync)
      Zone 2 (center): stretches
