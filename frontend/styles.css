@@ -10475,9 +10475,7 @@ html[dir="rtl"] .auth-form-wrapper {
 }
 
 .user-menu-dropdown {
-  position: absolute;
-  top: calc(100% + 0.5rem);
-  inset-inline-end: 0;
+  position: fixed;
   min-width: 220px;
   max-height: calc(100vh - 70px);
   overflow-y: auto;
@@ -10485,7 +10483,7 @@ html[dir="rtl"] .auth-form-wrapper {
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  z-index: 1000;
+  z-index: 10000;
 }
 
 .user-menu-header {

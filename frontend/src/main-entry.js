@@ -143,10 +143,28 @@ if (typeof window !== 'undefined') {
         const signOutBtn = container.querySelector('.user-menu-signout');
         
         if (trigger && dropdown) {
+          /**
+           * Position the user-menu dropdown using fixed coordinates
+           * so it escapes the overflow:auto clipping on .menu-controls.
+           */
+          const positionUserDropdown = () => {
+            const rect = trigger.getBoundingClientRect();
+            const isRTL = document.documentElement.dir === 'rtl';
+            dropdown.style.top = `${rect.bottom + 8}px`;
+            if (isRTL) {
+              dropdown.style.left = `${rect.left}px`;
+              dropdown.style.right = 'auto';
+            } else {
+              dropdown.style.right = `${window.innerWidth - rect.right}px`;
+              dropdown.style.left = 'auto';
+            }
+          };
+
           trigger.addEventListener('click', (e) => {
             e.stopPropagation();
             const isOpen = dropdown.style.display !== 'none';
             dropdown.style.display = isOpen ? 'none' : 'block';
+            if (!isOpen) positionUserDropdown();
             trigger.setAttribute('aria-expanded', String(!isOpen));
           });
 

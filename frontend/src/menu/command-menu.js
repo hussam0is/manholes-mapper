@@ -132,10 +132,41 @@ export function initCommandMenu(container) {
 
   let isOpen = false;
 
+  /**
+   * Position the dropdown using fixed coordinates relative to the trigger button.
+   * This avoids clipping by overflow:auto on ancestor containers (.menu-controls).
+   */
+  function positionDropdown() {
+    const rect = menuBtn.getBoundingClientRect();
+    const isRTL = document.documentElement.dir === 'rtl';
+
+    // Place below the trigger button
+    dropdown.style.top = `${rect.bottom + 4}px`;
+
+    // Align to the end edge (right in LTR, left in RTL)
+    if (isRTL) {
+      dropdown.style.left = `${rect.left}px`;
+      dropdown.style.right = 'auto';
+    } else {
+      dropdown.style.right = `${window.innerWidth - rect.right}px`;
+      dropdown.style.left = 'auto';
+    }
+
+    // Ensure dropdown doesn't overflow the viewport bottom
+    requestAnimationFrame(() => {
+      const dropdownRect = dropdown.getBoundingClientRect();
+      if (dropdownRect.bottom > window.innerHeight - 8) {
+        const maxH = window.innerHeight - rect.bottom - 12;
+        dropdown.querySelector('.menu-dropdown__content').style.maxHeight = `${maxH}px`;
+      }
+    });
+  }
+
   function openMenu() {
     isOpen = true;
     dropdown.classList.add('menu-dropdown--open');
     menuBtn.setAttribute('aria-expanded', 'true');
+    positionDropdown();
     
     // Focus first item
     const firstItem = dropdown.querySelector('button, input');

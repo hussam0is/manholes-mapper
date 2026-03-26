@@ -786,10 +786,7 @@
 
 .menu-dropdown {
   display: none;
-  position: absolute;
-  top: 100%;
-  inset-inline-end: 0;
-  margin-top: 4px;
+  position: fixed;
 
   min-width: 200px;
   padding: 0.25rem 0;
@@ -799,7 +796,7 @@
   border-radius: var(--menu-dropdown-radius);
   box-shadow: var(--menu-dropdown-shadow);
 
-  z-index: 1000;
+  z-index: 10000;
 }
 
 .menu-dropdown--open {
