@@ -34,17 +34,21 @@ export function renderRefLayerToggles() {
   const layers = getReferenceLayers();
   const desktopSection = document.getElementById('refLayersSection');
   const mobileSection = document.getElementById('mobileRefLayersSection');
+  const sidebarSection = document.getElementById('usRefLayersSection');
   const desktopList = document.getElementById('refLayersList');
   const mobileList = document.getElementById('mobileRefLayersList');
+  const sidebarList = document.getElementById('usRefLayersList');
   
   if (!layers || layers.length === 0) {
     if (desktopSection) desktopSection.style.display = 'none';
     if (mobileSection) mobileSection.style.display = 'none';
+    if (sidebarSection) sidebarSection.style.display = 'none';
     return;
   }
   
   if (desktopSection) desktopSection.style.display = '';
   if (mobileSection) mobileSection.style.display = '';
+  if (sidebarSection) sidebarSection.style.display = '';
   
   // Build layer toggle HTML — SECURITY FIX: escape server-sourced layer name/id
   const esc = typeof window.escapeHtml === 'function' ? window.escapeHtml : (s) => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
@@ -58,9 +62,10 @@ export function renderRefLayerToggles() {
   
   if (desktopList) desktopList.innerHTML = buildToggleHtml('desktop');
   if (mobileList) mobileList.innerHTML = buildToggleHtml('mobile');
+  if (sidebarList) sidebarList.innerHTML = buildToggleHtml('sidebar');
   
   // Attach event listeners
-  const attachListeners = (container, closeFn) => {
+  const attachListeners = (container) => {
     if (!container) return;
     container.querySelectorAll('input[data-layer-id]').forEach(cb => {
       cb.addEventListener('change', (e) => {
@@ -68,7 +73,7 @@ export function renderRefLayerToggles() {
         setLayerVisibility(e.target.dataset.layerId, e.target.checked);
         saveRefLayerSettings();
         F.scheduleDraw();
-        // Sync the other menu
+        // Sync the other menus
         syncRefLayerCheckboxes();
       });
     });
@@ -76,6 +81,7 @@ export function renderRefLayerToggles() {
   
   attachListeners(desktopList);
   attachListeners(mobileList);
+  attachListeners(sidebarList);
 }
 
 /**

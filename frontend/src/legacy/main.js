@@ -1798,6 +1798,7 @@ F.showToast               = (...a) => showToast(...a);
 F.applyCoordinatesIfEnabled = (...a) => applyCoordinatesIfEnabled(...a);
 F.addCoordinatesReferenceLayer = (...a) => addCoordinatesReferenceLayer(...a);
 F.updateMapReferencePoint = (...a) => updateMapReferencePoint(...a);
+F.renderRefLayerToggles   = (...a) => renderRefLayerToggles(...a);
 F.createNode              = (...a) => createNode(...a);
 F.createEdge              = (...a) => createEdge(...a);
 F.computeNodeTypes        = (...a) => computeNodeTypes(...a);

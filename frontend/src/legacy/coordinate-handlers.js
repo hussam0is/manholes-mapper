@@ -109,6 +109,11 @@ function addCoordinatesReferenceLayer(coordinatesMap) {
   });
 
   console.debug(`[Coordinates] Added reference layer with ${features.length} survey points`);
+
+  // Refresh the layers panel UI so the new layer appears with a toggle
+  if (typeof F.renderRefLayerToggles === 'function') {
+    F.renderRefLayerToggles();
+  }
 }
 
 // ============================================
