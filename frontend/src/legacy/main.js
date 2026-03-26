@@ -148,7 +148,7 @@ import { progressiveRenderer } from '../utils/progressive-renderer.js';
 import { S, F, bridgedProperty, hydrateStore } from './shared-state.js';
 import { bus } from '../state/event-bus.js';
 import { initGnssHandlers, setLiveMeasureMode, syncLiveMeasureToggleUI, updateLocationStatus, openGnssPointCaptureDialog, handleGnssPointCapture, vibrateForFixQuality, gpsQuickCapture, createNodeFromMeasurement, getNextEdgeId, centerOnGpsLocation, centerNewSketchOnUserLocation, toggleUserLocationTracking, updateGpsQuickCaptureBtn } from './gnss-handlers.js';
-import { initCoordinateHandlers, handleCoordinatesImport, applyCoordinatesIfEnabled, restoreOriginalPositions, toggleCoordinates, syncCoordinatesToggleUI, toggleMapLayer, syncMapLayerToggleUI, getMeasurementBoundsItm, startMeasurementTilesPrecache, updateMapReferencePoint, autoRepositionFromEmbeddedCoords, showCoordinatesRequiredPrompt, updateScaleDisplay, saveCoordinateScale, loadCoordinateScale, updateStretchDisplay, saveViewStretch, loadViewStretch, changeViewStretch, resetViewStretch, changeCoordinateScale, initCoordinates } from './coordinate-handlers.js';
+import { initCoordinateHandlers, handleCoordinatesImport, applyCoordinatesIfEnabled, restoreOriginalPositions, toggleCoordinates, syncCoordinatesToggleUI, toggleMapLayer, syncMapLayerToggleUI, getMeasurementBoundsItm, startMeasurementTilesPrecache, updateMapReferencePoint, autoRepositionFromEmbeddedCoords, showCoordinatesRequiredPrompt, updateScaleDisplay, saveCoordinateScale, loadCoordinateScale, updateStretchDisplay, saveViewStretch, loadViewStretch, changeViewStretch, resetViewStretch, changeCoordinateScale, initCoordinates, addCoordinatesReferenceLayer } from './coordinate-handlers.js';
 import { draw, scheduleDraw, scheduleEdgeLegendUpdate, scheduleIncompleteEdgeUpdate, renderEdgeLegend, drawInfiniteGrid, ensureVirtualPadding, autoPanWhenDragging, computeNodeTypes, drawEdge, drawDanglingEdgeLocal, drawEdgeLabels, drawNode, drawHouse, drawDirectConnectionBadge, updateCanvasEmptyState } from './canvas-draw.js';
 // TSC3 survey handlers are lazy-loaded below (perf: only needed for survey device connections)
 import { initAdminHandlers, openAdminModal, closeAdminModal, openAdminScreen, closeAdminScreen, openProjectsScreen, closeProjectsScreen, navigateToAdmin, navigateToProjects, getAdminSettingsModal, getAdminSettingsScreen } from './admin-handlers.js';
@@ -1796,6 +1796,8 @@ F.saveToStorage           = (...a) => saveToStorage(...a);
 F.renderDetails           = (...a) => renderDetails(...a);
 F.showToast               = (...a) => showToast(...a);
 F.applyCoordinatesIfEnabled = (...a) => applyCoordinatesIfEnabled(...a);
+F.addCoordinatesReferenceLayer = (...a) => addCoordinatesReferenceLayer(...a);
+F.updateMapReferencePoint = (...a) => updateMapReferencePoint(...a);
 F.createNode              = (...a) => createNode(...a);
 F.createEdge              = (...a) => createEdge(...a);
 F.computeNodeTypes        = (...a) => computeNodeTypes(...a);

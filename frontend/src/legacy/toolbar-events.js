@@ -326,6 +326,12 @@ export function initToolbarEvents() {
         S.currentInputFlowConfig = importedSketch.inputFlowConfig || DEFAULT_INPUT_FLOW_CONFIG;
         F.updateSketchNameDisplay();
 
+        // If the sketch has embedded coords, recreate reference layer and set map ref point
+        if (newCoordsMap.size > 0) {
+          try { F.addCoordinatesReferenceLayer?.(newCoordsMap); } catch (_) { }
+          try { F.updateMapReferencePoint?.(); } catch (_) { }
+        }
+
         F.computeNodeTypes();
         F.saveToStorage();
         F.updateCanvasEmptyState();

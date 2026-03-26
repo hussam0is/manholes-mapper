@@ -921,7 +921,9 @@ function initCoordinates() {
   S.mapLayerEnabled = isMapLayerEnabled();
   syncMapLayerToggleUI();
 
-  if (S.mapLayerEnabled) {
+  // Set map reference point if coordinates exist (needed even without map layer
+  // so that reference layers like Coordinates can render correctly)
+  if (S.mapLayerEnabled || S.coordinatesMap.size > 0) {
     updateMapReferencePoint();
   }
 
@@ -1077,4 +1079,5 @@ export {
   resetViewStretch,
   changeCoordinateScale,
   initCoordinates,
+  addCoordinatesReferenceLayer,
 };
