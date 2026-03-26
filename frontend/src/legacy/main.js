@@ -429,7 +429,7 @@ const MIN_SCALE = 0.005;
 const MAX_SCALE = 5.0;
 const SCALE_STEP = 1.1; // 10%
 // Canvas stretch state (separate X and Y scaling factors)
-let viewStretchX = 0.6;
+let viewStretchX = 1.0;
 let viewStretchY = 1.0;
 const MIN_STRETCH = 0.2;
 const MAX_STRETCH = 3.0;
