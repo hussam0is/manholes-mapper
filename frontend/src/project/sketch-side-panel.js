@@ -247,7 +247,10 @@ function renderListView() {
   const sketches = getAllSketches();
 
   // Remove any existing totals footer before re-rendering
-  const existingTotals = panelEl?.querySelector('.sketch-side-panel__totals');
+  // Use listEl.parentNode because after reparentSketchPanel() the content lives
+  // in #us-panel-sketches, not in panelEl (which becomes empty).
+  const _container = listEl?.parentNode || panelEl;
+  const existingTotals = _container?.querySelector('.sketch-side-panel__totals');
   if (existingTotals) existingTotals.remove();
 
   if (sketches.length === 0) {
@@ -260,11 +263,11 @@ function renderListView() {
   }
 
   // Update header sketch count
-  const countEl = panelEl?.querySelector('.sketch-side-panel__count');
+  const countEl = _container?.querySelector('.sketch-side-panel__count');
   if (countEl) countEl.textContent = `(${sketches.length})`;
 
   // Remove any existing toolbar before re-rendering
-  const existingToolbar = panelEl?.querySelector('.sketch-side-panel__toolbar');
+  const existingToolbar = _container?.querySelector('.sketch-side-panel__toolbar');
   if (existingToolbar) existingToolbar.remove();
 
   // Add toolbar row with View All button
@@ -542,7 +545,7 @@ function renderIssuesView() {
   }
 
   // Remove totals footer in issues view
-  const existingTotals = panelEl?.querySelector('.sketch-side-panel__totals');
+  const existingTotals = (listEl?.parentNode || panelEl)?.querySelector('.sketch-side-panel__totals');
   if (existingTotals) existingTotals.remove();
 
   const displayName = formatSketchName(sketch);
@@ -749,7 +752,7 @@ function renderMergeView() {
   const activeSketch = sketches.find(s => s.isActive);
 
   // Remove totals footer
-  const existingTotals = panelEl?.querySelector('.sketch-side-panel__totals');
+  const existingTotals = (listEl?.parentNode || panelEl)?.querySelector('.sketch-side-panel__totals');
   if (existingTotals) existingTotals.remove();
 
   listEl.innerHTML = '';
