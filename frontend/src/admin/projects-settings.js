@@ -274,7 +274,7 @@ export class ProjectsSettings {
     card.querySelector('[data-action="open"]')?.addEventListener('click', (e) => {
       e.stopPropagation();
       // markInternalNavigation suppresses the popstate exit-guard so navigation isn't reverted
-      if (typeof window.F?.markInternalNavigation === 'function') window.F.markInternalNavigation();
+      window.__markInternalNavigation?.();
       window.location.hash = `#/project/${project.id}`;
     });
 

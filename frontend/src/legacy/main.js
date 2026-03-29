@@ -1920,6 +1920,7 @@ window.openGnssPointCaptureDialog = openGnssPointCaptureDialog;
 window.centerOnGpsLocation = centerOnGpsLocation;
 window.toggleUserLocationTracking = toggleUserLocationTracking;
 window.__createNodeFromMeasurement = createNodeFromMeasurement;
+window.__markInternalNavigation = () => markInternalNavigation();
 
 // ============================================
 // TSC3 Survey Device Integration
