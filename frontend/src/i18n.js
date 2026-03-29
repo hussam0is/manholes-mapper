@@ -1199,9 +1199,6 @@ export const i18n = {
       },
     },
   },
-  schematicView: {
-    banner: 'תצוגה סכמטית — יבא קובץ קואורדינטות לתצוגה גיאוגרפית',
-  },
   en: {
     appTitle: 'Manhole Mapper',
     modeNode: 'Add Manhole (N)',
@@ -2398,9 +2395,6 @@ export const i18n = {
         weekStreak: (days) => `${days}-day streak — keep it up!`,
       },
     },
-  },
-  schematicView: {
-    banner: 'Schematic View — Import coordinates for geo-referenced layout',
   },
 };
 
