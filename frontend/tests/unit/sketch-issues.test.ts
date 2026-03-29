@@ -312,6 +312,127 @@ describe('computeSketchIssues', () => {
     });
   });
 
+  describe('obstructed_access', () => {
+    it('should detect locked house (maintenanceStatus=13)', () => {
+      const nodes = [makeNode('1', { maintenanceStatus: 13, surveyX: 1, surveyY: 2 })];
+      const result = computeSketchIssues(nodes, []);
+      const obs = result.issues.filter(i => i.type === 'obstructed_access');
+      expect(obs).toHaveLength(1);
+      expect(obs[0].nodeId).toBe('1');
+      expect(obs[0].reason).toBe('בית נעול');
+    });
+
+    it('should detect covered manhole (maintenanceStatus=4)', () => {
+      const nodes = [makeNode('1', { maintenanceStatus: 4 })];
+      const result = computeSketchIssues(nodes, []);
+      const obs = result.issues.filter(i => i.type === 'obstructed_access');
+      expect(obs).toHaveLength(1);
+      expect(obs[0].reason).toBe('שוחה מכוסה');
+    });
+
+    it('should detect cant open (maintenanceStatus=3)', () => {
+      const nodes = [makeNode('1', { maintenanceStatus: 3 })];
+      const result = computeSketchIssues(nodes, []);
+      expect(result.issues.filter(i => i.type === 'obstructed_access')).toHaveLength(1);
+    });
+
+    it('should not flag functional manholes (maintenanceStatus=1)', () => {
+      const nodes = [makeNode('1', { maintenanceStatus: 1 })];
+      const result = computeSketchIssues(nodes, []);
+      expect(result.issues.filter(i => i.type === 'obstructed_access')).toHaveLength(0);
+    });
+
+    it('should skip Home nodes', () => {
+      const nodes = [makeNode('1', { nodeType: 'Home', maintenanceStatus: 13 })];
+      const result = computeSketchIssues(nodes, []);
+      expect(result.issues.filter(i => i.type === 'obstructed_access')).toHaveLength(0);
+    });
+
+    it('should count in stats', () => {
+      const nodes = [makeNode('1', { maintenanceStatus: 13 }), makeNode('2', { maintenanceStatus: 4 })];
+      const result = computeSketchIssues(nodes, []);
+      expect(result.stats.obstructedAccessCount).toBe(2);
+    });
+  });
+
+  describe('schematic_location', () => {
+    it('should detect schematic nodes without survey coords', () => {
+      const nodes = [makeNode('1', { accuracyLevel: 1 })]; // schematic, no surveyX/Y
+      const result = computeSketchIssues(nodes, []);
+      const sch = result.issues.filter(i => i.type === 'schematic_location');
+      expect(sch).toHaveLength(1);
+      expect(sch[0].nodeId).toBe('1');
+    });
+
+    it('should not flag schematic nodes with survey coords', () => {
+      const nodes = [makeNode('1', { accuracyLevel: 1, surveyX: 10, surveyY: 20 })];
+      const result = computeSketchIssues(nodes, []);
+      expect(result.issues.filter(i => i.type === 'schematic_location')).toHaveLength(0);
+    });
+
+    it('should not flag engineering nodes without coords (those are missing_coords)', () => {
+      const nodes = [makeNode('1', { accuracyLevel: 0 })];
+      const result = computeSketchIssues(nodes, []);
+      expect(result.issues.filter(i => i.type === 'schematic_location')).toHaveLength(0);
+      expect(result.issues.filter(i => i.type === 'missing_coords')).toHaveLength(1);
+    });
+
+    it('should skip Home nodes', () => {
+      const nodes = [makeNode('1', { nodeType: 'Home', accuracyLevel: 1 })];
+      const result = computeSketchIssues(nodes, []);
+      expect(result.issues.filter(i => i.type === 'schematic_location')).toHaveLength(0);
+    });
+
+    it('should count in stats', () => {
+      const nodes = [makeNode('1', { accuracyLevel: 1 }), makeNode('2', { accuracyLevel: 1 })];
+      const result = computeSketchIssues(nodes, []);
+      expect(result.stats.schematicLocationCount).toBe(2);
+    });
+  });
+
+  describe('missing_tl', () => {
+    it('should detect nodes with coords but no TL', () => {
+      const nodes = [makeNode('1', { surveyX: 1, surveyY: 2 })]; // no tl
+      const result = computeSketchIssues(nodes, []);
+      const mtl = result.issues.filter(i => i.type === 'missing_tl');
+      expect(mtl).toHaveLength(1);
+      expect(mtl[0].nodeId).toBe('1');
+    });
+
+    it('should not flag nodes with TL value', () => {
+      const nodes = [makeNode('1', { surveyX: 1, surveyY: 2, tl: 345.5 })];
+      const result = computeSketchIssues(nodes, []);
+      expect(result.issues.filter(i => i.type === 'missing_tl')).toHaveLength(0);
+    });
+
+    it('should not flag nodes without survey coords', () => {
+      const nodes = [makeNode('1')]; // no surveyX/Y, no tl - this is missing_coords not missing_tl
+      const result = computeSketchIssues(nodes, []);
+      expect(result.issues.filter(i => i.type === 'missing_tl')).toHaveLength(0);
+    });
+
+    it('should skip Home nodes', () => {
+      const nodes = [makeNode('1', { nodeType: 'Home', surveyX: 1, surveyY: 2 })];
+      const result = computeSketchIssues(nodes, []);
+      expect(result.issues.filter(i => i.type === 'missing_tl')).toHaveLength(0);
+    });
+
+    it('should treat empty string TL as missing', () => {
+      const nodes = [makeNode('1', { surveyX: 1, surveyY: 2, tl: '' })];
+      const result = computeSketchIssues(nodes, []);
+      expect(result.issues.filter(i => i.type === 'missing_tl')).toHaveLength(1);
+    });
+
+    it('should count in stats', () => {
+      const nodes = [
+        makeNode('1', { surveyX: 1, surveyY: 2 }),
+        makeNode('2', { surveyX: 3, surveyY: 4 }),
+      ];
+      const result = computeSketchIssues(nodes, []);
+      expect(result.stats.missingTlCount).toBe(2);
+    });
+  });
+
   describe('issue sorting', () => {
     it('should sort missing_coords before negative_gradient', () => {
       const nodes = [

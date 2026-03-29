@@ -5,7 +5,8 @@
  * and surfaces actionable fix suggestions for review.
  *
  * Issue types: missing_coords, missing_pipe_data, long_edge,
- *              not_last_manhole, merge_candidate, negative_gradient
+ *              not_last_manhole, merge_candidate, negative_gradient,
+ *              obstructed_access, schematic_location, missing_tl
  */
 
 import { computeSketchIssues } from '../project/sketch-issues.js';
@@ -29,6 +30,9 @@ const SEVERITY = {
   not_last_manhole: 3,
   merge_candidate: 4,
   negative_gradient: 5,
+  obstructed_access: 6,
+  schematic_location: 7,
+  missing_tl: 8,
 };
 
 const ISSUE_ICONS = {
@@ -38,6 +42,9 @@ const ISSUE_ICONS = {
   not_last_manhole: 'warning',
   merge_candidate: 'call_merge',
   negative_gradient: 'trending_down',
+  obstructed_access: 'block',
+  schematic_location: 'blur_on',
+  missing_tl: 'height',
 };
 
 export class AdminFixes {
@@ -75,6 +82,9 @@ export class AdminFixes {
               <option value="not_last_manhole">${escapeHtml(this.t('adminPanel.fixes.types.not_last_manhole'))}</option>
               <option value="merge_candidate">${escapeHtml(this.t('adminPanel.fixes.types.merge_candidate'))}</option>
               <option value="negative_gradient">${escapeHtml(this.t('adminPanel.fixes.types.negative_gradient'))}</option>
+              <option value="obstructed_access">${escapeHtml(this.t('adminPanel.fixes.types.obstructed_access'))}</option>
+              <option value="schematic_location">${escapeHtml(this.t('adminPanel.fixes.types.schematic_location'))}</option>
+              <option value="missing_tl">${escapeHtml(this.t('adminPanel.fixes.types.missing_tl'))}</option>
             </select>
           </div>
           <div class="ap-filter-group">
@@ -248,6 +258,7 @@ export class AdminFixes {
       if (issue.lengthM != null) detail = `${issue.lengthM}m`;
       if (issue.distanceM != null) detail = `${issue.distanceM}m`;
       if (issue.gradient != null) detail = `Δ${issue.gradient.toFixed(2)}m`;
+      if (issue.reason) detail = issue.reason;
 
       const fixBtns = suggestions.map((fix, fixIdx) => `
         <button
