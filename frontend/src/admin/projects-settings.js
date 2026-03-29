@@ -245,8 +245,12 @@ export class ProjectsSettings {
           ${project.description ? `<p class="project-description">${this._escapeHtml(project.description)}</p>` : ''}
         </div>
       </div>
+      <div class="project-card-actions">
+        <button class="btn btn-sm btn-open" data-action="open" title="${this.t('projects.openProject') || 'Open Project'}">
+          <span class="material-icons">open_in_new</span>
+          <span class="btn-label">${this.t('projects.openProject') || 'Open Project'}</span>
+        </button>
       ${this.isAdmin ? `
-        <div class="project-card-actions">
           <button class="btn btn-sm btn-edit" data-action="edit" title="${this.t('projects.editProject')}">
             <span class="material-icons">edit</span>
             <span class="btn-label">${this.t('projects.editProject')}</span>
@@ -262,9 +266,15 @@ export class ProjectsSettings {
           <button class="btn btn-sm btn-delete" data-action="delete" title="${this.t('projects.deleteProject')}">
             <span class="material-icons">delete</span>
           </button>
-        </div>
       ` : ''}
+      </div>
     `;
+
+    // Open project button (always available)
+    card.querySelector('[data-action="open"]')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      window.location.hash = `#/project/${project.id}`;
+    });
 
     // Attach event handlers for admin actions
     if (this.isAdmin) {

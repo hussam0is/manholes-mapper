@@ -572,6 +572,7 @@ export const i18n = {
     projects: {
       title: 'ניהול פרויקטים',
       addProject: 'הוסף פרויקט',
+      openProject: 'פתח פרויקט',
       editProject: 'ערוך פרויקט',
       deleteProject: 'מחק פרויקט',
       projectName: 'שם הפרויקט',
@@ -1779,6 +1780,7 @@ export const i18n = {
     projects: {
       title: 'Project Management',
       addProject: 'Add Project',
+      openProject: 'Open Project',
       editProject: 'Edit Project',
       deleteProject: 'Delete Project',
       projectName: 'Project Name',
