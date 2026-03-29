@@ -621,6 +621,7 @@ export async function renderProjectsHome() {
           </button>
         </div>`;
       card.addEventListener('click', () => {
+        F.markInternalNavigation();
         location.hash = '#/project/' + project.id;
       });
       S.sketchListEl.appendChild(card);

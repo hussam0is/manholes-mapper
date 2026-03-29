@@ -1294,6 +1294,7 @@ if (sketchListEl) {
       renderHome();
       showToast(t('toasts.deleted'));
     } else if (action === 'openProject') {
+      markInternalNavigation();
       location.hash = '#/project/' + id;
     } else if (action === 'importHistory') {
       const lib = getLibrary();

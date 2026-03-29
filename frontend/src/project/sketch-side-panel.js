@@ -120,6 +120,7 @@ export function initSketchSidePanel() {
       try {
         await loadProjectSketches(newProjectId);
         // Update URL hash to reflect the new project
+        if (typeof window.F?.markInternalNavigation === 'function') window.F.markInternalNavigation();
         window.location.hash = `#/project/${newProjectId}`;
         window.showToast?.(t('projects.canvas.projectSwitched') || 'Project switched');
       } catch (err) {
