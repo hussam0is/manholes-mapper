@@ -85,22 +85,24 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'GET') {
-      // Get organization ID from query param (for super admin) or from user
-      const orgId = req.query.organizationId || currentUser.organization_id;
+      // For super_admin/admin: return all projects unless filtered by org query param
+      // For regular users: return only their organization's projects
+      const explicitOrgId = req.query.organizationId;
+      const orgId = explicitOrgId || currentUser.organization_id;
 
       let projects;
 
-      // Super admin with no org filter - return all projects
-      if (isSuperAdmin && !orgId) {
+      // Admin/super_admin without explicit org filter - return all projects across orgs
+      if (isAdmin && !explicitOrgId) {
         const { getAllProjects } = await import('../_lib/db.js');
         projects = await getAllProjects();
-        console.debug(`[API /api/projects] Super admin: returning all ${projects.length} projects`);
+        console.debug(`[API /api/projects] Admin: returning all ${projects.length} projects`);
       } else if (!orgId) {
-        // Non-super admin without org - return empty
+        // Non-admin without org - return empty
         return res.status(200).json({ projects: [] });
       } else {
-        // Non-super admins can only see their own organization's projects
-        if (!isSuperAdmin && orgId !== currentUser.organization_id) {
+        // Non-admins can only see their own organization's projects
+        if (!isAdmin && orgId !== currentUser.organization_id) {
           return res.status(403).json({ error: 'Access denied to this organization' });
         }
         projects = await getProjectsByOrganization(orgId);
