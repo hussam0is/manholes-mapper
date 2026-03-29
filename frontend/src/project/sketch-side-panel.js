@@ -195,12 +195,6 @@ async function _loadProjectSwitcher() {
     const data = await res.json();
     const projects = data.projects || [];
 
-    if (projects.length < 2) {
-      // No point showing a switcher with 0-1 projects
-      switcherEl.style.display = 'none';
-      return;
-    }
-
     const currentId = getCurrentProjectId();
     selectEl.innerHTML = projects.map(p =>
       `<option value="${p.id}"${p.id === currentId ? ' selected' : ''}>${p.name || p.id} (${p.sketchCount || 0})</option>`
