@@ -613,6 +613,8 @@ export const i18n = {
       canvas: {
         sketches: 'שרטוטים',
         backToProjects: 'חזרה לפרויקטים',
+        projectSwitched: 'הפרויקט הוחלף',
+        projectSwitchError: 'שגיאה בהחלפת פרויקט',
         switchedTo: 'עבר אל',
         showAll: 'הצג הכל',
         hideAll: 'הסתר הכל',
@@ -1818,6 +1820,8 @@ export const i18n = {
       canvas: {
         sketches: 'Sketches',
         backToProjects: 'Back to Projects',
+        projectSwitched: 'Project switched',
+        projectSwitchError: 'Failed to switch project',
         switchedTo: 'Switched to',
         showAll: 'Show All',
         hideAll: 'Hide All',

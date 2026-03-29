@@ -25,6 +25,8 @@ import {
   areAllSketchesSelected,
   toggleMultiSelect,
   refreshActiveSketchData,
+  getCurrentProjectId,
+  loadProjectSketches,
 } from './project-canvas-state.js';
 
 import { computeSketchIssues, computeProjectTotals } from './sketch-issues.js';
@@ -107,6 +109,30 @@ export function initSketchSidePanel() {
     });
   }
 
+  // Project switcher
+  const switcherEl = document.getElementById('projectSwitcher');
+  const switcherSelect = document.getElementById('projectSwitcherSelect');
+  if (switcherSelect) {
+    switcherSelect.addEventListener('change', async (e) => {
+      const newProjectId = e.target.value;
+      if (!newProjectId || newProjectId === getCurrentProjectId()) return;
+      switcherSelect.disabled = true;
+      try {
+        await loadProjectSketches(newProjectId);
+        // Update URL hash to reflect the new project
+        window.location.hash = `#/project/${newProjectId}`;
+        window.showToast?.(t('projects.canvas.projectSwitched') || 'Project switched');
+      } catch (err) {
+        console.error('[ProjectSwitcher] Failed to switch:', err);
+        window.showToast?.(t('projects.canvas.projectSwitchError') || 'Failed to switch project');
+        // Revert selection
+        switcherSelect.value = getCurrentProjectId() || '';
+      } finally {
+        switcherSelect.disabled = false;
+      }
+    });
+  }
+
   // Subscribe to project canvas state changes
   _unsub = onProjectCanvasChange((changeType) => {
     // changeType logged in dev only
@@ -152,7 +178,39 @@ export function showSketchSidePanel() {
   if (sketches.length > 0 && !areAllSketchesSelected()) {
     selectAllSketches();
   }
+  // Populate project switcher
+  _loadProjectSwitcher();
   render();
+}
+
+/** Fetch all projects and populate the switcher dropdown */
+async function _loadProjectSwitcher() {
+  const switcherEl = document.getElementById('projectSwitcher');
+  const selectEl = document.getElementById('projectSwitcherSelect');
+  if (!switcherEl || !selectEl) return;
+
+  try {
+    const res = await fetch('/api/projects', { credentials: 'include' });
+    if (!res.ok) return;
+    const data = await res.json();
+    const projects = data.projects || [];
+
+    if (projects.length < 2) {
+      // No point showing a switcher with 0-1 projects
+      switcherEl.style.display = 'none';
+      return;
+    }
+
+    const currentId = getCurrentProjectId();
+    selectEl.innerHTML = projects.map(p =>
+      `<option value="${p.id}"${p.id === currentId ? ' selected' : ''}>${p.name || p.id} (${p.sketchCount || 0})</option>`
+    ).join('');
+
+    switcherEl.style.display = '';
+  } catch (err) {
+    console.warn('[ProjectSwitcher] Failed to load projects:', err);
+    switcherEl.style.display = 'none';
+  }
 }
 
 /**
@@ -174,6 +232,8 @@ export function hideSketchSidePanel() {
   }
   const toggleBtn = document.getElementById('sketchSidePanelToggle');
   if (toggleBtn) toggleBtn.style.display = 'none';
+  const switcherEl = document.getElementById('projectSwitcher');
+  if (switcherEl) switcherEl.style.display = 'none';
 }
 
 /**

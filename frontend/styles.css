@@ -11510,6 +11510,40 @@ button:focus-visible,
   transform: scaleX(-1);
 }
 
+.project-switcher {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface-alt, #f8fafc);
+}
+
+.project-switcher__icon {
+  font-size: 18px;
+  color: var(--color-accent, #2563eb);
+  flex-shrink: 0;
+}
+
+.project-switcher__select {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 8px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 6px;
+  background: var(--color-bg, #fff);
+  color: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  appearance: auto;
+}
+
+.project-switcher__select:focus {
+  outline: 2px solid var(--color-accent, #2563eb);
+  outline-offset: -1px;
+}
+
 .sketch-side-panel__header {
   display: flex;
   align-items: center;
@@ -12467,6 +12501,17 @@ button:focus-visible,
 
   .sketch-side-panel__back:hover {
     background: var(--color-surface-alt, #1e293b);
+  }
+
+  .project-switcher {
+    background: var(--color-surface-alt, #0f172a);
+    border-color: var(--color-border, #334155);
+  }
+
+  .project-switcher__select {
+    background: var(--color-surface, #1e293b);
+    border-color: var(--color-border, #334155);
+    color: var(--color-text, #e2e8f0);
   }
 
   .sketch-side-panel__header {
