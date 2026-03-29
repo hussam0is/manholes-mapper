@@ -241,7 +241,19 @@ function closeFlyout() {
  * Wire action buttons (zoom, recenter, sidebar)
  */
 function wireActionDelegation() {
-  delegate('utZoomFitBtn', 'zoomToFitBtn');
+  // Direct call instead of delegation — avoids issues with the target button
+  // being inside #canvasFabToolbar (display:none in unified-layout).
+  // In project-canvas mode fit ALL loaded sketches; otherwise fit active sketch only.
+  const utZoomFitBtn = document.getElementById('utZoomFitBtn');
+  if (utZoomFitBtn) {
+    utZoomFitBtn.addEventListener('click', () => {
+      if (window.__projectCanvas?.isProjectCanvasMode?.()) {
+        window.__zoomToFitAllSketches?.();
+      } else {
+        window.__zoomToFit?.();
+      }
+    });
+  }
   delegate('utZoomInBtn', 'canvasZoomInBtn');
   delegate('utZoomOutBtn', 'canvasZoomOutBtn');
 

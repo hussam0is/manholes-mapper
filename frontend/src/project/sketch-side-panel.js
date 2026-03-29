@@ -1314,3 +1314,6 @@ function navigateToIssue(issue, sketch, mode) {
     }
   }, 150);
 }
+
+// Expose zoom-to-fit-all for use by unified toolbar
+window.__zoomToFitAllSketches = _zoomToFitAllSketches;

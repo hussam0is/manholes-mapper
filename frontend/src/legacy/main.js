@@ -1952,6 +1952,7 @@ window.__projectCanvas = {
   findEdgeInBackground,
   switchActiveSketch,
 };
+window.__zoomToFit = () => zoomToFit();
 
 // ============================================
 // TSC3 Survey Device Integration
