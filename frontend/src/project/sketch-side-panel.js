@@ -199,11 +199,8 @@ async function _loadProjectSwitcher() {
     selectEl.innerHTML = projects.map(p =>
       `<option value="${p.id}"${p.id === currentId ? ' selected' : ''}>${p.name || p.id} (${p.sketchCount || 0})</option>`
     ).join('');
-
-    switcherEl.style.display = '';
   } catch (err) {
     console.warn('[ProjectSwitcher] Failed to load projects:', err);
-    switcherEl.style.display = 'none';
   }
 }
 
@@ -226,8 +223,6 @@ export function hideSketchSidePanel() {
   }
   const toggleBtn = document.getElementById('sketchSidePanelToggle');
   if (toggleBtn) toggleBtn.style.display = 'none';
-  const switcherEl = document.getElementById('projectSwitcher');
-  if (switcherEl) switcherEl.style.display = 'none';
 }
 
 /**
