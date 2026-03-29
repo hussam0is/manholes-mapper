@@ -45,7 +45,8 @@ describe('Issue Navigation State', () => {
 
     it('should set currentIndex to -1 when no issues', async () => {
       const mod = await freshModule();
-      const nodes = [makeNode('1', { surveyX: 1, surveyY: 2 })];
+      // Node needs surveyX/Y AND tl to avoid missing_tl issue
+      const nodes = [makeNode('1', { surveyX: 1, surveyY: 2, tl: '1.5' })];
       mod.setIssueContext('sk1', nodes, []);
       const state = mod.getNavState();
       expect(state.total).toBe(0);
@@ -102,7 +103,7 @@ describe('Issue Navigation State', () => {
 
     it('should return null when no issues', async () => {
       const mod = await freshModule();
-      mod.setIssueContext('sk1', [makeNode('1', { surveyX: 1, surveyY: 2 })], []);
+      mod.setIssueContext('sk1', [makeNode('1', { surveyX: 1, surveyY: 2, tl: '1.5' })], []);
       expect(mod.nextIssue()).toBeNull();
       expect(mod.prevIssue()).toBeNull();
     });
@@ -155,8 +156,8 @@ describe('Issue Navigation State', () => {
       mod.setIssueContext('sk1', [makeNode('1'), makeNode('2'), makeNode('3')], []);
       mod.setCurrentIndex(2);
 
-      // Refresh with fewer issues
-      mod.refreshIssues([makeNode('1', { surveyX: 1, surveyY: 2 }), makeNode('2')], []);
+      // Refresh with fewer issues (node '1' fully resolved with tl)
+      mod.refreshIssues([makeNode('1', { surveyX: 1, surveyY: 2, tl: '1.5' }), makeNode('2')], []);
       // Only 1 issue now, index should clamp to 0
       expect(mod.getNavState().currentIndex).toBeLessThan(2);
     });
@@ -166,7 +167,8 @@ describe('Issue Navigation State', () => {
       mod.setIssueContext('sk1', [makeNode('1')], []);
       expect(mod.getNavState().currentIndex).toBe(0);
 
-      mod.refreshIssues([makeNode('1', { surveyX: 1, surveyY: 2 })], []);
+      // Node needs surveyX/Y AND tl to have zero issues
+      mod.refreshIssues([makeNode('1', { surveyX: 1, surveyY: 2, tl: '1.5' })], []);
       expect(mod.getNavState().currentIndex).toBe(-1);
       expect(mod.getNavState().total).toBe(0);
     });
