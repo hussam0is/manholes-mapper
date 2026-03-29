@@ -176,3 +176,179 @@ if (typeof window !== 'undefined') {
 }
 
 export { appStore };
+
+// ── AppStore class — reactive key/value store with bus integration ──
+
+/**
+ * Class-based reactive state store with subscriber notifications and
+ * event bus integration. Each `set()` emits a `store:<key>` event on the bus.
+ */
+class AppStore {
+  constructor() {
+    /** @type {Map<string, any>} */
+    this._state = new Map();
+    /** @type {Map<string, Set<Function>>} */
+    this._subs = new Map();
+    /** @type {boolean} */
+    this._batching = false;
+    /** @type {Map<string, { newVal: any, oldVal: any }>} */
+    this._pending = new Map();
+  }
+
+  /**
+   * Get the current value for a key.
+   * @param {string} key
+   * @returns {any}
+   */
+  get(key) {
+    return this._state.get(key);
+  }
+
+  /**
+   * Set a value. Notifies subscribers and emits `store:<key>` on the bus.
+   * No-op if the value is the same reference.
+   * @param {string} key
+   * @param {any} value
+   */
+  set(key, value) {
+    const old = this._state.get(key);
+    if (old === value) return;
+    this._state.set(key, value);
+
+    if (this._batching) {
+      // During batch, coalesce: keep first old value, update new value
+      if (!this._pending.has(key)) {
+        this._pending.set(key, { newVal: value, oldVal: old });
+      } else {
+        this._pending.get(key).newVal = value;
+      }
+      return;
+    }
+
+    this._notify(key, value, old);
+  }
+
+  /**
+   * Check whether a key exists in the store.
+   * @param {string} key
+   * @returns {boolean}
+   */
+  has(key) {
+    return this._state.has(key);
+  }
+
+  /**
+   * Bulk-initialize state without firing subscribers.
+   * @param {Record<string, any>} entries
+   */
+  init(entries) {
+    for (const [key, value] of Object.entries(entries)) {
+      this._state.set(key, value);
+    }
+  }
+
+  /**
+   * Subscribe to changes on a specific key.
+   * @param {string} key
+   * @param {(newVal: any, oldVal: any) => void} handler
+   * @returns {Function} unsubscribe
+   */
+  subscribe(key, handler) {
+    if (!this._subs.has(key)) {
+      this._subs.set(key, new Set());
+    }
+    this._subs.get(key).add(handler);
+    return () => this._subs.get(key)?.delete(handler);
+  }
+
+  /**
+   * Batch multiple set() calls; subscribers fire once per key after fn completes.
+   * @param {Function} fn
+   */
+  batch(fn) {
+    if (this._batching) {
+      // Nested batch — just run inline, outer batch will flush
+      fn();
+      return;
+    }
+    this._batching = true;
+    this._pending = new Map();
+    try {
+      fn();
+    } finally {
+      this._batching = false;
+      const pending = this._pending;
+      this._pending = new Map();
+      for (const [key, { newVal, oldVal }] of pending) {
+        this._notify(key, newVal, oldVal);
+      }
+    }
+  }
+
+  /**
+   * Get a snapshot of all state as a plain object.
+   * @returns {Record<string, any>}
+   */
+  snapshot() {
+    return Object.fromEntries(this._state);
+  }
+
+  /**
+   * Return all key names.
+   * @returns {string[]}
+   */
+  keys() {
+    return [...this._state.keys()];
+  }
+
+  /**
+   * Remove all state and subscribers.
+   */
+  clear() {
+    this._state.clear();
+    this._subs.clear();
+  }
+
+  /**
+   * Return type info for each key (for debugging).
+   * @returns {Record<string, string>}
+   */
+  debug() {
+    const result = {};
+    for (const [key, value] of this._state) {
+      if (value === null) {
+        result[key] = 'null';
+      } else if (Array.isArray(value)) {
+        result[key] = `array(${value.length})`;
+      } else {
+        result[key] = typeof value;
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Internal: notify subscribers and emit on bus.
+   * @param {string} key
+   * @param {any} newVal
+   * @param {any} oldVal
+   */
+  _notify(key, newVal, oldVal) {
+    const subs = this._subs.get(key);
+    if (subs) {
+      for (const cb of subs) {
+        try {
+          cb(newVal, oldVal);
+        } catch (err) {
+          console.error(`[AppStore] Error in subscriber for "${key}":`, err);
+        }
+      }
+    }
+    bus.emit(`store:${key}`, { key, value: newVal, prev: oldVal });
+  }
+}
+
+/** Singleton store instance */
+const store = new AppStore();
+
+export { AppStore, store };
