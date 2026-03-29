@@ -26,7 +26,7 @@
  * replaced by direct imports once circular dependency chains are broken.
  */
 
-import { appState as store } from '../state/app-state.js';
+import { store } from '../state/app-store.js';
 
 /** @type {Record<string, any>} */
 export const S = {};
