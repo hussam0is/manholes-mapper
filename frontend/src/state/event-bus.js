@@ -100,6 +100,18 @@ class EventBus {
       }
       this._onceListeners.delete(event);
     }
+
+    // Fire wildcard ('*') listeners with (event, data) signature
+    if (event !== '*') {
+      const wildcardListeners = this._listeners.get('*');
+      if (wildcardListeners) {
+        for (const cb of wildcardListeners) {
+          try { cb(event, data); } catch (err) {
+            console.error(`[EventBus] Error in wildcard listener for "${event}":`, err);
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -125,6 +137,20 @@ class EventBus {
     this._listeners.clear();
     this._onceListeners.clear();
     if (this._nsListeners) this._nsListeners.clear();
+  }
+
+  /**
+   * Return listener counts per event for debugging.
+   * @returns {Record<string, number>}
+   */
+  debug() {
+    const result = {};
+    for (const [event, listeners] of this._listeners) {
+      if (listeners.size > 0) {
+        result[event] = listeners.size;
+      }
+    }
+    return result;
   }
 
   /**
