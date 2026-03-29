@@ -1921,6 +1921,13 @@ window.centerOnGpsLocation = centerOnGpsLocation;
 window.toggleUserLocationTracking = toggleUserLocationTracking;
 window.__createNodeFromMeasurement = createNodeFromMeasurement;
 window.__markInternalNavigation = () => markInternalNavigation();
+window.__projectCanvas = {
+  isProjectCanvasMode,
+  getBackgroundSketches,
+  findNodeInBackground,
+  findEdgeInBackground,
+  switchActiveSketch,
+};
 
 // ============================================
 // TSC3 Survey Device Integration

@@ -905,6 +905,9 @@ export async function loadProjectCanvas(projectId) {
     showSketchSidePanel();
     if (window.__perfDebug) console.timeEnd('[PERF] showSketchSidePanel');
 
+    // Notify unified sidebar to show Sketches tab and reparent panel content
+    window.menuEvents?.emit('projectCanvas:enter');
+
     F.scheduleDraw();
     updateLoadingStep('canvas', 'done', t('projects.canvas.loadingCanvasDone'));
 

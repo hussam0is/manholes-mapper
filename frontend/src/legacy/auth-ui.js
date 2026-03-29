@@ -216,6 +216,7 @@ function _handleRouteImpl() {
     syncProjectSketchesToLibrary();
     clearProjectCanvas();
     hideSketchSidePanel();
+    window.menuEvents?.emit('projectCanvas:exit');
   }
 
   // Cross-module calls via F registry (avoids circular imports)
