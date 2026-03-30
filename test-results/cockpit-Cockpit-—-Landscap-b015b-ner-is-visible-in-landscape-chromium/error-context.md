@@ -1,0 +1,112 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - link "דלג לתוכן הראשי" [ref=e2] [cursor=pointer]:
+    - /url: "#main"
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - img "Geopoint" [ref=e5]
+      - heading "ממפה שוחות" [level=1] [ref=e6]
+      - text: description
+      - 'generic "סונכרן לאחרונה: עכשיו" [ref=e7]':
+        - generic [ref=e8]: cloud_done
+    - text: description
+    - navigation "Main navigation" [ref=e9]:
+      - generic [ref=e11]:
+        - button "שמירה" [ref=e12] [cursor=pointer]:
+          - generic [ref=e13]: save
+        - generic [ref=e14] [cursor=pointer]:
+          - checkbox "שמירה אוטומטית" [checked] [ref=e15]
+          - generic [ref=e16]: שמירה אוטומטית
+      - generic [ref=e18]:
+        - generic [ref=e19]: search
+        - textbox "Search nodes" [ref=e20]:
+          - /placeholder: חפש שוחה...
+      - generic [ref=e22]:
+        - button "הקטן גודל" [ref=e23] [cursor=pointer]:
+          - generic [ref=e24]: remove_circle_outline
+        - button "הגדל גודל" [ref=e25] [cursor=pointer]:
+          - generic [ref=e26]: add_circle_outline
+        - button "גודל אוטומטי" [ref=e27] [cursor=pointer]:
+          - generic [ref=e28]: fit_screen
+      - button "תפריט" [ref=e30] [cursor=pointer]:
+        - generic [ref=e31]: apps
+      - generic [ref=e32]:
+        - combobox "Select language" [ref=e33] [cursor=pointer]:
+          - option "עברית" [selected]
+          - option "English"
+        - button "עזרה" [ref=e34] [cursor=pointer]:
+          - generic [ref=e35]: help_outline
+        - button "הסקיצות שלי" [ref=e36] [cursor=pointer]:
+          - generic [ref=e37]: description
+      - button "שרטוטים" [ref=e39] [cursor=pointer]:
+        - generic [ref=e40]: layers
+        - generic [ref=e41]: Sketches
+      - button "D" [ref=e45] [cursor=pointer]:
+        - generic [ref=e47]: D
+  - generic [ref=e48]:
+    - generic "GPS Status" [ref=e49] [cursor=pointer]:
+      - generic [ref=e51]: GPS
+    - generic "Sync" [ref=e53] [cursor=pointer]:
+      - generic [ref=e54]: cloud_done
+      - generic [ref=e55]: מסונכרן
+    - generic "Health" [ref=e57] [cursor=pointer]:
+      - generic [ref=e58]: assessment
+      - generic [ref=e59]: "--"
+    - generic "Session" [ref=e61] [cursor=pointer]:
+      - generic [ref=e62]: timer
+      - generic [ref=e63]: סשן חדש
+  - main [ref=e64]:
+    - generic [ref=e65]:
+      - img "Sketch drawing canvas" [ref=e66]
+      - generic:
+        - generic: touch_app
+        - paragraph: התחל לשרטט
+        - paragraph: הקש על הקנבס כדי להוסיף שוחה
+        - paragraph:
+          - generic: south_west
+          - generic: או לחץ N למצב שוחה
+      - status
+      - toolbar "Drawing tools" [ref=e67]:
+        - generic [ref=e68]:
+          - button "Node mode" [ref=e69] [cursor=pointer]:
+            - generic [ref=e70]: radio_button_unchecked
+            - generic [ref=e71]: הוסף שוחה (N)
+          - button "Edge mode" [ref=e72] [cursor=pointer]:
+            - generic [ref=e73]: timeline
+            - generic [ref=e74]: צייר קו (E)
+          - button "Undo" [disabled]:
+            - generic: undo
+          - button "Redo" [disabled]:
+            - generic: redo
+        - button "My Location" [ref=e77] [cursor=pointer]:
+          - generic [ref=e78]: my_location
+          - generic [ref=e79]: המיקום שלי
+        - generic [ref=e80]:
+          - button "Zoom to fit" [ref=e81] [cursor=pointer]:
+            - generic [ref=e82]: fit_screen
+          - button "Zoom in" [ref=e83] [cursor=pointer]:
+            - generic [ref=e84]: add
+          - button "Zoom out" [ref=e85] [cursor=pointer]:
+            - generic [ref=e86]: remove
+          - button "Toggle panel" [ref=e88] [cursor=pointer]:
+            - generic [ref=e89]: menu_open
+    - complementary "Sidebar" [ref=e90]:
+      - button "Toggle sidebar" [ref=e91] [cursor=pointer]:
+        - generic [ref=e92]: chevron_left
+      - tablist [ref=e93]:
+        - tab "edit_note פרטים" [selected] [ref=e94] [cursor=pointer]:
+          - generic [ref=e95]: edit_note
+          - generic [ref=e96]: פרטים
+        - tab "monitor_heart סטטוס" [ref=e97] [cursor=pointer]:
+          - generic [ref=e98]: monitor_heart
+          - generic [ref=e99]: סטטוס
+        - tab "layers שכבות" [ref=e100] [cursor=pointer]:
+          - generic [ref=e101]: layers
+          - generic [ref=e102]: שכבות
+      - tabpanel [ref=e104]:
+        - generic [ref=e105]: בחר שוחה או קו כדי לערוך.
+    - button "Open sidebar" [ref=e106] [cursor=pointer]:
+      - generic [ref=e107]: menu_open
+```

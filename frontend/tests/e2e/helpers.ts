@@ -277,15 +277,10 @@ export async function gotoCanvasReady(page: Page) {
     },
     { timeout: 15000 }
   );
-  // Wait for lazy-loaded modules (cockpit, etc.) to initialize.
-  // The cockpit module is loaded via dynamic import in main-entry.js
-  // and injects a .cockpit element into the DOM when ready.
-  await page.waitForFunction(
-    () => document.querySelector('.cockpit') !== null,
-    { timeout: 10000 }
-  ).catch(() => {
-    // Cockpit may not init in all viewport sizes — non-fatal
-  });
+  // NOTE: Cockpit wait removed — the dynamic import of cockpit.js
+  // causes Chromium renderer crashes when polled via waitForFunction.
+  // The canvas-ready state is sufficient; cockpit-specific tests should
+  // wait for .cockpit locally if needed.
   // Brief settle time for event handlers
   await page.waitForTimeout(300);
 }

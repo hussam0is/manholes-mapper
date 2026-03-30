@@ -1,0 +1,155 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - link "Skip to main content" [ref=e2] [cursor=pointer]:
+    - /url: "#main"
+  - button "Show header" [ref=e3]: expand_more
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - img "Geopoint" [ref=e6]
+      - heading "Manhole Mapper" [level=1] [ref=e7]
+    - navigation "Main navigation" [ref=e8]:
+      - generic [ref=e10]:
+        - button "Save sketch" [ref=e11]: save
+        - checkbox [ref=e13]
+      - generic [ref=e15]:
+        - text: search
+        - textbox "Search nodes" [ref=e16]
+      - generic [ref=e18]:
+        - button "Decrease size" [ref=e19]: remove_circle_outline
+        - button "Increase size" [ref=e20]: add_circle_outline
+        - button "Auto size" [ref=e21]: fit_screen
+      - generic [ref=e22]:
+        - button "Export options" [ref=e23]: apps
+        - menu [ref=e24]:
+          - generic [ref=e25]: dashboard פעולות
+          - generic [ref=e26]:
+            - generic [ref=e27]:
+              - generic [ref=e28]: description שרטוט
+              - generic [ref=e29]:
+                - menuitem "download יצוא שרטוט" [ref=e30]
+                - menuitem "upload יבוא שרטוט" [ref=e31]
+            - separator [ref=e32]
+            - generic [ref=e33]:
+              - generic [ref=e34]: table_chart יצוא נתונים
+              - generic [ref=e35]:
+                - menuitem "donut_large יצוא שוחות" [ref=e36]
+                - menuitem "call_split יצוא קווים" [ref=e37]
+            - separator [ref=e38]
+            - generic [ref=e39]:
+              - generic [ref=e40]: schedule יום עבודה
+              - menuitem "done_all סיים יום עבודה יצוא כל השרטוטים של היום" [ref=e42]:
+                - text: done_all
+                - generic [ref=e43]: סיים יום עבודה יצוא כל השרטוטים של היום
+            - separator [ref=e44]
+            - generic [ref=e45]:
+              - generic [ref=e46]: location_on מיקום וקואורדינטות
+              - generic [ref=e47]:
+                - menuitem "place יבא קואורדינטות" [ref=e48]
+                - generic [ref=e49]:
+                  - checkbox "my_location הפעל קואורדינטות" [ref=e50]
+                  - text: my_location הפעל קואורדינטות
+                - generic [ref=e51]:
+                  - text: "straighten קנה מידה:"
+                  - generic [ref=e52]:
+                    - button "Decrease scale" [ref=e53]: −
+                    - text: 1:100
+                    - button "Increase scale" [ref=e54]: +
+                - generic [ref=e55]:
+                  - text: "swap_horiz מתיחה אופקית:"
+                  - generic [ref=e56]:
+                    - button "Decrease horizontal stretch" [ref=e57]: −
+                    - text: "1.0"
+                    - button "Increase horizontal stretch" [ref=e58]: +
+                - generic [ref=e59]:
+                  - text: "swap_vert מתיחה אנכית:"
+                  - generic [ref=e60]:
+                    - button "Decrease vertical stretch" [ref=e61]: −
+                    - text: "1.0"
+                    - button "Increase vertical stretch" [ref=e62]: +
+                - menuitem "refresh אפס מתיחה" [ref=e63]
+            - separator [ref=e64]
+            - generic [ref=e65]:
+              - generic [ref=e66]: satellite_alt מדידה חיה
+              - generic [ref=e67]:
+                - generic [ref=e68]:
+                  - checkbox "gps_fixed מדידה חיה" [ref=e69]
+                  - text: gps_fixed מדידה חיה
+                - button "settings_remote חיבור TMM" [ref=e70]
+            - separator [ref=e71]
+            - generic [ref=e72]:
+              - generic [ref=e73]: map שכבת מפה
+              - generic [ref=e74]:
+                - generic [ref=e75]:
+                  - checkbox "layers שכבת מפה" [ref=e76]
+                  - text: layers שכבת מפה
+                - generic [ref=e77]:
+                  - text: "terrain סוג מפה:"
+                  - combobox "Map type" [ref=e78]:
+                    - option "אורתופוטו" [selected]
+                    - option "רחובות"
+      - generic [ref=e79]:
+        - combobox "Select language" [ref=e80]:
+          - option "עברית" [selected]
+          - option "English"
+        - button "Help" [ref=e81]: help_outline
+        - button "Admin settings" [ref=e82]: tune
+        - button "Projects" [ref=e83]: folder_open
+        - button "My Sketches" [ref=e84]: description
+      - button "Sketches" [ref=e86]: layers Sketches
+    - button "Open menu" [ref=e87]: menu
+  - main [ref=e88]:
+    - generic [ref=e89]:
+      - img "Sketch drawing canvas" [ref=e90]
+      - generic [ref=e91]:
+        - text: touch_app
+        - paragraph [ref=e92]: התחל לשרטט
+        - paragraph [ref=e93]: הקש על הקנבס כדי להוסיף שוחה
+        - paragraph [ref=e94]: south_west או לחץ N למצב שוחה
+      - toolbar "Drawing tools" [ref=e95]:
+        - group "Drawing tools" [ref=e96]:
+          - button "Show my location" [ref=e97]: my_location
+          - button "Node type" [ref=e98]: radio_button_unchecked
+          - group "Node types" [ref=e99]:
+            - button "Manhole mode" [ref=e100]
+            - button "Home node mode" [ref=e101]
+            - button "Drainage mode" [ref=e102]
+            - button "Issue mode" [ref=e103]
+          - button "Edge/line mode" [ref=e104]
+          - button "Undo last action" [disabled] [ref=e105]: undo
+          - button "Redo last action" [disabled] [ref=e106]: redo
+          - button "Zoom in" [ref=e107]: add
+          - button "Zoom out" [ref=e108]: remove
+      - status
+      - img "Edge type color legend"
+      - button "Toggle edge legend" [ref=e109]: palette
+      - generic [ref=e110]:
+        - generic [ref=e111]:
+          - button "Zoom in" [ref=e112]: add
+          - button "Zoom out" [ref=e113]: remove
+          - button "Recenter by density" [ref=e114]: grain
+          - button "Recenter sketch" [ref=e115]: center_focus_strong
+          - button "Zoom to fit" [ref=e116]: fit_screen
+        - button "Canvas tools" [ref=e117]: more_vert
+      - dialog "טיפים וקיצורי מקשים" [ref=e118]:
+        - generic [ref=e119]:
+          - heading "טיפים וקיצורי מקשים" [level=2] [ref=e120]
+          - list [ref=e121]:
+            - listitem [ref=e122]: "N: מצב שוחה"
+            - listitem [ref=e123]: "E: מצב קו"
+            - listitem [ref=e124]: "S: שמירה"
+            - listitem [ref=e125]: "Space: הזזת קנבס (לחוץ וגרור)"
+            - listitem [ref=e126]: "= / - : זום פנימה / החוצה (0 לאיפוס)"
+            - listitem [ref=e127]: "גלגלת עכבר מעל הקנבס: זום"
+            - listitem [ref=e128]: "Esc: ביטול פעולה או ניקוי בחירה"
+            - listitem [ref=e129]: "Delete/Backspace: מחיקת פריט נבחר"
+          - paragraph [ref=e130]: במצב קו, בחר שוחת מקור ואז שוחת יעד.
+          - button "סגור" [ref=e131]
+    - complementary "פרטים" [ref=e132]:
+      - separator "Resize sidebar"
+      - generic [ref=e133]:
+        - heading "פרטים" [level=2] [ref=e134]
+        - button "Close sidebar" [ref=e135]: close
+      - paragraph [ref=e137]: בחר שוחה או קו כדי לערוך.
+```
