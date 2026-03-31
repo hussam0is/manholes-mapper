@@ -34,11 +34,19 @@ class EventBus {
 
   /**
    * Subscribe to an event.
-   * @param {string} event — namespaced event name
+   * @param {string} event — namespaced event name (use '*' for all events)
    * @param {Function} callback
    * @returns {Function} unsubscribe function
    */
   on(event, callback) {
+    // Wildcard: subscribe to all events
+    if (event === '*') {
+      if (!this._wildcardListeners) {
+        this._wildcardListeners = new Set();
+      }
+      this._wildcardListeners.add(callback);
+      return () => this._wildcardListeners.delete(callback);
+    }
     if (!this._listeners.has(event)) {
       this._listeners.set(event, new Set());
     }
@@ -68,6 +76,10 @@ class EventBus {
    * @param {Function} callback
    */
   off(event, callback) {
+    if (event === '*') {
+      this._wildcardListeners?.delete(callback);
+      return;
+    }
     this._listeners.get(event)?.delete(callback);
     this._onceListeners.get(event)?.delete(callback);
   }
@@ -100,6 +112,15 @@ class EventBus {
       }
       this._onceListeners.delete(event);
     }
+
+    // Fire wildcard listeners with (event, data)
+    if (this._wildcardListeners) {
+      for (const cb of this._wildcardListeners) {
+        try { cb(event, data); } catch (err) {
+          console.error(`[EventBus] Error in wildcard listener for "${event}":`, err);
+        }
+      }
+    }
   }
 
   /**
@@ -125,6 +146,19 @@ class EventBus {
     this._listeners.clear();
     this._onceListeners.clear();
     if (this._nsListeners) this._nsListeners.clear();
+    if (this._wildcardListeners) this._wildcardListeners.clear();
+  }
+
+  /**
+   * Return listener counts per event for debugging.
+   * @returns {Record<string, number>}
+   */
+  debug() {
+    const counts = {};
+    for (const [event, listeners] of this._listeners) {
+      counts[event] = listeners.size;
+    }
+    return counts;
   }
 
   /**
