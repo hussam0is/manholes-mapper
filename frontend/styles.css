@@ -14087,15 +14087,15 @@ button:focus-visible,
   }
 
   /* Header recall handle â€" chevron strip at top edge when header hidden.
-     Visual height is 28px but the touch target extends to 44px via padding-bottom
-     so finger taps register reliably on real devices. */
+     Visual height is 6px with minimal padding so it doesn't block canvas clicks.
+     Touch target is reduced to prevent interference with canvas interactions. */
   .header-recall-handle {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     height: 6px;
-    padding-bottom: 38px; /* extends touch area to 44px total */
+    padding-bottom: 4px; /* minimal touch area extension, total ~10px */
     display: flex;
     align-items: flex-start;
     justify-content: center;
