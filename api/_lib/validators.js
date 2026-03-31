@@ -84,6 +84,18 @@ export function validateUUID(id) {
 }
 
 /**
+ * Validate Better Auth user ID format (alphanumeric string, 20-40 chars)
+ * Better Auth generates IDs like "bKQ6Q52y6fukTk9Rev3P5tSNOlv2SRXn"
+ * Also accepts standard UUIDs for backwards compatibility
+ * @param {string} id - ID to validate
+ * @returns {boolean}
+ */
+export function validateUserId(id) {
+  if (typeof id !== 'string') return false;
+  return /^[a-zA-Z0-9_-]{10,50}$/.test(id) || validateUUID(id);
+}
+
+/**
  * Validate sketch input data
  * @param {Object} body - Request body
  * @returns {string[]|null} - Array of error messages or null if valid

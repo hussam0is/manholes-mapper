@@ -21,7 +21,7 @@ import {
   updateUser
 } from '../_lib/db.js';
 import { applyRateLimit } from '../_lib/rate-limit.js';
-import { VALID_ROLES, validateUUID, validateUserUpdateInput } from '../_lib/validators.js';
+import { VALID_ROLES, validateUUID, validateUserId, validateUserUpdateInput } from '../_lib/validators.js';
 import { handleApiError } from '../_lib/error-handler.js';
 
 export const config = { runtime: 'nodejs' };
@@ -122,7 +122,7 @@ async function handleSingleUser(req, res, request, targetUserId) {
   console.debug(`[API /api/users/${targetUserId}] ${req.method} request started`);
 
   // Validate UUID format
-  if (!validateUUID(targetUserId)) {
+  if (!validateUserId(targetUserId)) {
     return res.status(400).json({ error: 'Invalid user ID format' });
   }
 

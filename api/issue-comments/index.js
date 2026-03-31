@@ -25,7 +25,7 @@ import {
   getSketchById,
   getSketchByIdAdmin,
 } from '../_lib/db.js';
-import { validateUUID } from '../_lib/validators.js';
+import { validateUUID, validateUserId } from '../_lib/validators.js';
 import { applyRateLimit } from '../_lib/rate-limit.js';
 import { handleApiError } from '../_lib/error-handler.js';
 
@@ -122,11 +122,11 @@ export default async function handler(req, res) {
         return res.status(404).json({ error: 'Sketch not found' });
       }
 
-      // SECURITY FIX: Validate mentionedUserIds as UUIDs
+      // SECURITY FIX: Validate mentionedUserIds
       if (Array.isArray(mentionedUserIds)) {
         for (const mid of mentionedUserIds) {
-          if (!validateUUID(mid)) {
-            return res.status(400).json({ error: 'Invalid mentionedUserIds — each must be a valid UUID' });
+          if (!validateUserId(mid)) {
+            return res.status(400).json({ error: 'Invalid mentionedUserIds — each must be a valid user ID' });
           }
         }
       }
