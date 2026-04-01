@@ -5,8 +5,8 @@
  * Handles user role and feature permission checking on the client side.
  * Fetches and caches user role data from the API.
  *
- * @typedef {import('../types/index.d.ts').UserRoleData} UserRoleData
- * @typedef {import('../types/index.d.ts').AuthState} AuthState
+ * @typedef {import('../types/index.js').UserRoleData} UserRoleData
+ * @typedef {import('../types/index.js').AuthState} AuthState
  */
 
 import { getToken, getAuthState } from './auth-guard.js';
@@ -92,7 +92,7 @@ export async function fetchUserRole(forceRefresh = false) {
       return data;
 
     } catch (error) {
-      console.error('[Auth] Error fetching user role:', error.message);
+      console.error('[Auth] Error fetching user role:', error instanceof Error ? error.message : String(error));
       return null;
     } finally {
       fetchPromise = null;

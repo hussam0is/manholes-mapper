@@ -1,0 +1,2062 @@
+<testsuites id="" name="" tests="500" failures="0" skipped="500" errors="0" time="0.7900149999999999">
+<testsuite name="admin-panel.spec.ts" timestamp="2026-04-01T13:42:44.018Z" hostname="chromium" tests="10" failures="0" skipped="10" time="0" errors="0">
+<testcase name="Admin Panel DOM Structure › admin screen element exists in the DOM" classname="admin-panel.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Admin Panel DOM Structure › admin screen content area exists" classname="admin-panel.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Admin Panel DOM Structure › admin screen save button exists" classname="admin-panel.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Admin Panel DOM Structure › admin screen cancel button exists" classname="admin-panel.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Admin Panel DOM Structure › admin screen import button exists" classname="admin-panel.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Admin Panel DOM Structure › admin screen export button exists" classname="admin-panel.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Admin Button Visibility › admin button exists for admin users on desktop" classname="admin-panel.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Admin Button Visibility › admin button has tune icon" classname="admin-panel.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Admin Button Visibility › mobile admin button exists in the DOM" classname="admin-panel.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Admin Button Visibility › admin screen starts hidden" classname="admin-panel.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="auth.spec.ts" timestamp="2026-04-01T13:42:44.018Z" hostname="chromium" tests="10" failures="0" skipped="10" time="0" errors="0">
+<testcase name="Authentication › should show login panel when not authenticated" classname="auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › should have login form elements" classname="auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › should show app title correctly" classname="auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › should display brand logo" classname="auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Navigation › should have main navigation elements" classname="auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Navigation › should have mobile menu button" classname="auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Navigation › should toggle mobile menu on click" classname="auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility › should have proper ARIA labels" classname="auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility › should have proper document structure" classname="auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility › should have proper form labels" classname="auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="canvas-drawing.spec.ts" timestamp="2026-04-01T13:42:44.018Z" hostname="chromium" tests="15" failures="0" skipped="15" time="0" errors="0">
+<testcase name="Canvas Drawing Flow › canvas element is visible" classname="canvas-drawing.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Canvas Drawing Flow › canvas container fills the viewport" classname="canvas-drawing.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Canvas Drawing Flow › toolbar is visible with mode group" classname="canvas-drawing.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Canvas Drawing Flow › node mode button is present in the toolbar" classname="canvas-drawing.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Canvas Drawing Flow › edge mode button is present in the toolbar" classname="canvas-drawing.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Canvas Drawing Flow › clicking node mode button dispatches click event" classname="canvas-drawing.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Canvas Drawing Flow › clicking edge mode button dispatches click event" classname="canvas-drawing.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Canvas Drawing Flow › mode buttons are inside the mode group" classname="canvas-drawing.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Canvas Drawing Flow › recenter button exists in the FAB toolbar" classname="canvas-drawing.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Canvas Drawing Flow › canvas zoom buttons exist in the toolbar" classname="canvas-drawing.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Canvas Drawing Flow › zoom in button has add icon" classname="canvas-drawing.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Canvas Drawing Flow › zoom out button has remove icon" classname="canvas-drawing.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Node Creation › canvas container is clickable (no crash on click)" classname="canvas-drawing.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Node Creation › sidebar element exists in the DOM" classname="canvas-drawing.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Node Creation › details container exists in the DOM" classname="canvas-drawing.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="cockpit.spec.ts" timestamp="2026-04-01T13:42:44.018Z" hostname="chromium" tests="80" failures="0" skipped="80" time="0" errors="0">
+<testcase name="Cockpit — Landscape Layout › cockpit-mode class is added to body in landscape" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Landscape Layout › cockpit container is visible in landscape" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Landscape Layout › cockpit uses grid layout with two columns" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Landscape Layout › intel strip (Zone A) is present" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Landscape Layout › action rail (Zone C) is present in DOM" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Landscape Layout › canvas container remains visible in cockpit mode" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Landscape Layout › header stays visible in cockpit mode" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Landscape Layout › cockpit deactivates when switching to portrait" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip › GPS card is present with satellite icon" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip › GPS dot element exists for status indication" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip › GPS accuracy display exists" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip › GPS satellite count element exists" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip › health card is present with completion ring SVG" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip › completion ring text shows percentage or placeholder" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip › sync status card is present" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip › sync icon shows cloud_done by default" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip › session tracker card is present" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip › session duration starts at 0:00" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip › session node count element exists" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip › session edge count element exists" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip › health issues element exists (hidden when no issues)" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Action Rail › action rail has mode buttons for node, edge, home, drainage" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Action Rail › mode buttons have aria-pressed attribute" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Action Rail › GPS capture button exists" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Action Rail › TSC3 survey controller button exists" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Action Rail › undo button exists and starts disabled" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Action Rail › redo button exists and starts disabled" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Action Rail › zoom in/out/fit buttons exist" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Action Rail › 3D view button exists" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Action Rail › heatmap toggle button exists" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Action Rail › more menu button exists and starts collapsed" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Action Rail › collapse Zone A button exists" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Health Card &amp; Issues › completion ring SVG has bg and fill circles" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Health Card &amp; Issues › completion fill has data-level attribute" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Health Card &amp; Issues › health stats element exists" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Health Card &amp; Issues › issue list is hidden by default" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Health Card &amp; Issues › clicking issue count toggles issue list visibility" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — More Menu › more menu container exists in DOM" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — More Menu › more menu has Save button" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — More Menu › more menu has My Sketches button" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — More Menu › more menu has collapsible groups" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — More Menu › collapsible groups start collapsed" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — More Menu › clicking group header toggles expansion" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — More Menu › search group has node search input" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — More Menu › view group has size controls and 3D view" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — More Menu › sketch &amp; export group has export/import buttons" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — More Menu › location &amp; map group has coordinate controls" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — More Menu › measurement group has survey and finish workday buttons" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — More Menu › settings group has autosave toggle and admin button" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — More Menu › language toggle button exists at bottom" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip Collapse › collapse button exists in intel strip" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip Collapse › expand handle exists for collapsed state" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip Collapse › clicking collapse button adds collapsed class" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip Collapse › clicking collapse button adds zone-a-collapsed to body" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip Collapse › collapsing changes grid columns to hide Zone A" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip Collapse › clicking expand handle restores Zone A" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip Collapse › collapse state persists in localStorage" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip Collapse › collapse state is restored on page reload" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Micro-Cockpit (Portrait) › micro-cockpit strip is present in DOM" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Micro-Cockpit (Portrait) › micro-cockpit has GPS dot" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Micro-Cockpit (Portrait) › micro-cockpit has sync icon" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Micro-Cockpit (Portrait) › micro-cockpit has health percentage" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Micro-Cockpit (Portrait) › micro-cockpit has session timer" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Micro-Cockpit (Portrait) › micro-cockpit has role=status for accessibility" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Micro-Cockpit (Portrait) › cockpit-mode is NOT active in portrait" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Progress Bar › progress bar container exists with ARIA attributes" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Progress Bar › progress fill element exists with data-level" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Progress Bar › progress fill starts at 0% width" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Accessibility › intel strip has role=complementary" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Accessibility › intel strip has aria-label for survey status" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Accessibility › action rail has role=toolbar" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Accessibility › action rail has aria-label" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Accessibility › collapse buttons have aria-label" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Accessibility › all mode buttons are keyboard-focusable" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Accessibility › heatmap button has aria-pressed for toggle state" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Accessibility › map type select has aria-label" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Orientation Transitions › landscape → portrait → landscape preserves cockpit state" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Orientation Transitions › canvas remains interactive after orientation switches" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Condensed Status › condensed status bar exists in action rail" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Condensed Status › condensed status has GPS dot, sync icon, and health percentage" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="dark-mode.spec.ts" timestamp="2026-04-01T13:42:44.018Z" hostname="chromium" tests="6" failures="0" skipped="6" time="0" errors="0">
+<testcase name="Dark Mode › body has dark background in dark mode" classname="dark-mode.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Dark Mode › header has dark background in dark mode" classname="dark-mode.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Dark Mode › toolbar has dark styling in dark mode" classname="dark-mode.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Dark Mode › canvas container has appropriate styling in dark mode" classname="dark-mode.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Dark Mode › CSS custom properties are set for dark mode" classname="dark-mode.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Dark Mode › light mode has lighter backgrounds than dark mode" classname="dark-mode.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="export-flow.spec.ts" timestamp="2026-04-01T13:42:44.018Z" hostname="chromium" tests="9" failures="0" skipped="9" time="0" errors="0">
+<testcase name="Export Flow › export menu button exists in the DOM" classname="export-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Export Flow › export menu button has apps icon" classname="export-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Export Flow › export dropdown exists in the DOM" classname="export-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Export Flow › export nodes button exists in the dropdown" classname="export-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Export Flow › export edges button exists in the dropdown" classname="export-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Export Flow › export sketch button exists in the dropdown" classname="export-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Export Flow › export buttons are inside the controls nav" classname="export-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Export Flow › save button exists in the header" classname="export-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Export Flow › save button has save icon" classname="export-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="full-sketch-workflow.spec.ts" timestamp="2026-04-01T13:42:44.018Z" hostname="chromium" tests="1" failures="0" skipped="1" time="0" errors="0">
+<testcase name="Full Sketch Workflow — Severe UX Audit › complete sketch workflow with data entry" classname="full-sketch-workflow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="homepage.spec.ts" timestamp="2026-04-01T13:42:44.018Z" hostname="chromium" tests="36" failures="0" skipped="36" time="0" errors="0">
+<testcase name="Projects Homepage › should display home panel in projects mode on load" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Projects Homepage › should show dashboard icon in projects mode" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Projects Homepage › should NOT have subtitle element (removed in refactor)" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Projects Homepage › should render project cards" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Projects Homepage › should display project names in cards" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Projects Homepage › should display project descriptions when present" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Projects Homepage › should have folder icon on each project card" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Projects Homepage › should have &quot;Open Project&quot; buttons" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Projects Homepage › should show close button in projects mode" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Projects Homepage › should hide footer in projects mode" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Projects Homepage › should hide sketch tabs in projects mode" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Click → Canvas Navigation › clicking a project card navigates to #/project/:id" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Click → Canvas Navigation › clicking a project triggers hideHome" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Click → Canvas Navigation › clicking a project shows the sketch side panel" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Click → Canvas Navigation › sketch side panel lists all project sketches" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Click → Canvas Navigation › sketch side panel shows sketch names" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Click → Canvas Navigation › first sketch is marked as active" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Click → Canvas Navigation › side panel toggle button is visible" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Click → Canvas Navigation › empty project redirects back to homepage" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sketch Side Panel Interactions › clicking a non-active sketch switches it to active" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sketch Side Panel Interactions › eye icon toggles sketch visibility" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sketch Side Panel Interactions › side panel shows node count badges" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sketch Side Panel Interactions › active sketch has edit icon" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sketch Side Panel Interactions › close button hides the side panel" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sketch Side Panel Interactions › toggle button re-opens the side panel" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Back to Projects Navigation › back button exists in sketch side panel" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Back to Projects Navigation › back button has arrow_back icon" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Back to Projects Navigation › back button links to #/" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Back to Projects Navigation › clicking back button returns to projects homepage" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Back to Projects Navigation › back button hides sketch side panel" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Back to Projects Navigation › full round-trip: homepage → project → back → homepage" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Fallback: No Projects → Sketch List › falls back to sketches mode when no projects exist" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Fallback: No Projects → Sketch List › shows folder_open icon in sketches mode" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Fallback: No Projects → Sketch List › shows close button in sketches mode" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Fallback: No Projects → Sketch List › shows footer in sketches mode" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Fallback: API Error → Sketch List › falls back to sketches mode on API error" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="offline-resilience.spec.ts" timestamp="2026-04-01T13:42:44.018Z" hostname="chromium" tests="7" failures="0" skipped="7" time="0" errors="0">
+<testcase name="Offline Resilience › app loads and canvas works even when API calls fail after initial load" classname="offline-resilience.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Offline Resilience › app does not crash when navigating while offline" classname="offline-resilience.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Offline Resilience › toolbar remains visible when offline" classname="offline-resilience.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Offline Resilience › sync indicator exists in the DOM" classname="offline-resilience.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Offline Resilience › app survives going offline and back online" classname="offline-resilience.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Offline Resilience › app does not crash when projects API returns 500" classname="offline-resilience.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Offline Resilience › no unhandled page errors during offline operation (excluding known init errors)" classname="offline-resilience.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="project-canvas.spec.ts" timestamp="2026-04-01T13:42:44.018Z" hostname="chromium" tests="10" failures="0" skipped="10" time="0" errors="0">
+<testcase name="Project Canvas Structure › sketch side panel element exists in the DOM" classname="project-canvas.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Canvas Structure › sketch side panel toggle exists in the DOM" classname="project-canvas.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Canvas Structure › back to projects button exists in the DOM" classname="project-canvas.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Canvas Structure › back button has arrow icon" classname="project-canvas.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Canvas Structure › canvas container is present in the DOM" classname="project-canvas.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Canvas Structure › home panel element exists in the DOM" classname="project-canvas.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Canvas Structure › home panel has dialog role and title" classname="project-canvas.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Canvas Structure › sketch side panel starts hidden" classname="project-canvas.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Canvas Structure › side panel has correct CSS classes" classname="project-canvas.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Canvas Structure › graph canvas exists alongside side panel" classname="project-canvas.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="recent-fixes.spec.ts" timestamp="2026-04-01T13:42:44.018Z" hostname="chromium" tests="17" failures="0" skipped="17" time="0" errors="0">
+<testcase name="Sketches Button i18n Fix › desktop sketches button shows &quot;Sketches&quot; text, not [object Object]" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sketches Button i18n Fix › mobile sketches button shows translated text, not [object Object]" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sketches Button i18n Fix › sketchesBtn i18n attribute references sketchesBtn, not sketches" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Header Recall Handle Fix › recall handle does not block canvas clicks when header hidden" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sketches Button Navigation Fix › clicking sketches button on home route still shows sketches" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Dropdown Clipping Fix (Landscape) › menu dropdown uses position:fixed and high z-index" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Dropdown Clipping Fix (Landscape) › user menu dropdown uses position:fixed" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Dropdown Clipping Fix (Landscape) › command menu opens without clipping in landscape" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tablet Width Controls Visibility › controls are visible at 768px width (tablet)" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tablet Width Controls Visibility › controls not clipped at 700px width" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tablet Width Controls Visibility › progressive disclosure works at 850px" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Exit Confirm Modal Definition › back-button exit guard does not crash on popstate" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Canvas Redraw on Header Changes › canvas maintains valid dimensions after header toggle" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Default Horizontal Stretch › horizontal stretch defaults to 1.0, not 0.6" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Schematic View Feature › schematic view toggle exists in toolbar/menu" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Full User Flow Smoke Test › user can navigate through app without crashes" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Coordinates Reference Layer › app loads without error when coordinate handlers are invoked" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="responsive.spec.ts" timestamp="2026-04-01T13:42:44.018Z" hostname="chromium" tests="17" failures="0" skipped="17" time="0" errors="0">
+<testcase name="Responsive -- Mobile Portrait (375x812) › no horizontal overflow at 375px width" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Mobile Portrait (375x812) › mobile menu button is visible at 375px" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Mobile Portrait (375x812) › desktop navigation is hidden at 375px" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Mobile Portrait (375x812) › canvas fills available space at 375px" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Mobile Portrait (375x812) › toolbar buttons are accessible at 375px" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Mobile Portrait (375x812) › sidebar does not overflow at 375px" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Mobile Landscape (812x375) › no horizontal overflow at 812x375 landscape" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Mobile Landscape (812x375) › canvas container is visible in landscape" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Mobile Landscape (812x375) › header is present in landscape" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Mobile Landscape (812x375) › toolbar is within viewport bounds in landscape" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Mobile Landscape (812x375) › app does not crash at landscape viewport" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Desktop (1280x800) › desktop navigation is visible at 1280px" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Desktop (1280x800) › mobile menu button is hidden at 1280px" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Desktop (1280x800) › no horizontal overflow at 1280px" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Desktop (1280x800) › canvas container takes most of desktop width" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Desktop (1280x800) › brand logo is visible at desktop" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Desktop (1280x800) › language selector is visible on desktop" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="rtl-layout.spec.ts" timestamp="2026-04-01T13:42:44.018Z" hostname="chromium" tests="8" failures="0" skipped="8" time="0" errors="0">
+<testcase name="RTL Layout › document has dir=&quot;rtl&quot; by default (Hebrew)" classname="rtl-layout.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="RTL Layout › document has lang=&quot;he&quot; by default" classname="rtl-layout.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="RTL Layout › header brand is aligned to the right in RTL" classname="rtl-layout.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="RTL Layout › sidebar has RTL direction" classname="rtl-layout.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="RTL Layout › canvas toolbar respects RTL direction" classname="rtl-layout.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="RTL Layout › language selector has Hebrew option selected by default" classname="rtl-layout.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="RTL Layout › language selector has both Hebrew and English options" classname="rtl-layout.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="RTL Layout › material icons render with correct font-family" classname="rtl-layout.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="sketch.spec.ts" timestamp="2026-04-01T13:42:44.018Z" hostname="chromium" tests="17" failures="0" skipped="17" time="0" errors="0">
+<testcase name="Sketch Canvas › should have canvas element" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sketch Canvas › should have canvas container" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sketch Canvas › should have mode selection buttons" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sketch Canvas › should have toolbar with mode group" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sketch Canvas › should have recenter button" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sidebar › should have sidebar element" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sidebar › should have details container" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sidebar › should have sidebar close button" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Dialogs and Modals › should have help modal (hidden by default)" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Dialogs and Modals › should have admin modal (hidden by default)" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Dialogs and Modals › should have start panel (attached to DOM)" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Dialogs and Modals › should have home panel (hidden by default)" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Toast Notifications › should have toast container" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive Design › should show mobile menu on small screens" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive Design › should show desktop controls on large screens" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Language Selection › should have language selector in DOM" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Language Selection › mobile language selector should exist" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="three-d-view.spec.ts" timestamp="2026-04-01T13:42:44.018Z" hostname="chromium" tests="7" failures="0" skipped="7" time="0" errors="0">
+<testcase name="3D View Button › 3D view button exists in the DOM for admin users" classname="three-d-view.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="3D View Button › 3D view button exists in the DOM for regular users" classname="three-d-view.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="3D View Button › 3D view button starts hidden (display:none)" classname="three-d-view.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="3D View Button › 3D view button has view_in_ar icon" classname="three-d-view.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="3D View Button › 3D view button can be made visible via JS" classname="three-d-view.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="3D View Button › 3D view button is inside the canvas toolbar" classname="three-d-view.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="3D View Button › clicking force-shown 3D button does not crash" classname="three-d-view.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="admin-panel.spec.ts" timestamp="2026-04-01T13:42:44.018Z" hostname="Mobile Chrome" tests="10" failures="0" skipped="10" time="0" errors="0">
+<testcase name="Admin Panel DOM Structure › admin screen element exists in the DOM" classname="admin-panel.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Admin Panel DOM Structure › admin screen content area exists" classname="admin-panel.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Admin Panel DOM Structure › admin screen save button exists" classname="admin-panel.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Admin Panel DOM Structure › admin screen cancel button exists" classname="admin-panel.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Admin Panel DOM Structure › admin screen import button exists" classname="admin-panel.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Admin Panel DOM Structure › admin screen export button exists" classname="admin-panel.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Admin Button Visibility › admin button exists for admin users on desktop" classname="admin-panel.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Admin Button Visibility › admin button has tune icon" classname="admin-panel.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Admin Button Visibility › mobile admin button exists in the DOM" classname="admin-panel.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Admin Button Visibility › admin screen starts hidden" classname="admin-panel.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="auth.spec.ts" timestamp="2026-04-01T13:42:44.018Z" hostname="Mobile Chrome" tests="10" failures="0" skipped="10" time="0" errors="0">
+<testcase name="Authentication › should show login panel when not authenticated" classname="auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › should have login form elements" classname="auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › should show app title correctly" classname="auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › should display brand logo" classname="auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Navigation › should have main navigation elements" classname="auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Navigation › should have mobile menu button" classname="auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Navigation › should toggle mobile menu on click" classname="auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility › should have proper ARIA labels" classname="auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility › should have proper document structure" classname="auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Accessibility › should have proper form labels" classname="auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="canvas-drawing.spec.ts" timestamp="2026-04-01T13:42:44.018Z" hostname="Mobile Chrome" tests="15" failures="0" skipped="15" time="0" errors="0">
+<testcase name="Canvas Drawing Flow › canvas element is visible" classname="canvas-drawing.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Canvas Drawing Flow › canvas container fills the viewport" classname="canvas-drawing.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Canvas Drawing Flow › toolbar is visible with mode group" classname="canvas-drawing.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Canvas Drawing Flow › node mode button is present in the toolbar" classname="canvas-drawing.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Canvas Drawing Flow › edge mode button is present in the toolbar" classname="canvas-drawing.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Canvas Drawing Flow › clicking node mode button dispatches click event" classname="canvas-drawing.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Canvas Drawing Flow › clicking edge mode button dispatches click event" classname="canvas-drawing.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Canvas Drawing Flow › mode buttons are inside the mode group" classname="canvas-drawing.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Canvas Drawing Flow › recenter button exists in the FAB toolbar" classname="canvas-drawing.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Canvas Drawing Flow › canvas zoom buttons exist in the toolbar" classname="canvas-drawing.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Canvas Drawing Flow › zoom in button has add icon" classname="canvas-drawing.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Canvas Drawing Flow › zoom out button has remove icon" classname="canvas-drawing.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Node Creation › canvas container is clickable (no crash on click)" classname="canvas-drawing.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Node Creation › sidebar element exists in the DOM" classname="canvas-drawing.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Node Creation › details container exists in the DOM" classname="canvas-drawing.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="cockpit.spec.ts" timestamp="2026-04-01T13:42:44.018Z" hostname="Mobile Chrome" tests="80" failures="0" skipped="80" time="0" errors="0">
+<testcase name="Cockpit — Landscape Layout › cockpit-mode class is added to body in landscape" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Landscape Layout › cockpit container is visible in landscape" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Landscape Layout › cockpit uses grid layout with two columns" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Landscape Layout › intel strip (Zone A) is present" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Landscape Layout › action rail (Zone C) is present in DOM" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Landscape Layout › canvas container remains visible in cockpit mode" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Landscape Layout › header stays visible in cockpit mode" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Landscape Layout › cockpit deactivates when switching to portrait" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip › GPS card is present with satellite icon" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip › GPS dot element exists for status indication" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip › GPS accuracy display exists" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip › GPS satellite count element exists" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip › health card is present with completion ring SVG" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip › completion ring text shows percentage or placeholder" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip › sync status card is present" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip › sync icon shows cloud_done by default" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip › session tracker card is present" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip › session duration starts at 0:00" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip › session node count element exists" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip › session edge count element exists" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip › health issues element exists (hidden when no issues)" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Action Rail › action rail has mode buttons for node, edge, home, drainage" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Action Rail › mode buttons have aria-pressed attribute" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Action Rail › GPS capture button exists" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Action Rail › TSC3 survey controller button exists" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Action Rail › undo button exists and starts disabled" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Action Rail › redo button exists and starts disabled" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Action Rail › zoom in/out/fit buttons exist" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Action Rail › 3D view button exists" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Action Rail › heatmap toggle button exists" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Action Rail › more menu button exists and starts collapsed" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Action Rail › collapse Zone A button exists" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Health Card &amp; Issues › completion ring SVG has bg and fill circles" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Health Card &amp; Issues › completion fill has data-level attribute" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Health Card &amp; Issues › health stats element exists" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Health Card &amp; Issues › issue list is hidden by default" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Health Card &amp; Issues › clicking issue count toggles issue list visibility" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — More Menu › more menu container exists in DOM" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — More Menu › more menu has Save button" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — More Menu › more menu has My Sketches button" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — More Menu › more menu has collapsible groups" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — More Menu › collapsible groups start collapsed" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — More Menu › clicking group header toggles expansion" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — More Menu › search group has node search input" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — More Menu › view group has size controls and 3D view" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — More Menu › sketch &amp; export group has export/import buttons" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — More Menu › location &amp; map group has coordinate controls" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — More Menu › measurement group has survey and finish workday buttons" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — More Menu › settings group has autosave toggle and admin button" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — More Menu › language toggle button exists at bottom" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip Collapse › collapse button exists in intel strip" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip Collapse › expand handle exists for collapsed state" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip Collapse › clicking collapse button adds collapsed class" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip Collapse › clicking collapse button adds zone-a-collapsed to body" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip Collapse › collapsing changes grid columns to hide Zone A" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip Collapse › clicking expand handle restores Zone A" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip Collapse › collapse state persists in localStorage" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Intel Strip Collapse › collapse state is restored on page reload" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Micro-Cockpit (Portrait) › micro-cockpit strip is present in DOM" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Micro-Cockpit (Portrait) › micro-cockpit has GPS dot" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Micro-Cockpit (Portrait) › micro-cockpit has sync icon" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Micro-Cockpit (Portrait) › micro-cockpit has health percentage" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Micro-Cockpit (Portrait) › micro-cockpit has session timer" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Micro-Cockpit (Portrait) › micro-cockpit has role=status for accessibility" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Micro-Cockpit (Portrait) › cockpit-mode is NOT active in portrait" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Progress Bar › progress bar container exists with ARIA attributes" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Progress Bar › progress fill element exists with data-level" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Progress Bar › progress fill starts at 0% width" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Accessibility › intel strip has role=complementary" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Accessibility › intel strip has aria-label for survey status" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Accessibility › action rail has role=toolbar" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Accessibility › action rail has aria-label" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Accessibility › collapse buttons have aria-label" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Accessibility › all mode buttons are keyboard-focusable" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Accessibility › heatmap button has aria-pressed for toggle state" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Accessibility › map type select has aria-label" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Orientation Transitions › landscape → portrait → landscape preserves cockpit state" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Orientation Transitions › canvas remains interactive after orientation switches" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Condensed Status › condensed status bar exists in action rail" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cockpit — Condensed Status › condensed status has GPS dot, sync icon, and health percentage" classname="cockpit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="dark-mode.spec.ts" timestamp="2026-04-01T13:42:44.018Z" hostname="Mobile Chrome" tests="6" failures="0" skipped="6" time="0" errors="0">
+<testcase name="Dark Mode › body has dark background in dark mode" classname="dark-mode.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Dark Mode › header has dark background in dark mode" classname="dark-mode.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Dark Mode › toolbar has dark styling in dark mode" classname="dark-mode.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Dark Mode › canvas container has appropriate styling in dark mode" classname="dark-mode.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Dark Mode › CSS custom properties are set for dark mode" classname="dark-mode.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Dark Mode › light mode has lighter backgrounds than dark mode" classname="dark-mode.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="export-flow.spec.ts" timestamp="2026-04-01T13:42:44.018Z" hostname="Mobile Chrome" tests="9" failures="0" skipped="9" time="0" errors="0">
+<testcase name="Export Flow › export menu button exists in the DOM" classname="export-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Export Flow › export menu button has apps icon" classname="export-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Export Flow › export dropdown exists in the DOM" classname="export-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Export Flow › export nodes button exists in the dropdown" classname="export-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Export Flow › export edges button exists in the dropdown" classname="export-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Export Flow › export sketch button exists in the dropdown" classname="export-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Export Flow › export buttons are inside the controls nav" classname="export-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Export Flow › save button exists in the header" classname="export-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Export Flow › save button has save icon" classname="export-flow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="full-sketch-workflow.spec.ts" timestamp="2026-04-01T13:42:44.018Z" hostname="Mobile Chrome" tests="1" failures="0" skipped="1" time="0" errors="0">
+<testcase name="Full Sketch Workflow — Severe UX Audit › complete sketch workflow with data entry" classname="full-sketch-workflow.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="homepage.spec.ts" timestamp="2026-04-01T13:42:44.018Z" hostname="Mobile Chrome" tests="36" failures="0" skipped="36" time="0" errors="0">
+<testcase name="Projects Homepage › should display home panel in projects mode on load" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Projects Homepage › should show dashboard icon in projects mode" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Projects Homepage › should NOT have subtitle element (removed in refactor)" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Projects Homepage › should render project cards" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Projects Homepage › should display project names in cards" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Projects Homepage › should display project descriptions when present" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Projects Homepage › should have folder icon on each project card" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Projects Homepage › should have &quot;Open Project&quot; buttons" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Projects Homepage › should show close button in projects mode" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Projects Homepage › should hide footer in projects mode" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Projects Homepage › should hide sketch tabs in projects mode" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Click → Canvas Navigation › clicking a project card navigates to #/project/:id" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Click → Canvas Navigation › clicking a project triggers hideHome" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Click → Canvas Navigation › clicking a project shows the sketch side panel" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Click → Canvas Navigation › sketch side panel lists all project sketches" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Click → Canvas Navigation › sketch side panel shows sketch names" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Click → Canvas Navigation › first sketch is marked as active" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Click → Canvas Navigation › side panel toggle button is visible" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Click → Canvas Navigation › empty project redirects back to homepage" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sketch Side Panel Interactions › clicking a non-active sketch switches it to active" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sketch Side Panel Interactions › eye icon toggles sketch visibility" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sketch Side Panel Interactions › side panel shows node count badges" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sketch Side Panel Interactions › active sketch has edit icon" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sketch Side Panel Interactions › close button hides the side panel" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sketch Side Panel Interactions › toggle button re-opens the side panel" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Back to Projects Navigation › back button exists in sketch side panel" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Back to Projects Navigation › back button has arrow_back icon" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Back to Projects Navigation › back button links to #/" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Back to Projects Navigation › clicking back button returns to projects homepage" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Back to Projects Navigation › back button hides sketch side panel" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Back to Projects Navigation › full round-trip: homepage → project → back → homepage" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Fallback: No Projects → Sketch List › falls back to sketches mode when no projects exist" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Fallback: No Projects → Sketch List › shows folder_open icon in sketches mode" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Fallback: No Projects → Sketch List › shows close button in sketches mode" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Fallback: No Projects → Sketch List › shows footer in sketches mode" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Fallback: API Error → Sketch List › falls back to sketches mode on API error" classname="homepage.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="offline-resilience.spec.ts" timestamp="2026-04-01T13:42:44.018Z" hostname="Mobile Chrome" tests="7" failures="0" skipped="7" time="0" errors="0">
+<testcase name="Offline Resilience › app loads and canvas works even when API calls fail after initial load" classname="offline-resilience.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Offline Resilience › app does not crash when navigating while offline" classname="offline-resilience.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Offline Resilience › toolbar remains visible when offline" classname="offline-resilience.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Offline Resilience › sync indicator exists in the DOM" classname="offline-resilience.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Offline Resilience › app survives going offline and back online" classname="offline-resilience.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Offline Resilience › app does not crash when projects API returns 500" classname="offline-resilience.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Offline Resilience › no unhandled page errors during offline operation (excluding known init errors)" classname="offline-resilience.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="project-canvas.spec.ts" timestamp="2026-04-01T13:42:44.018Z" hostname="Mobile Chrome" tests="10" failures="0" skipped="10" time="0" errors="0">
+<testcase name="Project Canvas Structure › sketch side panel element exists in the DOM" classname="project-canvas.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Canvas Structure › sketch side panel toggle exists in the DOM" classname="project-canvas.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Canvas Structure › back to projects button exists in the DOM" classname="project-canvas.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Canvas Structure › back button has arrow icon" classname="project-canvas.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Canvas Structure › canvas container is present in the DOM" classname="project-canvas.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Canvas Structure › home panel element exists in the DOM" classname="project-canvas.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Canvas Structure › home panel has dialog role and title" classname="project-canvas.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Canvas Structure › sketch side panel starts hidden" classname="project-canvas.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Canvas Structure › side panel has correct CSS classes" classname="project-canvas.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Project Canvas Structure › graph canvas exists alongside side panel" classname="project-canvas.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="recent-fixes.spec.ts" timestamp="2026-04-01T13:42:44.018Z" hostname="Mobile Chrome" tests="17" failures="0" skipped="17" time="0" errors="0">
+<testcase name="Sketches Button i18n Fix › desktop sketches button shows &quot;Sketches&quot; text, not [object Object]" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sketches Button i18n Fix › mobile sketches button shows translated text, not [object Object]" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sketches Button i18n Fix › sketchesBtn i18n attribute references sketchesBtn, not sketches" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Header Recall Handle Fix › recall handle does not block canvas clicks when header hidden" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sketches Button Navigation Fix › clicking sketches button on home route still shows sketches" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Dropdown Clipping Fix (Landscape) › menu dropdown uses position:fixed and high z-index" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Dropdown Clipping Fix (Landscape) › user menu dropdown uses position:fixed" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Dropdown Clipping Fix (Landscape) › command menu opens without clipping in landscape" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tablet Width Controls Visibility › controls are visible at 768px width (tablet)" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tablet Width Controls Visibility › controls not clipped at 700px width" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tablet Width Controls Visibility › progressive disclosure works at 850px" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Exit Confirm Modal Definition › back-button exit guard does not crash on popstate" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Canvas Redraw on Header Changes › canvas maintains valid dimensions after header toggle" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Default Horizontal Stretch › horizontal stretch defaults to 1.0, not 0.6" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Schematic View Feature › schematic view toggle exists in toolbar/menu" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Full User Flow Smoke Test › user can navigate through app without crashes" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Coordinates Reference Layer › app loads without error when coordinate handlers are invoked" classname="recent-fixes.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="responsive.spec.ts" timestamp="2026-04-01T13:42:44.018Z" hostname="Mobile Chrome" tests="17" failures="0" skipped="17" time="0" errors="0">
+<testcase name="Responsive -- Mobile Portrait (375x812) › no horizontal overflow at 375px width" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Mobile Portrait (375x812) › mobile menu button is visible at 375px" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Mobile Portrait (375x812) › desktop navigation is hidden at 375px" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Mobile Portrait (375x812) › canvas fills available space at 375px" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Mobile Portrait (375x812) › toolbar buttons are accessible at 375px" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Mobile Portrait (375x812) › sidebar does not overflow at 375px" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Mobile Landscape (812x375) › no horizontal overflow at 812x375 landscape" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Mobile Landscape (812x375) › canvas container is visible in landscape" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Mobile Landscape (812x375) › header is present in landscape" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Mobile Landscape (812x375) › toolbar is within viewport bounds in landscape" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Mobile Landscape (812x375) › app does not crash at landscape viewport" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Desktop (1280x800) › desktop navigation is visible at 1280px" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Desktop (1280x800) › mobile menu button is hidden at 1280px" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Desktop (1280x800) › no horizontal overflow at 1280px" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Desktop (1280x800) › canvas container takes most of desktop width" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Desktop (1280x800) › brand logo is visible at desktop" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive -- Desktop (1280x800) › language selector is visible on desktop" classname="responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="rtl-layout.spec.ts" timestamp="2026-04-01T13:42:44.018Z" hostname="Mobile Chrome" tests="8" failures="0" skipped="8" time="0" errors="0">
+<testcase name="RTL Layout › document has dir=&quot;rtl&quot; by default (Hebrew)" classname="rtl-layout.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="RTL Layout › document has lang=&quot;he&quot; by default" classname="rtl-layout.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="RTL Layout › header brand is aligned to the right in RTL" classname="rtl-layout.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="RTL Layout › sidebar has RTL direction" classname="rtl-layout.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="RTL Layout › canvas toolbar respects RTL direction" classname="rtl-layout.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="RTL Layout › language selector has Hebrew option selected by default" classname="rtl-layout.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="RTL Layout › language selector has both Hebrew and English options" classname="rtl-layout.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="RTL Layout › material icons render with correct font-family" classname="rtl-layout.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="sketch.spec.ts" timestamp="2026-04-01T13:42:44.018Z" hostname="Mobile Chrome" tests="17" failures="0" skipped="17" time="0" errors="0">
+<testcase name="Sketch Canvas › should have canvas element" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sketch Canvas › should have canvas container" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sketch Canvas › should have mode selection buttons" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sketch Canvas › should have toolbar with mode group" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sketch Canvas › should have recenter button" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sidebar › should have sidebar element" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sidebar › should have details container" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Sidebar › should have sidebar close button" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Dialogs and Modals › should have help modal (hidden by default)" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Dialogs and Modals › should have admin modal (hidden by default)" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Dialogs and Modals › should have start panel (attached to DOM)" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Dialogs and Modals › should have home panel (hidden by default)" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Toast Notifications › should have toast container" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive Design › should show mobile menu on small screens" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Responsive Design › should show desktop controls on large screens" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Language Selection › should have language selector in DOM" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Language Selection › mobile language selector should exist" classname="sketch.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="three-d-view.spec.ts" timestamp="2026-04-01T13:42:44.018Z" hostname="Mobile Chrome" tests="7" failures="0" skipped="7" time="0" errors="0">
+<testcase name="3D View Button › 3D view button exists in the DOM for admin users" classname="three-d-view.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="3D View Button › 3D view button exists in the DOM for regular users" classname="three-d-view.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="3D View Button › 3D view button starts hidden (display:none)" classname="three-d-view.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="3D View Button › 3D view button has view_in_ar icon" classname="three-d-view.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="3D View Button › 3D view button can be made visible via JS" classname="three-d-view.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="3D View Button › 3D view button is inside the canvas toolbar" classname="three-d-view.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="3D View Button › clicking force-shown 3D button does not crash" classname="three-d-view.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+</testsuites>
