@@ -140,24 +140,32 @@ describe('tsc3-parser', () => {
     });
 
     it('should return null when northing is outside ITM range', () => {
-      // Northing 399999 is below the 400,000 floor
-      expect(parseSurveyLine('MH3,182456.789,399999,45.67')).toBeNull();
+      // Northing 349999 is below the 350,000 floor (south of Eilat)
+      expect(parseSurveyLine('MH3,182456.789,349999,45.67')).toBeNull();
       // Northing 800001 is above the 800,000 ceiling
       expect(parseSurveyLine('MH4,182456.789,800001,45.67')).toBeNull();
     });
 
     it('should accept coordinates exactly at ITM boundary values', () => {
       // Lower easting boundary with valid northing
-      const low = parseSurveyLine('BL1,100000,400000,0');
+      const low = parseSurveyLine('BL1,100000,350000,0');
       expect(low).not.toBeNull();
       expect(low!.easting).toBe(100000);
-      expect(low!.northing).toBe(400000);
+      expect(low!.northing).toBe(350000);
 
       // Upper easting boundary with valid northing
       const high = parseSurveyLine('BH1,300000,800000,0');
       expect(high).not.toBeNull();
       expect(high!.easting).toBe(300000);
       expect(high!.northing).toBe(800000);
+    });
+
+    it('should accept Eilat-area survey points (northing ~380k–400k)', () => {
+      // Eilat is around ITM northing 380,000–395,000 — previously rejected
+      const eilat = parseSurveyLine('EI1,185000,385000,12.5');
+      expect(eilat).not.toBeNull();
+      expect(eilat!.easting).toBe(185000);
+      expect(eilat!.northing).toBe(385000);
     });
   });
 

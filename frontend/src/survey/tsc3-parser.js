@@ -18,16 +18,17 @@ export function detectDelimiter(line) {
 /**
  * Detect whether the format is NEN (name,easting,northing,elev)
  * or NNE (name,northing,easting,elev) using ITM range heuristics.
- * ITM easting: ~100k-300k, northing: ~400k-800k
+ * ITM easting: ~100k-300k, northing: ~350k-800k
+ * Lower northing bound is 350,000 to include Eilat / southern Negev survey areas.
  * @param {number} val1 - First numeric value
  * @param {number} val2 - Second numeric value
  * @returns {'NEN'|'NNE'} Detected format
  */
 export function detectFormat(val1, val2) {
   const isVal1Easting = val1 >= 100000 && val1 <= 300000;
-  const isVal1Northing = val1 >= 400000 && val1 <= 800000;
+  const isVal1Northing = val1 >= 350000 && val1 <= 800000;
   const isVal2Easting = val2 >= 100000 && val2 <= 300000;
-  const isVal2Northing = val2 >= 400000 && val2 <= 800000;
+  const isVal2Northing = val2 >= 350000 && val2 <= 800000;
 
   if (isVal1Easting && isVal2Northing) return 'NEN';
   if (isVal1Northing && isVal2Easting) return 'NNE';
@@ -76,9 +77,10 @@ export function parseSurveyLine(line) {
   }
 
   // Validate ITM coordinate ranges — reject Bluetooth noise that produces nonsensical values.
-  // ITM easting: 100,000–300,000 | northing: 400,000–800,000 | elevation: -500–2,000
+  // ITM easting: 100,000–300,000 | northing: 350,000–800,000 | elevation: -500–2,000
+  // Lower northing bound is 350,000 to include Eilat / southern Negev survey areas.
   if (easting < 100000 || easting > 300000 ||
-      northing < 400000 || northing > 800000) {
+      northing < 350000 || northing > 800000) {
     return null;
   }
 
