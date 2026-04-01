@@ -79,7 +79,7 @@ export function setupEventDelegation(container) {
   // on the same elements and need the native event to bubble through.
   container.addEventListener('click', (e) => {
     const actionEl = e.target.closest('[data-action]');
-    if (actionEl && actionEl.tagName !== 'SELECT') {
+    if (actionEl && actionEl.tagName !== 'SELECT' && action !== 'headerRecall') {
       const action = actionEl.dataset.action;
       menuEvents.emit(action, { element: actionEl, originalEvent: e });
     }
