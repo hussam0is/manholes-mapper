@@ -30,7 +30,9 @@ const _listeners = new Set();
 export function setIssueContext(sketchId, nodes, edges) {
   _sketchId = sketchId;
   const result = computeSketchIssues(nodes, edges);
-  _issues = result.issues;
+  // Navigable issue types (original 6)
+  const NAV_TYPES = ['missing_coords', 'missing_pipe_data', 'long_edge', 'not_last_manhole', 'merge_candidate', 'negative_gradient'];
+  _issues = result.issues.filter(i => NAV_TYPES.includes(i.type));
   _currentIndex = _issues.length > 0 ? 0 : -1;
   _notify();
 }
@@ -43,7 +45,9 @@ export function setIssueContext(sketchId, nodes, edges) {
  */
 export function refreshIssues(nodes, edges) {
   const result = computeSketchIssues(nodes, edges);
-  _issues = result.issues;
+  // Navigable issue types
+  const NAV_TYPES = ['missing_coords', 'missing_pipe_data', 'long_edge', 'not_last_manhole', 'merge_candidate', 'negative_gradient'];
+  _issues = result.issues.filter(i => NAV_TYPES.includes(i.type));
   if (_currentIndex >= _issues.length) {
     _currentIndex = _issues.length > 0 ? _issues.length - 1 : -1;
   }

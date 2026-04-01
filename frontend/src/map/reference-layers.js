@@ -998,8 +998,8 @@ export function hitTestReferenceLayers(worldX, worldY, hitRadius, coordinateScal
       if (!feature.geometry || feature.geometry.type !== 'Point') continue;
       const [itmX, itmY] = feature.geometry.coordinates;
       // Use pre-transformed world coords if available
-      const wx = feature._worldX != null ? feature._worldX : refPoint.canvas.x + (itmX - refPoint.itm.x) * coordinateScale;
-      const wy = feature._worldY != null ? feature._worldY : refPoint.canvas.y - (itmY - refPoint.itm.y) * coordinateScale;
+      const wx = feature._worldPoint != null ? feature._worldPoint.x : refPoint.canvas.x + (itmX - refPoint.itm.x) * coordinateScale;
+      const wy = feature._worldPoint != null ? feature._worldPoint.y : refPoint.canvas.y - (itmY - refPoint.itm.y) * coordinateScale;
       const dx = wx - worldX;
       const dy = wy - worldY;
       const dist = Math.sqrt(dx * dx + dy * dy);
