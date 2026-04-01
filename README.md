@@ -1,6 +1,53 @@
 # Manholes Mapper PWA
 
-A professional, high-performance Progressive Web Application (PWA) for infrastructure mapping and field data collection. Built for offline-first operations with real-time canvas-based visualization and GIS-ready data export.
+> **Field-grade infrastructure mapping — built for surveyors, delivered as a PWA.**
+
+A professional, high-performance Progressive Web Application (PWA) for underground infrastructure mapping (manholes, drainage, home connections) and field data collection. Built for offline-first operations with real-time canvas-based visualization, RTK-GNSS live capture, and GIS-ready export.
+
+---
+
+## 🏆 For Contest Judges
+
+| | |
+|---|---|
+| **Live Production** | https://manholes-mapper.vercel.app |
+| **Dev Preview (latest code)** | https://manholes-mapper-git-dev-hussam0is-projects.vercel.app |
+| **Tech Stack** | Vanilla JS (ES Modules) + Vite 7 + Canvas 2D + Three.js + Leaflet + Better Auth + Neon Postgres |
+| **Test Suite** | **1 546 unit tests** — all passing (`cd frontend && npx vitest run`) |
+| **E2E Tests** | Playwright — `cd frontend && npx playwright test` |
+
+### What Makes It Special
+
+1. **Canvas-first network editor** — a hand-rolled, high-performance HTML5 Canvas graph editor with spatial indexing, progressive rendering, view-stretch, and RTL support. No third-party graph library.
+2. **Survey-grade GNSS integration** — live RTK position capture from Trimble R780 via Bluetooth SPP / WiFi TCP on Android (Capacitor); displays HRMS/VRMS progress toward RTK-fixed accuracy.
+3. **3D underground visualisation** — one-click Three.js fly-through of the surveyed pipe network; pipe depths and manhole shafts reconstructed from field measurements.
+4. **Offline-first PWA** — Service Worker + IndexedDB + localStorage hybrid; surveyors capture in the field with zero connectivity and sync when back on network.
+5. **Intelligent issue detection** — real-time sketch audit (missing coordinates, negative gradients, long edges, merge candidates) with in-canvas navigation to each issue.
+6. **Multi-tenant SaaS backend** — organisations, projects, role-based access, sketch locking, feature flags — all on Vercel serverless + Neon Postgres.
+
+### Quick Evaluation Path
+
+```bash
+# 1. Clone and install
+git clone https://github.com/hussam0is/manholes-mapper && cd manholes-mapper
+npm install
+
+# 2. Run the full unit test suite
+cd frontend && npx vitest run
+# → 1546 tests, ~27s, all green
+
+# 3. Start the dev server
+npm run dev
+# → http://localhost:5173
+
+# 4. Explore features
+#    - Create a new sketch, place manholes (N key) and pipes (E key)
+#    - Import coordinates CSV to geo-reference nodes
+#    - Click the 3D view button (cube icon) for underground visualisation
+#    - Switch to Project Canvas to see multi-sketch city view
+```
+
+---
 
 ## Overview
 
