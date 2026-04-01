@@ -207,27 +207,32 @@ export class AdminStatistics {
   /** Get date range bounds based on filter */
   _getDateBounds() {
     const now = new Date();
-    const todayStr = now.toISOString().slice(0, 10);
+    // Use UTC date parts consistently to avoid timezone-vs-ISO mismatch
+    const todayStr = [
+      now.getUTCFullYear(),
+      String(now.getUTCMonth() + 1).padStart(2, '0'),
+      String(now.getUTCDate()).padStart(2, '0'),
+    ].join('-');
     let startDate, endDate = todayStr;
 
     switch (this._filterRange) {
       case '7': {
-        const d = new Date(now); d.setDate(d.getDate() - 6);
+        const d = new Date(now); d.setUTCDate(d.getUTCDate() - 6);
         startDate = d.toISOString().slice(0, 10);
         break;
       }
       case '30': {
-        const d = new Date(now); d.setDate(d.getDate() - 29);
+        const d = new Date(now); d.setUTCDate(d.getUTCDate() - 29);
         startDate = d.toISOString().slice(0, 10);
         break;
       }
       case '90': {
-        const d = new Date(now); d.setDate(d.getDate() - 89);
+        const d = new Date(now); d.setUTCDate(d.getUTCDate() - 89);
         startDate = d.toISOString().slice(0, 10);
         break;
       }
       case '365': {
-        const d = new Date(now); d.setDate(d.getDate() - 364);
+        const d = new Date(now); d.setUTCDate(d.getUTCDate() - 364);
         startDate = d.toISOString().slice(0, 10);
         break;
       }
@@ -237,9 +242,9 @@ export class AdminStatistics {
       }
       case 'lastMonth': {
         const d = new Date(now);
-        d.setMonth(d.getMonth() - 1);
+        d.setUTCMonth(d.getUTCMonth() - 1);
         startDate = d.toISOString().slice(0, 7) + '-01';
-        const lastDay = new Date(now.getFullYear(), now.getMonth(), 0);
+        const lastDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0));
         endDate = lastDay.toISOString().slice(0, 10);
         break;
       }
