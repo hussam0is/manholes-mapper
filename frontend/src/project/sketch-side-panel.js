@@ -67,6 +67,17 @@ let listEl = null;
 let _unsub = null;
 let _unsubMerge = null;
 
+/**
+ * Return the actual container element where listEl currently lives.
+ * After unified-sidebar reparents the children out of #sketchSidePanel
+ * into #us-panel-sketches, panelEl becomes a stale reference to the old
+ * (now-empty) container. This helper ensures cleanup queries always
+ * target the real parent.
+ */
+function _container() {
+  return listEl?.parentNode || panelEl;
+}
+
 /** Current view: 'list' | 'issues' | 'merge' */
 let _currentView = 'list';
 /** Sketch ID whose issues are being viewed */
@@ -247,7 +258,7 @@ function renderListView() {
   const sketches = getAllSketches();
 
   // Remove any existing totals footer before re-rendering
-  const existingTotals = panelEl?.querySelector('.sketch-side-panel__totals');
+  const existingTotals = _container()?.querySelector('.sketch-side-panel__totals');
   if (existingTotals) existingTotals.remove();
 
   if (sketches.length === 0) {
@@ -260,11 +271,11 @@ function renderListView() {
   }
 
   // Update header sketch count
-  const countEl = panelEl?.querySelector('.sketch-side-panel__count');
+  const countEl = _container()?.querySelector('.sketch-side-panel__count');
   if (countEl) countEl.textContent = `(${sketches.length})`;
 
   // Remove any existing toolbar before re-rendering
-  const existingToolbar = panelEl?.querySelector('.sketch-side-panel__toolbar');
+  const existingToolbar = _container()?.querySelector('.sketch-side-panel__toolbar');
   if (existingToolbar) existingToolbar.remove();
 
   // Add toolbar row with View All button
@@ -523,7 +534,7 @@ function renderListView() {
       ` : ''}
     </div>
   `;
-  // Insert after listEl (inside panelEl)
+  // Insert after listEl
   listEl.parentNode.insertBefore(totalsEl, listEl.nextSibling);
 }
 
@@ -542,7 +553,7 @@ function renderIssuesView() {
   }
 
   // Remove totals footer in issues view
-  const existingTotals = panelEl?.querySelector('.sketch-side-panel__totals');
+  const existingTotals = _container()?.querySelector('.sketch-side-panel__totals');
   if (existingTotals) existingTotals.remove();
 
   const displayName = formatSketchName(sketch);
@@ -749,7 +760,7 @@ function renderMergeView() {
   const activeSketch = sketches.find(s => s.isActive);
 
   // Remove totals footer
-  const existingTotals = panelEl?.querySelector('.sketch-side-panel__totals');
+  const existingTotals = _container()?.querySelector('.sketch-side-panel__totals');
   if (existingTotals) existingTotals.remove();
 
   listEl.innerHTML = '';
