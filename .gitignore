@@ -60,3 +60,11 @@ current_app_design/
 app_state_*/
 screenshots/
 manholes-mapper-god-agent/
+
+# CDP debug scripts (local development/debugging only — not for source control)
+scripts/cdp-*.cjs
+
+# Test results and Playwright artifacts
+test-results/
+frontend/test-results/
+.playwright-artifacts-*/

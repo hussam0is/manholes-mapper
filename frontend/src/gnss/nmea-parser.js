@@ -204,6 +204,14 @@ export class NMEAParser {
       this.currentState.timestamp = Date.now();
       this.currentState.isValid = true;
 
+      // RMC does not carry fix quality — preserve whatever GGA already set.
+      // But if no GGA has arrived yet (fixQuality === 0), promote to 1 (GPS)
+      // so that isValid=true is not contradicted by fixQuality=0 ("No Fix").
+      if (this.currentState.fixQuality === 0) {
+        this.currentState.fixQuality = 1;
+        this.currentState.fixLabel = FIX_QUALITY_LABELS[1]; // 'GPS'
+      }
+
       this.notifyListeners();
       return true;
     }
