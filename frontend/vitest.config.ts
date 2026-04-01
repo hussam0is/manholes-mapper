@@ -6,6 +6,10 @@ export default defineConfig({
     setupFiles: ['./tests/setup.ts'],
     // Increase timeout for database integration tests
     testTimeout: 30000,
+    // Limit worker pool to prevent worker crashes on Windows due to memory pressure
+    pool: 'forks',
+    maxWorkers: 4,
+    minWorkers: 1,
     // Exclude Playwright E2E tests and API integration tests (need POSTGRES_URL)
     exclude: [
       '**/node_modules/**',
