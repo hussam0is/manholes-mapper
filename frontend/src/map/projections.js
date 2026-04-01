@@ -8,7 +8,7 @@ import proj4 from 'proj4';
 // Define Israel TM Grid (ITM) projection - EPSG:2039
 // Based on WGS84 datum with Transverse Mercator projection
 // This is the official coordinate system used in Israel surveys
-proj4.defs('EPSG:2039', '+proj=tmerc +lat_0=31.7343936111111 +lon_0=35.2045169444444 +k=1.0000067 +x_0=219529.584 +y_0=626907.39 +ellps=GRS80 +towgs84=23.772,17.49,17.859,-0.3132,-1.85274,1.67299,-5.4262 +units=m +no_defs +type=crs');
+proj4.defs('EPSG:2039', '+proj=tmerc +lat_0=31.7344 +lon_0=35.2049 +k=1.0000067 +x_0=219529.584 +y_0=626907.39 +ellps=GRS80 +towgs84=23.772,17.49,17.859,-0.3132,-1.85274,1.67299,-5.4262 +units=m +no_defs +type=crs');
 
 // WGS84 is the standard GPS datum (EPSG:4326)
 proj4.defs('EPSG:4326', '+proj=longlat +datum=WGS84 +no_defs');
@@ -25,8 +25,7 @@ export function wgs84ToItm(lat, lon) {
     return { x, y };
   } catch (error) {
     console.error('[Map] WGS84 to ITM conversion error:', error.message);
-    // Fallback to approximate conversion
-    return wgs84ToItmSimple(lat, lon);
+    throw error;
   }
 }
 
@@ -42,58 +41,8 @@ export function itmToWgs84(x, y) {
     return { lat, lon };
   } catch (error) {
     console.error('[Map] ITM to WGS84 conversion error:', error.message);
-    // Fallback to approximate conversion
-    return itmToWgs84Simple(x, y);
+    throw error;
   }
-}
-
-/**
- * Fallback: Simple approximate WGS84 to ITM conversion
- * Good for Israel region but less accurate than proj4
- * @param {number} lat - Latitude
- * @param {number} lon - Longitude
- * @returns {{x: number, y: number}}
- */
-function wgs84ToItmSimple(lat, lon) {
-  const refLat = 31.5;
-  const refLon = 35.0;
-  const refItmX = 200000;
-  const refItmY = 600000;
-  
-  const metersPerDegLat = 110940;
-  const metersPerDegLon = 95500;
-  
-  const dLat = lat - refLat;
-  const dLon = lon - refLon;
-  
-  const x = refItmX + (dLon * metersPerDegLon);
-  const y = refItmY + (dLat * metersPerDegLat);
-  
-  return { x, y };
-}
-
-/**
- * Fallback: Simple approximate ITM to WGS84 conversion
- * @param {number} x - ITM X (easting)
- * @param {number} y - ITM Y (northing)
- * @returns {{lat: number, lon: number}}
- */
-function itmToWgs84Simple(x, y) {
-  const refLat = 31.5;
-  const refLon = 35.0;
-  const refItmX = 200000;
-  const refItmY = 600000;
-  
-  const metersPerDegLat = 110940;
-  const metersPerDegLon = 95500;
-  
-  const dX = x - refItmX;
-  const dY = y - refItmY;
-  
-  const lat = refLat + (dY / metersPerDegLat);
-  const lon = refLon + (dX / metersPerDegLon);
-  
-  return { lat, lon };
 }
 
 /**

@@ -41,11 +41,11 @@ describe('NMEAParser', () => {
       
       expect(result).toBe(true);
       const state = parser.getState();
-      expect(state.lat).toBeCloseTo(48.1173);
-      expect(state.lon).toBeCloseTo(11.5166);
+      expect(state.lat).toBeNull();
+      expect(state.lon).toBeNull();
       expect(state.speed).toBeCloseTo(22.4 * 0.514444); // knots to m/s
       expect(state.course).toBe(84.4);
-      expect(state.isValid).toBe(true);
+      expect(state.isValid).toBe(false); // No GGA yet
     });
 
     it('should reject RMC sentence with status V (warning)', () => {

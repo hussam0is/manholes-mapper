@@ -184,39 +184,25 @@ export class NMEAParser {
       lonRaw, lonDir,
       speedKnots,
       course,
-      // date, magVariation, magDir, mode
     ] = parts;
 
     // Status A = valid, V = warning
-    if (status !== 'A') {
+    if (status !== "A") {
       return false;
     }
 
-    const lat = this.parseCoordinate(latRaw, latDir);
-    const lon = this.parseCoordinate(lonRaw, lonDir);
-
-    if (lat !== null && lon !== null) {
-      this.currentState.lat = lat;
-      this.currentState.lon = lon;
-      this.currentState.speed = speedKnots ? parseFloat(speedKnots) * 0.514444 : null; // knots to m/s
-      this.currentState.course = course ? parseFloat(course) : null;
-      this.currentState.utcTime = utcTime;
-      this.currentState.timestamp = Date.now();
+    this.currentState.speed = speedKnots ? parseFloat(speedKnots) * 0.514444 : null;
+    this.currentState.course = course ? parseFloat(course) : null;
+    this.currentState.utcTime = utcTime;
+    this.currentState.timestamp = Date.now();
+    
+    // Only set isValid if we already have a fix from GGA (or wait for it)
+    if (this.currentState.lat !== null && this.currentState.lon !== null) {
       this.currentState.isValid = true;
-
-      // RMC does not carry fix quality — preserve whatever GGA already set.
-      // But if no GGA has arrived yet (fixQuality === 0), promote to 1 (GPS)
-      // so that isValid=true is not contradicted by fixQuality=0 ("No Fix").
-      if (this.currentState.fixQuality === 0) {
-        this.currentState.fixQuality = 1;
-        this.currentState.fixLabel = FIX_QUALITY_LABELS[1]; // 'GPS'
-      }
-
-      this.notifyListeners();
-      return true;
     }
 
-    return false;
+    this.notifyListeners();
+    return true;
   }
 
   /**
