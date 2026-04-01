@@ -14099,7 +14099,7 @@ button:focus-visible,
     display: flex;
     align-items: flex-start;
     justify-content: center;
-    background: transparent;
+    background: rgba(255, 255, 255, 0);
     border-bottom: none;
     cursor: pointer;
     z-index: 201;
@@ -14747,7 +14747,7 @@ body.cockpit-mode #edgeLegend {
 
     /* Dark mode header recall handle */
     .header-recall-handle {
-      background: transparent;
+      background: rgba(255, 255, 255, 0);
       border-bottom-color: transparent;
     }
 
