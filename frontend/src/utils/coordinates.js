@@ -247,10 +247,13 @@ export function calculateOptimalScale(bounds, canvasWidth, canvasHeight, fillRat
   // Use the smaller scale to preserve aspect ratio
   let scale = Math.min(scaleX, scaleY);
   
-  // Clamp scale to reasonable range
-  // Min: 100 pixels/meter (1 pixel/cm, 10m = 1000px)
-  // Max: 200 pixels/meter (2 pixels/cm, very detailed)
-  scale = Math.max(100, Math.min(200, scale));
+  // Clamp scale to a range that works for real underground infrastructure networks.
+  // Min: 0.1 px/m → a ~8km-wide network fits in an 800px canvas (regional survey).
+  // Max: 100 px/m → a ~6m-wide network fills 640px (very precise local detail).
+  // NOTE: the fill-ratio calculation above already produces the right scale for the
+  // given canvas and survey extent; this clamp only prevents degenerate values (e.g.
+  // single-point surveys that produce Infinity, or sub-centimetre pixel densities).
+  scale = Math.max(0.1, Math.min(100, scale));
   
   return scale;
 }
