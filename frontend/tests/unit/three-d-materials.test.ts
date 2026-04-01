@@ -36,6 +36,10 @@ describe('NODE_TYPE_COLORS', () => {
     expect(NODE_TYPE_COLORS.ForLater).toBeDefined();
   });
 
+  it('maps Issue to red (0xef4444)', () => {
+    expect(NODE_TYPE_COLORS.Issue).toBe(0xef4444);
+  });
+
   it('all colors are distinct', () => {
     const colors = Object.values(NODE_TYPE_COLORS);
     const unique = new Set(colors);

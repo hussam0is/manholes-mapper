@@ -9,6 +9,7 @@ const NODE_TYPE_COLORS = {
   Home: 0x795548,
   Covered: 0x9e9e9e,
   ForLater: 0xa855f7,
+  Issue: 0xef4444,
 };
 
 const EDGE_TYPE_COLORS = {
