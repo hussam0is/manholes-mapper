@@ -154,6 +154,7 @@ function _handleRouteImpl() {
   const isSignup = (hash === '#/signup');
   const isProfile = (hash === '#/profile');
   const isLeaderboard = (hash === '#/leaderboard');
+  const isMetadata = (hash === '#/metadata');
   // Must check /stats BEFORE generic project match to avoid capturing stats as project ID
   const projectStatsMatch = hash.match(/^#\/project\/([^/]+)\/stats$/);
   const projectMatch = projectStatsMatch ? null : hash.match(/^#\/project\/([^/]+)$/);
@@ -209,6 +210,9 @@ function _handleRouteImpl() {
   if (!projectStatsMatch) {
     import('../pages/project-stats-page.js').then(m => m.hideProjectStatsPage()).catch(() => {});
   }
+  if (!isMetadata) {
+    import('../pages/metadata-dashboard.js').then(m => m.hideMetadataDashboard()).catch(() => {});
+  }
 
   // Leave project-canvas mode when navigating away from #/project/:id
   if (!projectMatch && !projectStatsMatch && isProjectCanvasMode()) {
@@ -216,6 +220,7 @@ function _handleRouteImpl() {
     syncProjectSketchesToLibrary();
     clearProjectCanvas();
     hideSketchSidePanel();
+    window.menuEvents?.emit('projectCanvas:exit');
   }
 
   // Cross-module calls via F registry (avoids circular imports)
@@ -255,6 +260,13 @@ function _handleRouteImpl() {
     try { closeProjectsScreen(); } catch (_) { }
     hideHome(true);
     import('../pages/leaderboard-page.js').then(m => m.renderLeaderboardPage()).catch(e => console.error('[Leaderboard]', e));
+  } else if (isMetadata) {
+    // Handle #/metadata route (admin-only)
+    try { document.body.classList.remove('admin-screen'); } catch (_) { }
+    try { closeAdminScreen(); } catch (_) { }
+    try { closeProjectsScreen(); } catch (_) { }
+    hideHome(true);
+    import('../pages/metadata-dashboard.js').then(m => m.renderMetadataDashboard()).catch(e => console.error('[Metadata]', e));
   } else if (projectStatsMatch) {
     // Handle #/project/:id/stats route
     try { document.body.classList.remove('admin-screen'); } catch (_) { }

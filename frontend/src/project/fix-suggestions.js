@@ -125,5 +125,90 @@ export function getFixSuggestions(issue, nodes, edges) {
     });
   }
 
+  if (issue.type === 'obstructed_access') {
+    const node = nodes.find(n => String(n.id) === String(issue.nodeId));
+    if (!node) return suggestions;
+
+    // 1. Schedule a revisit (navigational — marks node for revisit)
+    suggestions.push({
+      id: 'schedule_revisit',
+      labelKey: 'fixes.scheduleRevisit',
+      icon: 'event_repeat',
+      apply() {
+        node.note = (node.note ? node.note + '; ' : '') + 'לחזור למדוד';
+      },
+    });
+
+    // 2. Convert to Home (if locked house / no access)
+    if (node.maintenanceStatus === 13 && node.nodeType !== 'Home') {
+      suggestions.push({
+        id: 'convert_to_home',
+        labelKey: 'fixes.convertToHome',
+        icon: 'home',
+        apply() {
+          node.nodeType = 'Home';
+        },
+      });
+    }
+  }
+
+  if (issue.type === 'schematic_location') {
+    // Suggest measuring actual coordinates
+    suggestions.push({
+      id: 'measure_coordinates',
+      labelKey: 'fixes.measureCoordinates',
+      icon: 'my_location',
+      navigateTo: {
+        type: 'node',
+        nodeId: issue.nodeId,
+        focusField: 'coordinates',
+      },
+    });
+  }
+
+  if (issue.type === 'missing_tl') {
+    // Suggest measuring TL elevation
+    suggestions.push({
+      id: 'measure_tl',
+      labelKey: 'fixes.measureTL',
+      icon: 'height',
+      navigateTo: {
+        type: 'node',
+        nodeId: issue.nodeId,
+        focusField: 'tl',
+      },
+    });
+
+    // If material is missing too, suggest filling it
+    const node = nodes.find(n => String(n.id) === String(issue.nodeId));
+    if (node && (node.material == null || node.material === 0 || node.material === '')) {
+      suggestions.push({
+        id: 'fill_material',
+        labelKey: 'fixes.fillMaterial',
+        icon: 'category',
+        navigateTo: {
+          type: 'node',
+          nodeId: issue.nodeId,
+          focusField: 'material',
+        },
+      });
+    }
+  }
+
+  if (issue.type === 'missing_coords') {
+    // Suggest marking as schematic if coords can't be obtained
+    const node = nodes.find(n => String(n.id) === String(issue.nodeId));
+    if (node && node.accuracyLevel !== 1) {
+      suggestions.push({
+        id: 'mark_schematic',
+        labelKey: 'fixes.markSchematic',
+        icon: 'blur_on',
+        apply() {
+          node.accuracyLevel = 1;
+        },
+      });
+    }
+  }
+
   return suggestions;
 }

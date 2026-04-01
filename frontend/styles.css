@@ -11510,6 +11510,40 @@ button:focus-visible,
   transform: scaleX(-1);
 }
 
+.project-switcher {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface-alt, #f8fafc);
+}
+
+.project-switcher__icon {
+  font-size: 18px;
+  color: var(--color-accent, #2563eb);
+  flex-shrink: 0;
+}
+
+.project-switcher__select {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 8px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 6px;
+  background: var(--color-bg, #fff);
+  color: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  appearance: auto;
+}
+
+.project-switcher__select:focus {
+  outline: 2px solid var(--color-accent, #2563eb);
+  outline-offset: -1px;
+}
+
 .sketch-side-panel__header {
   display: flex;
   align-items: center;
@@ -12467,6 +12501,17 @@ button:focus-visible,
 
   .sketch-side-panel__back:hover {
     background: var(--color-surface-alt, #1e293b);
+  }
+
+  .project-switcher {
+    background: var(--color-surface-alt, #0f172a);
+    border-color: var(--color-border, #334155);
+  }
+
+  .project-switcher__select {
+    background: var(--color-surface, #1e293b);
+    border-color: var(--color-border, #334155);
+    color: var(--color-text, #e2e8f0);
   }
 
   .sketch-side-panel__header {
@@ -14805,6 +14850,8 @@ body.cockpit-mode #edgeLegend {
 
 /* Hub tab bar â€" extends the base .admin-tabs style */
 .ap-hub-tabs {
+  display: flex;
+  flex-shrink: 0;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -15585,6 +15632,133 @@ body.cockpit-mode #edgeLegend {
   background: var(--color-accent, #2563eb);
   border-radius: 3px;
   min-width: 2px;
+}
+
+/* ===== Metadata Dashboard ===== */
+.meta-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--color-border);
+  padding: 0 16px;
+  gap: 0;
+}
+
+.meta-tab {
+  padding: 10px 20px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.meta-tab:hover { color: var(--color-text); }
+.meta-tab.active {
+  color: var(--color-accent, #2563eb);
+  border-bottom-color: var(--color-accent, #2563eb);
+}
+
+.meta-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.meta-cards--sm {
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+}
+
+.meta-card {
+  background: var(--color-surface-alt, #f8fafc);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 14px 12px;
+  text-align: center;
+  transition: box-shadow 0.15s;
+}
+
+.meta-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.meta-card--warn {
+  border-color: var(--color-warning, #f59e0b);
+  background: rgba(245, 158, 11, 0.06);
+}
+
+.meta-card__icon {
+  font-size: 24px;
+  color: var(--color-accent, #2563eb);
+  margin-bottom: 6px;
+  display: block;
+}
+
+.meta-card__value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+.meta-card__label {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.meta-section {
+  margin-bottom: 28px;
+}
+
+.meta-section h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0 0 12px;
+  color: var(--color-text);
+}
+
+.meta-section h4 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 12px 0 8px;
+  color: var(--color-text-muted);
+}
+
+.meta-role-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.meta-role-badge--user {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.meta-role-badge--admin {
+  background: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+}
+
+.meta-role-badge--super_admin {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+@media (max-width: 480px) {
+  .meta-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .meta-tab {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
 }
 
 /* ===== Admin Statistics Dashboard ===== */

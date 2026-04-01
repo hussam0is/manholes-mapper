@@ -1294,6 +1294,7 @@ if (sketchListEl) {
       renderHome();
       showToast(t('toasts.deleted'));
     } else if (action === 'openProject') {
+      markInternalNavigation();
       location.hash = '#/project/' + id;
     } else if (action === 'importHistory') {
       const lib = getLibrary();
@@ -1919,6 +1920,38 @@ window.openGnssPointCaptureDialog = openGnssPointCaptureDialog;
 window.centerOnGpsLocation = centerOnGpsLocation;
 window.toggleUserLocationTracking = toggleUserLocationTracking;
 window.__createNodeFromMeasurement = createNodeFromMeasurement;
+window.__markInternalNavigation = () => markInternalNavigation();
+window.__setActiveSketchData = (data) => {
+  nodes = data.nodes || [];
+  edges = data.edges || [];
+  nextNodeId = data.nextNodeId || 1;
+  currentSketchId = data.sketchId || null;
+  currentSketchName = data.sketchName || null;
+  currentProjectId = data.projectId || null;
+  adminConfig = data.adminConfig || adminConfig;
+  currentInputFlowConfig = data.inputFlowConfig || currentInputFlowConfig;
+  S._nodeMapDirty = true;
+  S._spatialGridDirty = true;
+  S._dataVersion++;
+  clearUndoStack();
+  computeNodeTypes();
+  updateSketchNameDisplay();
+  scheduleDraw();
+};
+window.__getActiveSketchData = () => ({
+  nodes,
+  edges,
+  sketchId: currentSketchId,
+  sketchName: currentSketchName,
+  projectId: currentProjectId,
+});
+window.__projectCanvas = {
+  isProjectCanvasMode,
+  getBackgroundSketches,
+  findNodeInBackground,
+  findEdgeInBackground,
+  switchActiveSketch,
+};
 
 // ============================================
 // TSC3 Survey Device Integration

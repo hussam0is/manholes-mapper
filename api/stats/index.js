@@ -56,6 +56,10 @@ export default async function handler(req, res) {
     return handleWorkload(req, res, url, userId, userRecord);
   }
 
+  if (subPath === 'metadata' && req.method === 'GET') {
+    return handleMetadata(req, res, url, userId, userRecord);
+  }
+
   return res.status(404).json({ error: 'Not found' });
 }
 
@@ -696,5 +700,303 @@ async function handleWorkload(req, res, url, userId, userRecord) {
     issueBreakdown,
     activityHeatmap,
     records,
+  });
+}
+
+/**
+ * GET /api/stats/metadata — Platform-wide metadata statistics (admin/super_admin)
+ *
+ * Returns counts, growth, storage metrics, user activity, feature adoption,
+ * org breakdown, data quality, orphaned data, locks, sessions, sketch sizes.
+ */
+async function handleMetadata(req, res, url, userId, userRecord) {
+  const userRole = userRecord?.role || 'user';
+  if (userRole !== 'admin' && userRole !== 'super_admin') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  const userOrgId = userRecord?.organization_id;
+
+  // ── 1. Table counts ──
+  let countQuery;
+  if (userRole === 'super_admin') {
+    countQuery = await sql`
+      SELECT
+        (SELECT COUNT(*) FROM organizations) AS org_count,
+        (SELECT COUNT(*) FROM users) AS user_count,
+        (SELECT COUNT(*) FROM projects) AS project_count,
+        (SELECT COUNT(*) FROM sketches) AS sketch_count,
+        (SELECT COUNT(*) FROM user_features) AS feature_count,
+        (SELECT COUNT(*) FROM "session") AS session_count
+    `;
+  } else {
+    countQuery = await sql`
+      SELECT
+        1 AS org_count,
+        (SELECT COUNT(*) FROM users WHERE organization_id = ${userOrgId}) AS user_count,
+        (SELECT COUNT(*) FROM projects WHERE organization_id = ${userOrgId}) AS project_count,
+        (SELECT COUNT(*) FROM sketches s JOIN users u ON s.user_id = u.id WHERE u.organization_id = ${userOrgId}) AS sketch_count,
+        (SELECT COUNT(*) FROM user_features WHERE target_type = 'organization' AND target_id = ${userOrgId}) AS feature_count,
+        0 AS session_count
+    `;
+  }
+  const counts = (countQuery.rows || countQuery)[0];
+
+  // ── 2. Fetch sketches with metadata ──
+  let sketchResult;
+  if (userRole === 'super_admin') {
+    sketchResult = await sql`
+      SELECT s.id, s.name, s.user_id, s.created_by, s.project_id, s.created_at, s.updated_at,
+             COALESCE(jsonb_array_length(s.nodes), 0) AS node_count,
+             COALESCE(jsonb_array_length(s.edges), 0) AS edge_count,
+             s.nodes, s.locked_by, s.locked_at, s.lock_expires_at,
+             p.name AS project_name
+      FROM sketches s
+      LEFT JOIN projects p ON s.project_id = p.id
+      ORDER BY s.updated_at DESC
+      LIMIT 1000
+    `;
+  } else {
+    sketchResult = await sql`
+      SELECT s.id, s.name, s.user_id, s.created_by, s.project_id, s.created_at, s.updated_at,
+             COALESCE(jsonb_array_length(s.nodes), 0) AS node_count,
+             COALESCE(jsonb_array_length(s.edges), 0) AS edge_count,
+             s.nodes, s.locked_by, s.locked_at, s.lock_expires_at,
+             p.name AS project_name
+      FROM sketches s
+      LEFT JOIN projects p ON s.project_id = p.id
+      JOIN users u ON s.user_id = u.id
+      WHERE u.organization_id = ${userOrgId}
+      ORDER BY s.updated_at DESC
+      LIMIT 1000
+    `;
+  }
+  const sketches = sketchResult.rows || sketchResult;
+
+  // ── 3. Total nodes & edges from metadata (fast, no JSON parse) ──
+  let totalNodes = 0;
+  let totalEdges = 0;
+  for (const s of sketches) {
+    totalNodes += parseInt(s.node_count, 10) || 0;
+    totalEdges += parseInt(s.edge_count, 10) || 0;
+  }
+
+  // ── 4. Growth — sketches created per month (last 12 months) ──
+  const growthMap = new Map();
+  const now = new Date();
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    growthMap.set(d.toISOString().slice(0, 7), { sketches: 0, nodes: 0 });
+  }
+  for (const s of sketches) {
+    const month = (s.created_at || '').toString().slice(0, 7);
+    if (growthMap.has(month)) {
+      growthMap.get(month).sketches++;
+      growthMap.get(month).nodes += parseInt(s.node_count, 10) || 0;
+    }
+  }
+  const growth = Array.from(growthMap.entries()).map(([month, v]) => ({ month, ...v }));
+
+  // ── 5. Storage metrics ──
+  const avgNodesPerSketch = sketches.length > 0 ? Math.round(totalNodes / sketches.length) : 0;
+  const avgEdgesPerSketch = sketches.length > 0 ? Math.round(totalEdges / sketches.length) : 0;
+  const largestSketches = [...sketches]
+    .sort((a, b) => (parseInt(b.node_count, 10) || 0) - (parseInt(a.node_count, 10) || 0))
+    .slice(0, 10)
+    .map(s => ({
+      id: s.id, name: s.name || s.id,
+      nodeCount: parseInt(s.node_count, 10) || 0,
+      edgeCount: parseInt(s.edge_count, 10) || 0,
+    }));
+
+  // ── 6. Sketch size distribution ──
+  const sizeDistribution = { tiny: 0, small: 0, medium: 0, large: 0, huge: 0 };
+  for (const s of sketches) {
+    const nc = parseInt(s.node_count, 10) || 0;
+    if (nc <= 5) sizeDistribution.tiny++;
+    else if (nc <= 20) sizeDistribution.small++;
+    else if (nc <= 50) sizeDistribution.medium++;
+    else if (nc <= 200) sizeDistribution.large++;
+    else sizeDistribution.huge++;
+  }
+
+  // ── 7. Data quality (parse nodes JSON) ──
+  let nodesWithCoords = 0;
+  let nodesWithMaterial = 0;
+  let nodesWithMeasurement = 0;
+  let issueNodeCount = 0;
+  let applicableNodes = 0;
+
+  for (const s of sketches) {
+    const nodes = s.nodes || [];
+    for (const node of nodes) {
+      applicableNodes++;
+      if (node.surveyX != null && node.surveyY != null) nodesWithCoords++;
+      if (node.material) nodesWithMaterial++;
+      if (node.measure_precision != null && node.measure_precision > 0) nodesWithMeasurement++;
+      if (node.nodeType === 'Issue') issueNodeCount++;
+    }
+  }
+
+  const dataQuality = {
+    pctWithCoords: applicableNodes > 0 ? Math.round((nodesWithCoords / applicableNodes) * 100) : 0,
+    pctWithMeasurements: applicableNodes > 0 ? Math.round((nodesWithMeasurement / applicableNodes) * 100) : 0,
+    pctWithMaterial: applicableNodes > 0 ? Math.round((nodesWithMaterial / applicableNodes) * 100) : 0,
+    issueNodeCount,
+    totalNodes: applicableNodes,
+    nodesWithCoords,
+  };
+
+  // ── 8. User activity ──
+  let usersResult;
+  if (userRole === 'super_admin') {
+    usersResult = await sql`
+      SELECT u.id, u.username, u.email, u.role, u.organization_id, u.updated_at,
+             o.name AS org_name
+      FROM users u
+      LEFT JOIN organizations o ON u.organization_id = o.id
+      ORDER BY u.updated_at DESC
+    `;
+  } else {
+    usersResult = await sql`
+      SELECT u.id, u.username, u.email, u.role, u.organization_id, u.updated_at,
+             o.name AS org_name
+      FROM users u
+      LEFT JOIN organizations o ON u.organization_id = o.id
+      WHERE u.organization_id = ${userOrgId}
+      ORDER BY u.updated_at DESC
+    `;
+  }
+  const users = usersResult.rows || usersResult;
+
+  // Build per-user sketch/node counts
+  const userSketchCount = new Map();
+  const userNodeCount = new Map();
+  for (const s of sketches) {
+    const uid = s.user_id;
+    userSketchCount.set(uid, (userSketchCount.get(uid) || 0) + 1);
+    userNodeCount.set(uid, (userNodeCount.get(uid) || 0) + (parseInt(s.node_count, 10) || 0));
+  }
+
+  const userActivity = users.map(u => ({
+    userId: u.id,
+    email: u.email,
+    username: u.username,
+    role: u.role,
+    orgName: u.org_name,
+    lastActive: u.updated_at,
+    sketchCount: userSketchCount.get(u.id) || 0,
+    nodeCount: userNodeCount.get(u.id) || 0,
+  }));
+
+  // ── 9. Feature adoption ──
+  let featureResult;
+  if (userRole === 'super_admin') {
+    featureResult = await sql`
+      SELECT feature_key, COUNT(*) AS enabled_count
+      FROM user_features WHERE enabled = true
+      GROUP BY feature_key ORDER BY enabled_count DESC
+    `;
+  } else {
+    featureResult = await sql`
+      SELECT feature_key, COUNT(*) AS enabled_count
+      FROM user_features
+      WHERE enabled = true AND (
+        (target_type = 'organization' AND target_id = ${userOrgId})
+        OR (target_type = 'user' AND target_id IN (SELECT id FROM users WHERE organization_id = ${userOrgId}))
+      )
+      GROUP BY feature_key ORDER BY enabled_count DESC
+    `;
+  }
+  const featureAdoption = (featureResult.rows || featureResult).map(r => ({
+    feature: r.feature_key,
+    enabledCount: parseInt(r.enabled_count, 10) || 0,
+  }));
+
+  // ── 10. Org breakdown ──
+  let orgResult;
+  if (userRole === 'super_admin') {
+    orgResult = await sql`
+      SELECT o.id, o.name,
+             COUNT(DISTINCT u.id) AS user_count,
+             COUNT(DISTINCT s.id) AS sketch_count,
+             SUM(COALESCE(jsonb_array_length(s.nodes), 0)) AS node_count
+      FROM organizations o
+      LEFT JOIN users u ON u.organization_id = o.id
+      LEFT JOIN sketches s ON s.user_id = u.id
+      GROUP BY o.id, o.name
+      ORDER BY node_count DESC NULLS LAST
+    `;
+  } else {
+    orgResult = await sql`
+      SELECT o.id, o.name,
+             COUNT(DISTINCT u.id) AS user_count,
+             COUNT(DISTINCT s.id) AS sketch_count,
+             SUM(COALESCE(jsonb_array_length(s.nodes), 0)) AS node_count
+      FROM organizations o
+      LEFT JOIN users u ON u.organization_id = o.id
+      LEFT JOIN sketches s ON s.user_id = u.id
+      WHERE o.id = ${userOrgId}
+      GROUP BY o.id, o.name
+    `;
+  }
+  const orgBreakdown = (orgResult.rows || orgResult).map(r => ({
+    orgId: r.id, orgName: r.name,
+    userCount: parseInt(r.user_count, 10) || 0,
+    sketchCount: parseInt(r.sketch_count, 10) || 0,
+    nodeCount: parseInt(r.node_count, 10) || 0,
+  }));
+
+  // ── 11. Orphaned data ──
+  const orphanSketchCount = sketches.filter(s => !s.project_id).length;
+  const orphanUserCount = users.filter(u => !u.organization_id).length;
+
+  // ── 12. Active locks ──
+  const nowIso = now.toISOString();
+  const locks = sketches
+    .filter(s => s.locked_by && s.lock_expires_at && s.lock_expires_at > nowIso)
+    .map(s => ({
+      sketchId: s.id, sketchName: s.name || s.id,
+      lockedBy: s.locked_by, lockedAt: s.locked_at, expiresAt: s.lock_expires_at,
+    }));
+
+  // ── 13. User engagement (DAU/WAU/MAU from activity heatmap) ──
+  // Reuse activityHeatmap data pattern — count unique users per time window
+  const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+  const dauSet = new Set();
+  const wauSet = new Set();
+  const mauSet = new Set();
+  for (const s of sketches) {
+    const updDay = (s.updated_at || '').toString().slice(0, 10);
+    const uid = s.user_id;
+    if (updDay >= dayAgo) dauSet.add(uid);
+    if (updDay >= weekAgo) wauSet.add(uid);
+    if (updDay >= monthAgo) mauSet.add(uid);
+  }
+
+  return res.status(200).json({
+    counts: {
+      organizations: parseInt(counts.org_count, 10) || 0,
+      users: parseInt(counts.user_count, 10) || 0,
+      projects: parseInt(counts.project_count, 10) || 0,
+      sketches: parseInt(counts.sketch_count, 10) || 0,
+      totalNodes,
+      totalEdges,
+      features: parseInt(counts.feature_count, 10) || 0,
+      activeSessions: parseInt(counts.session_count, 10) || 0,
+    },
+    growth,
+    storage: { avgNodesPerSketch, avgEdgesPerSketch, largestSketches },
+    sizeDistribution,
+    dataQuality,
+    userActivity,
+    featureAdoption,
+    orgBreakdown,
+    orphanedData: { sketchesWithoutProject: orphanSketchCount, usersWithoutOrg: orphanUserCount },
+    locks,
+    engagement: { dau: dauSet.size, wau: wauSet.size, mau: mauSet.size },
   });
 }

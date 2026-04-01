@@ -10,11 +10,16 @@
  * 4. Not last manhole — manhole with only inbound edges (head) and no outbound (tail)
  * 4b. Merge candidate — two nearby stubs in different connected components
  * 5. Negative gradient — pipe where head is deeper than tail (uphill flow)
+ * 6. Obstructed access — node with maintenance status indicating access blocked
+ *    (locked house=13, covered=4, can't open=3, no cover=10, etc.)
+ * 7. Schematic location — node placed from sketch approximation (accuracyLevel=1)
+ *    that has no survey coordinates
+ * 8. Missing TL — node that has survey coordinates but no TL (top level) elevation
  */
 
 /**
- * @typedef {{ type: 'missing_coords' | 'missing_pipe_data' | 'long_edge' | 'not_last_manhole' | 'merge_candidate' | 'negative_gradient', nodeId?: string|number, edgeId?: string|number, side?: 'tail'|'head', worldX: number, worldY: number, lengthM?: number, gradient?: number, mergeNodeId?: string|number, distanceM?: number, mergeWorldX?: number, mergeWorldY?: number }} Issue
- * @typedef {{ totalKm: number, issueCount: number, missingCoordsCount: number, missingPipeDataCount: number }} SketchStats
+ * @typedef {{ type: 'missing_coords' | 'missing_pipe_data' | 'long_edge' | 'not_last_manhole' | 'merge_candidate' | 'negative_gradient' | 'obstructed_access' | 'schematic_location' | 'missing_tl', nodeId?: string|number, edgeId?: string|number, side?: 'tail'|'head', worldX: number, worldY: number, lengthM?: number, gradient?: number, mergeNodeId?: string|number, distanceM?: number, mergeWorldX?: number, mergeWorldY?: number, reason?: string }} Issue
+ * @typedef {{ totalKm: number, issueCount: number, missingCoordsCount: number, missingPipeDataCount: number, obstructedAccessCount: number, schematicLocationCount: number, missingTlCount: number }} SketchStats
  */
 
 const LONG_EDGE_THRESHOLD_M = 70;
@@ -22,6 +27,15 @@ const MERGE_DISTANCE_THRESHOLD_M = 40;
 
 // accuracyLevel codes: 0 = Engineering, 1 = Schematic
 const SCHEMATIC_ACCURACY = 1;
+
+// Maintenance status codes that indicate obstructed access
+const OBSTRUCTED_STATUSES = new Map([
+  [3, 'לא ניתן לפתיחה'],
+  [4, 'שוחה מכוסה'],
+  [5, 'שוחת ביוב - ללא גישה'],
+  [10, 'ללא מכסה'],
+  [13, 'בית נעול'],
+]);
 
 /**
  * Find connected components in an undirected graph.
@@ -305,8 +319,49 @@ export function computeSketchIssues(nodes, edges) {
     }
   }
 
-  // Sort: missing_coords first, then missing_pipe_data, then long_edge, then not_last_manhole, then negative_gradient; within each by id
-  const typeOrder = { missing_coords: 0, missing_pipe_data: 1, long_edge: 2, not_last_manhole: 3, merge_candidate: 3.5, negative_gradient: 4 };
+  // 6. Obstructed access — maintenance status indicates access is blocked
+  for (const node of nodes) {
+    if (node.nodeType === 'Home') continue;
+    const status = node.maintenanceStatus;
+    if (OBSTRUCTED_STATUSES.has(status)) {
+      issues.push({
+        type: 'obstructed_access',
+        nodeId: node.id,
+        worldX: node.x || 0,
+        worldY: node.y || 0,
+        reason: OBSTRUCTED_STATUSES.get(status),
+      });
+    }
+  }
+
+  // 7. Schematic location — node with schematic accuracy and no survey coords
+  for (const node of nodes) {
+    if (node.nodeType === 'Home') continue;
+    if (node.accuracyLevel === SCHEMATIC_ACCURACY && (node.surveyX == null || node.surveyY == null)) {
+      issues.push({
+        type: 'schematic_location',
+        nodeId: node.id,
+        worldX: node.x || 0,
+        worldY: node.y || 0,
+      });
+    }
+  }
+
+  // 8. Missing TL — node with survey coords but no TL elevation
+  for (const node of nodes) {
+    if (node.nodeType === 'Home') continue;
+    if (node.surveyX != null && node.surveyY != null && (node.tl == null || node.tl === '')) {
+      issues.push({
+        type: 'missing_tl',
+        nodeId: node.id,
+        worldX: node.x || 0,
+        worldY: node.y || 0,
+      });
+    }
+  }
+
+  // Sort by severity; within each type by id
+  const typeOrder = { missing_coords: 0, missing_pipe_data: 1, long_edge: 2, not_last_manhole: 3, merge_candidate: 3.5, negative_gradient: 4, obstructed_access: 5, schematic_location: 6, missing_tl: 7 };
   issues.sort((a, b) => {
     const tDiff = (typeOrder[a.type] ?? 9) - (typeOrder[b.type] ?? 9);
     if (tDiff !== 0) return tDiff;
@@ -331,9 +386,15 @@ export function computeSketchIssues(nodes, edges) {
   // Count issues by category for the breakdown display
   let missingCoordsCount = 0;
   let missingPipeDataCount = 0;
+  let obstructedAccessCount = 0;
+  let schematicLocationCount = 0;
+  let missingTlCount = 0;
   for (const issue of issues) {
     if (issue.type === 'missing_coords') missingCoordsCount++;
     else if (issue.type === 'missing_pipe_data') missingPipeDataCount++;
+    else if (issue.type === 'obstructed_access') obstructedAccessCount++;
+    else if (issue.type === 'schematic_location') schematicLocationCount++;
+    else if (issue.type === 'missing_tl') missingTlCount++;
   }
 
   return {
@@ -343,6 +404,9 @@ export function computeSketchIssues(nodes, edges) {
       issueCount: issues.length,
       missingCoordsCount,
       missingPipeDataCount,
+      obstructedAccessCount,
+      schematicLocationCount,
+      missingTlCount,
     },
   };
 }
@@ -357,11 +421,17 @@ export function computeProjectTotals(statsArray) {
   let issueCount = 0;
   let missingCoordsCount = 0;
   let missingPipeDataCount = 0;
+  let obstructedAccessCount = 0;
+  let schematicLocationCount = 0;
+  let missingTlCount = 0;
   for (const s of statsArray) {
     totalKm += s.totalKm;
     issueCount += s.issueCount;
     missingCoordsCount += s.missingCoordsCount || 0;
     missingPipeDataCount += s.missingPipeDataCount || 0;
+    obstructedAccessCount += s.obstructedAccessCount || 0;
+    schematicLocationCount += s.schematicLocationCount || 0;
+    missingTlCount += s.missingTlCount || 0;
   }
-  return { totalKm, issueCount, missingCoordsCount, missingPipeDataCount };
+  return { totalKm, issueCount, missingCoordsCount, missingPipeDataCount, obstructedAccessCount, schematicLocationCount, missingTlCount };
 }

@@ -621,6 +621,7 @@ export async function renderProjectsHome() {
           </button>
         </div>`;
       card.addEventListener('click', () => {
+        F.markInternalNavigation();
         location.hash = '#/project/' + project.id;
       });
       S.sketchListEl.appendChild(card);
@@ -903,6 +904,9 @@ export async function loadProjectCanvas(projectId) {
     if (window.__perfDebug) console.time('[PERF] showSketchSidePanel');
     showSketchSidePanel();
     if (window.__perfDebug) console.timeEnd('[PERF] showSketchSidePanel');
+
+    // Notify unified sidebar to show Sketches tab and reparent panel content
+    window.menuEvents?.emit('projectCanvas:enter');
 
     F.scheduleDraw();
     updateLoadingStep('canvas', 'done', t('projects.canvas.loadingCanvasDone'));

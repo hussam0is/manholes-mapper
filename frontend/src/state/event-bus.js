@@ -25,6 +25,10 @@ class EventBus {
     this._listeners = new Map();
     /** @type {Map<string, Set<Function>>} */
     this._onceListeners = new Map();
+    /** @type {Set<Function>} */
+    this._wildcardListeners = new Set();
+    /** @type {Map<string, Set<Function>>} */
+    this._nsListeners = new Map();
 
     if (typeof window !== 'undefined') {
       /** Debug: set window.__busDebug = true to log all events */
@@ -41,9 +45,6 @@ class EventBus {
   on(event, callback) {
     // Wildcard: subscribe to all events
     if (event === '*') {
-      if (!this._wildcardListeners) {
-        this._wildcardListeners = new Set();
-      }
       this._wildcardListeners.add(callback);
       return () => this._wildcardListeners.delete(callback);
     }
@@ -77,7 +78,7 @@ class EventBus {
    */
   off(event, callback) {
     if (event === '*') {
-      this._wildcardListeners?.delete(callback);
+      this._wildcardListeners.delete(callback);
       return;
     }
     this._listeners.get(event)?.delete(callback);
@@ -90,7 +91,7 @@ class EventBus {
    * @param {*} [data]
    */
   emit(event, data) {
-    if (this._debug) {
+    if (this._debug || (typeof window !== 'undefined' && window.__busDebug)) {
       console.debug(`[EventBus] ${event}`, data);
     }
 
@@ -113,14 +114,19 @@ class EventBus {
       this._onceListeners.delete(event);
     }
 
-    // Fire wildcard listeners with (event, data)
-    if (this._wildcardListeners) {
-      for (const cb of this._wildcardListeners) {
-        try { cb(event, data); } catch (err) {
-          console.error(`[EventBus] Error in wildcard listener for "${event}":`, err);
+    // Fire wildcard ('*') listeners with (event, data) signature
+    if (event !== '*') {
+      if (this._wildcardListeners) {
+        for (const cb of this._wildcardListeners) {
+          try { cb(event, data); } catch (err) {
+            console.error(`[EventBus] Error in wildcard listener for "${event}":`, err);
+          }
         }
       }
     }
+
+    // Fire namespace listeners
+    this._emitNs(event, data);
   }
 
   /**
@@ -130,8 +136,6 @@ class EventBus {
    * @returns {Function} unsubscribe function
    */
   onAny(prefix, callback) {
-    // Implemented via a Proxy-based approach; we store namespace listeners separately.
-    if (!this._nsListeners) this._nsListeners = new Map();
     if (!this._nsListeners.has(prefix)) {
       this._nsListeners.set(prefix, new Set());
     }
@@ -140,30 +144,7 @@ class EventBus {
   }
 
   /**
-   * Remove all listeners. Useful for tests or teardown.
-   */
-  clear() {
-    this._listeners.clear();
-    this._onceListeners.clear();
-    if (this._nsListeners) this._nsListeners.clear();
-    if (this._wildcardListeners) this._wildcardListeners.clear();
-  }
-
-  /**
-   * Return listener counts per event for debugging.
-   * @returns {Record<string, number>}
-   */
-  debug() {
-    const counts = {};
-    for (const [event, listeners] of this._listeners) {
-      counts[event] = listeners.size;
-    }
-    return counts;
-  }
-
-  /**
    * Internal override of emit to also fire namespace listeners.
-   * (We override via the constructor pattern to keep the class clean.)
    */
   _emitNs(event, data) {
     if (!this._nsListeners) return;
@@ -177,14 +158,34 @@ class EventBus {
       }
     }
   }
-}
 
-// Patch emit to also fire namespace listeners
-const _origEmit = EventBus.prototype.emit;
-EventBus.prototype.emit = function (event, data) {
-  _origEmit.call(this, event, data);
-  this._emitNs(event, data);
-};
+  /**
+   * Remove all listeners. Useful for tests or teardown.
+   */
+  clear() {
+    this._listeners.clear();
+    this._onceListeners.clear();
+    this._nsListeners.clear();
+    this._wildcardListeners.clear();
+  }
+
+  /**
+   * Return listener counts per event for debugging.
+   * @returns {Record<string, number>}
+   */
+  debug() {
+    const result = {};
+    for (const [event, listeners] of this._listeners) {
+      if (listeners.size > 0) {
+        result[event] = listeners.size;
+      }
+    }
+    if (this._wildcardListeners.size > 0) {
+      result['*'] = this._wildcardListeners.size;
+    }
+    return result;
+  }
+}
 
 /** Singleton event bus for the entire app. */
 export const bus = new EventBus();
