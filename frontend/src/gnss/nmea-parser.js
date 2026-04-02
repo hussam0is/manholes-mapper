@@ -127,7 +127,9 @@ export class NMEAParser {
    * $GPGGA,123519,4807.038,N,01131.000,E,1,08,0.9,545.4,M,47.0,M,,*47
    */
   parseGGA(parts) {
-    if (parts.length < 15) {
+    // Minimum required fields: type, time, lat, latDir, lon, lonDir, fix, sats, hdop, alt, altUnit
+    // Optional fields (geoidHeight, geoidUnit, ageDgps, dgpsStationId) may be omitted
+    if (parts.length < 11) {
       return false;
     }
 
@@ -172,7 +174,9 @@ export class NMEAParser {
    * $GPRMC,123519,A,4807.038,N,01131.000,E,022.4,084.4,230394,003.1,W*6A
    */
   parseRMC(parts) {
-    if (parts.length < 12) {
+    // Minimum required fields: type, time, status, lat, latDir, lon, lonDir, speed, course, date
+    // Optional fields (magVar, magVarDir) may be omitted
+    if (parts.length < 10) {
       return false;
     }
 
