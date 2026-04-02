@@ -196,8 +196,12 @@ export class NMEAParser {
     this.currentState.utcTime = utcTime;
     this.currentState.timestamp = Date.now();
     
-    // Only set isValid if we already have a fix from GGA (or wait for it)
-    if (this.currentState.lat !== null && this.currentState.lon !== null) {
+    // Only set isValid if we already have a valid fix from GGA.
+    // Guard against the case where GGA reported fix=0 (no fix) but still
+    // stored last-known lat/lon; in that scenario isValid must remain false
+    // even if RMC arrives with status='A'.
+    if (this.currentState.lat !== null && this.currentState.lon !== null &&
+        this.currentState.fixQuality > 0) {
       this.currentState.isValid = true;
     }
 

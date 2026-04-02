@@ -366,15 +366,18 @@ export function buildScene(THREE, data, CSS2DObject, issues = []) {
     pipeGroup.add(pipeMesh);
 
     // Pipe end caps (flat circles)
-    const capGeo = new THREE.CircleGeometry(pipeRadius, PIPE_RADIAL_SEGMENTS);
+    // Create each cap geometry separately — sharing a cloned template would leave
+    // the template geometry untracked (not added to scene, never disposed).
     const capMat = finalMat;
 
-    const startCap = new THREE.Mesh(capGeo.clone(), capMat);
+    const startCapGeo = new THREE.CircleGeometry(pipeRadius, PIPE_RADIAL_SEGMENTS);
+    const startCap = new THREE.Mesh(startCapGeo, capMat);
     startCap.position.copy(start);
     startCap.lookAt(end);
     pipeGroup.add(startCap);
 
-    const endCap = new THREE.Mesh(capGeo.clone(), capMat);
+    const endCapGeo = new THREE.CircleGeometry(pipeRadius, PIPE_RADIAL_SEGMENTS);
+    const endCap = new THREE.Mesh(endCapGeo, capMat);
     endCap.position.copy(end);
     endCap.lookAt(start);
     pipeGroup.add(endCap);

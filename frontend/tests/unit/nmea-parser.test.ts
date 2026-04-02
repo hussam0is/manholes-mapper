@@ -56,6 +56,19 @@ describe('NMEAParser', () => {
       expect(parser.getState().isValid).toBe(false);
     });
 
+    it('should NOT set isValid when GGA has fix=0 followed by RMC status A', () => {
+      // GGA with fix quality 0 (no fix) — receiver stores last-known position but isValid=false
+      const ggaNoFix = '$GPGGA,123519,4807.038,N,01131.000,E,0,00,99.9,0.0,M,0.0,M,,*3F';
+      parser.parseSentence(ggaNoFix);
+      expect(parser.getState().fixQuality).toBe(0);
+      expect(parser.getState().isValid).toBe(false);
+
+      // RMC status=A arrives — should NOT upgrade isValid because fixQuality is still 0
+      const rmc = '$GPRMC,123519,A,4807.038,N,01131.000,E,022.4,084.4,230394,003.1,W*6A';
+      parser.parseSentence(rmc);
+      expect(parser.getState().isValid).toBe(false);
+    });
+
     it('should reject sentence with invalid checksum', () => {
       const sentence = '$GPGGA,123519,4807.038,N,01131.000,E,1,08,0.9,545.4,M,47.0,M,,*00';
       const result = parser.parseSentence(sentence);
