@@ -68,3 +68,6 @@ scripts/cdp-*.cjs
 test-results/
 frontend/test-results/
 .playwright-artifacts-*/
+playwright-report/
+frontend/playwright-report/
+qa-skill/reporting/
