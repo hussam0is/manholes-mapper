@@ -37,6 +37,13 @@ frontend/
 │   │   ├── auth.js         # Auth state and API client
 │   │   ├── guards.js       # Route guards and permissions
 │   │   └── provider.js     # Better Auth provider setup
+│   ├── cockpit/            # Gamification UI (NEW)
+│   │   ├── cockpit.js      # Main cockpit controller
+│   │   ├── action-rail.js  # Bottom action bar
+│   │   ├── completion-engine.js  # Smart suggestions
+│   │   ├── intel-strip.js  # Project health metrics
+│   │   ├── quick-wins.js   # Context actions
+│   │   └── session-tracker.js  # Session progress
 │   ├── db.js               # IndexedDB database wrapper
 │   ├── dom/                # DOM manipulation utilities
 │   ├── features/           # Canvas rendering engine
@@ -44,6 +51,10 @@ frontend/
 │   │   ├── measurement-rail.js    # Inline depth inputs
 │   │   ├── node-icons.js          # Custom node icon system
 │   │   └── rendering.js           # Main render loop
+│   ├── field-commander/    # Mobile command palette (NEW)
+│   │   ├── command-palette.js    # Cmd+K interface
+│   │   ├── quick-actions.js      # Action shortcuts
+│   │   └── shortcuts.js          # Keyboard bindings
 │   ├── gnss/               # GNSS/Live Measure module
 │   │   ├── bluetooth-adapter.js   # Bluetooth SPP (Android)
 │   │   ├── wifi-adapter.js        # WiFi TCP (Android)
@@ -73,17 +84,58 @@ frontend/
 │   │   ├── menu.js         # Main menu
 │   │   ├── command-palette.js  # Cmd+K search
 │   │   └── action-bar.js   # Bottom toolbar
+│   ├── notifications/      # Notification system (NEW)
+│   │   ├── notification-center.js # Main UI
+│   │   ├── notification-manager.js # Delivery logic
+│   │   └── types.js        # Notification schemas
+│   ├── pages/              # Page components
+│   │   ├── leaderboard-page.js
+│   │   ├── metadata-dashboard.js
+│   │   ├── profile-page.js
+│   │   └── project-stats-page.js
+│   ├── project/            # Project canvas & issues (NEW)
+│   │   ├── project-canvas-renderer.js  # City view
+│   │   ├── project-canvas-state.js     # Canvas state
+│   │   ├── sketch-side-panel.js        # Detail view
+│   │   ├── sketch-issues.js            # Issue management
+│   │   ├── fix-suggestions.js          # Smart fixes
+│   │   ├── issue-highlight.js          # Navigation
+│   │   ├── issue-nav-state.js          # State
+│   │   └── last-edit-tracker.js        # Edit history
 │   ├── serviceWorker/      # Service Worker lifecycle
 │   ├── state/              # Global state management
 │   │   ├── state.js        # Core state (nodes, edges, selections)
 │   │   ├── constants.js    # Color palettes, enums
 │   │   ├── persistence.js  # Auto-save logic
 │   │   └── view-state.js   # View transform (pan, zoom)
-│   └── utils/              # Shared utilities
-│       ├── csv.js          # CSV export/import
-│       ├── geometry.js     # Geometry calculations
-│       ├── coordinates.js  # Coordinate transformations
-│       └── ui.js           # UI helpers
+│   ├── survey/             # Survey mode (NEW)
+│   │   ├── device-picker-dialog.js    # TSC3 selection
+│   │   ├── survey-node-type-dialog.js  # Survey forms
+│   │   ├── tsc3-bluetooth-adapter.js  # TSC3 Bluetooth
+│   │   ├── tsc3-connection-manager.js  # TSC3 manager
+│   │   ├── tsc3-parser.js            # TSC3 data parsing
+│   │   └── tsc3-websocket-adapter.js  # TSC3 WebSocket
+│   ├── three-d/            # 3D underground visualization
+│   │   ├── three-d-scene.js            # Scene setup
+│   │   ├── three-d-view.js            # Camera control
+│   │   ├── three-d-camera-framing.js  # Frame manager
+│   │   ├── three-d-fps-controls.js    # Input handling
+│   │   ├── three-d-miniature.js      # Miniature mode
+│   │   ├── three-d-joystick.js        # Virtual joystick
+│   │   ├── three-d-materials.js      # Materials
+│   │   └── three-d-issues.js          # Issue rendering
+│   ├── types/              # TypeScript types (NEW)
+│   │   ├── index.ts
+│   │   ├── node.ts
+│   │   ├── edge.ts
+│   │   └── project.ts
+│   ├── utils/              # Shared utilities
+│   │   ├── csv.js          # CSV export/import
+│   │   ├── geometry.js     # Geometry calculations
+│   │   ├── coordinates.js  # Coordinate transformations
+│   │   └── ui.js           # UI helpers
+│   └── workers/            # Web Workers
+│       └── gnss-worker.js  # NMEA parsing in background
 ├── test-results/           # Playwright test reports
 └── playwright-report/      # Test output
 ```
@@ -223,9 +275,78 @@ api/
   - `bluetooth-adapter.js` — Bluetooth SPP (Android)
   - `wifi-adapter.js` — WiFi TCP (Android)
   - `mock-adapter.js` — Browser testing
+  - `tsc3-adapter.js` — TSC3 device integration (NEW)
 - **NMEA Parser:** Parses GGA/RMC sentences, extracts lat/lon/fix quality
 - **State Manager (`gnss-state.js`):** Centralized state for position, captured points, live measure mode
 - **Canvas Marker:** Real-time GNSS position rendering on sketch
+
+### 2. Cockpit & Gamification
+
+**Purpose:** Visual progress tracking and intelligent suggestions.
+
+**Components:**
+- `cockpit.js` — Main controller for gamification UI
+- `action-rail.js` — Bottom action bar for common tasks
+- `completion-engine.js` — Analyzes progress and suggests next actions
+- `intel-strip.js` — Displays project health metrics (nodes, edges, issues)
+- `quick-wins.js` — Context-aware quick actions
+- `session-tracker.js` — Monitors survey session progress
+
+**Features:**
+- Skill levels based on XP accumulation
+- Health card with visual progress indicators
+- Smart suggestions for completing nodes and edges
+- Session time and completion tracking
+
+### 3. Field Commander
+
+**Purpose:** Mobile-optimized command interface.
+
+**Components:**
+- `command-palette.js` — Cmd+K searchable action menu
+- `quick-actions.js` — Pre-defined shortcuts
+- `shortcuts.js` — Keyboard binding management
+
+**Features:**
+- One-handed edge mode (long-press drag)
+- Fast action access without switching modes
+- Touch-optimized interface
+
+### 4. Project Canvas
+
+**Purpose:** Multi-sketch city view with unified network visualization.
+
+**Components:**
+- `project-canvas-renderer.js` — Canvas rendering for merged network
+- `project-canvas-state.js` — State management for city view
+- `sketch-side-panel.js` — Detail view for nodes/edges/issues
+- `sketch-issues.js` — Issue management and navigation
+- `fix-suggestions.js` — AI-assisted fix recommendations
+- `issue-highlight.js` — Navigation to issues
+- `issue-nav-state.js` — Navigation state
+
+**Features:**
+- See all sketches as one network
+- Click issues to jump to location
+- Merge duplicate nodes
+- Detailed sidebar with comments
+
+### 5. Survey Mode
+
+**Purpose:** Specialized workflow for survey equipment.
+
+**Components:**
+- `device-picker-dialog.js` — Select TSC3 survey device
+- `survey-node-type-dialog.js` — Optimized survey forms
+- `tsc3-bluetooth-adapter.js` — Bluetooth connection
+- `tsc3-connection-manager.js` — Device manager
+- `tsc3-parser.js` — TSC3 data parsing
+- `tsc3-websocket-adapter.js` — WebSocket communication
+
+**Features:**
+- Easy device connection
+- Survey-specific forms
+- Device data parsing and display
 
 **Connection Types:**
 - `BLUETOOTH` — Serial port profile over Bluetooth
@@ -297,7 +418,27 @@ api/
 - Background sync when network reconnected
 - Conflict resolution (last write wins)
 
-### 6. Multi-Tenant SaaS
+### 6. Issue System
+
+**Purpose:** Audit feedback and quality control.
+
+**Components:**
+- **Issue Detection:** Real-time canvas audit for common issues
+  - Missing coordinates
+  - Negative gradients
+  - Long edges
+  - Merge candidates
+- **Issue Node Type:** Dedicated node type for feedback
+- **Issue Comments:** Threaded comments per issue
+- **Navigation:** Jump to issues from canvas or sidebar
+
+**Components:**
+- `sketch-issues.js` — Issue management and storage
+- `issue-highlight.js` — Navigation to issues
+- `fix-suggestions.js` — AI-assisted fix recommendations
+- `issue-nav-state.js` — Navigation state
+
+### 7. Multi-Tenant SaaS
 
 **Purpose:** Organizational data isolation and RBAC.
 
@@ -313,13 +454,27 @@ api/
 - `admin`: Read/write org-wide data, manage members
 - `super_admin`: Full access, manage org, feature flags
 
+### 8. Notifications System
+
+**Purpose:** Contextual alerts and reminders.
+
+**Components:**
+- `notification-manager.js` — Notification delivery logic
+- `notification-center.js` — Notification UI
+- `types.js` — Notification schemas
+
+**Features:**
+- Contextual alerts based on user actions
+- Session reminders
+- System notifications
+
 ---
 
 ## Testing
 
 ### Unit Tests (Vitest)
 - **Location:** `frontend/src/**/*.test.js`
-- **Coverage:** 1546 tests
+- **Coverage:** ~1,546 tests
 - **Command:** `npm run test:run`
 - **Framework:** Vitest with jsdom
 
@@ -332,6 +487,12 @@ api/
 ### Test Results
 - Live reports: `frontend/test-results/`
 - Playwright HTML: `frontend/playwright-report/`
+
+### Test Coverage Gaps
+- Cockpit components: Zero test coverage (6 new files)
+- Survey mode modules: Zero test coverage
+- Project canvas features: Basic tests only
+- Admin panel modules: Zero test coverage (8 large files)
 
 ---
 

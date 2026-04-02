@@ -319,8 +319,25 @@ Delete issue.
 ### GET /api/issues/:issueId/comments
 List comments for an issue.
 
+**Headers:** Authorization: Bearer <token>
+
+**Response:**
+```json
+[
+  {
+    "id": "comment_123",
+    "issueId": "issue_456",
+    "text": "Fixed in commit abc123",
+    "authorId": "user_789",
+    "createdAt": "2026-04-01T10:00:00Z"
+  }
+]
+```
+
 ### POST /api/issues/:issueId/comments
 Add comment to issue.
+
+**Headers:** Authorization: Bearer <token>
 
 **Request:**
 ```json
@@ -328,6 +345,11 @@ Add comment to issue.
   "text": "Fixed in commit abc123"
 }
 ```
+
+**Response:** Comment object.
+
+### DELETE /api/issues/:issueId/comments/:commentId
+Delete comment (author only).
 
 ---
 

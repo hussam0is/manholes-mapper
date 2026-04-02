@@ -56,11 +56,16 @@ Manholes Mapper is a lightweight yet powerful tool designed for field workers to
 ## Key Features
 
 - **Interactive Canvas Editor**: High-performance HTML5 Canvas rendering for node-edge network visualization.
+- **Project Canvas**: Multi-sketch city view with merged network visualization and issue navigation (NEW)
+- **Cockpit/Gamification**: Visual progress tracking with skill levels, completion engine, and smart action suggestions (NEW)
+- **Field Commander**: Mobile-optimized command palette for fast actions, shortcuts, and quick-wins (NEW)
+- **Survey Mode**: TSC3 device integration with specialized survey workflows (NEW)
 - **Map Layer Integration**: Background map tiles (Esri World Imagery / Esri World Street Map) with Israel TM Grid (ITM) coordinate alignment for GIS-accurate positioning.
 - **Multi-Node Modes**: Specialized support for different infrastructure types:
   - **Manholes**: Standard network nodes.
   - **Home Nodes**: Residential/Building connections.
   - **Drainage Nodes**: Stormwater and surface water nodes.
+  - **Issues**: Audit feedback with navigation and comment system.
 - **Offline-First Architecture**: Full functionality without internet using a hybrid IndexedDB and localStorage persistence layer.
 - **Advanced Admin Configuration**:
   - Customize field visibility for CSV exports.
@@ -72,6 +77,7 @@ Manholes Mapper is a lightweight yet powerful tool designed for field workers to
   - **Resizable Details Drawer**: Swipeable and resizable sidebar for viewing and editing entity details.
   - **Mobile Action Menu**: Context-aware overflow menu for small screens.
   - **Touch Gestures**: Support for pinch-to-zoom and pan.
+  - **One-Handed Edge Mode**: Long-press drag to create edges with single-thumb control (NEW)
 - **Data Integrity & Export**:
   - **Real-time Autosave**: Automatic background persistence to prevent data loss.
   - **GIS Integration**: Export nodes and edges separately as CSV files optimized for ArcGIS.
@@ -88,6 +94,36 @@ Manholes Mapper is a lightweight yet powerful tool designed for field workers to
   - Top-bar search to instantly locate nodes by ID or address.
   - Command menu for quick action access.
   - Recenter view and edge legend for better orientation.
+
+## New Features (2026)
+
+### 🎮 Cockpit & Gamification
+- **Skill Levels**: Visual progress tracking with XP-based leveling system
+- **Completion Engine**: Smart suggestions for completing nodes and edges
+- **Health Card**: Real-time project health visualization
+- **Quick Wins**: Context-aware action suggestions for efficiency
+- **Session Tracker**: Progress monitoring during survey sessions
+
+### 📊 Project Canvas
+- **City View**: See all sketches as a unified network map
+- **Issue Navigation**: Click issues to jump to their location
+- **Merge Mode**: Identify and merge duplicate nodes
+- **Side Panel**: Detailed view with issue comments and fix suggestions
+
+### 📱 Field Commander
+- **Command Palette**: `Cmd+K` or menu for instant actions
+- **One-Handed Edge Mode**: Long-press drag for edge creation
+- **Smart Notifications**: Contextual alerts and reminders
+
+### 🎯 Survey Mode
+- **TSC3 Integration**: Specialized workflow for TSC3 survey devices
+- **Device Picker**: Easy connection to survey equipment
+- **Survey Node Dialog**: Optimized form for survey data entry
+
+### 🐛 Issue System
+- **Auto-Detection**: Real-time audit of sketches (missing coordinates, negative gradients, etc.)
+- **Issue Node Type**: Dedicated nodes for feedback with comments
+- **Navigation**: Jump to any issue from the sidebar or canvas
 
 ## Technology Stack
 
