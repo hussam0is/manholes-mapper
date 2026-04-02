@@ -119,7 +119,10 @@ export class NMEAParser {
     }
 
     const calculatedHex = calculated.toString(16).toUpperCase().padStart(2, '0');
-    return calculatedHex === providedChecksum.toUpperCase();
+    if (calculatedHex === providedChecksum.toUpperCase()) {
+      return true;
+    }
+    return lenientChecksum;
   }
 
   /**
