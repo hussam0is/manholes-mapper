@@ -8,7 +8,8 @@ import proj4 from 'proj4';
 // Define Israel TM Grid (ITM) projection - EPSG:2039
 // Based on WGS84 datum with Transverse Mercator projection
 // This is the official coordinate system used in Israel surveys
-proj4.defs('EPSG:2039', '+proj=tmerc +lat_0=31.7344 +lon_0=35.2049 +k=1.0000067 +x_0=219529.584 +y_0=626907.39 +ellps=GRS80 +towgs84=23.772,17.49,17.859,-0.3132,-1.85274,1.67299,-5.4262 +units=m +no_defs +type=crs');
+// Using precise official parameters from epsg.io/2039
+proj4.defs('EPSG:2039', '+proj=tmerc +lat_0=31.7343936111111 +lon_0=35.2045169444444 +k=1.0000067 +x_0=219529.584 +y_0=626907.39 +ellps=GRS80 +towgs84=23.772,17.49,17.859,-0.3132,-1.85274,1.67299,-5.4262 +units=m +no_defs +type=crs');
 
 // WGS84 is the standard GPS datum (EPSG:4326)
 proj4.defs('EPSG:4326', '+proj=longlat +datum=WGS84 +no_defs');
