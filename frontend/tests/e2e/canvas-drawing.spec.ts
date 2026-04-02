@@ -48,11 +48,11 @@ test.describe('Canvas Drawing Flow', () => {
   });
 
   test('toolbar is visible with mode group', async ({ page }) => {
-    const toolbar = page.locator('.canvas-toolbar');
+    const toolbar = page.locator('.unified-toolbar');
     await expect(toolbar).toBeVisible();
 
-    const modeGroup = page.locator('#modeGroup');
-    await expect(modeGroup).toBeVisible();
+    const modeGroup = page.locator('#utNodeFlyout');
+    await expect(modeGroup).toBeAttached();
   });
 
   test('node mode button is present in the toolbar', async ({ page }) => {

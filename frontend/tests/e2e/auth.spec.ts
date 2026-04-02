@@ -76,6 +76,14 @@ async function mockAuth(page: Page) {
 
 test.describe('Authentication', () => {
   test.beforeEach(async ({ page }) => {
+    // Mock get-session as unauthenticated before navigation
+    await page.route('**/api/auth/get-session', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ session: null, user: null }),
+      })
+    );
     // Navigate to the app
     await page.goto('/');
   });
