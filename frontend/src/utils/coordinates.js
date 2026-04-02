@@ -25,9 +25,10 @@ export function parseCoordinatesCsv(csvContent) {
   }
   
   // Check if first line is a header (contains non-numeric values in coordinate columns)
+  // Works for both 3-field (id,x,y) and 4-field (id,x,y,z) formats.
   const firstLine = lines[0];
   const firstFields = parseCSVLine(firstLine);
-  const isHeader = firstFields.length >= 4 && 
+  const isHeader = firstFields.length >= 3 && 
     (isNaN(parseFloat(firstFields[1])) || isNaN(parseFloat(firstFields[2])));
   
   const startIndex = isHeader ? 1 : 0;
@@ -35,11 +36,13 @@ export function parseCoordinatesCsv(csvContent) {
   for (let i = startIndex; i < lines.length; i++) {
     const fields = parseCSVLine(lines[i]);
     
-    if (fields.length >= 4) {
+    // Accept 3-field lines (id, x, y) — elevation defaults to 0
+    // Accept 4-field lines (id, x, y, z) — elevation from field
+    if (fields.length >= 3) {
       const pointId = String(fields[0]).trim();
       const x = parseFloat(fields[1]);
       const y = parseFloat(fields[2]);
-      const z = parseFloat(fields[3]);
+      const z = fields.length >= 4 ? parseFloat(fields[3]) : 0;
       
       // Only add if we have valid coordinates
       if (pointId && !isNaN(x) && !isNaN(y) && !isNaN(z)) {

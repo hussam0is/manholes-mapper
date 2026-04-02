@@ -1,5 +1,5 @@
 # UX Audit Report — Full Sketch Workflow
-Generated: 2026-03-25T22:12:14.469Z
+Generated: 2026-04-01T23:16:05.092Z
 Grade: **F**
 
 ## Executive Summary
@@ -7,12 +7,12 @@ Grade: **F**
 | Metric | Value |
 |--------|-------|
 | **Overall Grade** | **F** |
-| Total issues | **13** |
+| Total issues | **11** |
 | Critical | **5** |
 | Major | **5** |
-| Minor | **3** |
+| Minor | **1** |
 | Cosmetic | **0** |
-| Slow operations | **3** |
+| Slow operations | **1** |
 | Nodes created by clicks | 0/4 |
 | Edges created by clicks | 0/3 |
 | Final persisted nodes | 0 |
@@ -25,10 +25,10 @@ Grade: **F**
 
 | Action | Duration | Status |
 |--------|----------|--------|
-| App load → canvas ready | 4169ms | OK |
-| Activate node mode | 575ms | SLOW |
-| Activate edge mode | 369ms | SLOW |
-| Select node → sidebar | 9809ms | SLOW |
+| App load → canvas ready | 2497ms | OK |
+| Activate node mode | 120ms | OK |
+| Activate edge mode | 107ms | OK |
+| Select node → sidebar | 3342ms | SLOW |
 
 ---
 
@@ -53,24 +53,22 @@ These **block core workflows** and must be fixed immediately.
 
 Serious usability problems that cause **significant friction**.
 
-### [Onboarding] No empty state element exists in DOM — first-time users see a blank white canvas with no hint what to do
+### [Interaction] Clicking node mode button did not activate node mode (got "unknown"). Mode switching may be broken in E2E.
 
-### [Performance] "Select node → sidebar" took 9809ms (threshold: 1500ms)
+### [Performance] "Select node → sidebar" took 3342ms (threshold: 1500ms)
 
 ### [Interaction] Could not select an edge by clicking its midpoint. Edge hit zone is too narrow — user must click within a few pixels of the line. On mobile this is especially frustrating.
 
 ### [Interaction] Home node placement did not auto-open sidebar for data entry — user must manually click the node again
 
-### [Mobile/Touch] 21 interactive elements have touch targets smaller than 44x44px (WCAG minimum). On mobile, users will misclick constantly.
+### [Mobile/Touch] 13 interactive elements have touch targets smaller than 44x44px (WCAG minimum). On mobile, users will misclick constantly.
 
 
 ---
 
-## Minor Issues (3)
+## Minor Issues (1)
 
-- **[Performance]** "Activate node mode" took 575ms (threshold: 300ms)
-- **[Performance]** "Activate edge mode" took 369ms (threshold: 300ms)
-- **[Feedback]** No zoom level indicator visible — user cannot tell current zoom level. Compare: every map app shows zoom level.
+- **[Layout]** Canvas toolbar overlaps with header
 
 ---
 
