@@ -94,13 +94,14 @@ class TSC3ConnectionManager {
       elevation: point.elevation,
     };
 
-    if (match && match.hasCoordinates) {
+    if (match) {
       // Existing survey node — update coordinates directly.
-      // Requires hasCoordinates === true to guard against coincidental ID collisions
-      // with manually-created nodes that were never positioned by the survey system.
+      // Works for both already-surveyed nodes and unpositioned schematic nodes
+      // drawn manually in advance.
       if (this._onPointUpdate) {
         this._onPointUpdate(point.pointName, coords, false, match.nodeType);
       }
+      this._processQueue();
     } else {
       // No match — ask user for node type
       this._processingDialog = true;
