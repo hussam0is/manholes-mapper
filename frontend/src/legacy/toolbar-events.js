@@ -350,6 +350,128 @@ export function initToolbarEvents() {
     });
   }
 
+  // ── Import Legacy Sketch (sketch + CSV coordinates) ─────────────────
+  const importLegacySketchBtn = document.getElementById('importLegacySketchBtn');
+  const importLegacySketchFile = document.getElementById('importLegacySketchFile');
+  const importLegacyCoordsFile = document.getElementById('importLegacyCoordsFile');
+  
+  if (importLegacySketchBtn && importLegacySketchFile && importLegacyCoordsFile) {
+    let pendingSketchFile = null;
+    let pendingCoordsFile = null;
+
+    importLegacySketchBtn.addEventListener('click', () => {
+      // Reset pending files
+      pendingSketchFile = null;
+      pendingCoordsFile = null;
+      // First, prompt for the sketch file
+      importLegacySketchFile.click();
+    });
+
+    importLegacySketchFile.addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      
+      pendingSketchFile = file;
+      // Now prompt for coordinates CSV
+      importLegacyCoordsFile.click();
+    });
+
+    importLegacyCoordsFile.addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) {
+        pendingSketchFile = null;
+        importLegacySketchFile.value = '';
+        return;
+      }
+      
+      pendingCoordsFile = file;
+
+      try {
+        showToast(t('toasts.importingLegacy') || 'מייבא שרטוט ישן...');
+        
+        // Dynamic import to avoid loading legacy-import.js unless needed
+        const { importLegacySketch, readFileAsJson, readFileAsText } = await import('../utils/legacy-import.js');
+        
+        // Read both files
+        const [sketchData, csvContent] = await Promise.all([
+          readFileAsJson(pendingSketchFile),
+          readFileAsText(pendingCoordsFile)
+        ]);
+
+        // Check if current sketch has data
+        const hasCurrentSketch = S.nodes.length > 0 || S.edges.length > 0;
+        let shouldReplace = true;
+
+        if (hasCurrentSketch) {
+          shouldReplace = confirm(t('alerts.confirmImportReplace') || 'השרטוט הנוכחי יוחלף. להמשיך?');
+          if (!shouldReplace) {
+            importLegacySketchFile.value = '';
+            importLegacyCoordsFile.value = '';
+            pendingSketchFile = null;
+            pendingCoordsFile = null;
+            return;
+          }
+        }
+
+        // Process the legacy import
+        const importedData = importLegacySketch(sketchData, csvContent);
+        const importedSketch = importedData.sketch;
+
+        // Load the imported sketch
+        S.nodes = importedSketch.nodes;
+        S._nodeMapDirty = true; S._spatialGridDirty = true; S._dataVersion++;
+        S.edges = importedSketch.edges;
+        S.nextNodeId = importedSketch.nextNodeId;
+        S.creationDate = importedSketch.creationDate;
+        S.currentSketchId = null;
+        S.currentSketchName = importedSketch.name;
+        S.currentProjectId = null;
+
+        // Rebuild coordinatesMap from imported nodes
+        const newCoordsMap = new Map();
+        const origPositions = new Map();
+        for (const node of importedSketch.nodes) {
+          if (node.hasCoordinates && node.surveyX != null && node.surveyY != null) {
+            newCoordsMap.set(String(node.id), { x: node.surveyX, y: node.surveyY, z: node.surveyZ || 0 });
+          }
+          if (node.schematicX != null && node.schematicY != null) {
+            origPositions.set(node.id, { x: node.schematicX, y: node.schematicY });
+          }
+        }
+        S.coordinatesMap = newCoordsMap;
+        S.originalNodePositions = origPositions;
+        
+        const { DEFAULT_INPUT_FLOW_CONFIG } = await import('../state/constants.js');
+        S.currentInputFlowConfig = DEFAULT_INPUT_FLOW_CONFIG;
+        F.updateSketchNameDisplay();
+
+        // If the sketch has embedded coords, recreate reference layer
+        if (newCoordsMap.size > 0) {
+          try { F.addCoordinatesReferenceLayer?.(newCoordsMap); } catch (_) { }
+          try { F.updateMapReferencePoint?.(); } catch (_) { }
+        }
+
+        F.computeNodeTypes();
+        F.saveToStorage();
+        F.updateCanvasEmptyState();
+        F.draw();
+        renderDetails();
+
+        try { F.recenterView(); } catch (_) { }
+
+        showToast(t('toasts.legacySketchImported') || 'שרטוט ישן יובא בהצלחה');
+      } catch (error) {
+        console.error('[App] Legacy import error:', error.message);
+        showToast(t('alerts.legacyImportFailed') || 'ייבוא שרטוט ישן נכשל');
+      } finally {
+        importLegacySketchFile.value = '';
+        importLegacyCoordsFile.value = '';
+        pendingSketchFile = null;
+        pendingCoordsFile = null;
+      }
+    });
+  }
+
   // ── Size control buttons ────────────────────────────────────────────
   const sizeIncreaseBtn = document.getElementById('sizeIncreaseBtn');
   const sizeDecreaseBtn = document.getElementById('sizeDecreaseBtn');
