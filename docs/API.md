@@ -4,10 +4,12 @@ Complete API surface for the Manholes Mapper platform.
 
 ---
 
-## Authentication
+## Authentication (Better Auth)
 
-### POST /api/auth/sign-in
-Sign in with Better Auth.
+All auth endpoints are handled by Better Auth. The main endpoints:
+
+### POST /api/auth/sign-in/email
+Sign in with email/password.
 
 **Request:**
 ```json
@@ -19,7 +21,7 @@ Sign in with Better Auth.
 
 **Response:** Session token and user data.
 
-### POST /api/auth/sign-up
+### POST /api/auth/sign-up/email
 Create a new user account.
 
 **Request:**
@@ -39,6 +41,13 @@ Sign out and invalidate session.
 **Headers:** Authorization: Bearer <token>
 
 **Response:** Success message.
+
+### GET /api/auth/session
+Get current session info.
+
+**Headers:** Authorization: Bearer <token>
+
+**Response:** Session and user data.
 
 ---
 
@@ -372,6 +381,19 @@ Get project/sketch statistics.
 ### GET /api/stats/project/:projectId
 Get project statistics.
 
+**Response:**
+```json
+{
+  "projectId": "proj_123",
+  "totalSketches": 12,
+  "totalNodes": 156,
+  "totalEdges": 289,
+  "openIssues": 8,
+  "completedIssues": 45,
+  "lastActivity": "2026-04-02T14:30:00Z"
+}
+```
+
 ---
 
 ## Health Check
@@ -464,6 +486,42 @@ https://manholes-mapper.vercel.app/api
 
 Development uses relative paths from the frontend.
 
+## WebSocket Endpoints (TSC3 Survey Mode)
+
+### WS /ws/tsc3
+Real-time TSC3 device communication for survey mode.
+
+**Connection:**
+```javascript
+const ws = new WebSocket('wss://manholes-mapper.vercel.app/ws/tsc3');
+```
+
+**Messages:**
+
+**Client → Server:**
+```json
+{
+  "type": "connect",
+  "deviceType": "tsc3",
+  "connectionMethod": "bluetooth|wifi"
+}
+```
+
+**Server → Client:**
+```json
+{
+  "type": "position",
+  "data": {
+    "x": 123456.789,
+    "y": 234567.890,
+    "z": 10.5,
+    "fixQuality": 4,
+    "satellites": 12,
+    "hdop": 0.8
+  }
+}
+```
+
 ---
 
-*Last updated: 2026-03-31*
+*Last updated: 2026-04-03*

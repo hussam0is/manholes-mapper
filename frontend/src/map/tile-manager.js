@@ -7,7 +7,9 @@
 
 import {
   wgs84ToItm as projectWgs84ToItm,
-  itmToWgs84 as projectItmToWgs84
+  itmToWgs84 as projectItmToWgs84,
+  wgs84ToWebMercator,
+  webMercatorToWgs84
 } from './projections.js';
 
 // Tile size in pixels (standard for most tile servers)
@@ -121,61 +123,25 @@ export function storeTileInCache(x, y, z, type, image) {
 }
 
 /**
- * Convert latitude to Web Mercator Y
- * @param {number} lat - Latitude in degrees
- * @returns {number} Y in meters
- */
-function _latToMercatorY(lat) {
-  const latRad = lat * Math.PI / 180;
-  return EARTH_RADIUS * Math.log(Math.tan(Math.PI / 4 + latRad / 2));
-}
-
-/**
- * Convert longitude to Web Mercator X
- * @param {number} lon - Longitude in degrees
- * @returns {number} X in meters
- */
-function _lonToMercatorX(lon) {
-  return lon * Math.PI / 180 * EARTH_RADIUS;
-}
-
-/**
- * Convert Web Mercator Y to latitude
- * @param {number} y - Y in meters
- * @returns {number} Latitude in degrees
- */
-function _mercatorYToLat(y) {
-  return (2 * Math.atan(Math.exp(y / EARTH_RADIUS)) - Math.PI / 2) * 180 / Math.PI;
-}
-
-/**
- * Convert Web Mercator X to longitude
- * @param {number} x - X in meters
- * @returns {number} Longitude in degrees
- */
-function _mercatorXToLon(x) {
-  return x / EARTH_RADIUS * 180 / Math.PI;
-}
-
-/**
- * Convert lat/lon to tile coordinates (standard XYZ/slippy map)
+ * Convert lat/lon to tile coordinates (standard XYZ/slippy map) using proj4
  * @param {number} lat - Latitude in degrees
  * @param {number} lon - Longitude in degrees
  * @param {number} zoom - Zoom level
  * @returns {{tileX: number, tileY: number}}
  */
 export function latLonToTile(lat, lon, zoom) {
+  const { x, y } = wgs84ToWebMercator(lat, lon);
   const n = Math.pow(2, zoom);
-  const latRad = lat * Math.PI / 180;
+  const HALF_EARTH = Math.PI * EARTH_RADIUS;
   
-  const tileX = Math.floor((lon + 180) / 360 * n);
-  const tileY = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n);
+  const tileX = Math.floor(((x + HALF_EARTH) / (HALF_EARTH * 2)) * n);
+  const tileY = Math.floor(((HALF_EARTH - y) / (HALF_EARTH * 2)) * n);
   
   return { tileX, tileY };
 }
 
 /**
- * Convert tile coordinates to lat/lon (top-left corner of tile)
+ * Convert tile coordinates to lat/lon (top-left corner of tile) using proj4
  * @param {number} tileX - Tile X coordinate
  * @param {number} tileY - Tile Y coordinate
  * @param {number} zoom - Zoom level
@@ -183,11 +149,12 @@ export function latLonToTile(lat, lon, zoom) {
  */
 export function tileToLatLon(tileX, tileY, zoom) {
   const n = Math.pow(2, zoom);
-  const lon = tileX / n * 360 - 180;
-  const latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * tileY / n)));
-  const lat = latRad * 180 / Math.PI;
+  const HALF_EARTH = Math.PI * EARTH_RADIUS;
   
-  return { lat, lon };
+  const x = (tileX / n) * (HALF_EARTH * 2) - HALF_EARTH;
+  const y = HALF_EARTH - (tileY / n) * (HALF_EARTH * 2);
+  
+  return webMercatorToWgs84(x, y);
 }
 
 /**
@@ -210,10 +177,11 @@ export function itmToTile(itmX, itmY, zoom, itmToWgs84Fn) {
   
   // Calculate pixel offset within tile
   const n = Math.pow(2, zoom);
-  const latRad = lat * Math.PI / 180;
+  const { x: wmx, y: wmy } = wgs84ToWebMercator(lat, lon);
+  const HALF_EARTH = Math.PI * EARTH_RADIUS;
   
-  const exactX = (lon + 180) / 360 * n;
-  const exactY = (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n;
+  const exactX = ((wmx + HALF_EARTH) / (HALF_EARTH * 2)) * n;
+  const exactY = ((HALF_EARTH - wmy) / (HALF_EARTH * 2)) * n;
   
   const pixelX = Math.floor((exactX - tileX) * TILE_SIZE);
   const pixelY = Math.floor((exactY - tileY) * TILE_SIZE);

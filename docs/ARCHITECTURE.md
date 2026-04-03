@@ -459,14 +459,27 @@ api/
 **Purpose:** Contextual alerts and reminders.
 
 **Components:**
-- `notification-manager.js` — Notification delivery logic
-- `notification-center.js` — Notification UI
-- `types.js` — Notification schemas
+- `notification-bell.js` — Notification bell UI component
 
 **Features:**
 - Contextual alerts based on user actions
 - Session reminders
 - System notifications
+
+### 9. Layout System
+
+**Purpose:** Responsive layout management for different screen sizes and orientations.
+
+**Components:**
+- `layout-manager.js` — Central layout controller
+- `unified-sidebar.js` — Collapsible side panel
+- `unified-toolbar.js` — Top navigation bar
+- `micro-status-bar.js` — Compact status indicators
+
+**Features:**
+- Landscape/portrait orientation detection
+- Collapsible panels for maximized canvas space
+- Responsive breakpoints for mobile/tablet/desktop
 
 ---
 
@@ -489,10 +502,12 @@ api/
 - Playwright HTML: `frontend/playwright-report/`
 
 ### Test Coverage Gaps
-- Cockpit components: Zero test coverage (6 new files)
-- Survey mode modules: Zero test coverage
-- Project canvas features: Basic tests only
-- Admin panel modules: Zero test coverage (8 large files)
+- Cockpit components: Limited coverage (7 files)
+- Survey mode modules: Limited coverage (6 files)
+- Project canvas features: Basic tests only (9 files)
+- Admin panel modules: Limited coverage
+- Field commander modules: Limited coverage (7 files)
+- Layout system: Limited coverage (6 files)
 
 ---
 
@@ -587,4 +602,4 @@ Build `dist/` and deploy to any static host (Netlify, GitHub Pages). HTTPS requi
 
 ---
 
-*Last updated: 2026-03-31*
+*Last updated: 2026-04-03*

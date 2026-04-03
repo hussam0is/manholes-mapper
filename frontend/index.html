@@ -122,6 +122,10 @@
                   <span class="material-icons">upload</span>
                   <span class="menu-dropdown__label" data-i18n="importSketch">יבוא שרטוט</span>
                 </button>
+                <button id="importLegacySketchBtn" class="menu-dropdown__item" role="menuitem" data-action="importLegacySketch" data-i18n-title="importLegacySketch">
+                  <span class="material-icons">history</span>
+                  <span class="menu-dropdown__label" data-i18n="importLegacySketch">יבוא שרטוט ישן + קואורדינטות</span>
+                </button>
               </div>
             </div>
             
@@ -317,6 +321,8 @@
     <!-- Hidden file inputs -->
     <input type="file" id="importSketchFile" accept="application/json,.json" style="display:none;" aria-label="Import sketch file" />
     <input type="file" id="importCoordinatesFile" accept=".csv,text/csv" style="display:none;" aria-label="Import coordinates file" />
+    <input type="file" id="importLegacySketchFile" accept="application/json,.json" style="display:none;" aria-label="Import legacy sketch file" />
+    <input type="file" id="importLegacyCoordsFile" accept=".csv,text/csv" style="display:none;" aria-label="Import legacy coordinates file" />
 
     <!-- Mobile menu toggle -->
     <button id="mobileMenuBtn" class="menu-toggle" title="" aria-label="Open menu" aria-expanded="false" aria-controls="mobileMenu" data-i18n-title="menu" data-i18n-aria-label="menu">

@@ -98,11 +98,12 @@ Manholes Mapper is a lightweight yet powerful tool designed for field workers to
 ## New Features (2026)
 
 ### 🎮 Cockpit & Gamification
-- **Skill Levels**: Visual progress tracking with XP-based leveling system
+- **Skill Levels**: Visual progress tracking with XP-based leveling system (1-20+)
 - **Completion Engine**: Smart suggestions for completing nodes and edges
-- **Health Card**: Real-time project health visualization
+- **Intel Strip**: Landscape-first side panel with GPS status, project health, and quick stats
+- **Action Rail**: Bottom action bar for one-tap common operations
 - **Quick Wins**: Context-aware action suggestions for efficiency
-- **Session Tracker**: Progress monitoring during survey sessions
+- **Session Tracker**: Progress monitoring during survey sessions with time tracking
 
 ### 📊 Project Canvas
 - **City View**: See all sketches as a unified network map
@@ -114,26 +115,47 @@ Manholes Mapper is a lightweight yet powerful tool designed for field workers to
 - **Command Palette**: `Cmd+K` or menu for instant actions
 - **One-Handed Edge Mode**: Long-press drag for edge creation
 - **Smart Notifications**: Contextual alerts and reminders
+- **Gesture Support**: Touch-optimized gestures for mobile workflows
+- **Territory Management**: Zone-based work assignment tracking
+- **XP & Achievements**: Field work gamification with badges
 
-### 🎯 Survey Mode
+### 🎯 Survey Mode (TSC3)
 - **TSC3 Integration**: Specialized workflow for TSC3 survey devices
 - **Device Picker**: Easy connection to survey equipment
 - **Survey Node Dialog**: Optimized form for survey data entry
+- **Multiple Connection Types**:
+  - Bluetooth SPP for Trimble R780
+  - WiFi TCP (192.168.1.10:5017)
+  - TMM (Third-party NMEA over Wi-Fi/Bluetooth)
+  - Browser geolocation fallback
+- **Precision Measurement**: Gated capture with accuracy thresholds
+- **Fix Quality Indicators**: No Fix → GPS → DGPS → RTK Float → RTK Fixed
 
 ### 🐛 Issue System
-- **Auto-Detection**: Real-time audit of sketches (missing coordinates, negative gradients, etc.)
-- **Issue Node Type**: Dedicated nodes for feedback with comments
+- **Auto-Detection**: Real-time audit of sketches (missing coordinates, negative gradients, long edges, merge candidates)
+- **Issue Node Type**: Dedicated nodes for feedback with threaded comments
 - **Navigation**: Jump to any issue from the sidebar or canvas
+- **Fix Suggestions**: AI-assisted recommendations for resolving issues
+- **Merge Mode**: Identify and merge duplicate nodes across sketches
 
 ## Technology Stack
 
-- **Frontend**: Vanilla JavaScript (ES Modules) with a progressive migration to **React 19**.
-- **Styling**: **Tailwind CSS 4.x** for modern, responsive layouts.
-- **Build Tool**: **Vite 7.x** with stable output filenames for service worker compatibility.
-- **Rendering**: HTML5 Canvas API for the graph engine.
-- **Storage**: IndexedDB for durable storage, mirrored with localStorage for synchronous access.
-- **Offline**: Service Worker for asset caching and offline fallback.
-- **Authentication**: **Better Auth** for user authentication and session management with Neon Postgres.
+| Layer | Technology | Version | Purpose |
+|-------|------------|---------|---------|
+| **Frontend** | Vanilla JS (ES Modules) | - | Core canvas engine |
+| | React 19 | ^19.2.3 | UI components (gradual migration) |
+| | Tailwind CSS 4.x | ^4.1.18 | Styling |
+| | Vite 7 | ^7.1.3 | Build tool |
+| **Graphics** | HTML5 Canvas API | - | Graph rendering |
+| | Three.js | ^0.183.2 | 3D underground visualization |
+| | Leaflet | - | Map tiles |
+| **Storage** | IndexedDB | - | Durable storage |
+| | localStorage | - | Synchronous access |
+| **Auth** | Better Auth | ^1.4.17 | Authentication |
+| | Neon Postgres | ^0.10.0 | Database |
+| **Mobile** | Capacitor | ^8.0.2 | Android native |
+| | Capacitor Bluetooth | ^6.0.3 | Bluetooth SPP |
+| **Utils** | proj4 | ^2.20.2 | Coordinate transformations |
 
 ## Authentication (Better Auth)
 
@@ -175,12 +197,14 @@ This project uses [Better Auth](https://better-auth.com) for user authentication
 
 ```
 manholes-mapper/
-├── src/                    # Application source code
+├── frontend/src/           # Application source code
 │   ├── admin/              # Admin panel, settings, projects, input flow
 │   ├── auth/               # Better Auth client, provider, guard, permissions
+│   ├── cockpit/            # Gamification UI (XP, levels, session tracking)
 │   ├── db.js               # IndexedDB database definition
 │   ├── dom/                # DOM manipulation utilities
 │   ├── features/           # Rendering engine and drawing primitives
+│   ├── field-commander/    # Mobile command palette and gestures
 │   ├── gnss/               # GNSS/Live Measure module
 │   │   ├── bluetooth-adapter.js   # Bluetooth SPP connection
 │   │   ├── wifi-adapter.js        # WiFi TCP connection
@@ -189,23 +213,36 @@ manholes-mapper/
 │   │   ├── gnss-state.js          # State management
 │   │   ├── gnss-marker.js         # Canvas marker rendering
 │   │   ├── point-capture-dialog.js # Point capture UI
-│   │   └── connection-manager.js  # Unified connection interface
+│   │   ├── connection-manager.js  # Unified connection interface
+│   │   ├── tmm-adapter.js         # TMM (Third-party) NMEA adapter
+│   │   ├── browser-location-adapter.js  # Browser geolocation fallback
+│   │   └── precision-measure.js   # Precision-gated measurement
 │   ├── graph/              # Graph data structures and ID utilities
 │   ├── i18n.js             # Internationalization system (Hebrew/English)
+│   ├── layout/             # Layout manager, unified sidebar/toolbar
 │   ├── legacy/             # Core logic (being modularized)
 │   ├── main-entry.js       # Application entry point
 │   ├── map/                # Map tiles, projections, reference layers, Street View
 │   ├── menu/               # Responsive menu system, command palette, action bar
+│   ├── notifications/      # Notification bell and center
+│   ├── pages/              # Page components (profile, stats, leaderboard)
+│   ├── project/            # Project canvas, issues, merge mode
 │   ├── serviceWorker/      # SW registration and lifecycle
 │   ├── state/              # Global state, constants, and persistence logic
-│   └── utils/              # Shared utilities (CSV, Geometry, Coordinates, UI)
+│   ├── survey/             # TSC3 survey device integration
+│   ├── three-d/            # 3D underground visualization
+│   ├── types/              # TypeScript type definitions
+│   ├── utils/              # Shared utilities (CSV, Geometry, Coordinates, UI)
+│   └── workers/            # Web Workers (GNSS parsing)
 ├── api/                    # Vercel serverless API routes
 │   ├── auth/               # Better Auth endpoints
 │   ├── features/           # Feature flags CRUD
+│   ├── issue-comments/     # Issue comment system
 │   ├── layers/             # GIS reference layer data
 │   ├── organizations/      # Organization management
 │   ├── projects/           # Project CRUD
 │   ├── sketches/           # Sketch CRUD and locking
+│   ├── stats/              # Statistics and analytics
 │   ├── users/              # User management
 │   ├── user-role/          # Role and permissions
 │   └── _lib/               # Shared backend (db, auth, validators, rate-limit)

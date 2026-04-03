@@ -14,6 +14,8 @@ proj4.defs('EPSG:2039', '+proj=tmerc +lat_0=31.7343936111111 +lon_0=35.204516944
 // WGS84 is the standard GPS datum (EPSG:4326)
 proj4.defs('EPSG:4326', '+proj=longlat +datum=WGS84 +no_defs');
 
+// EPSG:3857 (Web Mercator) is built-in to proj4, no defs needed
+
 /**
  * Convert WGS84 (latitude, longitude) to Israel TM Grid (ITM)
  * @param {number} lat - Latitude in degrees
@@ -42,6 +44,38 @@ export function itmToWgs84(x, y) {
     return { lat, lon };
   } catch (error) {
     console.error('[Map] ITM to WGS84 conversion error:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * Convert WGS84 (latitude, longitude) to Web Mercator (EPSG:3857)
+ * @param {number} lat - Latitude in degrees
+ * @param {number} lon - Longitude in degrees
+ * @returns {{x: number, y: number}} Web Mercator coordinates in meters
+ */
+export function wgs84ToWebMercator(lat, lon) {
+  try {
+    const [x, y] = proj4('EPSG:4326', 'EPSG:3857', [lon, lat]);
+    return { x, y };
+  } catch (error) {
+    console.error('[Map] WGS84 to Web Mercator conversion error:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * Convert Web Mercator (EPSG:3857) to WGS84 (latitude, longitude)
+ * @param {number} x - Web Mercator X coordinate in meters
+ * @param {number} y - Web Mercator Y coordinate in meters
+ * @returns {{lat: number, lon: number}} WGS84 coordinates
+ */
+export function webMercatorToWgs84(x, y) {
+  try {
+    const [lon, lat] = proj4('EPSG:3857', 'EPSG:4326', [x, y]);
+    return { lat, lon };
+  } catch (error) {
+    console.error('[Map] Web Mercator to WGS84 conversion error:', error.message);
     throw error;
   }
 }
