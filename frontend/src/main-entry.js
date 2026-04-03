@@ -296,6 +296,7 @@ if (typeof window !== 'undefined') {
 // This preserves current behavior by importing the legacy script as a side-effect.
 // We will gradually move logic from main.js into organized modules under src/.
 import './legacy/main.js';
+import { initToolbarEvents } from './legacy/toolbar-events.js';
 
 // Initialize floating keyboard for mobile numeric inputs
 // This will only activate on mobile/touch devices
@@ -314,6 +315,9 @@ if (typeof window !== 'undefined') {
     initResizableDrawer();
     initCustomSelect();
     initCanvasFabToolbar();
+    
+    // Initialize toolbar events (export/import, legacy import, size controls)
+    initToolbarEvents();
     
     // Initialize new menu system
     initMenuSystem();
