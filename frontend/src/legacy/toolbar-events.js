@@ -352,19 +352,26 @@ export function initToolbarEvents() {
 
   // ── Import Legacy Sketch (sketch + CSV coordinates) ─────────────────
   const importLegacySketchBtn = document.getElementById('importLegacySketchBtn');
+  const mobileImportLegacySketchBtn = document.getElementById('mobileImportLegacySketchBtn');
   const importLegacySketchFile = document.getElementById('importLegacySketchFile');
   const importLegacyCoordsFile = document.getElementById('importLegacyCoordsFile');
   
-  if (importLegacySketchBtn && importLegacySketchFile && importLegacyCoordsFile) {
+  if (importLegacySketchFile && importLegacyCoordsFile) {
     let pendingSketchFile = null;
     let pendingCoordsFile = null;
 
-    importLegacySketchBtn.addEventListener('click', () => {
+    const triggerLegacyImport = () => {
       // Reset pending files
       pendingSketchFile = null;
       pendingCoordsFile = null;
       // First, prompt for the sketch file
       importLegacySketchFile.click();
+    };
+
+    if (importLegacySketchBtn) importLegacySketchBtn.addEventListener('click', triggerLegacyImport);
+    if (mobileImportLegacySketchBtn) mobileImportLegacySketchBtn.addEventListener('click', () => {
+      closeMobileMenu();
+      triggerLegacyImport();
     });
 
     importLegacySketchFile.addEventListener('change', async (e) => {
