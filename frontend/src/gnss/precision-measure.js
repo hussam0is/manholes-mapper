@@ -178,7 +178,7 @@ export class PrecisionMeasurement {
 
     // Criterion checks
     const hrmsMet = currentHrms != null && currentHrms <= this.config.hrmsThreshold;
-    const vrmsMet = currentVrms == null || currentVrms <= this.config.vrmsThreshold;
+    const vrmsMet = currentVrms != null && currentVrms <= this.config.vrmsThreshold;
     const epochsMet = n >= this.config.minEpochs;
     const occupationMet = elapsed >= this.config.occupationTimeSec;
     const fixQualityMet = last.fixQuality >= this.config.requireFixQuality;
