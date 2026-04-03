@@ -1,6 +1,6 @@
 # Manholes Mapper PWA
 
-> **Field-grade infrastructure mapping — built for surveyors, delivered as a PWA.**
+> **Field-grade infrastructure mapping - built for surveyors, delivered as a PWA.**
 
 A professional, high-performance Progressive Web Application (PWA) for underground infrastructure mapping (manholes, drainage, home connections) and field data collection. Built for offline-first operations with real-time canvas-based visualization, RTK-GNSS live capture, and GIS-ready export.
 
@@ -13,17 +13,18 @@ A professional, high-performance Progressive Web Application (PWA) for undergrou
 | **Live Production** | https://manholes-mapper.vercel.app |
 | **Dev Preview (latest code)** | https://manholes-mapper-git-dev-hussam0is-projects.vercel.app |
 | **Tech Stack** | Vanilla JS (ES Modules) + Vite 7 + Canvas 2D + Three.js + Leaflet + Better Auth + Neon Postgres |
-| **Test Suite** | **1 546 unit tests** — all passing (`cd frontend && npx vitest run`) |
-| **E2E Tests** | Playwright — `cd frontend && npx playwright test` |
+| **Test Suite** | **1 599 unit tests** — all passing (`cd frontend && npx vitest run`) |
+| **E2E Tests** | Playwright - `cd frontend && npx playwright test` |
 
 ### What Makes It Special
 
-1. **Canvas-first network editor** — a hand-rolled, high-performance HTML5 Canvas graph editor with spatial indexing, progressive rendering, view-stretch, and RTL support. No third-party graph library.
-2. **Survey-grade GNSS integration** — live RTK position capture from Trimble R780 via Bluetooth SPP / WiFi TCP on Android (Capacitor); displays HRMS/VRMS progress toward RTK-fixed accuracy.
-3. **3D underground visualisation** — one-click Three.js fly-through of the surveyed pipe network; pipe depths and manhole shafts reconstructed from field measurements.
-4. **Offline-first PWA** — Service Worker + IndexedDB + localStorage hybrid; surveyors capture in the field with zero connectivity and sync when back on network.
+1. **Canvas-first network editor** - a hand-rolled, high-performance HTML5 Canvas graph editor with spatial indexing, progressive rendering, view-stretch, and RTL support. No third-party graph library.
+2. **Survey-grade GNSS integration** - live RTK position capture from Trimble R780 via Bluetooth SPP / WiFi TCP on Android (Capacitor); displays HRMS/VRMS progress toward RTK-fixed accuracy.
+3. **3D underground visualisation** - one-click Three.js fly-through of the surveyed pipe network; pipe depths and manhole shafts reconstructed from field measurements.
+4. **Offline-first PWA** - Service Worker + IndexedDB + localStorage hybrid; surveyors capture in the field with zero connectivity and sync when back on network.
 5. **Intelligent issue detection** — real-time sketch audit (missing coordinates, negative gradients, long edges, merge candidates) with in-canvas navigation to each issue.
-6. **Multi-tenant SaaS backend** — organisations, projects, role-based access, sketch locking, feature flags — all on Vercel serverless + Neon Postgres.
+6. **Legacy data migration** — built-in Import Wizard converts pre-ITM-era sketches (old canvas JSON + ITM survey CSV) into fully geo-referenced sketches via BFS coordinate propagation.
+7. **Multi-tenant SaaS backend** — organisations, projects, role-based access, sketch locking, feature flags — all on Vercel serverless + Neon Postgres.
 
 ### Quick Evaluation Path
 
@@ -34,7 +35,7 @@ npm install
 
 # 2. Run the full unit test suite
 cd frontend && npx vitest run
-# → 1546 tests, ~27s, all green
+# → 1599 tests, ~27s, all green
 
 # 3. Start the dev server
 npm run dev
@@ -45,6 +46,7 @@ npm run dev
 #    - Import coordinates CSV to geo-reference nodes
 #    - Click the 3D view button (cube icon) for underground visualisation
 #    - Switch to Project Canvas to see multi-sketch city view
+#    - Menu → Sketch → "Import Legacy Sketch + Coordinates" to migrate old data
 ```
 
 ---
@@ -82,6 +84,7 @@ Manholes Mapper is a lightweight yet powerful tool designed for field workers to
   - **Real-time Autosave**: Automatic background persistence to prevent data loss.
   - **GIS Integration**: Export nodes and edges separately as CSV files optimized for ArcGIS.
   - **Backup & Sharing**: Export/Import entire sketches as JSON.
+  - **Legacy Import Wizard**: Two-file import (sketch JSON + ITM CSV) converts pre-coordinates-era data with BFS position propagation for unmatched nodes.
 - **Reference Layers**: GIS data overlays for sections, survey manholes, survey pipes (with direction arrows), streets, and addresses.
 - **Google Street View**: Drag-and-drop pegman widget to open Street View at any canvas location.
 - **Multi-Tenancy**: Organizations, projects, and role-based access control (user / admin / super_admin).
@@ -453,7 +456,7 @@ npx cap sync android
 1. **Enable Live Measure**: Tap the GPS icon in the canvas toolbar.
 2. **Connect to R780**: Tap "Connect to R780" and select your paired device (or enter WiFi IP).
 3. **Monitor Position**: The status pill shows fix quality, satellite count, and HDOP.
-4. **Capture Points**: 
+4. **Capture Points**:
    - Position yourself at a manhole.
    - Tap "Capture Point".
    - Select the node to assign coordinates to.
