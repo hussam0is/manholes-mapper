@@ -44,6 +44,11 @@ export const menuConfig = {
           icon: 'upload',
           labelKey: 'importSketch',
         },
+        {
+          id: 'importLegacySketch',
+          icon: 'history',
+          labelKey: 'importLegacySketch',
+        },
       ],
     },
     {
@@ -227,7 +232,7 @@ export const menuConfig = {
       id: 'sketchExport',
       labelKey: 'menuGroup.sketchExport',
       icon: 'description',
-      items: ['save', 'exportSketch', 'importSketch', 'exportNodes', 'exportEdges'],
+      items: ['save', 'exportSketch', 'importSketch', 'importLegacySketch', 'exportNodes', 'exportEdges'],
     },
     {
       // Merged: Location & Coordinates + Map Layer
