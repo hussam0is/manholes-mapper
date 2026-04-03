@@ -13,7 +13,7 @@
 import { S, F } from './shared-state.js';
 import { STORAGE_KEYS } from '../state/persistence.js';
 import { encodeUtf16LeWithBom } from '../utils/encoding.js';
-import { menuEvents } from '../menu/menu-events.js';
+import { menuEvents, bridgeAllToLegacy, legacyMappings } from '../menu/menu-events.js';
 import { closeMobileMenu } from './mobile-menu.js';
 import { syncFlyoutIcon } from './project-ui.js';
 import { scheduleDraw } from './canvas-draw.js';
@@ -582,4 +582,8 @@ export function initToolbarEvents() {
       renderHome();
     });
   }
+
+  // ── Bridge legacy menu events to DOM elements ───────────────────────
+  // Wire up menuEvents actions that map to existing button IDs
+  bridgeAllToLegacy(legacyMappings);
 }

@@ -141,6 +141,7 @@ export const legacyMappings = {
   save: 'saveBtn',
   exportSketch: 'exportSketchBtn',
   importSketch: 'importSketchBtn',
+  importLegacySketch: 'importLegacySketchBtn',
   exportNodes: 'exportNodesBtn',
   exportEdges: 'exportEdgesBtn',
   finishWorkday: 'finishWorkdayBtn',
