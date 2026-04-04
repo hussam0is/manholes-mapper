@@ -292,7 +292,72 @@ function draw() {
       ctx.lineWidth = 1.5 / sizeVS;
       ctx.stroke();
     }
-    ctx.restore();
+
+    // Edge length+angle tooltip during drawing (R10 — P1)
+    // Show "32.4m @ 45°" near the cursor tip when coordinateScale is available.
+    if (coordinateScale > 0 && (x2 !== x1 || y2 !== y1)) {
+      const dxWorld = x2 - x1;
+      const dyWorld = y2 - y1;
+      // Canvas world units → meters via coordinateScale (pixels per meter)
+      const lengthMeters = Math.sqrt(dxWorld * dxWorld + dyWorld * dyWorld) / coordinateScale;
+      // Bearing from North (canvas Y is down, so North = -Y direction)
+      // atan2(east, north) in canvas space: east=+dxWorld, north=-dyWorld
+      let bearingDeg = Math.atan2(dxWorld, -dyWorld) * (180 / Math.PI);
+      if (bearingDeg < 0) bearingDeg += 360;
+      const lengthStr = lengthMeters < 10
+        ? `${lengthMeters.toFixed(2)}m`
+        : `${lengthMeters.toFixed(1)}m`;
+      const tooltipText = `${lengthStr} @ ${Math.round(bearingDeg)}°`;
+
+      // Draw in screen-space: convert world tip coords back through view transform.
+      // At this point the ctx matrix is: translate(viewTranslate.x, viewTranslate.y) scale(viewScale)
+      // So screen position = world * viewScale + viewTranslate.
+      const tipScreenX = x2 * viewScale + viewTranslate.x;
+      const tipScreenY = y2 * viewScale + viewTranslate.y;
+
+      // Use a nested save/restore to draw the tooltip in screen-space
+      ctx.save();
+      const _dpr = window.devicePixelRatio || 1;
+      ctx.setTransform(_dpr, 0, 0, _dpr, 0, 0);
+
+      const ttPadH = 6;
+      const ttPadV = 4;
+      ctx.font = 'bold 12px Arial, sans-serif';
+      const ttMetrics = ctx.measureText(tooltipText);
+      const ttW = ttMetrics.width + ttPadH * 2;
+      const ttH = 12 + ttPadV * 2;
+      const ttRadius = 4;
+      // Offset tooltip 10px right and above the cursor tip
+      const ttX = tipScreenX + 10;
+      const ttY = tipScreenY - ttH - 6;
+
+      // Background pill
+      ctx.fillStyle = 'rgba(17, 24, 39, 0.82)';
+      ctx.strokeStyle = 'rgba(74, 222, 128, 0.55)'; // green accent border
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(ttX + ttRadius, ttY);
+      ctx.lineTo(ttX + ttW - ttRadius, ttY);
+      ctx.quadraticCurveTo(ttX + ttW, ttY, ttX + ttW, ttY + ttRadius);
+      ctx.lineTo(ttX + ttW, ttY + ttH - ttRadius);
+      ctx.quadraticCurveTo(ttX + ttW, ttY + ttH, ttX + ttW - ttRadius, ttY + ttH);
+      ctx.lineTo(ttX + ttRadius, ttY + ttH);
+      ctx.quadraticCurveTo(ttX, ttY + ttH, ttX, ttY + ttH - ttRadius);
+      ctx.lineTo(ttX, ttY + ttRadius);
+      ctx.quadraticCurveTo(ttX, ttY, ttX + ttRadius, ttY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Label text
+      ctx.fillStyle = '#f0fdf4'; // green-50
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(tooltipText, ttX + ttPadH, ttY + ttH / 2);
+
+      ctx.restore(); // ← matches the nested ctx.save() above
+    }
+    ctx.restore(); // ← matches the outer ctx.save() at the start of the rubber-band block
   }
 
   // Snap indicator during dangling endpoint drag
@@ -1394,6 +1459,39 @@ function scheduleDraw() {
     S.drawScheduled = false;
     draw();
   });
+}
+
+// ── Edge length+angle computation (pure helper, testable) ────────────────────
+
+/**
+ * Compute the real-world length (in metres) and bearing (degrees from North)
+ * for a rubber-band edge segment in canvas-world coordinates.
+ *
+ * Canvas-world coordinates use the same unit as coordinateScale (pixels per
+ * metre), so dividing pixel distance by coordinateScale gives metres.
+ *
+ * Bearing follows the surveying convention: 0° = North (−Y in canvas space),
+ * 90° = East (+X), 180° = South, 270° = West.  The result is always in [0, 360).
+ *
+ * @param {number} x1 - Start X in canvas-world space
+ * @param {number} y1 - Start Y in canvas-world space
+ * @param {number} x2 - End X in canvas-world space
+ * @param {number} y2 - End Y in canvas-world space
+ * @param {number} coordinateScale - Canvas pixels per metre (> 0)
+ * @returns {{ lengthMeters: number, bearingDeg: number } | null}
+ *   null when coordinateScale ≤ 0 or the segment has zero length.
+ */
+export function computeEdgeLengthAngle(x1, y1, x2, y2, coordinateScale) {
+  if (!coordinateScale || coordinateScale <= 0) return null;
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const pixelLength = Math.sqrt(dx * dx + dy * dy);
+  if (pixelLength === 0) return null;
+  const lengthMeters = pixelLength / coordinateScale;
+  // Bearing: atan2(east, north) — canvas Y increases downward so north = -dy
+  let bearingDeg = Math.atan2(dx, -dy) * (180 / Math.PI);
+  if (bearingDeg < 0) bearingDeg += 360;
+  return { lengthMeters, bearingDeg };
 }
 
 // ── Exports ──────────────────────────────────────────────────

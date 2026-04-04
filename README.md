@@ -63,7 +63,9 @@ Manholes Mapper is a lightweight yet powerful tool designed for field workers to
 - **Cockpit/Gamification**: Visual progress tracking with skill levels, completion engine, and smart action suggestions (NEW)
 - **Field Commander**: Mobile-optimized command palette for fast actions, shortcuts, and quick-wins (NEW)
 - **Survey Mode**: TSC3 device integration with specialized survey workflows (NEW)
-- **Map Layer Integration**: Background map tiles (Esri World Imagery / Esri World Street Map) with Israel TM Grid (ITM) coordinate alignment for GIS-accurate positioning.
+- **Map Layer Integration**: Background map tiles (Esri World Imagery / Esri World Street Map / GovMap) with Israel TM Grid (ITM) coordinate alignment for GIS-accurate positioning.
+- **Geoman Annotation Layer**: Draw zones, notes, and polygon overlays directly on the map canvas using Leaflet Geoman; annotations are autosaved to IndexedDB and persist across sessions.
+- **User Location (Browser Geolocation)**: Show device position on the map with permission management, continuous watch mode, and ITM coordinate conversion — no GNSS hardware required.
 - **Multi-Node Modes**: Specialized support for different infrastructure types:
   - **Manholes**: Standard network nodes.
   - **Home Nodes**: Residential/Building connections.
@@ -98,6 +100,9 @@ Manholes Mapper is a lightweight yet powerful tool designed for field workers to
   - Top-bar search to instantly locate nodes by ID or address.
   - Command menu for quick action access.
   - Recenter view and edge legend for better orientation.
+- **Status Bar & HUD**:
+  - **GPS Accuracy HUD Badge**: Color-coded badge in the micro-status-bar showing live fix quality (No Fix → GPS → DGPS → RTK Float → RTK Fixed) with HDOP indicator.
+  - **Persistent Offline Chip**: Header indicator that turns amber/red when the device goes offline; auto-clears on reconnection.
 
 ## New Features (2026)
 
@@ -134,6 +139,17 @@ Manholes Mapper is a lightweight yet powerful tool designed for field workers to
   - Browser geolocation fallback
 - **Precision Measurement**: Gated capture with accuracy thresholds
 - **Fix Quality Indicators**: No Fix → GPS → DGPS → RTK Float → RTK Fixed
+
+### 🗺️ Map Annotations (Geoman)
+- **Draw Zones & Polygons**: Add freehand or geometric overlays on the map layer with the Leaflet Geoman toolbar
+- **Persistent Storage**: Annotations autosave to IndexedDB (`annotationsStore`) and reload on app start
+- **Non-destructive**: Annotation layer sits on top of the infrastructure canvas; graph nodes/edges are untouched
+- **Events**: Emits `annotation:created`, `annotation:edited`, `annotation:deleted` on the global event bus
+
+### 📡 Status Bar & HUD
+- **GPS Accuracy Badge**: Color-coded realtime GNSS fix quality in the micro-status-bar (red/amber/blue/green)
+- **Offline Status Chip**: Persistent header chip shows network connectivity; auto-hides when back online
+- **60px Touch Targets**: Map control buttons enlarged to 60px for comfortable one-handed use on mobile
 
 ### 🐛 Issue System
 - **Auto-Detection**: Real-time audit of sketches (missing coordinates, negative gradients, long edges, merge candidates)
@@ -226,7 +242,15 @@ manholes-mapper/
 │   ├── layout/             # Layout manager, unified sidebar/toolbar
 │   ├── legacy/             # Core logic (being modularized)
 │   ├── main-entry.js       # Application entry point
-│   ├── map/                # Map tiles, projections, reference layers, Street View
+│   ├── map/                # Map tiles, projections, reference layers, Street View, annotations
+│   │   ├── annotation-layer.js    # Leaflet Geoman annotation overlay (draw zones/polygons)
+│   │   ├── govmap-layer.js        # GovMap (Israel gov orthophoto) tile layer
+│   │   ├── layers-config.js       # Layer configuration registry
+│   │   ├── projections.js         # EPSG:2039 ITM ↔ WGS-84 via proj4
+│   │   ├── reference-layers.js    # GIS overlay layers (sections, addresses, survey pipes)
+│   │   ├── street-view.js         # Google Street View pegman widget
+│   │   ├── tile-manager.js        # Tile layer lifecycle and switching
+│   │   └── user-location.js       # Browser geolocation with ITM conversion
 │   ├── menu/               # Responsive menu system, command palette, action bar
 │   ├── notifications/      # Notification bell and center
 │   ├── pages/              # Page components (profile, stats, leaderboard)
@@ -237,7 +261,17 @@ manholes-mapper/
 │   ├── three-d/            # 3D underground visualization
 │   ├── types/              # TypeScript type definitions
 │   ├── utils/              # Shared utilities (CSV, Geometry, UI)
-│   │   └── coordinates.js  # Coordinate transforms, ITM/WGS84, scale calc, BFS positioning
+│   │   ├── coordinates.js          # Coordinate transforms, ITM/WGS84, scale calc, BFS positioning
+│   │   ├── csv.js                  # CSV export/import for ArcGIS
+│   │   ├── input-flow-engine.js    # Context-aware form rules (hide/disable/reset fields)
+│   │   ├── label-collision.js      # Label overlap detection for canvas rendering
+│   │   ├── legacy-import.js        # Legacy sketch + ITM CSV conversion
+│   │   ├── progressive-renderer.js # Progressive canvas rendering (lazy tiles)
+│   │   ├── render-cache.js         # Canvas render cache for expensive draw calls
+│   │   ├── render-perf.js          # Render performance instrumentation
+│   │   ├── sketch-io.js            # Sketch serialization/deserialization
+│   │   ├── spatial-grid.js         # Spatial lookup grid for fast hit-testing
+│   │   └── toast.js                # Toast notification helper
 │   └── workers/            # Web Workers (GNSS parsing)
 ├── api/                    # Vercel serverless API routes
 │   ├── auth/               # Better Auth endpoints

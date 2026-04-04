@@ -98,10 +98,14 @@ frontend/
 │   │   └── legacy-import-loader.js # Pre-loads import dependencies
 │   ├── main-entry.js       # App bootstrap
 │   ├── map/                # Map layer system
-│   │   ├── map-tiles.js    # Tile layer management
-│   │   ├── projection.js   # ITM/ITM-Gov coordinate transform
-│   │   ├── reference-layers.js  # GIS overlays
-│   │   └── street-view.js  # Google Street View widget
+│   │   ├── annotation-layer.js    # Leaflet Geoman draw overlay (zones, polygons)
+│   │   ├── govmap-layer.js        # GovMap (Israel government orthophoto) tile layer
+│   │   ├── layers-config.js       # Layer configuration registry
+│   │   ├── projections.js         # EPSG:2039 ITM ↔ WGS-84 via proj4
+│   │   ├── reference-layers.js    # GIS overlay layers (sections, addresses, pipes)
+│   │   ├── street-view.js         # Google Street View pegman widget
+│   │   ├── tile-manager.js        # Tile layer lifecycle and switching
+│   │   └── user-location.js       # Browser geolocation with ITM conversion
 │   ├── menu/               # Responsive UI components
 │   │   ├── menu-config.js  # Declarative menu/action configuration
 │   │   ├── menu-events.js  # Event delegation and action routing
@@ -156,18 +160,21 @@ frontend/
 │   │   ├── edge.ts
 │   │   └── project.ts
 │   ├── utils/              # Shared utilities
-│   │   ├── csv.js                  # CSV export/import
-│   │   ├── geometry.js             # Geometry calculations
-│   │   ├── coordinates.js          # Coordinate transformations (ITM)
-│   │   ├── legacy-import.js        # Legacy sketch conversion logic
+│   │   ├── coordinates.js          # ITM/WGS84 transforms, BFS positioning, scale calc
+│   │   ├── csv.js                  # CSV export/import for ArcGIS
+│   │   ├── geometry.js             # Geometry helpers
+│   │   ├── input-flow-engine.js    # Context-aware form rules (hide/disable/reset fields)
+│   │   ├── label-collision.js      # Label overlap detection for canvas rendering
+│   │   ├── legacy-import.js        # Legacy sketch + ITM CSV conversion
+│   │   ├── progressive-renderer.js # Progressive canvas rendering (lazy tiles)
+│   │   ├── render-cache.js         # Canvas render cache for expensive draw calls
+│   │   ├── render-perf.js          # Render performance instrumentation
 │   │   ├── sketch-io.js            # Sketch serialization/deserialization
+│   │   ├── spatial-grid.js         # Spatial lookup grid for fast hit-testing
 │   │   ├── backup-manager.js       # Backup and restore
 │   │   ├── floating-keyboard.js    # Custom numeric keyboard
 │   │   ├── resizable-drawer.js     # Swipeable drawer
 │   │   ├── toast.js                # Toast notification helper
-│   │   ├── spatial-grid.js         # Spatial lookup grid
-│   │   ├── label-collision.js      # Label overlap detection
-│   │   ├── progressive-renderer.js # Progressive canvas rendering
 │   │   └── device-perf.js          # Device performance detection
 │   └── workers/            # Web Workers
 │       └── gnss-worker.js  # NMEA parsing in background
@@ -437,15 +444,44 @@ api/
 **Purpose:** GIS-accurate map background with coordinate alignment.
 
 **Components:**
-- **Tile Layer:** Esri World Imagery / World Street Map
-- **Projection:** Israel TM Grid (ITM, EPSG:2039) via proj4
+- **Tile Manager (`tile-manager.js`):** Esri World Imagery / World Street Map / GovMap tile layers
+- **GovMap Layer (`govmap-layer.js`):** Israel government orthophoto; includes ITM ↔ WGS-84 helpers used by the rest of the app
+- **Projection (`projections.js`):** Israel TM Grid (ITM, EPSG:2039) via proj4
 - **Reference Layers:** Sections, survey manholes, pipes, streets, addresses
-- **Street View:** Google Maps drag-and-drop pegman widget
+- **Street View (`street-view.js`):** Google Maps drag-and-drop pegman widget
+- **User Location (`user-location.js`):** Browser Geolocation API; watches device position, converts to ITM, notifies subscribers via callbacks
 
 **Coordinate System:**
 - Primary: ITM (EPSG:2039)
-- Valid range: X: 100,000-300,000m, Y: 350,000-800,000m
+- Valid range: X: 100,000-300,000m, Y: 350,000-800,000m (350k lower bound for Eilat/Negev)
 - Accuracy: <1 meter with proj4 transformations
+
+### 4a. Annotation Layer (Geoman)
+
+**Purpose:** Non-destructive freehand map annotations (zones, polygons, notes) on top of the canvas.
+
+**Components:**
+- `annotation-layer.js` — Leaflet map injected over `#graphCanvas`; uses `@geoman-io/leaflet-geoman-free` toolbar
+
+**Architecture:**
+- Transparent overlay (pointer-events: none when Geoman inactive → canvas interactions pass through)
+- Geoman draw mode activates pointer capture on the overlay; deactivation returns control to canvas
+- WGS-84 ↔ ITM conversion via shared `govmap-layer.js` helpers
+- Annotations persisted to IndexedDB `annotationsStore`; loaded on `initAnnotationLayer()`
+
+**Events emitted (EventBus):**
+| Event | Payload |
+|-------|---------|
+| `annotation:created` | GeoJSON feature + ITM bounds |
+| `annotation:edited` | Updated GeoJSON layer |
+| `annotation:deleted` | Deleted layer ID |
+
+**API:**
+```js
+import { initAnnotationLayer, destroyAnnotationLayer } from '../map/annotation-layer.js';
+initAnnotationLayer(); // call once after canvas is initialized
+destroyAnnotationLayer(); // cleanup on unmount
+```
 
 ### 5. Offline-First PWA
 
@@ -516,10 +552,19 @@ api/
 **Components:**
 - `layout-manager.js` — Central layout controller
 - `unified-sidebar.js` — Collapsible side panel
-- `unified-toolbar.js` — Top navigation bar
+- `unified-toolbar.js` — Top navigation bar with 60px touch-target map controls
 - `micro-status-bar.js` — Compact status indicators
 
-**Features:**
+**Status Bar Features (micro-status-bar.js):**
+- **GPS Accuracy HUD Badge:** Color-coded GNSS fix quality indicator embedded in the status bar
+  - 🔴 No Fix / 🟡 GPS / 🟡 DGPS / 🔵 RTK Float / 🟢 RTK Fixed
+  - Updates in real time from GNSS state; hidden when GNSS is disconnected
+- **Persistent Offline Chip:** Network connectivity indicator in the header
+  - Appears amber/red when the device is offline
+  - Auto-dismisses when connectivity is restored
+  - Does not disappear on page interactions so the user always knows network state
+
+**Other Features:**
 - Landscape/portrait orientation detection
 - Collapsible panels for maximized canvas space
 - Responsive breakpoints for mobile/tablet/desktop
