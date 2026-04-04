@@ -22,6 +22,7 @@ import {
   repositionNodesFromEmbeddedCoordinates,
   computeHypotheticalSchematicPositions,
   computeHypotheticalSurveyPositions,
+  getMeasurementBoundsItm,
 } from '../utils/coordinates.js';
 import {
   getMapReferencePoint,
@@ -429,34 +430,11 @@ function syncMapLayerToggleUI() {
 
 /**
  * Get ITM bounds of all nodes that have survey coordinates (measurement polygon extent).
+ * Delegates to the pure utility in src/utils/coordinates.js.
  * @returns {{ minX: number, maxX: number, minY: number, maxY: number } | null}
  */
-function getMeasurementBoundsItm() {
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  let hasAny = false;
-  for (const node of S.nodes) {
-    if (node.surveyX != null && node.surveyY != null) {
-      if (node.surveyX < minX) minX = node.surveyX;
-      if (node.surveyY < minY) minY = node.surveyY;
-      if (node.surveyX > maxX) maxX = node.surveyX;
-      if (node.surveyY > maxY) maxY = node.surveyY;
-      hasAny = true;
-    }
-  }
-  if (!hasAny && S.coordinatesMap.size > 0) {
-    for (const node of S.nodes) {
-      const coords = S.coordinatesMap.get(String(node.id));
-      if (coords) {
-        if (coords.x < minX) minX = coords.x;
-        if (coords.y < minY) minY = coords.y;
-        if (coords.x > maxX) maxX = coords.x;
-        if (coords.y > maxY) maxY = coords.y;
-        hasAny = true;
-      }
-    }
-  }
-  if (!hasAny || !Number.isFinite(minX)) return null;
-  return { minX, maxX, minY, maxY };
+function getMeasurementBoundsItmLocal() {
+  return getMeasurementBoundsItm(S.nodes, S.coordinatesMap);
 }
 
 /**
@@ -465,7 +443,7 @@ function getMeasurementBoundsItm() {
  */
 function startMeasurementTilesPrecache() {
   cancelTilePrecache();
-  const bounds = getMeasurementBoundsItm();
+  const bounds = getMeasurementBoundsItmLocal();
   if (bounds) precacheTilesForMeasurementBounds(bounds);
 }
 

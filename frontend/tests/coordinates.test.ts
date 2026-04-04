@@ -5,7 +5,8 @@ import {
   surveyToCanvas,
   applyCoordinatesToNodes,
   createCoordinateLookup,
-  approximateUncoordinatedNodePositions
+  approximateUncoordinatedNodePositions,
+  getMeasurementBoundsItm,
 } from '../src/utils/coordinates.js';
 
 describe('Coordinates Module', () => {
@@ -488,6 +489,75 @@ invalid,abc,def,ghi
       // Node 2 should be positioned above node 1 (same angle as original)
       expect(node2!.x).toBeCloseTo(200, 0);  // Same x as anchor
       expect(node2!.y).toBeLessThan(200);     // Above (smaller y)
+    });
+  });
+
+  describe('getMeasurementBoundsItm', () => {
+    it('should return bounds from node surveyX/Y', () => {
+      const nodes = [
+        { id: 1, surveyX: 182000, surveyY: 654000 },
+        { id: 2, surveyX: 183000, surveyY: 655000 },
+        { id: 3, surveyX: 182500, surveyY: 654500 },
+      ];
+      const result = getMeasurementBoundsItm(nodes, new Map());
+      expect(result).not.toBeNull();
+      expect(result!.minX).toBe(182000);
+      expect(result!.maxX).toBe(183000);
+      expect(result!.minY).toBe(654000);
+      expect(result!.maxY).toBe(655000);
+    });
+
+    it('should fall back to coordinatesMap when nodes have no surveyX/Y', () => {
+      const nodes = [
+        { id: 1 },
+        { id: 2 },
+      ];
+      const coordsMap = new Map([
+        ['1', { x: 182100, y: 654100, z: 0 }],
+        ['2', { x: 182900, y: 654900, z: 0 }],
+      ]);
+      const result = getMeasurementBoundsItm(nodes, coordsMap);
+      expect(result).not.toBeNull();
+      expect(result!.minX).toBe(182100);
+      expect(result!.maxX).toBe(182900);
+      expect(result!.minY).toBe(654100);
+      expect(result!.maxY).toBe(654900);
+    });
+
+    it('should prefer surveyX/Y over coordinatesMap', () => {
+      const nodes = [
+        { id: 1, surveyX: 182000, surveyY: 654000 },
+        { id: 2, surveyX: 182200, surveyY: 654200 },
+      ];
+      // coordinatesMap has different (wider) bounds — should be ignored
+      const coordsMap = new Map([
+        ['1', { x: 100000, y: 500000, z: 0 }],
+        ['2', { x: 300000, y: 700000, z: 0 }],
+      ]);
+      const result = getMeasurementBoundsItm(nodes, coordsMap);
+      expect(result!.minX).toBe(182000);
+      expect(result!.maxX).toBe(182200);
+    });
+
+    it('should return null when no nodes have coordinates', () => {
+      const nodes = [{ id: 1 }, { id: 2 }];
+      const result = getMeasurementBoundsItm(nodes, new Map());
+      expect(result).toBeNull();
+    });
+
+    it('should handle single-node case', () => {
+      const nodes = [{ id: 5, surveyX: 182500, surveyY: 654500 }];
+      const result = getMeasurementBoundsItm(nodes, new Map());
+      expect(result).not.toBeNull();
+      expect(result!.minX).toBe(182500);
+      expect(result!.maxX).toBe(182500);
+      expect(result!.minY).toBe(654500);
+      expect(result!.maxY).toBe(654500);
+    });
+
+    it('should handle empty nodes array', () => {
+      const result = getMeasurementBoundsItm([], new Map());
+      expect(result).toBeNull();
     });
   });
 });

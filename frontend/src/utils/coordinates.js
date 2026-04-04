@@ -912,3 +912,44 @@ export function repositionNodesFromEmbeddedCoordinates(nodes, coordinateScale, c
   console.debug(`[Coordinates] Repositioned ${coordinated.length} nodes from embedded coordinates, ${nodes.length - coordinated.length} hidden`);
   return { referencePoint };
 }
+
+/**
+ * Get ITM bounds of all nodes that have survey coordinates (measurement polygon extent).
+ * Falls back to coordinatesMap if no node has embedded surveyX/Y.
+ *
+ * @param {Array} nodes - Array of node objects
+ * @param {Map<string, {x: number, y: number}>} coordinatesMap - Point-id → ITM coords map
+ * @returns {{ minX: number, maxX: number, minY: number, maxY: number } | null}
+ */
+export function getMeasurementBoundsItm(nodes, coordinatesMap) {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  let hasAny = false;
+
+  // Prefer embedded survey coordinates on each node
+  for (const node of nodes) {
+    if (node.surveyX != null && node.surveyY != null) {
+      if (node.surveyX < minX) minX = node.surveyX;
+      if (node.surveyY < minY) minY = node.surveyY;
+      if (node.surveyX > maxX) maxX = node.surveyX;
+      if (node.surveyY > maxY) maxY = node.surveyY;
+      hasAny = true;
+    }
+  }
+
+  // Fallback: use coordinatesMap entries matched to nodes
+  if (!hasAny && coordinatesMap && coordinatesMap.size > 0) {
+    for (const node of nodes) {
+      const coords = coordinatesMap.get(String(node.id));
+      if (coords) {
+        if (coords.x < minX) minX = coords.x;
+        if (coords.y < minY) minY = coords.y;
+        if (coords.x > maxX) maxX = coords.x;
+        if (coords.y > maxY) maxY = coords.y;
+        hasAny = true;
+      }
+    }
+  }
+
+  if (!hasAny || !Number.isFinite(minX)) return null;
+  return { minX, maxX, minY, maxY };
+}
