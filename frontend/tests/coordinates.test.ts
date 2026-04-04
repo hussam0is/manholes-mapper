@@ -7,6 +7,12 @@ import {
   createCoordinateLookup,
   approximateUncoordinatedNodePositions,
   getMeasurementBoundsItm,
+  calculateOptimalScale,
+  extractNodeItmCoordinates,
+  classifySketchCoordinates,
+  computeHypotheticalSchematicPositions,
+  computeHypotheticalSurveyPositions,
+  repositionNodesFromEmbeddedCoordinates,
 } from '../src/utils/coordinates.js';
 
 describe('Coordinates Module', () => {
@@ -558,6 +564,195 @@ invalid,abc,def,ghi
     it('should handle empty nodes array', () => {
       const result = getMeasurementBoundsItm([], new Map());
       expect(result).toBeNull();
+    });
+  });
+
+  // ── calculateOptimalScale ────────────────────────────────────────────────
+
+  describe('calculateOptimalScale', () => {
+    it('should produce a scale that fills the canvas reasonably', () => {
+      // 500m × 300m survey extent on 800×600 canvas
+      const bounds = { minX: 180000, maxX: 180500, minY: 665000, maxY: 665300 };
+      const scale = calculateOptimalScale(bounds, 800, 600, 0.7);
+      // expected: min(800*0.7/500, 600*0.7/300) = min(1.12, 1.4) = 1.12
+      expect(scale).toBeCloseTo(1.12, 1);
+    });
+
+    it('should clamp to minimum 0.1 px/m for very large surveys', () => {
+      // 100 km survey extent
+      const bounds = { minX: 0, maxX: 100000, minY: 0, maxY: 100000 };
+      const scale = calculateOptimalScale(bounds, 800, 600, 0.7);
+      expect(scale).toBeGreaterThanOrEqual(0.1);
+    });
+
+    it('should clamp to maximum 100 px/m for tiny surveys', () => {
+      // 1 cm survey extent (degenerate)
+      const bounds = { minX: 0, maxX: 0.01, minY: 0, maxY: 0.01 };
+      const scale = calculateOptimalScale(bounds, 800, 600, 0.7);
+      expect(scale).toBeLessThanOrEqual(100);
+    });
+
+    it('should prefer width-limited scale to preserve aspect ratio', () => {
+      // Wide survey (1000m × 100m) on 800×600 canvas
+      const bounds = { minX: 0, maxX: 1000, minY: 0, maxY: 100 };
+      const scale = calculateOptimalScale(bounds, 800, 600, 0.7);
+      const scaleX = (800 * 0.7) / 1000;
+      const scaleY = (600 * 0.7) / 100;
+      expect(scale).toBeCloseTo(Math.min(scaleX, scaleY), 3);
+    });
+  });
+
+  // ── extractNodeItmCoordinates ────────────────────────────────────────────
+
+  describe('extractNodeItmCoordinates', () => {
+    const mockWgs84ToItm = (lat: number, lon: number) => ({
+      x: 180000 + (lon - 35) * 90000,
+      y: 660000 + (lat - 32) * 111000,
+    });
+
+    it('should extract surveyX/Y directly when present', () => {
+      const node = { id: 1, surveyX: 185000, surveyY: 665000 };
+      const result = extractNodeItmCoordinates(node, mockWgs84ToItm);
+      expect(result).toEqual({ surveyX: 185000, surveyY: 665000 });
+    });
+
+    it('should fall back to itmEasting/itmNorthing', () => {
+      const node = { id: 1, itmEasting: 185000, itmNorthing: 665000 };
+      const result = extractNodeItmCoordinates(node, mockWgs84ToItm);
+      expect(result).toEqual({ surveyX: 185000, surveyY: 665000 });
+    });
+
+    it('should convert lat/lon to ITM when no direct coords', () => {
+      const node = { id: 1, lat: 32.0, lon: 35.0 };
+      const result = extractNodeItmCoordinates(node, mockWgs84ToItm);
+      expect(result).not.toBeNull();
+      expect(result!.surveyX).toBeCloseTo(180000, -2);
+      expect(result!.surveyY).toBeCloseTo(660000, -2);
+    });
+
+    it('should return null when no coordinate fields are present', () => {
+      const node = { id: 1, x: 100, y: 200 };
+      const result = extractNodeItmCoordinates(node, mockWgs84ToItm);
+      expect(result).toBeNull();
+    });
+
+    it('should return null for zero lat/lon (invalid GPS default)', () => {
+      const node = { id: 1, lat: 0, lon: 0 };
+      const result = extractNodeItmCoordinates(node, mockWgs84ToItm);
+      expect(result).toBeNull();
+    });
+  });
+
+  // ── classifySketchCoordinates ────────────────────────────────────────────
+
+  describe('classifySketchCoordinates', () => {
+    const mockWgs84ToItm = (lat: number, lon: number) => ({
+      x: 180000 + (lon - 35) * 90000,
+      y: 660000 + (lat - 32) * 111000,
+    });
+
+    it('should count nodes with and without coordinates', () => {
+      const nodes = [
+        { id: 1, surveyX: 185000, surveyY: 665000 },
+        { id: 2, x: 100, y: 200 },
+        { id: 3, surveyX: 186000, surveyY: 666000 },
+      ];
+      const result = classifySketchCoordinates(nodes, mockWgs84ToItm);
+      expect(result.withCoords).toBe(2);
+      expect(result.withoutCoords).toBe(1);
+      expect(result.total).toBe(3);
+    });
+
+    it('should return all zeros for empty nodes array', () => {
+      const result = classifySketchCoordinates([], mockWgs84ToItm);
+      expect(result).toEqual({ withCoords: 0, withoutCoords: 0, total: 0 });
+    });
+  });
+
+  // ── computeHypotheticalSurveyPositions ───────────────────────────────────
+
+  describe('computeHypotheticalSurveyPositions', () => {
+    it('should assign hypothetical survey coords to schematic-only nodes', () => {
+      // Anchor: both schematic and survey coords
+      const anchor = { id: 1, schematicX: 100, schematicY: 100, surveyX: 185000, surveyY: 665000, x: 100, y: 100 };
+      // Target: only schematic, no survey coords
+      const target = { id: 2, schematicX: 200, schematicY: 100, x: 200, y: 100 } as any;
+      const edges = [{ tail: 1, head: 2 }];
+
+      const count = computeHypotheticalSurveyPositions([anchor, target], edges);
+      expect(count).toBeGreaterThan(0);
+      expect(target.survey_x_hypothetical).toBeDefined();
+      expect(typeof target.survey_x_hypothetical).toBe('number');
+    });
+
+    it('should return 0 when no anchor nodes exist', () => {
+      const nodes = [
+        { id: 1, schematicX: 100, schematicY: 100, x: 100, y: 100 },
+        { id: 2, schematicX: 200, schematicY: 100, x: 200, y: 100 },
+      ];
+      const edges = [{ tail: 1, head: 2 }];
+      const count = computeHypotheticalSurveyPositions(nodes, edges);
+      expect(count).toBe(0);
+    });
+  });
+
+  // ── computeHypotheticalSchematicPositions ────────────────────────────────
+
+  describe('computeHypotheticalSchematicPositions', () => {
+    it('should assign hypothetical schematic coords to survey-only nodes', () => {
+      // Anchor: both schematic and survey coords
+      const anchor = { id: 1, schematicX: 100, schematicY: 100, surveyX: 185000, surveyY: 665000, x: 100, y: 100 };
+      // Target: only survey coords, no schematic
+      const target = { id: 2, surveyX: 185100, surveyY: 665000 } as any;
+      const edges = [{ tail: 1, head: 2 }];
+
+      const count = computeHypotheticalSchematicPositions([anchor, target], edges);
+      expect(count).toBeGreaterThan(0);
+      expect(target.x_hypothetical).toBeDefined();
+      expect(typeof target.x_hypothetical).toBe('number');
+    });
+
+    it('should return 0 when no nodes need hypothetical positions', () => {
+      const nodes = [
+        { id: 1, schematicX: 100, schematicY: 100, surveyX: 185000, surveyY: 665000 },
+        { id: 2, schematicX: 200, schematicY: 100, surveyX: 186000, surveyY: 665000 },
+      ];
+      const count = computeHypotheticalSchematicPositions(nodes, []);
+      expect(count).toBe(0);
+    });
+  });
+
+  // ── repositionNodesFromEmbeddedCoordinates ───────────────────────────────
+
+  describe('repositionNodesFromEmbeddedCoordinates', () => {
+    const mockWgs84ToItm = (lat: number, lon: number) => ({
+      x: 180000 + (lon - 35) * 90000,
+      y: 660000 + (lat - 32) * 111000,
+    });
+
+    it('should position nodes with embedded surveyX/Y', () => {
+      const nodes: any[] = [
+        { id: 1, x: 10, y: 10, surveyX: 185000, surveyY: 665000 },
+        { id: 2, x: 20, y: 20, surveyX: 185100, surveyY: 665000 },
+      ];
+      const result = repositionNodesFromEmbeddedCoordinates(nodes, 3, 800, 600, mockWgs84ToItm);
+      expect(result.referencePoint).not.toBeNull();
+      expect(nodes[0].hasCoordinates).toBe(true);
+      expect(nodes[1].hasCoordinates).toBe(true);
+      // Nodes should be spatially separated (100m * 3px/m = 300px apart horizontally)
+      const dx = nodes[1].x - nodes[0].x;
+      expect(Math.abs(dx)).toBeCloseTo(300, 0);
+    });
+
+    it('should hide nodes without coords and return referencePoint null when all hidden', () => {
+      const nodes: any[] = [
+        { id: 1, x: 10, y: 10 },
+        { id: 2, x: 20, y: 20 },
+      ];
+      const result = repositionNodesFromEmbeddedCoordinates(nodes, 3, 800, 600, mockWgs84ToItm);
+      expect(result.referencePoint).toBeNull();
+      expect(nodes[0]._hidden).toBe(true);
+      expect(nodes[1]._hidden).toBe(true);
     });
   });
 });
