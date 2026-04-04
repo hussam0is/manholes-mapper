@@ -2259,6 +2259,80 @@ canvas {
 }
 
 /* ============================
+   GPS Capture FAB
+   One-tap: add manhole at current GPS location
+   Draggable for left-handed field workers
+   ============================ */
+.gps-capture-fab {
+  position: fixed;
+  inset-inline-start: 16px;
+  bottom: 72px;
+  z-index: 300;
+  background: #16a34a; /* green-700 */
+  color: #fff;
+  border: none;
+  border-radius: 28px;
+  height: 56px;
+  min-width: 56px;
+  padding-inline: 14px 18px;
+  display: none; /* shown via JS when GPS is active */
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.30);
+  cursor: pointer;
+  touch-action: none; /* we handle pointer events for drag */
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+  font-family: Inter, Arial, sans-serif;
+}
+
+.gps-capture-fab:hover {
+  background: #15803d; /* green-800 */
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+.gps-capture-fab:active {
+  transform: scale(0.95);
+  background: #166534; /* green-900 */
+}
+
+.gps-capture-fab--dragging {
+  opacity: 0.85;
+  cursor: grabbing;
+  transform: scale(1.05);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.40);
+}
+
+.gps-capture-fab__icon {
+  font-size: 24px;
+  pointer-events: none;
+}
+
+.gps-capture-fab__label {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+  pointer-events: none;
+}
+
+/* Cockpit mode: promote above the cockpit grid */
+body.cockpit-mode .gps-capture-fab {
+  z-index: 176;
+}
+
+/* Narrow / dark theme */
+@media (prefers-color-scheme: dark) {
+  .gps-capture-fab {
+    background: #15803d;
+  }
+  .gps-capture-fab:hover {
+    background: #166534;
+  }
+}
+
+/* ============================
    Precision Measure Overlay
    ============================ */
 .pm-overlay {

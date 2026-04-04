@@ -23,7 +23,7 @@ import { initSkillLevel, isFeatureVisible } from './state/skill-level.js';
 import { attachFloatingKeyboard } from './utils/floating-keyboard.js';
 import { initResizableDrawer } from './utils/resizable-drawer.js';
 import { initCustomSelect } from './utils/custom-select.js';
-import { initCanvasFabToolbar } from './canvas-fab-toolbar.js';
+import { initCanvasFabToolbar, initGpsCaptureFab } from './canvas-fab-toolbar.js';
 import { onAuthStateChange, getAuthState, updateAuthState, guardRoute, redirectIfAuthenticated, refreshSession } from './auth/auth-guard.js';
 import { initSyncService } from './auth/sync-service.js';
 import { initNotificationBell, destroyNotificationBell } from './notifications/notification-bell.js';
@@ -315,7 +315,8 @@ if (typeof window !== 'undefined') {
     initResizableDrawer();
     initCustomSelect();
     initCanvasFabToolbar();
-    
+    initGpsCaptureFab();   // one-tap GPS capture FAB (draggable)
+
     // Initialize toolbar events (export/import, legacy import, size controls)
     initToolbarEvents();
     

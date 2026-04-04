@@ -1489,8 +1489,12 @@ export function computeEdgeLengthAngle(x1, y1, x2, y2, coordinateScale) {
   if (pixelLength === 0) return null;
   const lengthMeters = pixelLength / coordinateScale;
   // Bearing: atan2(east, north) — canvas Y increases downward so north = -dy
+  // atan2 returns (-π, π]; multiply → (-180, 180]. Add 360 to negatives → [0, 360).
+  // Use % 360 after normalisation to guard against floating-point near-zero
+  // values (e.g. -1e-15) that would otherwise produce a result of exactly 360.
   let bearingDeg = Math.atan2(dx, -dy) * (180 / Math.PI);
   if (bearingDeg < 0) bearingDeg += 360;
+  bearingDeg = ((bearingDeg % 360) + 360) % 360; // clamp to [0, 360)
   return { lengthMeters, bearingDeg };
 }
 
