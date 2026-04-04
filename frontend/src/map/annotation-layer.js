@@ -349,8 +349,18 @@ function _onGnssPosition(position) {
 export function updateGnssAccuracyCircle(position) {
   if (!_map) return;
 
-  if (!position || !position.isValid || !position.lat || !position.lon || !position.accuracy) {
-    // Remove the circle when there is no valid fix
+  // Resolve the best available accuracy estimate:
+  //   1. position.accuracy  — set by browser-location-adapter and TMM adapter directly
+  //   2. position.hrms      — set by NMEAParser when $GPGST/$GNGST is present (Bluetooth receivers)
+  //   3. position.hdop * 3  — fallback estimate for receivers without GST support
+  // This ensures Bluetooth GNSS receivers (which populate hrms, not accuracy) also
+  // render the accuracy circle.
+  const resolvedAccuracy = position
+    ? (position.accuracy ?? position.hrms ?? (position.hdop != null ? position.hdop * 3 : null))
+    : null;
+
+  if (!position || !position.isValid || !position.lat || !position.lon || !resolvedAccuracy) {
+    // Remove the circle when there is no valid fix or no accuracy data
     if (_accuracyCircle) {
       _accuracyCircle.remove();
       _accuracyCircle = null;
@@ -362,11 +372,11 @@ export function updateGnssAccuracyCircle(position) {
 
   if (_accuracyCircle) {
     // Update existing circle position + radius
-    _accuracyCircle.setLatLng(latlng).setRadius(position.accuracy);
+    _accuracyCircle.setLatLng(latlng).setRadius(resolvedAccuracy);
   } else {
     // Create new circle
     _accuracyCircle = L.circle(latlng, {
-      radius: position.accuracy,
+      radius: resolvedAccuracy,
       color: '#4A90D9',
       fillColor: '#4A90D9',
       fillOpacity: 0.15,
