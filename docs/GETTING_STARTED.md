@@ -202,22 +202,38 @@ If you need to reset the app state:
 
 ```
 manholes-mapper/
-├── src/
-│   ├── admin/              # Admin panel, settings, projects, input flow
-│   ├── auth/               # Better Auth client, provider, guard, permissions
-│   ├── db.js               # IndexedDB wrapper
-│   ├── dom/                # DOM manipulation utilities
-│   ├── features/           # Canvas rendering and drawing primitives
-│   ├── gnss/               # GNSS/GPS live measure module
-│   ├── graph/              # Graph data structures and ID utilities
-│   ├── legacy/main.js      # Core app logic
-│   ├── map/                # Map tiles, projections, reference layers, Street View
-│   ├── menu/               # Responsive menu system and command palette
-│   ├── serviceWorker/      # SW registration
-│   ├── state/              # State & constants
-│   ├── utils/              # Utility functions (CSV, coordinates, geometry, UI)
-│   ├── i18n.js             # Hebrew/English translations
-│   └── main-entry.js       # Entry point
+├── frontend/
+│   ├── src/
+│   │   ├── admin/              # Admin panel, settings, projects, input flow
+│   │   ├── auth/               # Better Auth client, provider, guard, permissions
+│   │   ├── cockpit/            # Gamification (XP, skill levels, session tracker)
+│   │   ├── db.js               # IndexedDB wrapper
+│   │   ├── dom/                # DOM manipulation utilities
+│   │   ├── features/           # Canvas rendering and drawing primitives
+│   │   ├── field-commander/    # Mobile UI shell, gestures, territory, XP/achievements
+│   │   ├── gnss/               # GNSS/GPS live measure module
+│   │   ├── graph/              # Graph data structures and ID utilities
+│   │   ├── layout/             # Layout manager, sidebar, toolbar
+│   │   ├── legacy/             # Core app logic (being modularized)
+│   │   ├── map/                # Map tiles, projections, reference layers, Street View
+│   │   ├── menu/               # Responsive menu system and command palette
+│   │   ├── notifications/      # Notification bell and center
+│   │   ├── pages/              # Profile, stats, leaderboard page components
+│   │   ├── project/            # Project canvas, issue system, merge mode
+│   │   ├── serviceWorker/      # SW registration
+│   │   ├── state/              # Global state & constants
+│   │   ├── survey/             # TSC3 survey device integration
+│   │   ├── three-d/            # 3D underground visualization
+│   │   ├── types/              # TypeScript type definitions
+│   │   ├── utils/              # Utility functions (CSV, coordinates, geometry, UI)
+│   │   ├── workers/            # Web Workers (GNSS parsing)
+│   │   ├── i18n.js             # Hebrew/English translations
+│   │   └── main-entry.js       # Entry point
+│   ├── tests/                  # Vitest unit tests + Playwright E2E tests
+│   │   ├── unit/               # Unit test files (.test.ts)
+│   │   └── e2e/                # E2E Playwright specs
+│   ├── index.html              # Main HTML
+│   └── styles.css              # Global styles + Tailwind directives
 ├── api/                    # Vercel serverless API routes
 │   ├── auth/               # Better Auth endpoints
 │   ├── sketches/           # Sketch CRUD and locking
@@ -226,13 +242,8 @@ manholes-mapper/
 │   ├── layers/             # GIS reference layer data
 │   ├── users/              # User management
 │   └── _lib/               # Shared backend (db, auth, validators, rate-limit)
-├── tests/                  # Vitest + Playwright tests
-├── public/
-│   ├── service-worker.js   # Offline support
-│   └── manifest.json       # PWA config
-├── index.html              # Main HTML
-├── styles.css              # Styles
-└── package.json            # Dependencies
+├── public/                 # Static assets, PWA manifest, offline.html
+└── package.json            # Root package with all npm scripts
 ```
 
 ---

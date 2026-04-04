@@ -123,7 +123,9 @@ frontend/
 │   │   ├── fix-suggestions.js          # Smart fixes
 │   │   ├── issue-highlight.js          # Navigation
 │   │   ├── issue-nav-state.js          # State
-│   │   └── last-edit-tracker.js        # Edit history
+│   │   ├── last-edit-tracker.js        # Edit history
+│   │   ├── merge-mode.js               # Duplicate node merging
+│   │   └── project-loading-overlay.js  # Loading overlay UI
 │   ├── serviceWorker/      # Service Worker lifecycle
 │   ├── state/              # Global state management
 │   │   ├── app-state.js    # Core reactive state (get/set/subscribe)
@@ -527,8 +529,8 @@ api/
 ## Testing
 
 ### Unit Tests (Vitest)
-- **Location:** `frontend/src/**/*.test.js`
-- **Coverage:** 1,632 tests (65 test files)
+- **Location:** `frontend/tests/**/*.test.ts` (unit tests in `tests/unit/`, integration in `tests/`)
+- **Coverage:** 1,695 tests (66 test files)
 - **Command:** `npm run test:run`
 - **Framework:** Vitest with jsdom
 
@@ -615,7 +617,7 @@ Build `dist/` and deploy to any static host (Netlify, GitHub Pages). HTTPS requi
    - Connection state caching
 
 4. **Testing:**
-   - 1,546 unit tests (all passing)
+   - 1,695 unit tests (all passing)
    - E2E tests with Playwright
    - Test coverage reports
 
@@ -643,4 +645,4 @@ Build `dist/` and deploy to any static host (Netlify, GitHub Pages). HTTPS requi
 
 ---
 
-*Last updated: 2026-04-04*
+*Last updated: 2026-04-04 (test counts corrected to 1,695 / 66 files; project/ module list completed)*

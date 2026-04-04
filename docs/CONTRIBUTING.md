@@ -53,7 +53,7 @@ npm run test
 npm run test:run
 
 # Run specific test file
-cd frontend && npx vitest src/features/rendering.test.js
+cd frontend && npx vitest tests/unit/nmea-parser.test.ts
 ```
 
 ### E2E Tests
@@ -74,8 +74,8 @@ cd frontend && npx playwright test --coverage
 
 ### Test Results
 
-- Vitest HTML report: `frontend/dist/test-results/index.html`
 - Playwright HTML report: `frontend/playwright-report/index.html`
+- Test results: `frontend/test-results/`
 
 ## Code Style
 
@@ -161,7 +161,6 @@ manholes-mapper/
 ├── api/                   # Vercel serverless API
 ├── lib/                   # Better Auth server config
 ├── android/               # Capacitor Android project
-├── tests/                 # Test files
 ├── docs/                  # Documentation
 ├── public/                # Static assets
 └── package.json           # Dependencies
@@ -282,4 +281,4 @@ This project is proprietary. See LICENSE file for details.
 
 ---
 
-*Last updated: 2026-04-03*
+*Last updated: 2026-04-04*
