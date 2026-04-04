@@ -29,14 +29,21 @@ Manholes Mapper is a Progressive Web Application (PWA) for underground infrastru
 frontend/
 ├── src/
 │   ├── admin/              # Admin panel, settings, projects, input flow
-│   │   ├── admin-panel.js  # Main admin UI
-│   │   ├── settings.js     # Admin configuration UI
-│   │   ├── projects.js     # Project CRUD UI
-│   │   └── input-flow.js   # Intelligent form logic
+│   │   ├── admin-settings.js       # Admin configuration UI
+│   │   ├── admin-users.js          # User management
+│   │   ├── admin-organizations.js  # Organization management
+│   │   ├── admin-features.js       # Feature flags UI
+│   │   ├── admin-statistics.js     # Stats dashboard
+│   │   ├── admin-fixes.js          # Fix audit tools
+│   │   ├── projects-settings.js    # Project CRUD UI
+│   │   └── input-flow-settings.js  # Intelligent form logic settings
 │   ├── auth/               # Better Auth client integration
-│   │   ├── auth.js         # Auth state and API client
-│   │   ├── guards.js       # Route guards and permissions
-│   │   └── provider.js     # Better Auth provider setup
+│   │   ├── auth-client.js  # Better Auth client + sign-out
+│   │   ├── auth-guard.js   # Route guards and session management
+│   │   ├── auth-provider.jsx  # React auth provider
+│   │   ├── csrf.js         # CSRF double-submit cookie
+│   │   ├── permissions.js  # RBAC permissions service
+│   │   └── sync-service.js # Background sync after auth
 │   ├── cockpit/            # Gamification UI (NEW)
 │   │   ├── cockpit.js      # Main cockpit controller
 │   │   ├── action-rail.js  # Bottom action bar
@@ -51,29 +58,44 @@ frontend/
 │   │   ├── measurement-rail.js    # Inline depth inputs
 │   │   ├── node-icons.js          # Custom node icon system
 │   │   └── rendering.js           # Main render loop
-│   ├── field-commander/    # Mobile command palette (NEW)
-│   │   ├── command-palette.js    # Cmd+K interface
-│   │   ├── quick-actions.js      # Action shortcuts
-│   │   └── shortcuts.js          # Keyboard bindings
+│   ├── field-commander/    # Mobile UI shell, gestures, territory, XP (NEW)
+│   │   ├── fc-shell.js           # Field commander shell/frame
+│   │   ├── fc-gestures.js        # Touch gesture handling
+│   │   ├── fc-territory.js       # Zone-based assignment
+│   │   ├── fc-xp.js              # XP accumulation
+│   │   ├── fc-achievements.js    # Badge/achievement system
+│   │   └── fc-panels.js          # Panel management
 │   ├── gnss/               # GNSS/Live Measure module
-│   │   ├── bluetooth-adapter.js   # Bluetooth SPP (Android)
-│   │   ├── wifi-adapter.js        # WiFi TCP (Android)
-│   │   ├── mock-adapter.js        # Mock for testing
-│   │   ├── nmea-parser.js         # NMEA sentence parser
-│   │   ├── gnss-state.js          # State management
-│   │   ├── gnss-marker.js         # Canvas marker rendering
-│   │   ├── point-capture-dialog.js # Point capture UI
-│   │   └── connection-manager.js  # Unified connection interface
+│   │   ├── bluetooth-adapter.js          # Bluetooth SPP (Android)
+│   │   ├── wifi-adapter.js               # WiFi TCP (Android)
+│   │   ├── tmm-adapter.js                # Third-party NMEA adapter
+│   │   ├── browser-location-adapter.js   # Browser geolocation fallback
+│   │   ├── mock-adapter.js               # Mock for testing
+│   │   ├── nmea-parser.js                # NMEA sentence parser
+│   │   ├── gnss-state.js                 # State management
+│   │   ├── gnss-marker.js                # Canvas marker rendering
+│   │   ├── point-capture-dialog.js       # Point capture UI
+│   │   ├── precision-measure.js          # Accuracy-gated measurement
+│   │   ├── precision-measure-overlay.js  # Overlay UI
+│   │   ├── index.js                      # Public module exports
+│   │   └── connection-manager.js         # Unified connection interface
 │   ├── graph/              # Graph data structures
 │   │   ├── node.js         # Node model
 │   │   ├── edge.js         # Edge model
 │   │   ├── spatial-index.js  # R-tree for fast lookups
 │   │   └── graph.js        # Graph operations
 │   ├── i18n.js             # Internationalization (Hebrew/English)
-│   ├── legacy/             # Core logic (being modularized)
-│   │   ├── legacy-node.js  # Legacy node handling
-│   │   ├── legacy-edge.js  # Legacy edge handling
-│   │   └── legacy-store.js # Legacy state persistence
+│   ├── legacy/             # Core monolith (being modularized)
+│   │   ├── main.js                 # Main legacy bootstrap
+│   │   ├── canvas-draw.js          # Core canvas drawing logic
+│   │   ├── graph-crud.js           # Node/edge CRUD operations
+│   │   ├── pointer-handlers.js     # Canvas pointer event handlers
+│   │   ├── details-panel.js        # Node/edge details sidebar
+│   │   ├── toolbar-events.js       # Toolbar event wiring
+│   │   ├── storage-manager.js      # Local data persistence
+│   │   ├── coordinate-handlers.js  # ITM coordinate management
+│   │   ├── shared-state.js         # Shared legacy state
+│   │   └── legacy-import-loader.js # Pre-loads import dependencies
 │   ├── main-entry.js       # App bootstrap
 │   ├── map/                # Map layer system
 │   │   ├── map-tiles.js    # Tile layer management
@@ -81,13 +103,13 @@ frontend/
 │   │   ├── reference-layers.js  # GIS overlays
 │   │   └── street-view.js  # Google Street View widget
 │   ├── menu/               # Responsive UI components
-│   │   ├── menu.js         # Main menu
-│   │   ├── command-palette.js  # Cmd+K search
+│   │   ├── menu-config.js  # Declarative menu/action configuration
+│   │   ├── menu-events.js  # Event delegation and action routing
+│   │   ├── command-menu.js # Cmd+K command palette
+│   │   ├── header.js       # Top navigation header
 │   │   └── action-bar.js   # Bottom toolbar
-│   ├── notifications/      # Notification system (NEW)
-│   │   ├── notification-center.js # Main UI
-│   │   ├── notification-manager.js # Delivery logic
-│   │   └── types.js        # Notification schemas
+│   ├── notifications/      # Notification system
+│   │   └── notification-bell.js # Notification bell UI
 │   ├── pages/              # Page components
 │   │   ├── leaderboard-page.js
 │   │   ├── metadata-dashboard.js
@@ -104,10 +126,12 @@ frontend/
 │   │   └── last-edit-tracker.js        # Edit history
 │   ├── serviceWorker/      # Service Worker lifecycle
 │   ├── state/              # Global state management
-│   │   ├── state.js        # Core state (nodes, edges, selections)
+│   │   ├── app-state.js    # Core reactive state (get/set/subscribe)
+│   │   ├── app-store.js    # Sketch store (nodes, edges, selections)
 │   │   ├── constants.js    # Color palettes, enums
 │   │   ├── persistence.js  # Auto-save logic
-│   │   └── view-state.js   # View transform (pan, zoom)
+│   │   ├── event-bus.js    # Global event bus
+│   │   └── skill-level.js  # Feature visibility by skill level
 │   ├── survey/             # Survey mode (NEW)
 │   │   ├── device-picker-dialog.js    # TSC3 selection
 │   │   ├── survey-node-type-dialog.js  # Survey forms
@@ -130,10 +154,19 @@ frontend/
 │   │   ├── edge.ts
 │   │   └── project.ts
 │   ├── utils/              # Shared utilities
-│   │   ├── csv.js          # CSV export/import
-│   │   ├── geometry.js     # Geometry calculations
-│   │   ├── coordinates.js  # Coordinate transformations
-│   │   └── ui.js           # UI helpers
+│   │   ├── csv.js                  # CSV export/import
+│   │   ├── geometry.js             # Geometry calculations
+│   │   ├── coordinates.js          # Coordinate transformations (ITM)
+│   │   ├── legacy-import.js        # Legacy sketch conversion logic
+│   │   ├── sketch-io.js            # Sketch serialization/deserialization
+│   │   ├── backup-manager.js       # Backup and restore
+│   │   ├── floating-keyboard.js    # Custom numeric keyboard
+│   │   ├── resizable-drawer.js     # Swipeable drawer
+│   │   ├── toast.js                # Toast notification helper
+│   │   ├── spatial-grid.js         # Spatial lookup grid
+│   │   ├── label-collision.js      # Label overlap detection
+│   │   ├── progressive-renderer.js # Progressive canvas rendering
+│   │   └── device-perf.js          # Device performance detection
 │   └── workers/            # Web Workers
 │       └── gnss-worker.js  # NMEA parsing in background
 ├── test-results/           # Playwright test reports
@@ -274,8 +307,10 @@ api/
 - **Connection Adapters:**
   - `bluetooth-adapter.js` — Bluetooth SPP (Android)
   - `wifi-adapter.js` — WiFi TCP (Android)
+  - `tmm-adapter.js` — Third-party NMEA over Wi-Fi/Bluetooth
+  - `browser-location-adapter.js` — Browser geolocation fallback
   - `mock-adapter.js` — Browser testing
-  - `tsc3-adapter.js` — TSC3 device integration (NEW)
+  - *(TSC3 device integration is separate, in `survey/`)*
 - **NMEA Parser:** Parses GGA/RMC sentences, extracts lat/lon/fix quality
 - **State Manager (`gnss-state.js`):** Centralized state for position, captured points, live measure mode
 - **Canvas Marker:** Real-time GNSS position rendering on sketch
@@ -300,17 +335,23 @@ api/
 
 ### 3. Field Commander
 
-**Purpose:** Mobile-optimized command interface.
+**Purpose:** Mobile-optimized UI shell with gamification and territory management.
 
 **Components:**
-- `command-palette.js` — Cmd+K searchable action menu
-- `quick-actions.js` — Pre-defined shortcuts
-- `shortcuts.js` — Keyboard binding management
+- `fc-shell.js` — Field commander shell/frame
+- `fc-gestures.js` — Touch gesture handling (one-handed edge mode)
+- `fc-territory.js` — Zone-based work assignment
+- `fc-xp.js` — XP accumulation
+- `fc-achievements.js` — Badge/achievement system
+- `fc-panels.js` — Panel management
+
+**Note:** The `Cmd+K` command palette is in `menu/command-menu.js`, not in field-commander.
 
 **Features:**
 - One-handed edge mode (long-press drag)
-- Fast action access without switching modes
-- Touch-optimized interface
+- Territory zone management
+- XP and achievements gamification
+- Touch-optimized gesture handling
 
 ### 4. Project Canvas
 
@@ -487,7 +528,7 @@ api/
 
 ### Unit Tests (Vitest)
 - **Location:** `frontend/src/**/*.test.js`
-- **Coverage:** ~1,546 tests
+- **Coverage:** 1,632 tests (65 test files)
 - **Command:** `npm run test:run`
 - **Framework:** Vitest with jsdom
 
@@ -602,4 +643,4 @@ Build `dist/` and deploy to any static host (Netlify, GitHub Pages). HTTPS requi
 
 ---
 
-*Last updated: 2026-04-03*
+*Last updated: 2026-04-04*
