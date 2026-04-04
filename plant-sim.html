@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Plant Creature — Circle Interceptor</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0e0a;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100vw;
+    height: 100vh;
+  }
+  canvas {
+    display: block;
+  }
+  #hud {
+    position: fixed;
+    top: 12px;
+    right: 16px;
+    color: #4eff91;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    text-shadow: 0 0 8px #4eff91;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">INTERCEPTED: <span id="score">0</span></div>
+<script>
+(function() {
+'use strict';
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+
+let W, H;
+function resize() {
+  W = canvas.width  = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+let t = 0;
+let score = 0;
+
+// ─── PLANT CONFIGURATION ───────────────────────────────────────────────────
+const PLANT_X = 90;          // horizontal anchor
+const NUM_TENTACLES = 7;
+const SEGMENTS = 14;
+const SEG_LEN = 28;
+
+// Each tentacle has its own phase, speed, base angle, and an optional "strike" state
+const tentacles = Array.from({ length: NUM_TENTACLES }, (_, i) => ({
+  phase: (i / NUM_TENTACLES) * Math.PI * 2,
+  speed: 0.6 + Math.random() * 0.5,
+  baseAngle: -Math.PI * 0.5 + (i / (NUM_TENTACLES - 1) - 0.5) * Math.PI * 1.1,
+  strike: null,     // { target: circle, progress: 0..1 }
+  catching: false,
+  tip: { x: PLANT_X, y: H / 2 }  // current tip position (updated each frame)
+}));
+
+// Root anchor (base of plant)
+function plantRoot() {
+  return { x: PLANT_X, y: H * 0.5 };
+}
+
+// Compute a tentacle's segment positions via inverse kinematics-like forward kinematics
+// with sinusoidal undulation, optionally bending toward a strike target
+function tentacleSegments(ten, now) {
+  const root = plantRoot();
+  const pts = [{ x: root.x, y: root.y }];
+
+  // Determine tip target
+  let tipTarget = null;
+  if (ten.strike) {
+    tipTarget = ten.strike.target;
+  }
+
+  let angle = ten.baseAngle;
+  for (let s = 0; s < SEGMENTS; s++) {
+    const frac = s / SEGMENTS;
+    const prev = pts[s];
+
+    // Natural undulation
+    const undulate = Math.sin(now * ten.speed + ten.phase + s * 0.45) * (0.3 + frac * 0.25);
+    let segAngle = angle + undulate;
+
+    // If striking: blend toward tip target on outer segments
+    if (tipTarget && frac > 0.3) {
+      const strikeFrac = Math.min(1, (frac - 0.3) / 0.7) * Math.min(1, (ten.strike.progress || 0) * 2);
+      const dx = tipTarget.x - prev.x;
+      const dy = tipTarget.y - prev.y;
+      const toward = Math.atan2(dy, dx);
+      // Short-arc blend
+      let diff = toward - segAngle;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      segAngle += diff * strikeFrac * 0.7;
+    }
+
+    pts.push({
+      x: prev.x + Math.cos(segAngle) * SEG_LEN,
+      y: prev.y + Math.sin(segAngle) * SEG_LEN
+    });
+
+    angle = segAngle * 0.85 + angle * 0.15;
+  }
+
+  return pts;
+}
+
+// ─── CIRCLES ──────────────────────────────────────────────────────────────
+const circles = [];
+let nextSpawn = 0;
+const SPAWN_INTERVAL_MIN = 600;   // ms
+const SPAWN_INTERVAL_MAX = 1400;
+
+function spawnCircle(now) {
+  const r = 14 + Math.random() * 18;
+  circles.push({
+    x: W + r,
+    y: H * 0.1 + Math.random() * H * 0.8,
+    r,
+    vx: -(3.5 + Math.random() * 3.5),
+    vy: 0,
+    phase: Math.random() * Math.PI * 2,
+    ampY: 40 + Math.random() * 80,
+    freqY: 1.2 + Math.random() * 2.2,
+    hue: Math.random() * 60 + 160,   // cyan-green-teal palette
+    alpha: 1,
+    dead: false,
+    consumed: false,
+    consumeT: 0,
+    consumeX: 0,
+    consumeY: 0
+  });
+  nextSpawn = now + SPAWN_INTERVAL_MIN + Math.random() * (SPAWN_INTERVAL_MAX - SPAWN_INTERVAL_MIN);
+}
+
+// ─── TENTACLE ASSIGNMENT ───────────────────────────────────────────────────
+// Each free tentacle can be assigned to intercept one circle
+function assignTentacles() {
+  // Build list of circles not yet targeted
+  const unassigned = circles.filter(c => !c.dead && !c.consumed && !c._assigned);
+  const freeTentacles = tentacles.filter(ten => !ten.strike);
+
+  for (let i = 0; i < Math.min(unassigned.length, freeTentacles.length); i++) {
+    const c = unassigned[i];
+    const ten = freeTentacles[i];
+    c._assigned = true;
+    ten.strike = { target: c, progress: 0 };
+    ten.catching = false;
+  }
+}
+
+// ─── PARTICLES ────────────────────────────────────────────────────────────
+const particles = [];
+function spawnParticles(x, y, hue) {
+  for (let i = 0; i < 18; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 1 + Math.random() * 4;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 1,
+      decay: 0.03 + Math.random() * 0.04,
+      r: 2 + Math.random() * 5,
+      hue
+    });
+  }
+}
+
+// ─── DRAW HELPERS ─────────────────────────────────────────────────────────
+function drawBackground() {
+  // Deep dark gradient
+  const grad = ctx.createLinearGradient(0, 0, W, 0);
+  grad.addColorStop(0, '#060b06');
+  grad.addColorStop(1, '#0d1a14');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle grid lines
+  ctx.strokeStyle = 'rgba(40,80,50,0.12)';
+  ctx.lineWidth = 1;
+  const gStep = 60;
+  for (let gx = 0; gx < W; gx += gStep) {
+    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke();
+  }
+  for (let gy = 0; gy < H; gy += gStep) {
+    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+  }
+}
+
+function drawPlantBase(now) {
+  const root = plantRoot();
+  // Glowing pod / bulb
+  const grad = ctx.createRadialGradient(root.x, root.y, 2, root.x, root.y, 55);
+  grad.addColorStop(0, 'rgba(100,255,140,0.25)');
+  grad.addColorStop(0.5, 'rgba(40,180,80,0.10)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(root.x, root.y, 55, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Pulsing core
+  const pulse = 0.85 + 0.15 * Math.sin(now * 3.5);
+  const coreGrad = ctx.createRadialGradient(root.x, root.y, 0, root.x, root.y, 22 * pulse);
+  coreGrad.addColorStop(0, 'rgba(200,255,180,0.95)');
+  coreGrad.addColorStop(0.4, 'rgba(60,220,100,0.75)');
+  coreGrad.addColorStop(1, 'rgba(20,100,40,0)');
+  ctx.fillStyle = coreGrad;
+  ctx.beginPath();
+  ctx.arc(root.x, root.y, 22 * pulse, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Stem anchors
+  for (let i = 0; i < 3; i++) {
+    const ay = root.y + (i - 1) * 22;
+    ctx.beginPath();
+    ctx.moveTo(0, ay);
+    ctx.bezierCurveTo(30, ay + 5, 60, ay - 5, root.x, root.y);
+    ctx.strokeStyle = `rgba(40,160,70,0.5)`;
+    ctx.lineWidth = 6 - i * 1.5;
+    ctx.stroke();
+  }
+}
+
+function drawTentacle(pts, isStriking, hue) {
+  if (pts.length < 2) return;
+
+  // Shadow/glow pass
+  ctx.save();
+  ctx.shadowColor = `hsl(${hue},80%,50%)`;
+  ctx.shadowBlur = isStriking ? 18 : 8;
+
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length - 1; i++) {
+    const mx = (pts[i].x + pts[i + 1].x) * 0.5;
+    const my = (pts[i].y + pts[i + 1].y) * 0.5;
+    ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
+  }
+  ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
+
+  // Tapered width via gradient stroke trick: draw multiple passes
+  const maxW = isStriking ? 7 : 5;
+  for (let pass = 0; pass < 3; pass++) {
+    const frac = pass / 2;
+    ctx.lineWidth = maxW * (1 - frac * 0.7);
+    ctx.strokeStyle = `hsla(${hue},${60 + frac * 30}%,${45 + frac * 25}%,${1 - frac * 0.5})`;
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // Tip bud
+  const tip = pts[pts.length - 1];
+  const budR = isStriking ? 7 : 5;
+  const budGrad = ctx.createRadialGradient(tip.x, tip.y, 0, tip.x, tip.y, budR * 2);
+  budGrad.addColorStop(0, `hsl(${hue + 20}, 90%, 80%)`);
+  budGrad.addColorStop(1, `hsla(${hue}, 70%, 40%, 0)`);
+  ctx.fillStyle = budGrad;
+  ctx.beginPath();
+  ctx.arc(tip.x, tip.y, budR * 2, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawCircle(c, now) {
+  if (c.consumed) {
+    // Shrink + fade on consumption
+    const elapsed = (now - c.consumeT) / 0.4;
+    const scale = Math.max(0, 1 - elapsed);
+    const alpha = scale;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    const cg = ctx.createRadialGradient(c.consumeX, c.consumeY, 0, c.consumeX, c.consumeY, c.r * scale);
+    cg.addColorStop(0, `hsl(${c.hue},80%,80%)`);
+    cg.addColorStop(1, `hsla(${c.hue},60%,40%,0)`);
+    ctx.fillStyle = cg;
+    ctx.beginPath();
+    ctx.arc(c.consumeX, c.consumeY, c.r * scale, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
+
+  ctx.save();
+  ctx.shadowColor = `hsl(${c.hue},80%,55%)`;
+  ctx.shadowBlur = 20;
+
+  // Outer glow
+  const og = ctx.createRadialGradient(c.x, c.y, c.r * 0.3, c.x, c.y, c.r * 1.5);
+  og.addColorStop(0, `hsla(${c.hue},70%,60%,0.15)`);
+  og.addColorStop(1, `hsla(${c.hue},50%,30%,0)`);
+  ctx.fillStyle = og;
+  ctx.beginPath();
+  ctx.arc(c.x, c.y, c.r * 1.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Main body
+  const cg = ctx.createRadialGradient(c.x - c.r * 0.3, c.y - c.r * 0.3, c.r * 0.1, c.x, c.y, c.r);
+  cg.addColorStop(0, `hsl(${c.hue + 20},90%,80%)`);
+  cg.addColorStop(0.5, `hsl(${c.hue},75%,55%)`);
+  cg.addColorStop(1, `hsl(${c.hue - 10},60%,30%)`);
+  ctx.fillStyle = cg;
+  ctx.beginPath();
+  ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Rim
+  ctx.strokeStyle = `hsla(${c.hue + 30},90%,85%,0.6)`;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawParticles() {
+  for (const p of particles) {
+    ctx.save();
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = `hsl(${p.hue},80%,65%)`;
+    ctx.shadowColor = `hsl(${p.hue},80%,65%)`;
+    ctx.shadowBlur = 6;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r * p.life, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+// ─── MAIN LOOP ─────────────────────────────────────────────────────────────
+let lastTime = null;
+
+function loop(timestamp) {
+  if (!lastTime) lastTime = timestamp;
+  const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+  lastTime = timestamp;
+  t += dt;
+
+  // Spawn circles
+  if (timestamp > nextSpawn) {
+    spawnCircle(timestamp);
+  }
+
+  // Update circle positions
+  for (const c of circles) {
+    if (c.dead || c.consumed) continue;
+    c.vy = Math.sin(t * c.freqY + c.phase) * c.ampY * 0.04;
+    c.x += c.vx;
+    c.y += c.vy;
+
+    // If circle escapes left — shouldn't happen but failsafe
+    if (c.x + c.r < 0) {
+      c.dead = true;
+      if (c._assigned) {
+        const ten = tentacles.find(tn => tn.strike && tn.strike.target === c);
+        if (ten) { ten.strike = null; ten.catching = false; }
+      }
+    }
+  }
+
+  // Assign free tentacles to unassigned circles
+  assignTentacles();
+
+  // Update tentacle strikes & check catch
+  for (const ten of tentacles) {
+    if (!ten.strike) continue;
+    const c = ten.strike.target;
+
+    if (c.dead || c.consumed) {
+      ten.strike = null;
+      ten.catching = false;
+      continue;
+    }
+
+    // Advance strike progress (reach out)
+    ten.strike.progress = Math.min(1, (ten.strike.progress || 0) + dt * 1.8);
+
+    // Get tip position
+    const pts = tentacleSegments(ten, t);
+    const tip = pts[pts.length - 1];
+    ten.tip = tip;
+
+    // Check if tip is close enough to circle to catch it
+    const dx = tip.x - c.x;
+    const dy = tip.y - c.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist < c.r + 14) {
+      // CAUGHT!
+      c.consumed = true;
+      c.consumeT = t;
+      c.consumeX = c.x;
+      c.consumeY = c.y;
+      spawnParticles(c.x, c.y, c.hue);
+      score++;
+      scoreEl.textContent = score;
+      ten.strike = null;
+      ten.catching = false;
+    }
+  }
+
+  // Update particles
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vx *= 0.95;
+    p.vy *= 0.95;
+    p.life -= p.decay;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+
+  // Clean up dead/fully-consumed circles
+  for (let i = circles.length - 1; i >= 0; i--) {
+    const c = circles[i];
+    if (c.dead) { circles.splice(i, 1); continue; }
+    if (c.consumed && (t - c.consumeT) > 0.5) { circles.splice(i, 1); continue; }
+  }
+
+  // ─── DRAW ─────────────────────────────────────────────────────────────
+  ctx.clearRect(0, 0, W, H);
+  drawBackground();
+
+  // Draw circles (behind tentacles)
+  for (const c of circles) {
+    drawCircle(c, t);
+  }
+
+  // Draw plant base
+  drawPlantBase(t);
+
+  // Draw all tentacles
+  for (let i = 0; i < tentacles.length; i++) {
+    const ten = tentacles[i];
+    const pts = tentacleSegments(ten, t);
+    ten.tip = pts[pts.length - 1];
+    const hue = 110 + i * 8 + Math.sin(t * 0.5 + i) * 10;
+    drawTentacle(pts, !!ten.strike, hue);
+  }
+
+  // Draw particles (on top)
+  drawParticles();
+
+  requestAnimationFrame(loop);
+}
+
+requestAnimationFrame(loop);
+
+})();
+</script>
+</body>
+</html>
