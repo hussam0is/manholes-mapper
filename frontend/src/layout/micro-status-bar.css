@@ -84,11 +84,33 @@ body.unified-layout .micro-status-bar {
   .msb-gps-accuracy.acc-external { background: #2e1065; color: #c4b5fd; }
 }
 
-/* Sync */
+/* Sync (legacy — kept for compatibility) */
 .msb-sync.synced .material-icons { color: #22c55e; }
 .msb-sync.syncing .material-icons { color: #f59e0b; }
 .msb-sync.error .material-icons { color: #ef4444; }
 .msb-sync.offline .material-icons { color: #94a3b8; }
+
+/* ─── Offline Status Chip ─── */
+/* States: synced (green) | pending (amber) | offline (red) */
+.msb-offline-chip {
+  font-weight: 500;
+  transition: background 0.2s, color 0.2s;
+}
+
+.msb-offline-chip--synced .material-icons { color: #22c55e; }
+.msb-offline-chip--synced { color: var(--color-text-muted, #64748b); }
+
+.msb-offline-chip--pending .material-icons { color: #f59e0b; }
+.msb-offline-chip--pending { color: #92400e; background: rgba(245,158,11,0.08); border-radius: 6px; }
+
+.msb-offline-chip--offline .material-icons { color: #ef4444; }
+.msb-offline-chip--offline { color: #991b1b; background: rgba(239,68,68,0.08); border-radius: 6px; }
+
+/* Dark mode overrides for offline chip */
+@media (prefers-color-scheme: dark) {
+  .msb-offline-chip--pending { color: #fde68a; background: rgba(245,158,11,0.12); }
+  .msb-offline-chip--offline { color: #fca5a5; background: rgba(239,68,68,0.12); }
+}
 
 /* Health */
 .msb-health__percent {

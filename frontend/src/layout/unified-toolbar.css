@@ -254,3 +254,34 @@ body.unified-layout .unified-toolbar {
     border-color: var(--color-border, #334155);
   }
 }
+
+/* ─── Touch Target Audit (field use) ─────────────────────────────────
+   Leaflet map controls are typically 26–30px. Raise all tappable
+   controls to a minimum 60×60px touch area per WCAG 2.5.5 (AAA) and
+   field-use ergonomics. We use min-width/min-height so that controls
+   that are already larger are unaffected.
+   ──────────────────────────────────────────────────────────────────── */
+.leaflet-control button,
+.leaflet-bar a,
+.leaflet-control-zoom a {
+  min-width: 60px !important;
+  min-height: 60px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  font-size: 18px !important;
+  line-height: 1 !important;
+}
+
+/* Leaflet zoom bar: stack vertically, each link is 60px */
+.leaflet-control-zoom {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Leaflet attribution / layer switcher links are decorative, not action targets — exempt */
+.leaflet-control-attribution a {
+  min-width: unset !important;
+  min-height: unset !important;
+}

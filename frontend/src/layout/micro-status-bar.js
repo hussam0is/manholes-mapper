@@ -1,13 +1,92 @@
 /**
  * Micro Status Bar — compact 32px strip below header.
- * Shows: GPS fix | Sync status | Health % | Issue count | Session timer
+ * Shows: GPS fix | Sync status | Offline chip | Health % | Issue count | Session timer
  * Tapping any item opens the corresponding sidebar tab.
  */
 
 import './micro-status-bar.css';
+import { drainSyncQueue } from '../db.js';
 
 let barEl = null;
 let updateInterval = null;
+
+// ─── Offline chip state ────────────────────────────────────────────
+let _offlineChipOnline = null;   // last known online state (null = uninitialised)
+let _offlineChipBound = false;   // event listeners attached?
+
+/**
+ * Count pending items in the IndexedDB syncQueue.
+ * Returns 0 on any error (e.g. quota, blocked).
+ * @returns {Promise<number>}
+ */
+async function _countSyncQueue() {
+  try {
+    const items = await drainSyncQueue();
+    return items.length;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Update the offline-status chip and emit toast on state transitions.
+ */
+async function updateOfflineChip() {
+  const chipEl = document.getElementById('msbOfflineChip');
+  const chipIconEl = document.getElementById('msbOfflineIcon');
+  const chipLabelEl = document.getElementById('msbOfflineLabel');
+  if (!chipEl || !chipIconEl || !chipLabelEl) return;
+
+  const isOnline = navigator.onLine;
+  const pendingCount = isOnline ? await _countSyncQueue() : await _countSyncQueue();
+
+  // Determine chip state
+  let state;
+  if (!isOnline) {
+    state = 'offline';
+  } else if (pendingCount > 0) {
+    state = 'pending';
+  } else {
+    state = 'synced';
+  }
+
+  // Update DOM
+  chipEl.dataset.offlineState = state;
+  chipEl.className = `msb-item msb-offline-chip msb-offline-chip--${state}`;
+
+  switch (state) {
+    case 'offline':
+      chipIconEl.textContent = 'cloud_off';
+      chipLabelEl.textContent = 'Offline';
+      break;
+    case 'pending':
+      chipIconEl.textContent = 'cloud_upload';
+      chipLabelEl.textContent = `${pendingCount} pending`;
+      break;
+    case 'synced':
+    default:
+      chipIconEl.textContent = 'cloud_done';
+      chipLabelEl.textContent = 'Synced';
+      break;
+  }
+
+  // Toast on transition (only when previous state is known)
+  if (_offlineChipOnline !== null && _offlineChipOnline !== isOnline) {
+    const t = window.t || ((k) => k);
+    if (!isOnline) {
+      const msg = t('offline.wentOffline') ||
+        `Working offline${pendingCount > 0 ? ` — ${pendingCount} changes will sync when connected` : ''}`;
+      window.showToast?.(msg, 'warning', 4000);
+    } else {
+      const msg = pendingCount > 0
+        ? (t('offline.backOnlinePending') || `Back online — syncing ${pendingCount} pending changes`)
+        : (t('offline.backOnline') || 'Back online — all changes synced');
+      window.showToast?.(msg, 'success', 3000);
+    }
+  }
+
+  _offlineChipOnline = isOnline;
+}
 
 export function initMicroStatusBar() {
   if (document.getElementById('microStatusBar')) return;
@@ -25,9 +104,9 @@ export function initMicroStatusBar() {
       <span class="msb-gps-accuracy" id="msbGpsAccuracy" style="display:none"></span>
     </div>
     <div class="msb-sep"></div>
-    <div class="msb-item msb-sync synced" id="msbSync" data-sidebar-tab="status" title="Sync">
-      <span class="material-icons" id="msbSyncIcon">cloud_done</span>
-      <span id="msbSyncLabel">${t('cockpit.synced') || 'Synced'}</span>
+    <div class="msb-item msb-offline-chip msb-offline-chip--synced" id="msbOfflineChip" data-sidebar-tab="status" title="Connection &amp; Sync">
+      <span class="material-icons" id="msbOfflineIcon">cloud_done</span>
+      <span id="msbOfflineLabel">${t('cockpit.synced') || 'Synced'}</span>
     </div>
     <div class="msb-sep"></div>
     <div class="msb-item msb-health" data-sidebar-tab="status" title="Health">
@@ -71,11 +150,22 @@ export function initMicroStatusBar() {
     gnss.on('connection', updateGPS);
   }
 
+  // ─── Offline chip: native online/offline events ─────────────────
+  if (!_offlineChipBound) {
+    window.addEventListener('online',  _onOnlineEvent);
+    window.addEventListener('offline', _onOfflineEvent);
+    _offlineChipBound = true;
+  }
+  // Run once to set initial state without transition toast
+  _offlineChipOnline = navigator.onLine;
+  updateOfflineChip();
+
   // Use a slower fallback interval for sync/health/session (no events available)
   updateInterval = setInterval(() => {
     updateSync();
     updateHealth();
     updateSession();
+    updateOfflineChip(); // poll syncQueue periodically even without events
   }, 3000);
 
   // Initial full update
@@ -245,8 +335,22 @@ function updateSession() {
   if (usEdges && origEdges) usEdges.textContent = origEdges.textContent || '0';
 }
 
+// ─── Online / Offline event handlers ────────────────────────────────
+function _onOnlineEvent() {
+  updateOfflineChip();
+}
+function _onOfflineEvent() {
+  updateOfflineChip();
+}
+
 export function destroyMicroStatusBar() {
   if (updateInterval) clearInterval(updateInterval);
+  if (_offlineChipBound) {
+    window.removeEventListener('online',  _onOnlineEvent);
+    window.removeEventListener('offline', _onOfflineEvent);
+    _offlineChipBound = false;
+  }
+  _offlineChipOnline = null;
   barEl?.remove();
   barEl = null;
 }
