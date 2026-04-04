@@ -119,19 +119,21 @@ test.describe('Canvas Drawing Flow', () => {
   });
 
   test('zoom in button has add icon', async ({ page }) => {
-    const iconText = await page.evaluate(() => {
-      const btn = document.getElementById('canvasZoomInBtn');
-      return btn?.querySelector('.material-icons')?.textContent?.trim();
-    });
-    expect(iconText).toBe('add');
+    // Use locator API instead of page.evaluate to avoid "execution context destroyed"
+    // errors when the page is still settling after navigation/dismissHomePanel.
+    const icon = page.locator('#canvasZoomInBtn .material-icons');
+    await expect(icon).toBeAttached();
+    const iconText = await icon.textContent();
+    expect(iconText?.trim()).toBe('add');
   });
 
   test('zoom out button has remove icon', async ({ page }) => {
-    const iconText = await page.evaluate(() => {
-      const btn = document.getElementById('canvasZoomOutBtn');
-      return btn?.querySelector('.material-icons')?.textContent?.trim();
-    });
-    expect(iconText).toBe('remove');
+    // Use locator API instead of page.evaluate to avoid "execution context destroyed"
+    // errors when the page is still settling after navigation/dismissHomePanel.
+    const icon = page.locator('#canvasZoomOutBtn .material-icons');
+    await expect(icon).toBeAttached();
+    const iconText = await icon.textContent();
+    expect(iconText?.trim()).toBe('remove');
   });
 });
 

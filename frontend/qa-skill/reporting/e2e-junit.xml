@@ -1,5 +1,5 @@
-<testsuites id="" name="" tests="500" failures="0" skipped="500" errors="0" time="0.7477320000000002">
-<testsuite name="admin-panel.spec.ts" timestamp="2026-04-02T00:33:06.696Z" hostname="chromium" tests="10" failures="0" skipped="10" time="0" errors="0">
+<testsuites id="" name="" tests="500" failures="0" skipped="500" errors="0" time="0.8240740000000001">
+<testsuite name="admin-panel.spec.ts" timestamp="2026-04-04T07:04:10.419Z" hostname="chromium" tests="10" failures="0" skipped="10" time="0" errors="0">
 <testcase name="Admin Panel DOM Structure › admin screen element exists in the DOM" classname="admin-panel.spec.ts" time="0">
 <skipped>
 </skipped>
@@ -41,7 +41,7 @@
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="auth.spec.ts" timestamp="2026-04-02T00:33:06.696Z" hostname="chromium" tests="10" failures="0" skipped="10" time="0" errors="0">
+<testsuite name="auth.spec.ts" timestamp="2026-04-04T07:04:10.419Z" hostname="chromium" tests="10" failures="0" skipped="10" time="0" errors="0">
 <testcase name="Authentication › should show login panel when not authenticated" classname="auth.spec.ts" time="0">
 <skipped>
 </skipped>
@@ -83,7 +83,7 @@
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="canvas-drawing.spec.ts" timestamp="2026-04-02T00:33:06.696Z" hostname="chromium" tests="15" failures="0" skipped="15" time="0" errors="0">
+<testsuite name="canvas-drawing.spec.ts" timestamp="2026-04-04T07:04:10.419Z" hostname="chromium" tests="15" failures="0" skipped="15" time="0" errors="0">
 <testcase name="Canvas Drawing Flow › canvas element is visible" classname="canvas-drawing.spec.ts" time="0">
 <skipped>
 </skipped>
@@ -145,7 +145,7 @@
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="cockpit.spec.ts" timestamp="2026-04-02T00:33:06.696Z" hostname="chromium" tests="80" failures="0" skipped="80" time="0" errors="0">
+<testsuite name="cockpit.spec.ts" timestamp="2026-04-04T07:04:10.419Z" hostname="chromium" tests="80" failures="0" skipped="80" time="0" errors="0">
 <testcase name="Cockpit — Landscape Layout › cockpit-mode class is added to body in landscape" classname="cockpit.spec.ts" time="0">
 <skipped>
 </skipped>
@@ -467,7 +467,7 @@
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="dark-mode.spec.ts" timestamp="2026-04-02T00:33:06.696Z" hostname="chromium" tests="6" failures="0" skipped="6" time="0" errors="0">
+<testsuite name="dark-mode.spec.ts" timestamp="2026-04-04T07:04:10.419Z" hostname="chromium" tests="6" failures="0" skipped="6" time="0" errors="0">
 <testcase name="Dark Mode › body has dark background in dark mode" classname="dark-mode.spec.ts" time="0">
 <skipped>
 </skipped>
@@ -493,7 +493,7 @@
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="export-flow.spec.ts" timestamp="2026-04-02T00:33:06.696Z" hostname="chromium" tests="9" failures="0" skipped="9" time="0" errors="0">
+<testsuite name="export-flow.spec.ts" timestamp="2026-04-04T07:04:10.419Z" hostname="chromium" tests="9" failures="0" skipped="9" time="0" errors="0">
 <testcase name="Export Flow › export menu button exists in the DOM" classname="export-flow.spec.ts" time="0">
 <skipped>
 </skipped>
@@ -531,13 +531,13 @@
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="full-sketch-workflow.spec.ts" timestamp="2026-04-02T00:33:06.696Z" hostname="chromium" tests="1" failures="0" skipped="1" time="0" errors="0">
+<testsuite name="full-sketch-workflow.spec.ts" timestamp="2026-04-04T07:04:10.419Z" hostname="chromium" tests="1" failures="0" skipped="1" time="0" errors="0">
 <testcase name="Full Sketch Workflow — Severe UX Audit › complete sketch workflow with data entry" classname="full-sketch-workflow.spec.ts" time="0">
 <skipped>
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="homepage.spec.ts" timestamp="2026-04-02T00:33:06.696Z" hostname="chromium" tests="36" failures="0" skipped="36" time="0" errors="0">
+<testsuite name="homepage.spec.ts" timestamp="2026-04-04T07:04:10.419Z" hostname="chromium" tests="36" failures="0" skipped="36" time="0" errors="0">
 <testcase name="Projects Homepage › should display home panel in projects mode on load" classname="homepage.spec.ts" time="0">
 <skipped>
 </skipped>
@@ -683,7 +683,7 @@
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="offline-resilience.spec.ts" timestamp="2026-04-02T00:33:06.696Z" hostname="chromium" tests="7" failures="0" skipped="7" time="0" errors="0">
+<testsuite name="offline-resilience.spec.ts" timestamp="2026-04-04T07:04:10.419Z" hostname="chromium" tests="7" failures="0" skipped="7" time="0" errors="0">
 <testcase name="Offline Resilience › app loads and canvas works even when API calls fail after initial load" classname="offline-resilience.spec.ts" time="0">
 <skipped>
 </skipped>
@@ -713,7 +713,7 @@
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="project-canvas.spec.ts" timestamp="2026-04-02T00:33:06.696Z" hostname="chromium" tests="10" failures="0" skipped="10" time="0" errors="0">
+<testsuite name="project-canvas.spec.ts" timestamp="2026-04-04T07:04:10.419Z" hostname="chromium" tests="10" failures="0" skipped="10" time="0" errors="0">
 <testcase name="Project Canvas Structure › sketch side panel element exists in the DOM" classname="project-canvas.spec.ts" time="0">
 <skipped>
 </skipped>
@@ -755,7 +755,7 @@
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="recent-fixes.spec.ts" timestamp="2026-04-02T00:33:06.696Z" hostname="chromium" tests="17" failures="0" skipped="17" time="0" errors="0">
+<testsuite name="recent-fixes.spec.ts" timestamp="2026-04-04T07:04:10.419Z" hostname="chromium" tests="17" failures="0" skipped="17" time="0" errors="0">
 <testcase name="Sketches Button i18n Fix › desktop sketches button shows &quot;Sketches&quot; text, not [object Object]" classname="recent-fixes.spec.ts" time="0">
 <skipped>
 </skipped>
@@ -825,7 +825,7 @@
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="responsive.spec.ts" timestamp="2026-04-02T00:33:06.696Z" hostname="chromium" tests="17" failures="0" skipped="17" time="0" errors="0">
+<testsuite name="responsive.spec.ts" timestamp="2026-04-04T07:04:10.419Z" hostname="chromium" tests="17" failures="0" skipped="17" time="0" errors="0">
 <testcase name="Responsive -- Mobile Portrait (375x812) › no horizontal overflow at 375px width" classname="responsive.spec.ts" time="0">
 <skipped>
 </skipped>
@@ -895,7 +895,7 @@
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="rtl-layout.spec.ts" timestamp="2026-04-02T00:33:06.696Z" hostname="chromium" tests="8" failures="0" skipped="8" time="0" errors="0">
+<testsuite name="rtl-layout.spec.ts" timestamp="2026-04-04T07:04:10.419Z" hostname="chromium" tests="8" failures="0" skipped="8" time="0" errors="0">
 <testcase name="RTL Layout › document has dir=&quot;rtl&quot; by default (Hebrew)" classname="rtl-layout.spec.ts" time="0">
 <skipped>
 </skipped>
@@ -929,7 +929,7 @@
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="sketch.spec.ts" timestamp="2026-04-02T00:33:06.696Z" hostname="chromium" tests="17" failures="0" skipped="17" time="0" errors="0">
+<testsuite name="sketch.spec.ts" timestamp="2026-04-04T07:04:10.419Z" hostname="chromium" tests="17" failures="0" skipped="17" time="0" errors="0">
 <testcase name="Sketch Canvas › should have canvas element" classname="sketch.spec.ts" time="0">
 <skipped>
 </skipped>
@@ -999,7 +999,7 @@
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="three-d-view.spec.ts" timestamp="2026-04-02T00:33:06.696Z" hostname="chromium" tests="7" failures="0" skipped="7" time="0" errors="0">
+<testsuite name="three-d-view.spec.ts" timestamp="2026-04-04T07:04:10.419Z" hostname="chromium" tests="7" failures="0" skipped="7" time="0" errors="0">
 <testcase name="3D View Button › 3D view button exists in the DOM for admin users" classname="three-d-view.spec.ts" time="0">
 <skipped>
 </skipped>
@@ -1029,7 +1029,7 @@
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="admin-panel.spec.ts" timestamp="2026-04-02T00:33:06.696Z" hostname="Mobile Chrome" tests="10" failures="0" skipped="10" time="0" errors="0">
+<testsuite name="admin-panel.spec.ts" timestamp="2026-04-04T07:04:10.419Z" hostname="Mobile Chrome" tests="10" failures="0" skipped="10" time="0" errors="0">
 <testcase name="Admin Panel DOM Structure › admin screen element exists in the DOM" classname="admin-panel.spec.ts" time="0">
 <skipped>
 </skipped>
@@ -1071,7 +1071,7 @@
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="auth.spec.ts" timestamp="2026-04-02T00:33:06.696Z" hostname="Mobile Chrome" tests="10" failures="0" skipped="10" time="0" errors="0">
+<testsuite name="auth.spec.ts" timestamp="2026-04-04T07:04:10.419Z" hostname="Mobile Chrome" tests="10" failures="0" skipped="10" time="0" errors="0">
 <testcase name="Authentication › should show login panel when not authenticated" classname="auth.spec.ts" time="0">
 <skipped>
 </skipped>
@@ -1113,7 +1113,7 @@
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="canvas-drawing.spec.ts" timestamp="2026-04-02T00:33:06.696Z" hostname="Mobile Chrome" tests="15" failures="0" skipped="15" time="0" errors="0">
+<testsuite name="canvas-drawing.spec.ts" timestamp="2026-04-04T07:04:10.419Z" hostname="Mobile Chrome" tests="15" failures="0" skipped="15" time="0" errors="0">
 <testcase name="Canvas Drawing Flow › canvas element is visible" classname="canvas-drawing.spec.ts" time="0">
 <skipped>
 </skipped>
@@ -1175,7 +1175,7 @@
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="cockpit.spec.ts" timestamp="2026-04-02T00:33:06.696Z" hostname="Mobile Chrome" tests="80" failures="0" skipped="80" time="0" errors="0">
+<testsuite name="cockpit.spec.ts" timestamp="2026-04-04T07:04:10.419Z" hostname="Mobile Chrome" tests="80" failures="0" skipped="80" time="0" errors="0">
 <testcase name="Cockpit — Landscape Layout › cockpit-mode class is added to body in landscape" classname="cockpit.spec.ts" time="0">
 <skipped>
 </skipped>
@@ -1497,7 +1497,7 @@
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="dark-mode.spec.ts" timestamp="2026-04-02T00:33:06.696Z" hostname="Mobile Chrome" tests="6" failures="0" skipped="6" time="0" errors="0">
+<testsuite name="dark-mode.spec.ts" timestamp="2026-04-04T07:04:10.419Z" hostname="Mobile Chrome" tests="6" failures="0" skipped="6" time="0" errors="0">
 <testcase name="Dark Mode › body has dark background in dark mode" classname="dark-mode.spec.ts" time="0">
 <skipped>
 </skipped>
@@ -1523,7 +1523,7 @@
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="export-flow.spec.ts" timestamp="2026-04-02T00:33:06.696Z" hostname="Mobile Chrome" tests="9" failures="0" skipped="9" time="0" errors="0">
+<testsuite name="export-flow.spec.ts" timestamp="2026-04-04T07:04:10.419Z" hostname="Mobile Chrome" tests="9" failures="0" skipped="9" time="0" errors="0">
 <testcase name="Export Flow › export menu button exists in the DOM" classname="export-flow.spec.ts" time="0">
 <skipped>
 </skipped>
@@ -1561,13 +1561,13 @@
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="full-sketch-workflow.spec.ts" timestamp="2026-04-02T00:33:06.696Z" hostname="Mobile Chrome" tests="1" failures="0" skipped="1" time="0" errors="0">
+<testsuite name="full-sketch-workflow.spec.ts" timestamp="2026-04-04T07:04:10.419Z" hostname="Mobile Chrome" tests="1" failures="0" skipped="1" time="0" errors="0">
 <testcase name="Full Sketch Workflow — Severe UX Audit › complete sketch workflow with data entry" classname="full-sketch-workflow.spec.ts" time="0">
 <skipped>
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="homepage.spec.ts" timestamp="2026-04-02T00:33:06.696Z" hostname="Mobile Chrome" tests="36" failures="0" skipped="36" time="0" errors="0">
+<testsuite name="homepage.spec.ts" timestamp="2026-04-04T07:04:10.419Z" hostname="Mobile Chrome" tests="36" failures="0" skipped="36" time="0" errors="0">
 <testcase name="Projects Homepage › should display home panel in projects mode on load" classname="homepage.spec.ts" time="0">
 <skipped>
 </skipped>
@@ -1713,7 +1713,7 @@
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="offline-resilience.spec.ts" timestamp="2026-04-02T00:33:06.696Z" hostname="Mobile Chrome" tests="7" failures="0" skipped="7" time="0" errors="0">
+<testsuite name="offline-resilience.spec.ts" timestamp="2026-04-04T07:04:10.419Z" hostname="Mobile Chrome" tests="7" failures="0" skipped="7" time="0" errors="0">
 <testcase name="Offline Resilience › app loads and canvas works even when API calls fail after initial load" classname="offline-resilience.spec.ts" time="0">
 <skipped>
 </skipped>
@@ -1743,7 +1743,7 @@
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="project-canvas.spec.ts" timestamp="2026-04-02T00:33:06.696Z" hostname="Mobile Chrome" tests="10" failures="0" skipped="10" time="0" errors="0">
+<testsuite name="project-canvas.spec.ts" timestamp="2026-04-04T07:04:10.419Z" hostname="Mobile Chrome" tests="10" failures="0" skipped="10" time="0" errors="0">
 <testcase name="Project Canvas Structure › sketch side panel element exists in the DOM" classname="project-canvas.spec.ts" time="0">
 <skipped>
 </skipped>
@@ -1785,7 +1785,7 @@
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="recent-fixes.spec.ts" timestamp="2026-04-02T00:33:06.696Z" hostname="Mobile Chrome" tests="17" failures="0" skipped="17" time="0" errors="0">
+<testsuite name="recent-fixes.spec.ts" timestamp="2026-04-04T07:04:10.419Z" hostname="Mobile Chrome" tests="17" failures="0" skipped="17" time="0" errors="0">
 <testcase name="Sketches Button i18n Fix › desktop sketches button shows &quot;Sketches&quot; text, not [object Object]" classname="recent-fixes.spec.ts" time="0">
 <skipped>
 </skipped>
@@ -1855,7 +1855,7 @@
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="responsive.spec.ts" timestamp="2026-04-02T00:33:06.696Z" hostname="Mobile Chrome" tests="17" failures="0" skipped="17" time="0" errors="0">
+<testsuite name="responsive.spec.ts" timestamp="2026-04-04T07:04:10.419Z" hostname="Mobile Chrome" tests="17" failures="0" skipped="17" time="0" errors="0">
 <testcase name="Responsive -- Mobile Portrait (375x812) › no horizontal overflow at 375px width" classname="responsive.spec.ts" time="0">
 <skipped>
 </skipped>
@@ -1925,7 +1925,7 @@
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="rtl-layout.spec.ts" timestamp="2026-04-02T00:33:06.696Z" hostname="Mobile Chrome" tests="8" failures="0" skipped="8" time="0" errors="0">
+<testsuite name="rtl-layout.spec.ts" timestamp="2026-04-04T07:04:10.419Z" hostname="Mobile Chrome" tests="8" failures="0" skipped="8" time="0" errors="0">
 <testcase name="RTL Layout › document has dir=&quot;rtl&quot; by default (Hebrew)" classname="rtl-layout.spec.ts" time="0">
 <skipped>
 </skipped>
@@ -1959,7 +1959,7 @@
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="sketch.spec.ts" timestamp="2026-04-02T00:33:06.696Z" hostname="Mobile Chrome" tests="17" failures="0" skipped="17" time="0" errors="0">
+<testsuite name="sketch.spec.ts" timestamp="2026-04-04T07:04:10.419Z" hostname="Mobile Chrome" tests="17" failures="0" skipped="17" time="0" errors="0">
 <testcase name="Sketch Canvas › should have canvas element" classname="sketch.spec.ts" time="0">
 <skipped>
 </skipped>
@@ -2029,7 +2029,7 @@
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="three-d-view.spec.ts" timestamp="2026-04-02T00:33:06.696Z" hostname="Mobile Chrome" tests="7" failures="0" skipped="7" time="0" errors="0">
+<testsuite name="three-d-view.spec.ts" timestamp="2026-04-04T07:04:10.419Z" hostname="Mobile Chrome" tests="7" failures="0" skipped="7" time="0" errors="0">
 <testcase name="3D View Button › 3D view button exists in the DOM for admin users" classname="three-d-view.spec.ts" time="0">
 <skipped>
 </skipped>
