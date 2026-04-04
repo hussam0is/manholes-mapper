@@ -38,6 +38,9 @@ let _mapDiv = null;
 /** @type {boolean} */
 let _geomanActive = false;
 
+/** @type {L.Circle|null} — GPS accuracy circle rendered on the Leaflet overlay */
+let _accuracyCircle = null;
+
 // Debounce timer for batching rapid pm:edit events
 let _saveTimer = null;
 const SAVE_DEBOUNCE_MS = 800;
@@ -307,12 +310,68 @@ export function initAnnotationLayer() {
   // ── 8. Restore previously saved annotations ─────────────────────────────────
   restoreAnnotations();
 
-  // ── 9. Expose toggle for external callers (e.g. toolbar button) ─────────────
+  // ── 9. GPS accuracy circle ────────────────────────────────────────────────
+  // Subscribe to GNSS position events so the blue accuracy ring tracks the
+  // live position in real-time on the Leaflet overlay.
+  const gnss = /** @type {any} */ (window).__gnssState;
+  if (gnss && typeof gnss.on === 'function') {
+    gnss.on('position', _onGnssPosition);
+  }
+
+  // ── 10. Expose toggle for external callers (e.g. toolbar button) ─────────────
   /** @type {any} */ (window).__mmAnnotationLayer = {
     toggle: toggleAnnotationPanel,
     isActive: () => _geomanActive,
     getGeoJSON: collectGeoJSON,
   };
+}
+
+// ─── GNSS accuracy circle helpers ─────────────────────────────────────────────
+
+/**
+ * Handler for gnssState 'position' events.
+ * Creates or updates the Leaflet accuracy circle on the annotation overlay.
+ * @param {object} position - {lat, lon, accuracy, isValid}
+ */
+function _onGnssPosition(position) {
+  if (!_map) return;
+  updateGnssAccuracyCircle(position);
+}
+
+/**
+ * Create or update the GPS accuracy circle on the Leaflet annotation map.
+ * Pass null / invalid position to remove the circle.
+ *
+ * @param {{lat: number, lon: number, accuracy: number, isValid: boolean}|null} position
+ */
+export function updateGnssAccuracyCircle(position) {
+  if (!_map) return;
+
+  if (!position || !position.isValid || !position.lat || !position.lon || !position.accuracy) {
+    // Remove the circle when there is no valid fix
+    if (_accuracyCircle) {
+      _accuracyCircle.remove();
+      _accuracyCircle = null;
+    }
+    return;
+  }
+
+  const latlng = L.latLng(position.lat, position.lon);
+
+  if (_accuracyCircle) {
+    // Update existing circle position + radius
+    _accuracyCircle.setLatLng(latlng).setRadius(position.accuracy);
+  } else {
+    // Create new circle
+    _accuracyCircle = L.circle(latlng, {
+      radius: position.accuracy,
+      color: '#4A90D9',
+      fillColor: '#4A90D9',
+      fillOpacity: 0.15,
+      weight: 1,
+      interactive: false,
+    }).addTo(_map);
+  }
 }
 
 /**
@@ -350,6 +409,19 @@ export function destroyAnnotationLayer() {
     clearTimeout(_saveTimer);
     _saveTimer = null;
   }
+
+  // Unsubscribe GNSS position listener
+  const gnss = /** @type {any} */ (window).__gnssState;
+  if (gnss && typeof gnss.off === 'function') {
+    gnss.off('position', _onGnssPosition);
+  }
+
+  // Remove accuracy circle before destroying the map
+  if (_accuracyCircle) {
+    _accuracyCircle.remove();
+    _accuracyCircle = null;
+  }
+
   if (_map) {
     _map.remove();
     _map = null;
