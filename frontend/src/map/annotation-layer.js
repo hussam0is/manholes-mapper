@@ -225,6 +225,8 @@ export function initAnnotationLayer() {
     keyboard: false,
   });
 
+  L.control.zoom({ position: 'bottomleft' }).addTo(_map);
+
   // Transparent background (no tile layer) so the canvas shows through
   _mapDiv.querySelectorAll('.leaflet-tile-pane').forEach(el => {
     /** @type {HTMLElement} */ (el).style.display = 'none';

@@ -1,7 +1,13 @@
 /**
  * Micro Status Bar — compact 32px strip below header.
  * Shows: GPS fix | Sync status | Offline chip | Health % | Issue count | Session timer
- * Tapping any item opens the corresponding sidebar tab.
+ * Tapping the GPS chip expands a diagnostic panel (satellite count, HDOP, fix type, timestamp).
+ * Tapping other items opens the corresponding sidebar tab.
+ *
+ * GPS accuracy traffic-light thresholds (CEO R&D spec):
+ *   🟢 Green  : accuracy ≤ 3m   (sub-metre / RTK quality)
+ *   🟡 Amber  : accuracy 3–15m  (phone GPS, usable with caution)
+ *   🔴 Red    : accuracy > 15m  (unreliable — warn user)
  */
 
 import './micro-status-bar.css';
@@ -9,6 +15,9 @@ import { drainSyncQueue } from '../db.js';
 
 let barEl = null;
 let updateInterval = null;
+
+/** Whether the GPS diagnostic expand-panel is open */
+let _gpsExpanded = false;
 
 // ─── Offline chip state ────────────────────────────────────────────
 let _offlineChipOnline = null;   // last known online state (null = uninitialised)
@@ -54,6 +63,19 @@ async function updateOfflineChip() {
   chipEl.dataset.offlineState = state;
   chipEl.className = `msb-item msb-offline-chip msb-offline-chip--${state}`;
 
+  let badgeEl = document.getElementById('msbOfflineBadge');
+  if (pendingCount > 0) {
+    if (!badgeEl) {
+      badgeEl = document.createElement('span');
+      badgeEl.id = 'msbOfflineBadge';
+      badgeEl.className = 'msb-sync-badge';
+      chipIconEl.parentNode.appendChild(badgeEl);
+    }
+    badgeEl.textContent = pendingCount;
+  } else {
+    if (badgeEl) badgeEl.remove();
+  }
+
   switch (state) {
     case 'offline':
       chipIconEl.textContent = 'cloud_off';
@@ -98,14 +120,22 @@ export function initMicroStatusBar() {
   barEl.className = 'micro-status-bar';
 
   barEl.innerHTML = `
-    <div class="msb-item msb-gps" data-sidebar-tab="status" title="GPS Status">
+    <div class="msb-item msb-gps msb-gps-chip" id="msbGpsChip" title="GPS Status — tap for details">
       <span class="msb-gps-dot" id="msbGpsDot"></span>
       <span id="msbGpsLabel">GPS</span>
       <span class="msb-gps-accuracy" id="msbGpsAccuracy" style="display:none"></span>
     </div>
+    <div class="msb-gps-expand" id="msbGpsExpand" style="display:none">
+      <div class="msb-gps-expand__row"><span class="msb-gps-expand__key">Fix</span><span id="msbExpFixType">—</span></div>
+      <div class="msb-gps-expand__row"><span class="msb-gps-expand__key">Sats</span><span id="msbExpSats">—</span></div>
+      <div class="msb-gps-expand__row"><span class="msb-gps-expand__key">HDOP</span><span id="msbExpHdop">—</span></div>
+      <div class="msb-gps-expand__row"><span class="msb-gps-expand__key">Updated</span><span id="msbExpTime">—</span></div>
+    </div>
     <div class="msb-sep"></div>
     <div class="msb-item msb-offline-chip msb-offline-chip--synced" id="msbOfflineChip" data-sidebar-tab="status" title="Connection &amp; Sync">
-      <span class="material-icons" id="msbOfflineIcon">cloud_done</span>
+      <div class="msb-icon-wrapper">
+        <span class="material-icons" id="msbOfflineIcon">cloud_done</span>
+      </div>
       <span id="msbOfflineLabel">${t('cockpit.synced') || 'Synced'}</span>
     </div>
     <div class="msb-sep"></div>
@@ -132,8 +162,13 @@ export function initMicroStatusBar() {
     document.body.prepend(barEl);
   }
 
-  // Wire click → open sidebar tab
+  // Wire click: GPS chip → toggle diagnostic expand panel; others → open sidebar tab
   barEl.addEventListener('click', (e) => {
+    const gpsChip = e.target.closest('#msbGpsChip');
+    if (gpsChip) {
+      _toggleGpsExpand();
+      return;
+    }
     const item = e.target.closest('[data-sidebar-tab]');
     if (!item) return;
     const tab = item.dataset.sidebarTab;
