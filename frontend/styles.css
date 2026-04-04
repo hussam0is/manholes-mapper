@@ -2974,14 +2974,9 @@ body.cockpit-mode .gps-capture-fab {
   }
 }
 
-/* Keep two columns for sidebar on phones; stack only on very narrow screens */
+/* R&D spec: single-column, top-label layout for all attribute forms on mobile.
+   Sidebar forms now stack to single column at 640px (matches global rule). */
 @media (max-width: 640px) {
-  #sidebar .details-grid.two-col {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 380px) {
   #sidebar .details-grid.two-col {
     grid-template-columns: 1fr;
   }
