@@ -16,7 +16,7 @@
  */
 
 const DB_NAME = 'graphSketchDB';
-const DB_VERSION = 2; // Version 2: Added backups store
+const DB_VERSION = 3; // Version 3: Added annotations store for Geoman layer
 
 // Cached IDBDatabase handle — reused across calls to avoid leaking connections.
 // Each openDb() previously created a new handle that was never closed, leading to
@@ -63,6 +63,10 @@ export function openDb() {
         const backupsStore = db.createObjectStore('backups', { keyPath: 'id' });
         backupsStore.createIndex('type', 'type', { unique: false });
         backupsStore.createIndex('timestamp', 'timestamp', { unique: false });
+      }
+      // Version 3: annotations store for Geoman map-layer GeoJSON
+      if (!db.objectStoreNames.contains('annotations')) {
+        db.createObjectStore('annotations', { keyPath: 'key' });
       }
     };
     request.onsuccess = () => {
@@ -343,6 +347,60 @@ export async function clearAllBackups() {
   return new Promise((resolve, reject) => {
     const tx = db.transaction('backups', 'readwrite');
     tx.objectStore('backups').clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+// ============================================
+// Annotation Functions (Geoman map-layer)
+// ============================================
+
+/** Single-record key used in the annotations store */
+const ANNOTATIONS_KEY = 'geoman-annotations';
+
+/**
+ * Save a GeoJSON FeatureCollection of map annotations.
+ * Overwrites any previously saved annotations (single-record store).
+ *
+ * @param {object} geojson - GeoJSON FeatureCollection
+ * @returns {Promise<void>}
+ */
+export async function saveAnnotations(geojson) {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('annotations', 'readwrite');
+    tx.objectStore('annotations').put({ key: ANNOTATIONS_KEY, data: geojson, savedAt: Date.now() });
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+/**
+ * Load saved GeoJSON annotations.
+ * Returns null if no annotations have been saved yet.
+ *
+ * @returns {Promise<object|null>} GeoJSON FeatureCollection or null
+ */
+export async function loadAnnotations() {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('annotations', 'readonly');
+    const req = tx.objectStore('annotations').get(ANNOTATIONS_KEY);
+    req.onsuccess = () => resolve(req.result?.data ?? null);
+    req.onerror = () => reject(tx.error);
+  });
+}
+
+/**
+ * Delete all saved annotations.
+ * @returns {Promise<void>}
+ */
+export async function clearAnnotations() {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('annotations', 'readwrite');
+    tx.objectStore('annotations').delete(ANNOTATIONS_KEY);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });

@@ -237,6 +237,46 @@ export function getPermissionState() {
 }
 
 /**
+ * Draw the GPS accuracy circle at a screen-space position.
+ *
+ * This is a pure, testable helper that draws the blue uncertainty ring used to
+ * represent horizontal position accuracy on the canvas. It operates in
+ * screen-space (pixels) — the caller is responsible for computing screenX/Y
+ * and the pixel radius from real-world metres.
+ *
+ * Style matches the Leaflet L.circle spec from the CEO R&D memo:
+ *   color: '#4A90D9', fillOpacity: 0.15, weight: 1
+ *
+ * @param {CanvasRenderingContext2D} ctx - Canvas context already in screen space
+ * @param {number} screenX - Circle centre X in CSS pixels
+ * @param {number} screenY - Circle centre Y in CSS pixels
+ * @param {number} accuracyMeters - Horizontal accuracy in metres (≥ 0)
+ * @param {number} coordinateScale - Pixels per metre (canvas world scale)
+ * @param {number} viewScale - Current view zoom factor
+ * @returns {boolean} True if circle was drawn, false if too small / too large
+ */
+export function drawAccuracyCircle(ctx, screenX, screenY, accuracyMeters, coordinateScale, viewScale) {
+  if (!ctx || accuracyMeters == null || accuracyMeters <= 0) return false;
+
+  const radius = accuracyMeters * coordinateScale * viewScale;
+
+  // Skip circles smaller than 4px (invisible) or larger than 2000px (fills entire screen)
+  if (radius < 4 || radius > 2000) return false;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(screenX, screenY, radius, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(74, 144, 217, 0.15)';  // #4A90D9 at 15% opacity
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(74, 144, 217, 0.55)'; // #4A90D9 at 55% opacity
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.restore();
+
+  return true;
+}
+
+/**
  * Draw user location marker on canvas
  * @param {CanvasRenderingContext2D} ctx - Canvas context
  * @param {object} position - {lat, lon, accuracy}
@@ -276,16 +316,9 @@ export function drawUserLocationMarker(ctx, position, referencePoint, coordinate
   const dpr = window.devicePixelRatio || 1;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-  // Draw accuracy circle
-  const accuracyRadius = (position.accuracy || 10) * coordinateScale * viewScale;
-  if (accuracyRadius > 5 && accuracyRadius < 500) {
-    ctx.beginPath();
-    ctx.arc(screenX, screenY, accuracyRadius, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(66, 133, 244, 0.15)';
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(66, 133, 244, 0.4)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
+  // Draw accuracy circle using the canonical drawAccuracyCircle helper
+  if (position.accuracy) {
+    drawAccuracyCircle(ctx, screenX, screenY, position.accuracy, coordinateScale, viewScale);
   }
   
   // Draw pulsing outer ring

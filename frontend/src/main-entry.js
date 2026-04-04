@@ -356,6 +356,14 @@ if (typeof window !== 'undefined') {
 
     // Initialize unified layout (new clean layout system)
     initUnifiedLayout();
+
+    // Initialize Leaflet Geoman annotation layer (map-layer polygon/zone annotations)
+    // Runs after unified layout so canvasContainer is fully sized and positioned
+    import('./map/annotation-layer.js').then(({ initAnnotationLayer }) => {
+      initAnnotationLayer();
+    }).catch(err => {
+      console.warn('[main-entry] Geoman annotation layer failed to load:', err);
+    });
   });
 }
 

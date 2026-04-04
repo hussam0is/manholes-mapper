@@ -90,6 +90,10 @@ export function initUnifiedToolbar() {
         <span class="material-icons">remove</span>
       </button>
       <div class="ut-sep"></div>
+      <button class="ut-btn" id="utAnnotateBtn" title="${t('annotations.toggle') || 'Map Annotations'}" aria-label="Map annotations (Geoman)">
+        <span class="material-icons">draw</span>
+      </button>
+      <div class="ut-sep"></div>
       <button class="ut-btn" id="utSidebarBtn" title="${t('sidebar.details') || 'Panel'}" aria-label="Toggle panel">
         <span class="material-icons">menu_open</span>
       </button>
@@ -253,6 +257,29 @@ function wireActionDelegation() {
       import('./unified-sidebar.js').then(({ toggleSidebar }) => {
         toggleSidebar();
       });
+    });
+  }
+
+  // Annotation layer toggle (Geoman map annotations)
+  const utAnnotateBtn = document.getElementById('utAnnotateBtn');
+  if (utAnnotateBtn) {
+    utAnnotateBtn.addEventListener('click', () => {
+      const layer = /** @type {any} */ (window).__mmAnnotationLayer;
+      if (layer) {
+        layer.toggle();
+        utAnnotateBtn.classList.toggle('active', layer.isActive());
+      } else {
+        // Layer not yet loaded — import and init
+        import('../map/annotation-layer.js').then(({ initAnnotationLayer, toggleAnnotationPanel }) => {
+          initAnnotationLayer();
+          // Give Leaflet one frame to render before toggling
+          requestAnimationFrame(() => {
+            toggleAnnotationPanel();
+            utAnnotateBtn.classList.toggle('active',
+              /** @type {any} */ (window).__mmAnnotationLayer?.isActive() ?? false);
+          });
+        });
+      }
     });
   }
 
