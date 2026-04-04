@@ -11,7 +11,7 @@
  */
 
 import './micro-status-bar.css';
-import { drainSyncQueue } from '../db.js';
+import { countSyncQueue } from '../db.js';
 
 let barEl = null;
 let updateInterval = null;
@@ -25,16 +25,12 @@ let _offlineChipBound = false;   // event listeners attached?
 
 /**
  * Count pending items in the IndexedDB syncQueue.
- * Returns 0 on any error (e.g. quota, blocked).
+ * Uses IDBObjectStore.count() — read-only, no data transfer, O(1).
+ * Returns 0 on any error (e.g. quota, blocked, SSR).
  * @returns {Promise<number>}
  */
 async function _countSyncQueue() {
-  try {
-    const items = await drainSyncQueue();
-    return items.length;
-  } catch {
-    return 0;
-  }
+  return countSyncQueue();
 }
 
 /**

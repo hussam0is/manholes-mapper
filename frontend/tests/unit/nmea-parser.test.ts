@@ -306,4 +306,63 @@ describe('NMEAParser', () => {
       expect(state.fixQuality).toBe(4);
     });
   });
+
+  describe('GST sentence (GNSS Pseudorange Error Statistics)', () => {
+    it('should parse GNGST and compute hrms from lat/lon errors', () => {
+      // latErr=0.009, lonErr=0.010 => hrms = sqrt(0.009^2 + 0.010^2)
+      parser.parseSentence('$GNGST,142319.00,0.013,0.011,0.009,0.0,0.009,0.010,0.022*6C', { lenientChecksum: true });
+      const state = parser.getState();
+      const expected = Math.sqrt(0.009 * 0.009 + 0.010 * 0.010);
+      expect(state.hrms).toBeCloseTo(expected, 5);
+    });
+
+    it('should parse vrms from altitude error field', () => {
+      parser.parseSentence('$GNGST,142319.00,0.013,0.011,0.009,0.0,0.009,0.010,0.022*6C', { lenientChecksum: true });
+      expect(parser.getState().vrms).toBeCloseTo(0.022, 3);
+    });
+
+    it('should return false for sentences with fewer than 8 fields', () => {
+      const result = parser.parseSentence('$GPGST,142319.00,0.013,0.011*XX', { lenientChecksum: true });
+      expect(result).toBe(false);
+    });
+
+    it('should return false when latErr or lonErr is empty string', () => {
+      const result = parser.parseSentence('$GPGST,142319.00,0.013,0.011,0.009,0.0,,,0.022*XX', { lenientChecksum: true });
+      expect(result).toBe(false);
+    });
+
+    it('should set vrms to null when altErr field is absent', () => {
+      parser.parseSentence('$GPGST,142319.00,0.013,0.011,0.009,0.0,0.009,0.010*XX', { lenientChecksum: true });
+      expect(parser.getState().vrms).toBeNull();
+    });
+
+    it('should not overwrite lat/lon from GGA when only GST arrives', () => {
+      parser.parseSentence('$GNGGA,142319.00,3205.11900,N,03446.93807,E,4,12,0.73,37.9,M,17.4,M,1.0,*5B', { lenientChecksum: true });
+      const latBefore = parser.getState().lat;
+      parser.parseSentence('$GNGST,142319.00,0.013,0.011,0.009,0.0,0.009,0.010,0.022*6C', { lenientChecksum: true });
+      expect(parser.getState().lat).toBe(latBefore);
+    });
+
+    it('should reset hrms and vrms on parser.reset()', () => {
+      parser.parseSentence('$GNGST,142319.00,0.013,0.011,0.009,0.0,0.009,0.010,0.022*6C', { lenientChecksum: true });
+      parser.reset();
+      expect(parser.getState().hrms).toBeNull();
+      expect(parser.getState().vrms).toBeNull();
+    });
+
+    it('should notify listeners when GST is parsed', () => {
+      const cb = vi.fn();
+      parser.onUpdate(cb);
+      parser.parseSentence('$GNGST,142319.00,0.013,0.011,0.009,0.0,0.009,0.010,0.022*6C', { lenientChecksum: true });
+      expect(cb).toHaveBeenCalled();
+      expect(cb.mock.calls[0][0].hrms).toBeGreaterThan(0);
+    });
+
+    it('RTK-Fixed receiver: hrms sub-centimetre (survey-grade accuracy)', () => {
+      parser.parseSentence('$GNGST,142319.00,0.013,0.011,0.009,0.0,0.009,0.010,0.022*6C', { lenientChecksum: true });
+      const state = parser.getState();
+      expect(state.hrms).toBeLessThan(0.02);
+      expect(state.hrms).toBeGreaterThan(0);
+    });
+  });
 });

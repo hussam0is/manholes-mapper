@@ -1,7 +1,11 @@
 /**
  * NMEA Parser Module
  * Parses NMEA 0183 sentences from GNSS receivers
- * Supports GGA and RMC sentences with checksum validation
+ * Supports GGA, RMC, and GST sentences with checksum validation
+ *
+ * GST (GNSS Pseudorange Error Statistics) provides receiver-reported
+ * horizontal/vertical RMS errors — far more accurate than HDOP×3 estimates,
+ * especially for RTK/DGPS survey receivers (e.g. TSC3 total stations).
  */
 
 // Fix quality labels based on GGA fix indicator
@@ -36,7 +40,11 @@ export class NMEAParser {
       course: null,    // degrees true
       timestamp: null,
       utcTime: null,
-      isValid: false
+      isValid: false,
+      // GST fields: receiver-reported position error statistics (NMEA 0183 v2.3+)
+      // Populated when the receiver emits $GPGST or $GNGST sentences.
+      hrms: null,      // horizontal RMS error in metres (sqrt(latErr² + lonErr²))
+      vrms: null,      // vertical RMS error in metres
     };
     this.listeners = [];
   }
@@ -87,6 +95,8 @@ export class NMEAParser {
       return this.parseGGA(parts);
     } else if (sentenceType === '$GPRMC' || sentenceType === '$GNRMC') {
       return this.parseRMC(parts);
+    } else if (sentenceType === '$GPGST' || sentenceType === '$GNGST') {
+      return this.parseGST(parts);
     }
 
     return false;
@@ -217,6 +227,54 @@ export class NMEAParser {
   }
 
   /**
+   * Parse GST sentence (GNSS Pseudorange Error Statistics)
+   * Provides receiver-reported RMS position errors — more accurate than HDOP×3.
+   *
+   * Format: $GPGST,<utcTime>,<rmsResidual>,<semiMajor>,<semiMinor>,<orientation>,<latErr>,<lonErr>,<altErr>*<cs>
+   *
+   * Example (RTK-Fixed Trimble R10):
+   *   $GNGST,142319.00,0.013,0.011,0.009,0.0,0.009,0.010,0.022*6C
+   *
+   * Fields used:
+   *   [6] latErr  – 1-sigma latitude error standard deviation (metres)
+   *   [7] lonErr  – 1-sigma longitude error standard deviation (metres)
+   *   [8] altErr  – 1-sigma altitude error standard deviation (metres)
+   *
+   * hrms is computed as sqrt(latErr² + lonErr²) — the horizontal circle error.
+   * This is the value displayed as "accuracy" in the GPS chip and used for
+   * the accuracy circle radius.
+   *
+   * @param {string[]} parts - Sentence fields (already split, checksum stripped)
+   * @returns {boolean} True if successfully parsed
+   */
+  parseGST(parts) {
+    // $GPGST,utcTime,rmsResidual,semiMajor,semiMinor,orientation,latErr,lonErr,altErr
+    // Indices: 0=type, 1=time, 2=rms, 3=major, 4=minor, 5=orient, 6=latErr, 7=lonErr, 8=altErr
+    if (parts.length < 8) {
+      return false;
+    }
+
+    const latErr = parts[6] ? parseFloat(parts[6]) : null;
+    const lonErr = parts[7] ? parseFloat(parts[7]) : null;
+    const altErr = parts[8] ? parseFloat(parts[8]) : null;
+
+    if (latErr === null || lonErr === null || isNaN(latErr) || isNaN(lonErr)) {
+      return false;
+    }
+
+    // Horizontal RMS = sqrt(σlat² + σlon²)
+    const hrms = Math.sqrt(latErr * latErr + lonErr * lonErr);
+    const vrms = (altErr !== null && !isNaN(altErr)) ? Math.abs(altErr) : null;
+
+    this.currentState.hrms = hrms;
+    this.currentState.vrms = vrms;
+    this.currentState.timestamp = Date.now();
+
+    this.notifyListeners();
+    return true;
+  }
+
+  /**
    * Parse NMEA coordinate format (ddmm.mmmm) to decimal degrees
    * @param {string} coord - Coordinate in NMEA format
    * @param {string} dir - Direction (N/S/E/W)
@@ -314,7 +372,9 @@ export class NMEAParser {
       course: null,
       timestamp: null,
       utcTime: null,
-      isValid: false
+      isValid: false,
+      hrms: null,
+      vrms: null,
     };
   }
 }

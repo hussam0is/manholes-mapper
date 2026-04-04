@@ -2586,9 +2586,13 @@ body.cockpit-mode .gps-capture-fab {
   margin-bottom: 0.5rem;
 }
 
+/* R&D spec (Cycle 14): sidebar forms → always single-column, top-label layout.
+   The sidebar is 320px wide — two-col at that width produces ~145px columns
+   which are too narrow for comfortable field data entry on mobile.
+   col-span-2 fields still work (grid-column: 1 / -1 on a 1-col grid is a no-op). */
 #sidebar .details-grid.two-col {
   gap: 0.5rem 0.5rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
 }
 
 #sidebar .details-grid.two-col .field {

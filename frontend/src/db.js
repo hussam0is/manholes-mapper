@@ -244,6 +244,25 @@ export async function drainSyncQueue() {
 }
 
 /**
+ * Count pending items in the syncQueue without consuming them.
+ * Uses IDBObjectStore.count() — O(1) on most engines, no data transfer.
+ * @returns {Promise<number>}
+ */
+export async function countSyncQueue() {
+  try {
+    const db = await openDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('syncQueue', 'readonly');
+      const req = tx.objectStore('syncQueue').count();
+      req.onsuccess = () => resolve(req.result);
+      req.onerror  = () => reject(req.error);
+    });
+  } catch {
+    return 0;
+  }
+}
+
+/**
  * Remove a single sync queue item by its IDB key.
  * Called after an operation has been successfully processed.
  *
