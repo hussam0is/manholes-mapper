@@ -22,6 +22,7 @@ export function initMicroStatusBar() {
     <div class="msb-item msb-gps" data-sidebar-tab="status" title="GPS Status">
       <span class="msb-gps-dot" id="msbGpsDot"></span>
       <span id="msbGpsLabel">GPS</span>
+      <span class="msb-gps-accuracy" id="msbGpsAccuracy" style="display:none"></span>
     </div>
     <div class="msb-sep"></div>
     <div class="msb-item msb-sync synced" id="msbSync" data-sidebar-tab="status" title="Sync">
@@ -104,24 +105,56 @@ function updateGPS() {
 
   const dot = document.getElementById('msbGpsDot');
   const label = document.getElementById('msbGpsLabel');
+  const accuracyBadge = document.getElementById('msbGpsAccuracy');
   if (!dot || !label) return;
 
   const pos = gnss.getPosition?.();
-  const conn = gnss.getConnectionState?.();
+  // gnssState exposes connectionState as a direct property; fall back to getConnectionInfo()
+  const connInfo = gnss.getConnectionInfo?.() || {};
+  const isConnected = connInfo.isConnected || gnss.connectionState === 'connected';
+  const connType = connInfo.type || gnss.connectionType;
 
   dot.className = 'msb-gps-dot';
 
-  if (conn !== 'connected' || !pos || !pos.isValid) {
+  if (!isConnected || !pos || !pos.isValid) {
     label.textContent = 'GPS';
+    if (accuracyBadge) accuracyBadge.style.display = 'none';
     return;
   }
 
   const fq = pos.fixQuality;
+
   if (fq === 4) { dot.classList.add('fix-4'); label.textContent = 'RTK'; }
   else if (fq === 5) { dot.classList.add('fix-5'); label.textContent = 'Float'; }
   else if (fq === 2) { dot.classList.add('fix-2'); label.textContent = 'DGPS'; }
   else if (fq === 1) { dot.classList.add('fix-1'); label.textContent = 'GPS'; }
   else { label.textContent = 'GPS'; }
+
+  // Accuracy badge: color-coded ±Xm reading
+  if (accuracyBadge) {
+    const isTmm = connType === 'tmm' || connType === 'bluetooth';
+    const accuracy = pos.accuracy ?? (pos.hdop ? pos.hdop * 3 : null);
+
+    if (isTmm) {
+      accuracyBadge.textContent = 'External GNSS';
+      accuracyBadge.className = 'msb-gps-accuracy acc-external';
+      accuracyBadge.style.display = '';
+    } else if (accuracy != null && accuracy >= 0) {
+      const accRounded = accuracy < 1 ? accuracy.toFixed(2) : Math.round(accuracy);
+      accuracyBadge.textContent = `±${accRounded}m`;
+
+      // Color coding: GREEN < 1m | YELLOW 1-5m | ORANGE 5-15m | RED > 15m
+      accuracyBadge.className = 'msb-gps-accuracy';
+      if (accuracy < 1) accuracyBadge.classList.add('acc-green');
+      else if (accuracy < 5) accuracyBadge.classList.add('acc-yellow');
+      else if (accuracy < 15) accuracyBadge.classList.add('acc-orange');
+      else accuracyBadge.classList.add('acc-red');
+
+      accuracyBadge.style.display = '';
+    } else {
+      accuracyBadge.style.display = 'none';
+    }
+  }
 }
 
 function updateSync() {
