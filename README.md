@@ -13,7 +13,7 @@ A professional, high-performance Progressive Web Application (PWA) for undergrou
 | **Live Production** | https://manholes-mapper.vercel.app |
 | **Dev Preview (latest code)** | https://manholes-mapper-git-dev-hussam0is-projects.vercel.app |
 | **Tech Stack** | Vanilla JS (ES Modules) + Vite 7 + Canvas 2D + Three.js + Leaflet + Better Auth + Neon Postgres |
-| **Test Suite** | **1 632 unit tests** — all passing (`cd frontend && npx vitest run`) |
+| **Test Suite** | **1 649 unit tests** — all passing (`cd frontend && npx vitest run`) |
 | **E2E Tests** | Playwright - `cd frontend && npx playwright test` |
 
 ### What Makes It Special
@@ -25,7 +25,7 @@ A professional, high-performance Progressive Web Application (PWA) for undergrou
 5. **Intelligent issue detection** — real-time sketch audit (missing coordinates, negative gradients, long edges, merge candidates) with in-canvas navigation to each issue.
 6. **Legacy data migration** — built-in Import Wizard converts pre-ITM-era sketches (old canvas JSON + ITM survey CSV) into fully geo-referenced sketches via BFS coordinate propagation. Menu → Sketch → "Import Legacy Sketch + Coordinates".
 7. **Multi-tenant SaaS backend** — organisations, projects, role-based access, sketch locking, feature flags — all on Vercel serverless + Neon Postgres.
-8. **Production-grade test suite** — 1 632 unit tests across 65 test files (Vitest) + Playwright E2E tests; continuous test coverage for all core modules including GNSS, projections, graph operations, and the import wizard.
+8. **Production-grade test suite** — 1 649 unit tests across 65 test files (Vitest) + Playwright E2E tests; continuous test coverage for all core modules including GNSS, projections, graph operations, coordinate utilities, and the import wizard.
 
 ### Quick Evaluation Path
 
@@ -36,7 +36,7 @@ npm install
 
 # 2. Run the full unit test suite
 cd frontend && npx vitest run
-# → 1632 tests, ~25s, all green
+# → 1649 tests, ~27s, all green
 
 # 3. Start the dev server
 npm run dev
@@ -236,7 +236,8 @@ manholes-mapper/
 │   ├── survey/             # TSC3 survey device integration
 │   ├── three-d/            # 3D underground visualization
 │   ├── types/              # TypeScript type definitions
-│   ├── utils/              # Shared utilities (CSV, Geometry, Coordinates, UI)
+│   ├── utils/              # Shared utilities (CSV, Geometry, UI)
+│   │   └── coordinates.js  # Coordinate transforms, ITM/WGS84, scale calc, BFS positioning
 │   └── workers/            # Web Workers (GNSS parsing)
 ├── api/                    # Vercel serverless API routes
 │   ├── auth/               # Better Auth endpoints
