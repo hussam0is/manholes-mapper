@@ -110,6 +110,103 @@ async function updateOfflineChip() {
   _offlineChipOnline = isOnline;
 }
 
+/**
+ * Map GNSS fixQuality integer → human-readable label.
+ * Mirrors fix labels used in gnss-marker.js.
+ */
+const FIX_TYPE_LABELS = {
+  0: 'No Fix',
+  1: 'Autonomous GPS',
+  2: 'DGPS',
+  4: 'RTK Fixed',
+  5: 'RTK Float',
+};
+
+/**
+ * Return the traffic-light CSS modifier for a given accuracy value (metres).
+ * CEO R&D spec: ≤3m = green, 3–15m = amber, >15m = red.
+ * @param {number|null} accuracy
+ * @returns {'green'|'amber'|'red'|'none'}
+ */
+function _gpsTrafficLight(accuracy) {
+  if (accuracy == null || accuracy < 0) return 'none';
+  if (accuracy <= 3)  return 'green';
+  if (accuracy <= 15) return 'amber';
+  return 'red';
+}
+
+/**
+ * Toggle the GPS diagnostic expand-panel and refresh its content.
+ */
+function _toggleGpsExpand() {
+  const panel = document.getElementById('msbGpsExpand');
+  if (!panel) return;
+
+  _gpsExpanded = !_gpsExpanded;
+  panel.style.display = _gpsExpanded ? '' : 'none';
+
+  if (_gpsExpanded) {
+    _updateGpsExpandPanel();
+  }
+}
+
+/**
+ * Populate the GPS diagnostic expand-panel with live GNSS data.
+ * Reads from window.__gnssState / window.gnssState (same source as updateGPS).
+ */
+function _updateGpsExpandPanel() {
+  const fixTypeEl  = document.getElementById('msbExpFixType');
+  const satsEl     = document.getElementById('msbExpSats');
+  const hdopEl     = document.getElementById('msbExpHdop');
+  const timeEl     = document.getElementById('msbExpTime');
+  if (!fixTypeEl || !satsEl || !hdopEl || !timeEl) return;
+
+  const gnss = window.__gnssState || window.gnssState;
+  if (!gnss) {
+    fixTypeEl.textContent = '—';
+    satsEl.textContent    = '—';
+    hdopEl.textContent    = '—';
+    timeEl.textContent    = '—';
+    return;
+  }
+
+  const pos = gnss.getPosition?.();
+  if (!pos || !pos.isValid) {
+    fixTypeEl.textContent = 'No Fix';
+    satsEl.textContent    = '—';
+    hdopEl.textContent    = '—';
+    timeEl.textContent    = '—';
+    return;
+  }
+
+  // Fix type label
+  fixTypeEl.textContent = FIX_TYPE_LABELS[pos.fixQuality] ?? `Fix ${pos.fixQuality}`;
+
+  // Satellite count (may be null for browser GPS)
+  satsEl.textContent = pos.satellites != null ? String(pos.satellites) : '—';
+
+  // HDOP
+  if (pos.hdop != null) {
+    hdopEl.textContent = pos.hdop.toFixed(1);
+  } else if (pos.accuracy != null) {
+    // Browser GPS — estimate HDOP from accuracy
+    hdopEl.textContent = `~${(pos.accuracy / 3).toFixed(1)} (est.)`;
+  } else {
+    hdopEl.textContent = '—';
+  }
+
+  // Last update timestamp
+  if (pos.timestamp) {
+    const d = new Date(pos.timestamp);
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    const ss = String(d.getSeconds()).padStart(2, '0');
+    timeEl.textContent = `${hh}:${mm}:${ss}`;
+  } else {
+    timeEl.textContent = '—';
+  }
+}
+
 export function initMicroStatusBar() {
   if (document.getElementById('microStatusBar')) return;
 
@@ -231,6 +328,7 @@ function updateGPS() {
   const dot = document.getElementById('msbGpsDot');
   const label = document.getElementById('msbGpsLabel');
   const accuracyBadge = document.getElementById('msbGpsAccuracy');
+  const chipEl = document.getElementById('msbGpsChip');
   if (!dot || !label) return;
 
   const pos = gnss.getPosition?.();
@@ -241,9 +339,16 @@ function updateGPS() {
 
   dot.className = 'msb-gps-dot';
 
+  // Reset traffic-light classes on chip before applying new ones
+  if (chipEl) {
+    chipEl.classList.remove('gps-tl-green', 'gps-tl-amber', 'gps-tl-red');
+  }
+
   if (!isConnected || !pos || !pos.isValid) {
     label.textContent = 'GPS';
     if (accuracyBadge) accuracyBadge.style.display = 'none';
+    // Keep expand panel fresh
+    if (_gpsExpanded) _updateGpsExpandPanel();
     return;
   }
 
@@ -255,10 +360,18 @@ function updateGPS() {
   else if (fq === 1) { dot.classList.add('fix-1'); label.textContent = 'GPS'; }
   else { label.textContent = 'GPS'; }
 
-  // Accuracy badge: color-coded ±Xm reading
+  // Resolve accuracy value (metres) once, shared by chip + badge
+  const accuracy = pos.accuracy ?? (pos.hdop ? pos.hdop * 3 : null);
+
+  // Traffic-light color on the chip (CEO R&D spec: ≤3m green, 3–15m amber, >15m red)
+  if (chipEl && accuracy != null) {
+    const tl = _gpsTrafficLight(accuracy);
+    if (tl !== 'none') chipEl.classList.add(`gps-tl-${tl}`);
+  }
+
+  // Accuracy badge: detailed ±Xm reading
   if (accuracyBadge) {
     const isTmm = connType === 'tmm' || connType === 'bluetooth';
-    const accuracy = pos.accuracy ?? (pos.hdop ? pos.hdop * 3 : null);
 
     if (isTmm) {
       accuracyBadge.textContent = 'External GNSS';
@@ -268,18 +381,21 @@ function updateGPS() {
       const accRounded = accuracy < 1 ? accuracy.toFixed(2) : Math.round(accuracy);
       accuracyBadge.textContent = `±${accRounded}m`;
 
-      // Color coding: GREEN < 1m | YELLOW 1-5m | ORANGE 5-15m | RED > 15m
+      // Badge color mirrors traffic-light thresholds (CEO R&D spec)
       accuracyBadge.className = 'msb-gps-accuracy';
-      if (accuracy < 1) accuracyBadge.classList.add('acc-green');
-      else if (accuracy < 5) accuracyBadge.classList.add('acc-yellow');
-      else if (accuracy < 15) accuracyBadge.classList.add('acc-orange');
-      else accuracyBadge.classList.add('acc-red');
+      const tl = _gpsTrafficLight(accuracy);
+      if (tl === 'green')      accuracyBadge.classList.add('acc-green');
+      else if (tl === 'amber') accuracyBadge.classList.add('acc-amber');
+      else if (tl === 'red')   accuracyBadge.classList.add('acc-red');
 
       accuracyBadge.style.display = '';
     } else {
       accuracyBadge.style.display = 'none';
     }
   }
+
+  // Keep expand panel fresh if it's open
+  if (_gpsExpanded) _updateGpsExpandPanel();
 }
 
 function updateSync() {
