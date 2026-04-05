@@ -208,7 +208,14 @@ export async function enqueueSyncOperation(op) {
   return new Promise((resolve, reject) => {
     const tx = db.transaction('syncQueue', 'readwrite');
     tx.objectStore('syncQueue').add(op);
-    tx.oncomplete = () => resolve();
+    tx.oncomplete = () => {
+      // Notify the status bar immediately so the badge updates without waiting
+      // for the 30-second poll interval (R&D spec: "on each IndexedDB write").
+      import('./layout/micro-status-bar.js')
+        .then(({ notifySyncQueueWrite }) => notifySyncQueueWrite())
+        .catch(() => { /* non-fatal: badge will refresh on next poll */ });
+      resolve();
+    };
     tx.onerror = () => reject(tx.error);
   });
 }

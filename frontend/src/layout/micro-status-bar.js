@@ -15,6 +15,8 @@ import { countSyncQueue } from '../db.js';
 
 let barEl = null;
 let updateInterval = null;
+/** Separate 30-second interval for IndexedDB sync-queue polling (avoids hammering IDB every 3s) */
+let syncPollInterval = null;
 
 /** Whether the GPS diagnostic expand-panel is open */
 let _gpsExpanded = false;
@@ -288,13 +290,17 @@ export function initMicroStatusBar() {
   _offlineChipOnline = navigator.onLine;
   updateOfflineChip();
 
-  // Use a slower fallback interval for sync/health/session (no events available)
+  // 3-second interval for lightweight UI refresh (health %, session timer, sync icon)
   updateInterval = setInterval(() => {
     updateSync();
     updateHealth();
     updateSession();
-    updateOfflineChip(); // poll syncQueue periodically even without events
   }, 3000);
+
+  // 30-second interval for IndexedDB sync-queue count (avoids hammering IDB on every tick)
+  syncPollInterval = setInterval(() => {
+    updateOfflineChip();
+  }, 30_000);
 
   // Initial full update
   updateStatusBar();
@@ -490,8 +496,18 @@ function _onOfflineEvent() {
   updateOfflineChip();
 }
 
+/**
+ * Call this whenever a write to the IndexedDB sync queue occurs so the badge
+ * updates immediately without waiting for the 30-second poll cycle.
+ * (R&D spec: "Update every 30s or on each IndexedDB write")
+ */
+export function notifySyncQueueWrite() {
+  updateOfflineChip();
+}
+
 export function destroyMicroStatusBar() {
   if (updateInterval) clearInterval(updateInterval);
+  if (syncPollInterval) clearInterval(syncPollInterval);
   if (_offlineChipBound) {
     window.removeEventListener('online',  _onOnlineEvent);
     window.removeEventListener('offline', _onOfflineEvent);
