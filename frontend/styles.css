@@ -5013,8 +5013,16 @@ input.floating-keyboard-active {
 
 .form-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* Single-column by default — mobile-first (R&D spec: single-col top-label layout) */
+  grid-template-columns: 1fr;
   gap: 0.75rem;
+}
+
+/* Allow multi-column only on wider viewports where there's genuinely room */
+@media (min-width: 640px) {
+  .form-row {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 .form-group {
@@ -5022,6 +5030,7 @@ input.floating-keyboard-active {
 }
 
 .form-group label {
+  /* Top-label layout: label above the input, full-width */
   display: block;
   margin-bottom: 0.375rem;
   font-size: 0.85rem;
@@ -5032,12 +5041,15 @@ input.floating-keyboard-active {
 .form-group input,
 .form-group select,
 .form-group textarea {
+  /* Full-width inputs (single-column mobile spec) */
   width: 100%;
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--color-border, #e0e0e0);
   border-radius: 6px;
   font-size: 0.9rem;
   background: var(--color-surface);
+  box-sizing: border-box;
+  min-height: var(--touch-target-min, 44px);
 }
 
 .form-group input:focus,
