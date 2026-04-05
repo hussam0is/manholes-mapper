@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * micro-status-bar.test.ts
  * Unit tests for GPS traffic-light logic and expand-panel helpers.
@@ -5,6 +6,9 @@
  * We test the pure helper `_gpsTrafficLight` by importing via a named re-export
  * shim (see bottom of this file), and `_updateGpsExpandPanel` behaviour via
  * DOM + mock gnssState.
+ *
+ * @vitest-environment jsdom — required for DOM access (document, body) when
+ * running under pool:forks where the global environment config is not inherited.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
