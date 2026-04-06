@@ -1,4 +1,7 @@
-// GPS accuracy circle canvas renderer
+// GPS accuracy circle renderer (legacy canvas helper + Leaflet implementation)
+import L from 'leaflet';
+
+// Legacy canvas-based helper for backwards compatibility with unit tests
 export const drawAccuracyCircle = (ctx, centerX, centerY, accuracyMeters, scale, viewScale) => {
   if (!ctx) return false;
   if (!accuracyMeters || accuracyMeters <= 0) return false;
@@ -32,4 +35,30 @@ export const drawAccuracyCircle = (ctx, centerX, centerY, accuracyMeters, scale,
   ctx.restore();
   
   return true;
+};
+
+// Leaflet-based implementation for use with map instances
+export const createAccuracyCircle = (map, latlng, accuracyMeters, options = {}) => {
+  if (!map || !accuracyMeters || accuracyMeters <= 0) return null;
+
+  const {
+    color = 'blue',
+    fillColor = 'rgba(74, 144, 217, 0.15)',
+    fillOpacity = 0.15,
+    weight = 2
+  } = options;
+
+  // Create Leaflet circle with accuracy radius (meters)
+  const accuracyCircle = L.circle(latlng, {
+    radius: accuracyMeters,
+    color,
+    fillColor,
+    fillOpacity,
+    weight
+  }).addTo(map);
+
+  // Bind popup to show accuracy info
+  accuracyCircle.bindPopup(`<b>GPS Accuracy</b><br>${accuracyMeters} meters`).openPopup();
+
+  return accuracyCircle;
 };
