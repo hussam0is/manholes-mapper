@@ -1,14 +1,35 @@
-// Render GPS accuracy circle using position accuracy
-const accuracyCircle = L.circle([
-  parseFloat(nmeaData.latitude),
-  parseFloat(nmeaData.longitude)
-], {
-  radius: calculateAccuracyRadius(nmeaData.HDOP, nmeaData.satellites)
-}).addTo(map);
-
-function calculateAccuracyRadius(HDOP, satellites) {
-  // Calculate radius based on HDOP (Horizontal Dilution of Precision)
-  // Formula: radius = HDOP * 1000 * (satellites / 10)
-  // This provides a more realistic accuracy representation
-  return HDOP * 1000 * (satellites / 10);
-}
+// GPS accuracy circle canvas renderer
+export const drawAccuracyCircle = (ctx, centerX, centerY, accuracyMeters, scale, viewScale) => {
+  if (!ctx) return false;
+  if (!accuracyMeters || accuracyMeters <= 0) return false;
+  
+  // Radius calculation: accuracy * scale * viewScale
+  const pixelRadius = accuracyMeters * scale * viewScale;
+  
+  // Clamp radius: 4px minimum, 2000px maximum
+  if (pixelRadius < 4) return false;
+  if (pixelRadius > 2000) return false;
+  
+  // Calculate adjusted radius for canvas
+  const radius = pixelRadius;
+  
+  // Save canvas state
+  ctx.save();
+  
+  // Set CEO-spec fill color: rgba(74, 144, 217, 0.15)
+  ctx.fillStyle = 'rgba(74, 144, 217, 0.15)';
+  
+  // Set stroke weight
+  ctx.lineWidth = 1;
+  
+  // Draw arc (full circle)
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  
+  // Restore canvas state
+  ctx.restore();
+  
+  return true;
+};
