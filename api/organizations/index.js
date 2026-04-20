@@ -84,7 +84,17 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'GET') {
-      const organizations = await getAllOrganizations();
+      // Only super_admin can see all organizations. Org-level admins are
+      // scoped to their own organization to prevent cross-tenant discovery.
+      let organizations;
+      if (isSuperAdmin) {
+        organizations = await getAllOrganizations();
+      } else if (currentUser.organization_id) {
+        const own = await getOrganizationById(currentUser.organization_id);
+        organizations = own ? [{ ...own, user_count: undefined }] : [];
+      } else {
+        organizations = [];
+      }
 
       const transformed = organizations.map(o => ({
         id: o.id,
@@ -93,7 +103,7 @@ export default async function handler(req, res) {
         createdAt: o.created_at,
       }));
 
-      console.debug(`[API /api/organizations] Returning ${transformed.length} organizations`);
+      console.debug(`[API /api/organizations] Returning ${transformed.length} organizations to ${isSuperAdmin ? 'super_admin' : 'admin'}`);
       return res.status(200).json({ organizations: transformed });
     }
 
@@ -208,6 +218,11 @@ async function handleSingleOrganization(req, res, request, orgId) {
     const org = await getOrganizationById(orgId);
     if (!org) {
       return res.status(404).json({ error: 'Organization not found' });
+    }
+
+    // Cross-tenant guard: non-super admins can only access their own org.
+    if (!isSuperAdmin && currentUser.organization_id !== orgId) {
+      return res.status(403).json({ error: 'Forbidden' });
     }
 
     if (req.method === 'GET') {

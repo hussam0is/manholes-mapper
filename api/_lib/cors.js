@@ -8,44 +8,84 @@
 // Capacitor WebView origin
 const CAPACITOR_ORIGIN = 'https://localhost';
 
+// Preview/prod Vercel domain patterns (glob-style). Used when ALLOWED_ORIGINS
+// is unset but we're in a deployed env — mirrors lib/auth.js trustedOrigins.
+const VERCEL_PREVIEW_PATTERNS = [
+  /^https:\/\/manholes-mapper\.vercel\.app$/,
+  /^https:\/\/manholes-mapper-[a-z0-9-]+-hussam0is-projects\.vercel\.app$/,
+  /^https:\/\/manholes-mapper-git-[a-z0-9/-]+-hussam0is-projects\.vercel\.app$/,
+];
+
+function isDeployedEnv() {
+  return Boolean(
+    process.env.VERCEL_ENV ||
+    process.env.VERCEL_URL ||
+    process.env.NODE_ENV === 'production'
+  );
+}
+
 /**
  * Get the list of allowed origins from env + built-in Capacitor origin.
- * @returns {string[]|null} Array of origins, or null to allow any.
+ * In deployed environments we NEVER return null (which would reflect any
+ * origin with credentials). Instead we auto-derive from VERCEL_URL and the
+ * known Vercel preview/prod domain patterns.
+ * @returns {{origins: string[]|null, patterns: RegExp[]}}
  */
 function getAllowedOrigins() {
   const envOrigins = process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
-    : null;
+    ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean)
+    : [];
 
-  if (!envOrigins) return null; // dev mode — allow any
+  const deployed = isDeployedEnv();
+
+  if (envOrigins.length === 0 && !deployed) {
+    // Local dev only — allow any origin
+    return { origins: null, patterns: [] };
+  }
+
+  const origins = [...envOrigins];
+
+  if (deployed) {
+    if (process.env.VERCEL_URL) {
+      const url = `https://${process.env.VERCEL_URL}`;
+      if (!origins.includes(url)) origins.push(url);
+    }
+    // Always trust the canonical production alias in deployed envs
+    if (!origins.includes('https://manholes-mapper.vercel.app')) {
+      origins.push('https://manholes-mapper.vercel.app');
+    }
+  }
 
   // Always include Capacitor origin
-  if (!envOrigins.includes(CAPACITOR_ORIGIN)) {
-    envOrigins.push(CAPACITOR_ORIGIN);
+  if (!origins.includes(CAPACITOR_ORIGIN)) {
+    origins.push(CAPACITOR_ORIGIN);
   }
-  return envOrigins;
+
+  return { origins, patterns: deployed ? VERCEL_PREVIEW_PATTERNS : [] };
 }
 
 /**
  * Resolve the Access-Control-Allow-Origin value for a request.
+ * Never reflects an arbitrary origin in a deployed environment.
  * @param {import('http').IncomingMessage} req
  * @returns {string}
  */
 export function resolveOrigin(req) {
-  const allowedOrigins = getAllowedOrigins();
+  const { origins, patterns } = getAllowedOrigins();
   const requestOrigin = req.headers.origin;
 
-  if (!allowedOrigins) {
-    // Dev mode: reflect request origin (or * if no origin header)
+  // Local dev fallback — no allowlist configured
+  if (origins === null) {
     return requestOrigin || '*';
   }
 
-  if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
-    return requestOrigin;
+  if (requestOrigin) {
+    if (origins.includes(requestOrigin)) return requestOrigin;
+    if (patterns.some(p => p.test(requestOrigin))) return requestOrigin;
   }
 
-  // Fallback to first allowed origin
-  return allowedOrigins[0];
+  // Fallback to first allowed origin (caller is not in allowlist)
+  return origins[0];
 }
 
 /**

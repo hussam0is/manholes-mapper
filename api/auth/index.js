@@ -1,41 +1,29 @@
 import { auth } from "../../lib/auth.js";
 import { toNodeHandler } from "better-auth/node";
+import { handleCors } from "../_lib/cors.js";
+import { applyRateLimit, MAX_REQUESTS_AUTH } from "../_lib/rate-limit.js";
 
 export const config = { runtime: 'nodejs' };
 
 const betterAuthHandler = toNodeHandler(auth);
 
 export default async function handler(req, res) {
-  // DB test
-  if (req.headers['x-db-test'] === '1') {
-    try {
-      const { Pool } = await import('@neondatabase/serverless');
-      const pool = new Pool({ connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL });
-      const r = await pool.query("SELECT table_name FROM information_schema.tables WHERE table_schema='public' ORDER BY table_name");
-      await pool.end();
-      return res.status(200).json({ tables: r.rows.map(x => x.table_name) });
-    } catch (e) {
-      return res.status(500).json({ dbError: e.message });
-    }
-  }
-  if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    return res.status(204).end();
-  }
+  // CORS — use the shared allowlist-based helper (handles OPTIONS preflight too).
+  if (handleCors(req, res)) return;
 
-  const origin = req.headers.origin || req.headers.referer?.replace(/\/$/, '') || '*';
-  res.setHeader('Access-Control-Allow-Origin', origin);
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  // Rate limit /api/auth/* more strictly than the default API surface.
+  // This is the first line of defense against credential stuffing / signup abuse.
+  if (applyRateLimit(req, res, MAX_REQUESTS_AUTH)) return;
 
   try {
     return await betterAuthHandler(req, res);
   } catch (error) {
-    console.error('[Auth API] Error:', error);
+    console.error('[Auth API] Error:', error?.message || error);
     if (!res.headersSent) {
-      return res.status(500).json({ error: error.message });
+      const isDev = process.env.NODE_ENV !== 'production' && process.env.VERCEL_ENV !== 'production';
+      return res.status(500).json({
+        error: isDev ? (error?.message || 'Internal server error') : 'Internal server error',
+      });
     }
   }
 }
