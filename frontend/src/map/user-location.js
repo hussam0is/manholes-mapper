@@ -1,43 +1,432 @@
-// GPS accuracy circle renderer (legacy canvas helper + Leaflet implementation)
-import L from 'leaflet';
+/**
+ * User Location Module
+ * Handles browser geolocation API for showing user position on the map,
+ * plus standalone accuracy-circle renderers (canvas + Leaflet).
+ */
 
-// Legacy canvas-based helper for backwards compatibility with unit tests
+import L from 'leaflet';
+import { wgs84ToItm } from './govmap-layer.js';
+
+// ============================================================================
+// Geolocation state
+// ============================================================================
+
+let watchId = null;
+let currentPosition = null;
+let locationEnabled = false;
+let permissionState = 'prompt'; // 'granted', 'denied', 'prompt'
+let lastUpdateTime = 0;
+let locationCallbacks = [];
+
+const LOCATION_OPTIONS = {
+  enableHighAccuracy: true,
+  timeout: 10000,
+  maximumAge: 5000
+};
+
+// Minimum time between updates (ms)
+const MIN_UPDATE_INTERVAL = 1000;
+
+/**
+ * Check if geolocation is supported
+ * @returns {boolean}
+ */
+export function isGeolocationSupported() {
+  return typeof navigator !== 'undefined' && 'geolocation' in navigator;
+}
+
+/**
+ * Check geolocation permission state
+ * @returns {Promise<string>} 'granted', 'denied', or 'prompt'
+ */
+export async function checkPermission() {
+  if (!isGeolocationSupported()) {
+    return 'denied';
+  }
+
+  try {
+    if (navigator.permissions) {
+      const result = await navigator.permissions.query({ name: 'geolocation' });
+      permissionState = result.state;
+
+      result.onchange = () => {
+        permissionState = result.state;
+        if (permissionState === 'denied' && watchId) {
+          stopWatchingLocation();
+        }
+      };
+
+      return permissionState;
+    }
+
+    return 'prompt';
+  } catch (e) {
+    console.warn('[Location] Permission check failed:', e.message);
+    return 'prompt';
+  }
+}
+
+/**
+ * Request location permission and get current position
+ * @returns {Promise<{lat: number, lon: number, accuracy: number, error?: string}|null>}
+ */
+export function requestLocationPermission() {
+  return new Promise((resolve) => {
+    if (!isGeolocationSupported()) {
+      resolve({ error: 'not_supported' });
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        permissionState = 'granted';
+        currentPosition = {
+          lat: position.coords.latitude,
+          lon: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+          timestamp: position.timestamp
+        };
+        lastUpdateTime = Date.now();
+        resolve(currentPosition);
+      },
+      (error) => {
+        console.warn('[Location] Location error:', error.code, error.message);
+        let errorType = 'unknown';
+
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            permissionState = 'denied';
+            errorType = 'permission_denied';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorType = 'position_unavailable';
+            break;
+          case error.TIMEOUT:
+            errorType = 'timeout';
+            break;
+        }
+
+        resolve({ error: errorType });
+      },
+      LOCATION_OPTIONS
+    );
+  });
+}
+
+/**
+ * Start watching user location
+ * @param {Function} callback - Called with position updates {lat, lon, accuracy}
+ * @returns {boolean} True if watch started successfully
+ */
+export function startWatchingLocation(callback) {
+  if (!isGeolocationSupported()) {
+    return false;
+  }
+
+  if (callback && !locationCallbacks.includes(callback)) {
+    locationCallbacks.push(callback);
+  }
+
+  if (watchId !== null) {
+    return true;
+  }
+
+  watchId = navigator.geolocation.watchPosition(
+    (position) => {
+      const now = Date.now();
+      if (now - lastUpdateTime < MIN_UPDATE_INTERVAL) {
+        return;
+      }
+
+      permissionState = 'granted';
+      currentPosition = {
+        lat: position.coords.latitude,
+        lon: position.coords.longitude,
+        accuracy: position.coords.accuracy,
+        altitude: position.coords.altitude,
+        heading: position.coords.heading,
+        speed: position.coords.speed,
+        timestamp: position.timestamp
+      };
+      lastUpdateTime = now;
+      locationEnabled = true;
+
+      locationCallbacks.forEach(cb => {
+        try {
+          cb(currentPosition);
+        } catch (e) {
+          console.error('[Location] Callback error:', e.message);
+        }
+      });
+    },
+    (error) => {
+      console.warn('[Location] Watch error:', error.message);
+      if (error.code === error.PERMISSION_DENIED) {
+        permissionState = 'denied';
+        stopWatchingLocation();
+      }
+    },
+    LOCATION_OPTIONS
+  );
+
+  return true;
+}
+
+/**
+ * Stop watching user location
+ */
+export function stopWatchingLocation() {
+  if (watchId !== null) {
+    navigator.geolocation.clearWatch(watchId);
+    watchId = null;
+  }
+  locationEnabled = false;
+}
+
+/**
+ * Remove a location callback
+ * @param {Function} callback
+ */
+export function removeLocationCallback(callback) {
+  const index = locationCallbacks.indexOf(callback);
+  if (index !== -1) {
+    locationCallbacks.splice(index, 1);
+  }
+}
+
+/**
+ * Check if location tracking is enabled
+ * @returns {boolean}
+ */
+export function isLocationEnabled() {
+  return locationEnabled && watchId !== null;
+}
+
+/**
+ * Get the current position
+ * @returns {object|null} {lat, lon, accuracy, ...} or null
+ */
+export function getCurrentPosition() {
+  return currentPosition;
+}
+
+/**
+ * Get the current position in ITM coordinates
+ * @returns {object|null} {x, y, accuracy} or null
+ */
+export function getCurrentPositionItm() {
+  if (!currentPosition) {
+    return null;
+  }
+
+  const itm = wgs84ToItm(currentPosition.lat, currentPosition.lon);
+  return {
+    x: itm.x,
+    y: itm.y,
+    accuracy: currentPosition.accuracy
+  };
+}
+
+/**
+ * Get permission state
+ * @returns {string} 'granted', 'denied', or 'prompt'
+ */
+export function getPermissionState() {
+  return permissionState;
+}
+
+/**
+ * Draw user location marker on canvas
+ * @param {CanvasRenderingContext2D} ctx - Canvas context
+ * @param {object} position - {lat, lon, accuracy}
+ * @param {object} referencePoint - {itm: {x, y}, canvas: {x, y}}
+ * @param {number} coordinateScale - Pixels per meter
+ * @param {object} viewTranslate - View translation
+ * @param {number} viewScale - View zoom scale
+ * @param {object} options - Drawing options
+ * @param {number} options.stretchX - Horizontal stretch factor (default 1)
+ * @param {number} options.stretchY - Vertical stretch factor (default 1)
+ */
+export function drawUserLocationMarker(ctx, position, referencePoint, coordinateScale, viewTranslate, viewScale, options = {}) {
+  if (!position || !referencePoint) {
+    return;
+  }
+
+  const { stretchX = 1, stretchY = 1 } = options;
+
+  const posItm = wgs84ToItm(position.lat, position.lon);
+
+  const dx = posItm.x - referencePoint.itm.x;
+  const dy = posItm.y - referencePoint.itm.y;
+
+  const canvasX = referencePoint.canvas.x + (dx * coordinateScale);
+  const canvasY = referencePoint.canvas.y - (dy * coordinateScale);
+
+  const screenX = (canvasX * stretchX) * viewScale + viewTranslate.x;
+  const screenY = (canvasY * stretchY) * viewScale + viewTranslate.y;
+
+  ctx.save();
+  const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  const accuracyRadius = (position.accuracy || 10) * coordinateScale * viewScale;
+  if (accuracyRadius > 5 && accuracyRadius < 500) {
+    ctx.beginPath();
+    ctx.arc(screenX, screenY, accuracyRadius, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(66, 133, 244, 0.15)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(66, 133, 244, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  const pulsePhase = (Date.now() % 2000) / 2000;
+  const pulseRadius = 12 + Math.sin(pulsePhase * Math.PI * 2) * 3;
+
+  ctx.beginPath();
+  ctx.arc(screenX, screenY, pulseRadius, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(66, 133, 244, 0.3)';
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(screenX, screenY, 8, 0, Math.PI * 2);
+  ctx.fillStyle = '#4285f4';
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  if (position.heading != null && !isNaN(position.heading)) {
+    const headingRad = (position.heading - 90) * Math.PI / 180;
+    const arrowLength = 15;
+
+    ctx.beginPath();
+    ctx.moveTo(screenX, screenY);
+    ctx.lineTo(
+      screenX + Math.cos(headingRad) * arrowLength,
+      screenY + Math.sin(headingRad) * arrowLength
+    );
+    ctx.strokeStyle = '#4285f4';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+/**
+ * Center map on user location
+ * @param {object} position - Current position {lat, lon}
+ * @param {object} referencePoint - Reference point for coordinate conversion
+ * @param {number} coordinateScale - Pixels per meter
+ * @param {number} canvasWidth - Canvas width
+ * @param {number} canvasHeight - Canvas height
+ * @param {number} viewScale - Current view zoom scale (default 1)
+ * @param {number} stretchX - Horizontal stretch factor (default 1)
+ * @param {number} stretchY - Vertical stretch factor (default 1)
+ * @returns {object|null} New view translation {x, y} or null
+ */
+export function calculateCenterOnUser(position, referencePoint, coordinateScale, canvasWidth, canvasHeight, viewScale = 1, stretchX = 1, stretchY = 1) {
+  if (!position || !referencePoint) {
+    return null;
+  }
+
+  const posItm = wgs84ToItm(position.lat, position.lon);
+
+  const dx = posItm.x - referencePoint.itm.x;
+  const dy = posItm.y - referencePoint.itm.y;
+
+  const worldX = referencePoint.canvas.x + (dx * coordinateScale);
+  const worldY = referencePoint.canvas.y - (dy * coordinateScale);
+
+  return {
+    x: canvasWidth / 2 - worldX * stretchX * viewScale,
+    y: canvasHeight / 2 - worldY * stretchY * viewScale
+  };
+}
+
+/**
+ * Get location status message for UI
+ * @returns {string}
+ */
+export function getLocationStatusMessage() {
+  if (!isGeolocationSupported()) {
+    return 'Location not supported';
+  }
+
+  switch (permissionState) {
+    case 'granted':
+      if (currentPosition) {
+        const acc = Math.round(currentPosition.accuracy);
+        return `Location: ${acc}m accuracy`;
+      }
+      return 'Getting location...';
+    case 'denied':
+      return 'Location access denied';
+    case 'prompt':
+    default:
+      return 'Click to enable location';
+  }
+}
+
+/**
+ * Toggle location tracking
+ * @param {Function} callback - Position update callback
+ * @returns {Promise<boolean>} True if now enabled
+ */
+export async function toggleLocation(callback) {
+  if (isLocationEnabled()) {
+    stopWatchingLocation();
+    return false;
+  } else {
+    const position = await requestLocationPermission();
+    if (position && !position.error) {
+      startWatchingLocation(callback);
+      return true;
+    }
+    return false;
+  }
+}
+
+// ============================================================================
+// Standalone accuracy-circle renderers (added April 2026)
+// ============================================================================
+
+/**
+ * Legacy canvas-based accuracy-circle helper.
+ * Returns true when the circle was drawn, false when the accuracy value
+ * is out of range (caller can fall back to a simpler marker).
+ */
 export const drawAccuracyCircle = (ctx, centerX, centerY, accuracyMeters, scale, viewScale) => {
   if (!ctx) return false;
   if (!accuracyMeters || accuracyMeters <= 0) return false;
-  
-  // Radius calculation: accuracy * scale * viewScale
+
   const pixelRadius = accuracyMeters * scale * viewScale;
-  
-  // Clamp radius: 4px minimum, 2000px maximum
+
   if (pixelRadius < 4) return false;
   if (pixelRadius > 2000) return false;
-  
-  // Calculate adjusted radius for canvas
+
   const radius = pixelRadius;
-  
-  // Save canvas state
+
   ctx.save();
-  
-  // Set CEO-spec fill color: rgba(74, 144, 217, 0.15)
   ctx.fillStyle = 'rgba(74, 144, 217, 0.15)';
-  
-  // Set stroke weight
   ctx.lineWidth = 1;
-  
-  // Draw arc (full circle)
+
   ctx.beginPath();
   ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
-  
-  // Restore canvas state
+
   ctx.restore();
-  
+
   return true;
 };
 
-// Leaflet-based implementation for use with map instances
+/**
+ * Leaflet-based accuracy circle factory. Adds the circle to the map and
+ * returns the circle instance (or null on invalid input).
+ */
 export const createAccuracyCircle = (map, latlng, accuracyMeters, options = {}) => {
   if (!map || !accuracyMeters || accuracyMeters <= 0) return null;
 
@@ -48,7 +437,6 @@ export const createAccuracyCircle = (map, latlng, accuracyMeters, options = {}) 
     weight = 2
   } = options;
 
-  // Create Leaflet circle with accuracy radius (meters)
   const accuracyCircle = L.circle(latlng, {
     radius: accuracyMeters,
     color,
@@ -57,8 +445,12 @@ export const createAccuracyCircle = (map, latlng, accuracyMeters, options = {}) 
     weight
   }).addTo(map);
 
-  // Bind popup to show accuracy info
   accuracyCircle.bindPopup(`<b>GPS Accuracy</b><br>${accuracyMeters} meters`).openPopup();
 
   return accuracyCircle;
 };
+
+// Check initial permission state on module load (fire-and-forget)
+if (isGeolocationSupported()) {
+  checkPermission();
+}
