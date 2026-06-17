@@ -236,6 +236,7 @@ import {
   NODE_RADIUS,
   COLORS,
   NODE_TYPES,
+  NODE_TYPE_OPTIONS,
   NODE_MATERIAL_OPTIONS,
   NODE_COVER_DIAMETERS,
   NODE_ACCESS_OPTIONS,
@@ -1255,24 +1256,7 @@ function loadFromStorage() {
     nodes.forEach((node) => {
       if (node.material === undefined) node.material = NODE_MATERIALS[0];
       if (node.type === undefined) node.type = NODE_TYPES[0];
-      if (node.nodeType === undefined) node.nodeType = 'Manhole';
-      // Normalize legacy nodeType values to 'Manhole' | 'Home'
-      if (node.nodeType === 'בית' || node.nodeType === 'Home' || node.nodeType === 'B') node.nodeType = 'Home';
-      else node.nodeType = 'Manhole';
-    if (node.nodeType === 'Home') {
-      node.material = NODE_MATERIALS[0];
-      node.coverDiameter = '';
-      node.access = '';
-      node.nodeEngineeringStatus = '';
-      node.maintenanceStatus = '';
-    }
-    if (node.nodeType === 'Drainage') {
-      node.material = NODE_MATERIALS[0];
-      node.coverDiameter = '';
-      node.access = '';
-      node.nodeEngineeringStatus = '';
-      node.maintenanceStatus = '';
-    }
+      normalizeNodeType(node);
       // Normalize cover diameter to integer or empty
       if (node.coverDiameter === undefined) node.coverDiameter = '';
       else {
@@ -1441,27 +1425,7 @@ function loadFromLibrary(sketchId) {
   nodes.forEach((node) => {
     if (node.material === undefined) node.material = NODE_MATERIALS[0];
     if (node.type === undefined) node.type = NODE_TYPES[0];
-    if (node.nodeType === undefined) node.nodeType = 'Manhole';
-    // Normalize legacy labels to new values
-    if (node.nodeType === 'בית' || node.nodeType === 'Home' || node.nodeType === 'B') node.nodeType = 'Home';
-    else if (node.nodeType === 'שוחה מכוסה' || node.nodeType === 'Covered' || node.nodeType === 'C') node.nodeType = 'Covered';
-    else if (node.nodeType === 'קולטן' || node.nodeType === 'Drainage' || node.nodeType === 'D') node.nodeType = 'Drainage';
-    else node.nodeType = 'Manhole';
-    if (node.nodeType === 'Home') {
-      node.material = NODE_MATERIALS[0];
-      node.coverDiameter = '';
-      node.access = '';
-      node.nodeEngineeringStatus = '';
-      node.maintenanceStatus = '';
-      if (node.directConnection === undefined) node.directConnection = false;
-    }
-    if (node.nodeType === 'Drainage') {
-      node.material = NODE_MATERIALS[0];
-      node.coverDiameter = '';
-      node.access = '';
-      node.nodeEngineeringStatus = '';
-      node.maintenanceStatus = '';
-    }
+    normalizeNodeType(node);
     if (node.coverDiameter === undefined) node.coverDiameter = NODE_COVER_DIAMETERS[0];
     if (node.maintenanceStatus === undefined) node.maintenanceStatus = 0;
     if (typeof node.maintenanceStatus !== 'number') {
@@ -2095,6 +2059,38 @@ function scheduleDraw() {
 }
 
 /**
+ * Normalize legacy nodeType values to canonical English keys.
+ * @param {object} node
+ */
+function normalizeNodeType(node) {
+  if (node.nodeType === undefined) node.nodeType = 'Manhole';
+  if (node.nodeType === 'בית' || node.nodeType === 'Home' || node.nodeType === 'B') node.nodeType = 'Home';
+  else if (node.nodeType === 'שוחה מכוסה' || node.nodeType === 'Covered' || node.nodeType === 'C') node.nodeType = 'Covered';
+  else if (node.nodeType === 'קולטן' || node.nodeType === 'Drainage' || node.nodeType === 'D') node.nodeType = 'Drainage';
+  else if (node.nodeType !== 'Home' && node.nodeType !== 'Drainage' && node.nodeType !== 'Covered') node.nodeType = 'Manhole';
+  if (node.nodeType === 'Home' && node.directConnection === undefined) node.directConnection = false;
+}
+
+/**
+ * Build HTML for the node-type dropdown in the details drawer.
+ * @param {object} node
+ * @returns {string}
+ */
+function buildNodeTypeSelectHtml(node) {
+  const typeOptions = NODE_TYPE_OPTIONS.map(({ value, i18nKey }) => {
+    const label = (typeof t === 'function') ? t(i18nKey) : value;
+    const selected = node.nodeType === value ? 'selected' : '';
+    return `<option value="${value}" ${selected}>${label}</option>`;
+  }).join('');
+  return `
+    <div class="field">
+      <label for="nodeTypeSelect">${t('labels.nodeType')}</label>
+      <select id="nodeTypeSelect">${typeOptions}</select>
+    </div>
+  `;
+}
+
+/**
  * Render the right-hand details panel based on the current selection.
  * Supports editing node id, note, material and edge type/material/measurements.
  */
@@ -2118,17 +2114,23 @@ function renderDetails() {
       .map(({ code, label }) => `<option value="${code}" ${Number(node.access)===Number(code)?'selected':''}>${label}</option>`)
       .join('');
     
-    // Node type options: A (default), B (house), C (grey)
+    // Node type options: Manhole, Home, Drainage, Covered
+    const idAndTypeSection = `
+      <div class="details-section">
+        <div class="field">
+          <label for="idInput">${t('labels.nodeId')}</label>
+          <input id="idInput" type="text" value="${node.id}" dir="auto" />
+        </div>
+        ${buildNodeTypeSelectHtml(node)}
+      </div>
+    `;
     if (node.nodeType === 'Home') {
       const dcLblRaw = (typeof t === 'function') ? t('labels.directConnection') : '';
       const dcText = (dcLblRaw && dcLblRaw !== 'labels.directConnection')
         ? dcLblRaw
         : (typeof isRTL === 'function' && isRTL(currentLang) ? 'חיבור ישיר' : 'Direct connection');
       container.innerHTML = `
-        <div class="field">
-          <label for="idInput">${t('labels.nodeId')}</label>
-          <input id="idInput" type="text" value="${node.id}" dir="auto" />
-        </div>
+        ${idAndTypeSection}
         <div class="field">
           <label for="noteInput">${t('labels.note')}</label>
           <textarea id="noteInput" rows="3" placeholder="${t('labels.notePlaceholder')}" dir="auto">${node.note || ''}</textarea>
@@ -2139,12 +2141,7 @@ function renderDetails() {
       `;
     } else {
       container.innerHTML = `
-        <div class="details-section">
-          <div class="field">
-            <label for="idInput">${t('labels.nodeId')}</label>
-            <input id="idInput" type="text" value="${node.id}" dir="auto" />
-          </div>
-        </div>
+        ${idAndTypeSection}
         <div class="details-section">
           <div class="details-section-title">${t('labels.indicator')}</div>
           <div class="details-grid two-col">
@@ -2401,7 +2398,19 @@ function renderDetails() {
       });
     }
     
-    // Node type selection removed from UI per requirements
+    // Node type selection — switches drawer fields while preserving stored values
+    const nodeTypeSelect = container.querySelector('#nodeTypeSelect');
+    if (nodeTypeSelect) {
+      nodeTypeSelect.addEventListener('change', (e) => {
+        const newType = String(e.target.value || '');
+        if (!newType || newType === node.nodeType) return;
+        node.nodeType = newType;
+        normalizeNodeType(node);
+        saveToStorage();
+        scheduleDraw();
+        renderDetails();
+      });
+    }
     // Delete node button listener
     const deleteNodeBtn = container.querySelector('#deleteNodeBtn');
     deleteNodeBtn.addEventListener('click', () => {

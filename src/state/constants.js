@@ -94,6 +94,12 @@ export const COLORS = new Proxy({}, {
 
 export const NODE_TYPES = ['type1', 'type2'];
 
+/** Semantic node categories shown in the details drawer type dropdown. */
+export const NODE_TYPE_OPTIONS = [
+  { value: 'Manhole', i18nKey: 'modeNode' },
+  { value: 'Home', i18nKey: 'modeHome' },
+];
+
 export const NODE_MATERIAL_OPTIONS = [
   { code: 0, label: 'לא ידוע' },
   { code: 1, label: 'פלדה מגולוונת' },
