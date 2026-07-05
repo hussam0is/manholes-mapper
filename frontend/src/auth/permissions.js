@@ -16,6 +16,11 @@ import { getToken, getAuthState } from './auth-guard.js';
 let userRoleCache = null;
 /** @type {Promise<UserRoleData | null> | null} */
 let fetchPromise = null;
+// After a failed fetch, don't re-hit the API for this long. Without this,
+// every caller retriggers a request on flaky field connections (each panel
+// init + the 5-min session poll), flooding the network and the console.
+const FAILED_FETCH_COOLDOWN_MS = 30_000;
+let lastFailedFetchAt = 0;
 
 // Listeners for permission changes
 /** @type {Set<(role: UserRoleData | null) => void>} */
@@ -66,6 +71,12 @@ export async function fetchUserRole(forceRefresh = false) {
     return fetchPromise;
   }
 
+  // Back off after a failure so dozens of callers don't retrigger the
+  // request in a loop (explicit forceRefresh still goes through).
+  if (!forceRefresh && lastFailedFetchAt && Date.now() - lastFailedFetchAt < FAILED_FETCH_COOLDOWN_MS) {
+    return null;
+  }
+
   fetchPromise = (async () => {
     try {
       const token = await getToken();
@@ -83,16 +94,29 @@ export async function fetchUserRole(forceRefresh = false) {
 
       if (!response.ok) {
         console.error('[Auth] Failed to fetch user role:', response.status);
+        lastFailedFetchAt = Date.now();
+        return null;
+      }
+
+      // Captive portals and misconfigured proxies return HTML with a 200 —
+      // detect that before .json() throws a cryptic parse error. A missing
+      // content-type is tolerated (the .json() catch below handles it).
+      const contentType = (response.headers && typeof response.headers.get === 'function' && response.headers.get('content-type')) || '';
+      if (contentType.includes('text/html')) {
+        console.error('[Auth] /api/user-role returned HTML instead of JSON — captive portal or proxy in the way?');
+        lastFailedFetchAt = Date.now();
         return null;
       }
 
       const data = await response.json();
       userRoleCache = data;
+      lastFailedFetchAt = 0;
       notifyPermissionChange();
       return data;
 
     } catch (error) {
       console.error('[Auth] Error fetching user role:', error instanceof Error ? error.message : String(error));
+      lastFailedFetchAt = Date.now();
       return null;
     } finally {
       fetchPromise = null;
@@ -152,6 +176,7 @@ export function getFeatures() {
 export function clearPermissions() {
   userRoleCache = null;
   fetchPromise = null;
+  lastFailedFetchAt = 0;
   notifyPermissionChange();
 }
 
@@ -161,6 +186,16 @@ export function clearPermissions() {
  */
 export function initPermissionsService() {
   if (typeof window === 'undefined') return;
+
+  // Connectivity returning is a legitimate reason to retry immediately —
+  // don't let the failure cooldown delay recovery in the field.
+  window.addEventListener('online', () => {
+    lastFailedFetchAt = 0;
+    const authState = getAuthState();
+    if (authState.isSignedIn && !userRoleCache) {
+      fetchUserRole().catch(() => {});
+    }
+  });
 
   // Listen for auth state changes
   if (window.authGuard?.onAuthStateChange) {
