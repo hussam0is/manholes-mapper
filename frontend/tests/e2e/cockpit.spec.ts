@@ -89,17 +89,16 @@ test.describe('Cockpit — Landscape Layout', () => {
     expect(hasCockpitMode).toBe(true);
   });
 
-  test('cockpit container is visible in landscape', async ({ page }) => {
+  test('unified layout replaces the cockpit overlay in landscape', async ({ page }) => {
+    // The unified layout permanently hides the legacy cockpit overlay and
+    // provides the bottom toolbar + status bar instead. The cockpit DOM stays
+    // attached because its engines still feed the status displays.
     const cockpit = page.locator('.cockpit');
-    await expect(cockpit).toBeVisible();
-  });
+    await expect(cockpit).toBeAttached();
+    await expect(cockpit).toBeHidden();
 
-  test('cockpit uses grid layout with two columns', async ({ page }) => {
-    const display = await page.evaluate(() => {
-      const el = document.querySelector('.cockpit');
-      return el ? getComputedStyle(el).display : null;
-    });
-    expect(display).toBe('grid');
+    const unifiedToolbar = page.locator('#unifiedToolbar');
+    await expect(unifiedToolbar).toBeVisible();
   });
 
   test('intel strip (Zone A) is present', async ({ page }) => {
@@ -208,11 +207,13 @@ test.describe('Cockpit — Intel Strip', () => {
     await expect(sessionCard).toBeAttached();
   });
 
-  test('session duration starts at 0:00', async ({ page }) => {
+  test('session duration starts fresh', async ({ page }) => {
     const duration = page.locator('#sessionDuration');
     await expect(duration).toBeAttached();
     const text = await duration.textContent();
-    expect(text).toMatch(/^0:\d{2}$/);
+    // The tracker shows a "New session" label for the first minute,
+    // then switches to the m:ss timer
+    expect(text).toMatch(/^(0:\d{2}|New session|סשן חדש)$/);
   });
 
   test('session node count element exists', async ({ page }) => {
@@ -351,15 +352,14 @@ test.describe('Cockpit — Health Card & Issues', () => {
   });
 
   test('clicking issue count toggles issue list visibility', async ({ page }) => {
-    // First make issues visible by injecting an issue count
+    // Let the cockpit recompute with the injected mock data. The real app
+    // emits sketch:changed whenever sketch data changes; that invalidates the
+    // completion cache and (after a 500ms debounce) re-runs updateCockpit,
+    // which seeds the issue navigation context the list is populated from.
     await page.evaluate(() => {
-      const issuesEl = document.getElementById('healthIssues');
-      if (issuesEl) {
-        issuesEl.style.display = '';
-        const countEl = document.getElementById('issueCount');
-        if (countEl) countEl.textContent = '3';
-      }
+      (window as any).menuEvents?.emit('sketch:changed');
     });
+    await page.waitForTimeout(900);
 
     const issueList = page.locator('#healthIssueList');
     // Initially hidden
@@ -566,8 +566,12 @@ test.describe('Cockpit — Intel Strip Collapse', () => {
   });
 
   test('collapse state is restored on page reload', async ({ page }) => {
-    // Set collapsed state
-    await page.evaluate(() => {
+    // Persist the collapsed state before the page loads. This must be an
+    // init script: the describe-level beforeEach registers an init script
+    // that REMOVES the key on every navigation, so a plain evaluate-set
+    // would be wiped by the reload. Init scripts run in registration order,
+    // so this one re-sets the key after the cleanup script clears it.
+    await page.addInitScript(() => {
       localStorage.setItem('cockpit-collapsed', '1');
     });
 
