@@ -1952,6 +1952,21 @@ window.__projectCanvas = {
   findEdgeInBackground,
   switchActiveSketch,
 };
+// View-state bridge for ES modules (issue navigation, project canvas,
+// measurement rail, 3D view). These were dropped during the main.js
+// modularization; all callers use optional chaining, so issue jumps and
+// module-triggered redraws silently no-oped until restored.
+window.__setViewState = (scale, tx, ty) => {
+  if (Number.isFinite(scale)) {
+    viewScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale));
+  }
+  if (Number.isFinite(tx) && Number.isFinite(ty)) {
+    viewTranslate = { x: tx, y: ty };
+  }
+  scheduleDraw();
+};
+window.__getStretch = () => ({ x: viewStretchX, y: viewStretchY });
+window.__scheduleDraw = scheduleDraw;
 
 // ============================================
 // TSC3 Survey Device Integration
