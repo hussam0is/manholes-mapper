@@ -244,26 +244,25 @@ async function ensureHomePanelHidden(page: Page) {
 }
 
 /**
- * Disable only the MutationObserver guard (keeps renderHome as no-op).
- * Use before clicking elements that the panel would otherwise overlay.
+ * Open the unified sidebar on its Sketches tab.
+ *
+ * Under the unified layout the sketch side panel content (#sketchSidePanel
+ * children, including #backToProjectsBtn and the sketch list) is reparented
+ * into the sidebar's Sketches tab, which is only on-screen once the sidebar
+ * is opened via the toolbar's panel toggle.
  */
-async function disablePanelGuard(page: Page) {
-  await page.evaluate(() => {
-    (window as any).__panelGuardDisabled = true;
-  });
-}
+async function openSketchesTab(page: Page) {
+  const sidebar = page.locator('#unifiedSidebar');
+  const collapsed = await sidebar.evaluate((el) => el.classList.contains('collapsed'));
+  if (collapsed) {
+    await page.locator('#utSidebarBtn').click();
+  }
+  await expect(sidebar).not.toHaveClass(/collapsed/);
 
-/**
- * Restore the original renderHome so the homepage can re-render normally.
- * Call AFTER navigation to avoid sync-service re-showing the panel mid-click.
- */
-async function restoreRenderHome(page: Page) {
-  await page.evaluate(() => {
-    if ((window as any).__originalRenderHome) {
-      (window as any).renderHome = (window as any).__originalRenderHome;
-      (window as any).renderHome();
-    }
-  });
+  // The Sketches tab is only shown in project-canvas mode
+  const sketchesTab = page.locator('.unified-sidebar__tab[data-tab="sketches"]');
+  await sketchesTab.click();
+  await expect(page.locator('#us-panel-sketches')).toHaveClass(/active/);
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────────
@@ -400,21 +399,22 @@ test.describe('Project Click → Canvas Navigation', () => {
     // hideHome() is called by loadProjectCanvas() as part of the route
     // handler. We verify it was invoked by checking that:
     // 1) The URL navigated to the project route (verified above)
-    // 2) The sketch side panel appeared (which only happens after
-    //    loadProjectCanvas runs, which always calls hideHome first)
+    // 2) The sidebar's Sketches tab became available (projectCanvas:enter
+    //    fires at the end of loadProjectCanvas, which calls hideHome first)
     await ensureHomePanelHidden(page);
-    const sidePanel = page.locator('#sketchSidePanel');
-    await expect(sidePanel).toBeVisible({ timeout: 5000 });
+    const sketchesTab = page.locator('.unified-sidebar__tab[data-tab="sketches"]');
+    await expect(sketchesTab).toBeVisible({ timeout: 5000 });
   });
 
-  test('clicking a project shows the sketch side panel', async ({ page }) => {
+  test('clicking a project shows the sketch list in the sidebar', async ({ page }) => {
     await gotoHomeAuthenticated(page);
 
     await page.locator('.project-card').first().click();
     await page.waitForURL(/#\/project\/proj-aaa/);
+    await ensureHomePanelHidden(page);
 
-    const sidePanel = page.locator('#sketchSidePanel');
-    await expect(sidePanel).toBeVisible();
+    await openSketchesTab(page);
+    await expect(page.locator('.sketch-side-panel__item').first()).toBeVisible();
   });
 
   test('sketch side panel lists all project sketches', async ({ page }) => {
@@ -433,9 +433,11 @@ test.describe('Project Click → Canvas Navigation', () => {
 
     await page.locator('.project-card').first().click();
     await page.waitForURL(/#\/project\/proj-aaa/);
+    await ensureHomePanelHidden(page);
+    await openSketchesTab(page);
 
-    await expect(page.locator('.sketch-side-panel__name').nth(0)).toHaveText('Main Street');
-    await expect(page.locator('.sketch-side-panel__name').nth(1)).toHaveText('Park Avenue');
+    await expect(page.locator('.sketch-side-panel__item .sketch-card__name').nth(0)).toHaveText('Main Street');
+    await expect(page.locator('.sketch-side-panel__item .sketch-card__name').nth(1)).toHaveText('Park Avenue');
   });
 
   test('first sketch is marked as active', async ({ page }) => {
@@ -448,13 +450,15 @@ test.describe('Project Click → Canvas Navigation', () => {
     await expect(firstItem).toHaveClass(/active/);
   });
 
-  test('side panel toggle button is visible', async ({ page }) => {
+  test('sidebar toggle button is visible in the toolbar', async ({ page }) => {
     await gotoHomeAuthenticated(page);
 
     await page.locator('.project-card').first().click();
     await page.waitForURL(/#\/project\/proj-aaa/);
 
-    const toggleBtn = page.locator('#sketchSidePanelToggle');
+    // The old floating #sketchSidePanelToggle is hidden under the unified
+    // layout; the toolbar's panel toggle is the way to reach the sketch list
+    const toggleBtn = page.locator('#utSidebarBtn');
     await expect(toggleBtn).toBeVisible();
   });
 
@@ -485,18 +489,20 @@ test.describe('Sketch Side Panel Interactions', () => {
     await page.waitForURL(/#\/project\/proj-aaa/);
     // Wait for homePanel close animation to complete
     await ensureHomePanelHidden(page);
+    // The sketch list lives in the unified sidebar's Sketches tab
+    await openSketchesTab(page);
     await page.locator('.sketch-side-panel__item').first().waitFor({ state: 'visible' });
   }
 
-  test('clicking a non-active sketch switches it to active', async ({ page }) => {
+  test('double-clicking a non-active sketch switches it to active', async ({ page }) => {
     await navigateToProject(page);
 
     // Second sketch should not be active
     const secondItem = page.locator('.sketch-side-panel__item').nth(1);
     await expect(secondItem).not.toHaveClass(/active/);
 
-    // Click to switch
-    await secondItem.click();
+    // Single click only toggles selection; double click switches the active sketch
+    await secondItem.dblclick();
 
     // Second should now be active, first should not
     await expect(secondItem).toHaveClass(/active/);
@@ -531,37 +537,36 @@ test.describe('Sketch Side Panel Interactions', () => {
     await expect(badges.nth(1)).toHaveText('1');
   });
 
-  test('active sketch has edit icon', async ({ page }) => {
+  test('active sketch shows the editing badge', async ({ page }) => {
     await navigateToProject(page);
 
     const activeItem = page.locator('.sketch-side-panel__item.active');
-    const editIcon = activeItem.locator('.sketch-side-panel__active-icon');
-    await expect(editIcon).toBeVisible();
-    await expect(editIcon).toHaveText('edit');
+    const editingBadge = activeItem.locator('.sketch-side-panel__editing-badge');
+    await expect(editingBadge).toBeVisible();
+    await expect(editingBadge.locator('.material-icons')).toHaveText('edit');
   });
 
-  test('close button hides the side panel', async ({ page }) => {
+  test('toolbar toggle collapses the sidebar sketch list', async ({ page }) => {
     await navigateToProject(page);
 
-    const closeBtn = page.locator('.sketch-side-panel__close');
-    await closeBtn.click();
-
-    const sidePanel = page.locator('#sketchSidePanel');
-    await expect(sidePanel).not.toHaveClass(/open/);
+    // The toolbar panel button toggles the sidebar closed
+    // (the sidebar's own edge collapse button is partially covered by the
+    // canvas, so the toolbar toggle is the reliable control)
+    await page.locator('#utSidebarBtn').click();
+    await expect(page.locator('#unifiedSidebar')).toHaveClass(/collapsed/);
   });
 
-  test('toggle button re-opens the side panel', async ({ page }) => {
+  test('toolbar toggle re-opens the sidebar sketch list', async ({ page }) => {
     await navigateToProject(page);
 
-    // Close it first
-    const closeBtn = page.locator('.sketch-side-panel__close');
-    await closeBtn.click();
-    await expect(page.locator('#sketchSidePanel')).not.toHaveClass(/open/);
+    // Collapse it first
+    await page.locator('#utSidebarBtn').click();
+    await expect(page.locator('#unifiedSidebar')).toHaveClass(/collapsed/);
 
-    // Re-open via toggle
-    const toggleBtn = page.locator('#sketchSidePanelToggle');
-    await toggleBtn.click();
-    await expect(page.locator('#sketchSidePanel')).toHaveClass(/open/);
+    // Re-open via the toolbar panel toggle
+    await page.locator('#utSidebarBtn').click();
+    await expect(page.locator('#unifiedSidebar')).not.toHaveClass(/collapsed/);
+    await expect(page.locator('.sketch-side-panel__item').first()).toBeVisible();
   });
 });
 
@@ -578,6 +583,8 @@ test.describe('Back to Projects Navigation', () => {
     await gotoHomeAuthenticated(page);
     await page.locator('.project-card').first().click();
     await page.waitForURL(/#\/project\/proj-aaa/);
+    await ensureHomePanelHidden(page);
+    await openSketchesTab(page);
 
     const backBtn = page.locator('#backToProjectsBtn');
     await expect(backBtn).toBeVisible();
@@ -592,50 +599,43 @@ test.describe('Back to Projects Navigation', () => {
     await expect(icon).toHaveText('arrow_back');
   });
 
-  test('back button links to #/', async ({ page }) => {
+  test('back button links to #/projects', async ({ page }) => {
     await gotoHomeAuthenticated(page);
     await page.locator('.project-card').first().click();
     await page.waitForURL(/#\/project\/proj-aaa/);
 
     const backBtn = page.locator('#backToProjectsBtn');
-    await expect(backBtn).toHaveAttribute('href', '#/');
+    await expect(backBtn).toHaveAttribute('href', '#/projects');
   });
 
-  test('clicking back button returns to projects homepage', async ({ page }) => {
+  test('clicking back button opens the projects screen', async ({ page }) => {
     await gotoHomeAuthenticated(page);
     await page.locator('.project-card').first().click();
     await page.waitForURL(/#\/project\/proj-aaa/);
     await ensureHomePanelHidden(page);
+    await openSketchesTab(page);
 
-    // Disable observer but keep renderHome as no-op so panels stay hidden
-    await disablePanelGuard(page);
-
-    // Click back button (panels hidden, so click goes through)
+    // Click back button — it links to the #/projects management screen
     await page.locator('#backToProjectsBtn').click();
-    await page.waitForURL(/#\//);
+    await page.waitForURL(/#\/projects/);
 
-    // Now restore renderHome and invoke it to show the projects homepage
-    await restoreRenderHome(page);
-
-    const homePanel = page.locator('#homePanel');
-    await expect(homePanel).toBeVisible();
-    await expect(homePanel).toHaveClass(/home-panel--projects/);
+    const projectsScreen = page.locator('#projectsScreen');
+    await expect(projectsScreen).toBeVisible();
   });
 
-  test('back button hides sketch side panel', async ({ page }) => {
+  test('back button hides the sketch list', async ({ page }) => {
     await gotoHomeAuthenticated(page);
     await page.locator('.project-card').first().click();
     await page.waitForURL(/#\/project\/proj-aaa/);
     await ensureHomePanelHidden(page);
+    await openSketchesTab(page);
 
-    // Disable observer, click back, then check side panel state
-    await disablePanelGuard(page);
     await page.locator('#backToProjectsBtn').click();
-    await page.waitForURL(/#\//);
+    await page.waitForURL(/#\/projects/);
 
-    // Side panel should be hidden after navigating back
-    const sidePanel = page.locator('#sketchSidePanel');
-    await expect(sidePanel).toBeHidden();
+    // Leaving project-canvas mode hides the sidebar's Sketches tab
+    const sketchesTab = page.locator('.unified-sidebar__tab[data-tab="sketches"]');
+    await expect(sketchesTab).toBeHidden();
   });
 
   test('full round-trip: homepage → project → back → homepage', async ({ page }) => {

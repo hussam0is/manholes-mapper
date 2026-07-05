@@ -140,20 +140,23 @@ test.describe('Sketches Button Navigation Fix', () => {
     // Should be on home route
     await page.waitForURL(url => url.hash === '#/' || url.hash === '' || url.hash === '#', { timeout: 5000 }).catch(() => {});
 
+    // The homepage opens as a modal on load and would swallow header clicks —
+    // dismiss it first, like a user who closed the panel and wants it back
+    const homePanel = page.locator('#homePanel');
+    if (await homePanel.isVisible().catch(() => false)) {
+      await page.locator('#homePanelCloseBtn').click();
+      await expect(homePanel).toBeHidden();
+    }
+
     // Try clicking sketches button — should not be a no-op
     const sketchesBtn = page.locator('#sketchesBtn');
     const count = await sketchesBtn.count();
     if (count > 0 && await sketchesBtn.isVisible()) {
       await sketchesBtn.click();
-      // Wait for something to happen (panel toggle or route re-render)
-      await page.waitForTimeout(500);
 
-      // The home panel or some sketch list should be visible
-      const homePanel = page.locator('#homePanel');
-      const startPanel = page.locator('#startPanel');
-      const eitherVisible = await homePanel.isVisible().catch(() => false) ||
-                            await startPanel.isVisible().catch(() => false);
-      // At minimum, no crash occurred
+      // Even though the hash is already #/, the button re-runs the route
+      // handler and the sketch list panel re-appears
+      await expect(homePanel).toBeVisible({ timeout: 5000 });
       await expect(page.locator('#canvasContainer')).toBeAttached();
     }
   });
@@ -466,7 +469,7 @@ test.describe('Full User Flow Smoke Test', () => {
     await page.waitForTimeout(200);
 
     // 7. Toolbar should be accessible (may be hidden if home panel is covering it)
-    const toolbar = page.locator('.canvas-toolbar');
+    const toolbar = page.locator('#unifiedToolbar');
     if (await toolbar.count() > 0) {
       // Toolbar exists in DOM — may be hidden behind panels, that's OK
       await expect(toolbar).toBeAttached();
