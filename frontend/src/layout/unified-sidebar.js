@@ -401,6 +401,17 @@ function wireCollapse() {
       openSidebar();
     });
   }
+
+  // Mobile bottom sheet: tapping the drag handle closes the sheet. Without
+  // this the open sheet is a dead end on phones — the edge tab is hidden,
+  // the floating toggle fades out while open, and the sheet covers the
+  // toolbar's panel button.
+  const sheetHandle = sidebarEl?.querySelector('.unified-sidebar__sheet-handle');
+  if (sheetHandle) {
+    sheetHandle.addEventListener('click', () => {
+      if (isOpen) closeSidebar();
+    });
+  }
 }
 
 /**

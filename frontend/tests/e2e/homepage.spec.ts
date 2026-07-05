@@ -547,6 +547,10 @@ test.describe('Sketch Side Panel Interactions', () => {
   });
 
   test('edge collapse button collapses the sidebar sketch list', async ({ page }) => {
+    test.skip(
+      (page.viewportSize()?.width ?? 1280) <= 600,
+      'the edge tab is a desktop control — the mobile bottom sheet hides it'
+    );
     await navigateToProject(page);
 
     // The sidebar's edge tab replaces the old panel close button
@@ -557,8 +561,14 @@ test.describe('Sketch Side Panel Interactions', () => {
   test('toolbar toggle re-opens the sidebar sketch list', async ({ page }) => {
     await navigateToProject(page);
 
-    // Collapse it first
-    await page.locator('#utSidebarBtn').click();
+    // Collapse it first. On phones the open bottom sheet covers the toolbar,
+    // so the sheet's drag handle is the closing control there.
+    const isMobile = (page.viewportSize()?.width ?? 1280) <= 600;
+    if (isMobile) {
+      await page.locator('.unified-sidebar__sheet-handle').click();
+    } else {
+      await page.locator('#utSidebarBtn').click();
+    }
     await expect(page.locator('#unifiedSidebar')).toHaveClass(/collapsed/);
 
     // Re-open via the toolbar panel toggle
