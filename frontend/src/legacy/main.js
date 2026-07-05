@@ -617,6 +617,8 @@ let adminConfig = loadAdminConfig();
     ctx:                      bp('ctx',                      () => ctx,                      null),
     homePanel:                bp('homePanel',                () => homePanel,                null),
     startPanel:               bp('startPanel',               () => startPanel,               null),
+    homeTitleEl:              bp('homeTitleEl',              () => homeTitleEl,              null),
+    sketchListEl:             bp('sketchListEl',             () => sketchListEl,             null),
     detailsContainer:         bp('detailsContainer',         () => detailsContainer,         null),
     sidebarTitleEl:           bp('sidebarTitleEl',           () => sidebarTitleEl,            null),
     sidebarEl:                bp('sidebarEl',                () => sidebarEl,                 null),
@@ -1782,6 +1784,13 @@ async function init() {
 
   // Signal that the app is fully initialized
   bus.emit('app:initialized', { lang: currentLang, mode: currentMode });
+
+  // Re-evaluate the route now that the S proxy / F registry are populated.
+  // When auth resolves before this module finishes loading (e.g. the localhost
+  // dev bypass), the earlier handleRoute() calls hit empty S bindings and
+  // renderProjectsHome()/renderHome() silently no-op, leaving the start panel
+  // covering the app instead of the homepage.
+  handleRoute();
 }
 
 // ─── Function registry for extracted modules ────────────────────────────────
