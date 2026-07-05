@@ -407,7 +407,19 @@ function pointerDown(x, y) {
     S.dragOffset.x = world.x - node.x;
     S.dragOffset.y = world.y - node.y;
     S.isDragging = true;
-    dragStartNodeState = { id: node.id, oldX: node.x, oldY: node.y, oldSurveyX: node.surveyX, oldSurveyY: node.surveyY };
+    dragStartNodeState = {
+      id: node.id,
+      oldX: node.x,
+      oldY: node.y,
+      oldSurveyX: node.surveyX,
+      oldSurveyY: node.surveyY,
+      oldSurveyZ: node.surveyZ,
+      oldSchematicX: node.schematicX,
+      oldSchematicY: node.schematicY,
+      oldGnssFixQuality: node.gnssFixQuality,
+      oldHasCoordinates: node.hasCoordinates,
+      measurementCleared: false,
+    };
     pendingDetailsForSelectedNode = true;
     selectedNodeDownScreen = { x, y };
     selectedNodeMoveThreshold = (lastPointerType === 'touch') ? TOUCH_TAP_MOVE_THRESHOLD : MOUSE_TAP_MOVE_THRESHOLD;
@@ -459,10 +471,15 @@ function pointerMove(x, y) {
     }
   }
   if (S.isDragging && S.selectedNode) {
+    // Protect only RTK-Fixed (quality 4) survey points from being overwritten
+    // by a drag — that's the gold-standard measurement. RTK-Float (quality 5)
+    // and all lower-quality fixes are REPLACEABLE by manual drag per product
+    // rule: "adding a new coordinate replaces any prior schematic or float
+    // measurement."
     if (
       S.selectedNode.surveyX != null &&
       S.selectedNode.surveyY != null &&
-      (S.selectedNode.gnssFixQuality === 4 || S.selectedNode.gnssFixQuality === 5)
+      S.selectedNode.gnssFixQuality === 4
     ) {
       S.isDragging = false;
       return;
@@ -471,12 +488,43 @@ function pointerMove(x, y) {
       S.isDragging = false;
       return;
     }
+
+    // Clear any stale schematic anchor / non-Fixed survey data exactly once
+    // per drag, the first time we actually move the node. After this point
+    // the node's x/y (and derived manual_x/y) are the sole source of truth.
+    if (dragStartNodeState && !dragStartNodeState.measurementCleared) {
+      const hadMeasurement =
+        S.selectedNode.surveyX != null ||
+        S.selectedNode.surveyY != null ||
+        S.selectedNode.surveyZ != null ||
+        S.selectedNode.schematicX != null ||
+        S.selectedNode.schematicY != null ||
+        (S.selectedNode.gnssFixQuality != null && S.selectedNode.gnssFixQuality !== 6);
+      if (hadMeasurement) {
+        S.selectedNode.surveyX = null;
+        S.selectedNode.surveyY = null;
+        S.selectedNode.surveyZ = null;
+        S.selectedNode.schematicX = null;
+        S.selectedNode.schematicY = null;
+        // Demote to Manual quality so downstream code (icons, completeness,
+        // heatmap) treats this node as user-placed rather than surveyed.
+        S.selectedNode.gnssFixQuality = 6;
+        // hasCoordinates becomes true only if we can derive ITM from the
+        // drag (reference point available) — otherwise the node is purely
+        // schematic/canvas now.
+        S.selectedNode.hasCoordinates = false;
+      }
+      dragStartNodeState.measurementCleared = true;
+    }
+
     S.selectedNode.x = world.x - S.dragOffset.x;
     S.selectedNode.y = world.y - S.dragOffset.y;
     const refDrag = F.getMapReferencePoint();
     if (refDrag && refDrag.itm && refDrag.canvas && S.coordinateScale > 0) {
       S.selectedNode.manual_x = refDrag.itm.x + (S.selectedNode.x - refDrag.canvas.x) / S.coordinateScale;
       S.selectedNode.manual_y = refDrag.itm.y - (S.selectedNode.y - refDrag.canvas.y) / S.coordinateScale;
+      // With a valid reference, the drag produces real ITM coordinates.
+      S.selectedNode.hasCoordinates = true;
     }
     F.updateNodeTimestamp(S.selectedNode);
     F.saveToStorage();
@@ -502,6 +550,15 @@ function pointerUp() {
         oldY: dragStartNodeState.oldY,
         oldSurveyX: dragStartNodeState.oldSurveyX,
         oldSurveyY: dragStartNodeState.oldSurveyY,
+        // Round-trip all fields we cleared during the drag so undo can
+        // restore the pre-drag measurement state (schematic anchor, RTK-Float
+        // survey, fix-quality flag, hasCoordinates). Without these the undo
+        // was losing the measurement silently.
+        oldSurveyZ: dragStartNodeState.oldSurveyZ,
+        oldSchematicX: dragStartNodeState.oldSchematicX,
+        oldSchematicY: dragStartNodeState.oldSchematicY,
+        oldGnssFixQuality: dragStartNodeState.oldGnssFixQuality,
+        oldHasCoordinates: dragStartNodeState.oldHasCoordinates,
       });
     }
   }

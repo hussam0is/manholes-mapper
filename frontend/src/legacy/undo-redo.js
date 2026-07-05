@@ -305,7 +305,10 @@ export function performUndo() {
     if (nodeHasValuableData(node)) {
       if (!confirm(t('confirms.undoNodeWithData'))) return;
     }
-    // Save current position for redo
+    // Save current (post-drag) position AND measurement state for redo.
+    // pointer-handlers clears schematicX/Y, surveyX/Y/Z, demotes
+    // gnssFixQuality, and flips hasCoordinates; we must snapshot the
+    // cleared state here so redo can restore the "dragged" state exactly.
     S.redoStack.push({
       type: 'nodeMove',
       nodeId: action.nodeId,
@@ -313,11 +316,21 @@ export function performUndo() {
       oldY: node.y,
       oldSurveyX: node.surveyX,
       oldSurveyY: node.surveyY,
+      oldSurveyZ: node.surveyZ,
+      oldSchematicX: node.schematicX,
+      oldSchematicY: node.schematicY,
+      oldGnssFixQuality: node.gnssFixQuality,
+      oldHasCoordinates: node.hasCoordinates,
     });
     node.x = action.oldX;
     node.y = action.oldY;
     if (action.oldSurveyX !== undefined) node.surveyX = action.oldSurveyX;
     if (action.oldSurveyY !== undefined) node.surveyY = action.oldSurveyY;
+    if (action.oldSurveyZ !== undefined) node.surveyZ = action.oldSurveyZ;
+    if (action.oldSchematicX !== undefined) node.schematicX = action.oldSchematicX;
+    if (action.oldSchematicY !== undefined) node.schematicY = action.oldSchematicY;
+    if (action.oldGnssFixQuality !== undefined) node.gnssFixQuality = action.oldGnssFixQuality;
+    if (action.oldHasCoordinates !== undefined) node.hasCoordinates = action.oldHasCoordinates;
     S.undoStack.pop();
     F.updateNodeTimestamp(node);
     F.saveToStorage();
@@ -444,10 +457,11 @@ export function performRedo() {
     F.showToast(t('toasts.redoEdgeCreate'));
 
   } else if (action.type === 'nodeMove') {
-    // Redo of "undo nodeMove" — move node to the redo position
+    // Redo of "undo nodeMove" — move node to the redo position and
+    // reinstate the post-drag measurement state (see undo branch).
     const node = S.nodes.find(n => String(n.id) === String(action.nodeId));
     if (!node) { updateRedoButton(); return; }
-    // Save current pos for undo
+    // Save current (pre-redo, i.e. post-undo) pos + measurement for undo
     pushUndoDirect({
       type: 'nodeMove',
       nodeId: action.nodeId,
@@ -455,11 +469,21 @@ export function performRedo() {
       oldY: node.y,
       oldSurveyX: node.surveyX,
       oldSurveyY: node.surveyY,
+      oldSurveyZ: node.surveyZ,
+      oldSchematicX: node.schematicX,
+      oldSchematicY: node.schematicY,
+      oldGnssFixQuality: node.gnssFixQuality,
+      oldHasCoordinates: node.hasCoordinates,
     });
     node.x = action.oldX;
     node.y = action.oldY;
     if (action.oldSurveyX !== undefined) node.surveyX = action.oldSurveyX;
     if (action.oldSurveyY !== undefined) node.surveyY = action.oldSurveyY;
+    if (action.oldSurveyZ !== undefined) node.surveyZ = action.oldSurveyZ;
+    if (action.oldSchematicX !== undefined) node.schematicX = action.oldSchematicX;
+    if (action.oldSchematicY !== undefined) node.schematicY = action.oldSchematicY;
+    if (action.oldGnssFixQuality !== undefined) node.gnssFixQuality = action.oldGnssFixQuality;
+    if (action.oldHasCoordinates !== undefined) node.hasCoordinates = action.oldHasCoordinates;
     F.updateNodeTimestamp(node);
     F.saveToStorage();
     F.scheduleDraw();
