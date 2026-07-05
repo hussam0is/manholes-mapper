@@ -33,7 +33,7 @@ npm run db:migrate      # Migrate Better Auth tables (needs POSTGRES_URL)
 
 ```bash
 npm run test:run                              # Run all tests (Vitest, ~490 tests)
-npm run test:run frontend/tests/unit/gnss-state.test.ts  # Single test file
+npm run test:run -- tests/unit/gnss-state.test.ts  # Single test file (paths relative to frontend/, the vitest root)
 npm test                                      # Watch mode
 ```
 
