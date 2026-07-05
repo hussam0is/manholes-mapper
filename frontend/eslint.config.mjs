@@ -30,7 +30,9 @@ export default [
     },
   },
   {
-    ignores: ['dist/**', 'node_modules/**', 'src/legacy/main.js'],
+    // *.d.ts are TypeScript declaration files — the default espree parser
+    // can't parse `interface`/`declare`, so lint always exited 1 on them.
+    ignores: ['dist/**', 'node_modules/**', 'src/legacy/main.js', '**/*.d.ts'],
   },
 ];
 
