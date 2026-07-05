@@ -107,6 +107,16 @@ export function initSketchSidePanel() {
     });
   }
 
+  // Back to Projects anchor — flag the hash change as intentional so the
+  // Android back-button exit guard doesn't treat the popstate fired by this
+  // same-document navigation as "back" and bounce the user to #/
+  const backBtn = document.getElementById('backToProjectsBtn');
+  if (backBtn) {
+    backBtn.addEventListener('click', () => {
+      window.__markInternalNavigation?.();
+    });
+  }
+
   // Close button
   const closeBtn = panelEl.querySelector('.sketch-side-panel__close');
   if (closeBtn) {
