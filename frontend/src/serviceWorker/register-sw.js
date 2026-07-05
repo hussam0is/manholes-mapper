@@ -3,6 +3,16 @@
 
 (function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
+  // Never run the service worker under the Vite dev server — its
+  // stale-while-revalidate cache serves every module one edit behind, which
+  // breaks HMR and makes local testing misleading. Also unregister any SW
+  // left on this origin by a previous production preview.
+  if (import.meta.env && import.meta.env.DEV) {
+    navigator.serviceWorker.getRegistrations()
+      .then((regs) => regs.forEach((r) => r.unregister()))
+      .catch(() => {});
+    return;
+  }
   // Only register the service worker when served over HTTPS or from localhost.  Service
   // workers are not allowed on plain HTTP on most devices.  This check prevents
   // confusing errors during development.

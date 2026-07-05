@@ -1099,6 +1099,18 @@ function initCollapsibleMobileMenuGroups(menuEl) {
 try { syncAppHeightVar(); } catch (e) { console.warn('[main-entry] syncAppHeightVar failed:', e); }
 try { syncHeaderHeightVar(); } catch (e) { console.warn('[main-entry] syncHeaderHeightVar failed:', e); }
 
+// The canvas container must never scroll — a stray focus()/scrollIntoView()
+// inside it displaces the canvas and breaks pointer hit-testing. CSS uses
+// overflow: clip; this guard heals WebViews that only support hidden.
+(function guardCanvasContainerScroll() {
+  const cc = document.getElementById('canvasContainer');
+  if (!cc) return;
+  cc.addEventListener('scroll', () => {
+    if (cc.scrollTop !== 0) cc.scrollTop = 0;
+    if (cc.scrollLeft !== 0) cc.scrollLeft = 0;
+  }, { passive: true });
+})();
+
 // --- Landscape header auto-hide ---
 // In landscape mobile mode, the header auto-hides during canvas interaction to
 // maximise vertical drawing space, then reappears on idle or top-edge hover.

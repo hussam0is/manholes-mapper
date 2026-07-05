@@ -439,6 +439,19 @@ body.unified-layout .unified-sidebar:not(.collapsed) ~ .unified-sidebar-toggle {
   }
 }
 
+/* ─── Short landscape (TSC5-class 5" controllers, ~640x360 CSS px):
+   a fixed 320px panel would eat half the screen. Cap it so the canvas
+   keeps the majority while the form stays comfortably usable. ─── */
+@media (max-height: 450px) and (orientation: landscape) and (min-width: 601px) {
+  body.unified-layout .unified-sidebar {
+    width: min(300px, 45vw);
+  }
+
+  body.unified-layout.sidebar-open #canvasContainer {
+    margin-inline-end: min(300px, 45vw);
+  }
+}
+
 /* ─── Dark mode ─── */
 @media (prefers-color-scheme: dark) {
   body.unified-layout .unified-sidebar {

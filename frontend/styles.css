@@ -1176,7 +1176,12 @@ select.btn:focus-visible {
   min-height: 0; /* Allow shrinking in flex context */
   position: relative;
   background: var(--color-surface);
+  /* clip (not hidden): overflow:hidden boxes are still programmatically
+     scrollable, so a stray focus()/scrollIntoView() inside the container
+     silently shifts the canvas and breaks all pointer hit-testing.
+     overflow:clip makes it a non-scroll-container. */
   overflow: hidden;
+  overflow: clip;
   box-shadow: var(--shadow);
   border-radius: var(--radius);
   margin: 0.5rem;
@@ -13642,6 +13647,21 @@ button:focus-visible,
     -webkit-backdrop-filter: saturate(160%) blur(12px);
     border-bottom: 1px solid rgba(0, 0, 0, 0.06);
     box-shadow: none;
+  }
+
+  /* menu.css (loaded after this file) re-declares `.app-header` as
+     position: sticky with min-height: var(--menu-height) (56px), which put
+     the header back into layout flow and reserved ~73px of a 360px-tall
+     screen even while hidden. header.app-header outranks it on specificity
+     so the canvas keeps the full viewport height on TSC5-class landscape
+     controllers. */
+  header.app-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    min-height: 0;
+    padding: 0.25rem 0.75rem;
   }
 
   /* Override the solid .soft-blue-header gradient in landscape */
