@@ -56,20 +56,11 @@ test.describe('3D View Button', () => {
     expect(iconText).toBe('view_in_ar');
   });
 
-  test('3D view button can be made visible via JS', async ({ page }) => {
-    await mockAuthAdmin(page);
-    await gotoCanvasReady(page);
-    await dismissHomePanel(page);
-
-    // Force-show the button (simulating what permissions service would do)
-    await page.evaluate(() => {
-      const btn = document.getElementById('threeDViewBtn');
-      if (btn) btn.style.display = '';
-    });
-
-    const threeDBtn = page.locator('#threeDViewBtn');
-    await expect(threeDBtn).toBeVisible();
-  });
+  // NOTE: the old "can be made visible via JS" test was removed — under the
+  // unified layout the legacy .canvas-toolbar that hosts #threeDViewBtn is
+  // permanently hidden, so clearing the button's inline display can no longer
+  // make it visible. The button remains a programmatic delegation target
+  // (covered by the click test below).
 
   test('3D view button is inside the canvas toolbar', async ({ page }) => {
     await mockAuthUser(page);
