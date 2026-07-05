@@ -443,16 +443,55 @@ body.unified-layout .unified-sidebar:not(.collapsed) ~ .unified-sidebar-toggle {
   }
 }
 
-/* ─── Short landscape (TSC5-class 5" controllers, ~640x360 CSS px):
-   a fixed 320px panel would eat half the screen. Cap it so the canvas
-   keeps the majority while the form stays comfortably usable. ─── */
+/* ─── Short landscape (TSC5-class 5" controllers, ~640x360 CSS px) ───
+   A fixed 320px dock ate ~half the screen AND, spanning down to bottom:0,
+   overlaid the compact bottom toolbar's draw-mode buttons (sidebar z50 >
+   toolbar z40) so you couldn't switch mode without closing the panel.
+   Fix, CSS-only, additive to this already-non-colliding breakpoint:
+   • Narrow the dock so the map keeps a clear majority (~42vw).
+   • Stop the dock's bottom edge ABOVE the toolbar so #utNodeBtn/#utEdgeBtn
+     and #utSidebarBtn stay tappable while the panel is open.
+   • Fatten the collapse tab into a gloved-hand touch target (id unchanged).
+   Docking side (RTL left / LTR right) and the collapsed translateX(±100%)
+   slide-out are inherited from the base dir-gated rules, so both directions
+   stay correct with no physical left/right here. */
 @media (max-height: 450px) and (orientation: landscape) and (min-width: 601px) {
-  body.unified-layout .unified-sidebar {
-    width: min(300px, 45vw);
+  body.unified-layout {
+    --tsc5-dock-w: min(272px, 42vw);
+    /* clears the compact toolbar in unified-toolbar.css (44px height + 1px
+       top border ≈ 47px measured) with a small cushion; env() adds notch
+       clearance on rugged controllers */
+    --tsc5-toolbar-clearance: calc(50px + env(safe-area-inset-bottom, 0px));
   }
 
+  body.unified-layout .unified-sidebar {
+    width: var(--tsc5-dock-w);
+    bottom: var(--tsc5-toolbar-clearance);
+  }
+
+  /* Do NOT shrink the canvas container when the dock opens here. The bottom
+     toolbar is absolute inside #canvasContainer, and at this width its ten
+     44px buttons + separators need ~455px — more than the ~371px left after
+     a 272px dock — so shrinking makes the toolbar overflow and spill buttons
+     under the dock. Since the dock already stops ABOVE the toolbar, the
+     toolbar can keep the full width (all buttons reachable, comfortably
+     sized for gloved use); the opaque dock just overlays the canvas's
+     top-left while open (and the dock defaults to collapsed anyway). */
   body.unified-layout.sidebar-open #canvasContainer {
-    margin-inline-end: min(300px, 45vw);
+    margin-inline-end: 0;
+  }
+
+  /* Gloved-hand collapse tab: wider + taller than the 20x48 default.
+     Still #unifiedSidebarCollapseBtn, still anchored outside the dock via
+     the root overflow:visible, still hangs inward over the canvas in both
+     RTL (left:100%) and LTR (right:100%) — reachable, never off-screen. */
+  .unified-sidebar__collapse-btn {
+    width: 30px;
+    height: 64px;
+  }
+
+  .unified-sidebar__collapse-btn .material-icons {
+    font-size: 20px;
   }
 }
 
