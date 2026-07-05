@@ -48,11 +48,11 @@ test.describe('Canvas Drawing Flow', () => {
   });
 
   test('toolbar is visible with mode group', async ({ page }) => {
-    // The canvas toolbar wraps all drawing-mode buttons
-    const toolbar = page.locator('.canvas-toolbar');
+    // The unified bottom toolbar wraps all drawing-mode buttons
+    const toolbar = page.locator('#unifiedToolbar');
     await expect(toolbar).toBeVisible();
 
-    // The #modeGroup segmented control contains all mode buttons
+    // The legacy #modeGroup segmented control remains as the delegation target
     const modeGroup = page.locator('#modeGroup');
     await expect(modeGroup).toBeAttached();
   });

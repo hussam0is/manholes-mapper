@@ -74,13 +74,13 @@ test.describe('Offline Resilience', () => {
       route.abort('connectionrefused')
     );
 
-    // Toolbar should still be present
-    const toolbar = page.locator('.canvas-toolbar');
+    // Unified toolbar should still be present
+    const toolbar = page.locator('#unifiedToolbar');
     await expect(toolbar).toBeVisible();
 
-    // Mode buttons should still be in the DOM
-    await expect(page.locator('#nodeModeBtn')).toBeAttached();
-    await expect(page.locator('#edgeModeBtn')).toBeAttached();
+    // Mode buttons should still be visible
+    await expect(page.locator('#utNodeBtn')).toBeVisible();
+    await expect(page.locator('#utEdgeBtn')).toBeVisible();
   });
 
   test('sync indicator exists in the DOM', async ({ page }) => {

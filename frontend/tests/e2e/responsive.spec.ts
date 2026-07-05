@@ -57,7 +57,7 @@ test.describe('Responsive -- Mobile Portrait (375x812)', () => {
     await gotoCanvasReady(page);
     await dismissHomePanel(page);
 
-    const toolbar = page.locator('.canvas-toolbar');
+    const toolbar = page.locator('#unifiedToolbar');
     await expect(toolbar).toBeVisible();
 
     // Toolbar should not overflow the viewport
@@ -124,15 +124,13 @@ test.describe('Responsive -- Mobile Landscape (812x375)', () => {
     await gotoCanvasReady(page);
     await dismissHomePanel(page);
 
-    const toolbar = page.locator('.canvas-toolbar');
-    const isVisible = await toolbar.isVisible();
+    const toolbar = page.locator('#unifiedToolbar');
+    await expect(toolbar).toBeVisible();
 
-    if (isVisible) {
-      const box = await toolbar.boundingBox();
-      expect(box).not.toBeNull();
-      // Toolbar should be within viewport bounds
-      expect(box!.x + box!.width).toBeLessThanOrEqual(820);
-    }
+    const box = await toolbar.boundingBox();
+    expect(box).not.toBeNull();
+    // Toolbar should be within viewport bounds
+    expect(box!.x + box!.width).toBeLessThanOrEqual(820);
   });
 
   test('app does not crash at landscape viewport', async ({ page }) => {

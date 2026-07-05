@@ -124,29 +124,30 @@ test.describe('Sketch Canvas', () => {
   });
 
   test('should have mode selection buttons', async ({ page }) => {
-    // Node mode button
-    const nodeModeBtn = page.locator('#nodeModeBtn');
+    // Unified toolbar node mode button (delegates to legacy #nodeModeBtn)
+    const nodeModeBtn = page.locator('#utNodeBtn');
     await expect(nodeModeBtn).toBeVisible();
 
-    // Edge mode button
-    const edgeModeBtn = page.locator('#edgeModeBtn');
+    // Unified toolbar edge mode button
+    const edgeModeBtn = page.locator('#utEdgeBtn');
     await expect(edgeModeBtn).toBeVisible();
   });
 
-  test('should have toolbar with mode group', async ({ page }) => {
-    const toolbar = page.locator('.canvas-toolbar');
+  test('should have toolbar with mode section', async ({ page }) => {
+    const toolbar = page.locator('#unifiedToolbar');
     await expect(toolbar).toBeVisible();
 
-    const modeGroup = page.locator('#modeGroup');
-    await expect(modeGroup).toBeVisible();
+    const modeSection = page.locator('#unifiedToolbar .ut-section--modes');
+    await expect(modeSection).toBeVisible();
   });
 
-  test('should have recenter button', async ({ page }) => {
-    const recenterBtn = page.locator('#recenterBtn');
-    await expect(recenterBtn).toBeVisible();
+  test('should have zoom-to-fit button', async ({ page }) => {
+    // The unified toolbar replaced the recenter FAB with zoom-to-fit
+    const zoomFitBtn = page.locator('#utZoomFitBtn');
+    await expect(zoomFitBtn).toBeVisible();
     // Support both English and Hebrew titles
-    const title = await recenterBtn.getAttribute('title');
-    expect(['Recenter sketch', 'מרכז שרטוט']).toContain(title);
+    const title = await zoomFitBtn.getAttribute('title');
+    expect(['Zoom to fit', 'התאם לשרטוט']).toContain(title);
   });
 });
 
