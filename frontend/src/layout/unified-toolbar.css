@@ -197,15 +197,26 @@ body.unified-layout .unified-toolbar {
 }
 
 /* ─── Mobile tweaks ─── */
+/* All 10 buttons must fit a 360px-wide portrait phone in a single row —
+   the toolbar cannot scroll (overflow would clip the node-type flyout) */
 @media (max-width: 600px) {
   body.unified-layout .unified-toolbar {
     height: 52px;
-    padding: 0 4px;
+    padding: 0 2px;
+    gap: 2px;
+  }
+
+  .ut-section {
+    gap: 0;
+  }
+
+  .ut-sep {
+    display: none;
   }
 
   .ut-btn {
-    padding: 4px 6px;
-    min-width: 40px;
+    padding: 4px 2px;
+    min-width: 34px;
   }
 
   .ut-btn .material-icons {
