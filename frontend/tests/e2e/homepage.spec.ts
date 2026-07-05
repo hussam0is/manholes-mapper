@@ -546,13 +546,11 @@ test.describe('Sketch Side Panel Interactions', () => {
     await expect(editingBadge.locator('.material-icons')).toHaveText('edit');
   });
 
-  test('toolbar toggle collapses the sidebar sketch list', async ({ page }) => {
+  test('edge collapse button collapses the sidebar sketch list', async ({ page }) => {
     await navigateToProject(page);
 
-    // The toolbar panel button toggles the sidebar closed
-    // (the sidebar's own edge collapse button is partially covered by the
-    // canvas, so the toolbar toggle is the reliable control)
-    await page.locator('#utSidebarBtn').click();
+    // The sidebar's edge tab replaces the old panel close button
+    await page.locator('#unifiedSidebarCollapseBtn').click();
     await expect(page.locator('#unifiedSidebar')).toHaveClass(/collapsed/);
   });
 

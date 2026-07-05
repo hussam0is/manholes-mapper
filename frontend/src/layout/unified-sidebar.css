@@ -13,7 +13,9 @@ body.unified-layout .unified-sidebar {
   z-index: 50;
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: -2px 0 12px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
+  /* visible: the edge collapse tab is anchored outside the sidebar box and
+     would be clipped otherwise; panels clip their own content */
+  overflow: visible;
 }
 
 /* RTL: sidebar on left; LTR: sidebar on right */
@@ -387,6 +389,8 @@ body.unified-layout .unified-sidebar:not(.collapsed) ~ .unified-sidebar-toggle {
     border-radius: 16px 16px 0 0;
     box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.12);
     transform: translateY(0);
+    /* clip content to the rounded sheet corners (edge tab is hidden here) */
+    overflow: hidden;
   }
 
   body.unified-layout .unified-sidebar.collapsed {
