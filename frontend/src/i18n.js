@@ -35,6 +35,9 @@ export const i18n = {
     edgeLegend: {
       toggle: 'הצג/הסתר מקרא קווים',
     },
+    annotations: {
+      toggle: 'סימונים על המפה',
+    },
     searchNode: 'חפש שוחה...',
     searchNodeTitle: 'חפש שוחה לפי מספר',
     searchAddress: 'כתובת / עיר / רחוב...',
@@ -1308,6 +1311,9 @@ export const i18n = {
     zoomToFit: 'Zoom to fit',
     edgeLegend: {
       toggle: 'Toggle edge legend',
+    },
+    annotations: {
+      toggle: 'Map annotations',
     },
     floatingKeyboard: 'Floating Keyboard',
     searchNode: 'Search node...',
