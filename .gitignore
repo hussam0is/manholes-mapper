@@ -70,4 +70,17 @@ frontend/test-results/
 .playwright-artifacts-*/
 playwright-report/
 frontend/playwright-report/
-qa-skill/reporting/
+**/qa-skill/reporting/
+.playwright-mcp/
+
+# Claude session scratch (plans, one-off capture/verify scripts)
+.claude/plans/
+_design-system-v2-handoff/
+scripts/capture-*.mjs
+scripts/verify-*.mjs
+scripts/debug-*.mjs
+scripts/inspect-*.mjs
+scripts/test-app-nav.mjs
+scripts/test-arrows.mjs
+scripts/test-view-all*.mjs
+scripts/session-watchdog.sh
