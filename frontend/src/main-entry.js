@@ -7,6 +7,7 @@ import './auth/csrf.js';
 
 // Import CSS via JS so Vite handles it correctly in both dev and build modes
 import '../styles.css';
+import '../design-system-v2.css';
 import './menu/menu.css';
 
 // Load small utilities first so legacy code can rely on them during migration.

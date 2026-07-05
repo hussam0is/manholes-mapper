@@ -1,0 +1,709 @@
+/* =========================================================
+   Manholes Mapper — Design System v2
+   Handoff from Claude Design (claude.ai/design) — 2026-04-20
+   Applied additively on top of frontend/styles.css.
+
+   Load order (in frontend/index.html):
+     1. <link rel="stylesheet" href="/styles.css" />
+     2. <link rel="stylesheet" href="/design-system-v2.css" />
+
+   This file:
+     - Adds new tokens that were missing from styles.css
+       (GNSS fix-quality colors, semantic type aliases,
+        line-height tokens, --text-3xl, z-index tokens,
+        font stacks)
+     - Adds new component classes that were absent:
+       .input, .toggle, .badge-{primary|success|danger|warning|accent|muted},
+       .role-badge, .panel + children, .menu-item + children,
+       .gnss-badge/.gnss-dot, .fab (+color variants),
+       .sl-overlay/.sl-panel/.sk-card (sketch list)
+     - Does NOT redefine selectors that already exist in styles.css
+       (.btn*, .segmented, .canvas-toolbar, #appTitle,
+        .soft-blue-header). The existing tokens in styles.css :root
+        already match the handoff values, so existing components
+        inherit the handoff look automatically.
+   ========================================================= */
+
+
+/* =========================================================
+   TOKEN ADDITIONS
+   ========================================================= */
+:root {
+  /* Font stacks — adds explicit variables matching handoff */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+               Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+  --font-icons: 'Material Icons';
+
+  /* Extended type scale — adds 3xl */
+  --text-3xl: 1.875rem;   /* 30px — display */
+
+  /* Semantic type roles */
+  --type-h1: var(--text-2xl);
+  --type-h2: var(--text-xl);
+  --type-h3: var(--text-lg);
+  --type-body: var(--text-sm);
+  --type-caption: var(--text-xs);
+  --type-label: var(--text-xs);
+  --type-button: var(--text-sm);
+  --type-code: var(--text-sm);
+
+  /* Line heights */
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+
+  /* GNSS fix quality — field-critical */
+  --color-fix-none: #ef4444;       /* red — no fix */
+  --color-fix-gps: #f59e0b;        /* amber — GPS */
+  --color-fix-dgps: #f59e0b;       /* amber — DGPS */
+  --color-fix-rtk-float: #3b82f6;  /* blue — RTK float */
+  --color-fix-rtk-fixed: #22c55e;  /* green — RTK fixed */
+
+  /* Z-index scale — documents + formalizes stacking from CSS comment */
+  --z-fab: 16;
+  --z-drawer: 40;
+  --z-legend: 140;
+  --z-toolbar: 150;
+  --z-header: 200;
+  --z-precision: 1001;
+  --z-menu-bg: 1055;
+  --z-menu: 1060;
+  --z-3d: 2000;
+  --z-keyboard: 9999;
+}
+
+
+/* =========================================================
+   SEMANTIC TYPE UTILITIES
+   ========================================================= */
+.section-label {
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-muted);
+}
+
+.caption {
+  font-size: var(--type-caption);
+  color: var(--color-muted);
+  line-height: var(--leading-normal);
+}
+
+.app-title-gradient {
+  font-size: 1.55rem;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  line-height: 1.25;
+  background: linear-gradient(
+    90deg,
+    var(--color-text) 0%,
+    var(--color-brand-accent) 42%,
+    var(--color-brand-accent) 58%,
+    var(--color-text) 100%
+  );
+  -webkit-background-clip: text;
+          background-clip: text;
+  color: transparent;
+}
+
+
+/* =========================================================
+   FORM CONTROLS — .input, .toggle
+   (element `input`, `select` already styled by styles.css;
+    these are opt-in utility classes for new markup)
+   ========================================================= */
+.input {
+  width: 200px;
+  height: 36px;
+  padding: 0 12px;
+  font-size: var(--text-sm);
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.input::placeholder { color: var(--color-text-tertiary); }
+.input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+.input.input-error,
+.input[aria-invalid="true"] {
+  border-color: var(--color-danger);
+}
+.input.input-error:focus,
+.input[aria-invalid="true"]:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+}
+.input.input-success {
+  border-color: var(--color-success);
+}
+.input.input-success:focus {
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+}
+
+.field-label {
+  display: block;
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--color-text-secondary);
+  margin-bottom: 4px;
+}
+
+.error-msg {
+  font-size: var(--text-xs);
+  color: var(--color-danger);
+  margin-top: 3px;
+}
+
+/* Toggle switch (button-based for accessibility) */
+.toggle {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+  cursor: pointer;
+  padding: 0;
+  transition: background .2s ease;
+}
+.toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform .2s ease;
+}
+.toggle.on,
+.toggle[aria-checked="true"] {
+  background: var(--color-primary);
+}
+.toggle.on::after,
+.toggle[aria-checked="true"]::after {
+  transform: translateX(16px);
+}
+.toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.toggle-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+
+/* =========================================================
+   BADGES & CHIPS
+   (styles.css already defines `.badge` with --up/--down/--flat
+    trend modifiers — below are STATUS/ROLE variants using
+    distinct class names to avoid collisions)
+   ========================================================= */
+.badge-primary,
+.badge-success,
+.badge-danger,
+.badge-warning,
+.badge-accent,
+.badge-muted {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: var(--font-semibold);
+  line-height: 1.4;
+}
+.badge-primary { background: var(--color-primary-light); color: var(--color-primary-hover); }
+.badge-success { background: var(--color-success-light); color: var(--color-success-hover); }
+.badge-danger  { background: var(--color-danger-light);  color: var(--color-danger-hover); }
+.badge-warning { background: var(--color-warning-light); color: var(--color-warning-hover); }
+.badge-accent  { background: var(--color-accent-light);  color: var(--color-accent-hover); }
+.badge-muted   { background: var(--color-surface-hover); color: var(--color-text-secondary); }
+
+/* Role badges — uppercase, letter-spaced, stricter weight */
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  font-weight: var(--font-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  line-height: 1.4;
+}
+.role-badge.role-user  { background: var(--color-surface-hover); color: var(--color-text-secondary); }
+.role-badge.role-admin { background: var(--color-primary-light); color: var(--color-primary-hover); }
+.role-badge.role-super { background: var(--color-accent-light);  color: var(--color-accent-hover); }
+
+
+/* =========================================================
+   PANEL / MENU — for dropdowns, command menu, action panels
+   ========================================================= */
+.panel {
+  width: 240px;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  font-size: var(--text-sm);
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border);
+  background: linear-gradient(135deg, var(--color-bg), var(--color-surface-hover));
+}
+.panel-header h3,
+.panel-header .panel-title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.panel-body {
+  padding: 4px;
+}
+
+.panel-close-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--color-muted);
+  transition: background .15s ease;
+}
+.panel-close-btn:hover { background: rgba(0, 0, 0, 0.06); }
+
+.menu-group {
+  margin-bottom: 4px;
+}
+
+.group-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  font-size: 0.7rem;
+  font-weight: var(--font-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--color-muted);
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: start;
+  transition: background .12s ease;
+}
+.menu-item:hover { background: var(--color-surface-hover); }
+.menu-item:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.menu-item .material-icons {
+  color: var(--color-primary);
+  font-size: 18px;
+}
+
+.menu-item.menu-item-success { color: var(--color-success-hover); }
+.menu-item.menu-item-success .material-icons { color: var(--color-success); }
+
+.menu-item.menu-item-danger { color: var(--color-danger-hover); }
+.menu-item.menu-item-danger .material-icons { color: var(--color-danger); }
+
+.menu-divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: 4px 0;
+}
+
+
+/* =========================================================
+   FAB — Floating Action Button
+   (styles.css has .canvas-fab-toolbar* for the stack;
+    this is the reusable circular button primitive)
+   ========================================================= */
+.fab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+  z-index: var(--z-fab);
+}
+.fab:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
+}
+.fab:active { transform: scale(0.98); }
+.fab:focus-visible {
+  outline: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18), var(--focus-ring);
+}
+.fab .material-icons { font-size: 22px; }
+
+.fab-primary,
+.fab-blue   { background: var(--color-primary); }
+.fab-primary:hover,
+.fab-blue:hover { background: var(--color-primary-hover); }
+
+.fab-success,
+.fab-green  { background: var(--color-success); }
+.fab-success:hover,
+.fab-green:hover { background: var(--color-success-hover); }
+
+.fab-warning,
+.fab-amber  { background: var(--color-warning); }
+.fab-warning:hover,
+.fab-amber:hover { background: var(--color-warning-hover); }
+
+.fab-danger,
+.fab-red    { background: var(--color-danger); }
+.fab-danger:hover,
+.fab-red:hover { background: var(--color-danger-hover); }
+
+.fab-sm { width: 40px; height: 40px; }
+.fab-sm .material-icons { font-size: 18px; }
+
+.fab-lg { width: 56px; height: 56px; }
+.fab-lg .material-icons { font-size: 26px; }
+
+.fab-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+
+/* =========================================================
+   GNSS STATUS BADGE
+   (new name — styles.css uses .gnss-status-pill which differs
+    in shape; this is the pill-shaped field badge from handoff.
+    Use wherever new UI needs it; existing .gnss-status-pill stays.)
+   ========================================================= */
+.gnss-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(4px);
+}
+
+.gnss-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--color-fix-none);
+}
+.gnss-dot.fix-none      { background: var(--color-fix-none); }
+.gnss-dot.fix-gps       { background: var(--color-fix-gps); }
+.gnss-dot.fix-dgps      { background: var(--color-fix-dgps); opacity: 0.8; }
+.gnss-dot.fix-rtk-float { background: var(--color-fix-rtk-float); }
+.gnss-dot.fix-rtk-fixed { background: var(--color-fix-rtk-fixed); }
+
+/* Pulse variant — for "locked" RTK Fixed confirmation */
+.gnss-dot.pulse {
+  animation: gnss-dot-pulse 1.8s ease-in-out infinite;
+}
+@keyframes gnss-dot-pulse {
+  0%, 100% { transform: scale(1);   opacity: 1; }
+  50%      { transform: scale(1.4); opacity: 0.6; }
+}
+
+
+/* =========================================================
+   SKETCH LIST OVERLAY & CARDS (from UI kit)
+   ========================================================= */
+.sl-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: stretch;
+  background: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(3px);
+  z-index: var(--z-menu);
+}
+.sl-overlay.open {
+  display: flex;
+  animation: sl-overlay-fade .18s ease-out;
+}
+@keyframes sl-overlay-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.sl-panel {
+  width: 340px;
+  max-width: 88vw;
+  height: 100%;
+  background: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-lg);
+  animation: sl-panel-in .2s ease-out;
+}
+@keyframes sl-panel-in {
+  from { transform: translateX(-20px); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+[dir="rtl"] .sl-panel { animation-name: sl-panel-in-rtl; }
+@keyframes sl-panel-in-rtl {
+  from { transform: translateX(20px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+.sl-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+.sl-header h2 {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+}
+
+.sl-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sk-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease, box-shadow .15s ease;
+}
+.sk-card:hover {
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-sm);
+}
+.sk-card.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-bg);
+}
+
+.sk-ic {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.sk-meta {
+  flex: 1;
+  min-width: 0;
+}
+.sk-name {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sk-sub {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.sk-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  font-weight: var(--font-semibold);
+  line-height: 1.4;
+}
+.sk-tag.t-syn { background: var(--color-success-light); color: var(--color-success-hover); }
+.sk-tag.t-loc { background: var(--color-warning-light); color: var(--color-warning-hover); }
+
+
+/* =========================================================
+   UTILITY: Divider (spec'd in buttons.html as .divider)
+   ========================================================= */
+.ds-divider {
+  width: 1px;
+  height: 36px;
+  background: var(--color-border);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+.ds-divider.horizontal {
+  width: 100%;
+  height: 1px;
+  margin: 8px 0;
+}
+
+
+/* =========================================================
+   DARK MODE OVERRIDES — new tokens + components only
+   (existing styles.css dark-mode handles .btn, header, etc.)
+   ========================================================= */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* GNSS fix colors: slightly brighter for dark backgrounds */
+    --color-fix-rtk-float: #60a5fa;
+  }
+
+  .input {
+    background: var(--color-surface);
+    color: var(--color-text);
+    border-color: var(--color-border-strong);
+  }
+  .input::placeholder { color: var(--color-text-tertiary); }
+  .input:focus {
+    border-color: var(--color-primary-strong, var(--color-primary));
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.25);
+  }
+
+  .toggle { background: var(--color-border-strong); }
+  .toggle::after { background: #f1f5f9; }
+
+  .panel {
+    background: var(--color-surface);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  }
+  .panel-header {
+    background: linear-gradient(135deg, var(--color-bg), var(--color-surface-hover));
+  }
+  .panel-close-btn:hover { background: rgba(255, 255, 255, 0.08); }
+
+  .menu-item:hover { background: var(--color-surface-hover); }
+
+  .gnss-badge {
+    background: rgba(30, 41, 59, 0.92);
+    color: var(--color-text);
+    border-color: var(--color-border-strong);
+  }
+
+  .sl-overlay {
+    background: rgba(0, 0, 0, 0.55);
+  }
+  .sk-card {
+    background: var(--color-surface);
+    border-color: var(--color-border-strong);
+  }
+  .sk-card.active {
+    background: var(--color-primary-bg, rgba(37, 99, 235, 0.15));
+    border-color: var(--color-primary);
+  }
+  .sk-ic {
+    background: rgba(37, 99, 235, 0.18);
+    color: var(--color-primary-strong, var(--color-primary));
+  }
+}
+
+[data-theme="dark"] .input {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .panel {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .gnss-badge {
+  background: rgba(30, 41, 59, 0.92);
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+}
+[data-theme="dark"] .sk-card {
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+@media (prefers-reduced-motion: reduce) {
+  .fab,
+  .toggle,
+  .toggle::after,
+  .sk-card,
+  .input,
+  .menu-item,
+  .sl-panel,
+  .sl-overlay,
+  .gnss-dot.pulse {
+    transition: none !important;
+    animation: none !important;
+  }
+}
