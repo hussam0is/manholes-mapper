@@ -85,24 +85,31 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'GET') {
-      // For super_admin/admin: return all projects unless filtered by org query param
-      // For regular users: return only their organization's projects
+      // super_admin: all projects, or any org via ?organizationId.
+      // admin + user: confined to their OWN organization only.
       const explicitOrgId = req.query.organizationId;
-      const orgId = explicitOrgId || currentUser.organization_id;
+
+      // Validate the org filter format if provided (avoid a Postgres cast 500)
+      if (explicitOrgId && !validateUUID(explicitOrgId)) {
+        return res.status(400).json({ error: 'Invalid organizationId format' });
+      }
 
       let projects;
 
-      // Admin/super_admin without explicit org filter - return all projects across orgs
-      if (isAdmin && !explicitOrgId) {
+      if (isSuperAdmin && !explicitOrgId) {
+        // super_admin without a filter → all projects across every organization
         const { getAllProjects } = await import('../_lib/db.js');
         projects = await getAllProjects();
-        console.debug(`[API /api/projects] Admin: returning all ${projects.length} projects`);
-      } else if (!orgId) {
-        // Non-admin without org - return empty
-        return res.status(200).json({ projects: [] });
+        console.debug(`[API /api/projects] Super admin: returning all ${projects.length} projects`);
       } else {
-        // Non-admins can only see their own organization's projects
-        if (!isAdmin && orgId !== currentUser.organization_id) {
+        const orgId = explicitOrgId || currentUser.organization_id;
+        if (!orgId) {
+          // No organization to scope to → nothing to return
+          return res.status(200).json({ projects: [] });
+        }
+        // Only super_admin may read an organization other than their own.
+        // Org admins are confined to their own org (prevents cross-tenant discovery).
+        if (!isSuperAdmin && orgId !== currentUser.organization_id) {
           return res.status(403).json({ error: 'Access denied to this organization' });
         }
         projects = await getProjectsByOrganization(orgId);
