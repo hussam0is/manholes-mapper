@@ -345,6 +345,109 @@ function saveConflictBackup(sketchId, localData, sketchName) {
   }
 }
 
+/**
+ * Merge a partial update into the matching entry of the legacy localStorage
+ * library (graphSketch.library) and invalidate the in-memory cache.
+ * @param {string} sketchId
+ * @param {Object} data - fields to merge into the library entry
+ */
+function updateLegacyLibraryEntry(sketchId, data) {
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  try {
+    const raw = window.localStorage.getItem('graphSketch.library');
+    if (!raw) return;
+    const lib = JSON.parse(raw);
+    if (!Array.isArray(lib)) return;
+    const idx = lib.findIndex(s => s.id === sketchId);
+    if (idx >= 0) {
+      lib[idx] = { ...lib[idx], ...data };
+      window.localStorage.setItem('graphSketch.library', JSON.stringify(lib));
+      if (typeof window.invalidateLibraryCache === 'function') {
+        window.invalidateLibraryCache();
+      }
+    }
+  } catch (err) {
+    console.warn('[Sync] Failed to update legacy library entry:', err);
+  }
+}
+
+/**
+ * Resolve a structural sync conflict by union-merging local additions onto the
+ * authoritative server version and pushing the merged result. Server data is
+ * never overwritten — only local-only nodes/edges are added back (see
+ * mergeSketchData). A raw backup of the local version is saved first as a
+ * safety net. This replaces the old "discard local, take server" behavior that
+ * silently lost a crew's offline field work.
+ *
+ * @param {string} sketchId
+ * @param {Object} localPayload - the PUT payload we tried to send (local data)
+ * @param {Object} baseSketch - full local sketch object, used to persist locally
+ * @param {Object} serverSketch - server's current version (from the 409 body)
+ * @param {number|null} serverVersion
+ * @returns {Promise<Object|null>} the successful update result, or null if the
+ *   merge push hit a fresh conflict (server accepted this cycle; backup keeps local)
+ */
+async function resolveStructuralConflict(sketchId, localPayload, baseSketch, serverSketch, serverVersion) {
+  // Safety net: back up the raw local version before merging.
+  saveConflictBackup(sketchId, localPayload, baseSketch.name || sketchId);
+
+  const merged = mergeSketchData(localPayload, serverSketch);
+  const mergedResult = await updateSketchInCloud(sketchId, {
+    ...localPayload,
+    nodes: merged.nodes,
+    edges: merged.edges,
+    clientVersion: serverVersion != null ? serverVersion : null,
+  });
+
+  if (mergedResult?._conflict) {
+    // Lost a race with another writer — accept server this cycle. The backup
+    // preserves the local version so nothing is truly lost.
+    console.warn(`[Sync] Merge push for sketch ${sketchId} hit a fresh conflict — accepting server this cycle.`);
+    const serverData = {
+      ...baseSketch,
+      nodes: serverSketch.nodes || [],
+      edges: serverSketch.edges || [],
+      adminConfig: serverSketch.adminConfig || baseSketch.adminConfig || {},
+      updatedAt: serverSketch.updatedAt,
+    };
+    await saveSketchToIdb(serverData);
+    updateLegacyLibraryEntry(sketchId, serverData);
+    if (serverVersion != null) lastKnownServerVersion.set(sketchId, serverVersion);
+    return null;
+  }
+
+  // Merge accepted — persist merged data locally and track the new version.
+  const mergedLocal = {
+    ...baseSketch,
+    nodes: merged.nodes,
+    edges: merged.edges,
+    updatedAt: mergedResult?.updatedAt ?? serverSketch.updatedAt,
+  };
+  await saveSketchToIdb(mergedLocal);
+  updateLegacyLibraryEntry(sketchId, mergedLocal);
+
+  console.debug(
+    `[Sync] Merged sketch ${sketchId}: +${merged.mergeInfo.addedNodes} nodes, ` +
+    `+${merged.mergeInfo.addedEdges} edges recovered from local.`
+  );
+
+  // Notify only if we actually recovered local-only work.
+  const recovered = merged.mergeInfo.addedNodes + merged.mergeInfo.addedEdges;
+  if (recovered > 0 && typeof window !== 'undefined' && typeof window.showToast === 'function') {
+    const displayName = baseSketch.name || sketchId;
+    window.showToast(
+      typeof window.t === 'function'
+        ? window.t('auth.conflictMerged', displayName)
+        : `Sync conflict for '${displayName}' was merged — your local additions were kept.`
+    );
+  }
+
+  if (mergedResult && mergedResult.version != null) {
+    lastKnownServerVersion.set(sketchId, mergedResult.version);
+  }
+  return mergedResult;
+}
+
 // API base URL - in development without vercel dev, API won't be available
 // In production or with vercel dev, API is same-origin
 const API_BASE = '';
@@ -1194,65 +1297,18 @@ export async function syncSketchToCloud(sketch) {
               result = null;
             }
           } else {
-            // Structural conflict — nodes/edges differ.
-            // Save local version as backup, accept server version.
+            // Structural conflict — nodes/edges differ. Union-merge local
+            // additions onto the server version instead of discarding the
+            // local crew's offline field work.
             console.warn(
               `[Sync] Structural conflict for sketch ${sketch.id}: ` +
               `local ${comparison.localNodeCount} nodes / ${comparison.localEdgeCount} edges vs ` +
               `server ${comparison.serverNodeCount} nodes / ${comparison.serverEdgeCount} edges. ` +
-              `Accepting server version and backing up local changes.`
+              `Union-merging local additions onto the server version.`
             );
-
-            saveConflictBackup(sketch.id, putPayload, sketch.name || sketch.id);
-
-            // Accept the server version into local storage
-            const serverData = {
-              ...sketch,
-              nodes: serverSketch.nodes || [],
-              edges: serverSketch.edges || [],
-              adminConfig: serverSketch.adminConfig || sketch.adminConfig || {},
-              updatedAt: serverSketch.updatedAt,
-            };
-            await saveSketchToIdb(serverData);
-
-            // Update legacy localStorage
-            if (typeof window !== 'undefined' && window.localStorage) {
-              try {
-                const raw = window.localStorage.getItem('graphSketch.library');
-                if (raw) {
-                  const lib = JSON.parse(raw);
-                  if (Array.isArray(lib)) {
-                    const idx = lib.findIndex(s => s.id === sketch.id);
-                    if (idx >= 0) {
-                      lib[idx] = { ...lib[idx], ...serverData };
-                      window.localStorage.setItem('graphSketch.library', JSON.stringify(lib));
-                      if (typeof window.invalidateLibraryCache === 'function') {
-                        window.invalidateLibraryCache();
-                      }
-                    }
-                  }
-                }
-              } catch (err) {
-                console.warn('[Sync] Failed to update localStorage after conflict resolution:', err);
-              }
-            }
-
-            // Notify user
-            const displayName = sketch.name || sketch.id;
-            if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
-              window.showToast(
-                typeof window.t === 'function'
-                  ? window.t('auth.conflictDetected', displayName)
-                  : `Sync conflict detected for sketch '${displayName}'. Your local changes were saved as a backup.`
-              );
-            }
-
-            // Track the server version so the next save uses it
-            if (serverVersion != null) {
-              lastKnownServerVersion.set(sketch.id, serverVersion);
-            }
-            // Don't set result — we intentionally did NOT push local data
-            result = null;
+            result = await resolveStructuralConflict(
+              sketch.id, putPayload, sketch, serverSketch, serverVersion
+            );
           }
         } else {
           // No server sketch data in 409 response — cannot compare. Give up for this cycle.
@@ -1560,32 +1616,12 @@ export async function processSyncQueue() {
                     clientVersion: serverVersion != null ? serverVersion : null,
                   });
                 } else {
-                  // Structural conflict — backup local, accept server
-                  console.warn(`[Sync] Structural queue conflict for ${op.data.id}. Accepting server version.`);
-                  saveConflictBackup(op.data.id, queuePayload, op.data.name || op.data.id);
-
-                  await saveSketchToIdb({
-                    ...op.data,
-                    nodes: serverSketch.nodes || [],
-                    edges: serverSketch.edges || [],
-                    adminConfig: serverSketch.adminConfig || op.data.adminConfig || {},
-                    updatedAt: serverSketch.updatedAt,
-                  });
-
-                  const displayName = op.data.name || op.data.id;
-                  if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
-                    window.showToast(
-                      typeof window.t === 'function'
-                        ? window.t('auth.conflictDetected', displayName)
-                        : `Sync conflict detected for sketch '${displayName}'. Your local changes were saved as a backup.`
-                    );
-                  }
-
-                  if (serverVersion != null) {
-                    lastKnownServerVersion.set(op.data.id, serverVersion);
-                  }
-                  // Treat as resolved — don't retry
-                  queueResult = null;
+                  // Structural conflict — union-merge local additions onto server
+                  // instead of discarding queued offline work.
+                  console.warn(`[Sync] Structural queue conflict for ${op.data.id}. Union-merging local additions.`);
+                  queueResult = await resolveStructuralConflict(
+                    op.data.id, queuePayload, op.data, serverSketch, serverVersion
+                  );
                 }
               } else {
                 console.error(`[Sync] Queue conflict for ${op.data.id} but no server data — skipping.`);

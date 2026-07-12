@@ -545,12 +545,23 @@ describe('Sync Service Unit Tests', () => {
   });
 
   describe('Structural Conflict Resolution', () => {
-    it('should save backup and accept server version on structural conflict', async () => {
+    const clearBackups = () => {
+      const keys = [];
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const k = window.localStorage.key(i);
+        if (k && k.startsWith('conflict_backup_')) keys.push(k);
+      }
+      for (const k of keys) window.localStorage.removeItem(k);
+      return keys;
+    };
+
+    it('should union-merge local-only additions onto the server version', async () => {
       const uuid = '12345678-1234-1234-1234-123456789abc';
+      // Local has a node (id 3) that the server doesn't — it must be recovered.
       const localSketch = {
         id: uuid,
         name: 'My Sketch',
-        nodes: [{ id: 1, x: 100, y: 200 }],
+        nodes: [{ id: 1, x: 100, y: 200 }, { id: 3, x: 500, y: 600 }],
         edges: [],
       };
       const serverSketch = {
@@ -563,31 +574,42 @@ describe('Sync Service Unit Tests', () => {
         updatedAt: '2026-03-01T00:00:00Z',
       };
 
-      // First call: PUT returns 409 with server data (structural conflict)
+      // First PUT → 409 with server data (structural conflict)
       (global.fetch as any).mockResolvedValueOnce({
         ok: false,
         status: 409,
         headers: { get: () => 'application/json' },
         json: async () => ({ error: 'Version conflict', currentSketch: serverSketch }),
       });
+      // Second PUT → merge accepted
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ sketch: { ...serverSketch, version: 6 } }),
+      });
 
-      // Mock showToast so we can verify it was called
       window.showToast = vi.fn();
 
       await syncSketchToCloud(localSketch);
 
-      // Should save the server version to IDB (accepting server data)
+      // The merge PUT should carry the union: server nodes (1,2) + local-only (3)
+      const putCalls = (global.fetch as any).mock.calls.filter(
+        (c: any[]) => c[1]?.method === 'PUT'
+      );
+      expect(putCalls.length).toBe(2);
+      const mergedBody = JSON.parse(putCalls[1][1].body);
+      expect(mergedBody.nodes.map((n: any) => n.id).sort()).toEqual([1, 2, 3]);
+
+      // Merged data (with recovered node 3) persisted locally
       expect(db.saveSketch).toHaveBeenCalledWith(expect.objectContaining({
         id: uuid,
-        nodes: serverSketch.nodes,
-        edges: serverSketch.edges,
+        nodes: expect.arrayContaining([expect.objectContaining({ id: 3 })]),
       }));
 
-      // Should notify the user
+      // Local-only work was recovered → user notified
       expect(window.showToast).toHaveBeenCalledTimes(1);
-      expect(window.showToast).toHaveBeenCalledWith(expect.stringContaining('My Sketch'));
 
-      // Should have saved a conflict backup in localStorage
+      // Backup still saved as a safety net
       const backupKeys = [];
       for (let i = 0; i < window.localStorage.length; i++) {
         const k = window.localStorage.key(i);
@@ -595,8 +617,45 @@ describe('Sync Service Unit Tests', () => {
       }
       expect(backupKeys.length).toBeGreaterThanOrEqual(1);
 
-      // Clean up
-      for (const k of backupKeys) window.localStorage.removeItem(k);
+      clearBackups();
+      delete (window as any).showToast;
+    });
+
+    it('should not notify when the merge recovers no local-only work', async () => {
+      const uuid = '12345678-1234-1234-1234-123456789ac0';
+      // Local nodes are a subset of the server's — nothing to recover.
+      const localSketch = { id: uuid, name: 'Subset', nodes: [{ id: 1, x: 100, y: 200 }], edges: [] };
+      const serverSketch = {
+        id: uuid,
+        name: 'Subset',
+        version: 5,
+        nodes: [{ id: 1, x: 100, y: 200 }, { id: 2, x: 300, y: 400 }],
+        edges: [{ id: 1, from: 1, to: 2 }],
+        adminConfig: {},
+        updatedAt: '2026-03-01T00:00:00Z',
+      };
+
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 409,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ error: 'Version conflict', currentSketch: serverSketch }),
+      });
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ sketch: { ...serverSketch, version: 6 } }),
+      });
+
+      window.showToast = vi.fn();
+
+      await syncSketchToCloud(localSketch);
+
+      // No local additions → no toast, but merge is still pushed
+      expect(window.showToast).not.toHaveBeenCalled();
+      expect((global.fetch as any).mock.calls.filter((c: any[]) => c[1]?.method === 'PUT').length).toBe(2);
+
+      clearBackups();
       delete (window as any).showToast;
     });
 

@@ -138,6 +138,7 @@ export const i18n = {
       syncError: 'שגיאת סנכרון',
       syncNow: 'סנכרן עכשיו',
       conflictDetected: (name) => `זוהה קונפליקט סנכרון בסקיצה '${name}'. השינויים המקומיים שלך נשמרו כגיבוי.`,
+      conflictMerged: (name) => `קונפליקט סנכרון בסקיצה '${name}' מוזג — התוספות המקומיות שלך נשמרו.`,
       // Auth form strings
       signIn: 'התחבר',
       signUp: 'הרשם',
@@ -1415,6 +1416,7 @@ export const i18n = {
       syncError: 'Sync error',
       syncNow: 'Sync now',
       conflictDetected: (name) => `Sync conflict detected for sketch '${name}'. Your local changes were saved as a backup.`,
+      conflictMerged: (name) => `Sync conflict for '${name}' was merged — your local additions were kept.`,
       // Auth form strings
       signIn: 'Sign In',
       signUp: 'Sign Up',
