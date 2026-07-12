@@ -32,6 +32,10 @@ const TOUCH_MEASURED_DRAG_THRESHOLD = 22;
 // ── Module-local state ──────────────────────────────────────────────────────
 let longPressTimer = null;
 let _longPressEdgeTail = null;
+// True when pendingEdgeTail was re-armed by chaining (edge just created)
+// rather than by an explicit first tap. A chained tail ends quietly on an
+// empty tap; an explicitly armed tail keeps the dangling-edge feature.
+let _chainArmed = false;
 let _lastTapNodeId = null;
 let _lastTapTime = 0;
 let dragStartNodeState = null;
@@ -269,6 +273,7 @@ function pointerDown(x, y) {
       if (node) {
         S.pendingEdgeTail = node;
         S.pendingEdgePreview = { x: world.x, y: world.y };
+        _chainArmed = false;
         F.showToast(t('toasts.chooseTarget'));
         F.scheduleDraw();
         return;
@@ -288,6 +293,7 @@ function pointerDown(x, y) {
           if (switched) {
             S.pendingEdgeTail = switched;
             S.pendingEdgePreview = { x: world.x, y: world.y };
+            _chainArmed = false;
             F.showToast(t('toasts.chooseTarget'));
             F.scheduleDraw();
             return;
@@ -315,15 +321,18 @@ function pointerDown(x, y) {
     if (S.pendingEdgeTail) {
       if (node) {
         if (String(node.id) === String(S.pendingEdgeTail.id)) {
-          S.pendingEdgeTail = null;
-          S.pendingEdgePreview = null;
-          F.showToast(t('toasts.edgeCancelled'), 1200);
+          // Same node: keep the chain armed (a re-tap used to cancel, which
+          // broke the tap-A-tap-B, tap-B-tap-C rhythm). Explicit cancels:
+          // Escape, mode switch, or the on-screen chain-cancel chip.
           F.scheduleDraw();
           return;
         }
         const created = F.createEdge(S.pendingEdgeTail.id, node.id);
-        S.pendingEdgeTail = null;
-        S.pendingEdgePreview = null;
+        // Chain: the head becomes the next tail, so a run of manholes costs
+        // one tap per node instead of two.
+        S.pendingEdgeTail = node;
+        S.pendingEdgePreview = { x: world.x, y: world.y };
+        _chainArmed = true;
         if (created) {
           F.showToast(t('toasts.edgeCreated'), 1200);
         } else {
@@ -338,6 +347,19 @@ function pointerDown(x, y) {
         S.selectedEdge = edgeAt;
         S.selectedNode = null;
         F.renderDetails();
+        F.scheduleDraw();
+        return;
+      }
+      // A CHAINED tail ends quietly on an empty tap: with the tail staying
+      // armed across a whole run, every stray miss would otherwise mint a
+      // dangling edge, and two disconnected runs (A-B then C-D) could never
+      // be drawn without a spurious fused segment. The explicit first-tap
+      // arm keeps the dangling-edge feature exactly as before.
+      if (_chainArmed) {
+        S.pendingEdgeTail = null;
+        S.pendingEdgePreview = null;
+        _chainArmed = false;
+        F.showToast(t('toasts.chainEnded'), 1200);
         F.scheduleDraw();
         return;
       }
@@ -822,6 +844,7 @@ export function initPointerHandlers() {
               if (nodeAt) {
                 S.pendingEdgeTail = nodeAt;
                 S.pendingEdgePreview = { x: world.x, y: world.y };
+                _chainArmed = false;
                 S.selectedNode = null;
                 S.selectedEdge = null;
                 touchAddPending = false;
@@ -841,8 +864,11 @@ export function initPointerHandlers() {
               if (nodeAt) {
                 if (String(nodeAt.id) !== String(S.pendingEdgeTail.id)) {
                   const created = F.createEdge(S.pendingEdgeTail.id, nodeAt.id);
-                  S.pendingEdgeTail = null;
-                  S.pendingEdgePreview = null;
+                  // Chain: the head becomes the next tail (mirrors the mouse
+                  // branch) — one tap per manhole in a run.
+                  S.pendingEdgeTail = nodeAt;
+                  S.pendingEdgePreview = { x: world.x, y: world.y };
+                  _chainArmed = true;
                   F.scheduleDraw();
                   if (created) {
                     F.showToast(t('toasts.edgeCreated'), 1200);
@@ -850,10 +876,9 @@ export function initPointerHandlers() {
                     F.showToast(t('toasts.edgeExists'));
                   }
                 } else {
-                  S.pendingEdgeTail = null;
-                  S.pendingEdgePreview = null;
+                  // Same node: keep the chain armed; cancel via the chip,
+                  // Escape, or a mode switch.
                   F.scheduleDraw();
-                  F.showToast(t('toasts.edgeCancelled'), 1200);
                 }
               } else if (edgeAt) {
                 S.pendingEdgeTail = null;

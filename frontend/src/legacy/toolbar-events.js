@@ -142,6 +142,9 @@ function setMode(mode) {
   S.selectedNode = null;
   S.selectedEdge = null;
   renderDetails();
+  // Redraw so the cleared rubber-band/armed-tail state (and the chain-cancel
+  // chip synced from the draw tick) disappear immediately on mode switch
+  F.scheduleDraw?.();
 }
 
 // ── Init ─────────────────────────────────────────────────────────────────

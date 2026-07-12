@@ -38,6 +38,60 @@ import { drawNodeIcon } from '../features/node-icons.js';
 import { processLabels } from '../utils/label-collision.js';
 import { buildNodeGrid, buildEdgeGrid } from '../utils/spatial-grid.js';
 import { renderPerf } from '../utils/render-perf.js';
+
+// ── Edge-chain cancel chip ───────────────────────────────────────────────────
+// While an edge tail (or inbound start) is armed, a keyboard-less device has
+// no way to cancel: Escape needs a keyboard and a re-tap of the tail now
+// keeps the chain armed. This floating chip is the explicit on-screen cancel.
+let _edgeChainChipEl = null;
+
+function syncEdgeChainChip(showing) {
+  let el = _edgeChainChipEl;
+  // Recreate if a canvas-container rebuild orphaned the cached element
+  if (el && !el.isConnected) {
+    _edgeChainChipEl = null;
+    el = null;
+  }
+  if (!el) {
+    if (!showing) return;
+    const container = document.getElementById('canvasContainer');
+    if (!container) return;
+    el = document.createElement('button');
+    el.id = 'edgeChainCancelBtn';
+    el.type = 'button';
+    // Inline styles keep this out of styles.css (which is non-fingerprinted
+    // and would require an APP_VERSION bump). Centered above the toolbar:
+    // both bottom corners are taken (sidebar-toggle FAB inline-end, edge
+    // legend inline-start) and the dock overlays the inline-end band.
+    el.style.cssText =
+      'position:absolute;bottom:68px;left:50%;transform:translateX(-50%);z-index:45;' +
+      'display:none;align-items:center;gap:6px;min-height:44px;padding:8px 14px;' +
+      'border:none;border-radius:22px;background:#b91c1c;color:#fff;' +
+      'font-size:14px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.25);' +
+      'cursor:pointer;-webkit-tap-highlight-color:transparent;';
+    el.innerHTML =
+      '<span class="material-icons" style="font-size:18px" aria-hidden="true">close</span>' +
+      '<span class="edge-chain-cancel__label"></span>';
+    el.addEventListener('click', () => {
+      S.pendingEdgeTail = null;
+      S.pendingEdgeStartPosition = null;
+      S.pendingEdgePreview = null;
+      F.showToast(window.t?.('toasts.chainEnded') || 'Chain ended', 1200);
+      F.scheduleDraw();
+    });
+    container.appendChild(el);
+    _edgeChainChipEl = el;
+  }
+  if (showing) {
+    const label = window.t?.('toasts.edgeChainCancel') || 'End chain';
+    const labelEl = el.querySelector('.edge-chain-cancel__label');
+    if (labelEl) labelEl.textContent = label;
+    el.setAttribute('aria-label', label);
+    el.style.display = 'flex';
+  } else {
+    el.style.display = 'none';
+  }
+}
 import { progressiveRenderer } from '../utils/progressive-renderer.js';
 import { drawReferenceLayers } from '../map/reference-layers.js';
 import { drawBackgroundSketches, drawMergeModeOverlay } from '../project/project-canvas-renderer.js';
@@ -244,6 +298,25 @@ function draw() {
       _edgesDrawn++;
     }
   }
+
+  // Armed-tail ring: make the pending-edge / chain state visible on canvas
+  if (currentMode === 'edge' && pendingEdgeTail) {
+    ctx.save();
+    ctx.strokeStyle = COLORS.edge.preview;
+    ctx.setLineDash([]);
+    ctx.lineWidth = 3 / sizeVS;
+    ctx.beginPath();
+    ctx.arc(
+      pendingEdgeTail.x * viewStretchX,
+      pendingEdgeTail.y * viewStretchY,
+      (NODE_RADIUS * sizeScale / sizeVS) * 1.45,
+      0, Math.PI * 2
+    );
+    ctx.stroke();
+    ctx.restore();
+  }
+  // Keep the DOM chain-cancel chip in sync with the armed state (idempotent)
+  syncEdgeChainChip(currentMode === 'edge' && !!(pendingEdgeTail || pendingEdgeStartPosition));
 
   // Rubber-band preview when creating an edge
   if (currentMode === 'edge' && pendingEdgePreview) {

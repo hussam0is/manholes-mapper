@@ -144,19 +144,25 @@ test('scenario A: survey 3 new manholes + 2 pipes (tap count + wizard cost)', as
   const posA = await nodeScreenPos(page, idA); const posB = await nodeScreenPos(page, idB); const posC = await nodeScreenPos(page, idC);
   await tap(page, posA!.sx, posA!.sy);
   await tap(page, posB!.sx, posB!.sy);
-  // chain check: does B remain armed as tail for the next edge?
+  // Chaining: B stays armed as the next tail, so C completes the second edge
   await tap(page, posC!.sx, posC!.sy);
   s = await sketch(page);
   const chainWorked = s.edges.length === 2;
-  record('A.chainAfterBC', { edges: s.edges.length, chainWorked, note: chainWorked ? 'B stayed armed — chaining EXISTS' : 'tail cleared after edge — B→C needed re-tap of B (no chaining)' });
-  if (!chainWorked) {
-    await tap(page, posB!.sx, posB!.sy);
-    await tap(page, posC!.sx, posC!.sy);
-    s = await sketch(page);
-  }
+  record('A.chainAfterBC', { edges: s.edges.length, chainWorked });
+  expect(chainWorked, 'edge chaining: head stays armed as next tail (A,B,C → 2 edges)').toBe(true);
   record('A.totalTapsFor3Nodes2Pipes', { taps: tapCount, nodes: s.nodes.length, edges: s.edges.length });
   expect(s.edges.length).toBe(2);
+  expect(tapCount, '3 nodes + 2 pipes in 7 taps (was 9 pre-chaining)').toBe(7);
+
+  // The chain is still armed on C — the on-screen cancel chip must be
+  // visible (keyboard-less TSC5 has no Escape) and must end the chain
+  const chainChip = page.locator('#edgeChainCancelBtn');
+  await expect(chainChip, 'chain-cancel chip visible while a tail is armed').toBeVisible();
   await page.screenshot({ path: 'test-results/tsc5-scnA-network.png' });
+  await chainChip.tap();
+  await page.waitForTimeout(200);
+  await expect(chainChip, 'chip hides after cancelling the chain').toBeHidden();
+  expect((await sketch(page)).edges.length, 'cancel creates no extra edges').toBe(2);
 
   // ── Wizard cost: set cover diameter on fresh node A ──
   await tapEl(page, '#utNodeBtn'); // back to node mode
@@ -299,6 +305,52 @@ test('mis-tap hazards: select-miss, edge-miss, drag jitter', async ({ page }) =>
   const afterStray = (await sketch(page)).edges;
   record('H2.strayEmptyTapsInEdgeMode', { edgesBefore: beforeStray, edgesAfter: afterStray.length, edges: afterStray });
   await page.screenshot({ path: 'test-results/tsc5-hazard-danglings.png' });
+
+  // FIX VERIFICATION (chain end): after a CHAINED edge, an empty tap ends the
+  // chain quietly — no dangling edge minted, chip hides. Reset the sketch
+  // first (the stray-tap probe leaves a dangling edge whose geometry would
+  // make "empty ground" ambiguous) and mode-round-trip to clear pending state.
+  await page.evaluate(() => {
+    (window as any).__setActiveSketchData({
+      nodes: [
+        // Same shape as the original seed — H3 below drags node 1 and needs
+        // its Float-quality measurement intact
+        { id: '1', x: 300, y: 300, nodeType: 'node', surveyX: 178500, surveyY: 650200, surveyZ: 100.5, gnssFixQuality: 5, measure_precision: 0.08 },
+        { id: '2', x: 500, y: 300, nodeType: 'node' },
+      ],
+      edges: [],
+    });
+    (window as any).__scheduleDraw?.();
+  });
+  await page.waitForTimeout(300);
+  // Close the sidebar (opened by the earlier select probes) — it overlays the
+  // inline-start canvas band and would swallow taps on node 1 after zoomToFit
+  await page.evaluate(() => {
+    const sb = document.getElementById('unifiedSidebar');
+    if (sb && !sb.classList.contains('collapsed')) {
+      (document.getElementById('unifiedSidebarCollapseBtn') as HTMLElement)?.click();
+    }
+  });
+  await page.waitForTimeout(300);
+  await page.evaluate(() => (window as any).zoomToFit?.());
+  await page.waitForTimeout(300);
+  await tapEl(page, '#utNodeBtn');
+  await tapEl(page, '#utEdgeBtn');
+  const q1 = await nodeScreenPos(page, '1');
+  const q2 = await nodeScreenPos(page, '2');
+  await tap(page, q1!.sx, q1!.sy); // arm tail (explicit)
+  await tap(page, q2!.sx, q2!.sy); // edge 1-2 created, tail chained to 2
+  const edgesAfterChain = (await sketch(page)).edges.length;
+  expect(edgesAfterChain, 'chained edge 1-2 created').toBe(1);
+  // Guaranteed-empty point: both nodes sit on one horizontal line, so a spot
+  // well above the midpoint is clear of both node radii and the edge line
+  const emptyX = (q1!.sx + q2!.sx) / 2;
+  const emptyY = Math.max(80, q1!.sy - 110);
+  await tap(page, emptyX, emptyY); // empty ground → chain ends
+  const edgesAfterEmptyTap = (await sketch(page)).edges.length;
+  record('H4.chainEndsOnEmptyTap', { edgesAfterChain, edgesAfterEmptyTap });
+  expect(edgesAfterEmptyTap, 'empty tap ends the chain without minting a dangling edge').toBe(edgesAfterChain);
+  await expect(page.locator('#edgeChainCancelBtn'), 'chip hides when the chain ends').toBeHidden();
 
   // HAZARD 3: touch-drag node 1 by ~8px — does it wipe survey data / demote fixQuality?
   const preDrag = (await sketch(page)).nodes.find(n => n.id === '1');
