@@ -30,25 +30,70 @@ export function syncAppHeightVar() {
       // Only write when value actually changes to avoid unnecessary style mutations
       if (document.documentElement.style.getPropertyValue('--app-height') !== newVal) {
         document.documentElement.style.setProperty('--app-height', newVal);
+        return true;
       }
+      return false;
     };
-    
+
     // Set initial value
     setAppHeight();
-    
+
+    // After rotation, mobile browsers can keep reporting the pre-rotation
+    // viewport size well past any fixed delay (often >300ms on Android), so
+    // fixed setTimeout retries miss the final size. Poll until the reported
+    // height stabilizes; when it changes after the original event already
+    // fired, re-dispatch a resize event so canvas/layout listeners that read
+    // window dimensions re-run with the settled values.
+    const SETTLE_INTERVAL_MS = 100;
+    const SETTLE_MAX_MS = 2000;
+    const SETTLE_STABLE_TICKS = 3;
+    let settleTimer = 0;
+    const settleAppHeight = () => {
+      clearInterval(settleTimer);
+      const settleStart = Date.now();
+      let stableTicks = 0;
+      settleTimer = setInterval(() => {
+        if (setAppHeight()) {
+          stableTicks = 0;
+          window.dispatchEvent(new Event('resize'));
+        } else {
+          stableTicks++;
+        }
+        if (stableTicks >= SETTLE_STABLE_TICKS || Date.now() - settleStart > SETTLE_MAX_MS) {
+          clearInterval(settleTimer);
+          settleTimer = 0;
+        }
+      }, SETTLE_INTERVAL_MS);
+    };
+
     // Listen for viewport changes
     if (window.visualViewport) {
       // visualViewport fires resize when keyboard opens/closes, orientation changes, etc.
       window.visualViewport.addEventListener('resize', setAppHeight);
     }
-    // Also listen for regular resize events as a fallback
-    window.addEventListener('resize', setAppHeight);
-    // Handle orientation changes specifically (some Android browsers need this)
-    window.addEventListener('orientationchange', () => {
-      // Delay slightly to allow the browser to finish orientation transition
-      setTimeout(setAppHeight, 100);
-      setTimeout(setAppHeight, 300);
+    // Regular resize events: apply immediately, then keep polling briefly in
+    // case the browser reported a stale (pre-rotation) size. The settleTimer
+    // guard keeps the synthetic resize dispatched above from re-entering.
+    window.addEventListener('resize', () => {
+      setAppHeight();
+      if (!settleTimer) settleAppHeight();
     });
+    // Handle orientation changes specifically. Browsers differ in which of
+    // these fires (and when), so wire all three; the settle loop is idempotent.
+    window.addEventListener('orientationchange', settleAppHeight);
+    if (window.screen?.orientation?.addEventListener) {
+      window.screen.orientation.addEventListener('change', settleAppHeight);
+    }
+    const orientationMq = window.matchMedia?.('(orientation: portrait)');
+    if (orientationMq?.addEventListener) {
+      orientationMq.addEventListener('change', settleAppHeight);
+    }
+    // Watchdog: some WebViews change the viewport without firing any of the
+    // events above. A cheap 1s check (one read + string compare) guarantees
+    // the layout self-corrects even when every event was missed.
+    setInterval(() => {
+      if (setAppHeight()) window.dispatchEvent(new Event('resize'));
+    }, 1000);
   } catch (_err) {}
 }
 
