@@ -85,7 +85,11 @@ export function handleTSC3PointReceived(pointName, coords, isNew, nodeType) {
   if (isNew && S.surveyAutoConnect && S.lastSurveyNodeId) {
     F.createEdge(S.lastSurveyNodeId, node.id);
   }
-  if (isNew) S.lastSurveyNodeId = node.id;
+  // Track the most recent surveyed node for chaining. Re-measures count too:
+  // a surveyor who just re-shot an existing manhole expects the next new
+  // point to connect to it — tracking only new points left auto-connect
+  // silently dead after any name-match update.
+  S.lastSurveyNodeId = node.id;
 
   // Select the node and update UI
   S.selectedNode = node;

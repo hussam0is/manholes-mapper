@@ -503,9 +503,15 @@ test('scenario B: TSC3 — re-measure existing manhole + new point (live mock br
     await page.waitForTimeout(800);
   }
   const final = await sketch(page);
+  const autoConnectedToLast = final.edges.some(e => (e.tail === 'MH-001' && e.head === 'MH-003') || (e.tail === 'MH-003' && e.head === 'MH-001'));
   record('B.afterNewPoint', {
     nodes: final.nodes.map(n => n.id),
     edges: final.edges.map(e => `${e.tail}->${e.head}`),
-    autoConnectedToLast: final.edges.some(e => (e.tail === 'MH-001' && e.head === 'MH-003') || (e.tail === 'MH-003' && e.head === 'MH-001')),
+    autoConnectedToLast,
   });
+  // FIX VERIFICATION (auto-connect): with the checkbox on, the new point must
+  // chain to the most recently SHOT node — including a re-measured one
+  if (dlgVisible) {
+    expect(autoConnectedToLast, 'new survey point auto-connects to the last shot node').toBe(true);
+  }
 });
