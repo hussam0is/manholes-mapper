@@ -23,6 +23,11 @@ const TOUCH_TAP_MOVE_THRESHOLD = 5;
 const TOUCH_SELECT_EXPANSION = 14;
 const TOUCH_EDGE_HIT_THRESHOLD = 14;
 const MOUSE_TAP_MOVE_THRESHOLD = 6;
+// Touch drags on a node that still carries a measurement must be deliberate:
+// below this screen-px travel the move is treated as glove jitter and ignored
+// (an 8px smear used to null the survey coords and demote fix quality).
+// Mouse drags are precise and keep the replace-on-drag product rule as-is.
+const TOUCH_MEASURED_DRAG_THRESHOLD = 22;
 
 // ── Module-local state ──────────────────────────────────────────────────────
 let longPressTimer = null;
@@ -459,6 +464,21 @@ function pointerDown(x, y) {
   }
 }
 
+/**
+ * True when the node still carries measurement/schematic data that a drag
+ * would clear (mirrors the one-time clear in pointerMove).
+ */
+function nodeHasProtectedMeasurement(node) {
+  return (
+    node.surveyX != null ||
+    node.surveyY != null ||
+    node.surveyZ != null ||
+    node.schematicX != null ||
+    node.schematicY != null ||
+    (node.gnssFixQuality != null && node.gnssFixQuality !== 6)
+  );
+}
+
 function pointerMove(x, y) {
   const world = F.screenToWorld(x, y);
   if (pendingDetailsForSelectedNode && selectedNodeDownScreen) {
@@ -489,17 +509,25 @@ function pointerMove(x, y) {
       return;
     }
 
+    // Touch-only jitter gate: while the node still carries a measurement,
+    // ignore sub-threshold travel entirely (no move, no wipe, no save) so a
+    // gloved finger-wobble cannot destroy survey data. Once travel becomes
+    // deliberate the normal drag (incl. the one-time clear below) proceeds.
+    if (
+      lastPointerType === 'touch' &&
+      dragStartNodeState && !dragStartNodeState.measurementCleared &&
+      selectedNodeDownScreen &&
+      nodeHasProtectedMeasurement(S.selectedNode) &&
+      Math.hypot(x - selectedNodeDownScreen.x, y - selectedNodeDownScreen.y) < TOUCH_MEASURED_DRAG_THRESHOLD
+    ) {
+      return;
+    }
+
     // Clear any stale schematic anchor / non-Fixed survey data exactly once
     // per drag, the first time we actually move the node. After this point
     // the node's x/y (and derived manual_x/y) are the sole source of truth.
     if (dragStartNodeState && !dragStartNodeState.measurementCleared) {
-      const hadMeasurement =
-        S.selectedNode.surveyX != null ||
-        S.selectedNode.surveyY != null ||
-        S.selectedNode.surveyZ != null ||
-        S.selectedNode.schematicX != null ||
-        S.selectedNode.schematicY != null ||
-        (S.selectedNode.gnssFixQuality != null && S.selectedNode.gnssFixQuality !== 6);
+      const hadMeasurement = nodeHasProtectedMeasurement(S.selectedNode);
       if (hadMeasurement) {
         S.selectedNode.surveyX = null;
         S.selectedNode.surveyY = null;
