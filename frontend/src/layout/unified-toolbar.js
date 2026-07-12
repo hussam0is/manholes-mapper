@@ -308,8 +308,12 @@ function wireGPSCapture() {
     if (!gnss) return;
 
     const pos = gnss.getPosition?.();
-    const conn = gnss.getConnectionState?.();
-    const isTracking = conn === 'connected';
+    // gnssState has no getConnectionState() method — its API is
+    // getConnectionInfo() → {state, isConnected} plus the .connectionState
+    // property. The old optional call returned undefined and kept the
+    // capture button permanently hidden.
+    const info = gnss.getConnectionInfo?.();
+    const isTracking = info ? info.isConnected : (gnss.connectionState === 'connected');
 
     captureBtn.classList.toggle('hidden', !isTracking);
 
@@ -329,6 +333,8 @@ function wireGPSCapture() {
   if (gnss && typeof gnss.on === 'function') {
     gnss.on('position', updateCaptureVisibility);
     gnss.on('connection', updateCaptureVisibility);
+    // Sync immediately — GNSS may already be connected when the toolbar mounts
+    updateCaptureVisibility();
   } else {
     // Fallback: poll if gnss not yet available
     setInterval(updateCaptureVisibility, 1000);
