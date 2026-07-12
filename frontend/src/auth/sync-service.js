@@ -461,16 +461,15 @@ export function resetSyncHealth() {
  */
 export async function refreshQueueStatus() {
   try {
-    const operations = await drainSyncQueue();
-    // Re-enqueue drained items (non-destructive peek)
-    for (const op of operations) {
-      await enqueueSyncOperation(op);
-    }
+    // countSyncQueue is a true read-only peek. The old code drained (which is
+    // ALSO read-only) and then re-enqueued every item — doubling the queue on
+    // each call and causing duplicate replays and unbounded IndexedDB growth.
+    const size = await countSyncQueue();
     updateSyncState({
-      queueSize: operations.length,
-      pendingChanges: operations.length,
+      queueSize: size,
+      pendingChanges: size,
     });
-    return operations.length;
+    return size;
   } catch (err) {
     console.warn('[Sync] Failed to refresh queue status:', err);
     return syncState.queueSize;

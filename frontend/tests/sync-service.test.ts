@@ -14,6 +14,7 @@ import {
   getSyncHealth,
   resetSyncHealth,
   clearLocalSketchData,
+  refreshQueueStatus,
 } from '../src/auth/sync-service.js';
 import * as db from '../src/db.js';
 import * as authGuard from '../src/auth/auth-guard.js';
@@ -272,6 +273,19 @@ describe('Sync Service Unit Tests', () => {
       
       expect(global.fetch).toHaveBeenCalledTimes(1);
       vi.useRealTimers();
+    });
+  });
+
+  describe('refreshQueueStatus', () => {
+    it('should peek the queue size without mutating the queue', async () => {
+      (db.countSyncQueue as any).mockResolvedValue(3);
+
+      const size = await refreshQueueStatus();
+
+      expect(size).toBe(3);
+      expect(getSyncState().queueSize).toBe(3);
+      // Must NOT re-enqueue anything (the old bug doubled the queue every call)
+      expect(db.enqueueSyncOperation).not.toHaveBeenCalled();
     });
   });
 
