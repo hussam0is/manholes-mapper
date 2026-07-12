@@ -796,12 +796,24 @@ export async function syncFromCloud() {
             adminConfig: hasFullData ? (s.adminConfig || {}) : (localHasData ? (existing.adminConfig || {}) : {}),
           };
         });
-        window.localStorage.setItem('graphSketch.library', JSON.stringify(legacyLib));
+        // Preserve local-only sketches (created offline / not yet synced) that
+        // aren't in the cloud response. Without this, the wholesale rebuild would
+        // drop them from the home list — they'd survive in IndexedDB but become
+        // invisible and unopenable. Entries that were previously cloud-synced but
+        // are now absent were deleted remotely, so we intentionally do NOT
+        // resurrect those (mirrors the IndexedDB cleanup above).
+        const cloudIds = new Set(cloudSketches.map(s => s.id));
+        const localOnly = existingLib.filter(
+          s => s && s.id && !cloudIds.has(s.id) && !s.cloudSynced
+        );
+        const mergedLib = [...legacyLib, ...localOnly];
+
+        window.localStorage.setItem('graphSketch.library', JSON.stringify(mergedLib));
         // Invalidate the in-memory library cache so getLibrary() reads the fresh data
         if (typeof window.invalidateLibraryCache === 'function') {
           window.invalidateLibraryCache();
         }
-        console.debug(`[Sync] Updated legacy localStorage with ${legacyLib.length} sketches`);
+        console.debug(`[Sync] Updated legacy localStorage with ${legacyLib.length} cloud + ${localOnly.length} local-only sketches`);
 
         // NOTE: We do NOT call window.renderHome() here — that would force-open the
         // home panel even when the user is on the canvas.  The onSyncStateChange

@@ -112,6 +112,32 @@ describe('Sync Service Unit Tests', () => {
       await syncFromCloud();
       expect(global.fetch).not.toHaveBeenCalled();
     });
+
+    it('should preserve local-only (unsynced) sketches in the legacy library', async () => {
+      // A sketch created offline / not yet synced lives in the local library
+      // but is absent from the cloud response. It must NOT be dropped.
+      const localOnly = { id: 'sk_local_only', name: 'Field Draft', cloudSynced: false, nodes: [{ id: 1, x: 0, y: 0 }], edges: [] };
+      const staleSynced = { id: 'cloud-gone', name: 'Deleted Remotely', cloudSynced: true };
+      window.localStorage.setItem('graphSketch.library', JSON.stringify([localOnly, staleSynced]));
+
+      const cloudSketches = [{ id: 'cloud-1', name: 'Cloud Sketch' }];
+      (global.fetch as any).mockResolvedValue({
+        ok: true,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ sketches: cloudSketches }),
+      });
+      (db.getAllSketches as any).mockResolvedValue([]);
+
+      await syncFromCloud();
+
+      const lib = JSON.parse(window.localStorage.getItem('graphSketch.library') || '[]');
+      const ids = lib.map((s: any) => s.id);
+      expect(ids).toContain('cloud-1');           // cloud sketch present
+      expect(ids).toContain('sk_local_only');     // local-only preserved
+      expect(ids).not.toContain('cloud-gone');    // remotely-deleted not resurrected
+
+      window.localStorage.removeItem('graphSketch.library');
+    });
   });
 
   describe('syncSketchToCloud', () => {
