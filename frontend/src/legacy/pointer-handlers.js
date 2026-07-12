@@ -465,6 +465,49 @@ function pointerDown(x, y) {
 }
 
 /**
+ * Pan (never zoom) so the given node sits in the middle of the canvas band
+ * NOT covered by the unified sidebar. On short-landscape devices the open
+ * sidebar overlays ~42vw of the canvas and routinely hides the very node
+ * being edited. No-op when the node is already inside the visible band.
+ *
+ * Uses the sidebar's offsetWidth + document direction (not its live rect):
+ * the open/close transition is a transform, so mid-animation rects lie
+ * while offsetWidth and the final anchored side are stable.
+ */
+function centerSelectedNodeInVisibleCanvas(node) {
+  try {
+    const canvas = S.canvas;
+    if (!canvas || !node) return;
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width) return;
+    let visLeft = rect.left;
+    let visRight = rect.right;
+    const sidebar = document.getElementById('unifiedSidebar');
+    if (sidebar && !sidebar.classList.contains('collapsed')) {
+      const w = sidebar.offsetWidth || 0;
+      const rtl = (document.documentElement.dir || 'ltr') === 'rtl';
+      if (rtl) visLeft = Math.max(visLeft, w); // sidebar docks left in RTL
+      else visRight = Math.min(visRight, window.innerWidth - w);
+    }
+    if (visRight - visLeft < 80) return; // no meaningful canvas visible
+    const dpr = canvas.width / rect.width;
+    const nodeScreenX = (node.x * S.viewScale * S.viewStretchX + S.viewTranslate.x) / dpr + rect.left;
+    // Already comfortably visible? Leave the view alone.
+    const margin = 30;
+    if (nodeScreenX >= visLeft + margin && nodeScreenX <= visRight - margin) return;
+    const targetX = (visLeft + visRight) / 2;
+    const targetYCss = rect.top + rect.height / 2;
+    const nodeScreenY = (node.y * S.viewScale * S.viewStretchY + S.viewTranslate.y) / dpr + rect.top;
+    const tx = S.viewTranslate.x + (targetX - nodeScreenX) * dpr;
+    // Keep vertical position unless the node is off-canvas vertically
+    const ty = (nodeScreenY < rect.top + margin || nodeScreenY > rect.bottom - margin)
+      ? S.viewTranslate.y + (targetYCss - nodeScreenY) * dpr
+      : S.viewTranslate.y;
+    window.__setViewState?.(S.viewScale, tx, ty);
+  } catch (_) { /* view pan is best-effort */ }
+}
+
+/**
  * True when the node still carries measurement/schematic data that a drag
  * would clear (mirrors the one-time clear in pointerMove).
  */
@@ -599,6 +642,15 @@ function pointerUp() {
       F.renderDetails();
     } else {
       F.renderDetails();
+      // Touch-select only: slide the node out from behind the sidebar once
+      // the panel has opened (the unified-sidebar bridge flips the class
+      // async). Mouse/desktop and programmatic selections are unaffected.
+      if (lastPointerType === 'touch') {
+        const selNode = S.selectedNode;
+        setTimeout(() => {
+          if (S.selectedNode === selNode) centerSelectedNodeInVisibleCanvas(selNode);
+        }, 60);
+      }
     }
     F.scheduleDraw();
   }
@@ -1064,6 +1116,11 @@ export function initPointerHandlers() {
             S.__wizardActiveTab = null;
             F.renderDetails();
             F.scheduleDraw();
+            // Touch-select only: slide the node out from behind the sidebar
+            // once the panel has opened (bridge flips the class async)
+            setTimeout(() => {
+              if (S.selectedNode === nearNode) centerSelectedNodeInVisibleCanvas(nearNode);
+            }, 60);
           } else if (!nearEdge) {
             const created = F.createNode(world.x, world.y);
             if (S.currentMode === 'home' && created) {
