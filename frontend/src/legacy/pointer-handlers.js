@@ -13,6 +13,7 @@ import { S, F } from './shared-state.js';
 import { distanceToSegment } from '../utils/geometry.js';
 import { NODE_RADIUS } from '../state/constants.js';
 import { commitIdInputIfFocused } from '../dom/dom-utils.js';
+import { wizardIsRTKFixed } from './wizard-helpers.js';
 
 // ── Local constants ─────────────────────────────────────────────────────────
 const LONG_PRESS_MS = 600;
@@ -446,6 +447,7 @@ function pointerDown(x, y) {
       oldGnssFixQuality: node.gnssFixQuality,
       oldHasCoordinates: node.hasCoordinates,
       measurementCleared: false,
+      rtkLockNotified: false,
     };
     pendingDetailsForSelectedNode = true;
     selectedNodeDownScreen = { x, y };
@@ -556,17 +558,25 @@ function pointerMove(x, y) {
     }
   }
   if (S.isDragging && S.selectedNode) {
-    // Protect only RTK-Fixed (quality 4) survey points from being overwritten
-    // by a drag — that's the gold-standard measurement. RTK-Float (quality 5)
-    // and all lower-quality fixes are REPLACEABLE by manual drag per product
-    // rule: "adding a new coordinate replaces any prior schematic or float
-    // measurement."
-    if (
-      S.selectedNode.surveyX != null &&
-      S.selectedNode.surveyY != null &&
-      S.selectedNode.gnssFixQuality === 4
-    ) {
-      S.isDragging = false;
+    // Protect RTK-Fixed survey points from being overwritten by a drag —
+    // that's the gold-standard measurement. Uses the same definition as the
+    // wizard (quality 4, imported survey coordinates, or precision <= 5cm),
+    // not just quality-4-with-surveyX/Y, so TSC3/CSV-sourced fixed points are
+    // covered too. RTK-Float (quality 5) and all lower-quality fixes remain
+    // REPLACEABLE by manual drag per product rule: "adding a new coordinate
+    // replaces any prior schematic or float measurement."
+    if (wizardIsRTKFixed(S.selectedNode)) {
+      // Block the move but keep tracking the gesture so a deliberate drag
+      // attempt (past the tap threshold) explains itself exactly once;
+      // plain taps to open the details panel stay silent.
+      if (
+        dragStartNodeState && !dragStartNodeState.rtkLockNotified &&
+        selectedNodeDownScreen &&
+        Math.hypot(x - selectedNodeDownScreen.x, y - selectedNodeDownScreen.y) > selectedNodeMoveThreshold
+      ) {
+        dragStartNodeState.rtkLockNotified = true;
+        F.showToast(t('toasts.rtkFixedLocked'), 2000);
+      }
       return;
     }
     if (S.selectedNode.positionLocked && S.selectedNode.manual_x != null && S.selectedNode.manual_y != null) {
