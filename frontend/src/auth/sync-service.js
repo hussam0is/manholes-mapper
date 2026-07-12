@@ -347,8 +347,23 @@ function saveConflictBackup(sketchId, localData, sketchName) {
 // In production or with vercel dev, API is same-origin
 const API_BASE = '';
 
-// Flag to track if API is available (set to false after first failure in dev)
+// Flag to track whether the API is reachable. Set false after a failure so we
+// stop hammering a missing/broken endpoint, but this is a self-healing circuit
+// breaker — NOT a permanent latch. After a cooldown, apiRequest re-probes so a
+// single transient network blip can't silently disable cloud sync for the whole
+// session (which previously caused every later edit to be dropped).
 let apiAvailable = true;
+let apiUnavailableSince = 0;
+const API_RETRY_COOLDOWN_MS = 30 * 1000;
+
+/**
+ * Mark the API as temporarily unreachable and stamp the time so apiRequest can
+ * re-probe once the cooldown elapses.
+ */
+function markApiUnavailable() {
+  apiAvailable = false;
+  apiUnavailableSince = Date.now();
+}
 
 /**
  * Read the csrf_token cookie set by the server (double-submit cookie pattern).
@@ -496,12 +511,18 @@ function updateSyncState(updates) {
  * @returns {Promise<Response>}
  */
 async function apiRequest(endpoint, options = {}) {
-  // Skip API calls if we've detected API isn't available (dev mode without vercel dev)
+  // Circuit breaker: if the API was marked unavailable, skip the call during the
+  // cooldown window, then optimistically re-probe. This lets sync recover on its
+  // own after a transient failure instead of staying dead until a page reload.
   if (!apiAvailable) {
-    // Silent throw - this is expected in dev mode without vercel dev
-    const error = new Error('API not available (development mode)');
-    error.isExpectedDevError = true;
-    throw error;
+    if (Date.now() - apiUnavailableSince < API_RETRY_COOLDOWN_MS) {
+      const error = new Error('API not available (cooling down after failure)');
+      error.isExpectedDevError = true;
+      throw error;
+    }
+    // Cooldown elapsed — allow one probe. A successful response re-enables the
+    // flag below; another failure re-arms the cooldown via markApiUnavailable().
+    apiAvailable = true;
   }
 
   const token = await getToken();
@@ -542,7 +563,7 @@ async function apiRequest(endpoint, options = {}) {
     // Check if we got HTML back instead of JSON (common when API route doesn't exist)
     const contentType = response.headers.get('content-type') || '';
     if (!contentType.includes('application/json')) {
-      apiAvailable = false;
+      markApiUnavailable();
       const devError = new Error('API not available - received non-JSON response');
       devError.isExpectedDevError = true;
       throw devError;
@@ -594,7 +615,7 @@ async function apiRequest(endpoint, options = {}) {
       throw new Error('API request timed out');
     }
     if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
-      apiAvailable = false;
+      markApiUnavailable();
       const devError = new Error('API not available (network error)');
       devError.isExpectedDevError = true;
       throw devError;
@@ -615,7 +636,7 @@ export async function fetchSketchesFromCloud() {
   } catch (error) {
     // Check if this is a JSON parsing error (happens when server returns non-JSON)
     if (error instanceof SyntaxError && error.message.includes('Unexpected token')) {
-      apiAvailable = false;
+      markApiUnavailable();
       const devError = new Error('API not available - received non-JSON response');
       devError.isExpectedDevError = true;
       throw devError;
@@ -829,7 +850,7 @@ export async function syncFromCloud() {
       if (apiAvailable) {
         console.debug('[Sync] API not available (development mode). Using local data only.');
       }
-      apiAvailable = false;
+      markApiUnavailable();
       updateSyncState({
         isSyncing: false,
         error: null, // Don't show as error in dev mode
@@ -1038,19 +1059,36 @@ if (typeof window !== 'undefined') {
  * @param {Object} sketch - Sketch to sync
  */
 export async function syncSketchToCloud(sketch) {
-  // Skip if API not available (dev mode)
-  if (!apiAvailable) {
-    console.debug('[Sync] Cloud sync skipped — API not available');
+  // Skip sync for legacy non-UUID sketch IDs (e.g. sk_xxx) — the API requires a
+  // valid UUID and would return 400. Legacy sketches remain in local storage
+  // untouched; they just won't sync to the cloud. Checked FIRST so legacy IDs
+  // are never queued.
+  if (sketch.id && !isValidCloudUUID(sketch.id)) {
+    console.warn(`[Sync] Skipping cloud sync for legacy sketch ID "${sketch.id}" (not a valid UUID)`);
     return;
   }
 
-  // Skip sync for legacy non-UUID sketch IDs (e.g. sk_xxx) — the API
-  // requires a valid UUID and would return 400. Legacy sketches remain
-  // in local storage untouched; they just won't sync to the cloud.
-  // This check is before the offline queue to prevent legacy IDs from
-  // being enqueued in the first place.
-  if (sketch.id && !isValidCloudUUID(sketch.id)) {
-    console.warn(`[Sync] Skipping cloud sync for legacy sketch ID "${sketch.id}" (not a valid UUID)`);
+  // If the API is currently marked unavailable, don't hit the network — but
+  // QUEUE the change so it survives until the API recovers (the self-healing
+  // apiRequest probe + scheduleQueueDrain drain it once connectivity is back).
+  // Dropping it here was a data-loss bug: one transient failure silently
+  // discarded every later edit for the rest of the session.
+  if (!apiAvailable) {
+    const isEmpty =
+      (!sketch.nodes || sketch.nodes.length === 0) &&
+      (!sketch.edges || sketch.edges.length === 0);
+    if (!isEmpty) {
+      await enqueueSyncOperation({
+        type: 'UPDATE',
+        sketchId: sketch.id,
+        data: sketch,
+        timestamp: Date.now(),
+      });
+      updateSyncState({ pendingChanges: syncState.pendingChanges + 1 });
+      console.debug('[Sync] API unavailable — queued sketch update for later');
+    } else {
+      console.debug('[Sync] Cloud sync skipped — API unavailable and sketch is empty');
+    }
     return;
   }
 
@@ -1289,23 +1327,32 @@ export async function syncSketchToCloud(sketch) {
       isSyncing: false,
       lastSyncTime: new Date(),
     });
+
+    // A live sync just succeeded → the API is reachable. Drain anything that was
+    // queued while it was unavailable. A flaky HTTP failure doesn't fire the
+    // 'online' event, so processSyncQueue wouldn't otherwise run. Deferred so it
+    // executes after `isSyncInProgress` is cleared in the finally block.
+    scheduleQueueDrain();
   } catch (error) {
-    // Check if API became unavailable
-    const isApiUnavailable = error.message?.includes('API not available');
+    // "API not available" is an expected transient/dev condition — keep the UI
+    // quiet — but STILL queue the change below so the edit is never lost. The
+    // old code returned here without queuing, silently dropping the save.
+    const isApiUnavailable =
+      error.isExpectedDevError || error.message?.includes('API not available');
+
     if (isApiUnavailable) {
-      console.debug('[Sync] Cloud sync skipped — API not available');
-      updateSyncState({ isSyncing: false });
-      return;
+      console.debug('[Sync] API unavailable — queuing sketch update for retry');
+      updateSyncState({ isSyncing: false, error: null, errorStatusCode: null });
+    } else {
+      console.error('[Sync] Failed to sync sketch to cloud:', error);
+      updateSyncState({
+        isSyncing: false,
+        error: error.message,
+        errorStatusCode: error.statusCode || null,
+      });
     }
 
-    console.error('[Sync] Failed to sync sketch to cloud:', error);
-    updateSyncState({
-      isSyncing: false,
-      error: error.message,
-      errorStatusCode: error.statusCode || null,
-    });
-    
-    // Queue for later retry
+    // Queue for later retry so no edit is lost.
     await enqueueSyncOperation({
       type: 'UPDATE',
       sketchId: sketch.id,
@@ -1399,7 +1446,24 @@ export async function deleteSketchEverywhere(sketchId) {
  */
 export function resetApiAvailability() {
   apiAvailable = true;
+  apiUnavailableSince = 0;
   console.debug('[Sync] API availability reset');
+}
+
+/**
+ * Schedule a queue drain on the next tick. Used after a successful live sync so
+ * operations queued during an API outage flush without waiting for an 'online'
+ * event (which never fires when connectivity never actually dropped). Gated on
+ * pendingChanges so it stays a no-op in the common no-backlog case.
+ */
+function scheduleQueueDrain() {
+  if (typeof setTimeout !== 'function') return;
+  if (syncState.pendingChanges <= 0) return;
+  setTimeout(() => {
+    if (navigator.onLine && getAuthState().isSignedIn && !isSyncInProgress) {
+      processSyncQueue().catch(err => console.warn('[Sync] Queue drain failed:', err));
+    }
+  }, 0);
 }
 
 /**
@@ -1411,7 +1475,7 @@ export async function processSyncQueue() {
     return;
   }
 
-  const allOperations = await drainSyncQueue();
+  const allOperations = (await drainSyncQueue()) || [];
   if (allOperations.length === 0) return;
 
   // Filter out operations for legacy non-UUID sketch IDs — these would
