@@ -300,7 +300,12 @@ function renderDetails() {
   if (sidebarTitleEl) {
     if (selectedNode) {
       const ntKey = (selectedNode.nodeType || 'Manhole').toLowerCase();
-      const typeLabel = t('nodeTypeLabel.' + ntKey) || t('nodeTypeLabel.manhole');
+      // t() echoes the raw key on a miss (never falsy), so detect the echo —
+      // nodeTypes outside the nodeTypeLabel map (e.g. 'node') otherwise leak
+      // "nodeTypeLabel.node" into the title
+      const rawKey = 'nodeTypeLabel.' + ntKey;
+      let typeLabel = t(rawKey);
+      if (typeLabel === rawKey) typeLabel = t('nodeTypeLabel.manhole');
       sidebarTitleEl.textContent = t('sidebarNodeTitle', typeLabel, selectedNode.id);
       sidebarTitleEl.removeAttribute('data-i18n');
     } else if (selectedEdge) {
