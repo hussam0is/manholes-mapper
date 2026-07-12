@@ -20,7 +20,7 @@ import { updateLayersPanel } from '../map/layers-config.js';
 import { wgs84ToItm } from '../map/govmap-layer.js';
 
 // ── Constants (mirrored from main.js) ────────────────────────
-const MIN_SCALE = 0.005;
+const MIN_SCALE = 0.0005;
 const MAX_SCALE = 5.0;
 
 // ============================================
@@ -201,7 +201,8 @@ export function stretchedNode(node) {
  */
 export function setZoom(newScale) {
   const clamped = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
-  if (Math.abs(clamped - S.viewScale) < 0.0001) return;
+  // Relative epsilon: an absolute one swallows zoom steps at deep zoom-out
+  if (Math.abs(clamped - S.viewScale) < S.viewScale * 0.001) return;
   // Zoom centered on canvas center
   const rect = S.canvas.getBoundingClientRect();
   const centerScreen = { x: rect.width / 2, y: rect.height / 2 };

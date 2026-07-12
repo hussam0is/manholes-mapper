@@ -426,7 +426,7 @@ try { window.currentLang = currentLang; } catch (_) { }
 let viewScale = 1;
 let drawScheduled = false;
 let viewTranslate = { x: 0, y: 0 }; // screen-space translation (for pan/anchored zoom)
-const MIN_SCALE = 0.005;
+const MIN_SCALE = 0.0005;
 const MAX_SCALE = 5.0;
 const SCALE_STEP = 1.1; // 10%
 // Canvas stretch state (separate X and Y scaling factors)
@@ -1703,7 +1703,8 @@ canvas.addEventListener('wheel', (e) => {
   const delta = e.deltaY;
   const newScale = delta > 0 ? (viewScale / SCALE_STEP) : (viewScale * SCALE_STEP);
   const clamped = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
-  if (Math.abs(clamped - viewScale) < 0.0001) return;
+  // Relative epsilon: an absolute one swallows zoom steps at deep zoom-out
+  if (Math.abs(clamped - viewScale) < viewScale * 0.001) return;
   viewScale = clamped;
   // Anchor zoom at mouse position
   viewTranslate.x = mouseX - viewScale * viewStretchX * focusWorld.x;

@@ -1196,7 +1196,7 @@ function _zoomToFitAllSketches() {
   const padding = 0.7;
   const scaleX = dx > 0 ? (rect.width * padding) / dx : 10;
   const scaleY = dy > 0 ? (rect.height * padding) / dy : 10;
-  const MIN_SCALE = 0.005;
+  const MIN_SCALE = 0.0005;
   const targetScale = Math.max(MIN_SCALE, Math.min(scaleX, scaleY));
 
   console.log(`[ViewAll] targetScale=${targetScale.toFixed(4)}, dx=${dx.toFixed(0)}, dy=${dy.toFixed(0)}, canvas=${rect.width}x${rect.height}`);

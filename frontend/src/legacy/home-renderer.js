@@ -43,7 +43,7 @@ import {
 const t = (...args) => F.t(...args);
 const escapeHtml = (s) => window.escapeHtml ? window.escapeHtml(s) : String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 
-const MIN_SCALE = 0.005;
+const MIN_SCALE = 0.0005;
 const MAX_SCALE = 5.0;
 
 // === Local state ===

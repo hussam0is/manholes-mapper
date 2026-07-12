@@ -17,7 +17,7 @@ import { commitIdInputIfFocused } from '../dom/dom-utils.js';
 // ── Local constants ─────────────────────────────────────────────────────────
 const LONG_PRESS_MS = 600;
 const DOUBLE_TAP_MS = 300;
-const MIN_SCALE = 0.005;
+const MIN_SCALE = 0.0005;
 const MAX_SCALE = 5.0;
 const TOUCH_TAP_MOVE_THRESHOLD = 5;
 const TOUCH_SELECT_EXPANSION = 14;
