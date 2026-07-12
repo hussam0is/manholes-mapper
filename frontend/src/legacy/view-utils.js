@@ -20,7 +20,7 @@ import { updateLayersPanel } from '../map/layers-config.js';
 import { wgs84ToItm } from '../map/govmap-layer.js';
 
 // ── Constants (mirrored from main.js) ────────────────────────
-const MIN_SCALE = 0.0005;
+const MIN_SCALE = 0.001;
 const MAX_SCALE = 5.0;
 
 // ============================================
