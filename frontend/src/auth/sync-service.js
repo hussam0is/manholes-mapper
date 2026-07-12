@@ -17,6 +17,8 @@ import {
   enqueueSyncOperation,
   drainSyncQueue,
   removeSyncQueueItem,
+  countSyncQueue,
+  clearSyncQueue,
 } from '../db.js';
 
 // Retry configuration for exponential backoff
@@ -1894,6 +1896,25 @@ export function initSyncService() {
 export async function clearLocalSketchData() {
   console.debug('[Sync] Clearing all local sketch data (logout)');
   try {
+    // Best-effort: flush any queued offline edits to the cloud BEFORE we wipe
+    // local state. The session cookie is still valid at this point (sign-out
+    // happens after this call), so a successful flush means the signing-out
+    // user doesn't lose pending work.
+    try {
+      const pending = await countSyncQueue().catch(() => 0);
+      if (pending > 0 && navigator.onLine && getAuthState().isSignedIn) {
+        console.debug(`[Sync] Flushing ${pending} queued operation(s) before logout`);
+        await processSyncQueue();
+      }
+    } catch (flushErr) {
+      console.warn('[Sync] Pre-logout queue flush failed:', flushErr.message);
+    }
+
+    // Clear the sync queue so one account's queued edits can NEVER replay under
+    // the next account that signs in on this device (cross-account contamination).
+    await clearSyncQueue().catch(() => {});
+    updateSyncState({ pendingChanges: 0 });
+
     // Clear localStorage sketch data
     if (typeof window !== 'undefined' && window.localStorage) {
       window.localStorage.removeItem('graphSketch.library');
@@ -1904,6 +1925,9 @@ export async function clearLocalSketchData() {
     for (const s of idbSketches) {
       await deleteSketchFromIdb(s.id).catch(() => {});
     }
+    // Drop the in-memory optimistic-locking versions so a new account doesn't
+    // reuse the previous account's version numbers.
+    lastKnownServerVersion.clear();
     // Invalidate the legacy library cache
     if (typeof window !== 'undefined' && typeof window.invalidateLibraryCache === 'function') {
       window.invalidateLibraryCache();

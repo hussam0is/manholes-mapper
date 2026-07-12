@@ -13,6 +13,7 @@ import {
   mergeSketchData,
   getSyncHealth,
   resetSyncHealth,
+  clearLocalSketchData,
 } from '../src/auth/sync-service.js';
 import * as db from '../src/db.js';
 import * as authGuard from '../src/auth/auth-guard.js';
@@ -27,6 +28,8 @@ vi.mock('../src/db.js', () => ({
   enqueueSyncOperation: vi.fn(),
   drainSyncQueue: vi.fn(),
   removeSyncQueueItem: vi.fn(),
+  countSyncQueue: vi.fn(),
+  clearSyncQueue: vi.fn(),
 }));
 
 vi.mock('../src/auth/auth-guard.js', () => ({
@@ -74,6 +77,9 @@ describe('Sync Service Unit Tests', () => {
 
     // removeSyncQueueItem should resolve successfully by default
     (db.removeSyncQueueItem as any).mockResolvedValue(undefined);
+    // Queue helpers must return promises (they're awaited in the source)
+    (db.countSyncQueue as any).mockResolvedValue(0);
+    (db.clearSyncQueue as any).mockResolvedValue(undefined);
   });
 
   describe('syncFromCloud', () => {
@@ -111,6 +117,33 @@ describe('Sync Service Unit Tests', () => {
       mockOnLine(false);
       await syncFromCloud();
       expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    it('clearLocalSketchData should clear the sync queue to prevent cross-account replay', async () => {
+      (db.countSyncQueue as any).mockResolvedValue(0); // nothing to flush
+      (db.getAllSketches as any).mockResolvedValue([]);
+      window.localStorage.setItem('graphSketch.library', JSON.stringify([{ id: 'x' }]));
+
+      await clearLocalSketchData();
+
+      // Queue must be cleared so the previous account's ops don't replay
+      expect(db.clearSyncQueue).toHaveBeenCalled();
+      expect(window.localStorage.getItem('graphSketch.library')).toBeNull();
+    });
+
+    it('clearLocalSketchData should flush pending edits before wiping when online', async () => {
+      const uuid = '12345678-1234-1234-1234-1234567890ab';
+      (db.countSyncQueue as any).mockResolvedValue(1);
+      (db.drainSyncQueue as any).mockResolvedValue([
+        { type: 'UPDATE', data: { id: uuid, name: 'Unsynced', nodes: [{ id: 1, x: 0, y: 0 }], edges: [] }, _queueKey: 1 },
+      ]);
+      (db.getAllSketches as any).mockResolvedValue([]);
+
+      await clearLocalSketchData();
+
+      // The pending edit should have been pushed to the cloud before clearing
+      expect(global.fetch).toHaveBeenCalledWith(`/api/sketches/${uuid}`, expect.objectContaining({ method: 'PUT' }));
+      expect(db.clearSyncQueue).toHaveBeenCalled();
     });
 
     it('should preserve local-only (unsynced) sketches in the legacy library', async () => {

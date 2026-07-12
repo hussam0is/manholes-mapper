@@ -286,6 +286,24 @@ export async function removeSyncQueueItem(key) {
   });
 }
 
+/**
+ * Remove every pending operation from the sync queue.
+ *
+ * Used on logout so one account's queued edits can't replay under the next
+ * account that signs in on the same device.
+ *
+ * @returns {Promise<void>}
+ */
+export async function clearSyncQueue() {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('syncQueue', 'readwrite');
+    tx.objectStore('syncQueue').clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
 // ============================================
 // Backup Functions
 // ============================================
