@@ -825,7 +825,23 @@ export function initPointerHandlers() {
             S.dragOffset.x = world.x - nodeAt.x;
             S.dragOffset.y = world.y - nodeAt.y;
             S.isDragging = true;
-            dragStartNodeState = { id: nodeAt.id, oldX: nodeAt.x, oldY: nodeAt.y, oldSurveyX: nodeAt.surveyX, oldSurveyY: nodeAt.surveyY };
+            // Full measurement snapshot — must match the mouse-path literal
+            // above so undo can restore surveyZ/schematic/fixQuality after a
+            // touch drag wipes them (undo-redo restores per-field only when
+            // the old value is !== undefined)
+            dragStartNodeState = {
+              id: nodeAt.id,
+              oldX: nodeAt.x,
+              oldY: nodeAt.y,
+              oldSurveyX: nodeAt.surveyX,
+              oldSurveyY: nodeAt.surveyY,
+              oldSurveyZ: nodeAt.surveyZ,
+              oldSchematicX: nodeAt.schematicX,
+              oldSchematicY: nodeAt.schematicY,
+              oldGnssFixQuality: nodeAt.gnssFixQuality,
+              oldHasCoordinates: nodeAt.hasCoordinates,
+              measurementCleared: false,
+            };
             touchAddPending = false;
             touchAddPoint = null;
             // Double-tap detection for context menu
