@@ -1708,11 +1708,20 @@ function renderDetails() {
           _preSidebarFocusEl = document.activeElement;
         }
         sidebarEl.classList.add('open');
-        // Move focus into the sidebar for screen-reader users
+        // Move focus into the sidebar for screen-reader users. Focus the
+        // panel TITLE, not the first input — focusing #idInput here popped
+        // the soft keyboard over half the screen on every selection and
+        // every re-render on touch devices. Creation flows that want a
+        // field focused (home/issue) set it themselves via setTimeout, and
+        // the in-container guard keeps focus in the field being edited
+        // across autosave re-renders.
         requestAnimationFrame(() => {
-          const firstInput = detailsContainer.querySelector('input, select, textarea, button');
-          if (firstInput) firstInput.focus({ preventScroll: true });
-          else if (sidebarTitleEl) sidebarTitleEl.focus({ preventScroll: true });
+          if (detailsContainer.contains(document.activeElement)) return;
+          if (sidebarTitleEl) sidebarTitleEl.focus({ preventScroll: true });
+          else {
+            const firstInput = detailsContainer.querySelector('input, select, textarea, button');
+            if (firstInput) firstInput.focus({ preventScroll: true });
+          }
         });
       }
       else sidebarEl.classList.remove('open');
