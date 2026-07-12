@@ -44,6 +44,44 @@ import { handleApiError } from '../_lib/error-handler.js';
 
 export const config = { runtime: 'nodejs' };
 
+/**
+ * Verify the caller may attach a sketch to `projectId`: the project must exist
+ * and belong to the caller's organization (super_admin may use any project).
+ *
+ * On failure this sends the HTTP error response and returns null — the caller
+ * MUST return immediately when the result is null. On success it returns the
+ * project row (so the caller can read input_flow_config without a second query).
+ *
+ * This closes a cross-tenant hole: without it, any authenticated user could
+ * attach a sketch to another organization's project (poisoning that org's
+ * project canvas and stats) and read the project's input_flow_config.
+ *
+ * @param {import('http').ServerResponse} res
+ * @param {string} projectId
+ * @param {string} userId
+ * @param {object} authUser - session user (for getOrCreateUser)
+ * @returns {Promise<object|null>}
+ */
+async function resolveProjectForSketch(res, projectId, userId, authUser) {
+  if (!validateUUID(projectId)) {
+    res.status(400).json({ error: 'Invalid projectId format' });
+    return null;
+  }
+  const currentUser = await getOrCreateUser(userId, {
+    username: authUser?.name,
+    email: authUser?.email,
+  });
+  const isSuperAdmin = currentUser?.role === 'super_admin';
+  const project = await getProjectById(projectId);
+  // Use 404 (not 403) for both missing and cross-org so we don't reveal that a
+  // project with this id exists in another organization.
+  if (!project || (!isSuperAdmin && project.organization_id !== currentUser?.organization_id)) {
+    res.status(404).json({ error: 'Project not found' });
+    return null;
+  }
+  return project;
+}
+
 export default async function handler(req, res) {
   if (handleCors(req, res)) return;
   if (verifyCsrf(req, res)) return;
@@ -204,14 +242,16 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Validation failed', details: validationErrors });
       }
 
-      // Get project's input flow config if projectId is provided
+      // Get project's input flow config if projectId is provided.
+      // Verify the caller may attach the sketch to this project (own org, or
+      // super_admin) — otherwise this leaks another org's input_flow_config and
+      // plants a sketch inside their project.
       let snapshotInputFlowConfig = body.snapshotInputFlowConfig || {};
       if (body.projectId) {
-        const project = await getProjectById(body.projectId);
-        if (project) {
-          // Copy the project's input flow config as a snapshot
-          snapshotInputFlowConfig = project.input_flow_config || {};
-        }
+        const project = await resolveProjectForSketch(res, body.projectId, userId, authUser);
+        if (!project) return; // error response already sent
+        // Copy the project's input flow config as a snapshot
+        snapshotInputFlowConfig = project.input_flow_config || {};
       }
 
       const sketch = await createSketch(userId, {
@@ -469,18 +509,19 @@ async function handleSingleSketch(req, res, request, sketchId) {
         return res.status(400).json({ error: 'Validation failed', details: validationErrors });
       }
 
-      // If projectId is being changed, get the new project's input flow config
+      // If projectId is being set, verify the caller may attach the sketch to it
+      // (own org, or super_admin) before recording it — this closes the same
+      // cross-tenant hole as the create path.
       let snapshotInputFlowConfig = body.snapshotInputFlowConfig;
-      if (body.projectId !== undefined && body.updateInputFlowSnapshot) {
-        if (body.projectId) {
-          const project = await getProjectById(body.projectId);
-          if (project) {
-            snapshotInputFlowConfig = project.input_flow_config || {};
-          }
-        } else {
-          // If project is being removed, keep the existing snapshot or clear it
-          snapshotInputFlowConfig = snapshotInputFlowConfig || {};
+      if (body.projectId) {
+        const project = await resolveProjectForSketch(res, body.projectId, userId, authUser);
+        if (!project) return; // error response already sent
+        if (body.updateInputFlowSnapshot) {
+          snapshotInputFlowConfig = project.input_flow_config || {};
         }
+      } else if (body.projectId !== undefined && body.updateInputFlowSnapshot) {
+        // projectId explicitly cleared (null) — keep or reset the snapshot.
+        snapshotInputFlowConfig = snapshotInputFlowConfig || {};
       }
 
       const updated = await updateSketch(sketchId, userId, {
