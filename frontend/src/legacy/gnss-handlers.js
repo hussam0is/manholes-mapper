@@ -184,6 +184,7 @@ function handleGnssPointCapture(captureData) {
     node.surveyX = captureData.itm.x;
     node.surveyY = captureData.itm.y;
     node.surveyZ = captureData.position.alt || 0;
+    if (captureData.position.alt) node.tl = captureData.position.alt;
     node.gnssFixQuality = captureData.position.fixQuality;
     node.gnssHdop = captureData.position.hdop;
     node.measure_precision = captureData.position.accuracy || null;
@@ -204,7 +205,11 @@ function handleGnssPointCapture(captureData) {
       line_diameter: null
     };
     S.edges.push(newEdge);
+    window.__gradientEngine?.onEdgeCreated(newEdge);
   }
+
+  // Smart check: gradients of every pipe touching this node
+  if (node) window.__gradientEngine?.onMeasurementApplied(node.id);
 
   // Update gnss state with the captured point
   gnssState?.capturePoint(targetNodeId, {
@@ -312,6 +317,7 @@ function createNodeFromMeasurement(result) {
   node.surveyX = itm.x;
   node.surveyY = itm.y;
   node.surveyZ = position.alt || 0;
+  if (position.alt) node.tl = position.alt;
   node.gnssFixQuality = position.fixQuality;
   node.gnssHdop = position.hdop;
   node.measure_precision = position.hrms || position.accuracy || null;
@@ -334,6 +340,9 @@ function createNodeFromMeasurement(result) {
       F.createEdge(String(lastId), String(node.id));
     }
   }
+
+  // 6b. Smart check: gradients of every pipe touching this node
+  window.__gradientEngine?.onMeasurementApplied(node.id);
 
   // 7. Update gnss state
   gnssState.capturePoint(node.id, {

@@ -9,6 +9,8 @@
  *   10% — All optional fields filled (material, diameter, access)
  */
 
+import { computeEdgeGradient } from '../features/gradient-engine.js';
+
 // ── Completion cache with dirty-flag invalidation ───────────────────────
 let _cachedCompletion = null;
 let _completionDirty = true;
@@ -131,11 +133,18 @@ export function computeSketchCompletion() {
   );
   issues += missingCoords.length;
 
-  // Negative gradient edges
+  // Negative gradient edges — true slope via the gradient engine, with the
+  // legacy depth-delta fallback when no elevations exist (keeps this count
+  // consistent with sketch-issues.js)
+  const nodeById = new Map(nodes.map(n => [String(n.id), n]));
   const negGradient = connectedEdges.filter(e => {
+    const g = computeEdgeGradient(e, (id) => nodeById.get(String(id)));
+    if (g.status === 'exempt') return false;
+    if (g.status === 'negative') return true;
+    if (g.status !== 'unknown') return false;
     const tail = parseFloat(e.tail_measurement);
     const head = parseFloat(e.head_measurement);
-    return !isNaN(tail) && !isNaN(head) && head > tail;
+    return !isNaN(tail) && !isNaN(head) && tail > 0 && head > 0 && head > tail;
   });
   issues += negGradient.length;
 

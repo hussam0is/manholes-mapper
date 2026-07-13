@@ -783,6 +783,8 @@ export function connectDanglingEdge(edge, nodeId, type = 'outbound') {
   }
   edge.isDangling = false;
   F.saveToStorage();
+  // Smart check: the pipe just gained both endpoints
+  window.__gradientEngine?.onEdgeCreated(edge);
 }
 
 /**

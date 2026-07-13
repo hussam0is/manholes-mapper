@@ -17,8 +17,10 @@
  * 8. Missing TL — node that has survey coordinates but no TL (top level) elevation
  */
 
+import { computeEdgeGradient } from '../features/gradient-engine.js';
+
 /**
- * @typedef {{ type: 'missing_coords' | 'missing_pipe_data' | 'long_edge' | 'not_last_manhole' | 'merge_candidate' | 'negative_gradient' | 'obstructed_access' | 'schematic_location' | 'missing_tl', nodeId?: string|number, edgeId?: string|number, side?: 'tail'|'head', worldX: number, worldY: number, lengthM?: number, gradient?: number, mergeNodeId?: string|number, distanceM?: number, mergeWorldX?: number, mergeWorldY?: number, reason?: string }} Issue
+ * @typedef {{ type: 'missing_coords' | 'missing_pipe_data' | 'long_edge' | 'not_last_manhole' | 'merge_candidate' | 'negative_gradient' | 'obstructed_access' | 'schematic_location' | 'missing_tl', nodeId?: string|number, edgeId?: string|number, side?: 'tail'|'head', worldX: number, worldY: number, lengthM?: number, gradient?: number, slopePct?: number|null, basis?: 'invert'|'terrain'|'depth', mergeNodeId?: string|number, distanceM?: number, mergeWorldX?: number, mergeWorldY?: number, reason?: string }} Issue
  * @typedef {{ totalKm: number, issueCount: number, missingCoordsCount: number, missingPipeDataCount: number, obstructedAccessCount: number, schematicLocationCount: number, missingTlCount: number }} SketchStats
  */
 
@@ -296,23 +298,39 @@ export function computeSketchIssues(nodes, edges) {
 
   console.timeEnd('[PERF] computeIssues:mergeCandidate');
 
-  // 5. Negative gradient — pipe where head is deeper than tail (uphill flow)
+  // 5. Negative gradient — true hydraulic slope from elevations (invert or
+  // terrain basis) via the gradient engine; falls back to the legacy
+  // depth-delta heuristic only when no elevations are available. Edges
+  // touching Home/ForLater/Issue nodes are exempt (laterals rise legally).
   for (const edge of edges) {
-    const tailMeas = parseFloat(edge.tail_measurement);
-    const headMeas = parseFloat(edge.head_measurement);
-    if (isNaN(tailMeas) || isNaN(headMeas)) continue;
-    if (tailMeas <= 0 || headMeas <= 0) continue;
+    const tailNode = edge.tail != null ? nodeMap.get(String(edge.tail)) : null;
+    const headNode = edge.head != null ? nodeMap.get(String(edge.head)) : null;
+    const g = computeEdgeGradient(edge, (id) => nodeMap.get(String(id)));
+    if (g.status === 'exempt') continue;
 
-    // head deeper than tail = pipe slopes uphill from tail→head = bad
-    if (headMeas > tailMeas) {
-      const tailNode = edge.tail != null ? nodeMap.get(String(edge.tail)) : null;
-      const headNode = edge.head != null ? nodeMap.get(String(edge.head)) : null;
+    let isNegative = false;
+    let gradientM = null;
+    if (g.status === 'negative') {
+      isNegative = true;
+      gradientM = Math.abs(g.drop ?? 0);
+    } else if (g.status === 'unknown') {
+      // Legacy fallback: head deeper than tail = uphill (no elevations known)
+      const tailMeas = parseFloat(edge.tail_measurement);
+      const headMeas = parseFloat(edge.head_measurement);
+      if (!isNaN(tailMeas) && !isNaN(headMeas) && tailMeas > 0 && headMeas > 0 && headMeas > tailMeas) {
+        isNegative = true;
+        gradientM = +(headMeas - tailMeas).toFixed(3);
+      }
+    }
+    if (isNegative) {
       issues.push({
         type: 'negative_gradient',
         edgeId: edge.id,
         tailId: edge.tail,
         headId: edge.head,
-        gradient: +(headMeas - tailMeas).toFixed(3),
+        gradient: gradientM,
+        slopePct: g.slopePct,
+        basis: g.basis ?? 'depth',
         worldX: tailNode && headNode ? (tailNode.x + headNode.x) / 2 : 0,
         worldY: tailNode && headNode ? (tailNode.y + headNode.y) / 2 : 0,
       });
@@ -347,10 +365,15 @@ export function computeSketchIssues(nodes, edges) {
     }
   }
 
-  // 8. Missing TL — node with survey coords but no TL elevation
+  // 8. Missing TL — node with survey coords but no elevation. surveyZ is the
+  // same physical quantity (terrain level, written by TSC3/GNSS measurements),
+  // so either field satisfies the requirement.
   for (const node of nodes) {
     if (node.nodeType === 'Home') continue;
-    if (node.surveyX != null && node.surveyY != null && (node.tl == null || node.tl === '')) {
+    const hasTl = !(node.tl == null || node.tl === '');
+    const z = Number(node.surveyZ);
+    const hasZ = node.surveyZ != null && node.surveyZ !== '' && !Number.isNaN(z) && z !== 0;
+    if (node.surveyX != null && node.surveyY != null && !hasTl && !hasZ) {
       issues.push({
         type: 'missing_tl',
         nodeId: node.id,

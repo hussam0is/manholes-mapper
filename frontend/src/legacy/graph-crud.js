@@ -180,6 +180,8 @@ export function createEdge(tailId, headId, options = {}) {
   F.computeNodeTypes();
   F.pushUndo({ type: 'edgeCreate', edgeId: edge.id });
   F.saveToStorage();
+  // Smart check: gradient of the new pipe (alerts on negative slope)
+  if (!edge.isDangling) window.__gradientEngine?.onEdgeCreated(edge);
   // Trigger snap animation + haptic feedback
   S._animatingEdges.set(edge.id, performance.now());
   navigator.vibrate?.(10);
