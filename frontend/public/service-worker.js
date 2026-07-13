@@ -16,7 +16,7 @@
 // the network was unavailable and there was no cached response, causing
 // offline pages to break.  Increasing the version here forces browsers
 // to pick up the updated logic.
-const APP_VERSION = 'v130';
+const APP_VERSION = 'v131';
 const PRECACHE = 'graph-sketch-shell-' + APP_VERSION;
 const RUNTIME = 'graph-sketch-runtime-' + APP_VERSION;
 
@@ -59,6 +59,25 @@ async function trimCache(cacheName, maxItems) {
     const excess = keys.length - maxItems;
     await Promise.all(keys.slice(0, excess).map((key) => cache.delete(key)));
   }
+}
+
+/**
+ * Whether a fetch response is safe to store in a cache.
+ *
+ * Only successful, non-redirected, basic/cors responses are cacheable. Caching
+ * a 404/500 body — or a redirect to a login/captive-portal/SPA-fallback page —
+ * is how the app gets bricked: under the cache-first /assets/ strategy a poisoned
+ * entry is then served on every subsequent load, producing a white screen that
+ * survives reloads until APP_VERSION is bumped. Fail closed: don't cache it,
+ * just return it to the page (which retries the network next time).
+ */
+function isCacheable(response) {
+  return (
+    response &&
+    response.ok &&
+    !response.redirected &&
+    (response.type === 'basic' || response.type === 'cors' || response.type === 'default')
+  );
 }
 
 self.addEventListener('install', (event) => {
@@ -114,10 +133,14 @@ self.addEventListener('fetch', (event) => {
         if (cached) return cached;
         try {
           const response = await fetch(request);
-          const responseClone = response.clone();
-          event.waitUntil(
-            caches.open(RUNTIME).then((cache) => cache.put(request, responseClone)).then(() => trimCache(RUNTIME, MAX_RUNTIME_CACHE_ITEMS))
-          );
+          // Cross-origin fonts are often opaque (status 0); allow those, but
+          // never cache a non-ok CSS/font error.
+          if (isCacheable(response) || response.type === 'opaque') {
+            const responseClone = response.clone();
+            event.waitUntil(
+              caches.open(RUNTIME).then((cache) => cache.put(request, responseClone)).then(() => trimCache(RUNTIME, MAX_RUNTIME_CACHE_ITEMS))
+            );
+          }
           return response;
         } catch (_) {
           // Provide a safe empty fallback so respondWith never resolves undefined.
@@ -152,12 +175,15 @@ self.addEventListener('fetch', (event) => {
       (async () => {
         try {
           const response = await fetch(request);
-          // Update runtime cache with the fresh response.  Cloning is
-          // necessary because the response can only be consumed once.
-          const copy = response.clone();
-          event.waitUntil(
-            caches.open(RUNTIME).then((cache) => cache.put(request, copy)).then(() => trimCache(RUNTIME, MAX_RUNTIME_CACHE_ITEMS))
-          );
+          // Only cache a genuine 2xx HTML page. Caching a 404/500 page or a
+          // redirect (login / captive portal / SPA fallback) would poison the
+          // app shell and be served on the next offline navigation.
+          if (isCacheable(response)) {
+            const copy = response.clone();
+            event.waitUntil(
+              caches.open(RUNTIME).then((cache) => cache.put(request, copy)).then(() => trimCache(RUNTIME, MAX_RUNTIME_CACHE_ITEMS))
+            );
+          }
           return response;
         } catch (_) {
           // Attempt to return the exact page from cache
@@ -188,8 +214,10 @@ self.addEventListener('fetch', (event) => {
         if (cached) return cached;
         try {
           const response = await fetch(request);
-          const responseClone = response.clone();
-          caches.open(PRECACHE).then((cache) => cache.put(request, responseClone));
+          if (isCacheable(response)) {
+            const responseClone = response.clone();
+            caches.open(PRECACHE).then((cache) => cache.put(request, responseClone));
+          }
           return response;
         } catch (_) {
           return caches.match(OFFLINE_URL);
@@ -211,10 +239,18 @@ self.addEventListener('fetch', (event) => {
         if (cached) return cached;
         try {
           const response = await fetch(request);
-          const responseClone = response.clone();
-          event.waitUntil(
-            caches.open(RUNTIME).then((cache) => cache.put(request, responseClone)).then(() => trimCache(RUNTIME, MAX_RUNTIME_CACHE_ITEMS))
-          );
+          // CRITICAL: only cache a genuine 2xx bundle. During a deploy an old
+          // shell may request a now-missing hashed chunk and get a 404 or a
+          // 200 SPA-fallback/index.html; caching that under this cache-first
+          // strategy serves it forever → white screen surviving reloads. If the
+          // response isn't cacheable, return it WITHOUT caching so the next load
+          // retries the network.
+          if (isCacheable(response)) {
+            const responseClone = response.clone();
+            event.waitUntil(
+              caches.open(RUNTIME).then((cache) => cache.put(request, responseClone)).then(() => trimCache(RUNTIME, MAX_RUNTIME_CACHE_ITEMS))
+            );
+          }
           return response;
         } catch (_) {
           // When offline and the file isn’t cached yet, fall back to the offline page rather than
@@ -241,10 +277,12 @@ self.addEventListener('fetch', (event) => {
         // cached response — that is the "while‑revalidate" part.
         const fetchAndCache = fetch(request)
           .then((response) => {
-            const responseClone = response.clone();
-            caches.open(RUNTIME).then((cache) =>
-              cache.put(request, responseClone).then(() => trimCache(RUNTIME, MAX_RUNTIME_CACHE_ITEMS))
-            );
+            if (isCacheable(response)) {
+              const responseClone = response.clone();
+              caches.open(RUNTIME).then((cache) =>
+                cache.put(request, responseClone).then(() => trimCache(RUNTIME, MAX_RUNTIME_CACHE_ITEMS))
+              );
+            }
             return response;
           })
           .catch(() => null);
