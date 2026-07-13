@@ -703,7 +703,7 @@ function renderDetails() {
           html += `
             <div class="field">
               <label for="${inputId}">${measureLabel}</label>
-              <input id="${inputId}" type="text" inputmode="decimal" pattern="[0-9]*\\.?[0-9]*" value="${isTail ? (e.tail_measurement || '') : (e.head_measurement || '')}" placeholder="${t('labels.optional')}" dir="auto" />
+              <input id="${inputId}" type="text" inputmode="decimal" pattern="[0-9]*\\.?[0-9]*" value="${escapeHtml(isTail ? (e.tail_measurement || '') : (e.head_measurement || ''))}" placeholder="${t('labels.optional')}" dir="auto" />
             </div>`;
           if (adminConfig.edges.include.edge_type) {
             html += `
@@ -726,7 +726,7 @@ function renderDetails() {
               <label for="${diamSelectId}">${t('labels.lineDiameter')}</label>
               <select id="${diamSelectId}">
                 <option value="" ${e.line_diameter === '' ? 'selected' : ''}>${t('labels.optional')}</option>
-                ${diameterOptions.map((d) => { const lbl = String(d.label); const display = /^\d+$/.test(lbl) ? lbl + ' mm' : lbl; return `<option value="${String(d.code)}" ${String(e.line_diameter) === String(d.code) ? 'selected' : ''}>${display}</option>`; }).join('')}
+                ${diameterOptions.map((d) => { const lbl = String(d.label); const display = /^\d+$/.test(lbl) ? lbl + ' mm' : lbl; return `<option value="${escapeHtml(String(d.code))}" ${String(e.line_diameter) === String(d.code) ? 'selected' : ''}>${escapeHtml(display)}</option>`; }).join('')}
               </select>
             </div>`;
           } else {
@@ -738,7 +738,7 @@ function renderDetails() {
               html += `
             <div class="field">
               <label for="${fallDepthId}">${t('labels.fallDepth')}</label>
-              <input id="${fallDepthId}" type="text" inputmode="decimal" pattern="[0-9]*\\.?[0-9]*" value="${e.fall_depth || ''}" placeholder="${t('labels.optional')}" dir="auto" />
+              <input id="${fallDepthId}" type="text" inputmode="decimal" pattern="[0-9]*\\.?[0-9]*" value="${escapeHtml(e.fall_depth || '')}" placeholder="${t('labels.optional')}" dir="auto" />
             </div>`;
             } else {
               html += `<div class="field"></div>`;
@@ -1362,7 +1362,7 @@ function renderDetails() {
             <label for="edgeDiameterSelect">${t('labels.lineDiameter')}</label>
             <select id="edgeDiameterSelect">
               <option value="" ${edge.line_diameter === '' ? 'selected' : ''}>${t('labels.optional')}</option>
-              ${diameterOptions.map((d) => { const lbl = String(d.label); const display = /^\d+$/.test(lbl) ? lbl + ' mm' : lbl; return `<option value="${String(d.code)}" ${String(edge.line_diameter) === String(d.code) ? 'selected' : ''}>${display}</option>`; }).join('')}
+              ${diameterOptions.map((d) => { const lbl = String(d.label); const display = /^\d+$/.test(lbl) ? lbl + ' mm' : lbl; return `<option value="${escapeHtml(String(d.code))}" ${String(edge.line_diameter) === String(d.code) ? 'selected' : ''}>${escapeHtml(display)}</option>`; }).join('')}
             </select>
           </div>` : ''}
         </div>
@@ -1381,7 +1381,7 @@ function renderDetails() {
           ${adminConfig.edges.include.fall_depth ? `
           <div class="field">
             <label for="fallDepthInput">${t('labels.fallDepth')}</label>
-            <input id="fallDepthInput" type="text" inputmode="decimal" pattern="[0-9]*\\.?[0-9]*" value="${edge.fall_depth || ''}" placeholder="${t('labels.optional')}" dir="auto" />
+            <input id="fallDepthInput" type="text" inputmode="decimal" pattern="[0-9]*\\.?[0-9]*" value="${escapeHtml(edge.fall_depth || '')}" placeholder="${t('labels.optional')}" dir="auto" />
           </div>` : ''}
           ${adminConfig.edges.include.fall_position ? `
           <div class="field">
@@ -1394,12 +1394,12 @@ function renderDetails() {
           ${adminConfig.edges.include.tail_measurement ? `
           <div class="field">
             <label for="tailInput">${t('labels.tailMeasure')}</label>
-            <input id="tailInput" type="text" inputmode="decimal" pattern="[0-9]*\\.?[0-9]*" value="${edge.tail_measurement || ''}" placeholder="${t('labels.optional')}" dir="auto" />
+            <input id="tailInput" type="text" inputmode="decimal" pattern="[0-9]*\\.?[0-9]*" value="${escapeHtml(edge.tail_measurement || '')}" placeholder="${t('labels.optional')}" dir="auto" />
           </div>` : ''}
           ${adminConfig.edges.include.head_measurement ? `
           <div class="field">
             <label for="headInput">${t('labels.headMeasure')}</label>
-            <input id="headInput" type="text" inputmode="decimal" pattern="[0-9]*\\.?[0-9]*" value="${edge.head_measurement || ''}" placeholder="${t('labels.optional')}" dir="auto" />
+            <input id="headInput" type="text" inputmode="decimal" pattern="[0-9]*\\.?[0-9]*" value="${escapeHtml(edge.head_measurement || '')}" placeholder="${t('labels.optional')}" dir="auto" />
           </div>` : ''}
         </div>
       </div>` : ''}

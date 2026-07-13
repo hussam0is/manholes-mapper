@@ -219,7 +219,7 @@ async function _loadProjectSwitcher() {
 
     const currentId = getCurrentProjectId();
     selectEl.innerHTML = projects.map(p =>
-      `<option value="${p.id}"${p.id === currentId ? ' selected' : ''}>${p.name || p.id} (${p.sketchCount || 0})</option>`
+      `<option value="${esc(p.id)}"${p.id === currentId ? ' selected' : ''}>${esc(p.name || p.id)} (${Number(p.sketchCount) || 0})</option>`
     ).join('');
   } catch (err) {
     console.warn('[ProjectSwitcher] Failed to load projects:', err);
@@ -380,7 +380,7 @@ function renderListView() {
     }
 
     const issuesBadge = issues > 0
-      ? `<button class="sketch-side-panel__issues-btn ${severityClass}" data-sketch-issues="${sketch.id}" title="${esc(issueTooltip)}">
+      ? `<button class="sketch-side-panel__issues-btn ${severityClass}" data-sketch-issues="${esc(sketch.id)}" title="${esc(issueTooltip)}">
            <span class="material-icons">warning</span>${issues}
          </button>`
       : `<span class="sketch-side-panel__no-issues" title="${t('projects.canvas.noIssues') || 'OK'}">
@@ -391,7 +391,7 @@ function renderListView() {
     const mergeModeActive = isMergeModeEnabled();
     const mergeModeBtn = sketch.isActive
       ? `<button class="sketch-side-panel__merge-btn${mergeModeActive ? ' active' : ''}"
-           data-sketch-merge="${sketch.id}"
+           data-sketch-merge="${esc(sketch.id)}"
            title="${t('projects.canvas.mergeMode') || 'Merge Mode'} (${MERGE_RADIUS_M}m)">
            <span class="material-icons">call_merge</span>
          </button>`
@@ -436,7 +436,7 @@ function renderListView() {
         </div>
         <div class="sketch-card__actions">
           ${mergeModeBtn}
-          <button class="sketch-side-panel__recenter-btn" data-sketch-recenter="${sketch.id}" title="${t('projects.canvas.recenterToSketch') || 'Recenter to sketch'}">
+          <button class="sketch-side-panel__recenter-btn" data-sketch-recenter="${esc(sketch.id)}" title="${t('projects.canvas.recenterToSketch') || 'Recenter to sketch'}">
             <span class="material-icons">center_focus_strong</span>
           </button>
         </div>
