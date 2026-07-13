@@ -31,8 +31,9 @@ if one exists. Exact tool names vary by server version — discover them rather 
 
 If the MCP is not connected, or has no promote-capable tool, use the Vercel CLI — it is logged
 in as `hussam0is`. Every CLI command needs `--scope hussam0is-projects`.
-(As of 2026-07 the MCP does not start locally: `VERCEL_API_KEY` was wiped from `.env.local`,
-so the CLI path is the working one.)
+(`VERCEL_API_KEY` lives in a Windows **User-scope environment variable** — not in `.env.local` —
+verified 2026-07-13 to authenticate as hussam0is with access to this project. A session launched
+before the var was set won't have it; the CLI path always works.)
 
 **Never run `vercel link` or `vercel env pull`** — they overwrite `.env.local` and the
 local-only keys in it exist nowhere else.
