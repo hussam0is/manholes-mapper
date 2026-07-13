@@ -1,0 +1,211 @@
+{
+  "mode": "smart",
+  "notes": [
+    {
+      "area": "depth-entry",
+      "severity": "minor",
+      "text": "Entering both depths of one pipe requires selecting each endpoint node in turn (panel exposes only the selected node's side) — a per-pipe context switch in the field"
+    }
+  ],
+  "connect": {
+    "connectMs": 11,
+    "badge": "wifi"
+  },
+  "feedback.afterValidSegment": {
+    "snackbars": [
+      {
+        "kind": null,
+        "variant": "info",
+        "text": "infoמתחבר...close"
+      },
+      {
+        "kind": null,
+        "variant": "info",
+        "text": "infoמחובר ל-localhost:8765close"
+      },
+      {
+        "kind": null,
+        "variant": "success",
+        "text": "check_circleשוחה MH-101 נמדד/ה • גובה 105.00 מ'close"
+      }
+    ],
+    "toastText": "",
+    "engineAlerts": []
+  },
+  "feedback.atNegativeGradientMoment": {
+    "snackbars": [
+      {
+        "kind": null,
+        "variant": "info",
+        "text": "infoמחובר ל-localhost:8765close"
+      },
+      {
+        "kind": null,
+        "variant": "success",
+        "text": "check_circleשוחה MH-101 נמדד/ה • גובה 105.00 מ'close"
+      },
+      {
+        "kind": "gradient-negative",
+        "variant": "warning",
+        "text": "warning_amberשיפוע שליליקו MH-103 → MH-104: פני הקרקע עולים 45 ס\"מ בכיוון הזרימה — מומלץ לוודא את המדידההצגclose"
+      }
+    ],
+    "toastText": "",
+    "engineAlerts": [
+      {
+        "edgeId": "1783957725850.3735",
+        "status": "negative",
+        "basis": "terrain",
+        "slopePct": -2.25
+      }
+    ]
+  },
+  "feedback.afterHomeConnection": {
+    "snackbars": [
+      {
+        "kind": "gradient-negative",
+        "variant": "warning",
+        "text": "warning_amberשיפוע שליליקו MH-103 → MH-104: פני הקרקע עולים 45 ס\"מ בכיוון הזרימה — מומלץ לוודא את המדידההצגclose"
+      },
+      {
+        "kind": null,
+        "variant": "success",
+        "text": "check_circleשוחה MH-102 נמדד/ה • גובה 104.60 מ' • שיפוע 2.0% ✓close"
+      },
+      {
+        "kind": null,
+        "variant": "success",
+        "text": "check_circleשוחה MH-103 נמדד/ה • גובה 104.10 מ' • שיפוע 2.5% ✓close"
+      }
+    ],
+    "toastText": "",
+    "engineAlerts": [
+      {
+        "edgeId": "1783957725850.3735",
+        "status": "negative",
+        "basis": "terrain",
+        "slopePct": -2.25
+      }
+    ]
+  },
+  "shots": {
+    "MH-101": {
+      "dialogLatencyMs": 15,
+      "appliedMs": 89,
+      "taps": 1
+    },
+    "MH-102": {
+      "dialogLatencyMs": 8,
+      "appliedMs": 76,
+      "taps": 1
+    },
+    "MH-103": {
+      "dialogLatencyMs": 8,
+      "appliedMs": 72,
+      "taps": 1
+    },
+    "MH-104": {
+      "dialogLatencyMs": 8,
+      "appliedMs": 57,
+      "taps": 1
+    },
+    "MH-105": {
+      "dialogLatencyMs": 8,
+      "appliedMs": 57,
+      "taps": 1
+    },
+    "MH-103-reshoot": {
+      "dialogLatencyMs": null,
+      "appliedMs": 9,
+      "taps": 0
+    },
+    "BR-201": {
+      "dialogLatencyMs": 8,
+      "appliedMs": 59,
+      "taps": 1
+    },
+    "BR-202": {
+      "dialogLatencyMs": 7,
+      "appliedMs": 58,
+      "taps": 1
+    },
+    "MH-105-reshoot": {
+      "dialogLatencyMs": null,
+      "appliedMs": 6,
+      "taps": 0
+    },
+    "HM-301": {
+      "dialogLatencyMs": 7,
+      "appliedMs": 53,
+      "taps": 1
+    }
+  },
+  "network": {
+    "nodes": [
+      "MH-101(Manhole,z=105)",
+      "MH-102(Manhole,z=104.6)",
+      "MH-103(Manhole,z=104.1)",
+      "MH-104(Manhole,z=104.55)",
+      "MH-105(Manhole,z=103.8)",
+      "BR-201(Manhole,z=103.6)",
+      "BR-202(Manhole,z=103.1)",
+      "HM-301(Home,z=104)"
+    ],
+    "edges": [
+      "MH-101->MH-102",
+      "MH-102->MH-103",
+      "MH-103->MH-104",
+      "MH-104->MH-105",
+      "MH-103->BR-201",
+      "BR-201->BR-202",
+      "MH-105->HM-301"
+    ]
+  },
+  "depthEntry.selectNode": {
+    "sidebarOpen": true,
+    "msToFirstDepthEntered": 3712
+  },
+  "feedback.afterBadDepthEntry": {
+    "snackbars": [
+      {
+        "kind": null,
+        "variant": "success",
+        "text": "check_circleחיבור בית HM-301 נמדד/ה • גובה 104.00 מ'close"
+      },
+      {
+        "kind": null,
+        "variant": "success",
+        "text": "check_circleנשמרclose"
+      },
+      {
+        "kind": "gradient-negative",
+        "variant": "error",
+        "text": "errorשיפוע שליליקו MH-103 → MH-104: תחתית הצינור עולה בכיוון הזרימה (3.8%) — בדוק מדידות או כיוון זרימההצגclose"
+      }
+    ],
+    "toastText": "",
+    "engineAlerts": [
+      {
+        "edgeId": "1783957725850.3735",
+        "status": "negative",
+        "basis": "invert",
+        "slopePct": -3.75
+      }
+    ]
+  },
+  "issuesEngine": [
+    {
+      "type": "not_last_manhole",
+      "nodeId": "BR-202"
+    },
+    {
+      "type": "negative_gradient",
+      "edgeId": "1783957725850.3735",
+      "gradient": 0.75,
+      "slopePct": -3.75,
+      "basis": "invert"
+    }
+  ],
+  "flickerProbe": "zoom pulse x24, pan sweep x16, heatmap toggle x2, sidebar close — inspect video",
+  "consoleErrors": []
+}
