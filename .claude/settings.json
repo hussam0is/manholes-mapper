@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/promote-on-push-reminder.mjs",
+            "timeout": 15,
+            "statusMessage": "git push detected — promote reminder"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Every code change must be committed and pushed immediately.** After any file edit (new feature, bug fix, refactor, config change, etc.), always `git add`, `git commit`, and `git push` to the `dev` branch before moving on. Use a concise commit message describing the change. Do not batch multiple unrelated changes into one commit — commit after each logical change. Only skip committing if the user explicitly says otherwise.
 
+**Every push to `dev` must then be promoted to production.** After pushing, run the `vercel-promote` skill ([.claude/skills/vercel-promote/SKILL.md](./.claude/skills/vercel-promote/SKILL.md)): wait for the dev preview build to be Ready, promote it (Vercel MCP if connected, else `npx vercel promote <preview-url> --scope hussam0is-projects --yes`), then verify production health. A PostToolUse hook (`.claude/hooks/promote-on-push-reminder.mjs`) reminds you after each `git push`. Only skip promoting if the user explicitly says otherwise.
+
 ## Build & Dev Commands
 
 ```bash
@@ -91,6 +93,7 @@ Phone-debug MCP provides: `cdp_*` tools (evaluate, screenshot, console, network)
 | **init** | `init.md` | Session health check & auto-fix. Runs git status, lint, tests, build, SW version, dependency audit in parallel, then reports and auto-fixes critical issues. |
 | **manholes-clickup** | `manholes-clickup.md` | Manage ClickUp tasks/subtasks for the project. Uses ClickUp MCP tools. List ID: `901815260471`. |
 | **design-audit-loop** | `design-audit-loop.md` | Senior product designer running continuous design improvement loop. Captures screenshots, audits UX, delegates fixes to codesmith-engineer agents, verifies, iterates. Playwright MCP singleton — one browser agent at a time. |
+| **vercel-promote** | `.claude/skills/vercel-promote/SKILL.md` | Promote the latest dev preview deployment to production on Vercel. Run after **every** push to dev (enforced by the promote-on-push PostToolUse hook). Vercel MCP first, CLI fallback. |
 
 ### Spawnable Agent Types
 
@@ -288,7 +291,7 @@ Main reusable scripts (the many `_`-prefixed and `capture-*` scripts are one-off
 ## Deployment
 
 - **`dev` branch** → Vercel Preview deployment (auto)
-- **Production** → `npx vercel promote <preview-url> --scope hussam0is-projects` (triggers a fresh production build, not an instant alias swap)
+- **Production** → run the `vercel-promote` skill ([.claude/skills/vercel-promote/SKILL.md](./.claude/skills/vercel-promote/SKILL.md)) after every push to dev; under the hood: `npx vercel promote <preview-url> --scope hussam0is-projects` (triggers a fresh production build, not an instant alias swap)
 - Production URL: `https://manholes-mapper.vercel.app`
 - Preview URL: `https://manholes-mapper-git-dev-hussam0is-projects.vercel.app`
 - After promoting, wait ~1 min for CDN cache invalidation
