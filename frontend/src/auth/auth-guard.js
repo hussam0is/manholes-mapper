@@ -182,10 +182,14 @@ export function redirectIfAuthenticated(currentHash) {
  * @returns {Promise<void>}
  */
 export async function refreshSession() {
-  // DEV BYPASS: On localhost, skip real auth and fake a session
-  // so local development can continue when DB/auth is unavailable
+  // DEV BYPASS: under the Vite dev server on localhost, skip real auth and fake
+  // a session so local development / e2e can continue when DB/auth is
+  // unavailable. Gated on the build-time DEV flag so Vite tree-shakes this block
+  // out of production bundles — previously it was hostname-only and SHIPPED to
+  // prod, faking a session for anyone loading the app on a localhost origin
+  // (e.g. the Capacitor https://localhost WebView).
   const isLocalDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  if (isLocalDev) {
+  if (import.meta.env && import.meta.env.DEV && isLocalDev) {
     console.warn('[Auth] DEV BYPASS: Faking session for local development');
     updateAuthState({
       session: { id: 'dev-session', expiresAt: new Date(Date.now() + 86400000).toISOString() },
