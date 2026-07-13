@@ -1370,6 +1370,9 @@ export async function createIssueNotifications(sketchId, nodeId, commentId, excl
  */
 export async function createMentionNotifications(sketchId, nodeId, commentId, excludeUserId, mentionedUserIds, allowedOrgId = null) {
   if (!mentionedUserIds || mentionedUserIds.length === 0) return 0;
+  // Mentions are scoped to an organization; with no org there is nobody in scope
+  // to notify. Return early (fail closed) rather than run N no-op queries.
+  if (!allowedOrgId) return 0;
   // Get existing participants so we don't double-notify
   const participants = await getIssueParticipants(sketchId, nodeId);
   const participantIds = new Set(participants.map(p => p.user_id));

@@ -45,41 +45,36 @@ import { handleApiError } from '../_lib/error-handler.js';
 export const config = { runtime: 'nodejs' };
 
 /**
- * Verify the caller may attach a sketch to `projectId`: the project must exist
- * and belong to the caller's organization (super_admin may use any project).
+ * Check whether the caller may attach a sketch to `projectId`. Pure — does NOT
+ * touch the response. Returns { ok: true, project } when the project exists and
+ * belongs to the caller's organization (or the caller is super_admin);
+ * otherwise { ok: false } (invalid UUID, missing, or cross-org).
  *
- * On failure this sends the HTTP error response and returns null — the caller
- * MUST return immediately when the result is null. On success it returns the
- * project row (so the caller can read input_flow_config without a second query).
+ * Callers apply "resolve or ignore": attach the project only when ok, otherwise
+ * leave the sketch unattached. This closes the cross-tenant hole (a foreign or
+ * invalid projectId is never written to the sketch, so a user can't plant a
+ * sketch in another org's project or read its input_flow_config) WITHOUT
+ * blocking the user's own save — important because the client echoes the
+ * sketch's current projectId on every autosave, so a hard 404 on an
+ * inaccessible/deleted project would silently drop field edits.
  *
- * This closes a cross-tenant hole: without it, any authenticated user could
- * attach a sketch to another organization's project (poisoning that org's
- * project canvas and stats) and read the project's input_flow_config.
- *
- * @param {import('http').ServerResponse} res
  * @param {string} projectId
  * @param {string} userId
  * @param {object} authUser - session user (for getOrCreateUser)
- * @returns {Promise<object|null>}
+ * @returns {Promise<{ok: boolean, project?: object}>}
  */
-async function resolveProjectForSketch(res, projectId, userId, authUser) {
-  if (!validateUUID(projectId)) {
-    res.status(400).json({ error: 'Invalid projectId format' });
-    return null;
-  }
+async function checkProjectAccess(projectId, userId, authUser) {
+  if (!validateUUID(projectId)) return { ok: false };
   const currentUser = await getOrCreateUser(userId, {
     username: authUser?.name,
     email: authUser?.email,
   });
   const isSuperAdmin = currentUser?.role === 'super_admin';
   const project = await getProjectById(projectId);
-  // Use 404 (not 403) for both missing and cross-org so we don't reveal that a
-  // project with this id exists in another organization.
   if (!project || (!isSuperAdmin && project.organization_id !== currentUser?.organization_id)) {
-    res.status(404).json({ error: 'Project not found' });
-    return null;
+    return { ok: false };
   }
-  return project;
+  return { ok: true, project };
 }
 
 export default async function handler(req, res) {
@@ -242,16 +237,22 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Validation failed', details: validationErrors });
       }
 
-      // Get project's input flow config if projectId is provided.
-      // Verify the caller may attach the sketch to this project (own org, or
-      // super_admin) — otherwise this leaks another org's input_flow_config and
-      // plants a sketch inside their project.
+      // If a projectId is provided, attach the sketch to it ONLY when the caller
+      // may use that project (own org, or super_admin). An inaccessible or
+      // invalid projectId is ignored (sketch created unattached) rather than
+      // rejected — this blocks the cross-org attach / input_flow_config leak
+      // without failing the create (which would strand the sketch in a sync loop
+      // if e.g. its project was just deleted).
       let snapshotInputFlowConfig = body.snapshotInputFlowConfig || {};
+      let projectIdForCreate = null;
       if (body.projectId) {
-        const project = await resolveProjectForSketch(res, body.projectId, userId, authUser);
-        if (!project) return; // error response already sent
-        // Copy the project's input flow config as a snapshot
-        snapshotInputFlowConfig = project.input_flow_config || {};
+        const check = await checkProjectAccess(body.projectId, userId, authUser);
+        if (check.ok) {
+          projectIdForCreate = body.projectId;
+          snapshotInputFlowConfig = check.project.input_flow_config || {};
+        } else {
+          console.warn(`[API /api/sketches] Ignoring inaccessible projectId ${body.projectId} on create`);
+        }
       }
 
       const sketch = await createSketch(userId, {
@@ -262,7 +263,7 @@ export default async function handler(req, res) {
         adminConfig: body.adminConfig || {},
         createdBy: body.createdBy,
         lastEditedBy: body.lastEditedBy,
-        projectId: body.projectId || null,
+        projectId: projectIdForCreate,
         snapshotInputFlowConfig: snapshotInputFlowConfig,
       });
 
@@ -509,19 +510,31 @@ async function handleSingleSketch(req, res, request, sketchId) {
         return res.status(400).json({ error: 'Validation failed', details: validationErrors });
       }
 
-      // If projectId is being set, verify the caller may attach the sketch to it
-      // (own org, or super_admin) before recording it — this closes the same
-      // cross-tenant hole as the create path.
+      // If a projectId is provided, attach ONLY when the caller may use that
+      // project (own org, or super_admin). An inaccessible/invalid projectId is
+      // ignored (projectIdForUpdate stays undefined → updateSketch leaves the
+      // existing project_id untouched) rather than rejected. This closes the
+      // cross-org attach hole WITHOUT blocking the save: the client echoes the
+      // sketch's current projectId on every autosave, so a hard 404 on a
+      // since-deleted / now-foreign project would silently drop field edits.
       let snapshotInputFlowConfig = body.snapshotInputFlowConfig;
+      let projectIdForUpdate; // undefined = don't change project_id
       if (body.projectId) {
-        const project = await resolveProjectForSketch(res, body.projectId, userId, authUser);
-        if (!project) return; // error response already sent
-        if (body.updateInputFlowSnapshot) {
-          snapshotInputFlowConfig = project.input_flow_config || {};
+        const check = await checkProjectAccess(body.projectId, userId, authUser);
+        if (check.ok) {
+          projectIdForUpdate = body.projectId;
+          if (body.updateInputFlowSnapshot) {
+            snapshotInputFlowConfig = check.project.input_flow_config || {};
+          }
+        } else {
+          console.warn(`[API /api/sketches/${sketchId}] Ignoring inaccessible projectId ${body.projectId} on update (keeping current)`);
         }
-      } else if (body.projectId !== undefined && body.updateInputFlowSnapshot) {
-        // projectId explicitly cleared (null) — keep or reset the snapshot.
-        snapshotInputFlowConfig = snapshotInputFlowConfig || {};
+      } else if (body.projectId !== undefined) {
+        // projectId explicitly cleared (null) — detach the sketch from its project.
+        projectIdForUpdate = null;
+        if (body.updateInputFlowSnapshot) {
+          snapshotInputFlowConfig = snapshotInputFlowConfig || {};
+        }
       }
 
       const updated = await updateSketch(sketchId, userId, {
@@ -531,7 +544,7 @@ async function handleSingleSketch(req, res, request, sketchId) {
         edges: body.edges,
         adminConfig: body.adminConfig,
         lastEditedBy: body.lastEditedBy,
-        projectId: body.projectId,
+        projectId: projectIdForUpdate,
         snapshotInputFlowConfig: snapshotInputFlowConfig,
         clientUpdatedAt: body.clientUpdatedAt || null,
         clientVersion: body.clientVersion != null ? body.clientVersion : null,
