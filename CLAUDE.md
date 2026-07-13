@@ -15,6 +15,7 @@ npm run build        # Production build → frontend/dist/
 npm run preview      # Serve production build locally
 npm run format       # Prettier
 npm run mock:tsc3    # Start mock TSC3 receiver server (WS:8765, HTTP:3001)
+npm run dashboard    # Codebase dashboard (scripts/codebase-dashboard.mjs)
 ```
 
 **Android (Capacitor):**
@@ -32,16 +33,18 @@ npm run db:migrate      # Migrate Better Auth tables (needs POSTGRES_URL)
 ## Testing
 
 ```bash
-npm run test:run                              # Run all tests (Vitest, ~490 tests)
+npm run test:run                                   # Run all unit tests (Vitest, ~1790 tests)
 npm run test:run -- tests/unit/gnss-state.test.ts  # Single test file (paths relative to frontend/, the vitest root)
-npm test                                      # Watch mode
+npm test                                           # Watch mode
 ```
 
-Tests use jsdom environment. Setup in `frontend/tests/setup.ts` (loads `.env.local` for `POSTGRES_URL`). API tests hit real Neon Postgres. Test timeout: 30s.
+Config in `frontend/vitest.config.ts`: jsdom environment, setup in `frontend/tests/setup.ts` (loads `.env.local`), 30s test timeout, `pool: 'forks'` with `maxWorkers: 4` (prevents worker crashes on Windows). Path aliases rewrite `../api/_lib` imports to the repo-root `api/_lib/`.
 
-**Test files (22 total):**
-- `frontend/tests/unit/` — auth, auth-helpers, gnss-state, i18n, nmea-parser, permissions, project-canvas-state, projects-homepage, rate-limit, tsc3-parser, validators-extended
-- `frontend/tests/api/` — contracts, sketches, system, validators
+**The default run excludes `tests/e2e/**` (Playwright) and `tests/api/**` (integration tests that hit real Neon Postgres and need `POSTGRES_URL` in `.env.local`).**
+
+**Test layout (~70 files):**
+- `frontend/tests/unit/` — the bulk of tests: auth, GNSS, i18n, canvas rendering, cockpit, field-commander, three-d, project canvas, admin panels, validators, etc.
+- `frontend/tests/api/` — contracts, sketches, system, validators (real DB, excluded by default)
 - `frontend/tests/` (root) — coordinates, edge-cases, map-coordinates, map-layer-integration, map-tile-visibility, security, sync-service
 
 **E2E (Playwright):**
@@ -51,16 +54,16 @@ npx playwright test --project=chromium # Desktop only
 BASE_URL=http://localhost:5173 npx playwright test  # Custom base URL
 ```
 
-E2E config in `frontend/playwright.config.ts`. Tests in `frontend/tests/e2e/`. Runs `npm run dev` automatically via `webServer`. Projects: Desktop Chrome (Chromium) + Mobile Chrome (Pixel 5). Retries: 2 on CI, 0 locally. Screenshots/video on failure.
+E2E config in `frontend/playwright.config.ts`. ~17 specs in `frontend/tests/e2e/` (auth, canvas-drawing, cockpit, project-canvas, rtl-layout, tsc5-field-workflows, …). Runs `npm run dev` automatically via `webServer`. Projects: Desktop Chrome (Chromium) + Mobile Chrome (Pixel 5). Retries: 2 on CI, 0 locally. Screenshots/video on failure.
 
 ## Linting
 
 ```bash
-npm run lint         # ESLint on frontend/rontend/src/**/*.{js,ts}
+npm run lint         # ESLint on frontend/src/**/*.{js,ts}
 npm run lint:fix     # Auto-fix
 ```
 
-ESLint 9+ flat config in `frontend/eslint.config.mjs`. **`frontend/rontend/src/legacy/main.js` is excluded** from linting (monolithic legacy code). Import order enforced: builtin → external → internal → parent/sibling.
+ESLint 9+ flat config in `frontend/eslint.config.mjs`. **`frontend/src/legacy/main.js` is excluded** from linting (legacy core). Import order enforced: builtin → external → internal → parent/sibling.
 
 ## Claude Code Configuration
 
@@ -71,7 +74,7 @@ ESLint 9+ flat config in `frontend/eslint.config.mjs`. **`frontend/rontend/src/
 | **playwright** | Browser automation for E2E testing | `npx @playwright/mcp@latest` |
 | **postgres** | Direct Neon Postgres queries | `npx @modelcontextprotocol/server-postgres` with `POSTGRES_URL` |
 | **vercel** | Vercel deployment management | `npx @mistertk/vercel-mcp@latest` with `VERCEL_API_KEY` |
-| **phone-debug** | Physical phone testing via ADB/CDP | `node service/cdp-mcp/rontend/src/index.js` (CDP_HOST=localhost, CDP_PORT=9222) |
+| **phone-debug** | Physical phone testing via ADB/CDP | `node service/cdp-mcp/src/index.js` (CDP_HOST=localhost, CDP_PORT=9222) |
 
 Phone-debug MCP provides: `cdp_*` tools (evaluate, screenshot, console, network), `gnss_*` tools (position, mock, capture), `app_*` tools (state, navigate, toast, sync, language, map, redraw), `adb_screenshot`.
 
@@ -79,31 +82,32 @@ Phone-debug MCP provides: `cdp_*` tools (evaluate, screenshot, console, network)
 
 | Skill | File | Purpose |
 |-------|------|---------|
-| **manholes-mapper-god** | `manholes-mapper-god.md` (55KB) | Senior full-stack engineer with complete app knowledge. DB schema, API reference, RBAC, GNSS, state globals, deployment, investigation playbooks. Delegates to other skills. |
-| **mobile-phone-tester** | `mobile-phone-tester.md` (57KB) | QA testing on physical Samsung Galaxy Note 10 via ADB. Screen coordinates, touch interaction, GNSS testing, service worker debugging. Chrome 144+ CDP broken — ADB-only. |
-| **manholes-mapper-phone-user** | `manholes-mapper-phone-user.md` (10KB) | Field worker using PWA on Android. ADB commands, screen layout (1080x2280), user workflows (login, draw, GPS, export). |
-| **manholes-mapper-user-tester** | `manholes-mapper-user-tester.md` (5KB) | QA via Playwright + Postgres. 5-phase testing workflow: observe, functional, security, data integrity, edge cases. |
-| **mock-tsc3-controller** | `mock-tsc3-controller.md` (5KB) | Control mock TSC3 WebSocket server. HTTP API at localhost:3001 for sending survey points in ITM coordinates. |
+| **manholes-mapper-god** | `manholes-mapper-god.md` | Senior full-stack engineer with complete app knowledge. DB schema, API reference, RBAC, GNSS, state globals, deployment, investigation playbooks. Delegates to other skills. |
+| **mobile-phone-tester** | `mobile-phone-tester.md` | QA testing on physical Samsung Galaxy Note 10 via ADB. Screen coordinates, touch interaction, GNSS testing, service worker debugging. Chrome 144+ CDP broken — ADB-only. |
+| **manholes-mapper-phone-user** | `manholes-mapper-phone-user.md` | Field worker using PWA on Android. ADB commands, screen layout (1080x2280), user workflows (login, draw, GPS, export). |
+| **manholes-mapper-user-tester** | `manholes-mapper-user-tester.md` | QA via Playwright + Postgres. 5-phase testing workflow: observe, functional, security, data integrity, edge cases. |
+| **mock-tsc3-controller** | `mock-tsc3-controller.md` | Control mock TSC3 WebSocket server. HTTP API at localhost:3001 for sending survey points in ITM coordinates. |
+| **brutal-critic** | `brutal-critic.md` | Harsh design/UX critique pass over the app. |
 | **init** | `init.md` | Session health check & auto-fix. Runs git status, lint, tests, build, SW version, dependency audit in parallel, then reports and auto-fixes critical issues. |
 | **manholes-clickup** | `manholes-clickup.md` | Manage ClickUp tasks/subtasks for the project. Uses ClickUp MCP tools. List ID: `901815260471`. |
 | **design-audit-loop** | `design-audit-loop.md` | Senior product designer running continuous design improvement loop. Captures screenshots, audits UX, delegates fixes to codesmith-engineer agents, verifies, iterates. Playwright MCP singleton — one browser agent at a time. |
 
 ### Spawnable Agent Types
 
-Agents launched via the `Agent` tool with `subagent_type` parameter. Use `model: "opus"` for all spawned agents.
+Agents launched via the `Agent` tool with `subagent_type` parameter.
 
 | Agent Type | Purpose |
 |------------|---------|
 | **general-purpose** | Multi-step research, code search, complex autonomous tasks. Has access to all tools. |
-| **Explore** | Fast codebase exploration — find files by pattern, search code for keywords, answer structural questions. Thoroughness levels: quick/medium/very thorough. Read-only (no edits). |
+| **Explore** | Fast codebase exploration — find files by pattern, search code for keywords, answer structural questions. Read-only (no edits). |
 | **Plan** | Software architect — designs implementation plans, identifies critical files, considers trade-offs. Read-only (no edits). |
 | **code-reviewer** | Comprehensive code review for quality, structure, performance, maintainability. Use after writing/modifying code. |
-| **codesmith-engineer** | Full-stack engineering — deep codebase understanding, multi-file implementations, performance optimization, ML integration, CI/CD. Has all tools. |
+| **codesmith-engineer** | Full-stack engineering — deep codebase understanding, multi-file implementations, performance optimization, CI/CD. Has all tools. |
 | **design-audit-loop-agent** | Autonomous design audit: researches app via Playwright, captures screenshots, audits UX, delegates fixes, verifies, iterates. Has Playwright MCP tools. |
 
 ### Settings (`.claude/settings.local.json`)
 
-Post-tool-use hook: runs `scripts/check-phone-errors.sh` after Edit/Write/Bash (monitors phone error logs).
+Post-tool-use hook: `mcp__clickup__.*` tools trigger `.claude/hooks/clickup-voice-notify.sh`.
 
 Allowed operations include: npm scripts, git commands, node execution, curl, Vercel CLI, MCP servers (playwright, postgres, vercel).
 
@@ -119,70 +123,71 @@ The project is organized into two main areas:
 
 ### Entry Point Flow
 
-`frontend/index.html` → `frontend/rontend/src/main-entry.js` (ES module) → initializes CSS imports, i18n, auth, GNSS, menu system → loads `frontend/rontend/src/legacy/main.js` (core app logic, ~11300 lines).
+`frontend/index.html` → `frontend/src/main-entry.js` (ES module) → initializes CSS imports, i18n, auth, GNSS, menu system → loads `frontend/src/legacy/main.js` (core canvas loop and event wiring).
 
-**Critical load order:** `frontend/rontend/src/capacitor-api-proxy.js` must load before any `fetch()` calls (proxies API for Android native app).
+**Critical load order:** `frontend/src/capacitor-api-proxy.js` must load before any `fetch()` calls (proxies API for Android native app).
 
 CSS is imported via JS (`import '../styles.css'`) for Vite dev/build compatibility — there is no `<link>` tag in HTML.
 
-### Key Directories
+### Key Directories (`frontend/src/`)
 
-- **`frontend/rontend/src/legacy/main.js`** — Monolithic core (~11300 lines): canvas rendering loop, event handlers, sketch CRUD, all panel logic. Being modularized incrementally. **Excluded from ESLint.**
-- **`rontend/src/legacy/shared-state.js`** — Extracted shared state exports (window globals bridge for legacy ↔ ES module communication)
-- **`rontend/src/legacy/gnss-handlers.js`** — Extracted GNSS event handlers (~490 lines): live measure integration, position capture, accuracy display
-- **`rontend/src/legacy/tsc3-handlers.js`** — Extracted TSC3 survey controller handlers (~170 lines): incoming point processing, node matching
-- **`rontend/src/legacy/admin-handlers.js`** — Extracted admin panel handlers (~190 lines): admin config modal, settings import/export
-- **`rontend/src/legacy/library-manager.js`** — Extracted library/catalog management (~530 lines): node type, material, diameter catalog operations
-- **`rontend/src/auth/`** — Better Auth client (`auth-client.js`), session guards (`auth-guard.js` with 5-min polling), React auth UI (`auth-provider.jsx`), sync-service (`sync-service.js` with 2s debounce, AbortController cleanup), permissions/RBAC (`permissions.js`)
-- **`rontend/src/gnss/`** — Live Measure: GNSS state machine (`gnss-state.js` singleton), NMEA parsing (`nmea-parser.js` — GGA/RMC), browser-location-adapter (bridges `navigator.geolocation` → `gnssState`, infers fix quality from accuracy), Bluetooth/WiFi/mock adapters, connection manager, canvas marker rendering (`gnss-marker.js`), point capture dialog
-- **`rontend/src/survey/`** — TSC3 survey controller integration: device picker dialog, TSC3 Bluetooth/WebSocket adapters (Trimble TSC3 receivers), TSC3 NMEA parser, survey node-type dialog, connection manager
-- **`rontend/src/admin/`** — Admin panel (`admin-panel.js` ~26KB: Users/Orgs/Features tabs), admin settings (`admin-settings.js` ~25KB), input flow settings (`input-flow-settings.js` ~28KB: conditional field logic), project settings (`projects-settings.js` ~28KB)
-- **`rontend/src/features/`** — Canvas drawing primitives (`drawing-primitives.js`), graph rendering engine (`rendering.js`), node icons (`node-icons.js` ~13KB: manhole, drainage, house connection icons)
-- **`rontend/src/project/`** — Project canvas mode: `project-canvas-state.js` (multi-sketch Map, active/visibility tracking, sketch switching), `sketch-side-panel.js` (~14KB: collapsible list UI with per-sketch stats, issues sub-panel), `sketch-issues.js` (issue detection: missing coords, missing measurements, total km computation), `issue-highlight.js` (pulsing red ring animation), `last-edit-tracker.js` (tracks last edited position), `project-canvas-renderer.js` (background sketch rendering). **Issue navigation** in `sketch-side-panel.js` → `navigateToIssue()`: "my_location" button uses `goto` mode (`targetScale = 0.21`, 21% zoom — overview level), "swap_horiz" button uses `center_between` mode (dynamic zoom to fit issue + last edit position, capped at 5). Both call `window.__setViewState(scale, tx, ty)` and `startIssueHighlight()`. Zoom display: `viewScale * 100` → shown as percentage.
-- **`rontend/src/menu/`** — Responsive menu system: `menu-events.js` (EventEmitter singleton with delegation), `menu-config.js`, `command-menu.js` (command palette), `action-bar.js`, `header.js`
-- **`rontend/src/map/`** — `projections.js` (ITM/WGS84 via proj4, EPSG:2039), `govmap-layer.js` (~14KB: Israeli map tiles), `tile-manager.js` (~15KB: LRU cache), `reference-layers.js` (~18KB), `street-view.js`, `user-location.js` (geolocation permissions)
-- **`rontend/src/utils/`** — `coordinates.js` (~27KB: CSV parsing/import), `csv.js` (export with formula injection prevention), `sketch-io.js` (JSON import/export, schema v1.1), `floating-keyboard.js` (~14KB: draggable numeric keyboard), `input-flow-engine.js` (~13KB: conditional field evaluation), `resizable-drawer.js`, `backup-manager.js` (hourly/daily), `label-collision.js`, `geometry.js`, `toast.js`, `encoding.js`
-- **`rontend/src/state/`** — `constants.js` (NODE_RADIUS=20, COLORS_LIGHT/DARK palettes, node/edge material/type/diameter catalogs, `isDarkMode()`), `persistence.js` (IndexedDB ↔ localStorage bridging, STORAGE_KEYS)
-- **`rontend/src/dom/`** — `dom-utils.js` (CSS variable sync: `--app-height`, `--header-h`, visualViewport API for mobile)
-- **`rontend/src/graph/`** — `id-utils.js` (numeric ID detection, home internal ID generation)
-- **`rontend/src/serviceWorker/`** — `register-sw.js` (SW registration, 15-min update checks, offline refresh guards)
-- **`rontend/src/db.js`** — IndexedDB wrapper: stores `sketches`, `currentSketch`, `syncQueue`, `backups` (DB version 2)
-- **`rontend/src/i18n.js`** — Full translation dictionary (~37KB) for Hebrew/English
-- **`rontend/src/main-entry.js`** — App entry (~634 lines): auth, i18n, GNSS, menu init, mobile menu, floating keyboard, drawer, FAB toolbar
-- **`rontend/src/capacitor-api-proxy.js`** — API proxy for Capacitor native (redirects `/api/*` to production)
-- **`rontend/src/canvas-fab-toolbar.js`** — Floating action button speed dial
-- **`rontend/src/cockpit/`** — Gamification/mission-control dashboard: `cockpit.js` (~18KB: landscape-first layout, health card, stats), `action-rail.js` (~6KB: contextual action buttons), `completion-engine.js` (~7KB: sketch completeness scoring), `intel-strip.js` (~14KB: smart suggestions), `quick-wins.js` (~10KB: actionable improvement tasks), `session-tracker.js` (~13KB: work session timing and streaks)
-- **`rontend/src/three-d/`** — 3D sketch visualization (Three.js, dynamically imported): `three-d-view.js` (main overlay with OrbitControls, CSS2D labels), `three-d-scene.js` (scene builder — nodes as spheres, edges as tubes), `three-d-materials.js` (edge-type color materials), `three-d-camera-framing.js` (initial camera position), `three-d-fps-controls.js` (WASD + mouse FPS navigation), `three-d-joystick.js` (virtual joystick for mobile), `three-d-miniature.js` (miniature/diorama mode), `three-d-issues.js` (3D issue highlighting)
-- **`rontend/src/pages/`** — Hash-routed full-page views: `profile-page.js` (user profile with stats), `leaderboard-page.js` (org-wide leaderboard), `project-stats-page.js` (per-project analytics)
+- **`legacy/`** — The original monolith, now mostly modularized into ~24 files. `main.js` (~2100 lines, still ESLint-excluded) holds the canvas render loop and top-level wiring. Extracted modules include: `shared-state.js` (window-globals bridge for legacy ↔ ES module communication), `canvas-draw.js`, `pointer-handlers.js`, `graph-crud.js`, `details-panel.js`, `storage-manager.js`, `undo-redo.js`, `gnss-handlers.js`, `tsc3-handlers.js`, `admin-handlers.js`, `library-manager.js`, `coordinate-handlers.js`, `finish-workday.js`, `field-history.js`, `wizard-helpers.js`, `home-renderer.js`, `auth-ui.js`, `i18n-ui.js`, `mobile-menu.js`, `toolbar-events.js`, `project-ui.js`, `view-utils.js`, `app-utils.js`, `legacy-import-loader.js`
+- **`auth/`** — Better Auth client (`auth-client.js`), session guards (`auth-guard.js` with 5-min polling), React auth UI (`auth-provider.jsx`), sync-service (`sync-service.js` with 2s debounce, AbortController cleanup), permissions/RBAC (`permissions.js`)
+- **`gnss/`** — Live Measure: GNSS state machine (`gnss-state.js` singleton), NMEA parsing (`nmea-parser.js` — GGA/RMC), browser-location-adapter (bridges `navigator.geolocation` → `gnssState`, infers fix quality from accuracy), Bluetooth/WiFi/TMM/mock adapters, connection manager, canvas marker rendering (`gnss-marker.js`), point capture dialog, precision-gated measurement (`precision-measure.js`)
+- **`survey/`** — TSC3 survey controller integration: device picker dialog, TSC3 Bluetooth/WebSocket adapters (Trimble TSC3 receivers), TSC3 NMEA parser, survey node-type dialog, connection manager
+- **`admin/`** — Admin panel (`admin-panel.js`: Users/Orgs/Features tabs), admin settings, input flow settings (conditional field logic), project settings
+- **`features/`** — Canvas drawing primitives (`drawing-primitives.js`), graph rendering engine (`rendering.js`), node icons (`node-icons.js`: manhole, drainage, house connection icons), measurement rail (`measurement-rail.js`)
+- **`project/`** — Project canvas mode: `project-canvas-state.js` (multi-sketch Map, active/visibility tracking, sketch switching), `sketch-side-panel.js` (collapsible list UI with per-sketch stats, issues sub-panel, issue navigation via `window.__setViewState` + `startIssueHighlight`), `sketch-issues.js` (issue detection: missing coords, missing measurements, total km computation), `issue-highlight.js` (pulsing red ring animation), `issue-nav-state.js`, `fix-suggestions.js`, `merge-mode.js` (duplicate node merging), `last-edit-tracker.js`, `project-canvas-renderer.js` (background sketch rendering), `project-loading-overlay.js`
+- **`menu/`** — Responsive menu system: `menu-events.js` (EventEmitter singleton with delegation), `menu-config.js`, `command-menu.js` (command palette), `action-bar.js`, `header.js`
+- **`map/`** — `projections.js` (ITM/WGS84 via proj4, EPSG:2039), `govmap-layer.js` (Israeli map tiles), `tile-manager.js` (LRU cache), `reference-layers.js`, `annotation-layer.js` (Leaflet Geoman zones/polygons, autosaved to IndexedDB), `layers-config.js`, `street-view.js`, `user-location.js` (geolocation permissions)
+- **`cockpit/`** — Gamification/mission-control dashboard: `cockpit.js` (landscape-first layout, health card, stats), `action-rail.js`, `completion-engine.js` (sketch completeness scoring), `intel-strip.js` (smart suggestions), `quick-wins.js`, `session-tracker.js`
+- **`field-commander/`** — Mobile UI shell: `fc-shell.js`, `fc-gestures.js`, `fc-panels.js`, `fc-territory.js` (zone-based work assignment), `fc-xp.js` / `fc-achievements.js` (gamification)
+- **`layout/`** — `layout-manager.js`, `unified-sidebar.js`, `unified-toolbar.js`, `micro-status-bar.js` (GPS accuracy HUD badge, offline chip)
+- **`three-d/`** — 3D sketch visualization (Three.js, dynamically imported): `three-d-view.js` (main overlay with OrbitControls, CSS2D labels), `three-d-scene.js` (nodes as spheres, edges as tubes), materials, camera framing, FPS controls (WASD + mouse), virtual joystick (mobile), miniature/diorama mode, 3D issue highlighting
+- **`pages/`** — Hash-routed full-page views: `profile-page.js`, `leaderboard-page.js`, `project-stats-page.js`, `metadata-dashboard.js`
+- **`utils/`** — `coordinates.js` (CSV parsing/import, BFS coordinate propagation), `csv.js` (export with formula injection prevention), `sketch-io.js` (JSON import/export, schema v1.1), `legacy-import.js` (legacy sketch + ITM CSV conversion), `floating-keyboard.js` (draggable numeric keyboard), `input-flow-engine.js` (conditional field evaluation), `spatial-grid.js` (fast hit-testing), `progressive-renderer.js`, `render-cache.js`, `render-perf.js`, `resizable-drawer.js`, `backup-manager.js` (hourly/daily), `label-collision.js`, `geometry.js`, `toast.js`, `encoding.js`, `custom-select.js`, `device-perf.js`
+- **`state/`** — `constants.js` (NODE_RADIUS=20, COLORS_LIGHT/DARK palettes, node/edge material/type/diameter catalogs, `isDarkMode()`), `persistence.js` (IndexedDB ↔ localStorage bridging, STORAGE_KEYS), `app-state.js`, `app-store.js`, `event-bus.js`, `skill-level.js`
+- **`notifications/`** — `notification-bell.js` (notification center UI)
+- **`workers/`** — `data-processor.worker.js` + `worker-manager.js` (Web Worker offloading)
+- **`dom/`** — `dom-utils.js` (CSS variable sync: `--app-height`, `--header-h`, visualViewport API for mobile)
+- **`graph/`** — `id-utils.js` (numeric ID detection, home internal ID generation)
+- **`serviceWorker/`** — `register-sw.js` (SW registration, 15-min update checks, offline refresh guards)
+- **`db.js`** — IndexedDB wrapper: stores `sketches`, `currentSketch`, `syncQueue`, `backups`, `annotations` (DB_VERSION 3)
+- **`i18n.js`** — Full translation dictionary (~2600 lines) for Hebrew/English
+- **`main-entry.js`** — App entry: auth, i18n, GNSS, menu init, mobile menu, floating keyboard, drawer, FAB toolbar
+- **`capacitor-api-proxy.js`** — API proxy for Capacitor native (redirects `/api/*` to production)
+- **`canvas-fab-toolbar.js`** — Floating action button speed dial
 
 ### API Routes (`api/`)
+
+Every resource is a **single `index.js` handler** — there are no `[id].js` dynamic files. `vercel.json` rewrites path params to query params (e.g. `/api/sketches/:id` → `/api/sketches?id=:id`), so URLs look RESTful but handlers branch on `req.query.id` / method / `action`.
 
 All routes require Better Auth session. Rate limited: 100 req/min (20 for auth). CORS configured. Responses use camelCase (DB uses snake_case).
 
 | Route | Methods | Purpose |
 |-------|---------|---------|
 | `/api/auth/*` | ALL | Better Auth handler (signIn, signUp, signOut, session) |
-| `/api/sketches` | GET, POST | List sketches (role-filtered, paginated), create sketch, assign orphans |
-| `/api/sketches/[id]` | GET, PUT, DELETE, POST | Sketch CRUD + lock operations (lock/unlock/refresh/forceUnlock, 30-min expiry) |
-| `/api/projects` | GET, POST | List projects (admin), create project |
-| `/api/projects/[id]` | GET, PUT, DELETE, POST | Project CRUD + duplicate. GET supports `?fullSketches=true` for project-canvas |
-| `/api/organizations` | GET, POST | List/create orgs (admin/super_admin) |
-| `/api/organizations/[id]` | GET, PUT, DELETE | Org CRUD (super_admin) |
-| `/api/users` | GET | List users (admin sees org, super_admin sees all) |
-| `/api/users/[id]` | GET, PUT | User details, update role/org |
+| `/api/sketches`, `/api/sketches/:id` | GET, POST, PUT, DELETE | Sketch list (role-filtered, paginated), CRUD + lock operations (lock/unlock/refresh/forceUnlock, 30-min expiry) |
+| `/api/projects`, `/api/projects/:id` | GET, POST, PUT, DELETE | Project CRUD + duplicate. GET supports `?fullSketches=true` for project-canvas |
+| `/api/organizations`, `/api/organizations/:id` | GET, POST, PUT, DELETE | Org CRUD (admin/super_admin) |
+| `/api/users`, `/api/users/:id` | GET, PUT | List users (admin sees org, super_admin sees all), update role/org |
 | `/api/user-role` | GET | Current user's role, permissions, features. Auto-creates user record. |
-| `/api/features/:targetType/:targetId` | GET, PUT | Feature flags per user/org |
-| `/api/layers`, `/api/layers/[id]` | GET, POST, PUT, DELETE | Project GeoJSON layers (admin) |
+| `/api/features/*` | GET, PUT | Feature flags per user/org |
+| `/api/layers/*` | GET, POST, PUT, DELETE | Project GeoJSON layers (admin) |
 | `/api/issue-comments` | GET, POST | Issue node comments, close/reopen, notifications |
-| `/api/notifications` | GET, POST | Unread notifications (GET with `?count=true` for count), mark read |
-| `/api/stats/leaderboard` | GET | Accuracy leaderboard per project (`?projectId=UUID`) |
+| `/api/notifications/*` | GET, POST | Rewritten to `/api/issue-comments?action=notifications` |
+| `/api/stats/*` | GET | Statistics, e.g. accuracy leaderboard per project |
+| `/api/health` | GET | Health check |
 
 **API library (`api/_lib/`):**
 - `auth.js` — `verifyAuth()`, `parseBody()` (15MB limit), header/cookie helpers
-- `db.js` — All DB operations: sketch/project/org/user/feature/layer/lock CRUD, `ensureDb()` table creation
+- `db.js` — All DB operations: sketch/project/org/user/feature/layer/lock/notification CRUD, `ensureDb()` table creation
 - `validators.js` — MAX_NODES=10000, MAX_EDGES=50000, UUID validation, sketch/user/org/feature input validation
 - `rate-limit.js` — Sliding window per-IP, 60s window, in-memory per serverless instance
 - `cors.js` — Origin resolution, Capacitor `https://localhost` always allowed
+- `csrf.js` — CSRF protection helpers
+- `error-handler.js` — Shared error responses
+- `schema.sql` — Reference schema
 
 **Server library (`lib/auth.js`):** Better Auth config — Neon Postgres, email/password auth, 7-day sessions, 5-min cookie cache, cross-origin for Capacitor.
 
@@ -198,7 +203,7 @@ All routes require Better Auth session. Rate limited: 100 req/min (20 for auth).
 
 ### Node Type Categories
 
-Defined in `rontend/src/state/constants.js` as `NODE_TYPE_CATEGORIES`: **Manhole**, **Home**, **Drainage**, **Covered**, **ForLater**, **Issue**. Each type has a distinct icon drawn by `rontend/src/features/node-icons.js`. The **Issue** node type (red circle with exclamation mark) represents a reported field issue that needs attention — it is excluded from heatmap coloring and completeness scoring.
+Defined in `frontend/src/state/constants.js` as `NODE_TYPE_CATEGORIES`: **Manhole**, **Home**, **Drainage**, **Covered**, **ForLater**, **Issue**. Each type has a distinct icon drawn by `frontend/src/features/node-icons.js`. The **Issue** node type (red circle with exclamation mark) represents a reported field issue that needs attention — it is excluded from heatmap coloring and completeness scoring.
 
 ### Heat Map Mode
 
@@ -213,21 +218,21 @@ Toggle via `body.classList.toggle('heatmap-active')`. When active, nodes are col
 
 ### Internationalization
 
-`rontend/src/i18n.js` exports translations for `he` (Hebrew, RTL, default) and `en` (English). Access via `t('dotted.key')` in JS or `data-i18n="key"` attribute on HTML elements. Both languages must always be kept in sync — every key added to `he` must also be added to `en`.
+`frontend/src/i18n.js` exports translations for `he` (Hebrew, RTL, default) and `en` (English). Access via `t('dotted.key')` in JS or `data-i18n="key"` attribute on HTML elements. Both languages must always be kept in sync — every key added to `he` must also be added to `en`.
 
 ### CSS Architecture
 
-`frontend/styles.css` uses CSS custom properties (design tokens) with dark mode via `@media (prefers-color-scheme: dark)`. Dark mode tokens defined in `:root` override: `--color-surface-alt`, `--color-accent`, `--color-text-bright`, etc. — use these tokens rather than hardcoding hex values in dark mode blocks. `rontend/src/menu/menu.css` has menu-specific styles. Tailwind CSS 4.x used for utility classes (default config, no tailwind.config file).
+`frontend/styles.css` uses CSS custom properties (design tokens) with dark mode via `@media (prefers-color-scheme: dark)`. Dark mode tokens defined in `:root` override: `--color-surface-alt`, `--color-accent`, `--color-text-bright`, etc. — use these tokens rather than hardcoding hex values in dark mode blocks. `frontend/src/menu/menu.css` has menu-specific styles. Tailwind CSS 4.x used for utility classes (default config, no tailwind.config file).
 
 ### Service Worker & Caching
 
-`frontend/public/service-worker.js` uses versioned caches (`APP_VERSION`, currently v36). **Bump `APP_VERSION`** whenever non-fingerprinted files (service-worker.js, styles.css) change — this forces browsers to pick up updates. Vite-built JS/CSS under `/assets/` are fingerprinted and cached automatically.
+`frontend/public/service-worker.js` uses versioned caches keyed by `APP_VERSION` (check the current value at the top of the file). **Bump `APP_VERSION`** whenever non-fingerprinted files (service-worker.js, styles.css) change — this forces browsers to pick up updates. Vite-built JS/CSS under `/assets/` are fingerprinted and cached automatically.
 
 **Caching strategies:** Navigation → network-first (fallback `offline.html`). `/assets/*` → cache-first (fingerprinted). Google Fonts → cache-first. Other same-origin GET → stale-while-revalidate. `/api/*` → skip SW entirely.
 
 **Precache list:** `index.html`, `offline.html`, `manifest.json`, `styles.css`, `fonts/material-icons.woff2`, `app_icon.png`, `health/index.html`.
 
-**Registration:** `rontend/src/serviceWorker/register-sw.js` — HTTPS/localhost only, 15-min update checks, offline refresh guards (blocks F5, beforeunload, swipe-refresh).
+**Registration:** `frontend/src/serviceWorker/register-sw.js` — HTTPS/localhost only, 15-min update checks, offline refresh guards (blocks F5, beforeunload, swipe-refresh).
 
 ### Vite Build
 
@@ -240,9 +245,9 @@ HTTPS dev mode via mkcert available (`@vitejs/plugin-basic-ssl`). HMR disabled u
 
 ### Cross-Module Integration (Window Globals)
 
-ES modules communicate with `rontend/src/legacy/main.js` via window globals since the monolith can't use ES imports:
+ES modules communicate with `frontend/src/legacy/main.js` via window globals since the monolith can't use ES imports:
 
-**Canvas state (set by main.js):**
+**Canvas state (set by main.js / legacy modules):**
 - `window.__getActiveSketchData()` / `window.__setActiveSketchData(data)` — Snapshot/restore sketch state for project canvas switching
 - `window.__scheduleDraw()` — Trigger canvas redraw from any module
 - `window.__setViewState(scale, tx, ty)` — Set `viewScale`/`viewTranslate` programmatically (e.g., issue navigation)
@@ -251,6 +256,7 @@ ES modules communicate with `rontend/src/legacy/main.js` via window globals sin
 - `window.__projectCanvas` — Object with `isProjectCanvasMode()`, `getBackgroundSketches()`, `findNodeInBackground()`, `findEdgeInBackground()`, `switchActiveSketch()`
 - `window.__sketchReadOnly` — Read-only mode flag
 - `window.__issueHighlight` — `{ start(worldX, worldY, durationMs), draw(ctx, ...) }`
+- `window.__markInternalNavigation()` — **must be called before any in-app hash change**, otherwise the exit guard reverts navigation to `#/`
 
 **App-level (set by main-entry.js):**
 - `window.t(key, ...args)` / `window.isRTL()` — i18n translator and RTL check
@@ -266,31 +272,32 @@ ES modules communicate with `rontend/src/legacy/main.js` via window globals sin
 
 ## Scripts (`scripts/`)
 
+Main reusable scripts (the many `_`-prefixed and `capture-*` scripts are one-off data-fix/screenshot utilities):
+
 | Script | Command | Purpose |
 |--------|---------|---------|
 | `mock-tsc3/server.mjs` | `npm run mock:tsc3` | Mock TSC3 WebSocket (WS:8765) + HTTP control (3001). Broadcasts ITM survey points. |
 | `migrate-auth-tables.js` | `npm run db:migrate` | Create Better Auth tables (user, session, account, verification) |
+| `codebase-dashboard.mjs` | `npm run dashboard` | Codebase metrics dashboard |
 | `import-sketches.mjs` | `node scripts/import-sketches.mjs [dataDir]` | Import sketch JSON + merge coordinates from CSV |
-| `setup-data.mjs` | `node scripts/setup-data.mjs` | One-time init: create geopoint_plus org + me_rakat project |
-| `setup_me_rakat.js` | `node scripts/setup_me_rakat.js` | Create org, project, import GIS layers with styles |
 | `query-all-data.js` | `node scripts/query-all-data.js` | Database audit: orgs, users, projects, sketches, features summary |
 | `delete-empty-sketches.js` | `node scripts/delete-empty-sketches.js` | Remove sketches with no nodes/edges |
 | `test-db-connection.js` | `node scripts/test-db-connection.js` | Verify Postgres connection, init schema, count records |
-| `test_app.mjs` | `node scripts/test_app.mjs` | Smoke test via Playwright CDP |
 | `slim_geojson.js` | `node scripts/slim_geojson.js` | Reduce GeoJSON file size (strip verbose properties) |
 
 ## Deployment
 
 - **`dev` branch** → Vercel Preview deployment (auto)
-- **Production** → `npx vercel promote <preview-url>` (promotes preview to production)
+- **Production** → `npx vercel promote <preview-url> --scope hussam0is-projects` (triggers a fresh production build, not an instant alias swap)
 - Production URL: `https://manholes-mapper.vercel.app`
 - Preview URL: `https://manholes-mapper-git-dev-hussam0is-projects.vercel.app`
 - After promoting, wait ~1 min for CDN cache invalidation
-- **Bump `APP_VERSION`** in `frontend/public/service-worker.js` after promoting if non-fingerprinted files changed — phones serve stale-while-revalidate cached JS indefinitely without this
+- **Bump `APP_VERSION`** in `frontend/public/service-worker.js` after promoting if non-fingerprinted files changed — phones serve stale-while-revalidate cached JS indefinitely without this
+- Vercel CLI must be logged in as `hussam0is`
 
 ### Vercel Route Configuration
 
-`vercel.json` rewrites `/api/auth/:path*` and `/api/layers/:path*` to single handlers. CSP and security headers (HSTS, X-Frame-Options, Referrer-Policy) are configured there. API responses have `Cache-Control: no-store, max-age=0`. Geolocation permission enabled, microphone/camera disabled.
+`vercel.json` rewrites all `/:id` API paths to query-param handlers (see API Routes above) and `/api/auth/*`, `/api/layers/*`, `/api/features/*`, `/api/stats/*`, `/api/issue-comments/*`, `/api/notifications/*` to single handlers. CSP and security headers (HSTS, X-Frame-Options, Referrer-Policy) are configured there. API responses have `Cache-Control: no-store, max-age=0`. Geolocation permission enabled, microphone/camera disabled.
 
 ## Environment Variables
 
@@ -298,30 +305,30 @@ Required on Vercel: `BETTER_AUTH_SECRET`, `POSTGRES_URL`. Optional: `BETTER_AUTH
 
 For local API tests: set `POSTGRES_URL` in `.env.local`.
 
-`.env.local` also contains: `POSTGRES_URL_NON_POOLING` (migrations), `DATABASE_URL`, `PGHOST`/`PGUSER`/`PGPASSWORD`, `VERCEL_API_KEY`, `NEON_PROJECT_ID`.
+`.env.local` also contains: `POSTGRES_URL_NON_POOLING` (migrations), `DATABASE_URL`, `PGHOST`/`PGUSER`/`PGPASSWORD`, `VERCEL_API_KEY`, `NEON_PROJECT_ID`. **Back up `.env.local` before running `vercel link` or `vercel env pull` — they overwrite it, and the local-only keys exist nowhere else.**
 
 ## Tech Stack
 
-**Frontend:** Vite 7.x, vanilla JS (ES modules), HTML5 Canvas, React 19 (auth UI only), Tailwind CSS 4.x, proj4 (coordinate transforms)
+**Frontend:** Vite 7.x, vanilla JS (ES modules), HTML5 Canvas, React 19 (auth UI only), Three.js (3D view, dynamic import), Leaflet + Geoman (map annotations), Tailwind CSS 4.x, proj4 (coordinate transforms), papaparse, wicket
 
 **Backend:** Vercel serverless functions (Node.js), Better Auth 1.4.x, Neon Postgres (`@neondatabase/serverless`), `@vercel/postgres`
 
 **Mobile:** Capacitor 8.x (Android), Bluetooth SPP plugin, WiFi TCP plugin
 
-**Testing:** Vitest 4.x (unit, ~490 tests), Playwright 1.58.x (E2E), jsdom 28.x
+**Testing:** Vitest 4.x (unit, ~1790 tests), Playwright 1.5x (E2E), jsdom
 
 **Tooling:** ESLint 9.x (flat config), Prettier 3.x, TypeScript 5.9.x (`strict: false`)
 
 ## Conventions
 
 - **ES Modules** throughout (`"type": "module"` in package.json)
-- TypeScript config with `"strict": false` (gradual migration). Path alias: `@/*` → `rontend/src/*`.
-- Mobile-first: test all UI changes at 360px width. Canvas toolbar and panels must work on touch devices.
+- TypeScript config with `"strict": false` (gradual migration). Path alias: `@/*` → `frontend/src/*`.
+- Mobile-first: test all UI changes at 360px width **and at 640×360 landscape (Trimble TSC5, the primary field device)**. Canvas toolbar and panels must work on touch devices.
 - RTL: all panels must work correctly in Hebrew (RTL). Use `margin-inline-*` / `padding-inline-*` over `margin-left`/`margin-right`.
-- Material Icons self-hosted at `frontend/public/fonts/material-icons.woff2` (CSP blocks CDN loading).
+- Material Icons self-hosted at `frontend/public/fonts/material-icons.woff2` (CSP blocks CDN loading).
 - Health monitoring page at `/health/`.
 - `index.html` defaults to `<html lang="he" dir="rtl">` (Hebrew RTL).
-- Hash-based SPA routing: `#/`, `#/login`, `#/signup`, `#/admin`, `#/projects`.
+- Hash-based SPA routing: `#/`, `#/login`, `#/signup`, `#/admin`, `#/projects`. Always call `window.__markInternalNavigation()` before programmatic hash changes (exit guard).
 - State management: singleton pattern with listener callbacks (gnssState, menuEvents, projectSketches).
 - Legacy ↔ modern communication via window globals (documented above).
 
@@ -331,15 +338,15 @@ App ID: `com.geopoint.manholemapper`. Web dir: `dist/`. Cleartext enabled for de
 
 **Installed plugins:** `@capacitor/core` 8.x, `@capacitor/android` 8.x, `@e-is/capacitor-bluetooth-serial` 6.x (Bluetooth SPP for TSC3 & GNSS receivers). WiFi TCP (`capacitor-tcp-socket`) referenced in code but may need manual install.
 
-**API Proxy (`rontend/src/capacitor-api-proxy.js`):** On native Android, the WebView runs on `https://localhost` with no backend. This module wraps `window.fetch()` to intercept `/api/*` calls and route them to `https://manholes-mapper.vercel.app` with `credentials: 'include'`. **Must load before any fetch() calls** in `rontend/src/main-entry.js`.
+**API Proxy (`frontend/src/capacitor-api-proxy.js`):** On native Android, the WebView runs on `https://localhost` with no backend. This module wraps `window.fetch()` to intercept `/api/*` calls and route them to `https://manholes-mapper.vercel.app` with `credentials: 'include'`. **Must load before any fetch() calls** in `frontend/src/main-entry.js`.
 
 **Build flow:**
 1. `npm run build` → produces `dist/`
-2. `npm run build:android` → syncs `dist/` to `android/app/rontend/src/main/assets/www/`
+2. `npm run build:android` → syncs `dist/` to `android/app/src/main/assets/www/`
 3. `npm run open:android` → opens Android Studio
 4. Build & run from Android Studio (signing config optional for dev)
 
-## TSC3 Survey Controller Connection (`rontend/src/survey/`)
+## TSC3 Survey Controller Connection (`frontend/src/survey/`)
 
 The app connects to Trimble TSC3 survey controllers to receive real-time survey points (ITM coordinates).
 
@@ -370,9 +377,9 @@ The app connects to Trimble TSC3 survey controllers to receive real-time survey 
 
 **Mock TSC3 server (`scripts/mock-tsc3/server.mjs`):** `npm run mock:tsc3` starts WS on port 8765 + HTTP control API on port 3001. HTTP endpoints: `GET /api/status`, `POST /api/send-point`, `POST /api/send-batch`, `GET /api/history`, `POST /api/clear-history`. Web UI at `http://localhost:3001`.
 
-## GNSS Receiver Connection (`rontend/src/gnss/`)
+## GNSS Receiver Connection (`frontend/src/gnss/`)
 
-The app connects to GNSS receivers for live RTK positioning. Three adapter types, one active at a time.
+The app connects to GNSS receivers for live RTK positioning. Adapters (one active at a time): Bluetooth SPP, WiFi TCP, TMM, browser location, mock.
 
 ### Bluetooth SPP (`bluetooth-adapter.js`)
 - Same plugin as TSC3: `@e-is/capacitor-bluetooth-serial`
@@ -419,7 +426,7 @@ adb reverse tcp:8765 tcp:8765                                # Forward mock TSC3
 - Chrome 144+ has broken CDP WebSocket — use ADB-only testing
 - ADB screenshot scale factor: ~1.45 (multiply visual coords by 1.45 for ADB tap)
 - **NEVER** run `pm clear com.android.chrome` or `adb kill-server`
-- Service worker must be bumped (`APP_VERSION` in `frontend/public/service-worker.js`) after deploying non-fingerprinted changes
+- Service worker must be bumped (`APP_VERSION` in `frontend/public/service-worker.js`) after deploying non-fingerprinted changes
 - Deploy-test cycle: push to `dev` → wait 2 min → `npx vercel promote` → bump SW version
 - Use `manholes-mapper-phone-user` or `mobile-phone-tester` skills for phone interaction
 
@@ -436,4 +443,4 @@ adb reverse tcp:8765 tcp:8765                                # Forward mock TSC3
 
 ## Knowledge Base
 
-For a complete catalog of every object, function, button, layout, and DOM element in the app, see [`my_knowledge.md`](./docs/my_knowledge.md). It contains ~2000+ objects organized by module with exact code references, usage patterns, and related objects.
+For a complete catalog of objects, functions, buttons, layouts, and DOM elements in the app, see [`docs/my_knowledge.md`](./docs/my_knowledge.md). Additional docs in `docs/`: `ARCHITECTURE.md`, `API.md`, `ERD.md`, `LEGACY_IMPORT_GUIDE.md`, `MAP_COORDINATES.md`, `TMM_TESTING_GUIDE.md`, security audits, and more.
