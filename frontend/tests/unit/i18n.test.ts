@@ -42,6 +42,18 @@ describe('i18n dictionary', () => {
     expect(heMenu).toEqual(enMenu);
   });
 
+  it('should have matching nested keys for admin section', () => {
+    const heAdmin = Object.keys(i18n.he.admin).sort();
+    const enAdmin = Object.keys(i18n.en.admin).sort();
+    expect(heAdmin).toEqual(enAdmin);
+  });
+
+  it('should have matching nested keys for admin.csvFields section', () => {
+    const heFields = Object.keys(i18n.he.admin.csvFields).sort();
+    const enFields = Object.keys(i18n.en.admin.csvFields).sort();
+    expect(heFields).toEqual(enFields);
+  });
+
   it('should have correct English app title', () => {
     expect(i18n.en.appTitle).toBe('Manhole Mapper');
   });

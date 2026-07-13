@@ -220,6 +220,9 @@ export const defaultAdminConfig = {
       terrain_level: true,
       measure_precision: true,
       fix_type: true,
+      measured_at: true,
+      manual_x: false,
+      manual_y: false,
     },
     defaults: {
       material: NODE_MATERIALS[0],
@@ -275,6 +278,32 @@ export const defaultAdminConfig = {
 };
 
 /**
+ * Merge a stored/imported admin config with the defaults, per key.
+ * A config saved by an older app version (localStorage, or the per-sketch
+ * snapshot stored in the cloud) predates any include/default/option keys
+ * added since, and a shallow merge would drop those new keys forever
+ * (e.g. measure_precision and fix_type never appeared for users whose
+ * config was saved before they existed). Stored values still win over
+ * defaults per key.
+ * @param {object|null|undefined} parsed - Raw config to normalise
+ * @returns {object} Fully normalised config object
+ */
+export function normalizeAdminConfig(parsed) {
+  const defaults = JSON.parse(JSON.stringify(defaultAdminConfig));
+  if (!parsed || typeof parsed !== 'object') return defaults;
+  const merged = { ...defaults, ...parsed };
+  merged.nodes = { ...defaults.nodes, ...(parsed.nodes || {}) };
+  merged.edges = { ...defaults.edges, ...(parsed.edges || {}) };
+  merged.nodes.include = { ...defaults.nodes.include, ...(parsed.nodes?.include || {}) };
+  merged.edges.include = { ...defaults.edges.include, ...(parsed.edges?.include || {}) };
+  merged.nodes.defaults = { ...defaults.nodes.defaults, ...(parsed.nodes?.defaults || {}) };
+  merged.edges.defaults = { ...defaults.edges.defaults, ...(parsed.edges?.defaults || {}) };
+  merged.nodes.options = { ...defaults.nodes.options, ...(parsed.nodes?.options || {}) };
+  merged.edges.options = { ...defaults.edges.options, ...(parsed.edges?.options || {}) };
+  return merged;
+}
+
+/**
  * Load admin config from localStorage, merging with defaults for backward
  * compatibility. Returns a fully normalised config object.
  * @returns {object}
@@ -283,18 +312,7 @@ export function loadAdminConfig() {
   try {
     const raw = localStorage.getItem(ADMIN_STORAGE_KEY);
     if (!raw) return JSON.parse(JSON.stringify(defaultAdminConfig));
-    const parsed = JSON.parse(raw);
-    const merged = { ...JSON.parse(JSON.stringify(defaultAdminConfig)), ...parsed };
-    // Normalize nested shapes for backward compatibility
-    merged.nodes = merged.nodes || {};
-    merged.edges = merged.edges || {};
-    merged.nodes.options = merged.nodes.options || {};
-    merged.edges.options = merged.edges.options || {};
-    merged.nodes.include = merged.nodes.include || {};
-    merged.edges.include = merged.edges.include || {};
-    merged.nodes.defaults = merged.nodes.defaults || {};
-    merged.edges.defaults = merged.edges.defaults || {};
-    return merged;
+    return normalizeAdminConfig(JSON.parse(raw));
   } catch (e) {
     console.warn('[App] Failed to load admin config; using defaults', e.message);
     return JSON.parse(JSON.stringify(defaultAdminConfig));

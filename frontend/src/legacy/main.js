@@ -169,7 +169,7 @@ import { normalizeLegacySketch, loadFromStorage, saveToStorage, debouncedSaveToS
 // Project dropdown and flyout UI — [Extracted to src/legacy/project-ui.js]
 import { fetchProjects, renderProjectDropdown, getProjectInputFlowConfig, syncFlyoutIcon, closeFlyout, initProjectUI } from './project-ui.js';
 // Utility functions and canvas helpers — [Extracted to src/legacy/app-utils.js]
-import { getCurrentUsername, updateNodeTimestamp, updateEdgeTimestamp, synthesizeClickOnTap, updateSketchNameDisplay, getCachedCanvasRect, invalidateCanvasRectCache, markEdgeLabelCacheDirty, resizeCanvas, scheduleResizeCanvas, saveAdminConfig, defaultAdminConfig, loadAdminConfig } from './app-utils.js';
+import { getCurrentUsername, updateNodeTimestamp, updateEdgeTimestamp, synthesizeClickOnTap, updateSketchNameDisplay, getCachedCanvasRect, invalidateCanvasRectCache, markEdgeLabelCacheDirty, resizeCanvas, scheduleResizeCanvas, saveAdminConfig, defaultAdminConfig, loadAdminConfig, normalizeAdminConfig } from './app-utils.js';
 // Graph CRUD — [Extracted to src/legacy/graph-crud.js]
 import { newSketch, createNode, createEdge, createDanglingEdge, createInboundDanglingEdge, findIncompleteEdges, markRequiredFields, isNodeIncomplete, findNextIncompleteNode, centerOnNode } from './graph-crud.js';
 // Wizard helpers — [Extracted to src/legacy/wizard-helpers.js]
@@ -836,20 +836,9 @@ if (adminScreenImportBtn && adminScreenImportFile) {
           : null;
       if (!incoming) { showToast(t('admin.importInvalid')); return; }
       function normalize(config) {
-        const merged = { ...JSON.parse(JSON.stringify(defaultAdminConfig)), ...config };
-        merged.nodes = merged.nodes || {};
-        merged.edges = merged.edges || {};
-        const incNodes = { ...defaultAdminConfig.nodes.include, ...(merged.nodes.include || {}) };
-        const incEdges = { ...defaultAdminConfig.edges.include, ...(merged.edges.include || {}) };
-        Object.keys(incNodes).forEach(k => { incNodes[k] = !!incNodes[k]; });
-        Object.keys(incEdges).forEach(k => { incEdges[k] = !!incEdges[k]; });
-        merged.nodes.include = incNodes;
-        merged.edges.include = incEdges;
-        // customFields removed
-        merged.nodes.options = merged.nodes.options || {};
-        merged.edges.options = merged.edges.options || {};
-        merged.nodes.defaults = merged.nodes.defaults || {};
-        merged.edges.defaults = merged.edges.defaults || {};
+        const merged = normalizeAdminConfig(config);
+        Object.keys(merged.nodes.include).forEach(k => { merged.nodes.include[k] = !!merged.nodes.include[k]; });
+        Object.keys(merged.edges.include).forEach(k => { merged.edges.include[k] = !!merged.edges.include[k]; });
         return merged;
       }
       adminConfig = normalize(incoming);
@@ -1938,7 +1927,10 @@ window.__setActiveSketchData = (data) => {
   currentSketchId = data.sketchId || null;
   currentSketchName = data.sketchName || null;
   currentProjectId = data.projectId || null;
-  adminConfig = data.adminConfig || adminConfig;
+  // Normalise per-sketch config snapshots: sketches saved by older app
+  // versions lack include/option keys added since (their CSV exports would
+  // silently drop those columns), and an empty {} would export zero columns.
+  adminConfig = data.adminConfig ? normalizeAdminConfig(data.adminConfig) : adminConfig;
   currentInputFlowConfig = data.inputFlowConfig || currentInputFlowConfig;
   S._nodeMapDirty = true;
   S._spatialGridDirty = true;

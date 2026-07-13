@@ -96,8 +96,23 @@ export function csvQuote(value) {
   return '"' + safe.replace(/"/g, '""') + '"';
 }
 
-export function exportNodesCsv(nodes, adminConfig, _t) {
+/**
+ * Format a measurement timestamp for CSV as a sortable, Excel-friendly
+ * local date-time string (YYYY-MM-DD HH:mm). Empty string when absent/invalid.
+ * @param {number|string|null} ts - Timestamp (ms since epoch)
+ * @returns {string}
+ */
+function formatCsvDate(ts) {
+  if (ts == null || ts === '') return '';
+  const d = new Date(ts);
+  if (isNaN(d.getTime())) return '';
+  const pad = (v) => String(v).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+export function exportNodesCsv(nodes, adminConfig, _t, opts = {}) {
   const include = adminConfig.nodes?.include || {};
+  const coordinatesMap = opts.coordinatesMap;
   const headers = [];
   const rowFor = (n) => {
     const row = [];
@@ -120,11 +135,20 @@ export function exportNodesCsv(nodes, adminConfig, _t) {
     if (include.terrain_level) row.push(csvQuote(n.surveyZ != null ? n.surveyZ.toFixed(3) : ''));
     if (include.measure_precision) row.push(csvQuote(n.measure_precision != null ? n.measure_precision.toFixed(3) : ''));
     if (include.fix_type) {
-      const fixLabel = n.gnssFixQuality === 4 ? 'Fixed' :
-        n.gnssFixQuality === 5 ? 'Device Float' :
-        'Manual Float';
+      // Mirror the details-panel rule: explicit quality 4/5 wins; otherwise
+      // nodes whose coordinates came from an imported cords file count as
+      // Fixed; nodes without survey coordinates have no fix type at all.
+      let fixLabel = '';
+      if (n.surveyX != null || n.surveyY != null) {
+        const inMap = !!(coordinatesMap && coordinatesMap.has(String(n.id)));
+        const fq = (n.gnssFixQuality === 4 || n.gnssFixQuality === 5)
+          ? n.gnssFixQuality
+          : (inMap ? 4 : 6);
+        fixLabel = fq === 4 ? 'Fixed' : fq === 5 ? 'Device Float' : 'Manual Float';
+      }
       row.push(csvQuote(fixLabel));
     }
+    if (include.measured_at) row.push(csvQuote(formatCsvDate(n.measuredAt)));
     if (include.manual_x) row.push(csvQuote(n.manual_x != null ? n.manual_x.toFixed(3) : ''));
     if (include.manual_y) row.push(csvQuote(n.manual_y != null ? n.manual_y.toFixed(3) : ''));
     return row.join(',');
@@ -142,6 +166,7 @@ export function exportNodesCsv(nodes, adminConfig, _t) {
   if (include.terrain_level) headers.push('TL');
   if (include.measure_precision) headers.push('Precision');
   if (include.fix_type) headers.push('Fix_Type');
+  if (include.measured_at) headers.push('Measured_Date');
   if (include.manual_x) headers.push('Manual_X');
   if (include.manual_y) headers.push('Manual_Y');
   const lines = [headers.map(csvQuote).join(',')];

@@ -205,7 +205,11 @@ export class AdminSettings {
     Object.keys(include).forEach(k => {
       const checked = include[k] ? 'checked' : '';
       const id = `inc_${cfgKey}_${k}`;
-      const label = this.t(`admin.csvFields.${k}`) || k;
+      // t() echoes the dotted path for missing keys (truthy), so compare
+      // against the path to fall back to the bare key name instead.
+      const labelPath = `admin.csvFields.${k}`;
+      const translated = this.t(labelPath);
+      const label = (translated && translated !== labelPath) ? translated : k;
       const item = document.createElement('label');
       item.className = 'admin-toggle-item';
       item.innerHTML = `

@@ -204,7 +204,7 @@ export function initToolbarEvents() {
       }
       showToast(t('toasts.exporting'));
       const { exportNodesCsv } = await import('../utils/csv.js');
-      const csvContent = 'sep=,\r\n' + exportNodesCsv(S.nodes, S.adminConfig, t).replace(/\n/g, '\r\n');
+      const csvContent = 'sep=,\r\n' + exportNodesCsv(S.nodes, S.adminConfig, t, { coordinatesMap: S.coordinatesMap }).replace(/\n/g, '\r\n');
       const bytes = encodeUtf16LeWithBom(csvContent);
       const blob = new Blob([bytes], { type: 'text/csv;charset=utf-16le;' });
       const url = URL.createObjectURL(blob);
