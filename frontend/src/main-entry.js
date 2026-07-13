@@ -266,7 +266,10 @@ if (typeof window !== 'undefined') {
 
   // Initialize notification bell (polls for unread issue notifications)
   onAuthStateChange((state) => {
-    if (state.isAuthenticated) {
+    // auth-guard's state exposes `isSignedIn` (not `isAuthenticated`); the wrong
+    // key left this always-undefined, so the bell never initialized and the whole
+    // notifications feature was dead in production.
+    if (state.isSignedIn) {
       initNotificationBell();
     } else {
       destroyNotificationBell();
