@@ -16,6 +16,10 @@ import { handleApiError } from '../_lib/error-handler.js';
 
 export const config = { runtime: 'nodejs' };
 
+// Upper bound on sketches scanned for a project leaderboard. Loading full nodes
+// JSONB per sketch is memory-heavy; this caps the scan to protect the function.
+const MAX_LEADERBOARD_SKETCHES = 1000;
+
 export default async function handler(req, res) {
   if (handleCors(req, res)) return;
 
@@ -30,37 +34,45 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Verify auth — SECURITY FIX: check error field, not truthiness
-  const { userId, error: authError, user: authUser } = await verifyAuth(request);
-  if (authError) {
-    return res.status(401).json({ error: authError });
+  // Everything below can hit the DB; wrap it so a transient failure returns a
+  // sanitized 500/503 (via handleApiError) instead of crashing the invocation
+  // with an unhandled rejection. Sub-handlers are awaited so their rejections
+  // are caught here too (a bare `return handlerX()` would escape this try).
+  try {
+    // Verify auth — SECURITY FIX: check error field, not truthiness
+    const { userId, error: authError, user: authUser } = await verifyAuth(request);
+    if (authError) {
+      return res.status(401).json({ error: authError });
+    }
+
+    await ensureDb();
+
+    // Parse path: /api/stats/leaderboard or /api/stats?type=leaderboard
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const pathParts = url.pathname.split('/').filter(Boolean);
+    const subPath = pathParts[2] || url.searchParams.get('type') || '';
+
+    // Get user record for org-scoped access
+    const userRecord = await getOrCreateUser(userId, {
+      username: authUser?.name, email: authUser?.email,
+    });
+
+    if (subPath === 'leaderboard' && req.method === 'GET') {
+      return await handleLeaderboard(req, res, url, userId, userRecord);
+    }
+
+    if (subPath === 'workload' && req.method === 'GET') {
+      return await handleWorkload(req, res, url, userId, userRecord);
+    }
+
+    if (subPath === 'metadata' && req.method === 'GET') {
+      return await handleMetadata(req, res, url, userId, userRecord);
+    }
+
+    return res.status(404).json({ error: 'Not found' });
+  } catch (error) {
+    return handleApiError(error, res, '[API /api/stats]');
   }
-
-  await ensureDb();
-
-  // Parse path: /api/stats/leaderboard or /api/stats?type=leaderboard
-  const url = new URL(req.url, `http://${req.headers.host}`);
-  const pathParts = url.pathname.split('/').filter(Boolean);
-  const subPath = pathParts[2] || url.searchParams.get('type') || '';
-
-  // Get user record for org-scoped access
-  const userRecord = await getOrCreateUser(userId, {
-    username: authUser?.name, email: authUser?.email,
-  });
-
-  if (subPath === 'leaderboard' && req.method === 'GET') {
-    return handleLeaderboard(req, res, url, userId, userRecord);
-  }
-
-  if (subPath === 'workload' && req.method === 'GET') {
-    return handleWorkload(req, res, url, userId, userRecord);
-  }
-
-  if (subPath === 'metadata' && req.method === 'GET') {
-    return handleMetadata(req, res, url, userId, userRecord);
-  }
-
-  return res.status(404).json({ error: 'Not found' });
 }
 
 async function handleLeaderboard(req, res, url, userId, userRecord) {
@@ -86,10 +98,17 @@ async function handleLeaderboard(req, res, url, userId, userRecord) {
         return res.status(403).json({ error: 'Access denied to this project' });
       }
     }
+    // Bound the scan: loading full nodes JSONB for an unbounded number of
+    // sketches can exhaust the serverless memory/time budget. Cap it and warn
+    // if we hit the cap so the truncation isn't silent.
     const result = await sql`
       SELECT nodes FROM sketches WHERE project_id = ${projectId}
+      LIMIT ${MAX_LEADERBOARD_SKETCHES}
     `;
     sketches = result.rows || result;
+    if (sketches.length === MAX_LEADERBOARD_SKETCHES) {
+      console.warn(`[API /api/stats] Leaderboard for project ${projectId} truncated at ${MAX_LEADERBOARD_SKETCHES} sketches`);
+    }
   } else {
     // SECURITY FIX: Scope to user's organization instead of all sketches
     let result;
