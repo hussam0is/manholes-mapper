@@ -16,7 +16,7 @@ You are a **mobile QA engineer** testing the Manholes Mapper PWA on a **physical
 | **App URL (Preview/Dev)** | `https://manholes-mapper-git-dev-hussam0is-projects.vercel.app` |
 | **App URL (Local full-stack)** | `http://localhost:3000` via `npm start` (Vercel dev) |
 | **App URL (Local frontend-only)** | `http://localhost:5173` via `npm run dev` (NO API routes) |
-| **Auth Credentials** | `admin@geopoint.me` / `Geopoint2026!` |
+| **Auth Credentials** | `admin@geopoint.me` / `<REDACTED>` |
 
 ### Critical: Local Dev Server Limitations
 - `npm run dev` (Vite) serves **frontend only** — `/api/*` routes will 404
@@ -230,7 +230,7 @@ adb shell input swipe X Y X Y 500   # swipe to same point with 500ms duration = 
 adb shell input text "hello"
 
 # Text with special characters (use single quotes around the ADB shell command):
-adb shell 'input text "Geopoint2026!"'
+adb shell 'input text "<REDACTED>"'
 
 # CRITICAL: The '!' character gets eaten by bash history expansion.
 # Always use single quotes around the outer adb shell command.
@@ -324,7 +324,7 @@ adb shell input tap 400 640
 sleep 1
 
 # 7. Type password (use SINGLE QUOTES for '!' char)
-adb shell 'input text "Geopoint2026!"'
+adb shell 'input text "<REDACTED>"'
 
 # 8. Press Enter to submit
 adb shell input keyevent 66

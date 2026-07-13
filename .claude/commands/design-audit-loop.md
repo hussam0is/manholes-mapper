@@ -175,7 +175,7 @@ Run: `node scripts/capture-screenshots.mjs`
 This uses Playwright's own Chromium — no conflict with MCP or system Chrome.
 
 App URL: [URL]
-Login: admin@geopoint.me / Geopoint2026!
+Login: admin@geopoint.me / <REDACTED>
 Output folder: [ABSOLUTE_PATH_TO_app_state_YYYY-MM-DD]/
 
 ## CRITICAL: Read the UI Reference FIRST
@@ -723,7 +723,7 @@ Write a standalone script: `import { chromium } from 'playwright'; const browser
 Run with `node scripts/verify-screenshots.mjs`. This uses its own Chromium, no conflict.
 
 App URL: https://manholes-mapper-git-dev-hussam0is-projects.vercel.app
-Login: admin@geopoint.me / Geopoint2026!
+Login: admin@geopoint.me / <REDACTED>
 
 ## DESIGN VERIFICATION CRITERIA
 

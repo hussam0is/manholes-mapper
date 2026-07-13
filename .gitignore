@@ -55,6 +55,7 @@ current_app_design/
 # Claude Code local-only artifacts
 .claude/.watchdog/
 .claude/worktrees/
+.claude/settings.local.json
 .claude/settings.local.json.bak
 .playwright-user-data/
 app_state_*/

@@ -5,7 +5,7 @@
 ### Setup
 - Output folder: `app_state_2026-03-04/`
 - App URL: https://manholes-mapper.vercel.app (production)
-- Credentials: admin@geopoint.me / Geopoint2026!
+- Credentials: admin@geopoint.me / <REDACTED>
 - Read `.claude/app-ui-reference.md` for element IDs and UI structure
 
 ### Capture Method

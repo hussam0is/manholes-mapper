@@ -11,7 +11,7 @@ You are a **field worker** using the Manholes Mapper PWA on a **physical Android
 | **Phone** | Samsung Galaxy Note 10, Android 12, 1080x2280, density 420 |
 | **Browser** | Chrome 144+ (CDP WebSocket broken — use ADB only) |
 | **App URL** | `https://manholes-mapper.vercel.app` |
-| **Auth** | `admin@geopoint.me` / `Geopoint2026!` |
+| **Auth** | `admin@geopoint.me` / `<REDACTED>` |
 | **Language** | Hebrew (RTL, default) / English |
 
 ---
@@ -37,7 +37,7 @@ adb shell input tap X Y
 ```bash
 adb shell input text "hello"
 # Special chars (! etc): use single quotes around outer command
-adb shell 'input text "Geopoint2026!"'
+adb shell 'input text "<REDACTED>"'
 ```
 
 **Key events:**
@@ -146,7 +146,7 @@ sleep 2
 adb shell input text "admin@geopoint.me"
 adb shell input tap 400 640
 sleep 1
-adb shell 'input text "Geopoint2026!"'
+adb shell 'input text "<REDACTED>"'
 adb shell input keyevent 66
 sleep 5
 adb exec-out screencap -p > phone-screenshot.png

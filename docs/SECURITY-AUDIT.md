@@ -54,7 +54,7 @@ if (authError) {
 ### C3: Hardcoded Admin Credentials in Git-Tracked Scripts
 
 **Files (7 files):** `scripts/capture-final.mjs`, `scripts/capture-remaining.mjs`, `scripts/capture-app-state.mjs`, `scripts/capture-app-state-v2.mjs`, `scripts/capture-app-state-v3.mjs`, `scripts/design-audit-capture.mjs`, `scripts/verify-app-v105.mjs`
-**Description:** All contain `{ email: 'admin@geopoint.me', password: 'Geopoint2026!' }` in plaintext.
+**Description:** All contain `{ email: 'admin@geopoint.me', password: '<REDACTED>' }` in plaintext.
 
 **Remediation:**
 1. Change the admin password immediately.

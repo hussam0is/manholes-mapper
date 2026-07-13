@@ -47,7 +47,7 @@ It is read by Claude Code's `/manholes-mapper-god` skill for deep context.
 - **Task Prefixes**: FEATURE:, BUG:, UPGRADE:
 
 ## Auth Credentials
-- Admin: admin@geopoint.me / Geopoint2026! (super_admin role)
+- Admin: admin@geopoint.me / <REDACTED> (super_admin role)
 
 ## Deployment
 - `dev` branch -> Vercel Preview (auto)

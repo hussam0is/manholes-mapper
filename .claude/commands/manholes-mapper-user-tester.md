@@ -274,7 +274,7 @@ Run these steps before any test workflow on the dev deployment:
 ```
 browser_navigate('https://manholes-mapper-git-dev-hussam0is-projects.vercel.app/#/login')
 browser_fill_form(email, 'admin@geopoint.me')
-browser_fill_form(password, 'Geopoint2026!')
+browser_fill_form(password, '<REDACTED>')
 browser_click(submit)
 ```
 

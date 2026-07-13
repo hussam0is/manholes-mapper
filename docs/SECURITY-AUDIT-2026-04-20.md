@@ -26,8 +26,8 @@ _None._
 
 ### H1 — Rotated credential still in public git history
 - **Where:** commits `051f1c4e`, `c0c11eb2`, `72bba215`, `1f7426a3` (and several branches, including `remotes/origin/master`, `remotes/origin/dev`)
-- **What:** A Neon Postgres connection string with password `npg_Y5Pbts4zrZBc` (user `neondb_owner`, host `ep-polished-wave-aiccisto-pooler.c-4.us-east-1.aws.neon.tech`) was committed in the file `update-vercel-env.sh`. It was removed from the working tree on 2026-03-22 by commit `1f7426a3` ("security(C2): remove update-vercel-env.sh from git tracking"), but remains fully visible in git history.
-- **Status:** **Rotated.** The current `.env.local` uses a different password (`npg_SCQA8fmVd2Gr`), confirming the old credential was cycled. Impact today: none.
+- **What:** A Neon Postgres connection string with password `npg_<REDACTED>` (user `neondb_owner`, host `ep-polished-wave-aiccisto-pooler.c-4.us-east-1.aws.neon.tech`) was committed in the file `update-vercel-env.sh`. It was removed from the working tree on 2026-03-22 by commit `1f7426a3` ("security(C2): remove update-vercel-env.sh from git tracking"), but remains fully visible in git history.
+- **Status:** **Rotated.** The current `.env.local` uses a different password (`npg_<REDACTED>`), confirming the old credential was cycled. Impact today: none.
 - **Recommendation (low urgency):** If you want to scrub history, use `git filter-repo --invert-paths --path update-vercel-env.sh` (or BFG Repo-Cleaner), force-push all branches, and ask GitHub support to purge cached forks/PRs. Otherwise, leave as-is — the secret is dead.
 
 ### H2 — npm high-severity vulnerabilities (fixes available)

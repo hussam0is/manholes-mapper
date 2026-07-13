@@ -206,7 +206,7 @@ Full step-by-step for running TSC3 mock testing via Playwright on the dev deploy
 browser_navigate('https://manholes-mapper-git-dev-hussam0is-projects.vercel.app/#/login')
 browser_snapshot() → find email/password fields
 browser_fill_form(email ref, 'admin@geopoint.me')
-browser_fill_form(password ref, 'Geopoint2026!')
+browser_fill_form(password ref, '<REDACTED>')
 browser_click(submit button ref)
 ```
 

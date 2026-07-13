@@ -824,7 +824,7 @@ To invoke a sub-skill (mobile-phone-tester, manholes-mapper-phone-user, manholes
 
 ```
 Admin email:    admin@geopoint.me
-Admin password: Geopoint2026!
+Admin password: <REDACTED>
 Role:           super_admin
 ```
 
@@ -1062,7 +1062,7 @@ Reusable boilerplate for browser-based testing. Use this before any Playwright t
 browser_navigate('https://manholes-mapper-git-dev-hussam0is-projects.vercel.app/#/login')
 browser_snapshot()
 browser_fill_form({ ref for email field }, 'admin@geopoint.me')
-browser_fill_form({ ref for password field }, 'Geopoint2026!')
+browser_fill_form({ ref for password field }, '<REDACTED>')
 browser_click({ ref for submit button })
 ```
 

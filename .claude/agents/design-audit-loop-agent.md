@@ -115,7 +115,7 @@ Before navigating, read `.claude/app-ui-reference.md` — it contains every elem
 
 ### Step 0.4 — Browse and capture
 
-Use Playwright MCP to navigate the app. Login credentials: `admin@geopoint.me` / `Geopoint2026!`
+Use Playwright MCP to navigate the app. Login credentials: `admin@geopoint.me` / `<REDACTED>`
 
 **Workflows to capture:**
 
