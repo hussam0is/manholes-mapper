@@ -1368,7 +1368,7 @@ export async function createIssueNotifications(sketchId, nodeId, commentId, excl
 /**
  * Create notifications for @mentioned users who are not already participants
  */
-export async function createMentionNotifications(sketchId, nodeId, commentId, excludeUserId, mentionedUserIds) {
+export async function createMentionNotifications(sketchId, nodeId, commentId, excludeUserId, mentionedUserIds, allowedOrgId = null) {
   if (!mentionedUserIds || mentionedUserIds.length === 0) return 0;
   // Get existing participants so we don't double-notify
   const participants = await getIssueParticipants(sketchId, nodeId);
@@ -1379,11 +1379,20 @@ export async function createMentionNotifications(sketchId, nodeId, commentId, ex
   let count = 0;
   for (const uid of mentionedUserIds) {
     if (participantIds.has(uid)) continue; // Already notified via participant notifications
-    await sql`
+    // Only notify users who belong to the sketch's organization. This prevents
+    // cross-org mention injection: without it, a commenter could push their
+    // comment content + sketch name into ANY user's notification feed by UUID.
+    // A conditional INSERT keeps the org check atomic with the write.
+    const result = await sql`
       INSERT INTO issue_notifications (user_id, sketch_id, node_id, comment_id, type)
-      VALUES (${uid}, ${sketchId}, ${nodeId}, ${commentId}, 'mention')
+      SELECT ${uid}, ${sketchId}, ${nodeId}, ${commentId}, 'mention'
+      WHERE EXISTS (
+        SELECT 1 FROM users u
+        WHERE u.id = ${uid} AND u.organization_id = ${allowedOrgId}
+      )
+      RETURNING id
     `;
-    count++;
+    if (result.rows.length > 0) count++;
   }
   return count;
 }

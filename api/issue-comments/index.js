@@ -31,6 +31,9 @@ import { handleApiError } from '../_lib/error-handler.js';
 
 export const config = { runtime: 'nodejs' };
 
+// Upper bound on @mentions per comment (prevents insert-amplification DoS).
+const MAX_MENTIONS = 50;
+
 export default async function handler(req, res) {
   if (handleCors(req, res)) return;
   if (verifyCsrf(req, res)) return;
@@ -122,8 +125,12 @@ export default async function handler(req, res) {
         return res.status(404).json({ error: 'Sketch not found' });
       }
 
-      // SECURITY FIX: Validate mentionedUserIds as UUIDs
+      // SECURITY FIX: Validate mentionedUserIds — bounded count + UUID format.
+      // The count cap prevents one request from triggering thousands of INSERTs.
       if (Array.isArray(mentionedUserIds)) {
+        if (mentionedUserIds.length > MAX_MENTIONS) {
+          return res.status(400).json({ error: `Too many mentions (max ${MAX_MENTIONS})` });
+        }
         for (const mid of mentionedUserIds) {
           if (!validateUUID(mid)) {
             return res.status(400).json({ error: 'Invalid mentionedUserIds — each must be a valid UUID' });
@@ -148,9 +155,12 @@ export default async function handler(req, res) {
       const notificationType = isCloseAction ? 'issue_closed' : isReopenAction ? 'issue_reopened' : 'new_comment';
       await createIssueNotifications(sketchId, nodeId, comment.id, userId, notificationType);
 
-      // Create mention notifications for explicitly @mentioned users (who aren't already participants)
+      // Create mention notifications for explicitly @mentioned users (who aren't already participants).
+      // Scoped to the sketch's organization to prevent cross-org mention injection.
       if (Array.isArray(mentionedUserIds) && mentionedUserIds.length > 0) {
-        await createMentionNotifications(sketchId, nodeId, comment.id, userId, mentionedUserIds);
+        const ownerSketch = await getSketchByIdAdmin(sketchId);
+        const sketchOrgId = ownerSketch?.owner_organization_id || null;
+        await createMentionNotifications(sketchId, nodeId, comment.id, userId, mentionedUserIds, sketchOrgId);
       }
 
       return res.status(201).json({ comment });
