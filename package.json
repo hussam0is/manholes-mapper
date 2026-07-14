@@ -14,6 +14,9 @@
     "run:android": "npx cap run android",
     "db:migrate": "node scripts/migrate-auth-tables.js",
     "mock:tsc3": "node scripts/mock-tsc3/server.mjs",
+    "soak": "node --expose-gc scripts/soak/run-soak.mjs standard",
+    "soak:quick": "node --expose-gc scripts/soak/run-soak.mjs quick",
+    "soak:extended": "node --expose-gc scripts/soak/run-soak.mjs extended",
     "dashboard": "node scripts/codebase-dashboard.mjs",
     "god-mode": "node manholes-mapper-god-agent/daemon.mjs",
     "task-agent": "node manholes-mapper-god-agent/task-agent.mjs"
