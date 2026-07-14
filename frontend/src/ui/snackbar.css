@@ -123,6 +123,18 @@
   color: var(--color-text, #1f2937);
 }
 
+/* compact status pill (zoom %, size %, selection…): one per channel,
+   updated in place — minimal chrome, reads like the classic toast */
+.snackbar-item[data-compact] {
+  min-height: 32px;
+  padding: 6px 16px;
+  border-radius: var(--radius-full, 999px);
+  gap: 0;
+}
+.snackbar-item[data-compact]::before {
+  display: none;
+}
+
 .snackbar-progress {
   position: absolute;
   inset-inline: 0;

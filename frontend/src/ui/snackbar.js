@@ -63,6 +63,11 @@ function promoteQueue() {
  * @param {number} [opts.duration]      ms; defaults per variant
  * @param {string} [opts.icon]          material icon name override
  * @param {boolean} [opts.sticky]       never auto-dismiss
+ * @param {string} [opts.channel]       status channel: at most one visible item
+ *                                      per channel — a new show UPDATES it in
+ *                                      place instead of stacking (zoom %, size %…)
+ * @param {boolean} [opts.compact]      minimal status-pill look: no icon, no
+ *                                      close button, no progress bar
  * @param {Array<{label: string, onClick?: Function, primary?: boolean}>} [opts.actions]
  * @returns {{ dismiss: () => void, el: HTMLElement|null }}
  */
@@ -75,11 +80,26 @@ export function showSnackbar(opts) {
     duration,
     icon,
     sticky = false,
+    channel = '',
+    compact = false,
     actions = [],
   } = opts || {};
   const variant = VARIANTS.includes(opts?.variant) ? opts.variant : 'info';
 
   ensureContainer();
+
+  // Channelled status: update the existing pill in place — rapid-fire values
+  // (zoom 53% → 58% → 64%…) must never pile up as separate cards.
+  if (channel) {
+    const existing = visibleItems().find((el) => el.getAttribute('data-channel') === channel);
+    if (existing && existing.__snackbarRefresh) {
+      const msgEl = existing.querySelector('.snackbar-msg');
+      if (msgEl) msgEl.textContent = message;
+      existing.__snackbarMessage = message;
+      existing.__snackbarRefresh();
+      return { dismiss: existing.__snackbarDismiss, el: existing };
+    }
+  }
 
   // Dedup: an identical visible message just gets its timer refreshed.
   // (data-kind is unset for kind-less items — normalize both sides to ''.)
@@ -152,14 +172,18 @@ export function showSnackbar(opts) {
     el.className = 'snackbar-item';
     el.setAttribute('data-variant', variant);
     if (kind) el.setAttribute('data-kind', kind);
+    if (channel) el.setAttribute('data-channel', channel);
+    if (compact) el.setAttribute('data-compact', '');
     el.setAttribute('role', variant === 'error' || variant === 'warning' ? 'alert' : 'status');
     el.__snackbarMessage = message;
 
-    const iconEl = document.createElement('span');
-    iconEl.className = 'material-icons snackbar-icon';
-    iconEl.setAttribute('aria-hidden', 'true');
-    iconEl.textContent = icon || ICONS[variant];
-    el.appendChild(iconEl);
+    if (!compact) {
+      const iconEl = document.createElement('span');
+      iconEl.className = 'material-icons snackbar-icon';
+      iconEl.setAttribute('aria-hidden', 'true');
+      iconEl.textContent = icon || ICONS[variant];
+      el.appendChild(iconEl);
+    }
 
     const body = document.createElement('div');
     body.className = 'snackbar-body';
@@ -194,15 +218,17 @@ export function showSnackbar(opts) {
       el.appendChild(actionsEl);
     }
 
-    const closeBtn = document.createElement('button');
-    closeBtn.type = 'button';
-    closeBtn.className = 'material-icons snackbar-close';
-    closeBtn.setAttribute('aria-label', window.t?.('snackbar.dismiss') || 'Dismiss');
-    closeBtn.textContent = 'close';
-    closeBtn.addEventListener('click', dismiss);
-    el.appendChild(closeBtn);
+    if (!compact) {
+      const closeBtn = document.createElement('button');
+      closeBtn.type = 'button';
+      closeBtn.className = 'material-icons snackbar-close';
+      closeBtn.setAttribute('aria-label', window.t?.('snackbar.dismiss') || 'Dismiss');
+      closeBtn.textContent = 'close';
+      closeBtn.addEventListener('click', dismiss);
+      el.appendChild(closeBtn);
+    }
 
-    if (!sticky) {
+    if (!sticky && !compact) {
       const progress = document.createElement('div');
       progress.className = 'snackbar-progress';
       const fill = document.createElement('div');
@@ -256,6 +282,22 @@ export function showSnackbar(opts) {
 }
 
 /**
+ * Transient status readout (zoom %, size %, selection…): one compact pill per
+ * channel, updated IN PLACE on rapid-fire calls — never stacks.
+ * @param {string} message
+ * @param {string} [channel='status']
+ */
+export function showStatus(message, channel = 'status') {
+  return showSnackbar({
+    message: String(message ?? ''),
+    variant: 'info',
+    channel: `status-${channel}`,
+    compact: true,
+    duration: 1400,
+  });
+}
+
+/**
  * Legacy-compatible toast API (same signature as utils/toast.js showToast).
  * @param {string} message
  * @param {string|number} [variantOrDuration]
@@ -278,4 +320,5 @@ export function showToast(message, variantOrDuration, durationMs) {
 if (typeof window !== 'undefined' && !window.showToast) {
   window.showToast = showToast;
   window.showSnackbar = showSnackbar;
+  window.showStatus = showStatus;
 }
