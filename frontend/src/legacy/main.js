@@ -1921,6 +1921,9 @@ window.toggleUserLocationTracking = toggleUserLocationTracking;
 window.__createNodeFromMeasurement = createNodeFromMeasurement;
 window.__markInternalNavigation = () => markInternalNavigation();
 window.__setActiveSketchData = (data) => {
+  // New sketch context: clear gradient transition memory + pending timers so
+  // alerts and edge-id signatures never leak across sketch switches.
+  window.__gradientEngine?.reset?.();
   nodes = data.nodes || [];
   edges = data.edges || [];
   nextNodeId = data.nextNodeId || 1;

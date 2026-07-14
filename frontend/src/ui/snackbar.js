@@ -34,7 +34,8 @@ function ensureContainer() {
   container = document.createElement('div');
   container.id = 'snackbarContainer';
   container.setAttribute('role', 'region');
-  container.setAttribute('aria-live', 'polite');
+  // no aria-live here — each item carries role=status/alert; a live container
+  // would double-announce every insertion to screen readers
   container.setAttribute('aria-label', 'notifications');
   document.body.appendChild(container);
   return container;
@@ -81,8 +82,9 @@ export function showSnackbar(opts) {
   ensureContainer();
 
   // Dedup: an identical visible message just gets its timer refreshed.
+  // (data-kind is unset for kind-less items — normalize both sides to ''.)
   const dup = visibleItems().find(
-    (el) => el.getAttribute('data-kind') === kind && el.__snackbarMessage === message,
+    (el) => (el.getAttribute('data-kind') || '') === (kind || '') && el.__snackbarMessage === message,
   );
   if (dup && dup.__snackbarRefresh) {
     dup.__snackbarRefresh();
@@ -96,15 +98,21 @@ export function showSnackbar(opts) {
   let startedAt = 0;
 
   const dismiss = () => {
-    if (dismissed || !el) return;
-    dismissed = true;
+    if (dismissed) return;
+    dismissed = true; // also cancels a still-queued show()
+    if (!el) return;
     if (timerId) clearTimeout(timerId);
     el.classList.add('leaving');
+    let removed = false;
     const remove = () => {
+      if (removed) return;
+      removed = true;
       el?.remove();
       promoteQueue();
     };
-    el.addEventListener('transitionend', remove, { once: true });
+    // only the item's own transition — the progress fill's transitionend
+    // bubbles up and would truncate the exit animation
+    el.addEventListener('transitionend', (ev) => { if (ev.target === el) remove(); });
     setTimeout(remove, 400); // fallback if transitions are disabled
   };
 
@@ -137,7 +145,9 @@ export function showSnackbar(opts) {
     }
   };
 
+  let hovered = false;
   const show = () => {
+    if (dismissed) return; // dismissed while still queued
     el = document.createElement('div');
     el.className = 'snackbar-item';
     el.setAttribute('data-variant', variant);
@@ -204,8 +214,8 @@ export function showSnackbar(opts) {
     // Hover-pause is a mouse affordance only: touch taps fire pointerenter
     // without a reliable pointerleave and would freeze the stack (TSC5 is
     // touch-first). A hard max-lifetime failsafe guards the queue regardless.
-    el.addEventListener('pointerenter', (ev) => { if (ev.pointerType === 'mouse') pauseTimer(); });
-    el.addEventListener('pointerleave', (ev) => { if (ev.pointerType === 'mouse') startTimer(); });
+    el.addEventListener('pointerenter', (ev) => { if (ev.pointerType === 'mouse') { hovered = true; pauseTimer(); } });
+    el.addEventListener('pointerleave', (ev) => { if (ev.pointerType === 'mouse') { hovered = false; startTimer(); } });
     if (!sticky) {
       const maxLifetime = (duration ?? DEFAULT_DURATION[variant]) * 3 + 5000;
       setTimeout(dismiss, maxLifetime);
@@ -214,7 +224,7 @@ export function showSnackbar(opts) {
     el.__snackbarRefresh = () => {
       pauseTimer();
       remaining = sticky ? Infinity : (duration ?? DEFAULT_DURATION[variant]);
-      startTimer();
+      if (!hovered) startTimer(); // stay paused under the cursor
     };
 
     container.appendChild(el);

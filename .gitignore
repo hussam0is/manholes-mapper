@@ -84,3 +84,4 @@ scripts/test-app-nav.mjs
 scripts/test-arrows.mjs
 scripts/test-view-all*.mjs
 scripts/session-watchdog.sh
+frontend/audit-results/

@@ -208,6 +208,8 @@ export function deleteEdgeShared(edge, pushToUndo = true, skipConfirm = false) {
   }
 
   S.edges = S.edges.filter(e => e !== edge);
+  // Drop gradient timers/alerts keyed to this edge (ids can be reused)
+  window.__gradientEngine?.onEdgeDeleted(edge);
 
   if (S.selectedEdge && S.selectedEdge.id === edge.id) {
     S.selectedEdge = null;

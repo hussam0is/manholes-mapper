@@ -1,6 +1,7 @@
 /*
  * snackbar.css — stacking actionable snackbars (Wolt-style feedback cards).
- * z-index 170: above #toast (160), below the app header (200).
+ * z-index 1700: above the floating numeric keyboard (1500) — gradient alerts
+ * fire exactly while typing depths — and below the 3D overlay (2000).
  * Tokens that exist only in the dark-mode :root block always get a light
  * fallback via var(--x, fallback).
  */
@@ -13,7 +14,7 @@
   flex-direction: column-reverse;
   align-items: center;
   gap: 8px;
-  z-index: 170;
+  z-index: 1700;
   pointer-events: none;
   padding-inline: 16px;
 }

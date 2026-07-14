@@ -310,7 +310,10 @@ export function computeSketchIssues(nodes, edges) {
 
     let isNegative = false;
     let gradientM = null;
-    if (g.status === 'negative') {
+    // Terrain basis (no depths yet) is a transient early warning handled by
+    // the live snackbar — counting it as a persistent issue would flood the
+    // panel and crash the completion score mid-survey, before depths exist.
+    if (g.status === 'negative' && g.basis !== 'terrain') {
       isNegative = true;
       gradientM = Math.abs(g.drop ?? 0);
     } else if (g.status === 'unknown') {
@@ -370,7 +373,9 @@ export function computeSketchIssues(nodes, edges) {
   // so either field satisfies the requirement.
   for (const node of nodes) {
     if (node.nodeType === 'Home') continue;
-    const hasTl = !(node.tl == null || node.tl === '');
+    // 0 means "not measured" for both fields (parsers coerce missing to 0)
+    const tlNum = Number(node.tl);
+    const hasTl = !(node.tl == null || node.tl === '' || Number.isNaN(tlNum) || tlNum === 0);
     const z = Number(node.surveyZ);
     const hasZ = node.surveyZ != null && node.surveyZ !== '' && !Number.isNaN(z) && z !== 0;
     if (node.surveyX != null && node.surveyY != null && !hasTl && !hasZ) {

@@ -140,7 +140,8 @@ export function computeSketchCompletion() {
   const negGradient = connectedEdges.filter(e => {
     const g = computeEdgeGradient(e, (id) => nodeById.get(String(id)));
     if (g.status === 'exempt') return false;
-    if (g.status === 'negative') return true;
+    // terrain basis = transient early warning, not a scored issue (matches sketch-issues.js)
+    if (g.status === 'negative') return g.basis !== 'terrain';
     if (g.status !== 'unknown') return false;
     const tail = parseFloat(e.tail_measurement);
     const head = parseFloat(e.head_measurement);

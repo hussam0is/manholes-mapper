@@ -57,8 +57,10 @@ export function handleTSC3PointReceived(pointName, coords, isNew, nodeType) {
   node.surveyX = coords.easting;
   node.surveyY = coords.northing;
   node.surveyZ = coords.elevation;
-  // Terrain level: same physical quantity the issue engine checks as node.tl
-  node.tl = coords.elevation;
+  // Terrain level: same physical quantity the issue engine checks as node.tl.
+  // The parser coerces a missing elevation to 0 — writing tl=0 would silently
+  // suppress missing_tl detection, so only store real elevations.
+  if (Number(coords.elevation)) node.tl = coords.elevation;
   node.measure_precision = 0.02; // TSC3 RTK default precision (meters)
   node.gnssFixQuality = 4; // TSC3 delivers RTK Fixed coordinates
   // Measurement metadata
@@ -96,7 +98,7 @@ export function handleTSC3PointReceived(pointName, coords, isNew, nodeType) {
 
   // Smart check: gradients of every pipe touching this node, the moment the
   // measurement lands (negative-gradient alerts fire from the engine).
-  window.__gradientEngine?.onMeasurementApplied(node.id);
+  const gradientResults = window.__gradientEngine?.onMeasurementApplied(node.id) || [];
 
   // Select the node and update UI
   S.selectedNode = node;
@@ -117,20 +119,22 @@ export function handleTSC3PointReceived(pointName, coords, isNew, nodeType) {
   }
 
   // Measurement confirmation (Wolt-style: say what happened, with the numbers).
-  // Skip the success message when the new segment is bad — the engine's
-  // negative-gradient alert is already on screen and must not compete.
+  // Skip the success message when this shot raised a gradient problem on ANY
+  // touched pipe — the engine's alert is on screen and must not compete.
+  // Applies uniformly to new shots and re-measures.
+  const anyGradientProblem = gradientResults.some(
+    (g) => g && (g.status === 'negative' || g.status === 'low'),
+  );
   const elevText = Number(coords.elevation) ? Number(coords.elevation).toFixed(2) : '?';
   let slopeSuffix = '';
-  let newSegmentBad = false;
   if (isNew && prevSurveyNodeId) {
     const chainEdge = S.edges.find(
       (e) => String(e.tail) === String(prevSurveyNodeId) && String(e.head) === String(node.id),
     );
     const g = chainEdge ? window.__gradientEngine?.compute(chainEdge) : null;
-    if (g?.status === 'negative' || g?.status === 'low') newSegmentBad = true;
-    else if (g?.status === 'ok' && g.slopePct != null) slopeSuffix = t('survey.slopeToPrev', g.slopePct.toFixed(1)) || '';
+    if (g?.status === 'ok' && g.slopePct != null) slopeSuffix = t('survey.slopeToPrev', g.slopePct.toFixed(1)) || '';
   }
-  if (!newSegmentBad) {
+  if (!anyGradientProblem) {
     if (isNew) {
       const typeKey = `nodeTypeLabel.${String(node.nodeType || 'Manhole').toLowerCase()}`;
       const rawLabel = t(typeKey);

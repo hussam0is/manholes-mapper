@@ -31,6 +31,9 @@ import * as fs from 'fs';
 
 const MOCK = 'http://localhost:3001';
 const EXPECT_SMART = process.env.AUDIT_EXPECT_SMART === '1';
+// NOT test-results/: Playwright auto-cleans its outputDir at run start, which
+// would destroy the previous mode's findings/screenshots between runs.
+const OUT_DIR = 'audit-results';
 
 test.use({
   viewport: { width: 640, height: 360 },
@@ -56,9 +59,12 @@ function note(area: string, severity: 'info' | 'minor' | 'major', text: string, 
 }
 
 test.afterAll(async () => {
-  fs.mkdirSync('test-results', { recursive: true });
+  // afterAll also runs in the skipped Mobile Chrome project — an empty
+  // skeleton must never clobber the desktop run's findings.
+  if (Object.keys(findings).length <= 2 && findings.notes.length === 0) return;
+  fs.mkdirSync(OUT_DIR, { recursive: true });
   fs.writeFileSync(
-    `test-results/full-network-audit-findings-${findings.mode}.json`,
+    `${OUT_DIR}/full-network-audit-findings-${findings.mode}.json`,
     JSON.stringify(findings, null, 2),
   );
 });
@@ -236,13 +242,17 @@ test('full network build via TSC3 emulator: UX audit + gradient intelligence', a
   await setup(page);
 
   // ── Phase 1: connect to the TSC3 emulator ─────────────────────────────────
+  // Delta-based: a bystander client (e.g. a real device on the same mock)
+  // must not make this pass vacuously — require OUR connection to appear.
+  const clientsBefore =
+    (await request.get(`${MOCK}/api/status`).then((r) => r.json())).connectedClients ?? 0;
   const tConn = Date.now();
   await page.evaluate(() => (window as any).menuEvents?.emit('connectSurveyWebSocket'));
   await expect
     .poll(async () => (await request.get(`${MOCK}/api/status`).then((r) => r.json())).connectedClients, {
       timeout: 10_000,
     })
-    .toBeGreaterThan(0);
+    .toBeGreaterThan(clientsBefore);
   const connectMs = Date.now() - tConn;
   const badge = await page.evaluate(() => document.getElementById('surveyConnectionBadge')?.textContent?.trim() ?? '');
   record('connect', { connectMs, badge });
@@ -270,7 +280,7 @@ test('full network build via TSC3 emulator: UX audit + gradient intelligence', a
     if (p.pointName === 'MH-104') {
       const fb = await feedbackState(page);
       record('feedback.atNegativeGradientMoment', fb);
-      await page.screenshot({ path: 'test-results/audit-negative-gradient-moment.png' });
+      await page.screenshot({ path: `${OUT_DIR}/audit-negative-gradient-moment.png` });
       if (EXPECT_SMART) {
         expect(fb.engineAlerts, 'gradient engine present and exposing alerts').not.toBeNull();
         expect(
@@ -331,7 +341,7 @@ test('full network build via TSC3 emulator: UX audit + gradient intelligence', a
   }
   await page.evaluate(() => (window as any).zoomToFit?.());
   await page.waitForTimeout(500);
-  await page.screenshot({ path: 'test-results/audit-full-network.png' });
+  await page.screenshot({ path: `${OUT_DIR}/audit-full-network.png` });
 
   // ── Phase 6: depth measurements via the details panel ────────────────────
   // Bad edge MH-103→MH-104: inverts 104.10-1.50=102.60 → 104.55-1.20=103.35 (RISES → negative)
@@ -350,7 +360,7 @@ test('full network build via TSC3 emulator: UX audit + gradient intelligence', a
   await page.waitForTimeout(600);
   const fbDepth = await feedbackState(page);
   record('feedback.afterBadDepthEntry', fbDepth);
-  await page.screenshot({ path: 'test-results/audit-depth-entry.png' });
+  await page.screenshot({ path: `${OUT_DIR}/audit-depth-entry.png` });
   if (EXPECT_SMART) {
     expect(
       fbDepth.engineAlerts!.some((a: any) => String(a.edgeId) === badEdge.id && a.basis === 'invert' && a.status === 'negative'),
@@ -436,5 +446,5 @@ test('full network build via TSC3 emulator: UX audit + gradient intelligence', a
   record('flickerProbe', 'zoom pulse x24, pan sweep x16, heatmap toggle x2, sidebar close — inspect video');
 
   record('consoleErrors', consoleErrors.slice(0, 20));
-  await page.screenshot({ path: 'test-results/audit-final.png' });
+  await page.screenshot({ path: `${OUT_DIR}/audit-final.png` });
 });

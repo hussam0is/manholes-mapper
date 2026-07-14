@@ -176,6 +176,12 @@ function fmtSlope(slopePct) {
   return slopePct == null ? '' : `${Math.abs(slopePct).toFixed(1)}%`;
 }
 
+// A long uphill run would otherwise warn on every consecutive shot (terrain
+// basis fires before depths exist) — one snackbar per cooldown window is
+// enough; every alert is still recorded in activeAlerts.
+let lastTerrainSnackbarAt = 0;
+const TERRAIN_SNACKBAR_COOLDOWN_MS = 10_000;
+
 function notifyFor(edge, result) {
   const show = typeof window !== 'undefined' ? window.showSnackbar : null;
   if (!show) return;
@@ -183,11 +189,19 @@ function notifyFor(edge, result) {
   const head = String(edge.head);
 
   if (result.status === 'negative') {
+    if (result.basis === 'terrain') {
+      const now = Date.now();
+      if (now - lastTerrainSnackbarAt < TERRAIN_SNACKBAR_COOLDOWN_MS) return;
+      lastTerrainSnackbarAt = now;
+    }
     const riseCm = result.drop != null ? Math.round(Math.abs(result.drop) * 100) : null;
+    // slopePct is null on very short/unmeasurable segments — fall back to the
+    // absolute rise so the message never renders empty parentheses
+    const slopeText = result.slopePct != null ? fmtSlope(result.slopePct) : (riseCm != null ? `${riseCm} cm` : '');
     const message =
       result.basis === 'invert'
-        ? (tt('gradient.negativeInvert', tail, head, fmtSlope(result.slopePct)) ||
-           `Pipe ${tail} → ${head} runs uphill (${fmtSlope(result.slopePct)}) — check measurements or flow direction`)
+        ? (tt('gradient.negativeInvert', tail, head, slopeText) ||
+           `Pipe ${tail} → ${head} runs uphill (${slopeText}) — check measurements or flow direction`)
         : (tt('gradient.negativeTerrain', tail, head, riseCm) ||
            `Ground rises ${riseCm ?? '?'}cm along flow on ${tail} → ${head} — verify the shot`);
     show({
@@ -293,9 +307,24 @@ export function onDepthChanged(edgeOrId, delayMs = 600) {
     key,
     setTimeout(() => {
       depthTimers.delete(key);
-      evaluateEdge(edge);
+      // Re-resolve by id at fire time: the edge may have been deleted (or the
+      // active sketch switched) during the debounce window.
+      const live = (S.edges || []).find((e) => String(e.id) === key);
+      if (live) evaluateEdge(live);
     }, delayMs),
   );
+}
+
+/** An edge was removed — drop its timers, transition memory, and alert. */
+export function onEdgeDeleted(edgeOrId) {
+  const key = String(edgeOrId && typeof edgeOrId === 'object' ? edgeOrId.id : edgeOrId);
+  const timer = depthTimers.get(key);
+  if (timer) {
+    clearTimeout(timer);
+    depthTimers.delete(key);
+  }
+  lastSignature.delete(key);
+  activeAlerts.delete(key);
 }
 
 /** Re-evaluate the whole sketch (silent by default — used on load/import). */
@@ -330,6 +359,7 @@ if (typeof window !== 'undefined') {
     evaluateEdge,
     onMeasurementApplied,
     onEdgeCreated,
+    onEdgeDeleted,
     onDepthChanged,
     recheckAll,
     getAlerts,

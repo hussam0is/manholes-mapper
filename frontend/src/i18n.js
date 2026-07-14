@@ -864,8 +864,9 @@ export const i18n = {
       error: 'שגיאת חיבור למכשיר מדידה',
       pointUpdated: (id) => `נקודה ${id} עודכנה`,
       pointCreated: (type, id) => `נוצר ${type} ${id}`,
-      measuredNew: (type, id, z) => `${type} ${id} נמדד/ה • גובה ${z} מ'`,
-      measuredAgain: (id, z) => `${id} נמדדה מחדש • גובה ${z} מ'`,
+      // ⁦..⁩ (LRI/PDI) keep latin point-ids reading left-to-right inside RTL text
+      measuredNew: (type, id, z) => `מדידה חדשה: ${type} ⁦${id}⁩ • גובה ${z} מ'`,
+      measuredAgain: (id, z) => `מדידה עודכנה: ⁦${id}⁩ • גובה ${z} מ'`,
       slopeToPrev: (slope) => ` • שיפוע ${slope}% ✓`,
       newPointTitle: 'נקודת מדידה חדשה',
       newPointDesc: (name) => `נקודה "${name}" לא נמצאה. בחר סוג:`,
@@ -874,13 +875,15 @@ export const i18n = {
       connectToPrevious: 'חבר לנקודה הקודמת',
     },
     gradient: {
+      // pipe fragments wrapped in ⁦..⁩ (LRI/PDI) so the tail → head
+      // arrow keeps its true flow direction inside the RTL sentence
       negativeTitle: 'שיפוע שלילי',
       negativeInvert: (tail, head, slope) =>
-        `קו ${tail} → ${head}: תחתית הצינור עולה בכיוון הזרימה (${slope}) — בדוק מדידות או כיוון זרימה`,
+        `קו ⁦${tail} → ${head}⁩: תחתית הצינור עולה בכיוון הזרימה (${slope}) — בדוק מדידות או כיוון זרימה`,
       negativeTerrain: (tail, head, riseCm) =>
-        `קו ${tail} → ${head}: פני הקרקע עולים ${riseCm} ס"מ בכיוון הזרימה — מומלץ לוודא את המדידה`,
-      lowSlope: (tail, head, slope) => `קו ${tail} → ${head}: שיפוע נמוך (${slope})`,
-      resolved: (tail, head) => `השיפוע בקו ${tail} → ${head} תקין כעת`,
+        `קו ⁦${tail} → ${head}⁩: פני הקרקע עולים ${riseCm} ס"מ בכיוון הזרימה — מומלץ לוודא את המדידה`,
+      lowSlope: (tail, head, slope) => `קו ⁦${tail} → ${head}⁩: שיפוע נמוך (${slope})`,
+      resolved: (tail, head) => `השיפוע בקו ⁦${tail} → ${head}⁩ תקין כעת`,
       view: 'הצג',
     },
     snackbar: {
@@ -1366,7 +1369,7 @@ export const i18n = {
     sidebarTitle: 'Details',
     sidebarNodeTitle: (type, id) => `${type} #${id}`,
     sidebarEdgeTitle: (tail, head) => `Edge ${tail} → ${head}`,
-    nodeTypeLabel: { manhole: 'Node', home: 'Home', drainage: 'Drainage', covered: 'Covered', issue: 'Issue' },
+    nodeTypeLabel: { manhole: 'Manhole', home: 'Home', drainage: 'Drainage', covered: 'Covered', issue: 'Issue' },
     edgeLabel: 'Edge',
     detailsDefault: 'Select a node or edge to edit.',
     startTitle: 'Start New Sketch',
@@ -2161,8 +2164,8 @@ export const i18n = {
       error: 'Survey device connection error',
       pointUpdated: (id) => `Point ${id} updated`,
       pointCreated: (type, id) => `Created ${type} ${id}`,
-      measuredNew: (type, id, z) => `${type} ${id} measured • elev. ${z}m`,
-      measuredAgain: (id, z) => `${id} re-measured • elev. ${z}m`,
+      measuredNew: (type, id, z) => `New measurement: ${type} ${id} • elev. ${z}m`,
+      measuredAgain: (id, z) => `Measurement updated: ${id} • elev. ${z}m`,
       slopeToPrev: (slope) => ` • slope ${slope}% ✓`,
       newPointTitle: 'New Survey Point',
       newPointDesc: (name) => `Point "${name}" not found. Choose node type:`,
