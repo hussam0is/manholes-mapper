@@ -10,7 +10,7 @@
 
 import { Capacitor } from '@capacitor/core';
 
-const PRODUCTION_API = 'https://manholes-mapper.vercel.app';
+const PRODUCTION_API = 'https://manholes-mapper-three.vercel.app';
 
 export function isCapacitorNative() {
   try {

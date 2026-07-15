@@ -1,17 +1,15 @@
 ---
 name: vercel-promote
-description: Promote the latest dev preview deployment to production on Vercel for the manholes-mapper project. Run this EVERY time a commit is pushed to the dev branch — the project workflow requires promoting every push — and whenever the user says "promote", "deploy to production", "ship it", "release", "push to prod", "make it live", or asks why production is behind dev. Prefers Vercel MCP tools when connected; falls back to the authenticated Vercel CLI.
+description: Verify that a push to dev deployed to production on Vercel for the manholes-mapper project (since the 2026-07-15 account move, dev IS the production branch — no promote step exists anymore). Run this EVERY time a commit is pushed to the dev branch, and whenever the user says "promote", "deploy to production", "ship it", "release", "push to prod", "make it live", or asks why production is behind dev.
 ---
 
-# Promote dev → production on Vercel
+# Verify dev → production deployment on Vercel
 
-Project: `manholes-mapper` (projectId `prj_Nk3oHkTZXsIceR9mGlg5lg27k2Go`, team `hussam0is-projects`).
-Production: https://manholes-mapper.vercel.app
-Dev preview alias: https://manholes-mapper-git-dev-hussam0is-projects.vercel.app
-
-Pushing to `dev` only builds a **preview** deployment. Production updates when that deployment
-is explicitly promoted — that is what this skill does. The project rule is: **every commit pushed
-to dev gets promoted**, so run this at the end of any turn that pushed to dev.
+Project: `manholes-mapper` on team **`gis-6579s-projects`** (moved from `hussam0is-projects`
+on 2026-07-15 after the GitHub repo transferred to `geopoint-ltd`).
+Production: https://manholes-mapper-three.vercel.app
+**The production branch IS `dev`** — every push to `dev` auto-builds a production deployment.
+There is no promote step anymore; this skill now verifies the auto-deploy succeeded.
 
 ## Step 0 — Preconditions
 
@@ -22,69 +20,51 @@ to dev gets promoted**, so run this at the end of any turn that pushed to dev.
    at the top of `frontend/public/service-worker.js`, bump it now, commit, push, and continue
    with that new SHA — otherwise phones keep serving stale cached files indefinitely.
 
-## Step 1 — Pick the tooling: MCP first, CLI fallback
+## Step 1 — Tooling
 
-The repo configures a Vercel MCP server (`vercel` in `.mcp.json`, needs `VERCEL_API_KEY`).
-If its tools are connected (search deferred tools for "vercel"), use its deployment tools for
-steps 2–3: list/get deployments to find the dev preview and poll its state, and a promote tool
-if one exists. Exact tool names vary by server version — discover them rather than assuming.
+Use the Vercel REST API with the token from the Windows **User-scope env var `VERCEL_API_KEY`**
+(scoped to `gis-6579s-projects`; a session launched before the var was set won't have it —
+read it via `[Environment]::GetEnvironmentVariable('VERCEL_API_KEY','User')` in PowerShell).
+The CLI also works: every command needs `--scope gis-6579s-projects --token <token>`
+(the CLI's cookie login is still the old `hussam0is` account — always pass the token).
 
-If the MCP is not connected, or has no promote-capable tool, use the Vercel CLI — it is logged
-in as `hussam0is`. Every CLI command needs `--scope hussam0is-projects`.
-(`VERCEL_API_KEY` lives in a Windows **User-scope environment variable** — not in `.env.local` —
-verified 2026-07-13 to authenticate as hussam0is with access to this project. A session launched
-before the var was set won't have it; the CLI path always works.)
+**Never run `vercel link` or `vercel env pull` against the repo directory** — they overwrite
+`.env.local` and the local-only keys in it exist nowhere else (old-DB credentials included).
 
-**Never run `vercel link` or `vercel env pull`** — they overwrite `.env.local` and the
-local-only keys in it exist nowhere else.
-
-## Step 2 — Wait for the dev preview build to be Ready
-
-The preview for the pushed commit must finish building before it can be promoted.
+## Step 2 — Wait for the production build to be Ready
 
 ```
-npx vercel ls manholes-mapper --scope hussam0is-projects
+npx vercel ls manholes-mapper --scope gis-6579s-projects --token <token>
 ```
 
-Take the newest **Preview** deployment URL and confirm it was built from the pushed commit:
+Take the newest **Production** deployment and confirm (via `npx vercel inspect <url> ...` or
+`GET https://api.vercel.com/v13/deployments/<id>?slug=gis-6579s-projects`) that its git SHA
+matches step 0. Poll every ~30 s (builds typically take ~1 min; give up after ~10 min and report).
 
-```
-npx vercel inspect <deployment-url> --scope hussam0is-projects
-```
+- State `Ready` → continue.
+- State `Error` → fetch logs (`npx vercel inspect <url> --logs ...`), report the build
+  failure, and stop. Production keeps serving the previous deployment on a failed build.
 
-The output includes the git commit SHA — match it against step 0. If the newest preview is
-older than the push, the build hasn't been created yet; wait and re-list. Poll every ~30 s
-(builds typically take 1–3 min; give up after ~10 min and report).
+## Step 3 — Verify
 
-- State `Ready` → continue to step 3.
-- State `Error` → fetch logs with `npx vercel inspect <url> --logs --scope hussam0is-projects`,
-  report the build failure, and **stop — do not promote**.
-
-## Step 3 — Promote
-
-```
-npx vercel promote <deployment-url> --scope hussam0is-projects --yes
-```
-
-This triggers a **fresh production build** — it is not an instant alias swap. Poll
-`npx vercel ls manholes-mapper --scope hussam0is-projects` until the new **Production**
-deployment shows `Ready` (1–3 min typical). If the production build errors, production keeps
-serving the previous deployment — fetch its logs and report; do not retry blindly.
-
-## Step 4 — Verify
-
-1. `curl -s -o /dev/null -w "%{http_code}" https://manholes-mapper.vercel.app/api/health`
+1. `curl -s -o /dev/null -w "%{http_code}" https://manholes-mapper-three.vercel.app/api/health`
    → expect `200`.
-2. Optionally `npx vercel inspect` the new production deployment and confirm its commit SHA
-   matches step 0.
-3. Allow ~1 min for CDN cache invalidation before testing on phones/TSC5.
+2. Allow ~1 min for CDN cache invalidation before testing on phones/TSC5.
 
-## Step 5 — Report
+## Step 4 — Report
 
-Tell the user: the promoted SHA + commit subject, that production
-(https://manholes-mapper.vercel.app) now serves it, and whether `APP_VERSION` was bumped.
+Tell the user: the deployed SHA + commit subject, that production
+(https://manholes-mapper-three.vercel.app) now serves it, and whether `APP_VERSION` was bumped.
 
 ## Rollback
 
-If a promoted build misbehaves, `npx vercel rollback --scope hussam0is-projects` returns
-production to the previous deployment instantly.
+`npx vercel rollback --scope gis-6579s-projects --token <token>` returns production to the
+previous deployment instantly.
+
+## History
+
+Until 2026-07-15 the project lived on `hussam0is-projects`, where `dev` only built previews and
+each push required an explicit `vercel promote`. That account's production
+(https://manholes-mapper.vercel.app) still serves the last pre-transfer build and the OLD
+database — field devices with the installed APK/PWA keep hitting it until they migrate to the
+new URL.

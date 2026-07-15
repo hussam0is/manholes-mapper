@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Every code change must be committed and pushed immediately.** After any file edit (new feature, bug fix, refactor, config change, etc.), always `git add`, `git commit`, and `git push` to the `dev` branch before moving on. Use a concise commit message describing the change. Do not batch multiple unrelated changes into one commit — commit after each logical change. Only skip committing if the user explicitly says otherwise.
 
-**Every push to `dev` must then be promoted to production.** After pushing, run the `vercel-promote` skill ([.claude/skills/vercel-promote/SKILL.md](./.claude/skills/vercel-promote/SKILL.md)): wait for the dev preview build to be Ready, promote it (Vercel MCP if connected, else `npx vercel promote <preview-url> --scope hussam0is-projects --yes`), then verify production health. A PostToolUse hook (`.claude/hooks/promote-on-push-reminder.mjs`) reminds you after each `git push`. Only skip promoting if the user explicitly says otherwise.
+**Every push to `dev` auto-deploys to production — verify it.** Since 2026-07-15 the project lives on Vercel team `gis-6579s-projects` and **`dev` is the production branch**: pushing to `dev` triggers a production build directly (no promote step). After pushing, run the `vercel-promote` skill ([.claude/skills/vercel-promote/SKILL.md](./.claude/skills/vercel-promote/SKILL.md)) to wait for the build to be Ready and verify `https://manholes-mapper-three.vercel.app/api/health`. A PostToolUse hook (`.claude/hooks/promote-on-push-reminder.mjs`) reminds you after each `git push`. Only skip verifying if the user explicitly says otherwise.
 
 ## Build & Dev Commands
 
@@ -93,7 +93,7 @@ Phone-debug MCP provides: `cdp_*` tools (evaluate, screenshot, console, network)
 | **init** | `init.md` | Session health check & auto-fix. Runs git status, lint, tests, build, SW version, dependency audit in parallel, then reports and auto-fixes critical issues. |
 | **manholes-clickup** | `manholes-clickup.md` | Manage ClickUp tasks/subtasks for the project. Uses ClickUp MCP tools. List ID: `901815260471`. |
 | **design-audit-loop** | `design-audit-loop.md` | Senior product designer running continuous design improvement loop. Captures screenshots, audits UX, delegates fixes to codesmith-engineer agents, verifies, iterates. Playwright MCP singleton — one browser agent at a time. |
-| **vercel-promote** | `.claude/skills/vercel-promote/SKILL.md` | Promote the latest dev preview deployment to production on Vercel. Run after **every** push to dev (enforced by the promote-on-push PostToolUse hook). Vercel MCP first, CLI fallback. |
+| **vercel-promote** | `.claude/skills/vercel-promote/SKILL.md` | Verify the auto-deploy of dev → production on Vercel (dev IS the production branch since 2026-07-15). Run after **every** push to dev (enforced by the promote-on-push PostToolUse hook). |
 
 ### Spawnable Agent Types
 
@@ -290,13 +290,13 @@ Main reusable scripts (the many `_`-prefixed and `capture-*` scripts are one-off
 
 ## Deployment
 
-- **`dev` branch** → Vercel Preview deployment (auto)
-- **Production** → run the `vercel-promote` skill ([.claude/skills/vercel-promote/SKILL.md](./.claude/skills/vercel-promote/SKILL.md)) after every push to dev; under the hood: `npx vercel promote <preview-url> --scope hussam0is-projects` (triggers a fresh production build, not an instant alias swap)
-- Production URL: `https://manholes-mapper.vercel.app`
-- Preview URL: `https://manholes-mapper-git-dev-hussam0is-projects.vercel.app`
+- **`dev` branch** → Vercel **Production** deployment (auto — dev is the production branch on team `gis-6579s-projects` since 2026-07-15; repo owned by `geopoint-ltd` on GitHub)
+- **After every push** → run the `vercel-promote` skill ([.claude/skills/vercel-promote/SKILL.md](./.claude/skills/vercel-promote/SKILL.md)) to verify the production build went Ready and `/api/health` returns 200
+- Production URL: `https://manholes-mapper-three.vercel.app`
+- Old account production (`https://manholes-mapper.vercel.app`, team `hussam0is-projects`) still serves the pre-transfer build + OLD database — field devices keep using it until migrated to the new URL
 - After promoting, wait ~1 min for CDN cache invalidation
 - **Bump `APP_VERSION`** in `frontend/public/service-worker.js` after promoting if non-fingerprinted files changed — phones serve stale-while-revalidate cached JS indefinitely without this
-- Vercel CLI must be logged in as `hussam0is`
+- Vercel auth: token in Windows User env var `VERCEL_API_KEY` (scoped to `gis-6579s-projects`); the CLI's cookie login is still the old `hussam0is` account, so always pass `--token` + `--scope gis-6579s-projects`
 
 ### Vercel Route Configuration
 
@@ -341,7 +341,7 @@ App ID: `com.geopoint.manholemapper`. Web dir: `dist/`. Cleartext enabled for de
 
 **Installed plugins:** `@capacitor/core` 8.x, `@capacitor/android` 8.x, `@e-is/capacitor-bluetooth-serial` 6.x (Bluetooth SPP for TSC3 & GNSS receivers). WiFi TCP (`capacitor-tcp-socket`) referenced in code but may need manual install.
 
-**API Proxy (`frontend/src/capacitor-api-proxy.js`):** On native Android, the WebView runs on `https://localhost` with no backend. This module wraps `window.fetch()` to intercept `/api/*` calls and route them to `https://manholes-mapper.vercel.app` with `credentials: 'include'`. **Must load before any fetch() calls** in `frontend/src/main-entry.js`.
+**API Proxy (`frontend/src/capacitor-api-proxy.js`):** On native Android, the WebView runs on `https://localhost` with no backend. This module wraps `window.fetch()` to intercept `/api/*` calls and route them to `https://manholes-mapper-three.vercel.app` with `credentials: 'include'`. **Must load before any fetch() calls** in `frontend/src/main-entry.js`.
 
 **Build flow:**
 1. `npm run build` → produces `dist/`
@@ -430,7 +430,7 @@ adb reverse tcp:8765 tcp:8765                                # Forward mock TSC3
 - ADB screenshot scale factor: ~1.45 (multiply visual coords by 1.45 for ADB tap)
 - **NEVER** run `pm clear com.android.chrome` or `adb kill-server`
 - Service worker must be bumped (`APP_VERSION` in `frontend/public/service-worker.js`) after deploying non-fingerprinted changes
-- Deploy-test cycle: push to `dev` → wait 2 min → `npx vercel promote` → bump SW version
+- Deploy-test cycle: push to `dev` → wait ~2 min for the auto production build → bump SW version if non-fingerprinted files changed
 - Use `manholes-mapper-phone-user` or `mobile-phone-tester` skills for phone interaction
 
 ## Ports & Defaults

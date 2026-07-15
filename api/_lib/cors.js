@@ -11,9 +11,9 @@ const CAPACITOR_ORIGIN = 'https://localhost';
 // Preview/prod Vercel domain patterns (glob-style). Used when ALLOWED_ORIGINS
 // is unset but we're in a deployed env — mirrors lib/auth.js trustedOrigins.
 const VERCEL_PREVIEW_PATTERNS = [
-  /^https:\/\/manholes-mapper\.vercel\.app$/,
-  /^https:\/\/manholes-mapper-[a-z0-9-]+-hussam0is-projects\.vercel\.app$/,
-  /^https:\/\/manholes-mapper-git-[a-z0-9/-]+-hussam0is-projects\.vercel\.app$/,
+  /^https:\/\/manholes-mapper-three\.vercel\.app$/,
+  /^https:\/\/manholes-mapper-[a-z0-9-]+-gis-6579s-projects\.vercel\.app$/,
+  /^https:\/\/manholes-mapper-git-[a-z0-9/-]+-gis-6579s-projects\.vercel\.app$/,
 ];
 
 function isDeployedEnv() {
@@ -51,8 +51,8 @@ function getAllowedOrigins() {
       if (!origins.includes(url)) origins.push(url);
     }
     // Always trust the canonical production alias in deployed envs
-    if (!origins.includes('https://manholes-mapper.vercel.app')) {
-      origins.push('https://manholes-mapper.vercel.app');
+    if (!origins.includes('https://manholes-mapper-three.vercel.app')) {
+      origins.push('https://manholes-mapper-three.vercel.app');
     }
   }
 

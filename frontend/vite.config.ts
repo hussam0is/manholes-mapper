@@ -80,11 +80,11 @@ export default defineConfig({
     // Proxy /api requests to production when running standalone vite dev
     proxy: process.env.PORT ? undefined : {
       '/api': {
-        target: 'https://manholes-mapper.vercel.app',
+        target: 'https://manholes-mapper-three.vercel.app',
         changeOrigin: true,
         secure: true,
         headers: {
-          Origin: 'https://manholes-mapper.vercel.app',
+          Origin: 'https://manholes-mapper-three.vercel.app',
         },
       },
     },

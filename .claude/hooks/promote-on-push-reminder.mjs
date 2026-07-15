@@ -18,13 +18,12 @@ process.stdin.on('end', () => {
   if (!/\bgit\b[^\n;&|]*\bpush\b/.test(cmd)) process.exit(0);
 
   const context = [
-    'A `git push` just ran. Project rule: every commit pushed to the dev branch must be',
-    'promoted to production on Vercel. If this push targeted dev and you have not already',
-    'promoted it this turn (and this push is not itself a mid-promote step like an',
-    'APP_VERSION bump), run the vercel-promote skill now',
-    '(.claude/skills/vercel-promote/SKILL.md): wait for the dev preview build to be Ready,',
-    'promote it (Vercel MCP if connected, else `npx vercel promote <preview-url> --scope',
-    'hussam0is-projects --yes`), then verify https://manholes-mapper.vercel.app/api/health.',
+    'A `git push` just ran. Since 2026-07-15 the dev branch IS the production branch on the',
+    'new Vercel team (gis-6579s-projects) — every push to dev auto-deploys to production.',
+    'If this push targeted dev and you have not already verified it this turn (and this push',
+    'is not itself a mid-verify step like an APP_VERSION bump), run the vercel-promote skill',
+    'now (.claude/skills/vercel-promote/SKILL.md): wait for the production build to be Ready,',
+    'then verify https://manholes-mapper-three.vercel.app/api/health returns 200.',
   ].join(' ');
 
   process.stdout.write(
