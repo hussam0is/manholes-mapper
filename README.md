@@ -10,10 +10,9 @@ A professional, high-performance Progressive Web Application (PWA) for undergrou
 
 | | |
 |---|---|
-| **Live Production** | https://manholes-mapper.vercel.app |
-| **Dev Preview (latest code)** | https://manholes-mapper-git-dev-hussam0is-projects.vercel.app |
+| **Live Production** | https://manholes-mapper-three.vercel.app |
 | **Tech Stack** | Vanilla JS (ES Modules) + Vite 7 + Canvas 2D + Three.js + Leaflet + Better Auth + Neon Postgres |
-| **Test Suite** | **1 695 unit tests** - all passing (`cd frontend && npx vitest run`) |
+| **Test Suite** | **~1 790 unit tests** - all passing (`cd frontend && npx vitest run`) |
 | **E2E Tests** | Playwright - `cd frontend && npx playwright test` |
 
 ### What Makes It Special
@@ -25,13 +24,13 @@ A professional, high-performance Progressive Web Application (PWA) for undergrou
 5. **Intelligent issue detection** - real-time sketch audit (missing coordinates, negative gradients, long edges, merge candidates) with in-canvas navigation to each issue.
 6. **Legacy data migration** - built-in Import Wizard converts pre-ITM-era sketches (old canvas JSON + ITM survey CSV) into fully geo-referenced sketches via BFS coordinate propagation. Menu → Sketch → "Import Legacy Sketch + Coordinates".
 7. **Multi-tenant SaaS backend** - organisations, projects, role-based access, sketch locking, feature flags - all on Vercel serverless + Neon Postgres.
-8. **Production-grade test suite** — 1 695 unit tests across 66 test files (Vitest) + Playwright E2E tests; continuous test coverage for all core modules including GNSS, projections, graph operations, coordinate utilities, coordinate handlers, and the import wizard.
+8. **Production-grade test suite** — ~1 790 unit tests across 71 test files (Vitest) + Playwright E2E tests; continuous test coverage for all core modules including GNSS, projections, graph operations, coordinate utilities, coordinate handlers, and the import wizard.
 
 ### Quick Evaluation Path
 
 ```bash
 # 1. Clone and install
-git clone https://github.com/hussam0is/manholes-mapper && cd manholes-mapper
+git clone https://github.com/geopoint-ltd/manholes-mapper && cd manholes-mapper
 npm install
 
 # 2. Run the full unit test suite
@@ -287,13 +286,14 @@ manholes-mapper/
 │   └── _lib/               # Shared backend (db, auth, validators, rate-limit)
 ├── lib/                    # Better Auth server configuration
 ├── android/                # Capacitor Android project
-├── public/                 # Static assets and PWA manifest
-├── tests/                  # Vitest unit/integration + Playwright E2E tests
-├── dist/                   # Production build output
-├── index.html              # Main entry HTML
-├── styles.css              # Global styles and Tailwind directives
-├── capacitor.config.ts     # Capacitor configuration
-├── vite.config.ts          # Vite & Build configuration
+├── frontend/               # Vite app root
+│   ├── public/             # Static assets and PWA manifest
+│   ├── tests/              # Vitest unit/integration + Playwright E2E tests
+│   ├── dist/               # Production build output
+│   ├── index.html          # Main entry HTML
+│   ├── styles.css          # Global styles (design tokens)
+│   └── vite.config.ts      # Vite & Build configuration
+├── capacitor.config.ts     # Capacitor configuration (root — next to android/)
 └── package.json            # Dependencies and scripts
 ```
 
@@ -360,12 +360,11 @@ This project is deployed on **Vercel** with automatic deployments from Git.
 
 | Environment | URL |
 | :--- | :--- |
-| **Production** | https://manholes-mapper.vercel.app |
-| **Preview (dev branch)** | https://manholes-mapper-git-dev-hussam0is-projects.vercel.app |
+| **Production** | https://manholes-mapper-three.vercel.app |
 
 #### Deployment Process
 
-1. **Automatic Deployments**: Push to `master` branch triggers production deployment; push to `dev` triggers preview deployment.
+1. **Automatic Deployments**: `dev` is the production branch (Vercel team `gis-6579s-projects`) — every push to `dev` triggers a production deployment; other branches build previews. (`master` is dormant. The pre-2026-07 URL https://manholes-mapper.vercel.app serves a stale build against the old database.)
 2. **Manual Deployment**: Use Vercel CLI or dashboard to trigger deployments.
 
 ```bash
@@ -384,9 +383,9 @@ vercel --prod
 ```json
 {
   "framework": "vite",
-  "devCommand": "vite --port $PORT",
-  "buildCommand": "vite build",
-  "outputDirectory": "dist"
+  "devCommand": "cd frontend && vite --port $PORT",
+  "buildCommand": "cd frontend && vite build",
+  "outputDirectory": "frontend/dist"
 }
 ```
 
@@ -416,9 +415,9 @@ The application supports background map tiles with accurate coordinate alignment
 3. Map tiles automatically align with node positions
 
 **Documentation:**
-- [Complete Map Coordinate Guide](MAP_COORDINATES.md)
-- [Debugging Map Issues](MAP_DEBUGGING.md)
-- [Map Layer Fixes Summary](MAP_LAYER_FIXES.md)
+- [Complete Map Coordinate Guide](docs/MAP_COORDINATES.md)
+- [Debugging Map Issues](docs/MAP_DEBUGGING.md)
+- [Map Layer Fixes Summary](docs/MAP_LAYER_FIXES.md)
 
 **Coordinate System:**
 - Primary: Israel TM Grid (EPSG:2039)
@@ -477,7 +476,7 @@ npm run open:android
 
 For Bluetooth SPP support:
 ```bash
-npm install @niceprogrammer/capacitor-bluetooth-serial
+npm install @e-is/capacitor-bluetooth-serial
 npx cap sync android
 ```
 

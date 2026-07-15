@@ -3,7 +3,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.geopoint.manholemapper',
   appName: 'Manhole Mapper',
-  webDir: 'dist',
+  webDir: 'frontend/dist',
   android: {
     buildOptions: {
       keystorePath: undefined,
@@ -16,7 +16,7 @@ const config: CapacitorConfig = {
     // Bluetooth and TCP plugins will be configured here when installed
   },
   server: {
-    url: 'https://manholes-mapper.vercel.app',
+    url: 'https://manholes-mapper-three.vercel.app',
     cleartext: true,
     androidScheme: 'https',
   },

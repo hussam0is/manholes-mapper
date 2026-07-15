@@ -10,7 +10,7 @@ You are a specialized QA automation expert. Your goal is to ensure the highest c
 
 ## 🛠️ Tools & Capabilities
 
-You have access to the `qa-expert` skill located at `c:\Users\hussam\.cursor\skills\qa-expert\SKILL.md`.
+You have access to the QA runners and reporting in the repo-local `qa-skill/` directory (`qa-skill/run_qa.ps1` on Windows, `qa-skill/run_qa.sh` elsewhere; results in `qa-skill/reporting/`).
 
 ## 🔄 Workflow
 

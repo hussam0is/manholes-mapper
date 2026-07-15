@@ -481,19 +481,19 @@ CORS enabled for:
 ## Base URL
 
 ```
-https://manholes-mapper.vercel.app/api
+https://manholes-mapper-three.vercel.app/api
 ```
 
 Development uses relative paths from the frontend.
 
 ## WebSocket Endpoints (TSC3 Survey Mode)
 
-### WS /ws/tsc3
-Real-time TSC3 device communication for survey mode.
+### TSC3 WebSocket bridge (local, not a server endpoint)
+TSC3 survey data arrives over a LOCAL WebSocket bridge on port 8765 (Vercel serverless cannot host WebSockets — there is no /ws/tsc3 server route). Desktop: `ws://localhost:8765` (mock server via `npm run mock:tsc3`); phone on LAN: `ws://<LAN_IP>:8765`; phone via ADB: `adb reverse tcp:8765 tcp:8765` then `ws://localhost:8765`.
 
 **Connection:**
 ```javascript
-const ws = new WebSocket('wss://manholes-mapper.vercel.app/ws/tsc3');
+const ws = new WebSocket('ws://localhost:8765');
 ```
 
 **Messages:**

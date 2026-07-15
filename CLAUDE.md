@@ -11,13 +11,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build & Dev Commands
 
 ```bash
-npm run dev          # Vite only (frontend, HMR, no API routes) → localhost:5173
+npm run dev          # Vite only (frontend, HMR; /api is PROXIED TO PRODUCTION — writes hit the real prod DB) → localhost:5173
 npm start            # Full stack via vercel dev (API routes + Vite) → localhost:3000
 npm run build        # Production build → frontend/dist/
 npm run preview      # Serve production build locally
 npm run format       # Prettier
 npm run mock:tsc3    # Start mock TSC3 receiver server (WS:8765, HTTP:3001)
 npm run dashboard    # Codebase dashboard (scripts/codebase-dashboard.mjs)
+npm run soak         # Soak-testing suite (scripts/soak/run-soak.mjs, node --expose-gc); also soak:quick / soak:extended
 ```
 
 **Android (Capacitor):**
@@ -48,6 +49,9 @@ Config in `frontend/vitest.config.ts`: jsdom environment, setup in `frontend/tes
 - `frontend/tests/unit/` — the bulk of tests: auth, GNSS, i18n, canvas rendering, cockpit, field-commander, three-d, project canvas, admin panels, validators, etc.
 - `frontend/tests/api/` — contracts, sketches, system, validators (real DB, excluded by default)
 - `frontend/tests/` (root) — coordinates, edge-cases, map-coordinates, map-layer-integration, map-tile-visibility, security, sync-service
+- `frontend/tests/state/` — app-state, event-bus (in the default run); shared fixtures in `frontend/tests/fixtures/`
+
+A second Playwright config `frontend/playwright-headed.config.ts` exists for headed runs; the main config writes JUnit results to `frontend/qa-skill/reporting/e2e-junit.xml`.
 
 **E2E (Playwright):**
 ```bash
@@ -57,6 +61,10 @@ BASE_URL=http://localhost:5173 npx playwright test  # Custom base URL
 ```
 
 E2E config in `frontend/playwright.config.ts`. ~17 specs in `frontend/tests/e2e/` (auth, canvas-drawing, cockpit, project-canvas, rtl-layout, tsc5-field-workflows, …). Runs `npm run dev` automatically via `webServer`. Projects: Desktop Chrome (Chromium) + Mobile Chrome (Pixel 5). Retries: 2 on CI, 0 locally. Screenshots/video on failure.
+
+### QA Expert Workflow (`qa-skill/`)
+
+Repo-root `qa-skill/` holds cross-platform QA runners: `./qa-skill/run_qa.ps1` (Windows) / `./qa-skill/run_qa.sh`, with results in `qa-skill/reporting/`. The QA-expert workflow (from `.cursor/rules/qa-expert.mdc`, scoped to tests/**, src/**, api/**): (1) discover stack/test tooling, (2) draft a plan across Unit/Integration/API/E2E/Security/Performance suites, (3) implement prioritizing auth + sketch/node/edge CRUD critical paths, data mutations, and security boundaries, (4) execute via the run_qa runner and summarize from qa-skill/reporting/. Standards: Vitest unit tests with mocked externals, Playwright E2E on critical journeys, API schema+auth validation, `npm audit` + exposed-secret checks.
 
 ## Linting
 
@@ -77,10 +85,14 @@ ESLint 9+ flat config in `frontend/eslint.config.mjs`. **`frontend/src/legacy/ma
 | **postgres** | Direct Neon Postgres queries | `npx @modelcontextprotocol/server-postgres` with `POSTGRES_URL` |
 | **vercel** | Vercel deployment management | `npx @mistertk/vercel-mcp@latest` with `VERCEL_API_KEY` |
 | **phone-debug** | Physical phone testing via ADB/CDP | `node service/cdp-mcp/src/index.js` (CDP_HOST=localhost, CDP_PORT=9222) |
+| **clickup** | ClickUp task management (used by manholes-clickup skill + voice-notify hook) | `npx clickup-mcp-server` with `CLICKUP_API_TOKEN` |
+| **figma** | Official Figma MCP | HTTP `https://mcp.figma.com/mcp` |
 
 Phone-debug MCP provides: `cdp_*` tools (evaluate, screenshot, console, network), `gnss_*` tools (position, mock, capture), `app_*` tools (state, navigate, toast, sync, language, map, redraw), `adb_screenshot`.
 
 ### Agent Skills (`.claude/commands/`)
+
+> **WARNING:** several skill files below predate the 2026-07-15 account move — `manholes-mapper.vercel.app` / `hussam0is` URLs inside them are stale. Production is `https://manholes-mapper-three.vercel.app` and `dev` auto-deploys to production.
 
 | Skill | File | Purpose |
 |-------|------|---------|
@@ -108,11 +120,13 @@ Agents launched via the `Agent` tool with `subagent_type` parameter.
 | **codesmith-engineer** | Full-stack engineering — deep codebase understanding, multi-file implementations, performance optimization, CI/CD. Has all tools. |
 | **design-audit-loop-agent** | Autonomous design audit: researches app via Playwright, captures screenshots, audits UX, delegates fixes, verifies, iterates. Has Playwright MCP tools. |
 
-### Settings (`.claude/settings.local.json`)
+Only `design-audit-loop-agent` is defined in-repo (`.claude/agents/`); `code-reviewer`, `codesmith-engineer`, and `deep-code-reviewer` are user-level agents on this machine (`~/.claude/agents/`) and won't exist for other contributors.
 
-Post-tool-use hook: `mcp__clickup__.*` tools trigger `.claude/hooks/clickup-voice-notify.sh`.
+### Settings
 
-Allowed operations include: npm scripts, git commands, node execution, curl, Vercel CLI, MCP servers (playwright, postgres, vercel).
+`.claude/settings.json` (committed): PostToolUse hook on `Bash|PowerShell` → `node .claude/hooks/promote-on-push-reminder.mjs` (the after-push deploy reminder).
+
+`.claude/settings.local.json` (machine-local): PostToolUse hook — `mcp__clickup__.*` tools trigger `.claude/hooks/clickup-voice-notify.sh`. Permissions: `enableAllProjectMcpServers: true`; `enabledMcpjsonServers`: playwright, postgres, vercel, clickup; plus npm/git/node/curl/Vercel-CLI allows.
 
 ## Architecture Overview
 
@@ -128,17 +142,17 @@ The project is organized into two main areas:
 
 `frontend/index.html` → `frontend/src/main-entry.js` (ES module) → initializes CSS imports, i18n, auth, GNSS, menu system → loads `frontend/src/legacy/main.js` (core canvas loop and event wiring).
 
-**Critical load order:** `frontend/src/capacitor-api-proxy.js` must load before any `fetch()` calls (proxies API for Android native app).
+**Critical load order:** `frontend/src/capacitor-api-proxy.js` must load before any `fetch()` calls (proxies API for Android native app), immediately followed by `frontend/src/auth/csrf.js` which also wraps `window.fetch()` (x-csrf-token double-submit header). `design-system-v2.css` is imported alongside `styles.css`.
 
 CSS is imported via JS (`import '../styles.css'`) for Vite dev/build compatibility — there is no `<link>` tag in HTML.
 
 ### Key Directories (`frontend/src/`)
 
 - **`legacy/`** — The original monolith, now mostly modularized into ~24 files. `main.js` (~2100 lines, still ESLint-excluded) holds the canvas render loop and top-level wiring. Extracted modules include: `shared-state.js` (window-globals bridge for legacy ↔ ES module communication), `canvas-draw.js`, `pointer-handlers.js`, `graph-crud.js`, `details-panel.js`, `storage-manager.js`, `undo-redo.js`, `gnss-handlers.js`, `tsc3-handlers.js`, `admin-handlers.js`, `library-manager.js`, `coordinate-handlers.js`, `finish-workday.js`, `field-history.js`, `wizard-helpers.js`, `home-renderer.js`, `auth-ui.js`, `i18n-ui.js`, `mobile-menu.js`, `toolbar-events.js`, `project-ui.js`, `view-utils.js`, `app-utils.js`, `legacy-import-loader.js`
-- **`auth/`** — Better Auth client (`auth-client.js`), session guards (`auth-guard.js` with 5-min polling), React auth UI (`auth-provider.jsx`), sync-service (`sync-service.js` with 2s debounce, AbortController cleanup), permissions/RBAC (`permissions.js`)
+- **`auth/`** — Better Auth client (`auth-client.js`), session guards (`auth-guard.js` with 15-min polling), React auth UI (`auth-provider.jsx`), sync-service (`sync-service.js` with 2s debounce, AbortController cleanup), permissions/RBAC (`permissions.js`)
 - **`gnss/`** — Live Measure: GNSS state machine (`gnss-state.js` singleton), NMEA parsing (`nmea-parser.js` — GGA/RMC), browser-location-adapter (bridges `navigator.geolocation` → `gnssState`, infers fix quality from accuracy), Bluetooth/WiFi/TMM/mock adapters, connection manager, canvas marker rendering (`gnss-marker.js`), point capture dialog, precision-gated measurement (`precision-measure.js`)
 - **`survey/`** — TSC3 survey controller integration: device picker dialog, TSC3 Bluetooth/WebSocket adapters (Trimble TSC3 receivers), TSC3 NMEA parser, survey node-type dialog, connection manager
-- **`admin/`** — Admin panel (`admin-panel.js`: Users/Orgs/Features tabs), admin settings, input flow settings (conditional field logic), project settings
+- **`admin/`** — Admin tab modules lazy-imported by the hub `legacy/admin-handlers.js`: `admin-users.js`, `admin-organizations.js`, `admin-features.js`, `admin-fixes.js` (cross-sketch issues & fix suggestions), `admin-statistics.js` (KPI dashboard), `admin-settings.js`, `input-flow-settings.js` (conditional field logic), `projects-settings.js`
 - **`features/`** — Canvas drawing primitives (`drawing-primitives.js`), graph rendering engine (`rendering.js`), node icons (`node-icons.js`: manhole, drainage, house connection icons), measurement rail (`measurement-rail.js`)
 - **`project/`** — Project canvas mode: `project-canvas-state.js` (multi-sketch Map, active/visibility tracking, sketch switching), `sketch-side-panel.js` (collapsible list UI with per-sketch stats, issues sub-panel, issue navigation via `window.__setViewState` + `startIssueHighlight`), `sketch-issues.js` (issue detection: missing coords, missing measurements, total km computation), `issue-highlight.js` (pulsing red ring animation), `issue-nav-state.js`, `fix-suggestions.js`, `merge-mode.js` (duplicate node merging), `last-edit-tracker.js`, `project-canvas-renderer.js` (background sketch rendering), `project-loading-overlay.js`
 - **`menu/`** — Responsive menu system: `menu-events.js` (EventEmitter singleton with delegation), `menu-config.js`, `command-menu.js` (command palette), `action-bar.js`, `header.js`
@@ -165,7 +179,7 @@ CSS is imported via JS (`import '../styles.css'`) for Vite dev/build compatibili
 
 Every resource is a **single `index.js` handler** — there are no `[id].js` dynamic files. `vercel.json` rewrites path params to query params (e.g. `/api/sketches/:id` → `/api/sketches?id=:id`), so URLs look RESTful but handlers branch on `req.query.id` / method / `action`.
 
-All routes require Better Auth session. Rate limited: 100 req/min (20 for auth). CORS configured. Responses use camelCase (DB uses snake_case).
+All routes except `/api/health` (public, Edge runtime — also the one non-index.js handler, `api/health.js`, kept on Edge so it doesn't count toward the Vercel Hobby 12-serverless-function limit) and `/api/auth/*` require a Better Auth session. Rate limited: 100 req/min per IP (20 for `/api/auth`); /api/health is unlimited. CSRF (`verifyCsrf`) applies to sketches/projects/organizations/users/features/layers/issue-comments but NOT stats, user-role, health, or auth. CORS configured. Responses use camelCase (DB uses snake_case).
 
 | Route | Methods | Purpose |
 |-------|---------|---------|
@@ -180,7 +194,9 @@ All routes require Better Auth session. Rate limited: 100 req/min (20 for auth).
 | `/api/issue-comments` | GET, POST | Issue node comments, close/reopen, notifications |
 | `/api/notifications/*` | GET, POST | Rewritten to `/api/issue-comments?action=notifications` |
 | `/api/stats/*` | GET | Statistics, e.g. accuracy leaderboard per project |
-| `/api/health` | GET | Health check |
+| `/api/health` | GET | Health check (public, Edge runtime, never touches the DB) |
+
+Route behaviors worth knowing: `GET /api/sketches` returns metadata-only rows (node_count/edge_count) unless `?full=true`; `limit` clamped 1–200, default 50. `POST /api/sketches` with `body.action='assign-orphans'` + projectId bulk-assigns project-less org sketches (admin+). `/api/stats` subpaths: `leaderboard`, `workload` (admin+), `metadata`. `/api/organizations?action=members` is the merged org-members route; listing all orgs is super_admin-only.
 
 **API library (`api/_lib/`):**
 - `auth.js` — `verifyAuth()`, `parseBody()` (15MB limit), header/cookie helpers
@@ -190,13 +206,13 @@ All routes require Better Auth session. Rate limited: 100 req/min (20 for auth).
 - `cors.js` — Origin resolution, Capacitor `https://localhost` always allowed
 - `csrf.js` — CSRF protection helpers
 - `error-handler.js` — Shared error responses
-- `schema.sql` — Reference schema
+- `schema.sql` — STALE reference schema (wrong user_id type, missing lock/version columns and issue tables); the runtime `initializeDatabase()` in `db.js` is authoritative
 
 **Server library (`lib/auth.js`):** Better Auth config — Neon Postgres, email/password auth, 7-day sessions, 5-min cookie cache, cross-origin for Capacitor.
 
 ### Database Schema
 
-**Application tables:** `organizations`, `projects`, `sketches` (nodes/edges JSON, adminConfig, project_id FK), `users` (role, organization_id FK), `user_features`, `project_layers` (GeoJSON, style), `sketch_locks` (30-min expiry)
+**Application tables:** `organizations`, `projects` (input_flow_config, target_km), `sketches` (nodes/edges JSON, admin_config, project_id FK, `version` counter for optimistic locking, and lock columns `locked_by`/`locked_at`/`lock_expires_at` with 30-min expiry — there is **no** separate `sketch_locks` table), `users` (role, organization_id FK), `user_features`, `project_layers` (GeoJSON, style), `issue_comments`, `issue_notifications`
 
 **Better Auth tables:** `user`, `session`, `account`, `verification`
 
@@ -206,18 +222,18 @@ All routes require Better Auth session. Rate limited: 100 req/min (20 for auth).
 
 ### Node Type Categories
 
-Defined in `frontend/src/state/constants.js` as `NODE_TYPE_CATEGORIES`: **Manhole**, **Home**, **Drainage**, **Covered**, **ForLater**, **Issue**. Each type has a distinct icon drawn by `frontend/src/features/node-icons.js`. The **Issue** node type (red circle with exclamation mark) represents a reported field issue that needs attention — it is excluded from heatmap coloring and completeness scoring.
+Defined in `frontend/src/state/constants.js` as `NODE_TYPE_CATEGORIES`: **Manhole**, **Home**, **Drainage**, **Covered**, **ForLater**, **Issue**. Each type has a distinct icon drawn by `frontend/src/features/node-icons.js`. The **Issue** node type (red circle with exclamation mark) represents a reported field issue that needs attention — it is excluded from heatmap coloring (completeness scoring in `cockpit/completion-engine.js` excludes only Home and ForLater nodes; Issue nodes ARE counted).
 
 ### Heat Map Mode
 
-Toggle via `body.classList.toggle('heatmap-active')`. When active, nodes are color-coded by data completeness: **green** = all fields complete, **orange** = missing optional fields, **red** = issues or missing coordinates. Home, ForLater, and Issue nodes are excluded from heatmap coloring. The heatmap state is cached once per draw frame (`_isHeatmapFrame`) to avoid repeated DOM reads.
+Toggle via `body.classList.toggle('heatmap-active')`. When active, nodes are color-coded by data completeness: **green** = all fields complete, **orange** = missing optional fields, **red** = issues or missing coordinates. Home, ForLater, and Issue nodes are excluded from heatmap coloring. The heatmap state is cached once per draw frame (`_isHeatmapFrame`) to avoid repeated DOM reads. Edges are colored too: blue `#3b82f6` when both tail_measurement and head_measurement are present, gray `#9ca3af` otherwise.
 
 ### Data Flow
 
 1. **Canvas** — Users draw nodes/edges on HTML5 Canvas. Coordinates go through: WGS84 → ITM (proj4) → Canvas World → Screen pixels (via `viewScale`, `stretchX/Y`, `viewTranslate`)
 2. **Persistence** — localStorage (primary, synchronous) + IndexedDB (backup, async) + cloud Postgres (source of truth via sync-service)
-3. **Sync** — Online: immediate POST to `/api/sketches/{id}`. Offline: queued in IndexedDB `syncQueue`, drained on reconnect. `syncService.onSyncStateChange` notifies UI.
-4. **Auth** — Better Auth with Neon Postgres. Session cookies (7-day expiry). `auth-guard.js` redirects unauthenticated users to login panel. 5-min session polling.
+3. **Sync** — Online: debounced (2s) PUT to `/api/sketches/:id` (POST to `/api/sketches` only on create; PUT returns 409 with `{_conflict: true, currentSketch}` on version conflict). Offline: queued in IndexedDB `syncQueue`, drained on reconnect. `syncService.onSyncStateChange` notifies UI.
+4. **Auth** — Better Auth with Neon Postgres. Session cookies (7-day expiry). `auth-guard.js` redirects unauthenticated users to login panel. 15-min session polling (the 5-min figure is the separate Better Auth cookie-cache maxAge).
 
 ### Internationalization
 
@@ -225,26 +241,25 @@ Toggle via `body.classList.toggle('heatmap-active')`. When active, nodes are col
 
 ### CSS Architecture
 
-`frontend/styles.css` uses CSS custom properties (design tokens) with dark mode via `@media (prefers-color-scheme: dark)`. Dark mode tokens defined in `:root` override: `--color-surface-alt`, `--color-accent`, `--color-text-bright`, etc. — use these tokens rather than hardcoding hex values in dark mode blocks. `frontend/src/menu/menu.css` has menu-specific styles. Tailwind CSS 4.x used for utility classes (default config, no tailwind.config file).
+`frontend/styles.css` uses CSS custom properties (design tokens) with dark mode via `@media (prefers-color-scheme: dark)`. Dark mode tokens defined in `:root` override: `--color-surface-alt`, `--color-accent`, `--color-text-bright`, etc. — use these tokens rather than hardcoding hex values in dark mode blocks. `frontend/src/menu/menu.css` has menu-specific styles; other component-scoped CSS: `cockpit/cockpit.css`, `field-commander/fc-shell.css`, `layout/unified-sidebar.css`, `layout/unified-toolbar.css`, `layout/micro-status-bar.css`, plus root-level `frontend/design-system-v2.css` (v2 tokens, imported by main-entry.js right after styles.css). Dark mode: `applyDarkMode()` (state/constants.js) stamps `data-theme="dark|light"` on `<html>` from localStorage `dark_mode_preference` ('system' | 'light' | 'dark' | 'auto' = time-based, dark 19:00–06:00), with `@media (prefers-color-scheme: dark)` fallbacks; canvas colors switch via `isDarkMode()` → COLORS_DARK. NOTE: `tailwindcss` is in package.json but is NOT wired up (no directive, no PostCSS/Vite plugin) — do not write Tailwind utility classes.
 
 ### Service Worker & Caching
 
-`frontend/public/service-worker.js` uses versioned caches keyed by `APP_VERSION` (check the current value at the top of the file). **Bump `APP_VERSION`** whenever non-fingerprinted files (service-worker.js, styles.css) change — this forces browsers to pick up updates. Vite-built JS/CSS under `/assets/` are fingerprinted and cached automatically.
+`frontend/public/service-worker.js` uses versioned caches keyed by `APP_VERSION` (check the current value at the top of the file). **Bump `APP_VERSION`** whenever service-worker.js, index.html, or `main.js` content changes — effectively after any frontend change phones must pick up immediately. `main.js` has a stable filename and is stale-while-revalidate cached, so without a bump users get the OLD main.js (pointing at old hashed chunks) on first load after deploy. Vite-built JS/CSS under `/assets/` are fingerprinted and cached automatically.
 
 **Caching strategies:** Navigation → network-first (fallback `offline.html`). `/assets/*` → cache-first (fingerprinted). Google Fonts → cache-first. Other same-origin GET → stale-while-revalidate. `/api/*` → skip SW entirely.
 
-**Precache list:** `index.html`, `offline.html`, `manifest.json`, `styles.css`, `fonts/material-icons.woff2`, `app_icon.png`, `health/index.html`.
+**Precache list:** `index.html`, `offline.html`, `manifest.json`, `fonts/material-icons.woff2`, `app_icon.png`, `health/index.html`. (`main.js` is NOT precached — it is served via stale-while-revalidate.)
 
 **Registration:** `frontend/src/serviceWorker/register-sw.js` — HTTPS/localhost only, 15-min update checks, offline refresh guards (blocks F5, beforeunload, swipe-refresh).
 
 ### Vite Build
 
-Stable output filenames: `main.js`, `styles.css` (for service worker compatibility). Chunk size warning: 1000KB. Code splitting:
-- `better-auth` → `auth` chunk
-- `react`, `scheduler` → `react-vendor` chunk
-- Other `node_modules` → `vendor` chunk
+Stable output filename: `main.js` (dist root, referenced by index.html); CSS is fingerprinted into `assets/[name]-[hash:8].css`. Target es2022, modulePreload polyfill disabled. Chunk size warning: 1000KB. Code splitting:
+- `better-auth` → `auth`; `react`/`scheduler` → `react-vendor`; `three` → `three-vendor`; `proj4`/`mgrs`/`wkt-parser` → `proj4-vendor`; other `node_modules` → `vendor`
+- Lazy app chunks: `admin` (admin/ settings modules), `cockpit`, `field-commander`, `survey` (survey/ + tsc3-handlers)
 
-HTTPS dev mode via mkcert available (`@vitejs/plugin-basic-ssl`). HMR disabled under `vercel dev` (manual refresh required). Port from `PORT` env var or 5173.
+HTTPS dev via mkcert cert files (`manholes-mapper.local+5.pem` / `-key.pem`) auto-detected in `frontend/`; `@vitejs/plugin-basic-ssl` is installed but unused. HMR disabled under `vercel dev` (manual refresh required). Port from `PORT` env var or 5173.
 
 ### Cross-Module Integration (Window Globals)
 
@@ -271,7 +286,7 @@ ES modules communicate with `frontend/src/legacy/main.js` via window globals sin
 
 ### Keyboard Shortcuts
 
-`N` = Node mode, `E` = Edge mode, `+`/`=` = Zoom In, `-` = Zoom Out, `0` = Reset Zoom, `Esc` = Cancel/clear selection, `Delete`/`Backspace` = Delete selected item.
+`N` = Node mode, `E` = Edge mode, `Ctrl+Z` = Undo, `Ctrl+Shift+Z`/`Ctrl+Y` = Redo, `S` = Save, hold `Space` = pan canvas, `Tab`/`Shift+Tab` = cycle node/edge selection, `Enter` = open details drawer for selection, `+`/`=` = Zoom In, `-` = Zoom Out, `0` = Reset Zoom, `Esc` = Cancel/clear selection, `Delete`/`Backspace` = Delete selected item.
 
 ## Scripts (`scripts/`)
 
@@ -308,11 +323,13 @@ Required on Vercel: `BETTER_AUTH_SECRET`, `POSTGRES_URL`. Optional: `BETTER_AUTH
 
 For local API tests: set `POSTGRES_URL` in `.env.local`.
 
-`.env.local` also contains: `POSTGRES_URL_NON_POOLING` (migrations), `DATABASE_URL`, `PGHOST`/`PGUSER`/`PGPASSWORD`, `VERCEL_API_KEY`, `NEON_PROJECT_ID`. **Back up `.env.local` before running `vercel link` or `vercel env pull` — they overwrite it, and the local-only keys exist nowhere else.**
+`.env.local` (regenerated 2026-07-15, points at the NEW Neon DB — team `gis-6579s-projects`, Frankfurt) also contains: `DATABASE_URL`/`_UNPOOLED`, `POSTGRES_URL_NON_POOLING`/`_NO_SSL`/`_PRISMA_URL`, `PG*` keys, `NEON_PROJECT_ID`, `BETTER_AUTH_SECRET`, and `OLD_POSTGRES_URL` (pre-move DB; full old creds in `.env.local.backup-old-account-2026-07-15`). `VERCEL_API_KEY` is NOT here — it lives only in the Windows User env var. **Back up `.env.local` before running `vercel link` or `vercel env pull` — they overwrite it, and local-only keys exist nowhere else.**
+
+Also read by the API: `INITIAL_SUPER_ADMIN_EMAIL` (`api/_lib/db.js` — a newly created user with this email gets role super_admin; set on the Vercel project), `ALLOWED_ORIGINS` (comma-separated exact origins, used by `api/_lib/cors.js` and `lib/auth.js`; set in production). `POSTGRES_URL` falls back to `DATABASE_URL` in both `db.js` and `lib/auth.js`.
 
 ## Tech Stack
 
-**Frontend:** Vite 7.x, vanilla JS (ES modules), HTML5 Canvas, React 19 (auth UI only), Three.js (3D view, dynamic import), Leaflet + Geoman (map annotations), Tailwind CSS 4.x, proj4 (coordinate transforms), papaparse, wicket
+**Frontend:** Vite 7.x, vanilla JS (ES modules), HTML5 Canvas, React 19 (auth UI only), Three.js (3D view, dynamic import), Leaflet + Geoman (map annotations), proj4 (coordinate transforms), papaparse, wicket
 
 **Backend:** Vercel serverless functions (Node.js), Better Auth 1.4.x, Neon Postgres (`@neondatabase/serverless`), `@vercel/postgres`
 
@@ -337,7 +354,7 @@ For local API tests: set `POSTGRES_URL` in `.env.local`.
 
 ## Capacitor (Android)
 
-App ID: `com.geopoint.manholemapper`. Web dir: `dist/`. Cleartext enabled for dev. Android scheme: `https`.
+App ID: `com.geopoint.manholemapper`. Config: repo-root `capacitor.config.ts` (moved from frontend/ 2026-07-15 so root-run `cap sync` finds it next to `android/`); web dir: `frontend/dist`. Cleartext enabled for dev. Android scheme: `https`. **`capacitor.config.ts` sets `server.url`, which makes the native WebView load that remote URL directly (bundled assets and the fetch proxy are bypassed) — keep it pointed at `https://manholes-mapper-three.vercel.app` and re-run `npx cap sync android` after changing it.** The `capacitor-api-proxy.js` interception only matters when `server.url` is removed.
 
 **Installed plugins:** `@capacitor/core` 8.x, `@capacitor/android` 8.x, `@e-is/capacitor-bluetooth-serial` 6.x (Bluetooth SPP for TSC3 & GNSS receivers). WiFi TCP (`capacitor-tcp-socket`) referenced in code but may need manual install.
 
@@ -369,13 +386,13 @@ The app connects to Trimble TSC3 survey controllers to receive real-time survey 
 
 **Data format:** CSV lines — `PointName,Easting,Northing,Elevation\n`
 
-**Parser (`tsc3-parser.js`):** Auto-detects delimiter (tab/comma/space) and column order (NEN vs NNE) using ITM heuristics. Validates ITM ranges: easting 100k–300k, northing 400k–800k, elevation -500–2000.
+**Parser (`tsc3-parser.js`):** Auto-detects delimiter (tab/comma/space) and column order (NEN vs NNE) using ITM heuristics. Validates ITM ranges: easting 100k–300k, northing 350k–800k (lower bound deliberately includes Eilat/southern Negev). Elevation is NOT range-validated (NaN becomes 0).
 
 **Connection flow (`tsc3-connection-manager.js`):**
 1. User selects device via `device-picker-dialog.js` (filters for Trimble/TSC names)
 2. Incoming point → parser extracts `{ pointName, easting, northing, elevation }`
 3. If node with matching name exists → updates coordinates silently
-4. If new point → opens `survey-node-type-dialog.js` for type selection (Manhole, Valve, etc.)
+4. If new point → opens `survey-node-type-dialog.js` for type selection (Manhole, Home, Drainage; if no dialog opener is registered, defaults to Manhole)
 5. Points queue if dialog is open, processed sequentially
 
 **Mock TSC3 server (`scripts/mock-tsc3/server.mjs`):** `npm run mock:tsc3` starts WS on port 8765 + HTTP control API on port 3001. HTTP endpoints: `GET /api/status`, `POST /api/send-point`, `POST /api/send-batch`, `GET /api/history`, `POST /api/clear-history`. Web UI at `http://localhost:3001`.
@@ -403,7 +420,7 @@ The app connects to GNSS receivers for live RTK positioning. Adapters (one activ
 - Testing without hardware. Default position: Tel Aviv (32.0853, 34.7818)
 - Configurable fix quality: 0=Invalid, 1=GPS, 2=DGPS, 4=RTK Fixed, 5=RTK Float
 
-**State machine (`gnss-state.js`):** Singleton `gnssState` tracks connection state (disconnected/connecting/connected/error), position (lat/lon/accuracy/fixQuality/satellites/hdop), and captured points. Events: `on('position', cb)`, `on('connection', cb)`.
+**State machine (`gnss-state.js`):** Singleton `gnssState` tracks connection state (disconnected/connecting/connected/error), position (lat/lon/accuracy/fixQuality/satellites/hdop), and captured points. Events: `on('position', cb)`, `on('connection', cb)`, `on('capture', cb)`. The NMEA parser also handles GST sentences (precision estimates) alongside GGA/RMC.
 
 **Marker rendering (`gnss-marker.js`):** Draws accuracy circle + position dot with fix-quality color coding on canvas. Uses `ctx.setTransform(1,0,0,1,0,0)` to draw in screen space (DPR-aware).
 
@@ -419,7 +436,7 @@ adb forward tcp:9222 localabstract:chrome_devtools_remote   # Forward Chrome CDP
 adb reverse tcp:8765 tcp:8765                                # Forward mock TSC3 (optional)
 ```
 
-**Tools (31 total):** CDP core (list tabs, connect, evaluate JS, console logs, screenshots, network log), GNSS (get state/position/connection, watch position, trigger mock, capture point), App control (get state, navigate hash routes, toast, get sketch info, trigger sync, set language, center map, toggle live measure, force redraw), ADB screenshot (no CDP required).
+**Tools (22 total):** CDP core (list tabs, connect, evaluate JS, console logs, screenshots, network log), GNSS (get state/position/connection, watch position, trigger mock, capture point), App control (get state, navigate hash routes, toast, get sketch info, trigger sync, set language, center map, toggle live measure, force redraw), ADB screenshot (no CDP required).
 
 **Known issue:** Chrome 144+ has broken CDP WebSocket — `cdp_connect` always fails. Use `adb_screenshot` and `cdp_evaluate` (after manual tab detection) or ADB-only interaction.
 
@@ -437,7 +454,7 @@ adb reverse tcp:8765 tcp:8765                                # Forward mock TSC3
 
 | Service | Protocol | Port | Notes |
 |---------|----------|------|-------|
-| Vite Dev | HTTP | 5173 | Frontend only (HMR) |
+| Vite Dev | HTTP | 5173 | Frontend (HMR); /api proxied to production; binds 127.0.0.1 (not LAN-reachable) |
 | Vercel Dev | HTTP | 3000 | Full stack (API routes) |
 | Mock TSC3 WS | WebSocket | 8765 | Survey controller simulator |
 | Mock TSC3 HTTP | HTTP | 3001 | Control API + Web UI |

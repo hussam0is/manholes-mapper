@@ -16,7 +16,7 @@ Before you begin, ensure you have the following installed:
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/hussam0is/manholes-mapper.git
+git clone https://github.com/geopoint-ltd/manholes-mapper.git
 cd manholes-mapper
 
 # 2. Fetch and switch to the dev branch you want to test

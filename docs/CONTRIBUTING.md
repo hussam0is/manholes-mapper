@@ -15,7 +15,7 @@ Thank you for your interest in contributing to Manholes Mapper! This guide will 
 
 ```bash
 # Clone the repository
-git clone https://github.com/hussam0is/manholes-mapper
+git clone https://github.com/geopoint-ltd/manholes-mapper
 cd manholes-mapper
 
 # Install dependencies

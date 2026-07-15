@@ -4,10 +4,14 @@
  * Loads environment variables from .env.local before tests run.
  */
 
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { config } from 'dotenv';
 
-// Load environment variables from .env.local
-config({ path: '.env.local' });
+// Load environment variables from the repo-root .env.local. Vitest normally runs
+// with cwd=frontend/ (where no .env.local exists), so fall back to the parent dir.
+const envFile = [resolve(process.cwd(), '.env.local'), resolve(process.cwd(), '../.env.local')].find(existsSync);
+if (envFile) config({ path: envFile });
 
 // Verify required environment variables are set
 const requiredVars = ['POSTGRES_URL'];

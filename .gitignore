@@ -90,3 +90,6 @@ scripts/session-watchdog.sh
 
 # local env backups (contain DB credentials)
 .env.local.backup*
+
+# machine-local Claude settings (may contain credentials in permission strings)
+.claude/settings.local.json
