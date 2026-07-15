@@ -1,0 +1,20 @@
+# Normalize all text files to LF in the repository (working tree and index).
+# Prevents whole-file CRLF diffs when Windows tools edit large files.
+* text=auto eol=lf
+
+# Binary files — never apply line-ending conversion
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.webm binary
+*.mp4 binary
+*.jar binary
+*.zip binary
+*.pdf binary
+*.bin binary
