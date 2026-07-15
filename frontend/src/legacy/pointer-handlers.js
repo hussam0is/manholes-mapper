@@ -458,9 +458,11 @@ function pointerDown(x, y) {
   // Create new node when clicking empty space
   if (S.currentMode === 'node') {
     const created = F.createNode(world.x, world.y);
+    if (!created) return; // read-only sketch
     F.scheduleDraw();
   } else if (S.currentMode === 'home') {
     const created = F.createNode(world.x, world.y);
+    if (!created) return; // read-only sketch
     created.nodeType = 'Home';
     S.selectedNode = created;
     F.draw();
@@ -471,10 +473,12 @@ function pointerDown(x, y) {
     }, 0);
   } else if (S.currentMode === 'drainage') {
     const created = F.createNode(world.x, world.y);
+    if (!created) return; // read-only sketch
     created.nodeType = 'Drainage';
     F.scheduleDraw();
   } else if (S.currentMode === 'issue') {
     const created = F.createNode(world.x, world.y);
+    if (!created) return; // read-only sketch
     created.nodeType = 'Issue';
     created.issueStatus = 'open';
     created.issueComments = [];

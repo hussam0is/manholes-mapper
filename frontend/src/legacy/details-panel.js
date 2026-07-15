@@ -251,7 +251,9 @@ async function _sendIssueComment(node, inputEl, isCloseAction, isReopenAction) {
   const content = inputEl.value?.trim();
   if (!content || !S.currentSketchId) return;
   const mentionedUserIds = _extractMentionedUserIds(content);
-  inputEl.value = '';
+  // Don't clear the input until the POST succeeds — on field networks a failed
+  // send used to silently discard the typed comment.
+  inputEl.disabled = true;
   try {
     const resp = await fetch('/api/issue-comments', {
       method: 'POST',
@@ -266,10 +268,13 @@ async function _sendIssueComment(node, inputEl, isCloseAction, isReopenAction) {
       }),
     });
     if (!resp.ok) throw new Error('Failed to send comment');
+    inputEl.value = '';
     await _loadIssueComments(node);
   } catch (err) {
     console.error('[Issue Comments] Send failed:', err);
     F.showToast(t('issue.sendError'));
+  } finally {
+    inputEl.disabled = false;
   }
 }
 
@@ -800,12 +805,17 @@ function renderDetails() {
               const raw = String(ev.target.value || '');
               const sanitized = raw.replace(/[^0-9.]/g, '').replace(/\.(?=.*\.)/g, '');
               if (sanitized !== raw) ev.target.value = sanitized;
+              const wasEmpty = isTail ? !e.tail_measurement : !e.head_measurement;
               if (isTail) e.tail_measurement = sanitized; else e.head_measurement = sanitized;
               F.computeNodeTypes();
               F.debouncedSaveToStorage();
               F.scheduleDraw();
               // Smart check: live gradient validation while measuring (debounced)
               window.__gradientEngine?.onDepthChanged(e);
+              // Emit once per empty->filled transition (feeds XP/completion, not per keystroke)
+              if (wasEmpty && sanitized) {
+                window.menuEvents?.emit('measurement:filled', { edgeId: e.id, side: isTail ? 'tail' : 'head' });
+              }
             });
           }
           if (materialSelect) {
@@ -882,7 +892,15 @@ function renderDetails() {
           }
         });
       }
-    } catch (_) { }
+    } catch (err) {
+      // A render bug here used to silently hide the entire connected-lines
+      // section — surface it so depth entry is never invisibly missing.
+      console.error('[Details] Connected-lines section failed to render:', err);
+      const errCard = document.createElement('div');
+      errCard.className = 'details-section details-section--error';
+      errCard.textContent = t('detailsConnectedLinesError') || 'Connected lines failed to load — reselect the node';
+      detailsContainer.appendChild(errCard);
+    }
     // ── Element issues for selected node ──
     if (typeof window.__computeSketchIssues === 'function') {
       const { issues } = window.__computeSketchIssues(nodes, edges);
@@ -1753,6 +1771,24 @@ function renderDetails() {
   } else {
     setTimeout(() => F.resizeCanvas(), 0);
   }
+
+  // Read-only enforcement: locked sketches rendered fully editable let field
+  // workers type into a panel whose saves all land as 409 sync conflicts.
+  if (window.__sketchReadOnly && (selectedNode || selectedEdge)) {
+    applyReadOnlyState(detailsContainer);
+  }
+}
+
+/** Disable every form control in the details panel and prepend a lock banner. */
+function applyReadOnlyState(container) {
+  if (!container) return;
+  container.querySelectorAll('input, select, textarea, button').forEach((el) => {
+    el.disabled = true;
+  });
+  const banner = document.createElement('div');
+  banner.className = 'details-readonly-banner';
+  banner.innerHTML = `<span class="material-icons">lock</span><span>${t('toasts.sketchReadOnly') || 'Sketch is locked — read only'}</span>`;
+  container.prepend(banner);
 }
 
 // Track the element that had focus before the sidebar opened so we can

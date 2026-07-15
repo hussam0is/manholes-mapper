@@ -66,6 +66,12 @@ export function newSketch(date, projectId = null, inputFlowConfig = null) {
  * @returns {{id:string,x:number,y:number,note:string,material:string,type:string}} The created node
  */
 export function createNode(x, y) {
+  // Locked/read-only sketches must not accept new geometry — silent writes here
+  // end up as 409 sync conflicts against the lock holder's version.
+  if (window.__sketchReadOnly) {
+    F.showToast(t('toasts.sketchReadOnly') || 'Sketch is locked — read only', 'warning', 2500);
+    return null;
+  }
   const candidateStr = F.findSmallestAvailableNumericId();
   const used = F.collectUsedNumericIds();
   used.add(parseInt(candidateStr, 10));
@@ -120,6 +126,7 @@ export function createNode(x, y) {
   S._animatingNodes.set(String(node.id), performance.now());
   navigator.vibrate?.(10);
   F.scheduleDraw();
+  window.menuEvents?.emit('node:added', { nodeId: node.id, nodeType: node.nodeType });
   return node;
 }
 
@@ -135,6 +142,10 @@ export function createNode(x, y) {
  * @returns {object|null} The created edge, or null if duplicate exists
  */
 export function createEdge(tailId, headId, options = {}) {
+  if (window.__sketchReadOnly) {
+    F.showToast(t('toasts.sketchReadOnly') || 'Sketch is locked — read only', 'warning', 2500);
+    return null;
+  }
   const tailStr = tailId != null ? String(tailId) : null;
   const headStr = headId != null ? String(headId) : null;
   const isDanglingHead = headStr === null;
@@ -186,6 +197,7 @@ export function createEdge(tailId, headId, options = {}) {
   S._animatingEdges.set(edge.id, performance.now());
   navigator.vibrate?.(10);
   F.scheduleDraw();
+  window.menuEvents?.emit('edge:added', { edgeId: edge.id, isDangling: edge.isDangling });
   return edge;
 }
 

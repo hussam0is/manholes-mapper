@@ -281,6 +281,9 @@ export function saveToStorage() {
 
   F.markEdgeLabelCacheDirty();
   S._issueSetsDirty = true;
+  // Single choke point for "sketch data changed": un-freezes the completion
+  // ring, cockpit stats, and any listener on the app event bus.
+  window.menuEvents?.emit('sketch:changed', { sketchId: S.currentSketchId });
   const currentNodes = S.nodes;
   const currentEdges = S.edges;
   const currentNextNodeId = S.nextNodeId;

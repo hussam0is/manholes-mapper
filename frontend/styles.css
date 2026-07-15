@@ -17130,6 +17130,30 @@ body.unified-layout #sidebar.drawer {
   display: none !important;
 }
 
+/* Read-only lock banner + section error card (details panel) */
+.details-readonly-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-warning-text, #92400e);
+  background: var(--color-warning-bg, #fef3c7);
+  border: 1px solid var(--color-warning-border, #fcd34d);
+}
+.details-readonly-banner .material-icons { font-size: 18px; }
+
+.details-section--error {
+  color: var(--color-danger, #ef4444);
+  font-size: 13px;
+  padding: 8px 10px;
+  border: 1px dashed var(--color-danger, #ef4444);
+  border-radius: 8px;
+}
+
 /* Same for the legacy sketch side panel shell: its children are reparented into
    #us-panel-sketches at startup, but showSketchSidePanel() still re-shows the
    empty shell over the canvas. */
