@@ -804,6 +804,8 @@ function renderDetails() {
               F.computeNodeTypes();
               F.debouncedSaveToStorage();
               F.scheduleDraw();
+              // Smart check: live gradient validation while measuring (debounced)
+              window.__gradientEngine?.onDepthChanged(e);
             });
           }
           if (materialSelect) {
@@ -1632,6 +1634,8 @@ function renderDetails() {
         F.computeNodeTypes();
         F.debouncedSaveToStorage();
         F.scheduleDraw();
+        // Smart check: live gradient validation while measuring (debounced)
+        window.__gradientEngine?.onDepthChanged(edge);
       });
     }
     if (headInput) {
@@ -1648,6 +1652,8 @@ function renderDetails() {
         F.computeNodeTypes();
         F.debouncedSaveToStorage();
         F.scheduleDraw();
+        // Smart check: live gradient validation while measuring (debounced)
+        window.__gradientEngine?.onDepthChanged(edge);
       });
     }
     if (fallDepthInput) {

@@ -347,21 +347,28 @@ function populateIssueList(listEl) {
     return;
   }
 
+  // Keys are the snake_case issue types produced by sketch-issues.js
   const issueTypeIcons = {
-    missingCoords: 'location_off',
-    missingMeasurement: 'straighten',
-    negativeGradient: 'trending_down',
+    missing_coords: 'location_off',
+    missing_pipe_data: 'straighten',
+    long_edge: 'straighten',
+    not_last_manhole: 'call_missed_outgoing',
+    merge_candidate: 'call_merge',
+    negative_gradient: 'trending_down',
+    obstructed_access: 'block',
+    schematic_location: 'edit_location_alt',
+    missing_tl: 'height',
   };
 
-  const issueTypeLabels = {
-    missingCoords: t('elementIssues.missingCoords') || 'Missing coordinates',
-    missingMeasurement: t('elementIssues.missingMeasurement') || 'Missing measurement',
-    negativeGradient: t('elementIssues.negativeGradient') || 'Negative gradient',
+  const typeLabel = (type) => {
+    const key = `adminPanel.fixes.types.${type}`;
+    const label = t(key);
+    return label && label !== key ? label : type;
   };
 
   listEl.innerHTML = issues.map((issue, i) => {
     const icon = issueTypeIcons[issue.type] || 'warning_amber';
-    const label = issueTypeLabels[issue.type] || issue.type;
+    const label = typeLabel(issue.type);
     const target = issue.nodeLabel || issue.edgeLabel || `#${i + 1}`;
     return `<div class="intel-health__issue-item" data-index="${i}">
       <span class="material-icons">${icon}</span>

@@ -46,7 +46,7 @@ export function increaseSizeScale() {
     localStorage.setItem(STORAGE_KEYS.sizeScale, String(S.sizeScale));
     scheduleDraw();
     const pct = Math.round(S.sizeScale * 100);
-    showToast(t('toasts.sizeChanged', pct));
+    (window.showStatus || showToast)(t('toasts.sizeChanged', pct), 'size');
   }
 }
 
@@ -60,7 +60,7 @@ export function decreaseSizeScale() {
     localStorage.setItem(STORAGE_KEYS.sizeScale, String(S.sizeScale));
     scheduleDraw();
     const pct = Math.round(S.sizeScale * 100);
-    showToast(t('toasts.sizeChanged', pct));
+    (window.showStatus || showToast)(t('toasts.sizeChanged', pct), 'size');
   }
 }
 

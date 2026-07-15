@@ -1,0 +1,164 @@
+{
+  "mode": "baseline",
+  "notes": [
+    {
+      "area": "smartness",
+      "severity": "major",
+      "text": "MH-104 measured 0.45m ABOVE the upstream manhole along flow direction — app accepted it with no gradient warning at measurement time"
+    },
+    {
+      "area": "depth-entry",
+      "severity": "minor",
+      "text": "Entering both depths of one pipe requires selecting each endpoint node in turn (panel exposes only the selected node's side) — a per-pipe context switch in the field"
+    },
+    {
+      "area": "smartness",
+      "severity": "major",
+      "text": "Depths entered give an invert level RISING along flow (102.60 → 103.35) — no immediate feedback at entry time"
+    },
+    {
+      "area": "smartness",
+      "severity": "major",
+      "text": "Issues engine (depth-delta heuristic) does NOT flag MH-103→MH-104: tail depth 1.50 > head depth 1.20 masks the rising invert because elevations are ignored"
+    }
+  ],
+  "connect": {
+    "connectMs": 8,
+    "badge": "bluetooth_connected"
+  },
+  "feedback.afterValidSegment": {
+    "snackbars": [],
+    "toastText": "נוצר modeManhole MH-102",
+    "engineAlerts": null
+  },
+  "feedback.atNegativeGradientMoment": {
+    "snackbars": [],
+    "toastText": "נוצר modeManhole MH-104",
+    "engineAlerts": null
+  },
+  "baseline.negativeGradientWarned": false,
+  "feedback.afterHomeConnection": {
+    "snackbars": [],
+    "toastText": "נוצר הוסף חיבור בית HM-301",
+    "engineAlerts": null
+  },
+  "shots": {
+    "MH-101": {
+      "dialogLatencyMs": 12,
+      "appliedMs": 82,
+      "taps": 1
+    },
+    "MH-102": {
+      "dialogLatencyMs": 7,
+      "appliedMs": 62,
+      "taps": 1
+    },
+    "MH-103": {
+      "dialogLatencyMs": 10,
+      "appliedMs": 71,
+      "taps": 1
+    },
+    "MH-104": {
+      "dialogLatencyMs": 9,
+      "appliedMs": 72,
+      "taps": 1
+    },
+    "MH-105": {
+      "dialogLatencyMs": 10,
+      "appliedMs": 60,
+      "taps": 1
+    },
+    "MH-103-reshoot": {
+      "dialogLatencyMs": null,
+      "appliedMs": 8,
+      "taps": 0
+    },
+    "BR-201": {
+      "dialogLatencyMs": 9,
+      "appliedMs": 74,
+      "taps": 1
+    },
+    "BR-202": {
+      "dialogLatencyMs": 12,
+      "appliedMs": 69,
+      "taps": 1
+    },
+    "MH-105-reshoot": {
+      "dialogLatencyMs": null,
+      "appliedMs": 13,
+      "taps": 0
+    },
+    "HM-301": {
+      "dialogLatencyMs": 10,
+      "appliedMs": 66,
+      "taps": 1
+    }
+  },
+  "network": {
+    "nodes": [
+      "MH-101(Manhole,z=105)",
+      "MH-102(Manhole,z=104.6)",
+      "MH-103(Manhole,z=104.1)",
+      "MH-104(Manhole,z=104.55)",
+      "MH-105(Manhole,z=103.8)",
+      "BR-201(Manhole,z=103.6)",
+      "BR-202(Manhole,z=103.1)",
+      "HM-301(Home,z=104)"
+    ],
+    "edges": [
+      "MH-101->MH-102",
+      "MH-102->MH-103",
+      "MH-103->MH-104",
+      "MH-104->MH-105",
+      "MH-103->BR-201",
+      "BR-201->BR-202",
+      "MH-105->HM-301"
+    ]
+  },
+  "depthEntry.selectNode": {
+    "sidebarOpen": true,
+    "msToFirstDepthEntered": 703
+  },
+  "feedback.afterBadDepthEntry": {
+    "snackbars": [],
+    "toastText": "נשמר",
+    "engineAlerts": null
+  },
+  "baseline.depthEntryWarned": false,
+  "issuesEngine": [
+    {
+      "type": "not_last_manhole",
+      "nodeId": "BR-202"
+    },
+    {
+      "type": "missing_tl",
+      "nodeId": "MH-101"
+    },
+    {
+      "type": "missing_tl",
+      "nodeId": "MH-102"
+    },
+    {
+      "type": "missing_tl",
+      "nodeId": "MH-103"
+    },
+    {
+      "type": "missing_tl",
+      "nodeId": "MH-104"
+    },
+    {
+      "type": "missing_tl",
+      "nodeId": "MH-105"
+    },
+    {
+      "type": "missing_tl",
+      "nodeId": "BR-201"
+    },
+    {
+      "type": "missing_tl",
+      "nodeId": "BR-202"
+    }
+  ],
+  "flickerProbe": "zoom pulse x24, pan sweep x16, heatmap toggle x2, sidebar close — inspect video",
+  "consoleErrors": []
+}

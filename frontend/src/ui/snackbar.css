@@ -1,0 +1,205 @@
+/*
+ * snackbar.css — stacking actionable snackbars (Wolt-style feedback cards).
+ * z-index 1700: above the floating numeric keyboard (1500) — gradient alerts
+ * fire exactly while typing depths — and below the 3D overlay (2000).
+ * Tokens that exist only in the dark-mode :root block always get a light
+ * fallback via var(--x, fallback).
+ */
+
+#snackbarContainer {
+  position: fixed;
+  inset-inline: 0;
+  bottom: calc(var(--drawer-height, 0px) + 76px);
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 8px;
+  z-index: 1700;
+  pointer-events: none;
+  padding-inline: 16px;
+}
+
+.snackbar-item {
+  pointer-events: auto;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: max-content;
+  max-width: min(520px, 100%);
+  min-height: 44px;
+  padding: 10px 12px;
+  padding-inline-start: 14px;
+  background: var(--color-surface, #ffffff);
+  color: var(--color-text, #1f2937);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: var(--shadow-lg, 0 10px 24px rgba(15, 23, 42, 0.18));
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(10px) scale(0.97);
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+.snackbar-item.shown {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.snackbar-item.leaving {
+  opacity: 0;
+  transform: translateY(8px) scale(0.97);
+}
+
+/* severity accent: inline-start bar + icon color */
+.snackbar-item::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 4px;
+  background: var(--color-accent, #3b82f6);
+}
+.snackbar-item[data-variant='success']::before { background: var(--color-success, #16a34a); }
+.snackbar-item[data-variant='warning']::before { background: var(--color-warning, #d97706); }
+.snackbar-item[data-variant='error']::before   { background: var(--color-danger, #dc2626); }
+
+.snackbar-icon {
+  font-size: 20px;
+  flex: 0 0 auto;
+  color: var(--color-accent, #3b82f6);
+}
+.snackbar-item[data-variant='success'] .snackbar-icon { color: var(--color-success, #16a34a); }
+.snackbar-item[data-variant='warning'] .snackbar-icon { color: var(--color-warning, #d97706); }
+.snackbar-item[data-variant='error'] .snackbar-icon   { color: var(--color-danger, #dc2626); }
+
+.snackbar-body {
+  min-width: 0;
+  flex: 1 1 auto;
+  font-size: var(--text-sm, 0.875rem);
+  line-height: 1.35;
+}
+.snackbar-title {
+  font-weight: var(--font-semibold, 600);
+}
+.snackbar-msg {
+  overflow-wrap: anywhere;
+}
+
+.snackbar-actions {
+  display: flex;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+.snackbar-action {
+  border: none;
+  background: transparent;
+  color: var(--color-accent, #2563eb);
+  font-weight: var(--font-semibold, 600);
+  font-size: var(--text-sm, 0.875rem);
+  padding: 8px 10px;
+  min-height: 36px;
+  border-radius: var(--radius, 8px);
+  cursor: pointer;
+}
+.snackbar-action:hover,
+.snackbar-action:focus-visible {
+  background: var(--color-surface-hover, rgba(37, 99, 235, 0.08));
+}
+.snackbar-action[data-primary] {
+  background: var(--color-accent, #2563eb);
+  color: var(--color-text-on-primary, #ffffff);
+}
+
+.snackbar-close {
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary, #6b7280);
+  font-size: 18px;
+  padding: 6px;
+  border-radius: var(--radius-full, 999px);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.snackbar-close:hover {
+  color: var(--color-text, #1f2937);
+}
+
+/* compact status pill (zoom %, size %, selection…): one per channel,
+   updated in place — minimal chrome, reads like the classic toast */
+.snackbar-item[data-compact] {
+  min-height: 32px;
+  padding: 6px 16px;
+  border-radius: var(--radius-full, 999px);
+  gap: 0;
+}
+.snackbar-item[data-compact]::before {
+  display: none;
+}
+
+.snackbar-progress {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 3px;
+  background: transparent;
+}
+.snackbar-progress-fill {
+  height: 100%;
+  transform: scaleX(1);
+  transform-origin: var(--snackbar-progress-origin, left);
+  transition-property: transform;
+  transition-timing-function: linear;
+  background: color-mix(in srgb, currentColor 28%, transparent);
+  color: var(--color-accent, #3b82f6);
+}
+.snackbar-item[data-variant='success'] .snackbar-progress-fill { color: var(--color-success, #16a34a); }
+.snackbar-item[data-variant='warning'] .snackbar-progress-fill { color: var(--color-warning, #d97706); }
+.snackbar-item[data-variant='error'] .snackbar-progress-fill   { color: var(--color-danger, #dc2626); }
+
+[dir='rtl'] .snackbar-progress-fill {
+  --snackbar-progress-origin: right;
+}
+
+/* unified layout keeps the drawer/FAB row clear (mirrors #toast override) */
+body.unified-layout #snackbarContainer {
+  bottom: 72px;
+}
+
+/* TSC5 landscape (640x360): bottom-center strip between the two 44px FABs.
+   The compound selector must also be listed — body.unified-layout
+   #snackbarContainer (1,1,1) would otherwise outrank this rule and push the
+   stack up into canvas tap territory on a 360px-tall screen. */
+@media (max-height: 450px) and (orientation: landscape) {
+  #snackbarContainer,
+  body.unified-layout #snackbarContainer {
+    bottom: 12px;
+    padding-inline: 64px; /* clear Take-Measure FAB (start) + speed-dial (end) */
+  }
+  .snackbar-item {
+    max-width: min(460px, 100%);
+    min-height: 40px;
+    padding-block: 8px;
+    font-size: 0.8rem;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .snackbar-item {
+    background: var(--color-surface-alt, #1e293b);
+    color: var(--color-text, #e2e8f0);
+    border-color: var(--color-border, #334155);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .snackbar-item,
+  .snackbar-item.shown,
+  .snackbar-item.leaving {
+    transition: opacity 0.1s linear;
+    transform: none;
+  }
+  .snackbar-progress-fill {
+    transition: none;
+    display: none;
+  }
+}

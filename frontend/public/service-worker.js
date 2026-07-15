@@ -16,7 +16,9 @@
 // the network was unavailable and there was no cached response, causing
 // offline pages to break.  Increasing the version here forces browsers
 // to pick up the updated logic.
-const APP_VERSION = 'v132';
+// v133: dev and feature/v2-smart-field both bumped to v132 independently
+// (production already serves v132) — the merged result must go higher.
+const APP_VERSION = 'v133';
 const PRECACHE = 'graph-sketch-shell-' + APP_VERSION;
 const RUNTIME = 'graph-sketch-runtime-' + APP_VERSION;
 

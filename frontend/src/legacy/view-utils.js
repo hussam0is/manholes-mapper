@@ -211,7 +211,8 @@ export function setZoom(newScale) {
   S.viewTranslate.x = centerScreen.x - S.viewScale * S.viewStretchX * centerWorld.x;
   S.viewTranslate.y = centerScreen.y - S.viewScale * S.viewStretchY * centerWorld.y;
   F.scheduleDraw();
-  F.showToast(F.t('toasts.zoom', (S.viewScale * 100).toFixed(0)));
+  // status channel: single compact pill updated in place, never stacks
+  (window.showStatus || F.showToast)(F.t('toasts.zoom', (S.viewScale * 100).toFixed(0)), 'zoom');
 }
 
 /**

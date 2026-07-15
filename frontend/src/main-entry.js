@@ -11,11 +11,14 @@ import '../design-system-v2.css';
 import './menu/menu.css';
 
 // Load small utilities first so legacy code can rely on them during migration.
+// Snackbar must load BEFORE utils/toast.js: it claims window.showToast so every
+// legacy toast call upgrades to the stacking, actionable snackbar system.
+import './ui/snackbar.js';
 import './utils/toast.js';
 import './serviceWorker/register-sw.js';
-
+// Live pipe-slope intelligence (registers window.__gradientEngine)
+import './features/gradient-engine.js';
 // @vercel/speed-insights is lazy-loaded below (only on Vercel production)
-
 import { i18n as I18N_DICT, createTranslator, isRTL as i18nIsRTL } from './i18n.js';
 import { syncHeaderHeightVar, syncAppHeightVar } from './dom/dom-utils.js';
 import * as CONSTS from './state/constants.js';

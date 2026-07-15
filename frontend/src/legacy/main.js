@@ -1553,7 +1553,7 @@ document.addEventListener('keydown', (e) => {
         selectedNode = nodes[nextIndex];
         selectedEdge = null;
         centerOnNode(selectedNode);
-        showToast(t('toasts.nodeSelected', selectedNode.id), 1200);
+        (window.showStatus || showToast)(t('toasts.nodeSelected', selectedNode.id), 'selection');
       } else {
         // Select an edge
         const edgeIdx = nextIndex - nodes.length;
@@ -1702,7 +1702,8 @@ canvas.addEventListener('wheel', (e) => {
   // Throttle toast to once per 120ms to reduce DOM churn during rapid scrolling
   clearTimeout(_zoomToastTimer);
   _zoomToastTimer = setTimeout(() => {
-    showToast(t('toasts.zoom', (viewScale * 100).toFixed(0)));
+    // status channel: single compact pill updated in place, never stacks
+    (window.showStatus || showToast)(t('toasts.zoom', (viewScale * 100).toFixed(0)), 'zoom');
   }, 120);
 }, { passive: false });
 
@@ -1921,6 +1922,9 @@ window.toggleUserLocationTracking = toggleUserLocationTracking;
 window.__createNodeFromMeasurement = createNodeFromMeasurement;
 window.__markInternalNavigation = () => markInternalNavigation();
 window.__setActiveSketchData = (data) => {
+  // New sketch context: clear gradient transition memory + pending timers so
+  // alerts and edge-id signatures never leak across sketch switches.
+  window.__gradientEngine?.reset?.();
   nodes = data.nodes || [];
   edges = data.edges || [];
   nextNodeId = data.nextNodeId || 1;

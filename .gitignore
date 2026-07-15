@@ -93,3 +93,5 @@ scripts/session-watchdog.sh
 
 # machine-local Claude settings (may contain credentials in permission strings)
 .claude/settings.local.json
+
+frontend/audit-results/
