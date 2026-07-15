@@ -18,7 +18,8 @@
 // to pick up the updated logic.
 // v133: dev and feature/v2-smart-field both bumped to v132 independently
 // (production already serves v132) — the merged result must go higher.
-const APP_VERSION = 'v134';
+// v135: styles.css changed (read-only banner CSS in 21668d5) without a bump.
+const APP_VERSION = 'v135';
 const PRECACHE = 'graph-sketch-shell-' + APP_VERSION;
 const RUNTIME = 'graph-sketch-runtime-' + APP_VERSION;
 
