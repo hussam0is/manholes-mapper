@@ -611,7 +611,9 @@ function draw() {
   const effectiveFontPx = positionedLabels.length > 0
     ? positionedLabels[0].fontSize * viewScale
     : 16;
-  if (effectiveFontPx >= 4 && positionedLabels.length > 0) {
+  // 9px floor: below that Hebrew/digit labels render as unreadable smudge on the
+  // TSC5 — better to draw nothing until the user zooms in.
+  if (effectiveFontPx >= 9 && positionedLabels.length > 0) {
     const useHalo = mapLayerEnabled && getMapReferencePoint();
     ctx.save();
     ctx.fillStyle = COLORS.node.label;
@@ -643,7 +645,7 @@ function draw() {
   // Draw edge measurement labels
   {
     const _elf = Math.round(14 * sizeScale / sizeVS) * viewScale;
-    if (viewScale >= 0.3 && _elf >= 4) {
+    if (viewScale >= 0.3 && _elf >= 9) {
       const _edgeLabelSource = _useGridCull
         ? _visibleEdges
         : edges;

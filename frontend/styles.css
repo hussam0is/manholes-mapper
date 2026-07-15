@@ -954,8 +954,8 @@ header .btn-primary:hover {
   box-shadow: var(--shadow-sm);
 }
 
-/* Mobile touch target enforcement */
-@media (max-width: 600px) {
+/* Mobile touch target enforcement (640px includes the TSC5 landscape width) */
+@media (max-width: 640px) {
   .btn {
     min-height: var(--touch-target-min);
   }
@@ -2586,7 +2586,7 @@ body.cockpit-mode .gps-capture-fab {
 }
 
 /* Compact spacing for details inside the sidebar */
-#sidebar .details-section {
+:is(#sidebar, #us-panel-details) .details-section {
   padding: 0.5rem;
   margin-bottom: 0.5rem;
 }
@@ -2595,16 +2595,16 @@ body.cockpit-mode .gps-capture-fab {
    The sidebar is 320px wide — two-col at that width produces ~145px columns
    which are too narrow for comfortable field data entry on mobile.
    col-span-2 fields still work (grid-column: 1 / -1 on a 1-col grid is a no-op). */
-#sidebar .details-grid.two-col {
+:is(#sidebar, #us-panel-details) .details-grid.two-col {
   gap: 0.5rem 0.5rem;
   grid-template-columns: 1fr;
 }
 
-#sidebar .details-grid.two-col .field {
+:is(#sidebar, #us-panel-details) .details-grid.two-col .field {
   min-width: 0;
 }
 
-#sidebar .details-grid.two-col .field>* {
+:is(#sidebar, #us-panel-details) .details-grid.two-col .field>* {
   max-width: 100%;
 }
 
@@ -2616,11 +2616,11 @@ body.cockpit-mode .gps-capture-fab {
   min-width: 0;
 }
 
-#sidebar .field {
+:is(#sidebar, #us-panel-details) .field {
   margin-bottom: 0.5rem;
 }
 
-#sidebar label {
+:is(#sidebar, #us-panel-details) label {
   font-size: 0.85rem;
   line-height: 1.4;
   margin-bottom: 0.15rem;
@@ -2640,31 +2640,31 @@ body.cockpit-mode .gps-capture-fab {
   margin-bottom: 0;
 }
 
-#sidebar input[type="text"],
-#sidebar input[type="number"],
-#sidebar input[type="date"],
-#sidebar select,
-#sidebar textarea {
+:is(#sidebar, #us-panel-details) input[type="text"],
+:is(#sidebar, #us-panel-details) input[type="number"],
+:is(#sidebar, #us-panel-details) input[type="date"],
+:is(#sidebar, #us-panel-details) select,
+:is(#sidebar, #us-panel-details) textarea {
   padding: 0.4rem 0.5rem;
   font-size: 0.9rem;
   min-height: var(--touch-target-min, 44px);
   box-sizing: border-box;
 }
 
-#sidebar input[type="number"],
-#sidebar select {
+:is(#sidebar, #us-panel-details) input[type="number"],
+:is(#sidebar, #us-panel-details) select {
   width: 100%;
   max-width: 100%;
 }
 
-#sidebar select,
-#sidebar input[type="number"],
-#sidebar input[type="text"] {
+:is(#sidebar, #us-panel-details) select,
+:is(#sidebar, #us-panel-details) input[type="number"],
+:is(#sidebar, #us-panel-details) input[type="text"] {
   min-width: 0;
   box-sizing: border-box;
 }
 
-#sidebar select {
+:is(#sidebar, #us-panel-details) select {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2986,7 +2986,7 @@ body.cockpit-mode .gps-capture-fab {
 /* R&D spec: single-column, top-label layout for all attribute forms on mobile.
    Sidebar forms now stack to single column at 640px (matches global rule). */
 @media (max-width: 640px) {
-  #sidebar .details-grid.two-col {
+  :is(#sidebar, #us-panel-details) .details-grid.two-col {
     grid-template-columns: 1fr;
   }
 }
@@ -3769,8 +3769,8 @@ select {
     background-color 0.15s ease;
 }
 
-/* Mobile touch target enforcement */
-@media (max-width: 600px) {
+/* Mobile touch target enforcement (640px includes the TSC5 landscape width) */
+@media (max-width: 640px) {
   input[type="text"],
   input[type="number"],
   input[type="email"],
@@ -3943,7 +3943,7 @@ input.floating-keyboard-active {
   background: color-mix(in srgb, var(--color-primary) 5%, transparent) !important;
 }
 
-#sidebar h2 {
+:is(#sidebar, #us-panel-details) h2 {
   margin-top: 0;
 }
 
@@ -7269,10 +7269,10 @@ select.invalid:focus {
   }
 
   /* Mobile-friendly input fields */
-  #sidebar input[type="text"],
-  #sidebar input[type="number"],
-  #sidebar input[type="date"],
-  #sidebar select {
+  :is(#sidebar, #us-panel-details) input[type="text"],
+  :is(#sidebar, #us-panel-details) input[type="number"],
+  :is(#sidebar, #us-panel-details) input[type="date"],
+  :is(#sidebar, #us-panel-details) select {
     min-height: var(--touch-target-min);
     font-size: 16px;
     /* Prevents zoom on iOS */
@@ -12086,14 +12086,13 @@ button:focus-visible,
 }
 
 .sketch-side-panel__issue-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: block;
   padding: 8px 10px;
   border-bottom: 1px solid var(--color-border-light, #f1f5f9);
   font-size: 13px;
   transition: background 0.15s, border-inline-start 0.15s;
   border-inline-start: 3px solid transparent;
+  cursor: pointer;
 }
 .sketch-side-panel__issue-row--active {
   background: var(--color-primary-light, #dbeafe);
@@ -12109,9 +12108,10 @@ button:focus-visible,
   border-radius: 10px;
 }
 
-.sketch-side-panel__issue-info {
-  flex: 1;
-  min-width: 0;
+/* Line 1: icon + node id + single secondary action. The row itself is the
+   primary tap target (go to issue) — was two 44px buttons that starved the
+   text of width at the 245px dock. */
+.sketch-side-panel__issue-line1 {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -12129,26 +12129,29 @@ button:focus-visible,
 .sketch-side-panel__issue-node {
   font-weight: 600;
   white-space: nowrap;
-}
-
-.sketch-side-panel__issue-type {
-  color: var(--color-text-muted, #64748b);
-  font-size: 11px;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
-.sketch-side-panel__issue-actions {
-  display: flex;
-  gap: 4px;
-  flex-shrink: 0;
+/* Line 2: full-width issue text, readable size, wraps to 2 lines max */
+.sketch-side-panel__issue-type {
+  color: var(--color-text-muted, #64748b);
+  font-size: 12px;
+  line-height: 1.35;
+  margin-top: 2px;
+  padding-inline-start: 24px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.sketch-side-panel__issue-goto,
 .sketch-side-panel__issue-center {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -12160,13 +12163,11 @@ button:focus-visible,
   transition: background 0.15s, color 0.15s;
 }
 
-.sketch-side-panel__issue-goto:hover,
 .sketch-side-panel__issue-center:hover {
   background: var(--color-primary-bg, #eff6ff);
   color: var(--color-primary, #2563eb);
 }
 
-.sketch-side-panel__issue-goto .material-icons,
 .sketch-side-panel__issue-center .material-icons {
   font-size: 20px;
 }
@@ -14362,21 +14363,21 @@ button:focus-visible,
     font-size: 0.85rem;
   }
 
-  #sidebar .details-section {
+  :is(#sidebar, #us-panel-details) .details-section {
     padding: 0.35rem;
     margin-bottom: 0.35rem;
   }
 
-  #sidebar label {
+  :is(#sidebar, #us-panel-details) label {
     font-size: 0.8rem;
     margin-bottom: 0.1rem;
   }
 
-  #sidebar input[type="text"],
-  #sidebar input[type="number"],
-  #sidebar input[type="date"],
-  #sidebar select,
-  #sidebar textarea {
+  :is(#sidebar, #us-panel-details) input[type="text"],
+  :is(#sidebar, #us-panel-details) input[type="number"],
+  :is(#sidebar, #us-panel-details) input[type="date"],
+  :is(#sidebar, #us-panel-details) select,
+  :is(#sidebar, #us-panel-details) textarea {
     padding: 0.35rem 0.5rem;
     font-size: 0.875rem;
     min-height: var(--touch-target-min);
@@ -14420,11 +14421,11 @@ button:focus-visible,
   }
 
   /* Ensure delete/action buttons meet touch target in landscape */
-  #sidebar .btn {
+  :is(#sidebar, #us-panel-details) .btn {
     min-height: var(--touch-target-min);
   }
 
-  #sidebar .details-grid.two-col {
+  :is(#sidebar, #us-panel-details) .details-grid.two-col {
     gap: 0.3rem 0.3rem;
   }
 }
@@ -17129,6 +17130,13 @@ body.unified-layout #sidebar.drawer {
   display: none !important;
 }
 
+/* Same for the legacy sketch side panel shell: its children are reparented into
+   #us-panel-sketches at startup, but showSketchSidePanel() still re-shows the
+   empty shell over the canvas. */
+body.unified-layout #sketchSidePanel {
+  display: none !important;
+}
+
 /* â"€â"€ Canvas container adjustments under unified layout â"€â"€ */
 body.unified-layout #canvasContainer {
   /* Old sidebar is hidden, so let canvas take full width */
@@ -17152,14 +17160,15 @@ body.unified-layout #toast {
 
 /* ── Design Issue Fixes (Iteration 7) ──────────────────────────────── */
 
-/* #52 - Wizard tab abbreviated text labels */
+/* #52 - Wizard tab abbreviated text labels (>=12px: Hebrew is unreadable below
+   that on a sunlit 5" device; width follows content instead of a 40px cap) */
 .wizard-tab-label {
   display: none;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
-  line-height: 1;
+  line-height: 1.1;
   margin-top: 1px;
-  max-width: 40px;
+  max-width: 76px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

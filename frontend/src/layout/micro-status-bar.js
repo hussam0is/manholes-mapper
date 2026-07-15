@@ -74,33 +74,31 @@ async function updateOfflineChip() {
     if (badgeEl) badgeEl.remove();
   }
 
+  const t = window.t || ((k) => k);
   switch (state) {
     case 'offline':
       chipIconEl.textContent = 'cloud_off';
-      chipLabelEl.textContent = 'Offline';
+      chipLabelEl.textContent = t('fc.offline');
       break;
     case 'pending':
       chipIconEl.textContent = 'cloud_upload';
-      chipLabelEl.textContent = `${pendingCount} pending`;
+      chipLabelEl.textContent = t('fc.pendingCount', pendingCount);
       break;
     case 'synced':
     default:
       chipIconEl.textContent = 'cloud_done';
-      chipLabelEl.textContent = 'Synced';
+      chipLabelEl.textContent = t('fc.synced');
       break;
   }
 
   // Toast on transition (only when previous state is known)
   if (_offlineChipOnline !== null && _offlineChipOnline !== isOnline) {
-    const t = window.t || ((k) => k);
     if (!isOnline) {
-      const msg = t('offline.wentOffline') ||
-        `Working offline${pendingCount > 0 ? ` — ${pendingCount} changes will sync when connected` : ''}`;
-      window.showToast?.(msg, 'warning', 4000);
+      window.showToast?.(t('offline.wentOffline'), 'warning', 4000);
     } else {
       const msg = pendingCount > 0
-        ? (t('offline.backOnlinePending') || `Back online — syncing ${pendingCount} pending changes`)
-        : (t('offline.backOnline') || 'Back online — all changes synced');
+        ? t('offline.backOnlinePending', pendingCount)
+        : t('offline.backOnline');
       window.showToast?.(msg, 'success', 3000);
     }
   }

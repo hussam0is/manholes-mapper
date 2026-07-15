@@ -162,8 +162,29 @@ body.unified-layout .unified-sidebar.collapsed {
 }
 
 /* ─── Details tab: reparented #sidebar content ─── */
+/* Slim element-title strip so the worker can see WHICH node/edge they are editing
+   (was display:none — workers silently filled the wrong manhole). Close button
+   stays hidden: the unified sidebar has its own chrome. */
 .unified-sidebar__panel--details .sidebar-header {
-  display: none; /* hide original sidebar header — tabs handle it */
+  display: flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 0 6px;
+  margin: 0 0 6px;
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+}
+
+.unified-sidebar__panel--details .sidebar-header h2 {
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.unified-sidebar__panel--details .sidebar-header #sidebarCloseBtn {
+  display: none;
 }
 
 .unified-sidebar__panel--details .sidebar-drag-handle {

@@ -53,14 +53,18 @@ function formatSketchName(sketch) {
   return sketch.id ? sketch.id.replace('sk_', '#') : 'Sketch';
 }
 
-/** Detect if text is primarily LTR (Latin/digits) — used for BiDi wrapping */
+/** Detect if text is LTR by FIRST-STRONG character (Unicode bidi rule).
+ *  Digits and punctuation are direction-neutral — counting them as LTR evidence
+ *  flipped mostly-Hebrew names containing an ID or date to dir="ltr". */
 function isLtrText(str) {
   if (!str) return false;
-  // Count Latin letters + digits vs Hebrew/Arabic chars
-  const ltr = (str.match(/[A-Za-z0-9_\-.]/g) || []).length;
-  const rtl = (str.match(/[\u0590-\u05FF\u0600-\u06FF]/g) || []).length;
-  return ltr > rtl;
+  const m = String(str).match(/[A-Za-z֐-׿؀-ۿ]/);
+  return !!m && /[A-Za-z]/.test(m[0]);
 }
+
+/** Wrap an LTR token (node id like "L225", "#7→#12") in an isolated LTR <bdi>
+ *  so it renders left-to-right and un-mangled inside RTL text. */
+const ltrToken = (s) => `<bdi dir="ltr">${esc(s)}</bdi>`;
 
 let panelEl = null;
 let listEl = null;
@@ -582,7 +586,7 @@ function renderIssuesView() {
   backEl.className = 'sketch-side-panel__issues-back';
   backEl.innerHTML = `
     <span class="material-icons">arrow_back</span>
-    <span>${esc(displayName)} — ${t('projects.canvas.workingStatus') || 'Working Status'}</span>
+    <span><bdi>${esc(displayName)}</bdi> — ${t('projects.canvas.workingStatus') || 'Working Status'}</span>
   `;
   backEl.addEventListener('click', () => {
     _currentView = 'list';
@@ -654,25 +658,22 @@ function renderIssuesView() {
       nodeLabel = `#${issue.nodeId}`;
     }
 
+    // Two-line layout: line 1 = icon + node id + one secondary action; line 2 =
+    // full-width issue text (was one line where the text got ~50px → 2-3 chars).
+    // The whole row is the primary "go to issue" tap target.
     row.innerHTML = `
-      <div class="sketch-side-panel__issue-info">
+      <div class="sketch-side-panel__issue-line1">
         <span class="sketch-side-panel__issue-icon"><span class="material-icons">${icon}</span></span>
-        <span class="sketch-side-panel__issue-node">${esc(nodeLabel)}</span>
-        <span class="sketch-side-panel__issue-type">${esc(typeText)}</span>
-      </div>
-      <div class="sketch-side-panel__issue-actions">
-        <button class="sketch-side-panel__issue-goto" title="${t('projects.canvas.goToIssue') || 'Go to issue'}">
-          <span class="material-icons">my_location</span>
-        </button>
+        <span class="sketch-side-panel__issue-node">${ltrToken(nodeLabel)}</span>
         <button class="sketch-side-panel__issue-center" title="${t('projects.canvas.centerBetween') || 'Center between'}">
           <span class="material-icons">swap_horiz</span>
         </button>
       </div>
+      <div class="sketch-side-panel__issue-type">${esc(typeText)}</div>
     `;
 
-    // Go to issue — also updates nav state index
-    const gotoBtn = row.querySelector('.sketch-side-panel__issue-goto');
-    gotoBtn.addEventListener('click', () => {
+    // Whole row = go to issue — also updates nav state index
+    row.addEventListener('click', () => {
       setCurrentIndex(idx);
       _highlightActiveIssueRow(idx);
       navigateToIssue(issue, sketch, 'goto');
@@ -680,7 +681,8 @@ function renderIssuesView() {
 
     // Center between — also updates nav state index
     const centerBtn = row.querySelector('.sketch-side-panel__issue-center');
-    centerBtn.addEventListener('click', () => {
+    centerBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
       setCurrentIndex(idx);
       _highlightActiveIssueRow(idx);
       navigateToIssue(issue, sketch, 'center_between');

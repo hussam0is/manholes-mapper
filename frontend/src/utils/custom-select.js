@@ -92,19 +92,24 @@ function showCustomPicker(selectEl) {
 export function initCustomSelect() {
   if (!isMobile()) return;
 
-  const sidebar = document.getElementById('sidebar');
-  if (!sidebar) return;
-
-  // Use event delegation on the sidebar for all select elements
-  sidebar.addEventListener('mousedown', (e) => {
+  // Delegate at document level: the details form is reparented out of #sidebar
+  // into #us-panel-details by the unified layout at startup, so a #sidebar-bound
+  // listener never fires on the live form.
+  const resolveSelect = (e) => {
     const select = e.target.closest('select');
+    if (!select) return null;
+    return select.closest('#sidebar, #us-panel-details') ? select : null;
+  };
+
+  document.addEventListener('mousedown', (e) => {
+    const select = resolveSelect(e);
     if (!select) return;
     e.preventDefault();
     showCustomPicker(select);
   });
 
-  sidebar.addEventListener('touchend', (e) => {
-    const select = e.target.closest('select');
+  document.addEventListener('touchend', (e) => {
+    const select = resolveSelect(e);
     if (!select) return;
     e.preventDefault();
     showCustomPicker(select);
