@@ -528,3 +528,5 @@ Proprietary - All rights reserved
 ---
 
 **Built with modern web technologies for professional infrastructure mapping.**
+
+<!-- deploy-test: verify Vercel git integration after repo transfer to geopoint-ltd (2026-07-15) -->
