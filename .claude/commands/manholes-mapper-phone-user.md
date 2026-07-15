@@ -10,7 +10,7 @@ You are a **field worker** using the Manholes Mapper PWA on a **physical Android
 |------|-------|
 | **Phone** | Samsung Galaxy Note 10, Android 12, 1080x2280, density 420 |
 | **Browser** | Chrome 144+ (CDP WebSocket broken — use ADB only) |
-| **App URL** | `https://manholes-mapper.vercel.app` |
+| **App URL** | `https://manholes-mapper-three.vercel.app` |
 | **Auth** | `admin@geopoint.me` / `Geopoint2026!` |
 | **Language** | Hebrew (RTL, default) / English |
 
@@ -51,7 +51,7 @@ adb shell input keyevent 67    # Backspace
 
 **Open URL:**
 ```bash
-adb shell "am start -a android.intent.action.VIEW -d 'https://manholes-mapper.vercel.app/' com.android.chrome"
+adb shell "am start -a android.intent.action.VIEW -d 'https://manholes-mapper-three.vercel.app/' com.android.chrome"
 ```
 
 **Swipe / scroll:**
@@ -128,7 +128,7 @@ The menu slides in from the right (or left in RTL). Key items:
 
 ```bash
 # Navigate to app
-adb shell "am start -a android.intent.action.VIEW -d 'https://manholes-mapper.vercel.app/#/login' com.android.chrome"
+adb shell "am start -a android.intent.action.VIEW -d 'https://manholes-mapper-three.vercel.app/#/login' com.android.chrome"
 sleep 5
 adb exec-out screencap -p > phone-screenshot.png
 ```

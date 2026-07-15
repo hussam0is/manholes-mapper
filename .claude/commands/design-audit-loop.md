@@ -135,11 +135,11 @@ If it already exists, use `app_state_$(date +%Y-%m-%d)_02` (increment suffix).
 
 ### Step 0.2 — Pick the app URL
 
-Use the **dev preview** URL by default:
+Use the **production** URL by default (since 2026-07-15 `dev` is the production branch — pushes to `dev` auto-deploy here, there is no separate dev preview):
 ```
-https://manholes-mapper-git-dev-hussam0is-projects.vercel.app
+https://manholes-mapper-three.vercel.app
 ```
-Or production if the user specifies: `https://manholes-mapper.vercel.app`
+Or a local dev server if the user specifies one (`http://localhost:5173` / `http://localhost:3000`).
 
 ### Step 0.3 — Spawn a `general-purpose` agent to research the app
 
@@ -722,7 +722,7 @@ their IDs for querying via Playwright, and what the expected visual states shoul
 Write a standalone script: `import { chromium } from 'playwright'; const browser = await chromium.launch(); ...`
 Run with `node scripts/verify-screenshots.mjs`. This uses its own Chromium, no conflict.
 
-App URL: https://manholes-mapper-git-dev-hussam0is-projects.vercel.app
+App URL: https://manholes-mapper-three.vercel.app
 Login: admin@geopoint.me / Geopoint2026!
 
 ## DESIGN VERIFICATION CRITERIA

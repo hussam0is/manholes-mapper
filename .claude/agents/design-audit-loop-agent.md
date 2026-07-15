@@ -106,8 +106,7 @@ mkdir -p app_state_$(date +%Y-%m-%d)
 
 ### Step 0.2 — Pick the app URL
 
-Default: `https://manholes-mapper-git-dev-hussam0is-projects.vercel.app`
-Production: `https://manholes-mapper.vercel.app`
+Default: `https://manholes-mapper-three.vercel.app` (production — since 2026-07-15 `dev` is the production branch, so pushes to `dev` auto-deploy here; there is no separate dev preview URL)
 
 ### Step 0.3 — Read the UI reference
 

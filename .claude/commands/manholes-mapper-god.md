@@ -52,8 +52,8 @@ index.html → src/main-entry.js (ES module, ~400 lines)
 | `#/projects` | Project management (full page) | Yes — admin role |
 
 ### URLs
-- **Production:** `https://manholes-mapper.vercel.app`
-- **Preview (dev branch):** `https://manholes-mapper-git-dev-hussam0is-projects.vercel.app`
+- **Production:** `https://manholes-mapper-three.vercel.app` (Vercel team `gis-6579s-projects`; `dev` is the production branch — every push to `dev` auto-deploys here)
+- **Old production (pre-2026-07-15 account):** `https://manholes-mapper.vercel.app` — still serves the pre-transfer build + OLD database; field devices use it until cutover
 - **Local full-stack:** `http://localhost:3000` via `npm start` (Vercel dev)
 - **Local frontend-only:** `http://localhost:5173` via `npm run dev` (no API routes!)
 
@@ -429,15 +429,17 @@ liveMeasureEnabled     // 'true' | 'false'
 
 ### Deployment Cycle
 ```bash
-# 1. Push to dev branch → Vercel auto-deploys a Preview
+# 1. Push to dev branch → Vercel auto-deploys to PRODUCTION
+#    (dev IS the production branch on team gis-6579s-projects — no promote step)
 git push origin dev
 
-# 2. Wait ~2 minutes, then promote preview to production:
-echo "y" | npx vercel promote <preview-url>
+# 2. Verify the deploy: run the vercel-promote skill
+#    (.claude/skills/vercel-promote/SKILL.md) — waits for the build to be
+#    Ready and checks https://manholes-mapper-three.vercel.app/api/health
 
 # 3. If non-hashed files changed, bump service worker first:
 #    Edit public/service-worker.js: APP_VERSION 'v26' → 'v27'
-#    Then push again and promote
+#    Then push again
 ```
 
 ### Environment Variables (Vercel)
@@ -530,7 +532,7 @@ ORDER BY s."createdAt" DESC;
 
 **Standard workflow:**
 ```
-1. browser_navigate('https://manholes-mapper.vercel.app/#/login')
+1. browser_navigate('https://manholes-mapper-three.vercel.app/#/login')
 2. browser_snapshot()    → understand current UI, get element refs
 3. browser_fill_form / browser_click  → log in as admin
 4. browser_snapshot()    → confirm authenticated state
@@ -635,9 +637,9 @@ ORDER BY s.updated_at DESC;
 ```
 
 ### "Is the app deployed correctly?"
-1. `npx vercel ls 2>&1 | head -10` — find latest production deployment
-2. `browser_navigate('https://manholes-mapper.vercel.app/health/index.html')` — verify it loads
-3. `browser_navigate('https://manholes-mapper.vercel.app')` + `browser_snapshot()` — check UI renders
+1. `npx vercel ls --token "$env:VERCEL_API_KEY" --scope gis-6579s-projects 2>&1 | head -10` — find latest production deployment
+2. `browser_navigate('https://manholes-mapper-three.vercel.app/health/index.html')` — verify it loads
+3. `browser_navigate('https://manholes-mapper-three.vercel.app')` + `browser_snapshot()` — check UI renders
 4. Read `public/service-worker.js` to confirm current `APP_VERSION`
 
 ### "What's the live GNSS state on the phone?"
@@ -701,9 +703,9 @@ WHERE id = 'sketch-uuid-here';
 ```
 
 ### "Is the auth system working?"
-1. `browser_navigate('https://manholes-mapper.vercel.app/api/auth/get-session')` — should return JSON
+1. `browser_navigate('https://manholes-mapper-three.vercel.app/api/auth/get-session')` — should return JSON
 2. Check session table: `SELECT COUNT(*) FROM session WHERE "expiresAt" > NOW()`
-3. `browser_navigate('https://manholes-mapper.vercel.app/#/login')` → log in → `browser_evaluate(() => window.authGuard)`
+3. `browser_navigate('https://manholes-mapper-three.vercel.app/#/login')` → log in → `browser_evaluate(() => window.authGuard)`
 
 ### "What projects exist and who has access?"
 ```sql
@@ -1059,7 +1061,7 @@ Reusable boilerplate for browser-based testing. Use this before any Playwright t
 
 **Step 1: Navigate + Login**
 ```
-browser_navigate('https://manholes-mapper-git-dev-hussam0is-projects.vercel.app/#/login')
+browser_navigate('https://manholes-mapper-three.vercel.app/#/login')
 browser_snapshot()
 browser_fill_form({ ref for email field }, 'admin@geopoint.me')
 browser_fill_form({ ref for password field }, 'Geopoint2026!')

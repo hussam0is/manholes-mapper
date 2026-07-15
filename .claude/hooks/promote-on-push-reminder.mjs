@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // PostToolUse hook: after any shell command that ran `git push`, remind Claude to
-// promote the dev preview to production (project rule: every push to dev gets promoted).
+// verify the auto-deploy to production (project rule: every push to dev gets verified —
+// dev IS the production branch since 2026-07-15, no promote step).
 // Reads the hook payload from stdin and emits additionalContext JSON; always exits 0
 // so it never blocks the tool result.
 

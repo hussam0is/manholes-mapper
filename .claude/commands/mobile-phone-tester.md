@@ -12,8 +12,8 @@ You are a **mobile QA engineer** testing the Manholes Mapper PWA on a **physical
 | **GNSS Receiver** | Trimble R2 (connects via Bluetooth to phone) |
 | **Mock Location Provider** | Trimble Mobile Manager (TMM) — feeds RTK position as Android mock location |
 | **Browser** | Chrome 144+ on Android (CDP WebSocket broken — use ADB-only testing) |
-| **App URL (Production)** | `https://manholes-mapper.vercel.app` (see Deploy-and-Test Workflow below) |
-| **App URL (Preview/Dev)** | `https://manholes-mapper-git-dev-hussam0is-projects.vercel.app` |
+| **App URL (Production)** | `https://manholes-mapper-three.vercel.app` (see Deploy-and-Test Workflow below) |
+| **App URL (Old production, pre-2026-07-15)** | `https://manholes-mapper.vercel.app` — pre-transfer build + OLD database; only relevant for not-yet-migrated field devices |
 | **App URL (Local full-stack)** | `http://localhost:3000` via `npm start` (Vercel dev) |
 | **App URL (Local frontend-only)** | `http://localhost:5173` via `npm run dev` (NO API routes) |
 | **Auth Credentials** | `admin@geopoint.me` / `Geopoint2026!` |
@@ -26,23 +26,18 @@ You are a **mobile QA engineer** testing the Manholes Mapper PWA on a **physical
 
 ### Deploy-and-Test Workflow
 
-**CRITICAL: Pushing to `dev` creates a PREVIEW deployment, NOT production.**
-The production URL (`manholes-mapper.vercel.app`) does NOT auto-update from `dev` pushes.
+**Since 2026-07-15, `dev` IS the production branch** (Vercel team `gis-6579s-projects`):
+every push to `dev` auto-deploys directly to production (`manholes-mapper-three.vercel.app`).
+There is no preview/promote step anymore.
 
 After code changes:
 1. Commit and push to `dev` branch
-2. **Wait 2 minutes** for Vercel Preview deployment to complete
-3. **Promote to production** (required for phones using the production URL):
-   ```bash
-   # List deployments to find the latest Preview
-   npx vercel ls 2>&1 | head -10
-   # Promote it to production (auto-confirm with echo "y")
-   echo "y" | npx vercel promote <preview-deployment-url>
-   # Wait ~1 minute for production build
-   ```
+2. **Wait ~2 minutes** for the Vercel production build to complete
+3. **Verify the deploy** with the `vercel-promote` skill (`.claude/skills/vercel-promote/SKILL.md`) —
+   it waits for the build to be Ready and checks `https://manholes-mapper-three.vercel.app/api/health`
 4. **Bump service worker version** if code in non-hashed files changed (e.g., `main.js`):
    - Edit `public/service-worker.js`: increment `APP_VERSION` (e.g., `'v26'` → `'v27'`)
-   - Commit and push, then promote again
+   - Commit and push again
    - Without this, phones serve stale-while-revalidate cached JS indefinitely
 5. Navigate phone to production URL, take screenshot to verify new code is running
 
@@ -139,7 +134,7 @@ adb shell "cat /proc/net/unix | grep devtools"
 # If socket is missing, force-restart Chrome (use am force-stop, NEVER pm clear):
 adb shell "am force-stop com.android.chrome"
 sleep 2
-adb shell "am start -n com.android.chrome/com.google.android.apps.chrome.Main -d 'https://manholes-mapper.vercel.app/'"
+adb shell "am start -n com.android.chrome/com.google.android.apps.chrome.Main -d 'https://manholes-mapper-three.vercel.app/'"
 sleep 5
 # Re-establish forwarding after Chrome restart:
 adb forward tcp:9222 localabstract:chrome_devtools_remote
@@ -252,7 +247,7 @@ adb shell input keyevent 67     # Backspace/Delete
 
 **Opening URLs:**
 ```bash
-adb shell "am start -a android.intent.action.VIEW -d 'https://manholes-mapper.vercel.app/' com.android.chrome"
+adb shell "am start -a android.intent.action.VIEW -d 'https://manholes-mapper-three.vercel.app/' com.android.chrome"
 ```
 
 **Chrome management:**
@@ -297,7 +292,7 @@ When you need to log in on the phone and CDP is unavailable:
 
 ```bash
 # 1. Navigate to login page
-adb shell "am start -a android.intent.action.VIEW -d 'https://manholes-mapper.vercel.app/#/login' com.android.chrome"
+adb shell "am start -a android.intent.action.VIEW -d 'https://manholes-mapper-three.vercel.app/#/login' com.android.chrome"
 sleep 5
 
 # 2. Take a screenshot to verify login page loaded
@@ -676,7 +671,7 @@ When connected (via BT or WS):
 ### Issue: `am start VIEW` Opens New Tab Instead of Navigating
 **Symptoms:** Using `adb shell "am start -a android.intent.action.VIEW -d 'URL' com.android.chrome"` sometimes opens a new Chrome tab instead of navigating the existing tab.
 **Cause:** Chrome decides whether to reuse a tab based on the URL and current tab state. If the URL differs from the current tab, Chrome opens a new tab.
-**Fix:** Navigate to the same base URL each time (`https://manholes-mapper.vercel.app/`). If a new tab opens, use the back button or close the extra tab. For hash-based routing, change the hash via CDP evaluate or ADB JavaScript URL (if possible).
+**Fix:** Navigate to the same base URL each time (`https://manholes-mapper-three.vercel.app/`). If a new tab opens, use the back button or close the extra tab. For hash-based routing, change the hash via CDP evaluate or ADB JavaScript URL (if possible).
 
 ### Issue: Screenshot Coordinate Mapping (Downscaled Images)
 **Problem:** Screenshots are downscaled via PIL `thumbnail((2000,2000))` for Claude Code image limits. This means the displayed image is smaller than native 1080x2280. Tapping at visual coordinates from the downscaled image will miss the target.
@@ -792,11 +787,11 @@ The app shows toast messages for geolocation failures:
 **Fix:** Wake with `adb shell input keyevent 26` (power button toggle), then swipe to unlock: `adb shell input swipe 540 2000 540 1000 300`
 
 ### Issue: Stale Code After Deployment (Service Worker Cache)
-**Symptoms:** New code changes don't appear on the phone even after promoting to production.
+**Symptoms:** New code changes don't appear on the phone even after the production deploy went Ready.
 **Cause:** Service worker stale-while-revalidate serves old cached JS for non-hashed files.
 **Fix:**
 1. Bump `APP_VERSION` in `public/service-worker.js` (e.g., `'v26'` → `'v27'`)
-2. Commit, push, wait for build, promote to production
+2. Commit, push, wait for the auto production build
 3. Reload the page on the phone — new SW installs and clears old caches
 4. Reload once more to get the fresh files from the new cache
 

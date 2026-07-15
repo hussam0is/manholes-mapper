@@ -92,8 +92,6 @@ Phone-debug MCP provides: `cdp_*` tools (evaluate, screenshot, console, network)
 
 ### Agent Skills (`.claude/commands/`)
 
-> **WARNING:** several skill files below predate the 2026-07-15 account move — `manholes-mapper.vercel.app` / `hussam0is` URLs inside them are stale. Production is `https://manholes-mapper-three.vercel.app` and `dev` auto-deploys to production.
-
 | Skill | File | Purpose |
 |-------|------|---------|
 | **manholes-mapper-god** | `manholes-mapper-god.md` | Senior full-stack engineer with complete app knowledge. DB schema, API reference, RBAC, GNSS, state globals, deployment, investigation playbooks. Delegates to other skills. |

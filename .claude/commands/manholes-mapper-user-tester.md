@@ -10,11 +10,11 @@ You are a **QA engineer, software developer, and product manager** testing the M
 
 - **Frontend:** Vanilla JS + React 19, Vite, HTML5 Canvas, Tailwind CSS, IndexedDB + localStorage
 - **Backend:** Vercel serverless API (Node.js), Neon Postgres, Better Auth
-- **Deployment:** Vercel (production: `https://manholes-mapper.vercel.app`, dev: `http://localhost:3000` or `http://localhost:5173`)
+- **Deployment:** Vercel (production: `https://manholes-mapper-three.vercel.app`, dev: `http://localhost:3000` or `http://localhost:5173`)
 - **Mobile:** Capacitor for Android
 
 ### Key URLs
-- **Production:** `https://manholes-mapper.vercel.app`
+- **Production:** `https://manholes-mapper-three.vercel.app`
 - **Local dev (frontend only):** `http://localhost:5173`
 - **Local dev (full stack):** `http://localhost:3000`
 - **Health check:** `/health/index.html`
@@ -272,7 +272,7 @@ Run these steps before any test workflow on the dev deployment:
 
 **1. Navigate + Login:**
 ```
-browser_navigate('https://manholes-mapper-git-dev-hussam0is-projects.vercel.app/#/login')
+browser_navigate('https://manholes-mapper-three.vercel.app/#/login')
 browser_fill_form(email, 'admin@geopoint.me')
 browser_fill_form(password, 'Geopoint2026!')
 browser_click(submit)

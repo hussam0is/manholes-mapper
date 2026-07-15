@@ -9,7 +9,7 @@ import path from 'path';
 const OUTPUT_DIR = path.resolve('app_state_2026-03-04');
 mkdirSync(OUTPUT_DIR, { recursive: true });
 
-const APP_URL = 'https://manholes-mapper.vercel.app';
+const APP_URL = 'https://manholes-mapper-three.vercel.app';
 const CREDENTIALS = {
   email: process.env.ADMIN_EMAIL || (() => { throw new Error('ADMIN_EMAIL env var is required'); })(),
   password: process.env.ADMIN_PASSWORD || (() => { throw new Error('ADMIN_PASSWORD env var is required'); })(),
