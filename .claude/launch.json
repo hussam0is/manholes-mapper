@@ -3,14 +3,14 @@
   "configurations": [
     {
       "name": "dev",
-      "runtimeExecutable": "node",
-      "runtimeArgs": ["C:/Users/murjan.a/AppData/Roaming/npm/node_modules/vercel/dist/vc.js", "dev"],
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["start"],
       "port": 3000
     },
     {
       "name": "vite",
-      "runtimeExecutable": "node",
-      "runtimeArgs": ["node_modules/vite/bin/vite.js", "--port", "5173"],
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
       "port": 5173
     }
   ]
