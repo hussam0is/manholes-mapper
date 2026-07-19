@@ -307,6 +307,7 @@ Main reusable scripts (the many `_`-prefixed and `capture-*` scripts are one-off
 - **After every push** → run the `vercel-promote` skill ([.claude/skills/vercel-promote/SKILL.md](./.claude/skills/vercel-promote/SKILL.md)) to verify the production build went Ready and `/api/health` returns 200
 - Production URL: `https://manholes-mapper-three.vercel.app`
 - Old account production (`https://manholes-mapper.vercel.app`, team `hussam0is-projects`) still serves the pre-transfer build + OLD database — field devices keep using it until migrated to the new URL
+- **2026-07-19:** a second new-account Vercel project exists — team `dev-geopoint` (login `hussam-3537`), production `https://manholes-mapper-ten.vercel.app`, env vars configured but pointing at the **OLD** database, not git-connected. It is **NOT canonical**; created during credential recovery before the `gis-6579s-projects` setup was rediscovered. Pending user decision: retire it, or move the canonical deployment there (would need the NEW Neon DB creds + git connection).
 - After promoting, wait ~1 min for CDN cache invalidation
 - **Bump `APP_VERSION`** in `frontend/public/service-worker.js` after promoting if non-fingerprinted files changed — phones serve stale-while-revalidate cached JS indefinitely without this
 - Vercel auth: token in Windows User env var `VERCEL_API_KEY` (scoped to `gis-6579s-projects`); the CLI's cookie login is still the old `hussam0is` account, so always pass `--token` + `--scope gis-6579s-projects`
