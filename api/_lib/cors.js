@@ -12,8 +12,11 @@ const CAPACITOR_ORIGIN = 'https://localhost';
 // is unset but we're in a deployed env — mirrors lib/auth.js trustedOrigins.
 const VERCEL_PREVIEW_PATTERNS = [
   /^https:\/\/manholes-mapper-three\.vercel\.app$/,
+  /^https:\/\/manholes-mapper-ten\.vercel\.app$/,
   /^https:\/\/manholes-mapper-[a-z0-9-]+-gis-6579s-projects\.vercel\.app$/,
   /^https:\/\/manholes-mapper-git-[a-z0-9/-]+-gis-6579s-projects\.vercel\.app$/,
+  /^https:\/\/manholes-mapper-[a-z0-9-]+-dev-geopoint\.vercel\.app$/,
+  /^https:\/\/manholes-mapper-git-[a-z0-9/-]+-dev-geopoint\.vercel\.app$/,
 ];
 
 function isDeployedEnv() {
@@ -50,9 +53,9 @@ function getAllowedOrigins() {
       const url = `https://${process.env.VERCEL_URL}`;
       if (!origins.includes(url)) origins.push(url);
     }
-    // Always trust the canonical production alias in deployed envs
-    if (!origins.includes('https://manholes-mapper-three.vercel.app')) {
-      origins.push('https://manholes-mapper-three.vercel.app');
+    // Always trust the canonical production aliases in deployed envs
+    for (const alias of ['https://manholes-mapper-three.vercel.app', 'https://manholes-mapper-ten.vercel.app']) {
+      if (!origins.includes(alias)) origins.push(alias);
     }
   }
 
